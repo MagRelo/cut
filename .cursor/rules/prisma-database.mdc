@@ -1,0 +1,89 @@
+---
+description: database design, implementation, and documentation
+globs: 
+alwaysApply: false
+---
+
+### Current Tables
+
+1. **User**
+   - Core user information including authentication and profile data
+   - Fields: id, email, password, name, emailVerified, createdAt, updatedAt
+   - Relations: team, ownedLeagues, leagueMemberships, orderLogs
+
+2. **Team**
+   - Represents a fantasy golf team in a league
+   - Fields: id, name, createdAt, updatedAt, leagueId
+   - Relations: league, users, players
+
+3. **League**
+   - Represents a fantasy golf league
+   - Fields: id, name, description, isPrivate, maxTeams, commissionerId, createdAt, updatedAt
+   - Relations: commissioner, members, teams, settings
+
+4. **LeagueSettings**
+   - Configuration settings for each league
+   - Fields: id, rosterSize, weeklyStarters, scoringType, draftDate, seasonStart, seasonEnd
+   - Relations: league
+
+5. **LeagueMembership**
+   - Manages user membership in leagues
+   - Fields: id, userId, leagueId, role, joinedAt
+   - Relations: user, league
+
+6. **Player**
+   - Represents golf players and their tournament performance
+   - Fields: id, name, isActive, leaderboardPosition, pgaTourId, r1-r4 (round data), cut, bonus, total
+   - Relations: team
+
+7. **UserOrderLog**
+   - Tracks Hyperliquid trading orders
+   - Fields: id, userId, orderType, asset, amount, price, status, hyperliquidOrderId
+   - Relations: user
+
+### Suggested Future Tables
+
+1. **Tournament**
+   - Purpose: Track PGA Tour tournaments
+   - Fields: id, name, startDate, endDate, course, purse, status
+   - Relations: TournamentRounds, TournamentPlayers
+
+2. **TournamentPlayer**
+   - Purpose: Track player participation and results in specific tournaments
+   - Fields: id, tournamentId, playerId, finalPosition, earnings, fedExPoints
+   - Relations: Tournament, Player
+
+3. **Bet**
+   - Purpose: Track user betting activity
+   - Fields: id, userId, type (team, player, tournament), amount, odds, status
+   - Relations: User, Tournament, Team, Player
+
+4. **BetSettlement**
+   - Purpose: Record bet outcomes and payouts
+   - Fields: id, betId, settlementAmount, settlementDate, status
+   - Relations: Bet
+
+5. **PlayerStats**
+   - Purpose: Store detailed player statistics
+   - Fields: id, playerId, season, drivingAccuracy, greensInRegulation, puttingAverage
+   - Relations: Player
+
+8. **WeeklyLineup**
+   - Purpose: Track active players for each team per tournament
+   - Fields: id, teamId, tournamentId, week
+   - Relations: Team, Tournament, Player
+
+9. **Notification**
+   - Purpose: System notifications for users
+   - Fields: id, userId, type, message, read, createdAt
+   - Relations: User
+
+## Seeding the Database
+Here is how the db seeding should work:
+1. Get the latest pga data to create seed data
+ - run scrapePGATourData() to get the current the tournamentId and the list of players
+2. Create 3 users, 1 leagues, 3 teams (one for each user) and 8 players for each team. use the list of real players to help create the dummy players. make up dummy scores for them.
+
+
+
+
