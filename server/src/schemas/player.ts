@@ -26,6 +26,12 @@ export const playerIdSchema = z.object({
   id: z.string().cuid('Invalid player ID'),
 });
 
+// Schema for adding a player to a team
+export const teamPlayerSchema = z.object({
+  teamId: z.string().cuid('Invalid team ID'),
+  isActive: z.boolean().optional().default(false),
+});
+
 // Types derived from schemas
 export type CreatePlayerBody = z.infer<typeof createPlayerSchema>;
 export type UpdatePlayerBody = z.infer<typeof updatePlayerSchema>;
