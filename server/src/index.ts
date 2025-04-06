@@ -6,6 +6,8 @@ import authRoutes from './routes/auth';
 import pgaRoutes from './routes/pga';
 import leagueRoutes from './routes/leagues';
 import hyperliquidRoutes from './routes/hyperliquid';
+import playerRoutes from './routes/players';
+import tournamentRoutes from './routes/tournaments';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { requestLogger } from './middleware/logger';
@@ -65,6 +67,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pga', pgaRoutes);
 app.use('/api/leagues', leagueRoutes);
 app.use('/api/hyperliquid', hyperliquidRoutes);
+app.use('/api/players', playerRoutes);
+app.use('/api/tournaments', tournamentRoutes);
 
 // Protected routes
 app.use('/api/protected', authenticateToken, (req, res) => {

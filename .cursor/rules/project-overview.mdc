@@ -19,6 +19,22 @@ Bet the Cut is a web application that allows users to participate in fantasy gol
 - /client: all client-side code and dependencies. install all front-end dependencies in this directory using this package.json
 - /server: all server-side code and dependencies. install all server-side dependencies in this directory using this package.json
 
+# Player Management Architecture
+
+## Player Controller
+Responsible for managing the core player data synchronized from PGA Tour:
+- Player biographical information
+- PGA Tour IDs
+- Player statistics
+- External data synchronization
+
+## TeamPlayer Controller
+Responsible for managing fantasy team relationships:
+- Team roster management
+- Active/inactive player status for each team
+- Weekly player selections
+- Team composition rules enforcement
+
 ## Live Data Updates
 Each active player's stableford scores need to be updated every 10 minutes. This is done via a cron job that runs every 10 minutes. The job needs to: determine all of the players that are currently active on User teams for the current tournament, pull each scorecard and calculate the players score, and then save the player in the db. 
 

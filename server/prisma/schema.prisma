@@ -23,43 +23,43 @@ model User {
 }
 
 model Team {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  league    League   @relation(fields: [leagueId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  league    League       @relation(fields: [leagueId], references: [id])
   leagueId  String
   users     User[]
-  players   Player[]
+  players   TeamPlayer[]
 }
 
 model League {
-  id            String          @id @default(cuid())
+  id            String             @id @default(cuid())
   name          String
   description   String?
-  isPrivate     Boolean         @default(false)
-  maxTeams      Int             @default(8)
-  commissioner  User            @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
+  isPrivate     Boolean           @default(false)
+  maxTeams      Int               @default(8)
+  commissioner  User              @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
   commissionerId String
   members       LeagueMembership[]
   teams         Team[]
   settings      LeagueSettings?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }
 
 model LeagueSettings {
-  id              String   @id @default(cuid())
-  league          League   @relation(fields: [leagueId], references: [id])
-  leagueId        String   @unique
-  rosterSize      Int      @default(8)
-  weeklyStarters  Int      @default(4)
-  scoringType     String   @default("STABLEFORD")
+  id              String    @id @default(cuid())
+  league          League    @relation(fields: [leagueId], references: [id])
+  leagueId        String    @unique
+  rosterSize      Int       @default(8)
+  weeklyStarters  Int       @default(4)
+  scoringType     String    @default("STABLEFORD")
   draftDate       DateTime?
   seasonStart     DateTime?
   seasonEnd       DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model LeagueMembership {
@@ -75,38 +75,83 @@ model LeagueMembership {
 }
 
 model Player {
-  id                 String   @id @default(cuid())
-  name               String
-  isActive          Boolean  @default(false)
-  leaderboardPosition String?
-  pgaTourId         String?  // PGA Tour player identifier
-  r1                Json?    // Round 1 data
-  r2                Json?    // Round 2 data
-  r3                Json?    // Round 3 data
-  r4                Json?    // Round 4 data
-  cut               Int?
-  bonus             Int?
-  total             Int?
-  team              Team     @relation(fields: [teamId], references: [id])
-  teamId            String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id          String             @id @default(cuid())
+  pgaTourId   String?            @unique
+  name        String
+  imageUrl    String?
+  hometown    String?
+  age         Int?
+  teams       TeamPlayer[]
+  tournaments TournamentPlayer[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model TeamPlayer {
+  id        String   @id @default(cuid())
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    String
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+  addedAt   DateTime @default(now())
+  active    Boolean  @default(true)
+
+  @@unique([teamId, playerId])
+  @@index([teamId])
+  @@index([playerId])
+}
+
+model Tournament {
+  id          String             @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  course      String
+  purse       Float?
+  status      String             // UPCOMING, IN_PROGRESS, COMPLETED
+  players     TournamentPlayer[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model TournamentPlayer {
+  id                 String     @id @default(cuid())
+  tournament         Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId       String
+  player            Player     @relation(fields: [playerId], references: [id])
+  playerId          String
+  leaderboardPosition Int?
+  isActive          Boolean    @default(true)
+  r1Score           Int?       // Round scores in Stableford format
+  r2Score           Int?
+  r3Score           Int?
+  r4Score           Int?
+  totalScore        Int?
+  cut               Boolean    @default(false)
+  earnings          Float?
+  fedExPoints       Int?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
 }
 
 model UserOrderLog {
-  id                String   @id @default(cuid())
-  user              User     @relation(fields: [userId], references: [id])
+  id                String    @id @default(cuid())
+  user              User      @relation(fields: [userId], references: [id])
   userId            String
-  orderType         String   // 'BUY' or 'SELL'
+  orderType         String    // 'BUY' or 'SELL'
   asset             String
   amount            Float
   price             Float
-  status            String   // 'PENDING', 'COMPLETED', 'FAILED'
-  orderAttemptLog   Json?    // Raw response from order attempt
-  orderResultLog    Json?    // Raw response from order result
+  status            String    // 'PENDING', 'COMPLETED', 'FAILED'
+  orderAttemptLog   Json?     // Raw response from order attempt
+  orderResultLog    Json?     // Raw response from order result
   hyperliquidOrderId String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])

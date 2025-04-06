@@ -1,14 +1,9 @@
----
-description: database design, implementation, and documentation
-globs: 
-alwaysApply: false
----
 # Database Documentation
 
 ## Core Concepts
 
 The database is designed around these key concepts:
-1. Players exist independently of teams or leagues. Players will be loaded and refreshed from external data so players should only be linked to teams through the TeamPlayer table.
+1. Players exist independently of teams or leagues
 2. Users can join multiple leagues
 3. Users can create teams within leagues they've joined
 4. Teams can draft any available player
@@ -112,4 +107,4 @@ The seeding process follows these steps:
    - Create 3 teams (one per user)
    - Assign 8 players to each team through TeamPlayer records
    - Use real PGA Tour players for authenticity
-   - Create sample tournament results
+   - Create sample tournament results 
