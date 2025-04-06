@@ -46,7 +46,13 @@ async function cleanup() {
       prisma.player.deleteMany({
         where: {
           OR: [
-            { team: { league: { name: { startsWith: 'Test League' } } } },
+            {
+              teams: {
+                some: {
+                  team: { league: { name: { startsWith: 'Test League' } } },
+                },
+              },
+            },
             { name: { startsWith: 'Test Player' } },
           ],
         },
@@ -150,11 +156,20 @@ beforeEach(async () => {
         },
       });
 
-      // Create player
+      // Create player and associate with team through TeamPlayer
       testPlayer = await tx.player.create({
         data: {
           ...testData.player,
-          teamId: testTeam.id,
+          teams: {
+            create: {
+              team: {
+                connect: { id: testTeam.id },
+              },
+            },
+          },
+        },
+        include: {
+          teams: true,
         },
       });
     });
