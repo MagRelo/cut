@@ -1,77 +1,16 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
+import {
+  nextDataSchema,
+  type Tournament,
+  type Weather,
+  type PlayerRowV3,
+  type LeaderboardData,
+  type ScoringData,
+} from '../schemas/leaderboard';
 
 interface CacheItem {
   data: any;
   timestamp: number;
-}
-
-interface Weather {
-  condition: string;
-  tempF: number;
-  windSpeedMPH: number;
-}
-
-interface Tournament {
-  courses: Array<{
-    courseName: string;
-  }>;
-  id: string;
-  tournamentName: string;
-  tournamentStatus: string;
-  roundStatusDisplay: string;
-  roundDisplay: string;
-  currentRound: number;
-  weather: Weather;
-  beautyImage: string;
-  city: string;
-  state: string;
-  timezone: string;
-}
-
-interface ScoringData {
-  position: string;
-  movementAmount: string;
-  movementDirection: string;
-  total: string;
-}
-
-interface PlayerRowV3 {
-  __typename: 'PlayerRowV3';
-  scoringData: ScoringData;
-  player: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-interface LeaderboardData {
-  tournamentId: string;
-  tournamentName: string;
-  tournamentStatus: string;
-  roundStatusDisplay: string;
-  roundDisplay: string;
-  currentRound: number;
-  weather: string;
-  beautyImage: string;
-  courseName: string;
-  location: string;
-  timezone: string;
-  players: Array<
-    PlayerRowV3 & {
-      pgaTourId: string;
-      playerName: string;
-      position: string;
-      positionBonus: number;
-      cutBonus: number;
-      movementAmount: string;
-      movementDirection: string;
-      movementIcon: string;
-      score: number;
-      scoreDisplay: string;
-    }
-  >;
 }
 
 // Cache storage
@@ -90,55 +29,15 @@ export async function scrapePGATourData(): Promise<LeaderboardData> {
     }
 
     // Fetch the page content
-    const response = await axios.get('https://www.pgatour.com/leaderboard', {
+    const response = await fetch('https://www.pgatour.com/leaderboard', {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
 
-    // Load the HTML into cheerio
-    const $ = cheerio.load(response.data);
-
-    // Get the JSON data from the __NEXT_DATA__ script tag
-    const nextDataScript = $('#__NEXT_DATA__').html();
-    if (!nextDataScript) {
-      throw new Error('Could not find __NEXT_DATA__ script');
-    }
-
-    // Parse the JSON data
-    const leaderboardData = JSON.parse(nextDataScript);
-
-    // Update cache
-    cache.leaderboard = {
-      data: leaderboardData,
-      timestamp: now,
-    };
-
-    const rawTournament = leaderboardData.props.pageProps
-      .tournament as Tournament;
-    const rawPlayers = leaderboardData.props.pageProps.leaderboard
-      .players as PlayerRowV3[];
-
-    const obj: LeaderboardData = {
-      tournamentId: rawTournament.id,
-      tournamentName: rawTournament.tournamentName,
-      tournamentStatus: rawTournament.tournamentStatus,
-      roundStatusDisplay: rawTournament.roundStatusDisplay,
-      roundDisplay: rawTournament.roundDisplay,
-      currentRound: rawTournament.currentRound,
-      weather: formatWeather(rawTournament.weather),
-      beautyImage: rawTournament.beautyImage,
-      courseName: formatCourseName(rawTournament),
-      location: `${rawTournament.city}, ${rawTournament.state}`,
-      timezone: rawTournament.timezone,
-      players: parsePlayers_V3(rawPlayers),
-    };
-
-    return obj;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      switch (error.response?.status) {
+    if (!response.ok) {
+      switch (response.status) {
         case 429:
           throw new Error('Rate limit exceeded. Please try again later.');
         case 403:
@@ -155,11 +54,56 @@ export async function scrapePGATourData(): Promise<LeaderboardData> {
             'PGA Tour service is currently unavailable. Please try again later.'
           );
         default:
-          throw new Error(`Failed to fetch leaderboard data: ${error.message}`);
+          throw new Error(
+            `Failed to fetch leaderboard data: ${response.statusText}`
+          );
       }
     }
 
-    console.error('Error scraping PGA Tour data:', error);
+    const html = await response.text();
+    // Load the HTML into cheerio
+    const $ = cheerio.load(html);
+
+    // Get the JSON data from the __NEXT_DATA__ script tag
+    const nextDataScript = $('#__NEXT_DATA__').html();
+    if (!nextDataScript) {
+      throw new Error('Could not find __NEXT_DATA__ script');
+    }
+
+    // Parse and validate the JSON data
+    const leaderboardData = nextDataSchema.parse(JSON.parse(nextDataScript));
+
+    const rawTournament = leaderboardData.props.pageProps.tournament;
+    const rawPlayers = leaderboardData.props.pageProps.leaderboard.players;
+
+    const obj: LeaderboardData = {
+      tournamentId: rawTournament.id,
+      tournamentName: rawTournament.tournamentName,
+      tournamentStatus: rawTournament.tournamentStatus,
+      roundStatusDisplay: rawTournament.roundStatusDisplay,
+      roundDisplay: rawTournament.roundDisplay,
+      currentRound: rawTournament.currentRound,
+      weather: formatWeather(rawTournament.weather),
+      beautyImage: rawTournament.beautyImage,
+      courseName: formatCourseName(rawTournament),
+      location: `${rawTournament.city}, ${rawTournament.state}`,
+      timezone: rawTournament.timezone,
+      players: parsePlayers_V3(rawPlayers),
+    };
+
+    // Update cache
+    cache.leaderboard = {
+      data: obj,
+      timestamp: now,
+    };
+
+    return obj;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error('Error scraping PGA Tour data:', error.message);
+    } else {
+      console.error('Unknown error:', error);
+    }
     throw error;
   }
 }
@@ -258,34 +202,17 @@ function parsePlayers_V3(players: PlayerRowV3[]): LeaderboardData['players'] {
 }
 
 function normalizeScore(score: string, position: string): number {
-  if (!score) return 200;
-  if (position === 'WD') return 203;
-  if (position === 'CUT') return 202;
-  if (position === '-') return 201;
-  if (score === 'E') return 0;
-  return parseInt(score);
+  if (position === 'CUT' || position === 'WD') {
+    return 0;
+  }
+  return parseInt(score) || 0;
 }
 
 function calcMovementIcon(scoringObj: ScoringData): string {
-  let icon = '';
-  const movementThreshold = 15;
-  const absoluteMovement = Math.abs(parseInt(scoringObj.movementAmount));
-
-  if (
-    scoringObj.movementDirection === 'UP' &&
-    absoluteMovement >= movementThreshold
-  ) {
-    icon = ' 📈';
-  } else if (
-    scoringObj.movementDirection === 'DOWN' &&
-    absoluteMovement >= movementThreshold
-  ) {
-    icon = ' 📉';
+  if (scoringObj.movementDirection === 'up') {
+    return '⬆️';
+  } else if (scoringObj.movementDirection === 'down') {
+    return '⬇️';
   }
-
-  if (scoringObj.position === 'WD') {
-    icon = ' ☠️';
-  }
-
-  return icon;
+  return '➖';
 }

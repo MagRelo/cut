@@ -1,59 +1,14 @@
-import axios from 'axios';
-
-interface Player {
-  firstName: string;
-  lastName: string;
-}
-
-interface Hole {
-  par: number;
-  holeNumber: number;
-  score: string;
-}
-
-interface Nine {
-  parTotal: number;
-  holes: Hole[];
-}
-
-interface RoundScore {
-  roundNumber: number;
-  firstNine: Nine;
-  secondNine: Nine;
-}
-
-interface ScorecardData {
-  tournamentName: string;
-  id: string;
-  player: Player;
-  roundScores: RoundScore[];
-}
-
-interface FormattedHoles {
-  holes: number[];
-  pars: number[];
-  scores: (number | null)[];
-  stableford: (number | null)[];
-}
-
-interface Round {
-  holes: FormattedHoles;
-  total: number;
-  ratio: number;
-  icon: string;
-}
-
-interface Scorecard {
-  playerId: string;
-  playerName: string;
-  tournamentId: string;
-  tournamentName: string;
-  R1: Round | null;
-  R2: Round | null;
-  R3: Round | null;
-  R4: Round | null;
-  stablefordTotal: number;
-}
+import {
+  scorecardResponseSchema,
+  type Player,
+  type Hole,
+  type Nine,
+  type RoundScore,
+  type ScorecardData,
+  type FormattedHoles,
+  type Round,
+  type Scorecard,
+} from '../schemas/scorecard';
 
 const PGA_API_KEY = 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
 const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
@@ -97,24 +52,34 @@ async function fetchPlayerScorecard(
   `;
 
   try {
-    const response = await axios.post(
-      PGA_API_URL,
-      { query },
-      {
-        headers: {
-          'X-API-Key': PGA_API_KEY,
-        },
-      }
-    );
+    const response = await fetch(PGA_API_URL, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': PGA_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
 
-    if (response.data.errors) {
-      console.error('PGA API Errors:', response.data.errors);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const validatedData = scorecardResponseSchema.parse(data);
+
+    if (validatedData.errors) {
+      console.error('PGA API Errors:', validatedData.errors);
       return null;
     }
 
-    return response.data.data.scorecardV2;
+    return validatedData.data.scorecardV2;
   } catch (error) {
-    console.error('Error fetching scorecard:', error);
+    if (error instanceof Error) {
+      console.error('Error fetching scorecard:', error.message);
+    } else {
+      console.error('Unknown error:', error);
+    }
     return null;
   }
 }
@@ -207,11 +172,6 @@ export async function fetchScorecard(
       };
     }
   }
-
-  // // Ensure all rounds exist
-  // if (!rounds.R1 || !rounds.R2 || !rounds.R3 || !rounds.R4) {
-  //   return null;
-  // }
 
   const stablefordTotal = Object.values(rounds).reduce(
     (acc, round) => acc + (round?.total ?? 0),

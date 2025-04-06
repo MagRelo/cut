@@ -1,87 +1,78 @@
-import axios from 'axios';
 import type { Team } from '../types/team';
+import {
+  teamUpdateSchema,
+  activePlayersSchema,
+  type TeamUpdatePayload,
+  type ActivePlayersPayload,
+  type PGAPlayer,
+} from '../schemas/team';
 
-interface TeamUpdatePayload {
-  name?: string;
-  players?: Array<{ id: string; name: string }>;
-}
-
-interface ActivePlayersPayload {
-  teamId: string;
-  activePlayerIds: string[];
-}
-
-interface PGAPlayer {
-  id: string;
-  name: string;
-  firstName: string;
-  lastName: string;
-}
-
-const api = axios.create({
+const api = {
   baseURL: 'http://localhost:4000/api',
-});
+  headers: {} as Record<string, string>,
 
-// Add request interceptor for authentication
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
+  setAuthToken(token: string | null) {
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      this.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete this.headers.Authorization;
     }
-    return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+  async request<T>(method: string, url: string, data?: unknown): Promise<T> {
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return Promise.reject(error);
-  }
-);
+
+    return response.json();
+  },
+};
+
+// Initialize auth token from localStorage
+api.setAuthToken(localStorage.getItem('token'));
 
 export const getTeamsByLeague = async (leagueId: string): Promise<Team[]> => {
-  const response = await api.get<Team[]>(`/teams/league/${leagueId}`);
-  return response.data;
+  return api.request<Team[]>('GET', `/teams/league/${leagueId}`);
 };
 
 export const updateTeam = async (
   teamId: string,
   payload: TeamUpdatePayload
 ): Promise<Team> => {
-  const response = await api.put<Team>(`/teams/${teamId}`, payload);
-  return response.data;
+  const validatedPayload = teamUpdateSchema.parse(payload);
+  return api.request<Team>('PUT', `/teams/${teamId}`, validatedPayload);
 };
 
 export const setActivePlayers = async (
   payload: ActivePlayersPayload
 ): Promise<Team> => {
-  const response = await api.put<Team>(
-    `/teams/${payload.teamId}/active-players`,
-    {
-      playerIds: payload.activePlayerIds,
-    }
+  const validatedPayload = activePlayersSchema.parse(payload);
+  return api.request<Team>(
+    'PUT',
+    `/teams/${validatedPayload.teamId}/active-players`,
+    { playerIds: validatedPayload.activePlayerIds }
   );
-  return response.data;
 };
 
 export const getTeam = async (teamId: string): Promise<Team> => {
-  const response = await api.get<Team>(`/teams/${teamId}`);
-  return response.data;
+  return api.request<Team>('GET', `/teams/${teamId}`);
 };
 
 export const getPGATourPlayers = async (): Promise<PGAPlayer[]> => {
-  const response = await api.get<PGAPlayer[]>('/pga/players');
-  return response.data;
+  return api.request<PGAPlayer[]>('GET', '/pga/players');
 };
 
 export default {

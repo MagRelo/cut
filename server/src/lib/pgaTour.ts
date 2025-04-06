@@ -1,40 +1,10 @@
-import axios from 'axios';
-
-interface PGAError {
-  message: string;
-  code: string;
-}
-
-interface PlayerBio {
-  id: string;
-  age: number;
-  education: string;
-  turnedPro: string;
-}
-
-interface PGAPlayer {
-  id: string;
-  isActive: boolean;
-  firstName: string;
-  lastName: string;
-  shortName: string;
-  displayName: string;
-  alphaSort: string;
-  country: string;
-  countryFlag: string;
-  headshot: string;
-  playerBio: PlayerBio;
-}
-
-interface PlayerDirectoryResponse {
-  data: {
-    playerDirectory: {
-      tourCode: string;
-      players: PGAPlayer[];
-    };
-  };
-  errors?: PGAError[];
-}
+import {
+  playerDirectoryResponseSchema,
+  type PGAPlayer,
+  type PGAError,
+  type PlayerBio,
+  type PlayerDirectoryResponse,
+} from '../schemas/pgaTour';
 
 const PGA_TOUR_API_KEY =
   process.env.PGA_TOUR_API_KEY || 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
@@ -72,32 +42,36 @@ const PLAYER_DIRECTORY_QUERY = {
 
 export async function fetchPGATourPlayers(): Promise<PGAPlayer[]> {
   try {
-    const response = await axios.post<PlayerDirectoryResponse>(
-      PGA_TOUR_GRAPHQL_URL,
-      PLAYER_DIRECTORY_QUERY,
-      {
-        headers: {
-          'X-API-Key': PGA_TOUR_API_KEY,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await fetch(PGA_TOUR_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': PGA_TOUR_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(PLAYER_DIRECTORY_QUERY),
+    });
 
-    if (response.data.errors) {
-      console.error('PGA Tour API Errors:', response.data.errors);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const validatedData = playerDirectoryResponseSchema.parse(data);
+
+    if (validatedData.errors) {
+      console.error('PGA Tour API Errors:', validatedData.errors);
       throw new Error('Failed to fetch PGA Tour players');
     }
 
-    return response.data.data.playerDirectory.players;
+    return validatedData.data.playerDirectory.players;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error('Axios Error:', error.message);
-      if (error.response) {
-        console.error('Response Data:', error.response.data);
-        console.error('Response Status:', error.response.status);
+    if (error instanceof Error) {
+      console.error('Error:', error.message);
+      if (error instanceof TypeError) {
+        console.error('Network Error:', error);
       }
     } else {
-      console.error('Error:', error);
+      console.error('Unknown error:', error);
     }
     throw new Error('Failed to fetch PGA Tour players');
   }
