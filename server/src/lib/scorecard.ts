@@ -1,0 +1,232 @@
+import axios from 'axios';
+
+interface Player {
+  firstName: string;
+  lastName: string;
+}
+
+interface Hole {
+  par: number;
+  holeNumber: number;
+  score: string;
+}
+
+interface Nine {
+  parTotal: number;
+  holes: Hole[];
+}
+
+interface RoundScore {
+  roundNumber: number;
+  firstNine: Nine;
+  secondNine: Nine;
+}
+
+interface ScorecardData {
+  tournamentName: string;
+  id: string;
+  player: Player;
+  roundScores: RoundScore[];
+}
+
+interface FormattedHoles {
+  holes: number[];
+  pars: number[];
+  scores: (number | null)[];
+  stableford: (number | null)[];
+}
+
+interface Round {
+  holes: FormattedHoles;
+  total: number;
+  ratio: number;
+  icon: string;
+}
+
+interface Scorecard {
+  playerId: string;
+  playerName: string;
+  tournamentId: string;
+  tournamentName: string;
+  R1: Round | null;
+  R2: Round | null;
+  R3: Round | null;
+  R4: Round | null;
+  stablefordTotal: number;
+}
+
+const PGA_API_KEY = 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
+const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
+
+async function fetchPlayerScorecard(
+  playerId: string,
+  tournamentId: string
+): Promise<ScorecardData | null> {
+  if (!playerId || !tournamentId) return null;
+
+  const query = `
+    query {
+      scorecardV2(playerId: "${playerId}", id: "${tournamentId}") {
+        tournamentName
+        id
+        player {
+          firstName
+          lastName
+        }
+        roundScores {
+          roundNumber
+          firstNine {
+            parTotal
+            holes {
+              par
+              holeNumber
+              score
+            }
+          }
+          secondNine {
+            parTotal
+            holes {
+              par
+              holeNumber
+              score
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await axios.post(
+      PGA_API_URL,
+      { query },
+      {
+        headers: {
+          'X-API-Key': PGA_API_KEY,
+        },
+      }
+    );
+
+    if (response.data.errors) {
+      console.error('PGA API Errors:', response.data.errors);
+      return null;
+    }
+
+    return response.data.data.scorecardV2;
+  } catch (error) {
+    console.error('Error fetching scorecard:', error);
+    return null;
+  }
+}
+
+function calculateStableford(par: number, score: string): number | null {
+  if (score === '-') return null;
+
+  const numericScore = parseInt(score);
+  if (isNaN(numericScore)) return null;
+
+  if (numericScore === 1) return 10; // hole-in-one
+
+  const scoreDiff = numericScore - par;
+  switch (scoreDiff) {
+    case -4:
+    case -3:
+      return 15; // triple/double eagle
+    case -2:
+      return 5; // eagle
+    case -1:
+      return 2; // birdie
+    case 0:
+      return 0; // par
+    case 1:
+      return -1; // bogey
+    default:
+      return -3; // double or worse
+  }
+}
+
+function formatHoles(
+  roundScores: RoundScore[],
+  roundNumber: number
+): FormattedHoles | null {
+  const round = roundScores.find((item) => item.roundNumber === roundNumber);
+  if (!round) return null;
+
+  const allHoles = [...round.firstNine.holes, ...round.secondNine.holes];
+
+  return {
+    holes: allHoles.map((h) => h.holeNumber),
+    pars: allHoles.map((h) => h.par),
+    scores: allHoles.map((h) => (h.score === '-' ? null : parseInt(h.score))),
+    stableford: allHoles.map((h) => calculateStableford(h.par, h.score)),
+  };
+}
+
+function calculateRoundTotal(holes: FormattedHoles): number {
+  return holes.stableford.reduce((acc: number, val) => acc + (val ?? 0), 0);
+}
+
+function calculateHolesRemainingRatio(holes: FormattedHoles): number {
+  const holesPlayed = holes.stableford.filter((score) => score !== null).length;
+  return holesPlayed / holes.stableford.length;
+}
+
+function calculateRoundIcon(holes: FormattedHoles): string {
+  const holesPlayed = holes.stableford.filter((score) => score !== null).length;
+  if (holesPlayed < 4) return '';
+
+  const roundScore = calculateRoundTotal(holes);
+  const ratio = calculateHolesRemainingRatio(holes);
+  const adjustedScore = roundScore / ratio;
+
+  if (adjustedScore > 11) return ' 🔥';
+  if (adjustedScore < 0) return ' ❄️';
+  return '';
+}
+
+export async function fetchScorecard(
+  playerId: string,
+  tournamentId: string
+): Promise<Scorecard | null> {
+  const pgaScorecard = await fetchPlayerScorecard(playerId, tournamentId);
+  if (!pgaScorecard) return null;
+
+  const rounds: Record<string, Round | null> = {};
+  const roundNumbers = [1, 2, 3, 4];
+
+  for (const roundNumber of roundNumbers) {
+    const holes = formatHoles(pgaScorecard.roundScores, roundNumber) || null;
+    if (!holes) {
+      rounds[`R${roundNumber}`] = null;
+    } else {
+      rounds[`R${roundNumber}`] = {
+        holes,
+        total: calculateRoundTotal(holes),
+        ratio: calculateHolesRemainingRatio(holes),
+        icon: calculateRoundIcon(holes),
+      };
+    }
+  }
+
+  // // Ensure all rounds exist
+  // if (!rounds.R1 || !rounds.R2 || !rounds.R3 || !rounds.R4) {
+  //   return null;
+  // }
+
+  const stablefordTotal = Object.values(rounds).reduce(
+    (acc, round) => acc + (round?.total ?? 0),
+    0
+  );
+
+  return {
+    playerId,
+    playerName: `${pgaScorecard.player.lastName}, ${pgaScorecard.player.firstName}`,
+    tournamentId,
+    tournamentName: pgaScorecard.tournamentName,
+    R1: rounds.R1,
+    R2: rounds.R2,
+    R3: rounds.R3,
+    R4: rounds.R4,
+    stablefordTotal,
+  };
+}

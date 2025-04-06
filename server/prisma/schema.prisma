@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String            @id @default(cuid())
+  email             String            @unique
+  password          String
+  name              String
+  emailVerified     Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  team              Team?             @relation(fields: [teamId], references: [id])
+  teamId            String?
+  ownedLeagues      League[]          @relation("LeagueCommissioner")
+  leagueMemberships LeagueMembership[]
+  orderLogs         UserOrderLog[]
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  users     User[]
+  players   Player[]
+}
+
+model League {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  isPrivate     Boolean         @default(false)
+  maxTeams      Int             @default(8)
+  commissioner  User            @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
+  commissionerId String
+  members       LeagueMembership[]
+  teams         Team[]
+  settings      LeagueSettings?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model LeagueSettings {
+  id              String   @id @default(cuid())
+  league          League   @relation(fields: [leagueId], references: [id])
+  leagueId        String   @unique
+  rosterSize      Int      @default(8)
+  weeklyStarters  Int      @default(4)
+  scoringType     String   @default("STABLEFORD")
+  draftDate       DateTime?
+  seasonStart     DateTime?
+  seasonEnd       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LeagueMembership {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  role      String   @default("MEMBER")
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, leagueId])
+}
+
+model Player {
+  id                 String   @id @default(cuid())
+  name               String
+  isActive          Boolean  @default(false)
+  leaderboardPosition String?
+  pgaTourId         String?  // PGA Tour player identifier
+  r1                Json?    // Round 1 data
+  r2                Json?    // Round 2 data
+  r3                Json?    // Round 3 data
+  r4                Json?    // Round 4 data
+  cut               Int?
+  bonus             Int?
+  total             Int?
+  team              Team     @relation(fields: [teamId], references: [id])
+  teamId            String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model UserOrderLog {
+  id                String   @id @default(cuid())
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String
+  orderType         String   // 'BUY' or 'SELL'
+  asset             String
+  amount            Float
+  price             Float
+  status            String   // 'PENDING', 'COMPLETED', 'FAILED'
+  orderAttemptLog   Json?    // Raw response from order attempt
+  orderResultLog    Json?    // Raw response from order result
+  hyperliquidOrderId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+} 

@@ -1,0 +1,37 @@
+{
+  "name": "cut",
+  "version": "1.0.0",
+  "description": "Bet the Cut application",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "client:dev": "cd client && vite",
+    "client:build": "cd client && tsc -b && vite build",
+    "client:lint": "cd client && eslint .",
+    "client:preview": "cd client && vite preview",
+    "server:dev": "cd server && tsx watch src/index.ts",
+    "server:build": "cd server && tsc",
+    "prisma:generate": "cd server && prisma generate",
+    "prisma:migrate": "cd server && prisma migrate dev",
+    "prisma:studio": "cd server && prisma studio",
+    "prisma:seed": "cd server && tsx prisma/seed.ts",
+    "db:start": "cd server && docker compose up -d",
+    "db:stop": "cd server && docker compose down",
+    "db:logs": "cd server && docker compose logs -f",
+    "db:reset": "cd server && docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seed",
+    "test": "cd server && vitest",
+    "test:coverage": "cd server && vitest run --coverage",
+    "test:ui": "cd server && vitest --ui",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\""
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+} 
