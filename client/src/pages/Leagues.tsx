@@ -72,34 +72,40 @@ export function Leagues() {
           </Link>
         </div>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {leagues.map((league) => (
-            <div
-              key={league.id}
-              className='bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow'>
-              <h2 className='text-xl font-semibold text-gray-900 mb-2'>
-                {league.name}
-              </h2>
-              {league.description && (
-                <p className='text-gray-600 mb-4'>{league.description}</p>
-              )}
-              <div className='space-y-2'>
-                <p className='text-sm text-gray-500'>
-                  Created: {new Date(league.createdAt).toLocaleDateString()}
-                </p>
-                <p className='text-sm text-gray-500'>
-                  Teams: {league.teams.length}
-                </p>
-              </div>
-              <div className='mt-4'>
-                <Link
-                  to={`/tournament/${league.id}`}
-                  className='text-blue-600 hover:text-blue-800'>
-                  View Tournament →
-                </Link>
+        <div className='bg-white rounded-lg shadow overflow-hidden'>
+          <div className='min-w-full'>
+            {/* Table Header */}
+            <div className='bg-gray-50 border-b border-gray-200'>
+              <div className='grid grid-cols-3 gap-4 px-6 py-3'>
+                <div className='text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  League Name
+                </div>
+                <div className='text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Teams
+                </div>
+                <div className='text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Total Bets
+                </div>
               </div>
             </div>
-          ))}
+            {/* Table Body */}
+            <div className='divide-y divide-gray-200'>
+              {leagues.map((league) => (
+                <Link
+                  key={league.id}
+                  to={`/league-lobby/${league.id}`}
+                  className='grid grid-cols-3 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150'>
+                  <div className='text-left text-sm font-medium text-gray-900'>
+                    {league.name}
+                  </div>
+                  <div className='text-center text-sm text-gray-500'>
+                    {league.teams.length}
+                  </div>
+                  <div className='text-right text-sm text-gray-500'>$0.00</div>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

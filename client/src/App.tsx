@@ -6,9 +6,10 @@ import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { VerifyEmail } from './pages/VerifyEmail';
-import { Tournament } from './pages/Tournament';
+import { LeagueLobby } from './pages/LeagueLobby';
 import { Timeline } from './pages/Timeline';
 import { Leagues } from './pages/Leagues';
+import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
 import ManageTeam from './pages/ManageTeam';
 import { Navigation } from './components/Navigation';
@@ -45,10 +46,18 @@ export const App: React.FC = () => {
               }
             />
             <Route
-              path='/tournament/:leagueId'
+              path='/leagues/new'
               element={
                 <ProtectedRoute>
-                  <Tournament />
+                  <CreateLeague />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/league-lobby/:leagueId'
+              element={
+                <ProtectedRoute>
+                  <LeagueLobby />
                 </ProtectedRoute>
               }
             />

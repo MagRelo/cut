@@ -5,7 +5,7 @@ import { WeatherInfo } from '../components/WeatherInfo';
 import { getTeamsByLeague } from '../services/api';
 import type { Team } from '../types/team';
 
-export const Tournament: React.FC = () => {
+export const LeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [teams, setTeams] = useState<Team[]>([]);
