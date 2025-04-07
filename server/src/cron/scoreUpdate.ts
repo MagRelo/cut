@@ -14,6 +14,14 @@ const CURRENT_TOURNAMENT_ID = process.env.CURRENT_TOURNAMENT_ID;
 
 // Schedule the job to run every 10 minutes
 export function startScoreUpdateCron() {
+  // Check if score update cron should be enabled
+  if (process.env.ENABLE_SCORE_UPDATE_CRON !== 'true') {
+    console.log(
+      'Score update cron job is disabled via ENABLE_SCORE_UPDATE_CRON environment variable'
+    );
+    return;
+  }
+
   console.log('Starting score update cron job...');
 
   // Run every 10 minutes
