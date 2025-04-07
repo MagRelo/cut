@@ -162,4 +162,65 @@ export const playerController = {
       res.status(500).json({ error: 'Failed to sync PGA Tour players' });
     }
   },
+
+  addPlayerToTeam: async (req: Request, res: Response) => {
+    try {
+      const { id: playerId } = req.params;
+      const { teamId } = req.body;
+
+      const teamPlayer = await prisma.teamPlayer.create({
+        data: {
+          playerId,
+          teamId,
+        },
+        include: {
+          player: true,
+          team: true,
+        },
+      });
+
+      res.status(201).json(teamPlayer);
+    } catch (error) {
+      console.error('Error adding player to team:', error);
+      res.status(500).json({ error: 'Failed to add player to team' });
+    }
+  },
+
+  removePlayerFromTeam: async (req: Request, res: Response) => {
+    try {
+      const { id: playerId, teamId } = req.params;
+
+      await prisma.teamPlayer.delete({
+        where: {
+          teamId_playerId: {
+            teamId,
+            playerId,
+          },
+        },
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error removing player from team:', error);
+      res.status(500).json({ error: 'Failed to remove player from team' });
+    }
+  },
+
+  getPlayerTeams: async (req: Request, res: Response) => {
+    try {
+      const { id: playerId } = req.params;
+
+      const teams = await prisma.teamPlayer.findMany({
+        where: { playerId },
+        include: {
+          team: true,
+        },
+      });
+
+      res.json(teams);
+    } catch (error) {
+      console.error('Error getting player teams:', error);
+      res.status(500).json({ error: 'Failed to get player teams' });
+    }
+  },
 };
