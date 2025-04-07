@@ -31,7 +31,7 @@ function prepareTournamentData(
     roundStatusDisplay: leaderboardData.roundStatusDisplay,
     roundDisplay: leaderboardData.roundDisplay,
     currentRound: leaderboardData.currentRound,
-    weather: leaderboardData.weather, // Weather is now already an object
+    weather: leaderboardData.weather,
     beautyImage: leaderboardData.beautyImage,
   };
   return data as unknown as Prisma.TournamentCreateInput;
@@ -114,18 +114,27 @@ export const tournamentController = {
   ) {
     try {
       const { id } = req.params;
-      const { name, startDate, endDate, course, purse, status } = req.body;
+
+      // Fetch current tournament data from PGA Tour
+      const leaderboardData = await getPgaLeaderboard();
+
+      // Cast the weather data to a JSON value
+      const weatherData = leaderboardData.weather
+        ? JSON.parse(JSON.stringify(leaderboardData.weather))
+        : null;
 
       const tournament = await prisma.tournament.update({
         where: { id },
         data: {
-          name,
-          startDate: startDate ? new Date(startDate) : undefined,
-          endDate: endDate ? new Date(endDate) : undefined,
-          course,
-          purse: purse ? parseFloat(purse.toString()) : undefined,
-          status,
-        },
+          status:
+            leaderboardData.tournamentStatus === 'LIVE'
+              ? TournamentStatus.IN_PROGRESS
+              : TournamentStatus.UPCOMING,
+          roundStatusDisplay: leaderboardData.roundStatusDisplay || null,
+          roundDisplay: leaderboardData.roundDisplay || null,
+          currentRound: leaderboardData.currentRound || null,
+          weather: weatherData,
+        } as any, // Type assertion to bypass type checking temporarily
       });
 
       res.json(tournament);

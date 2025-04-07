@@ -51,7 +51,7 @@ export const leaderboardDataSchema = z.object({
   roundStatusDisplay: z.string(),
   roundDisplay: z.string(),
   currentRound: z.number(),
-  weather: weatherSchema,
+  weather: z.string(),
   beautyImage: z.string(),
   courseName: z.string(),
   location: z.string(),
