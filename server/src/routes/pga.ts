@@ -3,6 +3,7 @@ import { scrapePGATourData } from '../lib/pgaLeaderboard';
 import { fetchScorecard } from '../lib/pgaScorecard';
 import { authenticateToken } from '../middleware/auth';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers';
+import { getActivePlayers } from '../lib/pgaField';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -98,6 +99,28 @@ router.post('/refreshPlayers', async (req, res) => {
     res.status(500).json({
       error:
         error instanceof Error ? error.message : 'Failed to refresh players',
+    });
+  }
+});
+
+// Get active players for a specific tournament
+router.get('/field/:tournamentId', async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+
+    if (!tournamentId) {
+      return res.status(400).json({ error: 'Tournament ID is required' });
+    }
+
+    const fieldData = await getActivePlayers(tournamentId);
+    res.json(fieldData);
+  } catch (error) {
+    console.error('Error fetching tournament field:', error);
+    res.status(500).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch tournament field',
     });
   }
 });
