@@ -29,6 +29,10 @@ const api = {
   },
 
   async request<T>(method: string, url: string, data?: unknown): Promise<T> {
+    // Always get the latest token before making a request
+    const token = localStorage.getItem('token');
+    this.setAuthToken(token);
+
     const response = await fetch(`${this.baseURL}${url}`, {
       method,
       headers: {

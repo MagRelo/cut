@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { scrapePGATourData } from '../src/lib/pgaLeaderboard';
 
 const prisma = new PrismaClient();
 
@@ -8,11 +7,6 @@ async function main() {
   try {
     console.log('Starting database seeding...');
 
-    console.log('Fetching PGA Tour data...');
-    const [pgaData] = await Promise.all([scrapePGATourData()]);
-    const realPlayers = pgaData.players.slice(0, 24); // Get top 24 players to distribute among teams
-
-    // 2. Create 3 users with hashed passwords
     console.log('Creating users...');
     const testPassword = 'partytime';
     const hashedPassword = await bcrypt.hash(testPassword, 10);
