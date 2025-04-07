@@ -6,10 +6,7 @@ export const pgaErrorSchema = z.object({
 });
 
 export const playerBioSchema = z.object({
-  id: z.string(),
-  age: z.number(),
-  education: z.string(),
-  turnedPro: z.string(),
+  age: z.union([z.number(), z.string().transform(Number), z.null()]),
 });
 
 export const pgaPlayerSchema = z.object({
@@ -19,7 +16,6 @@ export const pgaPlayerSchema = z.object({
   lastName: z.string(),
   shortName: z.string(),
   displayName: z.string(),
-  alphaSort: z.string(),
   country: z.string(),
   countryFlag: z.string(),
   headshot: z.string(),

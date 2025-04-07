@@ -66,7 +66,7 @@ router.get('/scorecard/:playerId/:tournamentId', async (req, res) => {
 });
 
 // Refresh all PGA Tour players in database
-router.post('/refreshPlayers', async (req, res) => {
+router.get('/refreshPlayers', async (req, res) => {
   try {
     // Delete all existing players
     await prisma.player.deleteMany();
