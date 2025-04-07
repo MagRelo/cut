@@ -24,16 +24,12 @@ const PLAYER_DIRECTORY_QUERY = {
         firstName
         lastName
         shortName
-        displayName
-        alphaSort
+        displayName        
         country
         countryFlag
         headshot
         playerBio {
-          id
           age
-          education
-          turnedPro
         }
       }
     }

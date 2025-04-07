@@ -1,10 +1,12 @@
 import express from 'express';
-import { scrapePGATourData } from '../lib/leaderboard';
-import { fetchScorecard } from '../lib/scorecard';
+import { scrapePGATourData } from '../lib/pgaLeaderboard';
+import { fetchScorecard } from '../lib/pgaScorecard';
 import { authenticateToken } from '../middleware/auth';
-import { fetchPGATourPlayers } from '../lib/pgaTour';
+import { fetchPGATourPlayers } from '../lib/pgaPlayers';
+import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
 // Get PGA Tour players list
 router.get('/players', async (req, res) => {
@@ -58,6 +60,44 @@ router.get('/scorecard/:playerId/:tournamentId', async (req, res) => {
         error instanceof Error
           ? error.message
           : 'Failed to fetch scorecard data',
+    });
+  }
+});
+
+// Refresh all PGA Tour players in database
+router.post('/refreshPlayers', async (req, res) => {
+  try {
+    // Delete all existing players
+    await prisma.player.deleteMany();
+
+    // Fetch fresh player data from PGA Tour API
+    const players = await fetchPGATourPlayers();
+
+    // Insert new players
+    const createdPlayers = await prisma.player.createMany({
+      data: players.map((player) => ({
+        pgaTourId: player.id,
+        name: `${player.firstName} ${player.lastName}`.trim(),
+        firstName: player.firstName,
+        lastName: player.lastName,
+        displayName: player.displayName,
+        imageUrl: player.headshot || null,
+        country: player.country || null,
+        countryFlag: player.countryFlag || null,
+        age: player.playerBio?.age || null,
+        isActive: player.isActive || false,
+      })),
+    });
+
+    res.json({
+      message: 'Players refreshed successfully',
+      count: createdPlayers.count,
+    });
+  } catch (error) {
+    console.error('Error refreshing players:', error);
+    res.status(500).json({
+      error:
+        error instanceof Error ? error.message : 'Failed to refresh players',
     });
   }
 });

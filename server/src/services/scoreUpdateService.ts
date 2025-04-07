@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma, Player } from '@prisma/client';
-import { fetchScorecard } from '../lib/scorecard';
+import { fetchScorecard } from '../lib/pgaScorecard';
 
 const prisma = new PrismaClient();
 

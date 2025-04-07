@@ -78,9 +78,15 @@ model Player {
   id          String             @id @default(cuid())
   pgaTourId   String?            @unique
   name        String
+  firstName   String?
+  lastName    String?
+  displayName String?               
   imageUrl    String?
-  hometown    String?
+  country     String?
+  countryFlag String?
   age         Int?
+  inFeild     Boolean            @default(false)
+  isActive    Boolean            @default(false)
   teams       TeamPlayer[]
   tournaments TournamentPlayer[]
   createdAt   DateTime           @default(now())
@@ -163,4 +169,13 @@ model UserOrderLog {
 
   @@index([userId])
   @@index([status])
+}
+
+model Schedule {
+  id             String   @id @default(cuid())
+  tournamentId   String   @unique
+  tournamentName String
+  isActive       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 } 

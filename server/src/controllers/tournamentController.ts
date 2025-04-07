@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { scrapePGATourData } from '../lib/leaderboard';
-import { fetchScorecard } from '../lib/scorecard';
+import { scrapePGATourData } from '../lib/pgaLeaderboard';
+import { fetchScorecard } from '../lib/pgaScorecard';
 import {
   CreateTournamentBody,
   UpdateTournamentBody,

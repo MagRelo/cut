@@ -27,6 +27,7 @@
     "@nktkas/hyperliquid": "^0.17.2",
     "@prisma/client": "^5.10.0",
     "@types/node-cron": "^3.0.11",
+    "axios": "^1.8.4",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
