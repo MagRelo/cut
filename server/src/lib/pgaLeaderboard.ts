@@ -17,7 +17,7 @@ interface CacheItem {
 const cache: { [key: string]: CacheItem } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-export async function scrapePGATourData(): Promise<LeaderboardData> {
+export async function getPgaLeaderboard(): Promise<LeaderboardData> {
   try {
     // Check cache first
     const now = Date.now();
@@ -71,7 +71,8 @@ export async function scrapePGATourData(): Promise<LeaderboardData> {
     }
 
     // Parse and validate the JSON data
-    const leaderboardData = nextDataSchema.parse(JSON.parse(nextDataScript));
+    const parsedData = JSON.parse(nextDataScript);
+    const leaderboardData = nextDataSchema.parse(parsedData);
 
     const rawTournament = leaderboardData.props.pageProps.tournament;
     const rawPlayers = leaderboardData.props.pageProps.leaderboard.players;

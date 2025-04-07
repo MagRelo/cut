@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 export const weatherSchema = z.object({
   condition: z.string(),
-  tempF: z.number(),
-  windSpeedMPH: z.number(),
+  tempF: z.string().transform((val) => parseInt(val, 10)),
+  windSpeedMPH: z.string().transform((val) => parseInt(val, 10)),
 });
 
 export const courseSchema = z.object({
@@ -51,7 +51,7 @@ export const leaderboardDataSchema = z.object({
   roundStatusDisplay: z.string(),
   roundDisplay: z.string(),
   currentRound: z.number(),
-  weather: z.string(),
+  weather: weatherSchema,
   beautyImage: z.string(),
   courseName: z.string(),
   location: z.string(),
@@ -77,7 +77,22 @@ export const nextDataSchema = z.object({
     pageProps: z.object({
       tournament: tournamentSchema,
       leaderboard: z.object({
-        players: z.array(playerRowV3Schema),
+        players: z
+          .array(
+            z.object({
+              __typename: z.string(),
+              scoringData: scoringDataSchema.optional(),
+              player: playerSchema.optional(),
+            })
+          )
+          .transform((players) =>
+            players.filter(
+              (p): p is PlayerRowV3 =>
+                p.__typename === 'PlayerRowV3' &&
+                p.scoringData !== undefined &&
+                p.player !== undefined
+            )
+          ),
       }),
     }),
   }),

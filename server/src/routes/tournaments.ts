@@ -3,7 +3,6 @@ import { tournamentController } from '../controllers/tournamentController';
 import { authenticateToken } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import {
-  createTournamentSchema,
   updateTournamentSchema,
   tournamentIdSchema,
   TournamentStatus,
@@ -15,6 +14,7 @@ const router = express.Router();
 // Public routes
 router.get('/', tournamentController.getAllTournaments);
 router.get('/current', tournamentController.getCurrentTournament);
+router.get('/create', tournamentController.createTournament);
 router.get(
   '/:id',
   validate(z.object({ params: tournamentIdSchema })),
@@ -22,13 +22,7 @@ router.get(
 );
 
 // Protected routes
-router.post(
-  '/',
-  authenticateToken,
-  validate(z.object({ body: createTournamentSchema })),
-  tournamentController.createTournament
-);
-
+// router.get('/create', authenticateToken, tournamentController.createTournament);
 router.put(
   '/:id',
   authenticateToken,

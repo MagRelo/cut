@@ -1,16 +1,41 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { scrapePGATourData } from '../lib/pgaLeaderboard';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
 import { fetchScorecard } from '../lib/pgaScorecard';
 import {
-  CreateTournamentBody,
   UpdateTournamentBody,
   TournamentStatus,
   PGATourLeaderboard,
   PGATourScorecard,
 } from '../schemas/tournament';
+import type { LeaderboardData } from '../schemas/leaderboard';
 
 const prisma = new PrismaClient();
+
+function prepareTournamentData(
+  leaderboardData: LeaderboardData
+): Prisma.TournamentCreateInput {
+  const [city, state] = leaderboardData.location.split(', ');
+  const data = {
+    name: leaderboardData.tournamentName,
+    startDate: new Date(), // Current date as fallback
+    endDate: new Date(new Date().setDate(new Date().getDate() + 4)), // 4 days from now as fallback
+    course: leaderboardData.courseName,
+    city,
+    state,
+    timezone: leaderboardData.timezone,
+    status:
+      leaderboardData.tournamentStatus === 'LIVE'
+        ? TournamentStatus.IN_PROGRESS
+        : TournamentStatus.UPCOMING,
+    roundStatusDisplay: leaderboardData.roundStatusDisplay,
+    roundDisplay: leaderboardData.roundDisplay,
+    currentRound: leaderboardData.currentRound,
+    weather: leaderboardData.weather, // Weather is now already an object
+    beautyImage: leaderboardData.beautyImage,
+  };
+  return data as unknown as Prisma.TournamentCreateInput;
+}
 
 export const tournamentController = {
   // Get all tournaments
@@ -65,22 +90,14 @@ export const tournamentController = {
   },
 
   // Create a new tournament
-  async createTournament(
-    req: Request<{}, {}, CreateTournamentBody>,
-    res: Response
-  ) {
+  async createTournament(req: Request, res: Response) {
     try {
-      const { name, startDate, endDate, course, purse } = req.body;
+      // Fetch current tournament data from PGA Tour
+      const leaderboardData = await getPgaLeaderboard();
 
+      // Extract tournament details from leaderboard data
       const tournament = await prisma.tournament.create({
-        data: {
-          name,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-          course,
-          purse: purse ? parseFloat(purse.toString()) : null,
-          status: TournamentStatus.UPCOMING,
-        },
+        data: prepareTournamentData(leaderboardData),
       });
 
       res.status(201).json(tournament);
@@ -161,7 +178,7 @@ export const tournamentController = {
 
       // Get current leaderboard data
       const leaderboardData =
-        (await scrapePGATourData()) as unknown as PGATourLeaderboard;
+        (await getPgaLeaderboard()) as unknown as PGATourLeaderboard;
 
       // Update each player's scores
       for (const tournamentPlayer of tournament.players) {

@@ -1,10 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { CreatePlayerBody, UpdatePlayerBody } from '../schemas/player';
-import { scrapePGATourData } from '../utils/scraper';
-
-// leave this un-implemented for now
-// import { scrapePGATourData } from '../utils/scraper';
 
 const prisma = new PrismaClient();
 
@@ -73,27 +69,6 @@ export const deletePlayer = async (id: string) => {
   });
 };
 
-export const syncPGATourPlayers = async () => {
-  const pgaData = await scrapePGATourData();
-
-  for (const playerData of pgaData.players) {
-    const { pgaTourId, name, imageUrl, hometown, age } = playerData;
-    await prisma.player.upsert({
-      where: { pgaTourId },
-      update: { name, imageUrl, hometown, age },
-      create: {
-        pgaTourId,
-        name,
-        imageUrl,
-        hometown,
-        age,
-      },
-    });
-  }
-
-  return getAllPlayers();
-};
-
 export const playerController = {
   getAllPlayers: async (req: Request, res: Response) => {
     try {
@@ -150,16 +125,6 @@ export const playerController = {
     } catch (error) {
       console.error('Error deleting player:', error);
       res.status(500).json({ error: 'Failed to delete player' });
-    }
-  },
-
-  syncPGATourPlayers: async (req: Request, res: Response) => {
-    try {
-      const players = await syncPGATourPlayers();
-      res.json({ message: 'Players synced successfully', players });
-    } catch (error) {
-      console.error('Error syncing PGA Tour players:', error);
-      res.status(500).json({ error: 'Failed to sync PGA Tour players' });
     }
   },
 

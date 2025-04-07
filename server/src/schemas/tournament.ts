@@ -13,30 +13,21 @@ const tournamentBaseSchema = {
   startDate: z.string().datetime('Invalid start date'),
   endDate: z.string().datetime('Invalid end date'),
   course: z.string().min(2, 'Course name must be at least 2 characters'),
+  city: z.string().min(2, 'City name must be at least 2 characters'),
+  state: z.string().min(2, 'State name must be at least 2 characters'),
+  timezone: z.string(),
   purse: z.number().positive('Purse must be positive').optional(),
   status: z.enum([
     TournamentStatus.UPCOMING,
     TournamentStatus.IN_PROGRESS,
     TournamentStatus.COMPLETED,
   ]),
+  roundStatusDisplay: z.string().optional(),
+  roundDisplay: z.string().optional(),
+  currentRound: z.number().int().optional(),
+  weather: z.any().optional(), // Using any for JSON type
+  beautyImage: z.string().optional(),
 };
-
-// Schema for creating a new tournament
-export const createTournamentSchema = z
-  .object({
-    ...tournamentBaseSchema,
-    status: z
-      .enum([
-        TournamentStatus.UPCOMING,
-        TournamentStatus.IN_PROGRESS,
-        TournamentStatus.COMPLETED,
-      ])
-      .default(TournamentStatus.UPCOMING),
-  })
-  .refine(
-    (data) => new Date(data.startDate) < new Date(data.endDate),
-    'End date must be after start date'
-  );
 
 // Schema for updating a tournament
 export const updateTournamentSchema = z
@@ -57,7 +48,6 @@ export const tournamentIdSchema = z.object({
 });
 
 // Types derived from schemas
-export type CreateTournamentBody = z.infer<typeof createTournamentSchema>;
 export type UpdateTournamentBody = z.infer<typeof updateTournamentSchema>;
 export type TournamentIdParam = z.infer<typeof tournamentIdSchema>;
 

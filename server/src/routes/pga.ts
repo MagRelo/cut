@@ -1,5 +1,5 @@
 import express from 'express';
-import { scrapePGATourData } from '../lib/pgaLeaderboard';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
 import { fetchScorecard } from '../lib/pgaScorecard';
 import { authenticateToken } from '../middleware/auth';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers';
@@ -23,7 +23,7 @@ router.get('/players', async (req, res) => {
 // Get PGA Tour leaderboard data
 router.get('/leaderboard', async (req, res) => {
   try {
-    const data = await scrapePGATourData();
+    const data = await getPgaLeaderboard();
     res.json(data);
   } catch (error) {
     console.error('Error fetching leaderboard:', error);

@@ -42,8 +42,6 @@ router.delete(
   playerController.deletePlayer
 );
 
-router.post('/sync', authenticateToken, playerController.syncPGATourPlayers);
-
 // Team management routes
 router.post(
   '/:id/teams',
