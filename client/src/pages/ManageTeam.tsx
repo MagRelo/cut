@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Team } from '../types/team';
-import api, { getPGATourPlayers } from '../services/api';
+import api, {
+  getTeam,
+  getPGATourPlayers,
+  updateTeam,
+  setActivePlayers,
+} from '../services/api';
+import type { PGAPlayer } from '../schemas/team';
 
 type EditMode = 'none' | 'team' | 'active';
 
@@ -10,9 +16,7 @@ export default function ManageTeam() {
   const [team, setTeam] = useState<Team | null>(null);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [editedTeam, setEditedTeam] = useState<Team | null>(null);
-  const [pgaPlayers, setPGAPlayers] = useState<
-    Array<{ id: string; name: string; firstName: string; lastName: string }>
-  >([]);
+  const [pgaPlayers, setPGAPlayers] = useState<PGAPlayer[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +26,7 @@ export default function ManageTeam() {
       try {
         setIsLoading(true);
         const [teamData, playersData] = await Promise.all([
-          api.getTeam(teamId!),
+          getTeam(teamId!),
           getPGATourPlayers(),
         ]);
         setTeam(teamData);
@@ -52,9 +56,25 @@ export default function ManageTeam() {
     }
 
     if (editMode === 'active') {
-      const activeCount = editedTeam.players.filter((p) => p.isActive).length;
-      if (activeCount > 4) {
-        alert('You can only select up to 4 players for the current week.');
+      try {
+        // Get current tournament status
+        const currentTournament = await api.getCurrentTournament();
+
+        if (!currentTournament || currentTournament.status !== 'UPCOMING') {
+          alert('Team lineups can only be modified for upcoming tournaments.');
+          return;
+        }
+
+        const activeCount = editedTeam.players.filter((p) => p.isActive).length;
+        if (activeCount > 4) {
+          alert('You can only select up to 4 players for the current week.');
+          return;
+        }
+      } catch (error) {
+        setError(
+          'Failed to verify tournament status: ' +
+            (error instanceof Error ? error.message : 'Unknown error')
+        );
         return;
       }
     }
@@ -66,7 +86,7 @@ export default function ManageTeam() {
       let updatedTeam: Team;
 
       if (editMode === 'team') {
-        updatedTeam = await api.updateTeam(teamId, {
+        updatedTeam = await updateTeam(teamId, {
           name: editedTeam.name,
           players: editedTeam.players.map((p) => ({ id: p.id, name: p.name })),
         });
@@ -76,7 +96,7 @@ export default function ManageTeam() {
           .filter((p) => p.isActive)
           .map((p) => p.id);
 
-        updatedTeam = await api.setActivePlayers({
+        updatedTeam = await setActivePlayers({
           teamId,
           activePlayerIds,
         });
@@ -308,7 +328,9 @@ export default function ManageTeam() {
                                 (p) => p && p.id && p.firstName && p.lastName
                               )
                               .sort((a, b) =>
-                                a.lastName.localeCompare(b.lastName)
+                                (a.lastName || '').localeCompare(
+                                  b.lastName || ''
+                                )
                               )
                               .map((p) => (
                                 <option key={p.id} value={p.id}>

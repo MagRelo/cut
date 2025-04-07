@@ -7,6 +7,15 @@ import {
   type PGAPlayer,
 } from '../schemas/team';
 
+export type Tournament = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  course: string;
+  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
+};
+
 const api = {
   baseURL: 'http://localhost:4000/api',
   headers: {} as Record<string, string>,
@@ -39,6 +48,15 @@ const api = {
 
     return response.json();
   },
+
+  async getCurrentTournament(): Promise<Tournament | null> {
+    try {
+      return this.request<Tournament | null>('GET', '/tournaments/current');
+    } catch (error) {
+      console.error('Error fetching current tournament:', error);
+      throw error;
+    }
+  },
 };
 
 // Initialize auth token from localStorage
@@ -46,6 +64,10 @@ api.setAuthToken(localStorage.getItem('token'));
 
 export const getTeamsByLeague = async (leagueId: string): Promise<Team[]> => {
   return api.request<Team[]>('GET', `/teams/league/${leagueId}`);
+};
+
+export const getTeam = async (teamId: string): Promise<Team> => {
+  return api.request<Team>('GET', `/teams/${teamId}`);
 };
 
 export const updateTeam = async (
@@ -67,18 +89,8 @@ export const setActivePlayers = async (
   );
 };
 
-export const getTeam = async (teamId: string): Promise<Team> => {
-  return api.request<Team>('GET', `/teams/${teamId}`);
-};
-
 export const getPGATourPlayers = async (): Promise<PGAPlayer[]> => {
   return api.request<PGAPlayer[]>('GET', '/pga/players');
 };
 
-export default {
-  getTeamsByLeague,
-  updateTeam,
-  setActivePlayers,
-  getTeam,
-  getPGATourPlayers,
-};
+export default api;

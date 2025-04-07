@@ -6,6 +6,7 @@ import {
   createTournamentSchema,
   updateTournamentSchema,
   tournamentIdSchema,
+  TournamentStatus,
 } from '../schemas/tournament';
 import { z } from 'zod';
 
@@ -13,6 +14,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', tournamentController.getAllTournaments);
+router.get('/current', tournamentController.getCurrentTournament);
 router.get(
   '/:id',
   validate(z.object({ params: tournamentIdSchema })),
@@ -48,6 +50,25 @@ router.post(
   authenticateToken,
   validate(z.object({ params: tournamentIdSchema })),
   tournamentController.updateTournamentScores
+);
+
+// New route for updating tournament status
+router.patch(
+  '/:id/status',
+  authenticateToken,
+  validate(
+    z.object({
+      params: tournamentIdSchema,
+      body: z.object({
+        status: z.enum([
+          TournamentStatus.UPCOMING,
+          TournamentStatus.IN_PROGRESS,
+          TournamentStatus.COMPLETED,
+        ]),
+      }),
+    })
+  ),
+  tournamentController.updateTournamentStatus
 );
 
 export default router;

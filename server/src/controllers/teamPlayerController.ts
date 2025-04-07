@@ -4,6 +4,7 @@ import {
   CreateTeamPlayerBody,
   UpdateTeamPlayerBody,
 } from '../schemas/teamPlayer';
+import { TournamentStatus } from '../schemas/tournament';
 
 const prisma = new PrismaClient();
 
@@ -59,6 +60,30 @@ export const updateTeamPlayerStatus = async (
   playerId: string,
   data: UpdateTeamPlayerBody
 ) => {
+  // Get the current tournament
+  const currentTournament = await prisma.tournament.findFirst({
+    where: {
+      OR: [
+        { status: TournamentStatus.IN_PROGRESS },
+        { status: TournamentStatus.UPCOMING },
+      ],
+    },
+    orderBy: {
+      startDate: 'asc',
+    },
+  });
+
+  if (!currentTournament) {
+    throw new Error('No active or upcoming tournament found');
+  }
+
+  // Check if tournament is in a state that allows lineup changes
+  if (currentTournament.status !== TournamentStatus.UPCOMING) {
+    throw new Error(
+      'Team lineups can only be modified for upcoming tournaments'
+    );
+  }
+
   return prisma.teamPlayer.update({
     where: {
       teamId_playerId: {

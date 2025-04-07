@@ -151,6 +151,14 @@ export const tournamentController = {
         return res.status(404).json({ error: 'Tournament not found' });
       }
 
+      // Only allow score updates for IN_PROGRESS tournaments
+      if (tournament.status !== TournamentStatus.IN_PROGRESS) {
+        return res.status(400).json({
+          error:
+            'Tournament scores can only be updated when tournament is in progress',
+        });
+      }
+
       // Get current leaderboard data
       const leaderboardData =
         (await scrapePGATourData()) as unknown as PGATourLeaderboard;
@@ -187,35 +195,59 @@ export const tournamentController = {
         }
       }
 
-      // Update tournament status if needed
-      const newStatus = determineNewStatus(tournament, leaderboardData.status);
-      if (newStatus !== tournament.status) {
-        await prisma.tournament.update({
-          where: { id },
-          data: { status: newStatus },
-        });
-      }
-
       res.json({ message: 'Tournament scores updated successfully' });
     } catch (error) {
       console.error('Error updating tournament scores:', error);
       res.status(500).json({ error: 'Failed to update tournament scores' });
     }
   },
+
+  // New endpoint for manual tournament status updates
+  async updateTournamentStatus(
+    req: Request<{ id: string }, {}, { status: keyof typeof TournamentStatus }>,
+    res: Response
+  ) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const tournament = await prisma.tournament.update({
+        where: { id },
+        data: { status },
+      });
+
+      res.json(tournament);
+    } catch (error) {
+      console.error('Error updating tournament status:', error);
+      res.status(500).json({ error: 'Failed to update tournament status' });
+    }
+  },
+
+  // Get current tournament
+  async getCurrentTournament(req: Request, res: Response) {
+    try {
+      const tournament = await prisma.tournament.findFirst({
+        where: {
+          OR: [
+            { status: TournamentStatus.IN_PROGRESS },
+            { status: TournamentStatus.UPCOMING },
+          ],
+        },
+        orderBy: {
+          startDate: 'asc',
+        },
+      });
+
+      if (!tournament) {
+        return res
+          .status(404)
+          .json({ error: 'No active or upcoming tournament found' });
+      }
+
+      res.json(tournament);
+    } catch (error) {
+      console.error('Error fetching current tournament:', error);
+      res.status(500).json({ error: 'Failed to fetch current tournament' });
+    }
+  },
 };
-
-// Helper function to determine tournament status
-function determineNewStatus(
-  tournament: { startDate: Date; endDate: Date; status: string },
-  leaderboardStatus: keyof typeof TournamentStatus
-): keyof typeof TournamentStatus {
-  if (leaderboardStatus === TournamentStatus.COMPLETED)
-    return TournamentStatus.COMPLETED;
-  if (leaderboardStatus === TournamentStatus.IN_PROGRESS)
-    return TournamentStatus.IN_PROGRESS;
-
-  const now = new Date();
-  if (now < tournament.startDate) return TournamentStatus.UPCOMING;
-  if (now > tournament.endDate) return TournamentStatus.COMPLETED;
-  return TournamentStatus.IN_PROGRESS;
-}

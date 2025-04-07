@@ -1,6 +1,9 @@
 import cron from 'node-cron';
+import { PrismaClient } from '@prisma/client';
 import { ScoreUpdateService } from '../services/scoreUpdateService';
+import { TournamentStatus } from '../schemas/tournament';
 
+const prisma = new PrismaClient();
 const scoreUpdateService = new ScoreUpdateService();
 
 // TODO: In a real application, you would need to:
@@ -11,17 +14,24 @@ const CURRENT_TOURNAMENT_ID = process.env.CURRENT_TOURNAMENT_ID;
 
 // Schedule the job to run every 10 minutes
 export function startScoreUpdateCron() {
-  if (!CURRENT_TOURNAMENT_ID) {
-    console.error('No tournament ID configured. Score updates will not run.');
-    return;
-  }
-
   console.log('Starting score update cron job...');
 
   // Run every 10 minutes
   cron.schedule('*/10 * * * *', async () => {
     try {
-      await scoreUpdateService.updateAllScores(CURRENT_TOURNAMENT_ID);
+      // Find tournament that is IN_PROGRESS
+      const activeTournament = await prisma.tournament.findFirst({
+        where: {
+          status: TournamentStatus.IN_PROGRESS,
+        },
+      });
+
+      if (!activeTournament) {
+        console.log('No active tournament found. Skipping score update.');
+        return;
+      }
+
+      await scoreUpdateService.updateAllScores(activeTournament.id);
     } catch (error) {
       console.error('Error in score update cron job:', error);
     }
