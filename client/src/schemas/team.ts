@@ -9,7 +9,7 @@ export const playerSchema = z.object({
 
 export const teamUpdateSchema = z.object({
   name: z.string().optional(),
-  players: z.array(playerSchema).optional(),
+  players: z.array(z.string()).optional(),
 });
 
 export const activePlayersSchema = z.object({

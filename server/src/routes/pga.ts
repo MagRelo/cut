@@ -71,6 +71,15 @@ router.get('/refreshPlayers', async (req, res) => {
     // Delete all existing players
     await prisma.player.deleteMany();
 
+    // Get current tournament field data first
+    const currentTournamentId = 'R2025014'; // The Masters 2024
+    const { players: fieldPlayers } = await getActivePlayers(
+      currentTournamentId
+    );
+
+    // Create a Set of player IDs who are in the field for quick lookup
+    const inFieldPlayerIds = new Set(fieldPlayers.map((p) => p.id));
+
     // Fetch fresh player data from PGA Tour API
     const players = await fetchPGATourPlayers();
 
@@ -87,12 +96,14 @@ router.get('/refreshPlayers', async (req, res) => {
         countryFlag: player.countryFlag || null,
         age: player.playerBio?.age || null,
         isActive: player.isActive || false,
+        inField: inFieldPlayerIds.has(player.id),
       })),
     });
 
     res.json({
       message: 'Players refreshed successfully',
       count: createdPlayers.count,
+      fieldPlayersCount: fieldPlayers.length,
     });
   } catch (error) {
     console.error('Error refreshing players:', error);

@@ -15,6 +15,7 @@ export interface CreateTeamDto {
 
 export interface UpdateTeamDto {
   name?: string;
+  players?: string[];
 }
 
 export interface AddPlayerDto {
@@ -159,7 +160,7 @@ export class TeamService {
     // First, find all players by their pgaTourIds
     const players = await prisma.player.findMany({
       where: {
-        pgaTourId: {
+        id: {
           in: data.players,
         },
       },
@@ -248,23 +249,60 @@ export class TeamService {
     userId: string,
     data: UpdateTeamDto
   ): Promise<TeamWithPlayers> {
-    await this.verifyTeamOwnership(teamId, userId);
+    const team = await this.verifyTeamOwnership(teamId, userId);
 
-    const team = await prisma.team.update({
-      where: { id: teamId },
-      data: {
-        name: data.name,
-      },
-      include: {
-        players: {
-          include: {
-            player: true,
+    // If players are being updated, verify they exist
+    let players: Player[] = [];
+    if (data.players) {
+      players = await prisma.player.findMany({
+        where: {
+          id: {
+            in: data.players,
           },
         },
-      },
+      });
+
+      if (players.length !== data.players.length) {
+        throw new ValidationError('One or more players not found');
+      }
+    }
+
+    // Update team with transaction to handle both name and player updates
+    const updatedTeam = await prisma.$transaction(async (tx) => {
+      // If players are provided, first remove all existing players
+      if (data.players) {
+        await tx.teamPlayer.deleteMany({
+          where: { teamId },
+        });
+      }
+
+      // Update the team and add new players if provided
+      return tx.team.update({
+        where: { id: teamId },
+        data: {
+          name: data.name,
+          ...(data.players && {
+            players: {
+              create: players.map((player) => ({
+                player: {
+                  connect: { id: player.id },
+                },
+                active: false,
+              })),
+            },
+          }),
+        },
+        include: {
+          players: {
+            include: {
+              player: true,
+            },
+          },
+        },
+      });
     });
 
-    return team as TeamWithPlayers;
+    return updatedTeam as TeamWithPlayers;
   }
 
   async deleteTeam(teamId: string, userId: string): Promise<void> {

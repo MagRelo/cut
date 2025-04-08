@@ -64,15 +64,12 @@ export const EditTeam: React.FC = () => {
     try {
       const updatePayload: TeamUpdatePayload = {
         name: teamName,
-        players: selectedPlayers.map((id) => ({
-          id,
-          name: availablePlayers.find((p) => p.id === id)?.name || '',
-        })),
+        players: selectedPlayers,
       };
       await api.updateTeam(teamId, updatePayload);
+
       // Navigate back to the league lobby
-      const leagueId = team.players[0]?.teamId.split('-')[0] || '';
-      navigate(`/league/${leagueId}`);
+      navigate(`/league-lobby/${team.leagueId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update team');
       setIsSaving(false);

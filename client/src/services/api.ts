@@ -126,6 +126,7 @@ export interface Team {
   name: string;
   players: TeamPlayer[];
   userId: string;
+  leagueId: string;
 }
 
 export class ApiService {

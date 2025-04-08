@@ -56,7 +56,7 @@ export const CreateTeam: React.FC = () => {
         leagueId,
         players: selectedPlayers,
       });
-      navigate(`/league/${leagueId}`);
+      navigate(`/league-lobby/${leagueId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create team');
       setIsSaving(false);
