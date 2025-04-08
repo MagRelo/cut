@@ -284,7 +284,7 @@ export const LeagueLobby: React.FC = () => {
                               {player.player.imageUrl && (
                                 <div className='flex-shrink-0 h-10 w-10'>
                                   <img
-                                    className='h-10 w-10 rounded-full'
+                                    className='h-10 w-10 rounded-full object-cover'
                                     src={player.player.imageUrl}
                                     alt={
                                       player.player.displayName ||
@@ -317,19 +317,11 @@ export const LeagueLobby: React.FC = () => {
                             <div className='flex flex-col space-y-1'>
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  player.active
+                                  player.player.inField
                                     ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                {player.active ? 'Active' : 'Bench'}
-                              </span>
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  player.player.inFeild
-                                    ? 'bg-blue-100 text-blue-800'
                                     : 'bg-yellow-100 text-yellow-800'
                                 }`}>
-                                {player.player.inFeild
+                                {player.player.inField
                                   ? 'In Field'
                                   : 'Not In Field'}
                               </span>

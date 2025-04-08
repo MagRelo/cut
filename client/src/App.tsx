@@ -11,7 +11,6 @@ import { Timeline } from './pages/Timeline';
 import { Leagues } from './pages/Leagues';
 import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
-import ManageTeam from './pages/ManageTeam';
 import { CreateTeam } from './pages/CreateTeam';
 import { EditTeam } from './pages/EditTeam';
 import { Navigation } from './components/Navigation';
@@ -76,14 +75,6 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <Timeline />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/manage/:teamId'
-              element={
-                <ProtectedRoute>
-                  <ManageTeam />
                 </ProtectedRoute>
               }
             />
