@@ -16,7 +16,7 @@ export interface Player {
   country: string | null;
   countryFlag: string | null;
   age: number | null;
-  inFeild: boolean;
+  inField: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

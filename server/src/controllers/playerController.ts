@@ -5,18 +5,20 @@ import { CreatePlayerBody, UpdatePlayerBody } from '../schemas/player';
 const prisma = new PrismaClient();
 
 export const getAllPlayers = async () => {
-  return prisma.player.findMany({
-    include: {
-      tournaments: true,
-    },
-  });
+  return prisma.player.findMany({});
 };
 
 export const getPlayerById = async (id: string) => {
   return prisma.player.findUnique({
     where: { id },
-    include: {
-      tournaments: true,
+  });
+};
+
+export const getActivePlayers = async () => {
+  return prisma.player.findMany({
+    where: {
+      isActive: true,
+      inField: true,
     },
   });
 };
@@ -77,6 +79,16 @@ export const playerController = {
     } catch (error) {
       console.error('Error getting players:', error);
       res.status(500).json({ error: 'Failed to get players' });
+    }
+  },
+
+  getActivePlayers: async (req: Request, res: Response) => {
+    try {
+      const players = await getActivePlayers();
+      res.json(players);
+    } catch (error) {
+      console.error('Error getting active players:', error);
+      res.status(500).json({ error: 'Failed to get active players' });
     }
   },
 

@@ -12,7 +12,10 @@ const router = express.Router();
 // Get all players
 router.get('/', playerController.getAllPlayers);
 
-// Get player by ID
+// Get active players (must be before /:id to prevent id validation)
+router.get('/active', playerController.getActivePlayers);
+
+// Get player by ID (with validation)
 router.get(
   '/:id',
   validateRequest({ params: playerIdSchema }),
@@ -29,10 +32,7 @@ router.post(
 // Update player
 router.put(
   '/:id',
-  validateRequest({
-    params: playerIdSchema,
-    body: updatePlayerSchema,
-  }),
+  validateRequest({ params: playerIdSchema, body: updatePlayerSchema }),
   playerController.updatePlayer
 );
 
@@ -44,6 +44,6 @@ router.delete(
 );
 
 // Sync PGA Tour players
-router.post('/sync', playerController.syncPGATourPlayers);
+// router.post('/sync', playerController.syncPGATourPlayers);
 
 export default router;

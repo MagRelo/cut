@@ -85,7 +85,7 @@ model Player {
   country     String?
   countryFlag String?
   age         Int?
-  inFeild     Boolean            @default(false)
+  inField     Boolean            @default(false)
   isActive    Boolean            @default(false)
   teams       TeamPlayer[]
   tournaments TournamentPlayer[]

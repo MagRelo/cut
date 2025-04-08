@@ -13,6 +13,7 @@ import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
 import ManageTeam from './pages/ManageTeam';
 import { CreateTeam } from './pages/CreateTeam';
+import { EditTeam } from './pages/EditTeam';
 import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -83,6 +84,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <ManageTeam />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/team/:teamId/edit'
+              element={
+                <ProtectedRoute>
+                  <EditTeam />
                 </ProtectedRoute>
               }
             />

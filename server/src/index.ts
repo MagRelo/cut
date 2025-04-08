@@ -6,7 +6,7 @@ import authRoutes from './routes/auth';
 import pgaRoutes from './routes/pga';
 import leagueRoutes from './routes/leagues';
 import hyperliquidRoutes from './routes/hyperliquid';
-import playerRoutes from './routes/players';
+import playerRoutes from './routes/player.routes';
 import tournamentRoutes from './routes/tournaments';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';

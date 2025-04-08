@@ -125,7 +125,7 @@ export interface Team {
   id: string;
   name: string;
   players: TeamPlayer[];
-  isUserTeam?: boolean;
+  userId: string;
 }
 
 export class ApiService {
@@ -256,7 +256,7 @@ export class ApiService {
 
   // PGA Tour endpoints
   async getPGATourPlayers() {
-    return this.request<PGAPlayer[]>('GET', '/pga/players');
+    return this.request<PGAPlayer[]>('GET', '/players/active');
   }
 
   async getCurrentTournament() {

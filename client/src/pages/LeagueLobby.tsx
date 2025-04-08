@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import type { League } from '../services/api';
-import type { Team } from '../types/team';
+import type { Team } from '../services/api';
+
+interface League {
+  id: string;
+  name: string;
+  description?: string;
+  memberCount: number;
+  maxTeams: number;
+  isPrivate: boolean;
+  members: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    joinedAt: string;
+  }>;
+}
 
 export const LeagueLobby: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +60,9 @@ export const LeagueLobby: React.FC = () => {
 
         // Find user's team if they have one
         if (isMemberOfLeague) {
-          const userTeam = teamsData.find((team) => team.isUserTeam);
+          const userTeam = teamsData.find(
+            (team) => team.userId === localStorage.getItem('userId')
+          );
           setUserTeam(userTeam || null);
         }
       } catch (err) {
@@ -155,17 +171,11 @@ export const LeagueLobby: React.FC = () => {
             </div>
           </div>
           <div className='flex space-x-2'>
-            {isMember && (
+            {isMember && !userTeam && (
               <button
-                onClick={() =>
-                  navigate(
-                    userTeam
-                      ? `/team/${userTeam.id}`
-                      : `/league/${leagueId}/create-team`
-                  )
-                }
+                onClick={() => navigate(`/league/${leagueId}/create-team`)}
                 className='px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors'>
-                {userTeam ? 'Manage Team' : 'Create Team'}
+                Create Team
               </button>
             )}
             <button
@@ -192,30 +202,39 @@ export const LeagueLobby: React.FC = () => {
       <div className='space-y-4'>
         {teams.map((team) => (
           <div key={team.id} className='bg-white rounded-lg shadow'>
-            <button
-              onClick={() => toggleTeam(team.id)}
-              className='w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors'>
-              <h2 className='text-xl font-bold text-gray-900'>{team.name}</h2>
-              <div className='flex items-center space-x-4'>
-                <span className='text-lg font-semibold text-indigo-600'>
-                  Score: {calculateTeamScore(team)}
-                </span>
-                <svg
-                  className={`w-5 h-5 text-gray-500 transform transition-transform ${
-                    expandedTeams.has(team.id) ? 'rotate-180' : ''
-                  }`}
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M19 9l-7 7-7-7'
-                  />
-                </svg>
-              </div>
-            </button>
+            <div className='w-full px-4 py-4 flex justify-between items-center'>
+              <button
+                onClick={() => toggleTeam(team.id)}
+                className='flex-1 flex justify-between items-center hover:bg-gray-50 transition-colors'>
+                <h2 className='text-xl font-bold text-gray-900'>{team.name}</h2>
+                <div className='flex items-center space-x-4'>
+                  <span className='text-lg font-semibold text-indigo-600'>
+                    Score: {calculateTeamScore(team)}
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transform transition-transform ${
+                      expandedTeams.has(team.id) ? 'rotate-180' : ''
+                    }`}
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'>
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M19 9l-7 7-7-7'
+                    />
+                  </svg>
+                </div>
+              </button>
+              {team.userId === localStorage.getItem('userId') && (
+                <button
+                  onClick={() => navigate(`/team/${team.id}/edit`)}
+                  className='ml-4 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors'>
+                  Edit Team
+                </button>
+              )}
+            </div>
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
                 expandedTeams.has(team.id) ? 'max-h-[1000px]' : 'max-h-0'

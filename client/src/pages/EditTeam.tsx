@@ -1,41 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import type { PGAPlayer } from '../schemas/team';
+import type { PGAPlayer, TeamUpdatePayload } from '../schemas/team';
+import type { Team } from '../services/api';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 
-export const CreateTeam: React.FC = () => {
+export const EditTeam: React.FC = () => {
   const navigate = useNavigate();
-  const { leagueId } = useParams<{ leagueId: string }>();
+  const { teamId } = useParams<{ teamId: string }>();
   const [teamName, setTeamName] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [availablePlayers, setAvailablePlayers] = useState<PGAPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
 
   useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchData = async () => {
+      if (!teamId) return;
+
       try {
         setIsLoading(true);
-        const players = await api.getPGATourPlayers();
+        const [teamData, players] = await Promise.all([
+          api.getTeam(teamId),
+          api.getPGATourPlayers(),
+        ]);
+
+        setTeam(teamData);
+        setTeamName(teamData.name);
+        setSelectedPlayers(teamData.players.map((p) => p.player.id));
         setAvailablePlayers(players);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Failed to fetch players'
+          err instanceof Error ? err.message : 'Failed to fetch team data'
         );
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPlayers();
-  }, []);
+    fetchData();
+  }, [teamId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!leagueId) return;
+    if (!teamId || !team) return;
 
     if (!teamName.trim()) {
       setError('Please enter a team name');
@@ -51,14 +62,19 @@ export const CreateTeam: React.FC = () => {
     setError(null);
 
     try {
-      await api.createTeam({
+      const updatePayload: TeamUpdatePayload = {
         name: teamName,
-        leagueId,
-        players: selectedPlayers,
-      });
+        players: selectedPlayers.map((id) => ({
+          id,
+          name: availablePlayers.find((p) => p.id === id)?.name || '',
+        })),
+      };
+      await api.updateTeam(teamId, updatePayload);
+      // Navigate back to the league lobby
+      const leagueId = team.players[0]?.teamId.split('-')[0] || '';
       navigate(`/league/${leagueId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create team');
+      setError(err instanceof Error ? err.message : 'Failed to update team');
       setIsSaving(false);
     }
   };
@@ -79,11 +95,19 @@ export const CreateTeam: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  if (!team) {
+    return (
+      <div className='py-6'>
+        <div className='text-center text-gray-600'>Team not found</div>
+      </div>
+    );
+  }
+
   return (
     <div className='px-4 py-6'>
       <div className='max-w-2xl mx-auto'>
         <h1 className='text-2xl font-bold text-gray-900 mb-6'>
-          Create Your Team
+          Edit Your Team
         </h1>
 
         {error && <ErrorMessage message={error} />}
@@ -146,7 +170,11 @@ export const CreateTeam: React.FC = () => {
           <div className='flex justify-end space-x-3'>
             <button
               type='button'
-              onClick={() => navigate(`/league/${leagueId}`)}
+              onClick={() => {
+                // Navigate back to the league lobby
+                const leagueId = team.players[0]?.teamId.split('-')[0] || '';
+                navigate(`/league/${leagueId}`);
+              }}
               className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'>
               Cancel
             </button>
@@ -154,7 +182,7 @@ export const CreateTeam: React.FC = () => {
               type='submit'
               disabled={isSaving}
               className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed'>
-              {isSaving ? 'Creating...' : 'Create Team'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -163,4 +191,4 @@ export const CreateTeam: React.FC = () => {
   );
 };
 
-export default CreateTeam;
+export default EditTeam;

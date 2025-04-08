@@ -35,13 +35,27 @@ export interface UpdatePlayerDto {
   total?: number;
 }
 
-type TeamWithPlayers = Team & {
+type TeamWithPlayers = Omit<Team, 'users'> & {
   players: (TeamPlayer & {
     player: Player;
   })[];
+  users: {
+    id: string;
+    email: string;
+    name: string;
+  }[];
+  userId?: string;
 };
 
-type TeamWithPlayersAndLeague = TeamWithPlayers & {
+type TeamWithPlayersAndLeague = Omit<Team, 'users'> & {
+  players: (TeamPlayer & {
+    player: Player;
+  })[];
+  users: {
+    id: string;
+    email: string;
+    name: string;
+  }[];
   league: {
     members: Array<{
       id: string;
@@ -68,6 +82,13 @@ export class TeamService {
         players: {
           include: {
             player: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
           },
         },
         league: {
@@ -205,10 +226,21 @@ export class TeamService {
             player: true,
           },
         },
+        users: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
       },
     });
 
-    return teams as TeamWithPlayers[];
+    // Transform the response to include userId from the first user
+    return teams.map((team) => ({
+      ...team,
+      userId: team.users[0]?.id || '', // Get the first user's ID as the owner
+    })) as TeamWithPlayers[];
   }
 
   async updateTeam(
