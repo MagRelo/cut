@@ -94,91 +94,106 @@ export const EditTeam: React.FC = () => {
 
   if (!team) {
     return (
-      <div className='py-6'>
+      <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
         <div className='text-center text-gray-600'>Team not found</div>
       </div>
     );
   }
 
   return (
-    <div className='px-4 py-6'>
-      <div className='max-w-2xl mx-auto'>
-        <h1 className='text-2xl font-bold text-gray-900 mb-6'>
-          Edit Your Team
-        </h1>
-
-        {error && <ErrorMessage message={error} />}
-
-        <form onSubmit={handleSubmit} className='space-y-6'>
+    <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-8'>
+        <div className='space-y-8'>
           <div>
-            <label
-              htmlFor='teamName'
-              className='block text-sm font-medium text-gray-700'>
-              Team Name
-            </label>
-            <input
-              type='text'
-              id='teamName'
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-              placeholder='Enter team name'
-            />
+            <h1 className='text-3xl font-extrabold text-gray-900 text-center'>
+              Edit Your Team
+            </h1>
+            <p className='mt-2 text-sm text-gray-600 text-center'>
+              Update your team name and player selection
+            </p>
           </div>
 
-          <div>
-            <h2 className='text-lg font-medium text-gray-900 mb-4'>
-              Select 4 Players
-            </h2>
-            <div className='space-y-4'>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index}>
-                  <label
-                    htmlFor={`player-${index}`}
-                    className='block text-sm font-medium text-gray-700'>
-                    Player {index + 1}
-                  </label>
-                  <select
-                    id={`player-${index}`}
-                    value={selectedPlayers[index] || ''}
-                    onChange={(e) => handlePlayerSelect(e, index)}
-                    className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'>
-                    <option value=''>Select a player...</option>
-                    {availablePlayers
-                      .filter(
-                        (p) =>
-                          !selectedPlayers.includes(p.id) ||
-                          selectedPlayers[index] === p.id
-                      )
-                      .sort((a, b) =>
-                        (a.lastName || '').localeCompare(b.lastName || '')
-                      )
-                      .map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {player.lastName}, {player.firstName}
-                        </option>
-                      ))}
-                  </select>
+          {error && <ErrorMessage message={error} />}
+
+          <form onSubmit={handleSubmit} className='space-y-8'>
+            <div className='space-y-6'>
+              <div>
+                <label
+                  htmlFor='teamName'
+                  className='block text-sm font-medium text-gray-900'>
+                  Team Name
+                </label>
+                <div className='mt-1'>
+                  <input
+                    type='text'
+                    id='teamName'
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base'
+                    placeholder='Enter your team name'
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div className='flex justify-end space-x-3'>
-            <button
-              type='button'
-              onClick={() => navigate(`/league-lobby/${team.leagueId}`)}
-              className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'>
-              Cancel
-            </button>
-            <button
-              type='submit'
-              disabled={isSaving}
-              className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed'>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+              <div className='space-y-4'>
+                <h2 className='text-xl font-semibold text-gray-900'>
+                  Select Your Players
+                </h2>
+                <p className='text-sm text-gray-500'>
+                  Choose 4 players for your team. Each player can only be
+                  selected once.
+                </p>
+                <div className='grid gap-6 mt-4'>
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index}>
+                      <label
+                        htmlFor={`player-${index}`}
+                        className='block text-sm font-medium text-gray-900 mb-2'>
+                        Player {index + 1}
+                      </label>
+                      <select
+                        id={`player-${index}`}
+                        value={selectedPlayers[index] || ''}
+                        onChange={(e) => handlePlayerSelect(e, index)}
+                        className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg shadow-sm bg-white'>
+                        <option value=''>Select a player...</option>
+                        {availablePlayers
+                          .filter(
+                            (p) =>
+                              !selectedPlayers.includes(p.id) ||
+                              selectedPlayers[index] === p.id
+                          )
+                          .sort((a, b) =>
+                            (a.lastName || '').localeCompare(b.lastName || '')
+                          )
+                          .map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {player.lastName}, {player.firstName}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className='flex justify-end space-x-4 pt-6 border-t border-gray-200'>
+              <button
+                type='button'
+                onClick={() => navigate(`/league-lobby/${team.leagueId}`)}
+                className='px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors'>
+                Cancel
+              </button>
+              <button
+                type='submit'
+                disabled={isSaving}
+                className='px-6 py-3 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -208,7 +208,7 @@ export const LeagueLobby: React.FC = () => {
                 className='flex-1 flex justify-between items-center hover:bg-gray-50 transition-colors'>
                 <h2 className='text-xl font-bold text-gray-900'>{team.name}</h2>
                 <div className='flex items-center space-x-4'>
-                  <span className='text-lg font-semibold text-indigo-600'>
+                  <span className='text-lg font-semibold text-gray-900'>
                     Score: {calculateTeamScore(team)}
                   </span>
                   <svg
@@ -297,18 +297,6 @@ export const LeagueLobby: React.FC = () => {
                                 <div className='text-sm font-medium text-gray-900'>
                                   {player.player.displayName ||
                                     player.player.name}
-                                </div>
-                                <div className='flex items-center text-sm text-gray-500'>
-                                  {player.player.country && (
-                                    <span className='flex items-center'>
-                                      {player.player.countryFlag && (
-                                        <span className='mr-1'>
-                                          {player.player.countryFlag}
-                                        </span>
-                                      )}
-                                      {player.player.country}
-                                    </span>
-                                  )}
                                 </div>
                               </div>
                             </div>
