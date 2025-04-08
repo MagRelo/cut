@@ -34,7 +34,6 @@ POST   /api/players/sync         # Sync with PGA Tour data
 Manages the relationship between teams and players:
 
 - Team roster management
-- Active/inactive player status
 - Weekly player selections
 - Team composition rules
 

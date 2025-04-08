@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, Team, TeamPlayer, Player } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 export interface CreateTeamDto {
   name: string;
   leagueId: string;
+  players: string[];
 }
 
 export interface UpdateTeamDto {
@@ -34,29 +35,10 @@ export interface UpdatePlayerDto {
   total?: number;
 }
 
-type TeamWithPlayers = {
-  id: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-  leagueId: string;
-  players: Array<{
-    id: string;
-    name: string;
-    isActive: boolean;
-    leaderboardPosition: string | null;
-    pgaTourId: string | null;
-    r1: any | null;
-    r2: any | null;
-    r3: any | null;
-    r4: any | null;
-    cut: number | null;
-    bonus: number | null;
-    total: number | null;
-    teamId: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
+type TeamWithPlayers = Team & {
+  players: (TeamPlayer & {
+    player: Player;
+  })[];
 };
 
 type TeamWithPlayersAndLeague = TeamWithPlayers & {
@@ -83,7 +65,11 @@ export class TeamService {
     const team = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
         league: {
           include: {
             members: true,
@@ -104,7 +90,7 @@ export class TeamService {
       throw new UnauthorizedError('You are not a member of this league');
     }
 
-    return team;
+    return team as TeamWithPlayersAndLeague;
   }
 
   async createTeam(
@@ -149,17 +135,80 @@ export class TeamService {
       throw new ValidationError('You already have a team in this league');
     }
 
-    return prisma.team.create({
+    // First, find all players by their pgaTourIds
+    const players = await prisma.player.findMany({
+      where: {
+        pgaTourId: {
+          in: data.players,
+        },
+      },
+    });
+
+    if (players.length !== data.players.length) {
+      throw new ValidationError('One or more players not found');
+    }
+
+    // Create team with players using their database IDs
+    const team = await prisma.team.create({
       data: {
-        ...data,
+        name: data.name,
+        leagueId: data.leagueId,
         users: {
           connect: { id: userId },
         },
+        players: {
+          create: players.map((player) => ({
+            player: {
+              connect: { id: player.id },
+            },
+            active: true,
+          })),
+        },
       },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
+
+    return team as TeamWithPlayers;
+  }
+
+  async getTeam(teamId: string): Promise<TeamWithPlayers> {
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
+    if (!team) {
+      throw new NotFoundError('Team not found');
+    }
+
+    return team as TeamWithPlayers;
+  }
+
+  async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
+    const teams = await prisma.team.findMany({
+      where: { leagueId },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
+    return teams as TeamWithPlayers[];
   }
 
   async updateTeam(
@@ -169,15 +218,21 @@ export class TeamService {
   ): Promise<TeamWithPlayers> {
     await this.verifyTeamOwnership(teamId, userId);
 
-    return prisma.team.update({
+    const team = await prisma.team.update({
       where: { id: teamId },
       data: {
         name: data.name,
       },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
+
+    return team as TeamWithPlayers;
   }
 
   async deleteTeam(teamId: string, userId: string): Promise<void> {
@@ -188,53 +243,41 @@ export class TeamService {
     });
   }
 
-  async getTeam(teamId: string): Promise<TeamWithPlayers> {
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      include: {
-        players: true,
-      },
-    });
-
-    if (!team) {
-      throw new NotFoundError('Team not found');
-    }
-
-    return team;
-  }
-
-  async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
-    return prisma.team.findMany({
-      where: { leagueId },
-      include: {
-        players: true,
-      },
-    });
-  }
-
   async addPlayer(
     teamId: string,
     userId: string,
-    data: AddPlayerDto
+    playerId: string
   ): Promise<TeamWithPlayers> {
     const team = await this.verifyTeamOwnership(teamId, userId);
 
-    // Check roster size limit
-    if (team.players.length >= (team.league.settings?.rosterSize || 8)) {
-      throw new ValidationError('Team has reached maximum roster size');
+    // Check if player is already on the team
+    const existingPlayer = team.players.find((tp) => tp.player.id === playerId);
+    if (existingPlayer) {
+      throw new ValidationError('Player is already on the team');
     }
 
-    return prisma.team.update({
+    const updatedTeam = await prisma.team.update({
       where: { id: teamId },
       data: {
         players: {
-          create: data,
+          create: {
+            player: {
+              connect: { id: playerId },
+            },
+            active: false,
+          },
         },
       },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
+
+    return updatedTeam as TeamWithPlayers;
   }
 
   async removePlayer(
@@ -244,58 +287,65 @@ export class TeamService {
   ): Promise<TeamWithPlayers> {
     await this.verifyTeamOwnership(teamId, userId);
 
-    return prisma.team.update({
+    const updatedTeam = await prisma.team.update({
       where: { id: teamId },
       data: {
         players: {
-          delete: { id: playerId },
+          delete: {
+            teamId_playerId: {
+              teamId,
+              playerId,
+            },
+          },
         },
       },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
+
+    return updatedTeam as TeamWithPlayers;
   }
 
   async updatePlayer(
     teamId: string,
     userId: string,
     playerId: string,
-    data: UpdatePlayerDto
+    active: boolean
   ): Promise<TeamWithPlayers> {
-    const team = await this.verifyTeamOwnership(teamId, userId);
+    await this.verifyTeamOwnership(teamId, userId);
 
-    // If updating active status, check weekly starter limit
-    if (data.isActive !== undefined) {
-      const weeklyStarterLimit = team.league.settings?.weeklyStarters ?? 4;
-      const currentActiveCount = team.players.filter((p) => p.isActive).length;
-      const targetPlayer = team.players.find((p) => p.id === playerId);
-
-      if (
-        data.isActive &&
-        !targetPlayer?.isActive &&
-        currentActiveCount >= weeklyStarterLimit
-      ) {
-        throw new ValidationError(
-          `Cannot activate more than ${weeklyStarterLimit} players per week`
-        );
-      }
-    }
-
-    return prisma.team.update({
+    const updatedTeam = await prisma.team.update({
       where: { id: teamId },
       data: {
         players: {
           update: {
-            where: { id: playerId },
-            data,
+            where: {
+              teamId_playerId: {
+                teamId,
+                playerId,
+              },
+            },
+            data: {
+              active,
+            },
           },
         },
       },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
+
+    return updatedTeam as TeamWithPlayers;
   }
 
   async setActivePlayers(
@@ -305,37 +355,33 @@ export class TeamService {
   ): Promise<TeamWithPlayers> {
     const team = await this.verifyTeamOwnership(teamId, userId);
 
-    // Verify weekly starter limit
+    // Get league settings for weekly starter limit
     const weeklyStarterLimit = team.league.settings?.weeklyStarters ?? 4;
+
     if (playerIds.length > weeklyStarterLimit) {
       throw new ValidationError(
         `Cannot activate more than ${weeklyStarterLimit} players per week`
       );
     }
 
-    // Verify all players belong to the team
-    const invalidPlayers = playerIds.filter(
-      (id) => !team.players.some((p) => p.id === id)
-    );
-    if (invalidPlayers.length > 0) {
-      throw new ValidationError('Some players do not belong to this team');
-    }
-
-    // Update all players' active status
-    await prisma.player.updateMany({
+    // Update all players to inactive first
+    await prisma.teamPlayer.updateMany({
       where: { teamId },
-      data: { isActive: false },
+      data: { active: false },
     });
 
+    // Then set selected players to active
     if (playerIds.length > 0) {
-      await prisma.player.updateMany({
+      await prisma.teamPlayer.updateMany({
         where: {
           id: { in: playerIds },
+          teamId,
         },
-        data: { isActive: true },
+        data: { active: true },
       });
     }
 
+    // Return updated team
     return this.getTeam(teamId);
   }
 }

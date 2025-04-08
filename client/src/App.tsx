@@ -12,6 +12,7 @@ import { Leagues } from './pages/Leagues';
 import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
 import ManageTeam from './pages/ManageTeam';
+import { CreateTeam } from './pages/CreateTeam';
 import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -58,6 +59,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <LeagueLobby />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/league/:leagueId/create-team'
+              element={
+                <ProtectedRoute>
+                  <CreateTeam />
                 </ProtectedRoute>
               }
             />

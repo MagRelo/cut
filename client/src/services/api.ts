@@ -5,7 +5,7 @@ import {
   type ActivePlayersPayload,
   type PGAPlayer,
 } from '../schemas/team';
-import type { Team } from '../types/team';
+// import type { Team } from '../types/team';
 
 interface Tournament {
   id: string;
@@ -82,7 +82,53 @@ interface League {
   }>;
 }
 
-class ApiService {
+interface CreateTeamPayload {
+  name: string;
+  leagueId: string;
+  players: string[];
+}
+
+export interface Player {
+  id: string;
+  pgaTourId: string;
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  imageUrl: string | null;
+  country: string | null;
+  countryFlag: string | null;
+  age: number | null;
+  inFeild: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeamPlayer {
+  id: string;
+  teamId: string;
+  playerId: string;
+  active: boolean;
+  player: Player;
+  leaderboardPosition?: string;
+  r1?: { strokes: number };
+  r2?: { strokes: number };
+  r3?: { strokes: number };
+  r4?: { strokes: number };
+  cut?: number;
+  bonus?: number;
+  total?: number;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  players: TeamPlayer[];
+  isUserTeam?: boolean;
+}
+
+export class ApiService {
   private config: ApiConfig;
 
   constructor() {
@@ -260,11 +306,16 @@ class ApiService {
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>('GET', endpoint);
   }
+
+  async createTeam(data: CreateTeamPayload) {
+    const response = await this.request<Team>('POST', '/teams', data);
+    return response;
+  }
 }
 
 // Create and export a singleton instance
 export const api = new ApiService();
 
 // Export type definitions
-export type { Team, PGAPlayer, League };
+export type { PGAPlayer, League };
 export type { Tournament };

@@ -7,33 +7,48 @@ interface RoundData {
 
 export interface Player {
   id: string;
-  name: string;
-  isActive: boolean;
   pgaTourId: string;
-  leaderboardPosition: string;
-  r1: RoundData;
-  r2: RoundData;
-  r3: RoundData;
-  r4: RoundData;
-  cut: number | null;
-  bonus: number | null;
-  total: number;
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  imageUrl: string | null;
+  country: string | null;
+  countryFlag: string | null;
+  age: number | null;
+  inFeild: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeamPlayer {
+  id: string;
   teamId: string;
-  createdAt: string;
-  updatedAt: string;
+  playerId: string;
+  active: boolean;
+  player: Player;
+  leaderboardPosition?: string;
+  r1?: RoundData;
+  r2?: RoundData;
+  r3?: RoundData;
+  r4?: RoundData;
+  cut?: number;
+  bonus?: number;
+  total?: number;
 }
 
 export interface Team {
   id: string;
   name: string;
-  players: Player[];
-  isUserTeam: boolean;
+  players: TeamPlayer[];
+  isUserTeam?: boolean;
   leagueId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TeamUpdatePayload {
   name?: string;
-  players?: Player[];
+  players?: string[]; // Array of player IDs
 }

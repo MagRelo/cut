@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import type { Team } from '../types/team';
 import type { League } from '../services/api';
+import type { Team } from '../types/team';
 
 export const LeagueLobby: React.FC = () => {
+  const navigate = useNavigate();
   const { leagueId } = useParams<{ leagueId: string }>();
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [teams, setTeams] = useState<Team[]>([]);
@@ -13,6 +14,7 @@ export const LeagueLobby: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [userTeam, setUserTeam] = useState<Team | null>(null);
 
   useEffect(() => {
     const fetchLeagueData = async () => {
@@ -41,6 +43,12 @@ export const LeagueLobby: React.FC = () => {
           (member) => member.userId === userId
         );
         setIsMember(isMemberOfLeague);
+
+        // Find user's team if they have one
+        if (isMemberOfLeague) {
+          const userTeam = teamsData.find((team) => team.isUserTeam);
+          setUserTeam(userTeam || null);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Failed to fetch league data'
@@ -93,7 +101,7 @@ export const LeagueLobby: React.FC = () => {
 
   const calculateTeamScore = (team: Team) => {
     return team.players
-      .filter((player) => player.isActive)
+      .filter((player) => player.active)
       .reduce((sum, player) => sum + (player.total || 0), 0);
   };
 
@@ -146,22 +154,37 @@ export const LeagueLobby: React.FC = () => {
               <div>{league.isPrivate ? 'Private League' : 'Public League'}</div>
             </div>
           </div>
-          <button
-            onClick={handleJoinLeave}
-            disabled={isActionLoading}
-            className={`px-4 py-2 rounded-md font-medium transition-colors ${
-              isActionLoading
-                ? 'bg-gray-300 cursor-not-allowed'
+          <div className='flex space-x-2'>
+            {isMember && (
+              <button
+                onClick={() =>
+                  navigate(
+                    userTeam
+                      ? `/team/${userTeam.id}`
+                      : `/league/${leagueId}/create-team`
+                  )
+                }
+                className='px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors'>
+                {userTeam ? 'Manage Team' : 'Create Team'}
+              </button>
+            )}
+            <button
+              onClick={handleJoinLeave}
+              disabled={isActionLoading}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                isActionLoading
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : isMember
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}>
+              {isActionLoading
+                ? 'Processing...'
                 : isMember
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
-            }`}>
-            {isActionLoading
-              ? 'Processing...'
-              : isMember
-              ? 'Leave League'
-              : 'Join League'}
-          </button>
+                ? 'Leave League'
+                : 'Join League'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -237,33 +260,76 @@ export const LeagueLobby: React.FC = () => {
                     <tbody className='bg-white divide-y divide-gray-200'>
                       {team.players.map((player) => (
                         <tr key={player.id}>
-                          <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
-                            {player.name}
+                          <td className='px-6 py-4 whitespace-nowrap'>
+                            <div className='flex items-center'>
+                              {player.player.imageUrl && (
+                                <div className='flex-shrink-0 h-10 w-10'>
+                                  <img
+                                    className='h-10 w-10 rounded-full'
+                                    src={player.player.imageUrl}
+                                    alt={
+                                      player.player.displayName ||
+                                      player.player.name
+                                    }
+                                  />
+                                </div>
+                              )}
+                              <div className='ml-4'>
+                                <div className='text-sm font-medium text-gray-900'>
+                                  {player.player.displayName ||
+                                    player.player.name}
+                                </div>
+                                <div className='flex items-center text-sm text-gray-500'>
+                                  {player.player.country && (
+                                    <span className='flex items-center'>
+                                      {player.player.countryFlag && (
+                                        <span className='mr-1'>
+                                          {player.player.countryFlag}
+                                        </span>
+                                      )}
+                                      {player.player.country}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                player.isActive
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                              {player.isActive ? 'Active' : 'Bench'}
-                            </span>
+                            <div className='flex flex-col space-y-1'>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  player.active
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                {player.active ? 'Active' : 'Bench'}
+                              </span>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  player.player.inFeild
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                {player.player.inFeild
+                                  ? 'In Field'
+                                  : 'Not In Field'}
+                              </span>
+                            </div>
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.leaderboardPosition}
+                            {player.leaderboardPosition || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.r1.strokes}
+                            {player.r1?.strokes || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.r2.strokes}
+                            {player.r2?.strokes || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.r3.strokes}
+                            {player.r3?.strokes || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.r4.strokes}
+                            {player.r4?.strokes || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                             {player.cut || '-'}
@@ -272,7 +338,7 @@ export const LeagueLobby: React.FC = () => {
                             {player.bonus || '-'}
                           </td>
                           <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                            {player.total}
+                            {player.total || '-'}
                           </td>
                         </tr>
                       ))}
