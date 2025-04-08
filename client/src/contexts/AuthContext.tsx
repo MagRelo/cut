@@ -4,8 +4,8 @@ import { api } from '../services/api';
 interface User {
   id: string;
   email: string;
-  name: string | null;
-  emailVerified: Date | null;
+  name: string;
+  emailVerified: boolean;
   teamId: string;
 }
 
@@ -37,7 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const userData = await api.get<User>('/auth/me');
-        setUser(userData);
+        if (userData) {
+          setUser(userData);
+        } else {
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       } catch {
         localStorage.removeItem('token');
         setUser(null);
@@ -51,14 +56,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    localStorage.setItem('token', response.token);
-    setUser(response.user as User);
+    if (response && response.token) {
+      localStorage.setItem('token', response.token);
+      setUser({
+        id: response.id,
+        email: response.email,
+        name: response.name,
+        emailVerified: response.emailVerified,
+        teamId: response.teamId || '',
+      });
+    } else {
+      throw new Error('Invalid login response');
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
     const response = await api.register(email, password, name);
     localStorage.setItem('token', response.token);
-    setUser(response.user as User);
+    setUser({
+      id: response.id,
+      email: response.email,
+      name: response.name,
+      emailVerified: response.emailVerified,
+      teamId: response.teamId || '',
+    });
   };
 
   const logout = () => {

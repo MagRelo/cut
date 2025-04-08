@@ -3,7 +3,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { api } from '../services/api';
 
 // Validation schema
 const createLeagueSchema = z.object({
@@ -42,7 +42,7 @@ export function CreateLeague() {
   const onSubmit: SubmitHandler<CreateLeagueFormData> = useCallback(
     async (data) => {
       try {
-        await api.request('POST', '/leagues', data);
+        await api.createLeague(data);
         navigate('/leagues');
       } catch (error) {
         console.error('Failed to create league:', error);

@@ -23,11 +23,11 @@ interface ApiConfig {
 
 interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  id: string;
+  email: string;
+  name: string;
+  emailVerified: boolean;
+  teamId: string | null;
 }
 
 interface MessageResponse {
@@ -63,6 +63,14 @@ interface OrderResponse {
   orderId: string;
   status: string;
   timestamp: number;
+}
+
+interface League {
+  id: string;
+  name: string;
+  description?: string;
+  isPrivate: boolean;
+  maxTeams: number;
 }
 
 class ApiService {
@@ -106,7 +114,6 @@ class ApiService {
     if (!response.ok) {
       if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = '/login';
         throw new Error('Authentication failed');
       }
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -203,6 +210,16 @@ class ApiService {
     return this.request<OrderResponse>('POST', '/hyperliquid/order', orderData);
   }
 
+  // League endpoints
+  async createLeague(data: {
+    name: string;
+    description?: string;
+    isPrivate: boolean;
+    maxTeams: number;
+  }) {
+    return this.request<League>('POST', '/leagues', data);
+  }
+
   // Generic GET request for backward compatibility
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>('GET', endpoint);
@@ -213,5 +230,5 @@ class ApiService {
 export const api = new ApiService();
 
 // Export type definitions
-export type { Team, PGAPlayer };
+export type { Team, PGAPlayer, League };
 export type { Tournament };

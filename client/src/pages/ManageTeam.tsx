@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Team } from '../types/team';
-// import api, {
-//   getTeam,
-//   getPGATourPlayers,
-//   updateTeam,
-//   setActivePlayers,
-// } from '../services/api';
-
 import { api } from '../services/api';
 import type { PGAPlayer } from '../schemas/team';
+
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { ErrorMessage } from '../components/common/ErrorMessage';
+import { TeamHeader } from '../components/team/TeamHeader';
+import { PlayerTable } from '../components/team/PlayerTable';
+import { TeamStats } from '../components/team/TeamStats';
 
 type EditMode = 'none' | 'team' | 'active';
 
@@ -59,7 +58,6 @@ export default function ManageTeam() {
 
     if (editMode === 'active') {
       try {
-        // Get current tournament status
         const currentTournament = await api.getCurrentTournament();
 
         if (!currentTournament || currentTournament.status !== 'UPCOMING') {
@@ -93,7 +91,6 @@ export default function ManageTeam() {
           players: editedTeam.players.map((p) => ({ id: p.id, name: p.name })),
         });
       } else {
-        // editMode === 'active'
         const activePlayerIds = editedTeam.players
           .filter((p) => p.isActive)
           .map((p) => p.id);
@@ -166,13 +163,7 @@ export default function ManageTeam() {
   };
 
   if (isLoading) {
-    return (
-      <div className='py-6'>
-        <div className='flex items-center justify-center'>
-          <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!team || !editedTeam) {
@@ -188,203 +179,32 @@ export default function ManageTeam() {
 
   return (
     <div className='py-6'>
-      {error && (
-        <div className='mb-4 p-4 bg-red-50 border border-red-200 rounded-md'>
-          <div className='text-sm text-red-800'>{error}</div>
-        </div>
-      )}
+      {error && <ErrorMessage message={error} />}
 
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-blue-900'>Manage Team</h1>
-      </div>
+      <TeamHeader
+        team={team}
+        editedTeam={editedTeam}
+        editMode={editMode}
+        isSaving={isSaving}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onEditModeChange={setEditMode}
+        onTeamNameChange={(name) =>
+          setEditedTeam((prev) => (prev ? { ...prev, name } : null))
+        }
+      />
 
       <div className='bg-white rounded-lg shadow-sm p-6'>
-        <div className='flex justify-between items-center mb-6'>
-          <div>
-            {editMode === 'team' ? (
-              <input
-                type='text'
-                value={editedTeam.name}
-                onChange={(e) =>
-                  setEditedTeam({ ...editedTeam, name: e.target.value })
-                }
-                className='text-xl font-semibold px-2 py-1 border rounded'
-              />
-            ) : (
-              <h2 className='text-xl font-semibold'>{team.name}</h2>
-            )}
-          </div>
-          <div className='space-x-2'>
-            {editMode === 'none' ? (
-              <>
-                <button
-                  onClick={() => setEditMode('team')}
-                  className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'>
-                  Edit Team
-                </button>
-                <button
-                  onClick={() => setEditMode('active')}
-                  className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'>
-                  Set Active Players
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center`}>
-                  {isSaving ? (
-                    <>
-                      <svg
-                        className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
-                        xmlns='http://www.w3.org/2000/svg'
-                        fill='none'
-                        viewBox='0 0 24 24'>
-                        <circle
-                          className='opacity-25'
-                          cx='12'
-                          cy='12'
-                          r='10'
-                          stroke='currentColor'
-                          strokeWidth='4'></circle>
-                        <path
-                          className='opacity-75'
-                          fill='currentColor'
-                          d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
-                      </svg>
-                      Saving...
-                    </>
-                  ) : (
-                    'Save'
-                  )}
-                </button>
-                <button
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  className='px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed'>
-                  Cancel
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        <PlayerTable
+          players={editedTeam.players}
+          editMode={editMode}
+          pgaPlayers={pgaPlayers}
+          activePlayerCount={activePlayerCount}
+          onPlayerSelect={handlePlayerSelect}
+          onToggleActive={togglePlayerActive}
+        />
 
-        <div className='space-y-6'>
-          {editMode === 'team' && (
-            <div>
-              <h3 className='text-lg font-medium mb-2'>Team Details</h3>
-              <div className='grid grid-cols-2 gap-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Team Name
-                  </label>
-                  <input
-                    type='text'
-                    value={editedTeam.name}
-                    onChange={(e) =>
-                      setEditedTeam({ ...editedTeam, name: e.target.value })
-                    }
-                    className='mt-1 block w-full px-3 py-2 border rounded-md shadow-sm'
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <div className='flex justify-between items-center mb-2'>
-              <h3 className='text-lg font-medium'>
-                {editMode === 'active' ? 'Select Active Players' : 'Players'}
-              </h3>
-              {editMode === 'active' && (
-                <div className='text-sm text-gray-600'>
-                  Active Players: {activePlayerCount} / 4
-                </div>
-              )}
-            </div>
-            <div className='overflow-x-auto'>
-              <table className='w-full text-sm'>
-                <thead>
-                  <tr className='text-gray-500 border-b'>
-                    <th className='text-left py-2'>Name</th>
-                    {editMode === 'active' && (
-                      <th className='text-center py-2'>Active</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(editedTeam.players ?? []).map((player, index) => (
-                    <tr key={index} className='border-b'>
-                      <td className='py-2'>
-                        {editMode === 'team' ? (
-                          <select
-                            value={player.id || ''}
-                            onChange={(e) =>
-                              handlePlayerSelect(e.target.value, index)
-                            }
-                            className='w-full px-2 py-1 border rounded'>
-                            <option value=''>Select a player...</option>
-                            {pgaPlayers
-                              .filter(
-                                (p) => p && p.id && p.firstName && p.lastName
-                              )
-                              .sort((a, b) =>
-                                (a.lastName || '').localeCompare(
-                                  b.lastName || ''
-                                )
-                              )
-                              .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.lastName}, {p.firstName}
-                                </option>
-                              ))}
-                          </select>
-                        ) : (
-                          <div className='flex items-center'>
-                            <span>{player.name || 'Empty slot'}</span>
-                          </div>
-                        )}
-                      </td>
-                      {editMode === 'active' && (
-                        <td className='text-center py-2'>
-                          <input
-                            type='checkbox'
-                            checked={player.isActive}
-                            onChange={() => togglePlayerActive(index)}
-                            disabled={!player.id}
-                            className='h-4 w-4 text-blue-600 rounded border-gray-300 disabled:opacity-50'
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {editMode === 'none' && (
-            <div>
-              <h3 className='text-lg font-medium mb-2'>Team Stats</h3>
-              <div className='grid grid-cols-1 gap-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Player Count
-                  </label>
-                  <div className='mt-1 text-gray-900'>
-                    {
-                      (editedTeam.players ?? []).filter(
-                        (p) => p.id && !p.id.startsWith('empty-')
-                      ).length
-                    }{' '}
-                    / 8
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        {editMode === 'none' && <TeamStats team={editedTeam} />}
       </div>
     </div>
   );
