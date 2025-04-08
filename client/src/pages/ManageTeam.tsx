@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Team } from '../types/team';
-import api, {
-  getTeam,
-  getPGATourPlayers,
-  updateTeam,
-  setActivePlayers,
-} from '../services/api';
+// import api, {
+//   getTeam,
+//   getPGATourPlayers,
+//   updateTeam,
+//   setActivePlayers,
+// } from '../services/api';
+
+import { api } from '../services/api';
 import type { PGAPlayer } from '../schemas/team';
 
 type EditMode = 'none' | 'team' | 'active';
@@ -26,8 +28,8 @@ export default function ManageTeam() {
       try {
         setIsLoading(true);
         const [teamData, playersData] = await Promise.all([
-          getTeam(teamId!),
-          getPGATourPlayers(),
+          api.getTeam(teamId!),
+          api.getPGATourPlayers(),
         ]);
         setTeam(teamData);
         setEditedTeam(teamData);
@@ -86,7 +88,7 @@ export default function ManageTeam() {
       let updatedTeam: Team;
 
       if (editMode === 'team') {
-        updatedTeam = await updateTeam(teamId, {
+        updatedTeam = await api.updateTeam(teamId, {
           name: editedTeam.name,
           players: editedTeam.players.map((p) => ({ id: p.id, name: p.name })),
         });
@@ -96,7 +98,7 @@ export default function ManageTeam() {
           .filter((p) => p.isActive)
           .map((p) => p.id);
 
-        updatedTeam = await setActivePlayers({
+        updatedTeam = await api.setActivePlayers({
           teamId,
           activePlayerIds,
         });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import { api } from '../services/api';
 
 interface User {
   id: string;
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const userData = await api.get('/auth/me');
+        const userData = await api.get<User>('/auth/me');
         setUser(userData);
       } catch {
         localStorage.removeItem('token');
@@ -52,18 +52,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
     localStorage.setItem('token', response.token);
-    setUser({
-      id: response.id,
-      email: response.email,
-      name: response.name,
-      emailVerified: response.emailVerified,
-      teamId: response.teamId,
-    });
+    setUser(response.user as User);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const userData = await api.register(email, password, name);
-    setUser(userData);
+    const response = await api.register(email, password, name);
+    localStorage.setItem('token', response.token);
+    setUser(response.user as User);
   };
 
   const logout = () => {
@@ -80,7 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const verifyEmail = async (token: string) => {
-    const userData = await api.verifyEmail(token);
+    await api.verifyEmail(token);
+    // Fetch updated user data
+    const userData = await api.get<User>('/auth/me');
     setUser(userData);
   };
 

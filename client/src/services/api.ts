@@ -1,4 +1,3 @@
-import type { Team } from '../types/team';
 import {
   teamUpdateSchema,
   activePlayersSchema,
@@ -6,38 +5,100 @@ import {
   type ActivePlayersPayload,
   type PGAPlayer,
 } from '../schemas/team';
+import type { Team } from '../types/team';
 
-export type Tournament = {
+interface Tournament {
   id: string;
   name: string;
   startDate: string;
   endDate: string;
   course: string;
   status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
-};
+}
 
-const api = {
-  baseURL: 'http://localhost:4000/api',
-  headers: {} as Record<string, string>,
+interface ApiConfig {
+  baseURL: string;
+  headers: Record<string, string>;
+}
 
-  setAuthToken(token: string | null) {
+interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+interface MessageResponse {
+  message: string;
+}
+
+interface LeaderboardPlayer {
+  player: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface LeaderboardResponse {
+  props: {
+    pageProps: {
+      leaderboard: {
+        players: LeaderboardPlayer[];
+      };
+    };
+  };
+}
+
+interface HyperliquidAssets {
+  assets: {
+    perp: string[];
+    spot: string[];
+  };
+}
+
+interface OrderResponse {
+  orderId: string;
+  status: string;
+  timestamp: number;
+}
+
+class ApiService {
+  private config: ApiConfig;
+
+  constructor() {
+    this.config = {
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      headers: {},
+    };
+
+    // Initialize auth token from localStorage
+    this.setAuthToken(localStorage.getItem('token'));
+  }
+
+  private setAuthToken(token: string | null) {
     if (token) {
-      this.headers.Authorization = `Bearer ${token}`;
+      this.config.headers.Authorization = `Bearer ${token}`;
     } else {
-      delete this.headers.Authorization;
+      delete this.config.headers.Authorization;
     }
-  },
+  }
 
-  async request<T>(method: string, url: string, data?: unknown): Promise<T> {
-    // Always get the latest token before making a request
+  private async request<T>(
+    method: string,
+    endpoint: string,
+    data?: unknown
+  ): Promise<T> {
     const token = localStorage.getItem('token');
     this.setAuthToken(token);
 
-    const response = await fetch(`${this.baseURL}${url}`, {
+    const response = await fetch(`${this.config.baseURL}${endpoint}`, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        ...this.headers,
+        ...this.config.headers,
       },
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -46,55 +107,111 @@ const api = {
       if (response.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login';
+        throw new Error('Authentication failed');
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return response.json();
-  },
+  }
 
-  async getCurrentTournament(): Promise<Tournament | null> {
-    try {
-      return this.request<Tournament | null>('GET', '/tournaments/current');
-    } catch (error) {
-      console.error('Error fetching current tournament:', error);
-      throw error;
-    }
-  },
-};
+  // Auth endpoints
+  async login(email: string, password: string) {
+    return this.request<AuthResponse>('POST', '/auth/login', {
+      email,
+      password,
+    });
+  }
 
-// Initialize auth token from localStorage
-api.setAuthToken(localStorage.getItem('token'));
+  async register(email: string, password: string, name: string) {
+    return this.request<AuthResponse>('POST', '/auth/register', {
+      email,
+      password,
+      name,
+    });
+  }
 
-export const getTeamsByLeague = async (leagueId: string): Promise<Team[]> => {
-  return api.request<Team[]>('GET', `/teams/league/${leagueId}`);
-};
+  async forgotPassword(email: string) {
+    return this.request<MessageResponse>('POST', '/auth/forgot-password', {
+      email,
+    });
+  }
 
-export const getTeam = async (teamId: string): Promise<Team> => {
-  return api.request<Team>('GET', `/teams/${teamId}`);
-};
+  async resetPassword(token: string, newPassword: string) {
+    return this.request<MessageResponse>('POST', '/auth/reset-password', {
+      token,
+      newPassword,
+    });
+  }
 
-export const updateTeam = async (
-  teamId: string,
-  payload: TeamUpdatePayload
-): Promise<Team> => {
-  const validatedPayload = teamUpdateSchema.parse(payload);
-  return api.request<Team>('PUT', `/teams/${teamId}`, validatedPayload);
-};
+  async verifyEmail(token: string) {
+    return this.request<MessageResponse>('POST', '/auth/verify-email', {
+      token,
+    });
+  }
 
-export const setActivePlayers = async (
-  payload: ActivePlayersPayload
-): Promise<Team> => {
-  const validatedPayload = activePlayersSchema.parse(payload);
-  return api.request<Team>(
-    'PUT',
-    `/teams/${validatedPayload.teamId}/active-players`,
-    { playerIds: validatedPayload.activePlayerIds }
-  );
-};
+  async resendVerification() {
+    return this.request<MessageResponse>('POST', '/auth/resend-verification');
+  }
 
-export const getPGATourPlayers = async (): Promise<PGAPlayer[]> => {
-  return api.request<PGAPlayer[]>('GET', '/pga/players');
-};
+  // Team endpoints
+  async getTeamsByLeague(leagueId: string) {
+    return this.request<Team[]>('GET', `/teams/league/${leagueId}`);
+  }
 
-export default api;
+  async getTeam(teamId: string) {
+    return this.request<Team>('GET', `/teams/${teamId}`);
+  }
+
+  async updateTeam(teamId: string, payload: TeamUpdatePayload) {
+    const validatedPayload = teamUpdateSchema.parse(payload);
+    return this.request<Team>('PUT', `/teams/${teamId}`, validatedPayload);
+  }
+
+  async setActivePlayers(payload: ActivePlayersPayload) {
+    const validatedPayload = activePlayersSchema.parse(payload);
+    return this.request<Team>(
+      'PUT',
+      `/teams/${validatedPayload.teamId}/active-players`,
+      { playerIds: validatedPayload.activePlayerIds }
+    );
+  }
+
+  // PGA Tour endpoints
+  async getPGATourPlayers() {
+    return this.request<PGAPlayer[]>('GET', '/pga/players');
+  }
+
+  async getCurrentTournament() {
+    return this.request<Tournament | null>('GET', '/tournaments/current');
+  }
+
+  async getLeaderboard() {
+    return this.request<LeaderboardResponse>('GET', '/pga/leaderboard');
+  }
+
+  // Hyperliquid endpoints
+  async getAssets() {
+    return this.request<HyperliquidAssets>('GET', '/hyperliquid/assets');
+  }
+
+  async placeOrder(orderData: {
+    asset: string;
+    amountUsdc: number;
+    leverage: number;
+  }) {
+    return this.request<OrderResponse>('POST', '/hyperliquid/order', orderData);
+  }
+
+  // Generic GET request for backward compatibility
+  async get<T>(endpoint: string): Promise<T> {
+    return this.request<T>('GET', endpoint);
+  }
+}
+
+// Create and export a singleton instance
+export const api = new ApiService();
+
+// Export type definitions
+export type { Team, PGAPlayer };
+export type { Tournament };

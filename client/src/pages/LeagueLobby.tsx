@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { LeaderboardHeader } from '../components/LeaderboardHeader';
 import { WeatherInfo } from '../components/WeatherInfo';
-import { getTeamsByLeague } from '../services/api';
+import { api } from '../services/api';
 import type { Team } from '../types/team';
 
 export const LeagueLobby: React.FC = () => {
@@ -23,7 +23,7 @@ export const LeagueLobby: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await getTeamsByLeague(leagueId);
+        const data = await api.getTeamsByLeague(leagueId);
         setTeams(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch teams');

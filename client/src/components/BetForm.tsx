@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { api } from '../services/api';
 
 interface Asset {
   perp: string[];
@@ -7,7 +7,6 @@ interface Asset {
 }
 
 interface Player {
-  id: string;
   player: {
     id: string;
     firstName: string;
@@ -62,19 +61,21 @@ export const BetForm: React.FC = () => {
     const fetchPlayers = async () => {
       try {
         const response = await api.getLeaderboard();
-        console.log('Leaderboard response:', response);
         // Add validation to ensure we have the correct data structure
-        const players = response?.props?.pageProps?.leaderboard?.players;
-        if (!Array.isArray(players)) {
+        const leaderboardPlayers =
+          response?.props?.pageProps?.leaderboard?.players;
+        if (!Array.isArray(leaderboardPlayers)) {
           console.error('Invalid players data structure:', response);
           setPlayers([]);
         } else {
           // Validate each player object has the required structure
-          const validPlayers = players.filter(
-            (player) =>
-              player?.player?.id &&
-              player?.player?.firstName &&
-              player?.player?.lastName
+          const validPlayers = leaderboardPlayers.filter(
+            (player): player is Player =>
+              Boolean(
+                player?.player?.id &&
+                  player?.player?.firstName &&
+                  player?.player?.lastName
+              )
           );
           setPlayers(validPlayers);
         }

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api } from '../services/api';
 
 interface League {
   id: string;
   name: string;
-  description: string | null;
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
   teams: {
     id: string;
     name: string;
@@ -22,7 +22,7 @@ export function Leagues() {
   useEffect(() => {
     const fetchLeagues = async () => {
       try {
-        const data = await api.get('/leagues');
+        const data = await api.get<League[]>('/leagues');
         setLeagues(data);
       } catch (err) {
         setError('Failed to load leagues');
