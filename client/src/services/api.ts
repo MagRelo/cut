@@ -71,6 +71,15 @@ interface League {
   description?: string;
   isPrivate: boolean;
   maxTeams: number;
+  memberCount: number;
+  createdAt: string;
+  teams: Team[];
+  members: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    joinedAt: string;
+  }>;
 }
 
 class ApiService {
@@ -119,23 +128,38 @@ class ApiService {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    // Return undefined for 204 responses
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
     return response.json();
   }
 
   // Auth endpoints
   async login(email: string, password: string) {
-    return this.request<AuthResponse>('POST', '/auth/login', {
+    const response = await this.request<AuthResponse>('POST', '/auth/login', {
       email,
       password,
     });
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('userId', response.id);
+    return response;
   }
 
   async register(email: string, password: string, name: string) {
-    return this.request<AuthResponse>('POST', '/auth/register', {
-      email,
-      password,
-      name,
-    });
+    const response = await this.request<AuthResponse>(
+      'POST',
+      '/auth/register',
+      {
+        email,
+        password,
+        name,
+      }
+    );
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('userId', response.id);
+    return response;
   }
 
   async forgotPassword(email: string) {
@@ -211,6 +235,10 @@ class ApiService {
   }
 
   // League endpoints
+  async getLeague(leagueId: string) {
+    return this.request<League>('GET', `/leagues/${leagueId}`);
+  }
+
   async createLeague(data: {
     name: string;
     description?: string;
@@ -218,6 +246,14 @@ class ApiService {
     maxTeams: number;
   }) {
     return this.request<League>('POST', '/leagues', data);
+  }
+
+  async joinLeague(leagueId: string) {
+    return this.request<League>('POST', `/leagues/${leagueId}/join`);
+  }
+
+  async leaveLeague(leagueId: string): Promise<void> {
+    return this.request<void>('POST', `/leagues/${leagueId}/leave`);
   }
 
   // Generic GET request for backward compatibility

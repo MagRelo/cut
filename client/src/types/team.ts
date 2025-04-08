@@ -27,6 +27,7 @@ export interface Team {
   id: string;
   name: string;
   players: Player[];
+  isUserTeam: boolean;
   leagueId: string;
   createdAt: string;
   updatedAt: string;

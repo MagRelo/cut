@@ -75,6 +75,7 @@ Base path: `/api/leagues`
 | GET    | `/`             | List all leagues       |
 | DELETE | `/:id`          | Delete a league        |
 | POST   | `/:id/join`     | Join a league          |
+| POST   | `/:id/leave`    | Leave a league         |
 | PUT    | `/:id/settings` | Update league settings |
 
 ## Team Routes
