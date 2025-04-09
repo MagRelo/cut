@@ -4,13 +4,13 @@ The league lobby is a central point of interaction for Users. The layout is desi
 
 ## Sections
 
-1. League Info: name, description, settings, etc.
+1. League Info: name, description only
 2. Tournament Info: name, location, course, status, etc.
 3. Chat: live chat for Users of that league to interact
 4. Team List: List of teams in the league and their scores, players, name, etc.
 5. Create/Edit Team Form: Form for creating or editing a team
-6. Bet Form: Form for placing bets
-7. List of User's open bets: Display of current active bets
+6. Bet Form: Form for placing bets & List of User's open bets
+7. League Settings: the league settings & the 'Leave League' button.
 
 ## Layout
 

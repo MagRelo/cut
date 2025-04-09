@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 interface League {
@@ -26,6 +26,8 @@ export function Leagues() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [joiningLeagueId, setJoiningLeagueId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Get userId from localStorage
@@ -53,6 +55,22 @@ export function Leagues() {
       (member) => member.userId === userId
     );
     return membership?.role || null;
+  };
+
+  const handleJoinLeague = async (e: React.MouseEvent, leagueId: string) => {
+    e.preventDefault(); // Prevent navigation from Link component
+    if (!leagueId) return;
+
+    setJoiningLeagueId(leagueId);
+    try {
+      await api.joinLeague(leagueId);
+      // Navigate to league lobby after successful join
+      navigate(`/league-lobby/${leagueId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join league');
+    } finally {
+      setJoiningLeagueId(null);
+    }
   };
 
   if (loading) {
@@ -115,13 +133,22 @@ export function Leagues() {
             <div className='divide-y divide-gray-200'>
               {leagues.map((league) => {
                 const membershipRole = getMembershipStatus(league);
+                const isJoining = joiningLeagueId === league.id;
+
                 return (
-                  <Link
+                  <div
                     key={league.id}
-                    to={`/league-lobby/${league.id}`}
                     className='grid grid-cols-4 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150'>
                     <div className='text-left text-sm font-medium text-gray-900 flex items-center'>
-                      {league.name}
+                      {membershipRole ? (
+                        <Link
+                          to={`/league-lobby/${league.id}`}
+                          className='hover:text-blue-600'>
+                          {league.name}
+                        </Link>
+                      ) : (
+                        league.name
+                      )}
                       {league.isPrivate && (
                         <span className='ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded'>
                           Private
@@ -144,15 +171,24 @@ export function Leagues() {
                             : 'Member'}
                         </span>
                       ) : (
-                        <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800'>
-                          Not Joined
-                        </span>
+                        <button
+                          onClick={(e) => handleJoinLeague(e, league.id)}
+                          disabled={isJoining || league.isPrivate}
+                          className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${
+                            league.isPrivate
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : isJoining
+                              ? 'bg-blue-100 text-blue-400 cursor-wait'
+                              : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                          }`}>
+                          {isJoining ? 'Joining...' : 'Join'}
+                        </button>
                       )}
                     </div>
                     <div className='text-right text-sm text-gray-500'>
                       $0.00
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

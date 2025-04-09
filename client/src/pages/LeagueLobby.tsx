@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Team } from '../services/api';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -30,11 +30,15 @@ interface Tournament {
   endDate: string;
 }
 
-type TabSection = 'chat' | 'teams' | 'createTeam' | 'liveBets';
-type RightColumnTab = 'teams' | 'createTeam' | 'liveBets';
+type TabSection =
+  | 'chat'
+  | 'teams'
+  | 'createTeam'
+  | 'liveBets'
+  | 'leagueSettings';
+type RightColumnTab = 'teams' | 'createTeam' | 'liveBets' | 'leagueSettings';
 
 export const LeagueLobby: React.FC = () => {
-  const navigate = useNavigate();
   const { leagueId } = useParams<{ leagueId: string }>();
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [teams, setTeams] = useState<Team[]>([]);
@@ -74,7 +78,7 @@ export const LeagueLobby: React.FC = () => {
         setTournament(tournamentData);
 
         // Check if user is a member of this league by checking the members array
-        const userId = localStorage.getItem('userId'); // We need to store userId in localStorage after login
+        const userId = localStorage.getItem('userId');
         const isMemberOfLeague = leagueData.members.some(
           (member) => member.userId === userId
         );
@@ -86,11 +90,6 @@ export const LeagueLobby: React.FC = () => {
             (team) => team.userId === localStorage.getItem('userId')
           );
           setUserTeam(userTeam || null);
-
-          console.log('isMemberOfLeague', isMemberOfLeague);
-          console.log('teamsData', teamsData);
-          console.log('userId', localStorage.getItem('userId'));
-          console.log('userTeam', userTeam);
         }
       } catch (err) {
         setError(
@@ -104,27 +103,16 @@ export const LeagueLobby: React.FC = () => {
     fetchLeagueData();
   }, [leagueId]);
 
-  const handleJoinLeave = async () => {
+  const handleLeaveLeague = async () => {
     if (!leagueId) return;
 
     setIsActionLoading(true);
     try {
-      if (isMember) {
-        await api.leaveLeague(leagueId);
-        setIsMember(false);
-      } else {
-        await api.joinLeague(leagueId);
-        setIsMember(true);
-      }
-      // Refresh league data after join/leave
-      const [updatedLeague, updatedTeams] = await Promise.all([
-        api.getLeague(leagueId),
-        api.getTeamsByLeague(leagueId),
-      ]);
-      setLeague(updatedLeague);
-      setTeams(updatedTeams);
+      await api.leaveLeague(leagueId);
+      // Navigate back to leagues list after leaving
+      window.location.href = '/leagues';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to perform action');
+      setError(err instanceof Error ? err.message : 'Failed to leave league');
     } finally {
       setIsActionLoading(false);
     }
@@ -176,43 +164,11 @@ export const LeagueLobby: React.FC = () => {
     <div className='grid grid-cols-1 lg:grid-cols-4 gap-4 bg-white rounded-lg shadow-sm p-6 mb-6'>
       {/* League Info - Takes up 3 columns on desktop */}
       <div className='lg:col-span-3'>
-        <div className='flex justify-between items-start'>
-          <div>
-            <h1 className='text-2xl font-bold text-gray-900'>{league.name}</h1>
-            {league.description && (
-              <p className='mt-2 text-gray-600'>{league.description}</p>
-            )}
-            <div className='mt-4 flex flex-wrap gap-4 text-sm text-gray-500'>
-              <div>
-                <span className='font-medium'>{league.memberCount}</span>{' '}
-                members
-              </div>
-              <div>
-                <span className='font-medium'>{teams.length}</span> teams
-              </div>
-              <div>
-                Max teams:{' '}
-                <span className='font-medium'>{league.maxTeams}</span>
-              </div>
-              <div>{league.isPrivate ? 'Private League' : 'Public League'}</div>
-            </div>
-          </div>
-          <button
-            onClick={handleJoinLeave}
-            disabled={isActionLoading}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              isActionLoading
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : isMember
-                ? 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
-            }`}>
-            {isActionLoading
-              ? 'Processing...'
-              : isMember
-              ? 'Leave League'
-              : 'Join League'}
-          </button>
+        <div>
+          <h1 className='text-2xl font-bold text-gray-900'>{league.name}</h1>
+          {league.description && (
+            <p className='mt-2 text-gray-600'>{league.description}</p>
+          )}
         </div>
       </div>
 
@@ -279,6 +235,17 @@ export const LeagueLobby: React.FC = () => {
           }`}>
           Live Bets
         </button>
+        {isMember && (
+          <button
+            onClick={() => setActiveTab('leagueSettings')}
+            className={`px-3 py-2 text-sm font-medium ${
+              activeTab === 'leagueSettings'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            League Settings
+          </button>
+        )}
       </nav>
     </div>
   );
@@ -332,13 +299,6 @@ export const LeagueLobby: React.FC = () => {
                             </svg>
                           </div>
                         </button>
-                        {team.userId === localStorage.getItem('userId') && (
-                          <button
-                            onClick={() => navigate(`/team/${team.id}/edit`)}
-                            className='ml-4 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors'>
-                            Edit Team
-                          </button>
-                        )}
                       </div>
                       <div
                         className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -493,6 +453,59 @@ export const LeagueLobby: React.FC = () => {
                   </div>
                 </div>
               )}
+              {activeTab === 'leagueSettings' && isMember && (
+                <div className='h-full overflow-y-auto'>
+                  <h2 className='text-lg font-semibold mb-4'>
+                    League Settings
+                  </h2>
+                  <div className='space-y-6'>
+                    <div className='bg-white rounded-lg p-4 space-y-4'>
+                      <dl className='space-y-3'>
+                        <div className='flex justify-between items-center'>
+                          <dt className='text-sm text-gray-500'>Members</dt>
+                          <dd className='text-sm font-medium text-gray-900'>
+                            {league.members.length}
+                          </dd>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <dt className='text-sm text-gray-500'>Teams</dt>
+                          <dd className='text-sm font-medium text-gray-900'>
+                            {teams.length}
+                          </dd>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <dt className='text-sm text-gray-500'>
+                            Maximum Teams
+                          </dt>
+                          <dd className='text-sm font-medium text-gray-900'>
+                            {league.maxTeams}
+                          </dd>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <dt className='text-sm text-gray-500'>League Type</dt>
+                          <dd className='text-sm font-medium text-gray-900'>
+                            {league.isPrivate
+                              ? 'Private League'
+                              : 'Public League'}
+                          </dd>
+                        </div>
+                      </dl>
+                      <div className='pt-4 border-t'>
+                        <button
+                          onClick={handleLeaveLeague}
+                          disabled={isActionLoading}
+                          className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isActionLoading
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                          }`}>
+                          {isActionLoading ? 'Processing...' : 'Leave League'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -546,6 +559,17 @@ export const LeagueLobby: React.FC = () => {
                       }`}>
                       Live Bets
                     </button>
+                    {isMember && (
+                      <button
+                        onClick={() => setRightColumnTab('leagueSettings')}
+                        className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
+                          rightColumnTab === 'leagueSettings'
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}>
+                        League Settings
+                      </button>
+                    )}
                   </nav>
                 </div>
 
@@ -588,16 +612,6 @@ export const LeagueLobby: React.FC = () => {
                                   </svg>
                                 </div>
                               </button>
-                              {team.userId ===
-                                localStorage.getItem('userId') && (
-                                <button
-                                  onClick={() =>
-                                    navigate(`/team/${team.id}/edit`)
-                                  }
-                                  className='ml-4 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors'>
-                                  Edit Team
-                                </button>
-                              )}
                             </div>
                             <div
                               className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -765,6 +779,64 @@ export const LeagueLobby: React.FC = () => {
                           <p className='text-gray-500'>
                             Open bets coming soon...
                           </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {rightColumnTab === 'leagueSettings' && isMember && (
+                    <div className='h-full overflow-y-auto'>
+                      <h2 className='text-lg font-semibold mb-4'>
+                        League Settings
+                      </h2>
+                      <div className='space-y-6'>
+                        <div className='bg-white rounded-lg p-4 space-y-4'>
+                          <dl className='space-y-3'>
+                            <div className='flex justify-between items-center'>
+                              <dt className='text-sm text-gray-500'>Members</dt>
+                              <dd className='text-sm font-medium text-gray-900'>
+                                {league.members.length}
+                              </dd>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <dt className='text-sm text-gray-500'>Teams</dt>
+                              <dd className='text-sm font-medium text-gray-900'>
+                                {teams.length}
+                              </dd>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <dt className='text-sm text-gray-500'>
+                                Maximum Teams
+                              </dt>
+                              <dd className='text-sm font-medium text-gray-900'>
+                                {league.maxTeams}
+                              </dd>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <dt className='text-sm text-gray-500'>
+                                League Type
+                              </dt>
+                              <dd className='text-sm font-medium text-gray-900'>
+                                {league.isPrivate
+                                  ? 'Private League'
+                                  : 'Public League'}
+                              </dd>
+                            </div>
+                          </dl>
+                          <div className='pt-4 border-t'>
+                            <button
+                              onClick={handleLeaveLeague}
+                              disabled={isActionLoading}
+                              className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                isActionLoading
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                              }`}>
+                              {isActionLoading
+                                ? 'Processing...'
+                                : 'Leave League'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
