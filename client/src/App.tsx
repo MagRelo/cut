@@ -11,8 +11,7 @@ import { Timeline } from './pages/Timeline';
 import { Leagues } from './pages/Leagues';
 import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
-import { CreateTeam } from './pages/CreateTeam';
-import { EditTeam } from './pages/EditTeam';
+import { TeamForm } from './pages/TeamForm';
 import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -66,7 +65,7 @@ export const App: React.FC = () => {
               path='/league/:leagueId/create-team'
               element={
                 <ProtectedRoute>
-                  <CreateTeam />
+                  <TeamForm />
                 </ProtectedRoute>
               }
             />
@@ -82,7 +81,7 @@ export const App: React.FC = () => {
               path='/team/:teamId/edit'
               element={
                 <ProtectedRoute>
-                  <EditTeam />
+                  <TeamForm />
                 </ProtectedRoute>
               }
             />
