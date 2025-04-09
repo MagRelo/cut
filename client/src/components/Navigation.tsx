@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Navigation: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -36,11 +36,25 @@ export const Navigation: React.FC = () => {
           </div>
           <div className='flex items-center'>
             {user ? (
-              <button
-                onClick={logout}
-                className='ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700'>
-                Logout
-              </button>
+              <Link
+                to='/settings'
+                className={`ml-4 p-2 rounded-full hover:bg-gray-100 ${
+                  isActive('/settings') ? 'bg-gray-100' : ''
+                }`}>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-6 w-6 text-gray-600'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                  />
+                </svg>
+              </Link>
             ) : (
               <div className='space-x-4'>
                 <Link

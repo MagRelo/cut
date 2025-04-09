@@ -15,6 +15,7 @@ import { TeamForm } from './pages/TeamForm';
 import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { UserSettings } from './pages/UserSettings';
 
 export const App: React.FC = () => {
   return (
@@ -29,6 +30,14 @@ export const App: React.FC = () => {
             <Route path='/forgot-password' element={<ForgotPassword />} />
             <Route path='/reset-password' element={<ResetPassword />} />
             <Route path='/verify-email' element={<VerifyEmail />} />
+            <Route
+              path='/settings'
+              element={
+                <ProtectedRoute>
+                  <UserSettings />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path='/order'
               element={
