@@ -17,6 +17,13 @@ interface Tournament {
   endDate: string;
 }
 
+interface TournamentOdds {
+  [bookmaker: string]: Array<{
+    name: string;
+    price: number;
+  }>;
+}
+
 interface ApiConfig {
   baseURL: string;
   headers: Record<string, string>;
@@ -267,6 +274,16 @@ export class ApiService {
 
   async getLeaderboard() {
     return this.request<LeaderboardResponse>('GET', '/pga/leaderboard');
+  }
+
+  async getTournamentOdds(tournamentKey: string, bookmakers?: string[]) {
+    const bookmakerQuery = bookmakers
+      ? `?bookmakers=${bookmakers.join(',')}`
+      : '';
+    return this.request<TournamentOdds>(
+      'GET',
+      `/pga/odds/${tournamentKey}${bookmakerQuery}`
+    );
   }
 
   // Hyperliquid endpoints

@@ -5,6 +5,7 @@ import { authenticateToken } from '../middleware/auth';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers';
 import { getActivePlayers } from '../lib/pgaField';
 import { refreshPlayers } from '../lib/playerRefresh';
+import { getGolfTournamentOdds } from '../lib/pgaOdds';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -98,6 +99,32 @@ router.get('/field/:tournamentId', async (req, res) => {
         error instanceof Error
           ? error.message
           : 'Failed to fetch tournament field',
+    });
+  }
+});
+
+// Get tournament odds from specified bookmakers
+router.get('/odds/:tournamentKey', async (req, res) => {
+  try {
+    const { tournamentKey } = req.params;
+    const { bookmakers } = req.query;
+
+    if (!tournamentKey) {
+      return res.status(400).json({ error: 'Tournament key is required' });
+    }
+
+    const bookmakerList = bookmakers
+      ? (bookmakers as string).split(',')
+      : undefined;
+    const odds = await getGolfTournamentOdds(tournamentKey, bookmakerList);
+    res.json(odds);
+  } catch (error) {
+    console.error('Error fetching tournament odds:', error);
+    res.status(500).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch tournament odds',
     });
   }
 });

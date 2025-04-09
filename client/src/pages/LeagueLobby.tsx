@@ -30,6 +30,13 @@ interface Tournament {
   endDate: string;
 }
 
+interface TournamentOdds {
+  [key: string]: Array<{
+    name: string;
+    price: number;
+  }>;
+}
+
 type TabSection =
   | 'chat'
   | 'teams'
@@ -44,6 +51,9 @@ export const LeagueLobby: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [league, setLeague] = useState<League | null>(null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [tournamentOdds, setTournamentOdds] = useState<TournamentOdds | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
@@ -103,6 +113,22 @@ export const LeagueLobby: React.FC = () => {
     fetchLeagueData();
   }, [leagueId]);
 
+  useEffect(() => {
+    const fetchOdds = async () => {
+      try {
+        const odds = await api.getTournamentOdds(
+          'golf_masters_tournament_winner',
+          ['draftkings']
+        );
+        setTournamentOdds(odds);
+      } catch (error) {
+        console.error('Error fetching tournament odds:', error);
+      }
+    };
+
+    fetchOdds();
+  }, []);
+
   const handleLeaveLeague = async () => {
     if (!leagueId) return;
 
@@ -135,6 +161,70 @@ export const LeagueLobby: React.FC = () => {
       .filter((player) => player.active)
       .reduce((sum, player) => sum + (player.total || 0), 0);
   };
+
+  const renderOddsList = () => {
+    if (!tournamentOdds?.draftkings) {
+      return <p className='text-gray-500'>Loading odds...</p>;
+    }
+
+    return (
+      <div className='overflow-hidden'>
+        <table className='min-w-full divide-y divide-gray-200'>
+          <thead className='bg-gray-50'>
+            <tr>
+              <th
+                scope='col'
+                className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                Player
+              </th>
+              <th
+                scope='col'
+                className='px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                Odds
+              </th>
+            </tr>
+          </thead>
+          <tbody className='bg-white divide-y divide-gray-200'>
+            {tournamentOdds.draftkings
+              .sort((a, b) => a.price - b.price) // Sort by odds (lowest to highest)
+              .map((outcome, index) => (
+                <tr
+                  key={outcome.name}
+                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
+                    {outcome.name}
+                  </td>
+                  <td className='px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500'>
+                    {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderLiveBetsContent = () => (
+    <div className='space-y-8'>
+      <div>
+        <h2 className='text-lg font-semibold mb-4'>
+          Tournament Odds (DraftKings)
+        </h2>
+        {renderOddsList()}
+      </div>
+      <div>
+        <h2 className='text-lg font-semibold mb-4'>Place New Bet</h2>
+        {/* Bet form will go here */}
+        <p className='text-gray-500'>Bet form coming soon...</p>
+      </div>
+      <div>
+        <h2 className='text-lg font-semibold mb-4'>Your Open Bets</h2>
+        {/* Open bets list will go here */}
+        <p className='text-gray-500'>Open bets coming soon...</p>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -435,22 +525,7 @@ export const LeagueLobby: React.FC = () => {
               )}
               {activeTab === 'liveBets' && (
                 <div className='bg-white rounded-lg shadow p-4'>
-                  <div className='space-y-8'>
-                    <div>
-                      <h2 className='text-lg font-semibold mb-4'>
-                        Place New Bet
-                      </h2>
-                      {/* Bet form will go here */}
-                      <p className='text-gray-500'>Bet form coming soon...</p>
-                    </div>
-                    <div>
-                      <h2 className='text-lg font-semibold mb-4'>
-                        Your Open Bets
-                      </h2>
-                      {/* Open bets list will go here */}
-                      <p className='text-gray-500'>Open bets coming soon...</p>
-                    </div>
-                  </div>
+                  {renderLiveBetsContent()}
                 </div>
               )}
               {activeTab === 'leagueSettings' && isMember && (
@@ -760,27 +835,8 @@ export const LeagueLobby: React.FC = () => {
                   )}
 
                   {rightColumnTab === 'liveBets' && (
-                    <div className='h-full overflow-y-auto'>
-                      <div className='space-y-8'>
-                        <div>
-                          <h2 className='text-lg font-semibold mb-4'>
-                            Place New Bet
-                          </h2>
-                          {/* Bet form will go here */}
-                          <p className='text-gray-500'>
-                            Bet form coming soon...
-                          </p>
-                        </div>
-                        <div>
-                          <h2 className='text-lg font-semibold mb-4'>
-                            Your Open Bets
-                          </h2>
-                          {/* Open bets list will go here */}
-                          <p className='text-gray-500'>
-                            Open bets coming soon...
-                          </p>
-                        </div>
-                      </div>
+                    <div className='h-full overflow-y-auto p-4'>
+                      {renderLiveBetsContent()}
                     </div>
                   )}
 
