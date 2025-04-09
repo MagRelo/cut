@@ -1,24 +1,42 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
+import { Prisma, User, Team, League } from '@prisma/client';
 
 interface JwtPayload {
   userId: string;
 }
 
+type AuthTeam = {
+  id: string;
+  name: string;
+  leagueId: string;
+  leagueName: string;
+};
+
+type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  emailVerified: boolean;
+  teams: AuthTeam[];
+};
+
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email: string;
-        name: string;
-        emailVerified: boolean;
-        teamId?: string;
-      };
+      user?: AuthUser;
     }
   }
 }
+
+type TeamWithLeague = Team & {
+  league: Pick<League, 'id' | 'name'>;
+};
+
+type UserWithTeams = User & {
+  teams: TeamWithLeague[];
+};
 
 export const authenticateToken = async (
   req: Request,
@@ -38,23 +56,42 @@ export const authenticateToken = async (
       process.env.JWT_SECRET || 'your-secret-key'
     ) as JwtPayload;
 
-    const user = await prisma.user.findUnique({
+    const userInclude = {
+      teams: {
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    } satisfies Prisma.UserInclude;
+
+    const user = (await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { team: true },
-    });
+      include: userInclude,
+    })) as UserWithTeams | null;
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    req.user = {
+    const authUser: AuthUser = {
       id: user.id,
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
-      teamId: user.team?.id,
+      teams: user.teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        leagueId: team.league.id,
+        leagueName: team.league.name,
+      })),
     };
 
+    req.user = authUser;
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {

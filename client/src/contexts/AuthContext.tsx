@@ -1,85 +1,58 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 
+interface AuthTeam {
+  id: string;
+  name: string;
+  leagueId: string;
+  leagueName: string;
+}
+
 interface User {
   id: string;
   email: string;
   name: string;
   emailVerified: boolean;
-  teamId: string;
+  teams: AuthTeam[];
 }
 
-interface AuthContextType {
+interface AuthContextData {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
-  verifyEmail: (token: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const validateAndRestoreUser = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await api.get<User>('/auth/me');
-        if (userData) {
-          setUser(userData);
-        } else {
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      } catch {
-        localStorage.removeItem('token');
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    validateAndRestoreUser();
+    const token = localStorage.getItem('token');
+    if (token) {
+      api
+        .get<User>('/auth/me')
+        .then((response) => {
+          setUser(response);
+        })
+        .catch(() => {
+          logout();
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    if (response && response.token) {
-      localStorage.setItem('token', response.token);
-      setUser({
-        id: response.id,
-        email: response.email,
-        name: response.name,
-        emailVerified: response.emailVerified,
-        teamId: response.teamId || '',
-      });
-    } else {
-      throw new Error('Invalid login response');
-    }
-  };
-
-  const register = async (email: string, password: string, name: string) => {
-    const response = await api.register(email, password, name);
-    localStorage.setItem('token', response.token);
-    setUser({
-      id: response.id,
-      email: response.email,
-      name: response.name,
-      emailVerified: response.emailVerified,
-      teamId: response.teamId || '',
-    });
+    const { token: _, ...userData } = response;
+    setUser(userData);
   };
 
   const logout = () => {
@@ -87,23 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const forgotPassword = async (email: string) => {
-    await api.forgotPassword(email);
-  };
-
-  const resetPassword = async (token: string, newPassword: string) => {
-    await api.resetPassword(token, newPassword);
-  };
-
-  const verifyEmail = async (token: string) => {
-    await api.verifyEmail(token);
-    // Fetch updated user data
-    const userData = await api.get<User>('/auth/me');
+  const updateUser = (userData: User) => {
     setUser(userData);
-  };
-
-  const resendVerification = async () => {
-    await api.resendVerification();
   };
 
   return (
@@ -112,22 +70,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         login,
-        register,
         logout,
-        forgotPassword,
-        resetPassword,
-        verifyEmail,
-        resendVerification,
+        updateUser,
       }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextData {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+
   return context;
 }

@@ -35,7 +35,12 @@ interface AuthResponse {
   email: string;
   name: string;
   emailVerified: boolean;
-  teamId: string | null;
+  teams: Array<{
+    id: string;
+    name: string;
+    leagueId: string;
+    leagueName: string;
+  }>;
 }
 
 interface MessageResponse {

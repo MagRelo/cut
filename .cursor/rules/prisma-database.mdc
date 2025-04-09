@@ -10,9 +10,9 @@ alwaysApply: false
 The database is designed around these key concepts:
 1. Players exist independently of teams or leagues. Players will be loaded and refreshed from external data so players should only be linked to teams through the TeamPlayer table.
 2. Users can join multiple leagues
-3. Users can create teams within leagues they've joined
-4. Teams can draft any available player
-5. The same player can be on multiple teams across different leagues
+3. Users can create a single team for each league they have joined. Users cannot have more than one team per league.
+4. Teams can draft any player. Each player can only be used once per team per league, ie, multiple teams within a league can use the same player, but each player can only be selected once (no duplicates on a single team). The same player can be on multiple teams across different leagues
+
 
 ## Entity Relationships
 
@@ -25,7 +25,7 @@ The database is designed around these key concepts:
 ### Users and Leagues
 - Users can join multiple leagues through LeagueMembership
 - Users can be commissioners of leagues they create
-- Users can create and manage teams within leagues they've joined
+- Users can create and manage exactly one team within each leagues they've joined
 
 ### Teams and Leagues
 - Teams must belong to exactly one league

@@ -5,6 +5,15 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { sendEmail } from '../lib/email';
 import { authenticateToken } from '../middleware/auth';
+import { Prisma, User, Team, League } from '@prisma/client';
+
+type TeamWithLeague = Team & {
+  league: Pick<League, 'id' | 'name'>;
+};
+
+type UserWithTeams = User & {
+  teams: TeamWithLeague[];
+};
 
 const router = express.Router();
 
@@ -38,10 +47,23 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { team: true },
+    const userInclude = Prisma.validator<Prisma.UserInclude>()({
+      teams: {
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
     });
+
+    const user = (await prisma.user.findUnique({
+      where: { email },
+      include: userInclude,
+    })) as UserWithTeams | null;
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -67,7 +89,12 @@ router.post('/login', async (req, res) => {
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
-      teamId: user.team?.id || '',
+      teams: user.teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        leagueId: team.league.id,
+        leagueName: team.league.name,
+      })),
       token,
     });
   } catch (error) {
@@ -84,7 +111,6 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = registerSchema.parse(req.body);
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -93,18 +119,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        emailVerified: false,
       },
-      include: { team: true },
     });
 
     // Generate verification token
@@ -118,21 +140,12 @@ router.post('/register', async (req, res) => {
     await sendEmail({
       to: email,
       subject: 'Verify your email',
-      html: `
-        <h1>Welcome to Bet the Cut!</h1>
-        <p>Please click the link below to verify your email:</p>
-        <a href="${process.env.CLIENT_URL}/verify-email?token=${verificationToken}">
-          Verify Email
-        </a>
-      `,
+      html: `Please verify your email by clicking this link: ${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`,
     });
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      emailVerified: user.emailVerified,
-      teamId: user.team?.id || '',
+    res.status(201).json({
+      message:
+        'Registration successful. Please check your email to verify your account.',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -232,7 +245,6 @@ router.post('/verify-email', async (req, res) => {
   try {
     const { token } = verifyEmailSchema.parse(req.body);
 
-    // Verify token
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || 'your-secret-key'
@@ -240,19 +252,36 @@ router.post('/verify-email', async (req, res) => {
       userId: string;
     };
 
-    // Update user
-    const user = await prisma.user.update({
+    const userInclude = Prisma.validator<Prisma.UserInclude>()({
+      teams: {
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    });
+
+    const user = (await prisma.user.update({
       where: { id: decoded.userId },
       data: { emailVerified: true },
-      include: { team: true },
-    });
+      include: userInclude,
+    })) as UserWithTeams;
 
     res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
-      teamId: user.team?.id || '',
+      teams: user.teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        leagueId: team.league.id,
+        leagueName: team.league.name,
+      })),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -311,10 +340,23 @@ router.post('/resend-verification', async (req, res) => {
 // Get current user route
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: { team: true },
+    const userInclude = Prisma.validator<Prisma.UserInclude>()({
+      teams: {
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
     });
+
+    const user = (await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      include: userInclude,
+    })) as UserWithTeams | null;
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -325,7 +367,12 @@ router.get('/me', authenticateToken, async (req, res) => {
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
-      teamId: user.team?.id || '',
+      teams: user.teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        leagueId: team.league.id,
+        leagueName: team.league.name,
+      })),
     });
   } catch (error) {
     console.error('Get current user error:', error);

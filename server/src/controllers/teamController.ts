@@ -13,7 +13,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.createTeam(userId, req.body);
@@ -27,7 +27,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error creating team:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to create team' });
       }
     }
   }
@@ -36,7 +36,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.updateTeam(
@@ -54,7 +54,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error updating team:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to update team' });
       }
     }
   }
@@ -63,7 +63,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       await teamService.deleteTeam(req.params.teamId, userId);
@@ -77,7 +77,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error deleting team:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to delete team' });
       }
     }
   }
@@ -91,7 +91,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error fetching team:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to fetch team' });
       }
     }
   }
@@ -102,7 +102,7 @@ export class TeamController {
       res.json(teams);
     } catch (error) {
       console.error('Error fetching teams:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Failed to fetch teams' });
     }
   }
 
@@ -110,7 +110,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.addPlayer(
@@ -128,7 +128,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error adding player:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to add player' });
       }
     }
   }
@@ -137,7 +137,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.removePlayer(
@@ -155,7 +155,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error removing player:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to remove player' });
       }
     }
   }
@@ -164,7 +164,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.updatePlayer(
@@ -183,7 +183,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error updating player:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to update player' });
       }
     }
   }
@@ -192,7 +192,7 @@ export class TeamController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const team = await teamService.setActivePlayers(
@@ -210,7 +210,7 @@ export class TeamController {
         res.status(404).json({ error: error.message });
       } else {
         console.error('Error setting active players:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Failed to set active players' });
       }
     }
   }

@@ -18,18 +18,19 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const league = await leagueService.createLeague(
-        userId,
-        req.body as CreateLeagueDto
-      );
+      const createLeagueDto: CreateLeagueDto = req.body;
+      const league = await leagueService.createLeague(userId, createLeagueDto);
       res.status(201).json(league);
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ error: error.message });
       } else {
+        console.error('Error creating league:', error);
         res.status(500).json({ error: 'Failed to create league' });
       }
     }
@@ -39,21 +40,25 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
+      const updateLeagueDto: UpdateLeagueDto = req.body;
       const league = await leagueService.updateLeague(
         req.params.id,
         userId,
-        req.body as UpdateLeagueDto
+        updateLeagueDto
       );
       res.json(league);
     } catch (error) {
-      if (error instanceof NotFoundError) {
-        res.status(404).json({ error: error.message });
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
       } else if (error instanceof UnauthorizedError) {
-        res.status(403).json({ error: error.message });
+        res.status(401).json({ error: error.message });
+      } else if (error instanceof NotFoundError) {
+        res.status(404).json({ error: error.message });
       } else {
+        console.error('Error updating league:', error);
         res.status(500).json({ error: 'Failed to update league' });
       }
     }
@@ -63,17 +68,20 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       await leagueService.deleteLeague(req.params.id, userId);
       res.status(204).send();
     } catch (error) {
-      if (error instanceof NotFoundError) {
-        res.status(404).json({ error: error.message });
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
       } else if (error instanceof UnauthorizedError) {
-        res.status(403).json({ error: error.message });
+        res.status(401).json({ error: error.message });
+      } else if (error instanceof NotFoundError) {
+        res.status(404).json({ error: error.message });
       } else {
+        console.error('Error deleting league:', error);
         res.status(500).json({ error: 'Failed to delete league' });
       }
     }
@@ -87,7 +95,8 @@ export class LeagueController {
       if (error instanceof NotFoundError) {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: 'Failed to get league' });
+        console.error('Error fetching league:', error);
+        res.status(500).json({ error: 'Failed to fetch league' });
       }
     }
   }
@@ -110,17 +119,20 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const membership = await leagueService.joinLeague(req.params.id, userId);
-      res.status(201).json(membership);
+      const league = await leagueService.joinLeague(req.params.id, userId);
+      res.json(league);
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ error: error.message });
       } else if (error instanceof NotFoundError) {
         res.status(404).json({ error: error.message });
       } else {
+        console.error('Error joining league:', error);
         res.status(500).json({ error: 'Failed to join league' });
       }
     }
@@ -130,7 +142,7 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       await leagueService.leaveLeague(req.params.id, userId);
@@ -138,9 +150,12 @@ export class LeagueController {
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ error: error.message });
       } else if (error instanceof NotFoundError) {
         res.status(404).json({ error: error.message });
       } else {
+        console.error('Error leaving league:', error);
         res.status(500).json({ error: 'Failed to leave league' });
       }
     }
@@ -175,22 +190,26 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const settings = await leagueService.updateSettings(
+      const updateSettingsDto: UpdateSettingsDto = req.body;
+      const league = await leagueService.updateSettings(
         req.params.id,
         userId,
-        req.body as UpdateSettingsDto
+        updateSettingsDto
       );
-      res.json(settings);
+      res.json(league);
     } catch (error) {
-      if (error instanceof UnauthorizedError) {
-        res.status(403).json({ error: error.message });
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ error: error.message });
       } else if (error instanceof NotFoundError) {
         res.status(404).json({ error: error.message });
       } else {
-        res.status(500).json({ error: 'Failed to update settings' });
+        console.error('Error updating settings:', error);
+        res.status(500).json({ error: 'Failed to update league settings' });
       }
     }
   }
