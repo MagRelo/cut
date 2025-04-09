@@ -417,8 +417,8 @@ export const LeagueLobby: React.FC = () => {
                             <div
                               key={team.id}
                               className={`${
-                                index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                              }`}>
+                                index === 0 ? 'border-t' : ''
+                              } border-b border-gray-200`}>
                               <div className='w-full px-2 py-1.5 flex justify-between items-center'>
                                 <button
                                   onClick={() => toggleTeam(team.id)}
@@ -703,8 +703,8 @@ export const LeagueLobby: React.FC = () => {
                       <div
                         key={team.id}
                         className={`${
-                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                        }`}>
+                          index === 0 ? 'border-t' : ''
+                        } border-b border-gray-200`}>
                         <div className='w-full px-2 py-1.5 flex justify-between items-center'>
                           <button
                             onClick={() => toggleTeam(team.id)}

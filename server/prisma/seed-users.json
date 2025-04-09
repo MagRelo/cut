@@ -1,7 +1,7 @@
 {
   "league": {
-    "name": "Test Fantasy League",
-    "description": "A test league for development with 10 players",
+    "name": "Ballstrikers",
+    "description": "The OG. The league that started a revolution...",
     "settings": {
       "rosterSize": 8,
       "weeklyStarters": 4,
