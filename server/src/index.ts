@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { requestLogger } from './middleware/logger';
 import { startScoreUpdateCron } from './cron/scoreUpdate';
+import { startCleanupCron } from './cron/cleanup';
 
 // Load environment variables based on NODE_ENV
 const envFile =
@@ -82,8 +83,9 @@ app.use(errorHandler);
 try {
   console.log('Starting server initialization...');
 
-  // Start the cron job for score updates
+  // Start the cron jobs
   startScoreUpdateCron();
+  startCleanupCron();
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);

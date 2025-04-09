@@ -103,6 +103,12 @@ router.get('/field/:tournamentId', async (req, res) => {
   }
 });
 
+// Helper function to check if date is less than 1 hour old
+function isLessThanOneHourOld(date: Date): boolean {
+  const ONE_HOUR = 60 * 60 * 1000; // 1 hour in milliseconds
+  return new Date().getTime() - date.getTime() < ONE_HOUR;
+}
+
 // Get tournament odds from specified bookmakers
 router.get('/odds/:tournamentKey', async (req, res) => {
   try {
@@ -114,9 +120,49 @@ router.get('/odds/:tournamentKey', async (req, res) => {
     }
 
     const bookmakerList = bookmakers
-      ? (bookmakers as string).split(',')
-      : undefined;
-    const odds = await getGolfTournamentOdds(tournamentKey, bookmakerList);
+      ? (bookmakers as string).split(',').sort().join(',')
+      : null;
+
+    // Check cache first
+    const cachedData = await prisma.oddsCache.findUnique({
+      where: {
+        tournamentKey_bookmakers: {
+          tournamentKey,
+          bookmakers: bookmakerList,
+        },
+      },
+    });
+
+    // If we have valid cached data less than 1 hour old
+    if (cachedData && isLessThanOneHourOld(cachedData.updatedAt)) {
+      return res.json(cachedData.data);
+    }
+
+    // Fetch fresh data
+    const odds = await getGolfTournamentOdds(
+      tournamentKey,
+      bookmakerList ? bookmakerList.split(',') : undefined
+    );
+
+    // Update or create cache entry
+    await prisma.oddsCache.upsert({
+      where: {
+        tournamentKey_bookmakers: {
+          tournamentKey,
+          bookmakers: bookmakerList,
+        },
+      },
+      update: {
+        data: odds,
+        updatedAt: new Date(),
+      },
+      create: {
+        tournamentKey,
+        bookmakers: bookmakerList,
+        data: odds,
+      },
+    });
+
     res.json(odds);
   } catch (error) {
     console.error('Error fetching tournament odds:', error);
@@ -128,5 +174,19 @@ router.get('/odds/:tournamentKey', async (req, res) => {
     });
   }
 });
+
+// Cleanup old cache entries (can be called periodically)
+async function cleanupOldCacheEntries() {
+  const ONE_DAY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const cutoffDate = new Date(Date.now() - ONE_DAY);
+
+  await prisma.oddsCache.deleteMany({
+    where: {
+      updatedAt: {
+        lt: cutoffDate,
+      },
+    },
+  });
+}
 
 export default router;
