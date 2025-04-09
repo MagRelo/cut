@@ -1,103 +1,121 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { SeedData } from './types';
 import { getPgaLeaderboard } from '../src/lib/pgaLeaderboard';
 import { prepareTournamentData } from '../src/controllers/tournamentController';
 import { refreshPlayers } from '../src/lib/playerRefresh';
 
 const prisma = new PrismaClient();
 
+async function loadSeedData(): Promise<SeedData> {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const seedPath = path.join(__dirname, 'seed-users.json');
+  const seedContent = fs.readFileSync(seedPath, 'utf-8');
+  return JSON.parse(seedContent);
+}
+
 async function main() {
   try {
     console.log('Starting database seeding...');
 
-    // Create test users
+    // Load seed data
+    console.log('Loading seed data...');
+    const seedData = await loadSeedData();
+
+    // Create users
     console.log('Creating users...');
-    const testPassword = 'partytime';
-    const hashedPassword = await bcrypt.hash(testPassword, 10);
+    const users = await Promise.all(
+      seedData.users.map(async (userData) => {
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        return prisma.user.upsert({
+          where: { email: userData.email },
+          update: {},
+          create: {
+            email: userData.email,
+            password: hashedPassword,
+            name: userData.name,
+            emailVerified: true,
+          },
+        });
+      })
+    );
 
-    const users = await Promise.all([
-      prisma.user.upsert({
-        where: { email: 'user1@example.com' },
-        update: {},
-        create: {
-          email: 'user1@example.com',
-          password: hashedPassword,
-          name: 'User One',
-          emailVerified: true,
-        },
-      }),
-      prisma.user.upsert({
-        where: { email: 'user2@example.com' },
-        update: {},
-        create: {
-          email: 'user2@example.com',
-          password: hashedPassword,
-          name: 'User Two',
-          emailVerified: true,
-        },
-      }),
-      prisma.user.upsert({
-        where: { email: 'user3@example.com' },
-        update: {},
-        create: {
-          email: 'user3@example.com',
-          password: hashedPassword,
-          name: 'User Three',
-          emailVerified: true,
-        },
-      }),
-    ]);
+    // Create league
+    console.log('Creating league...');
+    const commissioner = users.find((u, i) => seedData.users[i].isCommissioner);
+    if (!commissioner) {
+      throw new Error('No commissioner found in seed data');
+    }
 
-    // Create a test league
-    console.log('Creating test league...');
     const league = await prisma.league.create({
       data: {
-        name: 'Test League',
-        description: 'A test league for development',
+        name: seedData.league.name,
+        description: seedData.league.description,
         commissioner: {
-          connect: { id: users[0].id },
+          connect: { id: commissioner.id },
         },
         settings: {
-          create: {
-            rosterSize: 8,
-            weeklyStarters: 4,
-            scoringType: 'STABLEFORD',
-          },
+          create: seedData.league.settings,
         },
       },
     });
 
-    // Add all users as league members
+    // Add league memberships
     console.log('Adding league memberships...');
     await Promise.all(
-      users.map((user) =>
+      users.map((user, i) =>
         prisma.leagueMembership.create({
           data: {
             user: { connect: { id: user.id } },
             league: { connect: { id: league.id } },
-            role: user.id === users[0].id ? 'COMMISSIONER' : 'MEMBER',
+            role: seedData.users[i].isCommissioner ? 'COMMISSIONER' : 'MEMBER',
           },
         })
       )
     );
 
-    // Create a team for each user in the league
-    console.log('Creating teams...');
+    // Refresh PGA Tour players first to ensure we have all players
+    console.log('Refreshing PGA Tour players...');
+    await refreshPlayers();
+
+    // Create teams and add players
+    console.log('Creating teams and adding players...');
     await Promise.all(
-      users.map((user) =>
-        prisma.team.create({
+      users.map(async (user, i) => {
+        const userData = seedData.users[i];
+        const team = await prisma.team.create({
           data: {
-            name: `${user.name}'s Team`,
+            name: userData.team.name,
             leagueId: league.id,
             userId: user.id,
-          } as any, // TODO: Fix type issue with proper Prisma types
-        })
-      )
-    );
+          },
+        });
 
-    // Refresh PGA Tour players
-    console.log('Refreshing PGA Tour players...');
-    const players = await refreshPlayers();
+        // Add players to team
+        await Promise.all(
+          userData.team.players.map(async (pgaTourId) => {
+            const player = await prisma.player.findFirst({
+              where: { pgaTourId },
+            });
+            if (player) {
+              await prisma.teamPlayer.create({
+                data: {
+                  teamId: team.id,
+                  playerId: player.id,
+                  active: true,
+                },
+              });
+            } else {
+              console.warn(`Player with PGA Tour ID ${pgaTourId} not found`);
+            }
+          })
+        );
+      })
+    );
 
     // Create current tournament
     console.log('Seeding current tournament data...');
@@ -107,12 +125,9 @@ async function main() {
     });
 
     console.log('Seed data created successfully:');
-    console.log(
-      'Users:',
-      users.map((u) => ({ id: u.id, email: u.email }))
-    );
-    console.log('League:', { id: league.id, name: league.name });
-    console.log('Players refreshed:', players.count);
+    console.log('Users created:', users.length);
+    console.log('League created:', { id: league.id, name: league.name });
+    console.log('Teams created:', users.length);
     console.log('Tournament created:', tournament.name);
   } catch (error) {
     console.error('Error seeding database:', error);

@@ -1,0 +1,104 @@
+{
+  "league": {
+    "name": "Test Fantasy League",
+    "description": "A test league for development with 10 players",
+    "settings": {
+      "rosterSize": 8,
+      "weeklyStarters": 4,
+      "scoringType": "STABLEFORD"
+    }
+  },
+  "users": [
+    {
+      "email": "sbird@techairprod.com",
+      "name": "Shane Bird",
+      "password": "partytime",
+      "isCommissioner": true,
+      "team": {
+        "name": "Birds of Prey",
+        "players": ["39971", "29725", "46442", "46970"]
+      }
+    },
+    {
+      "email": "mattlovan@gmail.com",
+      "name": "Matt Lovan",
+      "password": "partytime",
+      "team": {
+        "name": "Noodles",
+        "players": ["46046", "33204", "47993", "39324"]
+      }
+    },
+    {
+      "email": "FIX-1",
+      "name": "Matt Myers",
+      "password": "partytime",
+      "team": {
+        "name": "Myers",
+        "players": ["51634", "33141", "36799", "45157"]
+      }
+    },
+    {
+      "email": "FIX-2",
+      "name": "Oliver Bolduc",
+      "password": "partytime",
+      "team": {
+        "name": "Duck Hookers",
+        "players": ["48081", "34098", "28089", "47959"]
+      }
+    },
+    {
+      "email": "kaufmanm02@gmail.com",
+      "name": "Matt Kaufman",
+      "password": "partytime",
+      "team": {
+        "name": "BoneHammers",
+        "players": ["32839", "30911", "39997", "49960"]
+      }
+    },
+    {
+      "email": "FIX-3",
+      "name": "Jimmy",
+      "password": "partytime",
+      "team": {
+        "name": "Jimmy",
+        "players": []
+      }
+    },
+    {
+      "email": "FIX-4",
+      "name": "Doog",
+      "password": "partytime",
+      "team": {
+        "name": "DoogDiggler",
+        "players": []
+      }
+    },
+    {
+      "email": "FIX-5",
+      "name": "Phil Bevis",
+      "password": "partytime",
+      "team": {
+        "name": "Orange Snakes",
+        "players": ["28237", "29420", "24502", "25493"]
+      }
+    },
+    {
+      "email": "FIX-6",
+      "name": "Blake Ritchie",
+      "password": "partytime",
+      "team": {
+        "name": "BumbleBee",
+        "players": ["52955", "51766", "47483", "21209"]
+      }
+    },
+    {
+      "email": "FIX-7",
+      "name": "Cliff Neely",
+      "password": "partytime",
+      "team": {
+        "name": "Neely",
+        "players": []
+      }
+    }
+  ]
+}
