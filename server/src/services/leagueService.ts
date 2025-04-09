@@ -5,6 +5,7 @@ import {
   LeagueMembership,
   User,
   Prisma,
+  Team,
 } from '@prisma/client';
 import {
   NotFoundError,
@@ -207,13 +208,41 @@ export class LeagueService {
       throw new ValidationError('Commissioner cannot leave the league');
     }
 
-    await prisma.leagueMembership.delete({
+    // Find the user's team in this league
+    const team = await prisma.team.findFirst({
       where: {
-        userId_leagueId: {
-          userId,
-          leagueId,
+        leagueId,
+        users: {
+          some: {
+            id: userId,
+          },
         },
       },
+    });
+
+    // Use a transaction to ensure all operations succeed or fail together
+    await prisma.$transaction(async (tx) => {
+      if (team) {
+        // Delete all TeamPlayer records for this team
+        await tx.teamPlayer.deleteMany({
+          where: { teamId: team.id },
+        });
+
+        // Delete the team itself
+        await tx.team.delete({
+          where: { id: team.id },
+        });
+      }
+
+      // Delete the league membership
+      await tx.leagueMembership.delete({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId,
+          },
+        },
+      });
     });
   }
 
