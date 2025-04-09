@@ -37,6 +37,8 @@ function prepareTournamentData(
   return data as unknown as Prisma.TournamentCreateInput;
 }
 
+export { prepareTournamentData };
+
 export const tournamentController = {
   // Get all tournaments
   async getAllTournaments(req: Request, res: Response) {

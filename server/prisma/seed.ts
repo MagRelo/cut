@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { getPgaLeaderboard } from '../src/lib/pgaLeaderboard';
+import { prepareTournamentData } from '../src/controllers/tournamentController';
+import { refreshPlayers } from '../src/lib/playerRefresh';
 
 const prisma = new PrismaClient();
 
@@ -43,25 +46,16 @@ async function main() {
       }),
     ]);
 
-    // 3. Create 1 league
-    console.log('Creating league...');
-    const league = await prisma.league.upsert({
-      where: { id: 'seed-league' },
-      update: {},
-      create: {
-        id: 'seed-league',
-        name: 'Seed League',
-        maxTeams: 8,
-        commissioner: {
-          connect: { id: users[0].id }, // First user is commissioner
-        },
-        members: {
-          create: users.map((user) => ({
-            userId: user.id,
-            role: user.id === users[0].id ? 'COMMISSIONER' : 'MEMBER',
-          })),
-        },
-      },
+    console.log('Refreshing PGA Tour players...');
+    const players = await refreshPlayers();
+
+    console.log('Seeding current tournament data...');
+    // Fetch current tournament data from PGA Tour
+    const leaderboardData = await getPgaLeaderboard();
+
+    // Create tournament record
+    const tournament = await prisma.tournament.create({
+      data: prepareTournamentData(leaderboardData),
     });
 
     console.log('Seed data created successfully:');
@@ -69,7 +63,8 @@ async function main() {
       'Users:',
       users.map((u) => ({ id: u.id, email: u.email }))
     );
-    console.log('League:', { id: league.id, name: league.name });
+    console.log('Players refreshed:', players.count);
+    console.log('Tournament:', { id: tournament.id, name: tournament.name });
   } catch (error) {
     console.error('Error during seeding:', error);
     throw error;

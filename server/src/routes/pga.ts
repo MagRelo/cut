@@ -4,6 +4,7 @@ import { fetchScorecard } from '../lib/pgaScorecard';
 import { authenticateToken } from '../middleware/auth';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers';
 import { getActivePlayers } from '../lib/pgaField';
+import { refreshPlayers } from '../lib/playerRefresh';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -65,52 +66,17 @@ router.get('/scorecard/:playerId/:tournamentId', async (req, res) => {
   }
 });
 
-// Refresh all PGA Tour players in database
-router.get('/refreshPlayers', async (req, res) => {
+// Refresh PGA Tour players
+router.post('/players/refresh', async (req, res) => {
   try {
-    // Delete all existing players
-    await prisma.player.deleteMany();
-
-    // Get current tournament field data first
-    const currentTournamentId = 'R2025014'; // The Masters 2024
-    const { players: fieldPlayers } = await getActivePlayers(
-      currentTournamentId
-    );
-
-    // Create a Set of player IDs who are in the field for quick lookup
-    const inFieldPlayerIds = new Set(fieldPlayers.map((p) => p.id));
-
-    // Fetch fresh player data from PGA Tour API
-    const players = await fetchPGATourPlayers();
-
-    // Insert new players
-    const createdPlayers = await prisma.player.createMany({
-      data: players.map((player) => ({
-        pgaTourId: player.id,
-        name: `${player.firstName} ${player.lastName}`.trim(),
-        firstName: player.firstName,
-        lastName: player.lastName,
-        displayName: player.displayName,
-        imageUrl: player.headshot || null,
-        country: player.country || null,
-        countryFlag: player.countryFlag || null,
-        age: player.playerBio?.age || null,
-        isActive: player.isActive || false,
-        inField: inFieldPlayerIds.has(player.id),
-      })),
-    });
-
+    const createdPlayers = await refreshPlayers();
     res.json({
       message: 'Players refreshed successfully',
       count: createdPlayers.count,
-      fieldPlayersCount: fieldPlayers.length,
     });
   } catch (error) {
     console.error('Error refreshing players:', error);
-    res.status(500).json({
-      error:
-        error instanceof Error ? error.message : 'Failed to refresh players',
-    });
+    res.status(500).json({ error: 'Failed to refresh players' });
   }
 });
 
