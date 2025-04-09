@@ -259,7 +259,7 @@ export const LeagueLobby: React.FC = () => {
           }`}>
           Teams
         </button>
-        {isMember && !userTeam && (
+        {isMember && (
           <button
             onClick={() => setActiveTab('createTeam')}
             className={`px-3 py-2 text-sm font-medium ${
@@ -460,6 +460,7 @@ export const LeagueLobby: React.FC = () => {
               {activeTab === 'createTeam' && (
                 <div className='bg-white rounded-lg shadow p-4'>
                   <TeamFormComponent
+                    teamId={userTeam?.id}
                     leagueId={leagueId}
                     initialTeam={userTeam || undefined}
                     onSuccess={(teamId, leagueId) => {
@@ -525,7 +526,7 @@ export const LeagueLobby: React.FC = () => {
                       }`}>
                       Teams
                     </button>
-                    {isMember && !userTeam && (
+                    {isMember && (
                       <button
                         onClick={() => setRightColumnTab('createTeam')}
                         className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
@@ -718,14 +719,24 @@ export const LeagueLobby: React.FC = () => {
                     </div>
                   )}
 
-                  {rightColumnTab === 'createTeam' && isMember && !userTeam && (
+                  {rightColumnTab === 'createTeam' && isMember && (
                     <div className='h-full overflow-y-auto'>
                       <TeamFormComponent
+                        teamId={userTeam?.id}
                         leagueId={leagueId}
                         initialTeam={userTeam || undefined}
                         onSuccess={(teamId, leagueId) => {
                           // Refresh teams data after creation
-                          api.getTeamsByLeague(leagueId).then(setTeams);
+                          api
+                            .getTeamsByLeague(leagueId)
+                            .then((updatedTeams) => {
+                              setTeams(updatedTeams);
+                              const updatedUserTeam = updatedTeams.find(
+                                (team) =>
+                                  team.userId === localStorage.getItem('userId')
+                              );
+                              setUserTeam(updatedUserTeam || null);
+                            });
                           // Switch back to teams tab
                           setRightColumnTab('teams');
                         }}
