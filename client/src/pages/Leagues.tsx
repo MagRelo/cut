@@ -138,17 +138,17 @@ export function Leagues() {
                 return (
                   <div
                     key={league.id}
-                    className='grid grid-cols-4 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150'>
+                    className={`grid grid-cols-4 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150 ${
+                      membershipRole ? 'cursor-pointer' : ''
+                    }`}
+                    onClick={(e) => {
+                      if (membershipRole) {
+                        e.preventDefault();
+                        navigate(`/league-lobby/${league.id}`);
+                      }
+                    }}>
                     <div className='text-left text-sm font-medium text-gray-900 flex items-center'>
-                      {membershipRole ? (
-                        <Link
-                          to={`/league-lobby/${league.id}`}
-                          className='hover:text-blue-600'>
-                          {league.name}
-                        </Link>
-                      ) : (
-                        league.name
-                      )}
+                      {league.name}
                       {league.isPrivate && (
                         <span className='ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded'>
                           Private
@@ -172,7 +172,10 @@ export function Leagues() {
                         </span>
                       ) : (
                         <button
-                          onClick={(e) => handleJoinLeague(e, league.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleJoinLeague(e, league.id);
+                          }}
                           disabled={isJoining || league.isPrivate}
                           className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${
                             league.isPrivate
