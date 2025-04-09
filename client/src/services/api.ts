@@ -10,10 +10,11 @@ import {
 interface Tournament {
   id: string;
   name: string;
+  location: string;
+  course: string;
+  status: 'upcoming' | 'in-progress' | 'completed';
   startDate: string;
   endDate: string;
-  course: string;
-  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
 interface ApiConfig {
@@ -260,7 +261,7 @@ export class ApiService {
     return this.request<PGAPlayer[]>('GET', '/players/active');
   }
 
-  async getCurrentTournament() {
+  async getCurrentTournament(): Promise<Tournament | null> {
     return this.request<Tournament | null>('GET', '/tournaments/current');
   }
 

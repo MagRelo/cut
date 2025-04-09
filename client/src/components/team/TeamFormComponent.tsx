@@ -124,17 +124,6 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
 
   return (
     <div className='space-y-8'>
-      <div>
-        <h1 className='text-3xl font-extrabold text-gray-900 text-center'>
-          {isEditMode ? 'Edit Your Team' : 'Create Your Team'}
-        </h1>
-        <p className='mt-2 text-sm text-gray-600 text-center'>
-          {isEditMode
-            ? 'Update your team name and player selection'
-            : 'Select your team name and choose 4 players to compete'}
-        </p>
-      </div>
-
       {error && <ErrorMessage message={error} />}
 
       <form onSubmit={handleSubmit} className='space-y-8'>
