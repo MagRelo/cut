@@ -43,7 +43,7 @@ type TabSection =
   | 'createTeam'
   | 'liveBets'
   | 'leagueSettings';
-type RightColumnTab = 'teams' | 'createTeam' | 'liveBets' | 'leagueSettings';
+type RightColumnTab = TabSection;
 
 export const LeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
@@ -250,40 +250,6 @@ export const LeagueLobby: React.FC = () => {
     );
   }
 
-  const renderTopSection = () => (
-    <div className='grid grid-cols-1 lg:grid-cols-4 gap-4 bg-white rounded-lg shadow-sm p-6 mb-6'>
-      {/* League Info - Takes up 3 columns on desktop */}
-      <div className='lg:col-span-3'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-900'>{league.name}</h1>
-          {league.description && (
-            <p className='mt-2 text-gray-600'>{league.description}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Tournament Info - Takes up 1 column on desktop */}
-      <div className='lg:col-span-1 border-l lg:pl-4'>
-        {tournament ? (
-          <>
-            <h2 className='text-lg font-semibold text-gray-900'>
-              {tournament.name}
-            </h2>
-            <div className='mt-2 space-y-1 text-sm text-gray-600'>
-              <p>{tournament.location}</p>
-              <p>{tournament.course}</p>
-              <p className='capitalize'>
-                {tournament.status.replace('-', ' ')}
-              </p>
-            </div>
-          </>
-        ) : (
-          <p className='text-gray-500'>No tournament scheduled</p>
-        )}
-      </div>
-    </div>
-  );
-
   const renderMobileNavigation = () => (
     <div className='lg:hidden border-b border-gray-200 mb-4'>
       <nav className='flex space-x-4 px-4 overflow-x-auto'>
@@ -342,184 +308,565 @@ export const LeagueLobby: React.FC = () => {
 
   return (
     <div className='h-[calc(100vh-64px)] bg-gray-50 overflow-hidden'>
-      <div className='max-w-7xl mx-auto h-full flex flex-col'>
-        {renderTopSection()}
+      <div className='max-w-7xl mx-auto h-full p-4'>
+        {isDesktop ? (
+          <div className='h-full grid grid-rows-[auto,1fr] bg-white rounded-lg overflow-hidden border border-gray-200'>
+            {/* Desktop layout content */}
+            {/* Top Section */}
+            <div className='grid grid-cols-5'>
+              {/* League Info - Takes up 3 columns */}
+              <div className='col-span-3 p-6'>
+                <div>
+                  <h1 className='text-2xl font-bold text-gray-900'>
+                    {league.name}
+                  </h1>
+                  {league.description && (
+                    <p className='mt-2 text-gray-600'>{league.description}</p>
+                  )}
+                </div>
+              </div>
 
-        {/* Mobile: Tabbed Interface */}
-        {!isDesktop && (
-          <>
-            {renderMobileNavigation()}
-            <div className='px-4 flex-1 overflow-y-auto'>
-              {activeTab === 'chat' && (
-                <div className='bg-white rounded-lg shadow p-4 h-full'>
-                  {/* Chat component will go here */}
-                  <div className='h-full overflow-y-auto'>
+              {/* Tournament Info - Takes up 2 columns */}
+              <div className='col-span-2 p-6 border-l border-gray-200'>
+                {tournament ? (
+                  <>
+                    <h2 className='text-lg font-semibold text-gray-900'>
+                      {tournament.name}
+                    </h2>
+                    <div className='mt-2 space-y-1 text-sm text-gray-600'>
+                      <p>{tournament.location}</p>
+                      <p>{tournament.course}</p>
+                      <p className='capitalize'>
+                        {tournament.status.replace('-', ' ')}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className='text-gray-500'>No tournament scheduled</p>
+                )}
+              </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className='grid grid-cols-5 border-t border-gray-200'>
+              {/* Left Column: Chat (3/5 width) */}
+              <div className='col-span-3 overflow-hidden'>
+                <div className='h-full flex flex-col'>
+                  <div className='flex-1 overflow-y-auto p-4'>
+                    {/* Chat component will go here */}
                     <p className='text-gray-500'>Chat coming soon...</p>
                   </div>
                 </div>
-              )}
-              {activeTab === 'teams' && (
-                <div className='space-y-0'>
-                  {teams.map((team, index) => (
-                    <div
-                      key={team.id}
-                      className={`${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                      }`}>
-                      <div className='w-full px-2 py-1.5 flex justify-between items-center'>
-                        <button
-                          onClick={() => toggleTeam(team.id)}
-                          className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                          <h3 className='text-base font-medium text-gray-700'>
-                            {team.name}
-                          </h3>
-                          <div className='flex items-center space-x-2'>
-                            <span className='text-sm font-medium text-gray-600'>
-                              Score: {calculateTeamScore(team)}
-                            </span>
-                            <svg
-                              className={`w-4 h-4 text-gray-400 transform transition-transform ${
-                                expandedTeams.has(team.id) ? 'rotate-180' : ''
-                              }`}
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'>
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M19 9l-7 7-7-7'
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                          expandedTeams.has(team.id)
-                            ? 'max-h-[1000px]'
-                            : 'max-h-0'
+              </div>
+
+              {/* Right Column: Teams, Create Team, Live Bets (2/5 width) */}
+              <div className='col-span-2 flex flex-col overflow-hidden border-l border-gray-200'>
+                {/* Tabs Navigation */}
+                <div className='bg-white rounded-lg shadow flex flex-col h-full overflow-hidden'>
+                  <div className='border-b border-gray-200 flex-shrink-0'>
+                    <nav className='flex space-x-4 px-4' aria-label='Tabs'>
+                      <button
+                        onClick={() => setRightColumnTab('teams')}
+                        className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
+                          rightColumnTab === 'teams'
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}>
-                        <div className='px-2 pb-1.5'>
-                          <div className='overflow-x-auto'>
-                            <table className='min-w-full divide-y divide-gray-200'>
-                              <thead>
-                                <tr>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Player
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Status
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Pos
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    R1
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    R2
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    R3
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    R4
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Cut
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Bonus
-                                  </th>
-                                  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                    Total
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className='bg-white divide-y divide-gray-200'>
-                                {team.players.map((player) => (
-                                  <tr key={player.id}>
-                                    <td className='px-6 py-4 whitespace-nowrap'>
-                                      <div className='flex items-center'>
-                                        {player.player.imageUrl && (
-                                          <div className='flex-shrink-0 h-10 w-10'>
-                                            <img
-                                              className='h-10 w-10 rounded-full object-cover'
-                                              src={player.player.imageUrl}
-                                              alt={
-                                                player.player.displayName ||
-                                                player.player.name
-                                              }
-                                            />
-                                          </div>
-                                        )}
-                                        <div className='ml-4'>
-                                          <div className='text-sm font-medium text-gray-900'>
-                                            {player.player.displayName ||
-                                              player.player.name}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                                      <div className='flex flex-col space-y-1'>
-                                        <span
-                                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            player.player.inField
-                                              ? 'bg-green-100 text-green-800'
-                                              : 'bg-yellow-100 text-yellow-800'
-                                          }`}>
-                                          {player.player.inField
-                                            ? 'In Field'
-                                            : 'Not In Field'}
-                                        </span>
-                                      </div>
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.leaderboardPosition || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.r1?.strokes || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.r2?.strokes || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.r3?.strokes || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.r4?.strokes || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.cut || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.bonus || '-'}
-                                    </td>
-                                    <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                      {player.total || '-'}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                        Teams
+                      </button>
+                      {isMember && (
+                        <button
+                          onClick={() => setRightColumnTab('createTeam')}
+                          className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
+                            rightColumnTab === 'createTeam'
+                              ? 'border-indigo-500 text-indigo-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}>
+                          Manage Team
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setRightColumnTab('liveBets')}
+                        className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
+                          rightColumnTab === 'liveBets'
+                            ? 'border-indigo-500 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}>
+                        Live Bets
+                      </button>
+                      {isMember && (
+                        <button
+                          onClick={() => setRightColumnTab('leagueSettings')}
+                          className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
+                            rightColumnTab === 'leagueSettings'
+                              ? 'border-indigo-500 text-indigo-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}>
+                          League Settings
+                        </button>
+                      )}
+                    </nav>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className='p-4 flex-1 overflow-y-auto'>
+                    {rightColumnTab === 'teams' && (
+                      <div className='h-full overflow-y-auto'>
+                        <div className='space-y-0'>
+                          {teams.map((team, index) => (
+                            <div
+                              key={team.id}
+                              className={`${
+                                index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                              }`}>
+                              <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                                <button
+                                  onClick={() => toggleTeam(team.id)}
+                                  className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
+                                  <h3 className='text-base font-medium text-gray-700'>
+                                    {team.name}
+                                  </h3>
+                                  <div className='flex items-center space-x-2'>
+                                    <span className='text-sm font-medium text-gray-600'>
+                                      Score: {calculateTeamScore(team)}
+                                    </span>
+                                    <svg
+                                      className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                        expandedTeams.has(team.id)
+                                          ? 'rotate-180'
+                                          : ''
+                                      }`}
+                                      fill='none'
+                                      stroke='currentColor'
+                                      viewBox='0 0 24 24'>
+                                      <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M19 9l-7 7-7-7'
+                                      />
+                                    </svg>
+                                  </div>
+                                </button>
+                              </div>
+                              <div
+                                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                                  expandedTeams.has(team.id)
+                                    ? 'max-h-[1000px]'
+                                    : 'max-h-0'
+                                }`}>
+                                <div className='px-2 pb-1.5'>
+                                  <div className='overflow-x-auto'>
+                                    <table className='min-w-full divide-y divide-gray-200'>
+                                      <thead>
+                                        <tr>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Player
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Status
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Pos
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            R1
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            R2
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            R3
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            R4
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Cut
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Bonus
+                                          </th>
+                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            Total
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className='bg-white divide-y divide-gray-200'>
+                                        {team.players.map((player) => (
+                                          <tr key={player.id}>
+                                            <td className='px-6 py-4 whitespace-nowrap'>
+                                              <div className='flex items-center'>
+                                                {player.player.imageUrl && (
+                                                  <div className='flex-shrink-0 h-10 w-10'>
+                                                    <img
+                                                      className='h-10 w-10 rounded-full object-cover'
+                                                      src={
+                                                        player.player.imageUrl
+                                                      }
+                                                      alt={
+                                                        player.player
+                                                          .displayName ||
+                                                        player.player.name
+                                                      }
+                                                    />
+                                                  </div>
+                                                )}
+                                                <div className='ml-4'>
+                                                  <div className='text-sm font-medium text-gray-900'>
+                                                    {player.player
+                                                      .displayName ||
+                                                      player.player.name}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                                              <div className='flex flex-col space-y-1'>
+                                                <span
+                                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    player.player.inField
+                                                      ? 'bg-green-100 text-green-800'
+                                                      : 'bg-yellow-100 text-yellow-800'
+                                                  }`}>
+                                                  {player.player.inField
+                                                    ? 'In Field'
+                                                    : 'Not In Field'}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.leaderboardPosition ||
+                                                '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.r1?.strokes || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.r2?.strokes || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.r3?.strokes || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.r4?.strokes || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.cut || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.bonus || '-'}
+                                            </td>
+                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                              {player.total || '-'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {rightColumnTab === 'createTeam' && isMember && (
+                      <div className='h-full overflow-y-auto'>
+                        <TeamFormComponent
+                          teamId={userTeam?.id}
+                          leagueId={leagueId}
+                          initialTeam={userTeam || undefined}
+                          onSuccess={(teamId, leagueId) => {
+                            // Refresh teams data after creation
+                            api
+                              .getTeamsByLeague(leagueId)
+                              .then((updatedTeams) => {
+                                setTeams(updatedTeams);
+                                const updatedUserTeam = updatedTeams.find(
+                                  (team) =>
+                                    team.userId ===
+                                    localStorage.getItem('userId')
+                                );
+                                setUserTeam(updatedUserTeam || null);
+                              });
+                            // Switch back to teams tab
+                            setRightColumnTab('teams');
+                          }}
+                          onCancel={() => setRightColumnTab('teams')}
+                        />
+                      </div>
+                    )}
+
+                    {rightColumnTab === 'liveBets' && (
+                      <div className='h-full overflow-y-auto p-4'>
+                        {renderLiveBetsContent()}
+                      </div>
+                    )}
+
+                    {rightColumnTab === 'leagueSettings' && isMember && (
+                      <div className='h-full overflow-y-auto'>
+                        <h2 className='text-lg font-semibold mb-4'>
+                          League Settings
+                        </h2>
+                        <div className='space-y-6'>
+                          <div className='bg-white rounded-lg p-4 space-y-4'>
+                            <dl className='space-y-3'>
+                              <div className='flex justify-between items-center'>
+                                <dt className='text-sm text-gray-500'>
+                                  Members
+                                </dt>
+                                <dd className='text-sm font-medium text-gray-900'>
+                                  {league.members.length}
+                                </dd>
+                              </div>
+                              <div className='flex justify-between items-center'>
+                                <dt className='text-sm text-gray-500'>Teams</dt>
+                                <dd className='text-sm font-medium text-gray-900'>
+                                  {teams.length}
+                                </dd>
+                              </div>
+                              <div className='flex justify-between items-center'>
+                                <dt className='text-sm text-gray-500'>
+                                  Maximum Teams
+                                </dt>
+                                <dd className='text-sm font-medium text-gray-900'>
+                                  {league.maxTeams}
+                                </dd>
+                              </div>
+                              <div className='flex justify-between items-center'>
+                                <dt className='text-sm text-gray-500'>
+                                  League Type
+                                </dt>
+                                <dd className='text-sm font-medium text-gray-900'>
+                                  {league.isPrivate
+                                    ? 'Private League'
+                                    : 'Public League'}
+                                </dd>
+                              </div>
+                            </dl>
+                            <div className='pt-4 border-t'>
+                              <button
+                                onClick={handleLeaveLeague}
+                                disabled={isActionLoading}
+                                className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                  isActionLoading
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                                }`}>
+                                {isActionLoading
+                                  ? 'Processing...'
+                                  : 'Leave League'}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Mobile Layout */
+          <div className='h-full flex flex-col bg-white rounded-lg border border-gray-200'>
+            {/* Mobile Header */}
+            <div className='p-4 border-b border-gray-200'>
+              <h1 className='text-xl font-bold text-gray-900'>{league.name}</h1>
+              {tournament && (
+                <div className='mt-2 text-sm text-gray-600'>
+                  <p>
+                    {tournament.name} - {tournament.status.replace('-', ' ')}
+                  </p>
                 </div>
               )}
-              {activeTab === 'createTeam' && (
-                <div className='bg-white rounded-lg shadow p-4'>
+            </div>
+
+            {/* Mobile Navigation */}
+            {renderMobileNavigation()}
+
+            {/* Mobile Content */}
+            <div className='flex-1 overflow-y-auto'>
+              {activeTab === 'chat' && (
+                <div className='p-4'>
+                  <p className='text-gray-500'>Chat coming soon...</p>
+                </div>
+              )}
+              {/* Rest of mobile content */}
+              {activeTab === 'teams' && (
+                <div className='p-4'>
+                  <div className='space-y-0'>
+                    {teams.map((team, index) => (
+                      <div
+                        key={team.id}
+                        className={`${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        }`}>
+                        <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                          <button
+                            onClick={() => toggleTeam(team.id)}
+                            className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
+                            <h3 className='text-base font-medium text-gray-700'>
+                              {team.name}
+                            </h3>
+                            <div className='flex items-center space-x-2'>
+                              <span className='text-sm font-medium text-gray-600'>
+                                Score: {calculateTeamScore(team)}
+                              </span>
+                              <svg
+                                className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                  expandedTeams.has(team.id) ? 'rotate-180' : ''
+                                }`}
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'>
+                                <path
+                                  strokeLinecap='round'
+                                  strokeLinejoin='round'
+                                  strokeWidth={2}
+                                  d='M19 9l-7 7-7-7'
+                                />
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            expandedTeams.has(team.id)
+                              ? 'max-h-[1000px]'
+                              : 'max-h-0'
+                          }`}>
+                          <div className='px-2 pb-1.5'>
+                            <div className='overflow-x-auto'>
+                              <table className='min-w-full divide-y divide-gray-200'>
+                                <thead>
+                                  <tr>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Player
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Status
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Pos
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      R1
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      R2
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      R3
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      R4
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Cut
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Bonus
+                                    </th>
+                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      Total
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className='bg-white divide-y divide-gray-200'>
+                                  {team.players.map((player) => (
+                                    <tr key={player.id}>
+                                      <td className='px-6 py-4 whitespace-nowrap'>
+                                        <div className='flex items-center'>
+                                          {player.player.imageUrl && (
+                                            <div className='flex-shrink-0 h-10 w-10'>
+                                              <img
+                                                className='h-10 w-10 rounded-full object-cover'
+                                                src={player.player.imageUrl}
+                                                alt={
+                                                  player.player.displayName ||
+                                                  player.player.name
+                                                }
+                                              />
+                                            </div>
+                                          )}
+                                          <div className='ml-4'>
+                                            <div className='text-sm font-medium text-gray-900'>
+                                              {player.player.displayName ||
+                                                player.player.name}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                                        <div className='flex flex-col space-y-1'>
+                                          <span
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                              player.player.inField
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                            {player.player.inField
+                                              ? 'In Field'
+                                              : 'Not In Field'}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.leaderboardPosition || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.r1?.strokes || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.r2?.strokes || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.r3?.strokes || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.r4?.strokes || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.cut || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.bonus || '-'}
+                                      </td>
+                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                        {player.total || '-'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeTab === 'createTeam' && isMember && (
+                <div className='p-4'>
                   <TeamFormComponent
                     teamId={userTeam?.id}
                     leagueId={leagueId}
                     initialTeam={userTeam || undefined}
                     onSuccess={(teamId, leagueId) => {
                       // Refresh teams data after creation
-                      api.getTeamsByLeague(leagueId).then(setTeams);
+                      api.getTeamsByLeague(leagueId).then((updatedTeams) => {
+                        setTeams(updatedTeams);
+                        const updatedUserTeam = updatedTeams.find(
+                          (team) =>
+                            team.userId === localStorage.getItem('userId')
+                        );
+                        setUserTeam(updatedUserTeam || null);
+                      });
                       // Switch back to teams tab
                       setActiveTab('teams');
                     }}
@@ -528,12 +875,10 @@ export const LeagueLobby: React.FC = () => {
                 </div>
               )}
               {activeTab === 'liveBets' && (
-                <div className='bg-white rounded-lg shadow p-4'>
-                  {renderLiveBetsContent()}
-                </div>
+                <div className='p-4'>{renderLiveBetsContent()}</div>
               )}
               {activeTab === 'leagueSettings' && isMember && (
-                <div className='h-full overflow-y-auto'>
+                <div className='p-4'>
                   <h2 className='text-lg font-semibold mb-4'>
                     League Settings
                   </h2>
@@ -585,325 +930,6 @@ export const LeagueLobby: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-          </>
-        )}
-
-        {/* Desktop: Grid Layout */}
-        {isDesktop && (
-          <div className='px-4 grid grid-cols-5 gap-6 flex-1 overflow-hidden'>
-            {/* Left Column: Chat (3/5 width) */}
-            <div className='col-span-3 bg-white rounded-lg shadow overflow-hidden'>
-              <div className='h-full flex flex-col'>
-                <h2 className='text-lg font-semibold p-4'>League Chat</h2>
-                <div className='flex-1 overflow-y-auto p-4'>
-                  {/* Chat component will go here */}
-                  <p className='text-gray-500'>Chat coming soon...</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Teams, Create Team, Live Bets (2/5 width) */}
-            <div className='col-span-2 flex flex-col overflow-hidden'>
-              {/* Tabs Navigation */}
-              <div className='bg-white rounded-lg shadow flex flex-col h-full overflow-hidden'>
-                <div className='border-b border-gray-200 flex-shrink-0'>
-                  <nav className='flex space-x-4 px-4' aria-label='Tabs'>
-                    <button
-                      onClick={() => setRightColumnTab('teams')}
-                      className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                        rightColumnTab === 'teams'
-                          ? 'border-indigo-500 text-indigo-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}>
-                      Teams
-                    </button>
-                    {isMember && (
-                      <button
-                        onClick={() => setRightColumnTab('createTeam')}
-                        className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                          rightColumnTab === 'createTeam'
-                            ? 'border-indigo-500 text-indigo-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}>
-                        Manage Team
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setRightColumnTab('liveBets')}
-                      className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                        rightColumnTab === 'liveBets'
-                          ? 'border-indigo-500 text-indigo-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}>
-                      Live Bets
-                    </button>
-                    {isMember && (
-                      <button
-                        onClick={() => setRightColumnTab('leagueSettings')}
-                        className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                          rightColumnTab === 'leagueSettings'
-                            ? 'border-indigo-500 text-indigo-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}>
-                        League Settings
-                      </button>
-                    )}
-                  </nav>
-                </div>
-
-                {/* Tab Content */}
-                <div className='p-4 flex-1 overflow-y-auto'>
-                  {rightColumnTab === 'teams' && (
-                    <div className='h-full overflow-y-auto'>
-                      <div className='space-y-0'>
-                        {teams.map((team, index) => (
-                          <div
-                            key={team.id}
-                            className={`${
-                              index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                            }`}>
-                            <div className='w-full px-2 py-1.5 flex justify-between items-center'>
-                              <button
-                                onClick={() => toggleTeam(team.id)}
-                                className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                                <h3 className='text-base font-medium text-gray-700'>
-                                  {team.name}
-                                </h3>
-                                <div className='flex items-center space-x-2'>
-                                  <span className='text-sm font-medium text-gray-600'>
-                                    Score: {calculateTeamScore(team)}
-                                  </span>
-                                  <svg
-                                    className={`w-4 h-4 text-gray-400 transform transition-transform ${
-                                      expandedTeams.has(team.id)
-                                        ? 'rotate-180'
-                                        : ''
-                                    }`}
-                                    fill='none'
-                                    stroke='currentColor'
-                                    viewBox='0 0 24 24'>
-                                    <path
-                                      strokeLinecap='round'
-                                      strokeLinejoin='round'
-                                      strokeWidth={2}
-                                      d='M19 9l-7 7-7-7'
-                                    />
-                                  </svg>
-                                </div>
-                              </button>
-                            </div>
-                            <div
-                              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                expandedTeams.has(team.id)
-                                  ? 'max-h-[1000px]'
-                                  : 'max-h-0'
-                              }`}>
-                              <div className='px-2 pb-1.5'>
-                                <div className='overflow-x-auto'>
-                                  <table className='min-w-full divide-y divide-gray-200'>
-                                    <thead>
-                                      <tr>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Player
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Status
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Pos
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R1
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R2
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R3
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R4
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Cut
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Bonus
-                                        </th>
-                                        <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Total
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className='bg-white divide-y divide-gray-200'>
-                                      {team.players.map((player) => (
-                                        <tr key={player.id}>
-                                          <td className='px-6 py-4 whitespace-nowrap'>
-                                            <div className='flex items-center'>
-                                              {player.player.imageUrl && (
-                                                <div className='flex-shrink-0 h-10 w-10'>
-                                                  <img
-                                                    className='h-10 w-10 rounded-full object-cover'
-                                                    src={player.player.imageUrl}
-                                                    alt={
-                                                      player.player
-                                                        .displayName ||
-                                                      player.player.name
-                                                    }
-                                                  />
-                                                </div>
-                                              )}
-                                              <div className='ml-4'>
-                                                <div className='text-sm font-medium text-gray-900'>
-                                                  {player.player.displayName ||
-                                                    player.player.name}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                                            <div className='flex flex-col space-y-1'>
-                                              <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                  player.player.inField
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                {player.player.inField
-                                                  ? 'In Field'
-                                                  : 'Not In Field'}
-                                              </span>
-                                            </div>
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.leaderboardPosition || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.r1?.strokes || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.r2?.strokes || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.r3?.strokes || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.r4?.strokes || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.cut || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.bonus || '-'}
-                                          </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.total || '-'}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {rightColumnTab === 'createTeam' && isMember && (
-                    <div className='h-full overflow-y-auto'>
-                      <TeamFormComponent
-                        teamId={userTeam?.id}
-                        leagueId={leagueId}
-                        initialTeam={userTeam || undefined}
-                        onSuccess={(teamId, leagueId) => {
-                          // Refresh teams data after creation
-                          api
-                            .getTeamsByLeague(leagueId)
-                            .then((updatedTeams) => {
-                              setTeams(updatedTeams);
-                              const updatedUserTeam = updatedTeams.find(
-                                (team) =>
-                                  team.userId === localStorage.getItem('userId')
-                              );
-                              setUserTeam(updatedUserTeam || null);
-                            });
-                          // Switch back to teams tab
-                          setRightColumnTab('teams');
-                        }}
-                        onCancel={() => setRightColumnTab('teams')}
-                      />
-                    </div>
-                  )}
-
-                  {rightColumnTab === 'liveBets' && (
-                    <div className='h-full overflow-y-auto p-4'>
-                      {renderLiveBetsContent()}
-                    </div>
-                  )}
-
-                  {rightColumnTab === 'leagueSettings' && isMember && (
-                    <div className='h-full overflow-y-auto'>
-                      <h2 className='text-lg font-semibold mb-4'>
-                        League Settings
-                      </h2>
-                      <div className='space-y-6'>
-                        <div className='bg-white rounded-lg p-4 space-y-4'>
-                          <dl className='space-y-3'>
-                            <div className='flex justify-between items-center'>
-                              <dt className='text-sm text-gray-500'>Members</dt>
-                              <dd className='text-sm font-medium text-gray-900'>
-                                {league.members.length}
-                              </dd>
-                            </div>
-                            <div className='flex justify-between items-center'>
-                              <dt className='text-sm text-gray-500'>Teams</dt>
-                              <dd className='text-sm font-medium text-gray-900'>
-                                {teams.length}
-                              </dd>
-                            </div>
-                            <div className='flex justify-between items-center'>
-                              <dt className='text-sm text-gray-500'>
-                                Maximum Teams
-                              </dt>
-                              <dd className='text-sm font-medium text-gray-900'>
-                                {league.maxTeams}
-                              </dd>
-                            </div>
-                            <div className='flex justify-between items-center'>
-                              <dt className='text-sm text-gray-500'>
-                                League Type
-                              </dt>
-                              <dd className='text-sm font-medium text-gray-900'>
-                                {league.isPrivate
-                                  ? 'Private League'
-                                  : 'Public League'}
-                              </dd>
-                            </div>
-                          </dl>
-                          <div className='pt-4 border-t'>
-                            <button
-                              onClick={handleLeaveLeague}
-                              disabled={isActionLoading}
-                              className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                isActionLoading
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                  : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                              }`}>
-                              {isActionLoading
-                                ? 'Processing...'
-                                : 'Leave League'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         )}

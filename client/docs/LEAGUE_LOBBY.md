@@ -20,23 +20,25 @@ All sections are arranged into a tabbed interface with icons & labels representi
 
 ### Desktop
 
-The layout is constrained to a maximum width to ensure consistency across different screen sizes. The content is organized in a two-row structure:
+The layout is constrained to a maximum width and uses a unified grid structure with internal borders. The content is organized in a two-row structure:
 
 ```
 ┌─────────────────────────────────┐
 │    1 (75%)         │    2 (25%) │  Row 1: League & Tournament Info
-├────────────────────┴────────────┤
-│                    │            │
-│                    │    4,5,6,7 │  Row 2: Main Content
-│         3          │   (Tabbed  │
-│     (Chat)         │  Interface)│  3:2 ratio between
-│      60%          │     40%    │  chat and right column
-│                    │            │
-└────────────────────┴────────────┘
+├─────────────────────┼───────────┤  Internal borders between all sections
+│                     │           │
+│                     │   4,5,6,7 │  Row 2: Main Content
+│          3          │  (Tabbed  │
+│      (Chat)         │ Interface)│  3:2 ratio between
+│       60%          │    40%    │  chat and right column
+│                     │           │
+└─────────────────────┴───────────┘
 ```
 
 The desktop layout features:
 
+- A unified grid structure with internal borders between all sections
+- No gaps or margins between sections
 - A fixed maximum width container
 - Top row split between League Info (75%) and Tournament Info (25%)
 - Bottom row split in a 3:2 ratio between:
@@ -44,7 +46,8 @@ The desktop layout features:
   - Right: Tabbed interface (40%) containing:
     - Teams List
     - Create/Edit Team Form (when applicable)
-    - Bet Form
-    - Open Bets List
+    - Bet Form & Open Bets List
+    - League Settings
 - Each column in the bottom row scrolls independently if content exceeds the viewport height
 - The right column uses tabs at the top to switch between different sections
+- Consistent white background across all sections
