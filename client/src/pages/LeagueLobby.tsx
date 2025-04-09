@@ -30,8 +30,8 @@ interface Tournament {
   endDate: string;
 }
 
-type TabSection = 'chat' | 'teams' | 'createTeam' | 'bets' | 'openBets';
-type RightColumnTab = 'teams' | 'createTeam' | 'bets' | 'openBets';
+type TabSection = 'chat' | 'teams' | 'createTeam' | 'liveBets';
+type RightColumnTab = 'teams' | 'createTeam' | 'liveBets';
 
 export const LeagueLobby: React.FC = () => {
   const navigate = useNavigate();
@@ -86,6 +86,11 @@ export const LeagueLobby: React.FC = () => {
             (team) => team.userId === localStorage.getItem('userId')
           );
           setUserTeam(userTeam || null);
+
+          console.log('isMemberOfLeague', isMemberOfLeague);
+          console.log('teamsData', teamsData);
+          console.log('userId', localStorage.getItem('userId'));
+          console.log('userTeam', userTeam);
         }
       } catch (err) {
         setError(
@@ -266,22 +271,13 @@ export const LeagueLobby: React.FC = () => {
           </button>
         )}
         <button
-          onClick={() => setActiveTab('bets')}
+          onClick={() => setActiveTab('liveBets')}
           className={`px-3 py-2 text-sm font-medium ${
-            activeTab === 'bets'
+            activeTab === 'liveBets'
               ? 'text-indigo-600 border-b-2 border-indigo-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
-          Place Bets
-        </button>
-        <button
-          onClick={() => setActiveTab('openBets')}
-          className={`px-3 py-2 text-sm font-medium ${
-            activeTab === 'openBets'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}>
-          Open Bets
+          Live Bets
         </button>
       </nav>
     </div>
@@ -476,16 +472,24 @@ export const LeagueLobby: React.FC = () => {
                   />
                 </div>
               )}
-              {activeTab === 'bets' && (
+              {activeTab === 'liveBets' && (
                 <div className='bg-white rounded-lg shadow p-4'>
-                  {/* Bet form will go here */}
-                  <p className='text-gray-500'>Bet form coming soon...</p>
-                </div>
-              )}
-              {activeTab === 'openBets' && (
-                <div className='bg-white rounded-lg shadow p-4'>
-                  {/* Open bets list will go here */}
-                  <p className='text-gray-500'>Open bets coming soon...</p>
+                  <div className='space-y-8'>
+                    <div>
+                      <h2 className='text-lg font-semibold mb-4'>
+                        Place New Bet
+                      </h2>
+                      {/* Bet form will go here */}
+                      <p className='text-gray-500'>Bet form coming soon...</p>
+                    </div>
+                    <div>
+                      <h2 className='text-lg font-semibold mb-4'>
+                        Your Open Bets
+                      </h2>
+                      {/* Open bets list will go here */}
+                      <p className='text-gray-500'>Open bets coming soon...</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -506,7 +510,7 @@ export const LeagueLobby: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Column: Teams, Create Team, Bets (2/5 width) */}
+            {/* Right Column: Teams, Create Team, Live Bets (2/5 width) */}
             <div className='col-span-2 flex flex-col overflow-hidden'>
               {/* Tabs Navigation */}
               <div className='bg-white rounded-lg shadow flex flex-col h-full overflow-hidden'>
@@ -533,22 +537,13 @@ export const LeagueLobby: React.FC = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => setRightColumnTab('bets')}
+                      onClick={() => setRightColumnTab('liveBets')}
                       className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                        rightColumnTab === 'bets'
+                        rightColumnTab === 'liveBets'
                           ? 'border-indigo-500 text-indigo-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}>
-                      Place Bets
-                    </button>
-                    <button
-                      onClick={() => setRightColumnTab('openBets')}
-                      className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
-                        rightColumnTab === 'openBets'
-                          ? 'border-indigo-500 text-indigo-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}>
-                      Open Bets
+                      Live Bets
                     </button>
                   </nav>
                 </div>
@@ -739,21 +734,28 @@ export const LeagueLobby: React.FC = () => {
                     </div>
                   )}
 
-                  {rightColumnTab === 'bets' && (
+                  {rightColumnTab === 'liveBets' && (
                     <div className='h-full overflow-y-auto'>
-                      <h2 className='text-lg font-semibold mb-4'>Place Bets</h2>
-                      {/* Bet form will go here */}
-                      <p className='text-gray-500'>Bet form coming soon...</p>
-                    </div>
-                  )}
-
-                  {rightColumnTab === 'openBets' && (
-                    <div className='h-full overflow-y-auto'>
-                      <h2 className='text-lg font-semibold mb-4'>
-                        Your Open Bets
-                      </h2>
-                      {/* Open bets list will go here */}
-                      <p className='text-gray-500'>Open bets coming soon...</p>
+                      <div className='space-y-8'>
+                        <div>
+                          <h2 className='text-lg font-semibold mb-4'>
+                            Place New Bet
+                          </h2>
+                          {/* Bet form will go here */}
+                          <p className='text-gray-500'>
+                            Bet form coming soon...
+                          </p>
+                        </div>
+                        <div>
+                          <h2 className='text-lg font-semibold mb-4'>
+                            Your Open Bets
+                          </h2>
+                          {/* Open bets list will go here */}
+                          <p className='text-gray-500'>
+                            Open bets coming soon...
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

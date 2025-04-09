@@ -22,6 +22,8 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
 }) => {
   const isEditMode = Boolean(teamId);
 
+  console.log('teamId', teamId);
+
   const [teamName, setTeamName] = useState(initialTeam?.name || '');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
     initialTeam?.players.map((p) => p.player.id) || []
