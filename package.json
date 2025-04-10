@@ -11,6 +11,7 @@
     "client:preview": "npm run preview --workspace=client",
     "server:dev": "npm run dev --workspace=server",
     "server:build": "npm run build --workspace=server",
+    "server:deploy": "npm run deploy --workspace=server",
     "prisma:generate": "npm run prisma:generate --workspace=server",
     "prisma:migrate": "npm run prisma:migrate --workspace=server",
     "prisma:studio": "npm run prisma:studio --workspace=server",
