@@ -13,7 +13,7 @@ export const LeaderboardHeader: React.FC<LeaderboardHeaderProps> = ({
 }) => {
   return (
     <div className='mb-6'>
-      <h1 className='text-2xl font-bold text-blue-900 mb-1'>
+      <h1 className='text-2xl font-bold text-emerald-600 mb-1'>
         {tournamentName}
       </h1>
       <div className='text-gray-600'>{courseName}</div>

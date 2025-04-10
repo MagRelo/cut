@@ -55,7 +55,7 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             checked={player.isActive}
             onChange={() => onToggleActive?.(index)}
             disabled={!player.id}
-            className='h-4 w-4 text-blue-600 rounded border-gray-300 disabled:opacity-50'
+            className='h-4 w-4 text-emerald-600 rounded border-gray-300 disabled:opacity-50'
           />
         </td>
       )}

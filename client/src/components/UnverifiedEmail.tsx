@@ -48,12 +48,12 @@ export function UnverifiedEmail() {
           <div className='flex items-center justify-between'>
             <button
               onClick={() => resendVerificationEmail()}
-              className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'>
+              className='inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
               Resend verification email
             </button>
             <a
               href='/verify-email'
-              className='text-sm font-medium text-indigo-600 hover:text-indigo-500'>
+              className='text-sm font-medium text-emerald-600 hover:text-emerald-500'>
               Go to verification page
             </a>
           </div>

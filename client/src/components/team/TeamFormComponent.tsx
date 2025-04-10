@@ -140,7 +140,7 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
                 id='teamName'
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
-                className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base'
+                className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base'
                 placeholder='Enter your team name'
               />
             </div>
@@ -166,7 +166,7 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
                     id={`player-${index}`}
                     value={selectedPlayers[index] || ''}
                     onChange={(e) => handlePlayerSelect(e, index)}
-                    className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg shadow-sm bg-white'>
+                    className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white'>
                     <option value=''>Select a player...</option>
                     {availablePlayers
                       .filter(
@@ -193,13 +193,13 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
           <button
             type='button'
             onClick={onCancel}
-            className='px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors'>
+            className='px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-emerald-500 focus:ring-offset-2 focus:ring-emerald-500 transition-colors'>
             Cancel
           </button>
           <button
             type='submit'
             disabled={isSaving}
-            className='px-6 py-3 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+            className='px-6 py-3 text-base font-medium text-white bg-emerald-600 border border-transparent rounded-lg shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-emerald-500 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
             {isSaving
               ? isEditMode
                 ? 'Saving...'

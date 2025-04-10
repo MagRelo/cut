@@ -24,7 +24,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
 }) => {
   return (
     <div className='mb-6'>
-      <h1 className='text-2xl font-bold text-blue-900'>Manage Team</h1>
+      <h1 className='text-2xl font-bold text-emerald-600'>Manage Team</h1>
 
       <div className='flex justify-between items-center mt-4'>
         <div>
@@ -45,7 +45,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
             <>
               <button
                 onClick={() => onEditModeChange('team')}
-                className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'>
+                className='px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700'>
                 Edit Team
               </button>
               <button
@@ -59,7 +59,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
               <button
                 onClick={onSave}
                 disabled={isSaving}
-                className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
+                className='px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
                 {isSaving ? (
                   <>
                     <svg

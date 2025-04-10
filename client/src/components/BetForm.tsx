@@ -135,7 +135,7 @@ export const BetForm: React.FC = () => {
               name='betType'
               value={formData.betType}
               onChange={handleInputChange}
-              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'>
+              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500'>
               <option value='Player Finish'>Player Finish</option>
             </select>
           </div>
@@ -150,7 +150,7 @@ export const BetForm: React.FC = () => {
                   name='golfer'
                   value={formData.golfer}
                   onChange={handleInputChange}
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'>
+                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500'>
                   <option value=''>Select a golfer</option>
                   {!isLoading.players && players && players.length > 0 ? (
                     players.map((player) => (
@@ -176,7 +176,7 @@ export const BetForm: React.FC = () => {
                   name='finish'
                   value={formData.finish}
                   onChange={handleInputChange}
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'>
+                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500'>
                   <option value='Win'>Win</option>
                   <option value='Top 5'>Top 5</option>
                   <option value='Top 10'>Top 10</option>
@@ -196,7 +196,7 @@ export const BetForm: React.FC = () => {
               onChange={handleInputChange}
               min='0'
               step='0.01'
-              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500'
               required
             />
           </div>
@@ -216,7 +216,7 @@ export const BetForm: React.FC = () => {
               name='assetType'
               value={formData.assetType}
               onChange={handleInputChange}
-              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500'
               required>
               <option value=''>Select an asset</option>
               {!isLoading.assets && assets?.perp && assets.perp.length > 0 ? (
@@ -247,7 +247,7 @@ export const BetForm: React.FC = () => {
                   value='Up'
                   checked={formData.direction === 'Up'}
                   onChange={handleInputChange}
-                  className='form-radio text-indigo-600'
+                  className='form-radio text-emerald-600'
                 />
                 <span className='ml-2'>Up</span>
               </label>
@@ -258,7 +258,7 @@ export const BetForm: React.FC = () => {
                   value='Down'
                   checked={formData.direction === 'Down'}
                   onChange={handleInputChange}
-                  className='form-radio text-indigo-600'
+                  className='form-radio text-emerald-600'
                 />
                 <span className='ml-2'>Down</span>
               </label>
@@ -281,7 +281,7 @@ export const BetForm: React.FC = () => {
                       value={option.value}
                       checked={formData.leverage === option.value}
                       onChange={handleInputChange}
-                      className='form-radio text-indigo-600'
+                      className='form-radio text-emerald-600'
                     />
                     <span className='ml-2'>{option.label}</span>
                   </label>
@@ -299,7 +299,7 @@ export const BetForm: React.FC = () => {
       <div className='flex justify-end'>
         <button
           type='submit'
-          className='bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'>
+          className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2'>
           Place Order
         </button>
       </div>

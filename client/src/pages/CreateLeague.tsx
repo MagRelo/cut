@@ -67,7 +67,7 @@ export function CreateLeague() {
             <input
               type='text'
               {...register('name')}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
               placeholder='Enter league name'
             />
             {errors.name && (
@@ -82,7 +82,7 @@ export function CreateLeague() {
             <textarea
               {...register('description')}
               rows={4}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
               placeholder='Enter league description'
             />
             {errors.description && (
@@ -99,7 +99,7 @@ export function CreateLeague() {
             <input
               type='number'
               {...register('maxTeams', { valueAsNumber: true })}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
               placeholder='Enter maximum number of teams'
             />
             {errors.maxTeams && (
@@ -113,7 +113,7 @@ export function CreateLeague() {
             <input
               type='checkbox'
               {...register('isPrivate')}
-              className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+              className='h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded'
             />
             <label className='ml-2 block text-sm text-gray-700'>
               Make this league private
@@ -129,13 +129,13 @@ export function CreateLeague() {
             <button
               type='button'
               onClick={() => navigate('/leagues')}
-              className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'>
+              className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
               Cancel
             </button>
             <button
               type='submit'
               disabled={isSubmitting}
-              className='px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50'>
+              className='px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
               {isSubmitting ? 'Creating...' : 'Create League'}
             </button>
           </div>

@@ -297,7 +297,7 @@ export const LeagueLobby: React.FC = () => {
           onClick={() => setActiveTab('chat')}
           className={`px-3 py-2 text-sm font-medium ${
             activeTab === 'chat'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              ? 'text-emerald-600 border-b-2 border-emerald-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
           Chat
@@ -306,7 +306,7 @@ export const LeagueLobby: React.FC = () => {
           onClick={() => setActiveTab('teams')}
           className={`px-3 py-2 text-sm font-medium ${
             activeTab === 'teams'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              ? 'text-emerald-600 border-b-2 border-emerald-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
           Teams
@@ -316,7 +316,7 @@ export const LeagueLobby: React.FC = () => {
             onClick={() => setActiveTab('createTeam')}
             className={`px-3 py-2 text-sm font-medium ${
               activeTab === 'createTeam'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}>
             Manage Team
@@ -326,7 +326,7 @@ export const LeagueLobby: React.FC = () => {
           onClick={() => setActiveTab('liveBets')}
           className={`px-3 py-2 text-sm font-medium ${
             activeTab === 'liveBets'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
+              ? 'text-emerald-600 border-b-2 border-emerald-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
           Live Bets
@@ -336,7 +336,7 @@ export const LeagueLobby: React.FC = () => {
             onClick={() => setActiveTab('leagueSettings')}
             className={`px-3 py-2 text-sm font-medium ${
               activeTab === 'leagueSettings'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}>
             League Settings
@@ -389,13 +389,13 @@ export const LeagueLobby: React.FC = () => {
 
             {/* Main Content Grid */}
             <div className='grid grid-cols-5 border-t border-gray-200 h-full overflow-hidden'>
-              {/* Left Column: Chat (3/5 width) */}
-              <div className='col-span-3 h-full overflow-hidden'>
+              {/* Left Column: Chat (2/5 width) */}
+              <div className='col-span-2 h-full overflow-hidden'>
                 <div className='h-full'>{renderChatContent()}</div>
               </div>
 
-              {/* Right Column: Teams, Create Team, Live Bets (2/5 width) */}
-              <div className='col-span-2 flex flex-col overflow-hidden border-l border-gray-200'>
+              {/* Right Column: Teams, Create Team, Live Bets (3/5 width) */}
+              <div className='col-span-3 flex flex-col overflow-hidden border-l border-gray-200'>
                 {/* Tabs Navigation */}
                 <div className='bg-white rounded-lg shadow flex flex-col h-full overflow-hidden'>
                   <div className='border-b border-gray-200 flex-shrink-0'>
@@ -404,7 +404,7 @@ export const LeagueLobby: React.FC = () => {
                         onClick={() => setRightColumnTab('teams')}
                         className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
                           rightColumnTab === 'teams'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-emerald-500 text-emerald-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}>
                         Teams
@@ -414,7 +414,7 @@ export const LeagueLobby: React.FC = () => {
                           onClick={() => setRightColumnTab('createTeam')}
                           className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
                             rightColumnTab === 'createTeam'
-                              ? 'border-indigo-500 text-indigo-600'
+                              ? 'border-emerald-500 text-emerald-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}>
                           Manage Team
@@ -424,7 +424,7 @@ export const LeagueLobby: React.FC = () => {
                         onClick={() => setRightColumnTab('liveBets')}
                         className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
                           rightColumnTab === 'liveBets'
-                            ? 'border-indigo-500 text-indigo-600'
+                            ? 'border-emerald-500 text-emerald-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}>
                         Live Bets
@@ -434,7 +434,7 @@ export const LeagueLobby: React.FC = () => {
                           onClick={() => setRightColumnTab('leagueSettings')}
                           className={`py-4 px-1 inline-flex items-center border-b-2 font-medium text-sm ${
                             rightColumnTab === 'leagueSettings'
-                              ? 'border-indigo-500 text-indigo-600'
+                              ? 'border-emerald-500 text-emerald-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}>
                           League Settings
@@ -448,162 +448,159 @@ export const LeagueLobby: React.FC = () => {
                     {rightColumnTab === 'teams' && (
                       <div className='h-full overflow-y-auto'>
                         <div className='space-y-0'>
-                          {teams.map((team, index) => (
-                            <div
-                              key={team.id}
-                              className={`${
-                                index === 0 ? 'border-t' : ''
-                              } border-b border-gray-200`}>
-                              <div className='w-full px-2 py-1.5 flex justify-between items-center'>
-                                <button
-                                  onClick={() => toggleTeam(team.id)}
-                                  className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                                  <h3 className='text-base font-medium text-gray-700'>
-                                    {team.name}
-                                  </h3>
-                                  <div className='flex items-center space-x-2'>
-                                    <span className='text-sm font-medium text-gray-600'>
-                                      Score: {calculateTeamScore(team)}
-                                    </span>
-                                    <svg
-                                      className={`w-4 h-4 text-gray-400 transform transition-transform ${
-                                        expandedTeams.has(team.id)
-                                          ? 'rotate-180'
-                                          : ''
-                                      }`}
-                                      fill='none'
-                                      stroke='currentColor'
-                                      viewBox='0 0 24 24'>
-                                      <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M19 9l-7 7-7-7'
-                                      />
-                                    </svg>
-                                  </div>
-                                </button>
-                              </div>
+                          {teams
+                            .sort(
+                              (a: Team, b: Team) =>
+                                calculateTeamScore(b) - calculateTeamScore(a)
+                            )
+                            .map((team: Team, index: number) => (
                               <div
-                                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                  expandedTeams.has(team.id)
-                                    ? 'max-h-[1000px]'
-                                    : 'max-h-0'
-                                }`}>
-                                <div className='px-2 pb-1.5'>
-                                  <div className='overflow-x-auto'>
-                                    <table className='min-w-full divide-y divide-gray-200'>
-                                      <thead>
-                                        <tr>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Player
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Status
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Pos
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            R1
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            R2
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            R3
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            R4
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Cut
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Bonus
-                                          </th>
-                                          <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                            Total
-                                          </th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className='bg-white divide-y divide-gray-200'>
-                                        {team.players.map((player) => (
-                                          <tr key={player.id}>
-                                            <td className='px-6 py-4 whitespace-nowrap'>
-                                              <div className='flex items-center'>
-                                                {player.player.imageUrl && (
-                                                  <div className='flex-shrink-0 h-10 w-10'>
-                                                    <img
-                                                      className='h-10 w-10 rounded-full object-cover'
-                                                      src={
-                                                        player.player.imageUrl
-                                                      }
-                                                      alt={
-                                                        player.player
-                                                          .displayName ||
-                                                        player.player.name
-                                                      }
-                                                    />
-                                                  </div>
-                                                )}
-                                                <div className='ml-4'>
-                                                  <div className='text-sm font-medium text-gray-900'>
-                                                    {player.player
-                                                      .displayName ||
-                                                      player.player.name}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                                              <div className='flex flex-col space-y-1'>
-                                                <span
-                                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    player.player.inField
-                                                      ? 'bg-green-100 text-green-800'
-                                                      : 'bg-yellow-100 text-yellow-800'
-                                                  }`}>
-                                                  {player.player.inField
-                                                    ? 'In Field'
-                                                    : 'Not In Field'}
-                                                </span>
-                                              </div>
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.leaderboardPosition ||
-                                                '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r1?.total || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r2?.total || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r3?.total || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r4?.total || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.cut || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.bonus || '-'}
-                                            </td>
-                                            <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.total || '-'}
-                                            </td>
+                                key={team.id}
+                                className={`${
+                                  index === 0 ? 'border-t' : ''
+                                } border-b border-gray-200`}>
+                                <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                                  <button
+                                    onClick={() => toggleTeam(team.id)}
+                                    className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
+                                    <h3 className='text-base font-medium text-gray-700'>
+                                      {team.name}
+                                    </h3>
+                                    <div className='flex items-center space-x-2'>
+                                      <span className='text-sm font-medium text-gray-600'>
+                                        {calculateTeamScore(team)}
+                                      </span>
+                                      <svg
+                                        className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                          expandedTeams.has(team.id)
+                                            ? 'rotate-180'
+                                            : ''
+                                        }`}
+                                        fill='none'
+                                        stroke='currentColor'
+                                        viewBox='0 0 24 24'>
+                                        <path
+                                          strokeLinecap='round'
+                                          strokeLinejoin='round'
+                                          strokeWidth={2}
+                                          d='M19 9l-7 7-7-7'
+                                        />
+                                      </svg>
+                                    </div>
+                                  </button>
+                                </div>
+                                <div
+                                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                                    expandedTeams.has(team.id)
+                                      ? 'max-h-[1000px]'
+                                      : 'max-h-0'
+                                  }`}>
+                                  <div className='px-2 pb-1.5'>
+                                    <div className='overflow-x-auto'>
+                                      <table className='min-w-full divide-y divide-gray-200'>
+                                        <thead>
+                                          <tr>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              Player
+                                            </th>
+                                            {/* Position column to be used later for tournament position tracking
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              Pos
+                                            </th>
+                                            */}
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              R1
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              R2
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              R3
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              R4
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              Cut
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              Bonus
+                                            </th>
+                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                              Total
+                                            </th>
                                           </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
+                                        </thead>
+                                        <tbody className='bg-white divide-y divide-gray-200'>
+                                          {team.players
+                                            .sort(
+                                              (a: TeamPlayer, b: TeamPlayer) =>
+                                                (b.total || 0) - (a.total || 0)
+                                            )
+                                            .map((player) => (
+                                              <tr key={player.id}>
+                                                <td className='px-6 py-4 whitespace-nowrap'>
+                                                  <div className='flex items-center'>
+                                                    {player.player.imageUrl && (
+                                                      <div className='flex-shrink-0 h-10 w-10'>
+                                                        <img
+                                                          className='h-10 w-10 rounded-full object-cover'
+                                                          src={
+                                                            player.player
+                                                              .imageUrl
+                                                          }
+                                                          alt={
+                                                            player.player
+                                                              .displayName ||
+                                                            player.player.name
+                                                          }
+                                                        />
+                                                      </div>
+                                                    )}
+                                                    <div className='ml-4'>
+                                                      <div className='text-sm font-medium text-gray-900'>
+                                                        {player.player
+                                                          .displayName ||
+                                                          player.player.name}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </td>
+                                                {/* Position column to be used later for tournament position tracking
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.leaderboardPosition || '-'}
+                                                </td>
+                                                */}
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.r1?.total || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.r2?.total || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.r3?.total || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.r4?.total || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.cut || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.bonus || '-'}
+                                                </td>
+                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                  {player.total || '-'}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       </div>
                     )}
@@ -729,155 +726,155 @@ export const LeagueLobby: React.FC = () => {
               {activeTab === 'teams' && (
                 <div className='p-4'>
                   <div className='space-y-0'>
-                    {teams.map((team, index) => (
-                      <div
-                        key={team.id}
-                        className={`${
-                          index === 0 ? 'border-t' : ''
-                        } border-b border-gray-200`}>
-                        <div className='w-full px-2 py-1.5 flex justify-between items-center'>
-                          <button
-                            onClick={() => toggleTeam(team.id)}
-                            className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                            <h3 className='text-base font-medium text-gray-700'>
-                              {team.name}
-                            </h3>
-                            <div className='flex items-center space-x-2'>
-                              <span className='text-sm font-medium text-gray-600'>
-                                Score: {calculateTeamScore(team)}
-                              </span>
-                              <svg
-                                className={`w-4 h-4 text-gray-400 transform transition-transform ${
-                                  expandedTeams.has(team.id) ? 'rotate-180' : ''
-                                }`}
-                                fill='none'
-                                stroke='currentColor'
-                                viewBox='0 0 24 24'>
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth={2}
-                                  d='M19 9l-7 7-7-7'
-                                />
-                              </svg>
-                            </div>
-                          </button>
-                        </div>
+                    {teams
+                      .sort(
+                        (a: Team, b: Team) =>
+                          calculateTeamScore(b) - calculateTeamScore(a)
+                      )
+                      .map((team: Team, index: number) => (
                         <div
-                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                            expandedTeams.has(team.id)
-                              ? 'max-h-[1000px]'
-                              : 'max-h-0'
-                          }`}>
-                          <div className='px-2 pb-1.5'>
-                            <div className='overflow-x-auto'>
-                              <table className='min-w-full divide-y divide-gray-200'>
-                                <thead>
-                                  <tr>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Player
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Status
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Pos
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      R1
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      R2
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      R3
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      R4
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Cut
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Bonus
-                                    </th>
-                                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                      Total
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody className='bg-white divide-y divide-gray-200'>
-                                  {team.players.map((player) => (
-                                    <tr key={player.id}>
-                                      <td className='px-6 py-4 whitespace-nowrap'>
-                                        <div className='flex items-center'>
-                                          {player.player.imageUrl && (
-                                            <div className='flex-shrink-0 h-10 w-10'>
-                                              <img
-                                                className='h-10 w-10 rounded-full object-cover'
-                                                src={player.player.imageUrl}
-                                                alt={
-                                                  player.player.displayName ||
-                                                  player.player.name
-                                                }
-                                              />
-                                            </div>
-                                          )}
-                                          <div className='ml-4'>
-                                            <div className='text-sm font-medium text-gray-900'>
-                                              {player.player.displayName ||
-                                                player.player.name}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm'>
-                                        <div className='flex flex-col space-y-1'>
-                                          <span
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                              player.player.inField
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                            {player.player.inField
-                                              ? 'In Field'
-                                              : 'Not In Field'}
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.leaderboardPosition || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r1?.total || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r2?.total || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r3?.total || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r4?.total || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.cut || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.bonus || '-'}
-                                      </td>
-                                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.total || '-'}
-                                      </td>
+                          key={team.id}
+                          className={`${
+                            index === 0 ? 'border-t' : ''
+                          } border-b border-gray-200`}>
+                          <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                            <button
+                              onClick={() => toggleTeam(team.id)}
+                              className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
+                              <h3 className='text-base font-medium text-gray-700'>
+                                {team.name}
+                              </h3>
+                              <div className='flex items-center space-x-2'>
+                                <span className='text-sm font-medium text-gray-600'>
+                                  {calculateTeamScore(team)}
+                                </span>
+                                <svg
+                                  className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                    expandedTeams.has(team.id)
+                                      ? 'rotate-180'
+                                      : ''
+                                  }`}
+                                  fill='none'
+                                  stroke='currentColor'
+                                  viewBox='0 0 24 24'>
+                                  <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M19 9l-7 7-7-7'
+                                  />
+                                </svg>
+                              </div>
+                            </button>
+                          </div>
+                          <div
+                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                              expandedTeams.has(team.id)
+                                ? 'max-h-[1000px]'
+                                : 'max-h-0'
+                            }`}>
+                            <div className='px-2 pb-1.5'>
+                              <div className='overflow-x-auto'>
+                                <table className='min-w-full divide-y divide-gray-200'>
+                                  <thead>
+                                    <tr>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        Player
+                                      </th>
+                                      {/* Position column to be used later for tournament position tracking
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        Pos
+                                      </th>
+                                      */}
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        R1
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        R2
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        R3
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        R4
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        Cut
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        Bonus
+                                      </th>
+                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                        Total
+                                      </th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody className='bg-white divide-y divide-gray-200'>
+                                    {team.players
+                                      .sort(
+                                        (a: TeamPlayer, b: TeamPlayer) =>
+                                          (b.total || 0) - (a.total || 0)
+                                      )
+                                      .map((player) => (
+                                        <tr key={player.id}>
+                                          <td className='px-6 py-4 whitespace-nowrap'>
+                                            <div className='flex items-center'>
+                                              {player.player.imageUrl && (
+                                                <div className='flex-shrink-0 h-10 w-10'>
+                                                  <img
+                                                    className='h-10 w-10 rounded-full object-cover'
+                                                    src={player.player.imageUrl}
+                                                    alt={
+                                                      player.player
+                                                        .displayName ||
+                                                      player.player.name
+                                                    }
+                                                  />
+                                                </div>
+                                              )}
+                                              <div className='ml-4'>
+                                                <div className='text-sm font-medium text-gray-900'>
+                                                  {player.player.displayName ||
+                                                    player.player.name}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </td>
+                                          {/* Position column to be used later for tournament position tracking
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.leaderboardPosition || '-'}
+                                          </td>
+                                          */}
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.r1?.total || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.r2?.total || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.r3?.total || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.r4?.total || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.cut || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.bonus || '-'}
+                                          </td>
+                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                            {player.total || '-'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               )}

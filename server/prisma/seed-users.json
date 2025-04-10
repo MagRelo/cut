@@ -61,7 +61,7 @@
       "password": "partytime",
       "team": {
         "name": "Jimmy",
-        "players": []
+        "players": ["50525", "47504", "45486", "47591"]
       }
     },
     {
@@ -70,7 +70,7 @@
       "password": "partytime",
       "team": {
         "name": "DoogDiggler",
-        "players": []
+        "players": ["35450", "56630", "34046", "36689"]
       }
     },
     {
@@ -97,7 +97,7 @@
       "password": "partytime",
       "team": {
         "name": "Neely",
-        "players": []
+        "players": ["33448", "46717", "37378", "30925"]
       }
     }
   ]

@@ -122,7 +122,7 @@ export const Timeline: React.FC = () => {
   return (
     <div className='py-6'>
       <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-blue-900'>
+        <h1 className='text-2xl font-bold text-emerald-600'>
           Texas Children's Houston Open
         </h1>
         <div className='text-gray-600'>Memorial Park Golf Course</div>

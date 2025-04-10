@@ -24,13 +24,13 @@ The layout is constrained to a maximum width and uses a unified grid structure w
 
 ```
 ┌─────────────────────────────────┐
-│    1 (75%)         │    2 (25%) │  Row 1: League & Tournament Info
+│    1 (40%)         │    2 (60%) │  Row 1: League & Tournament Info
 ├─────────────────────┼───────────┤  Internal borders between all sections
 │                     │           │
 │                     │   4,5,6,7 │  Row 2: Main Content
 │          3          │  (Tabbed  │
 │      (Chat)         │ Interface)│  3:2 ratio between
-│       60%          │    40%    │  chat and right column
+│       40%           │    60%    │  chat and right column
 │                     │           │
 └─────────────────────┴───────────┘
 ```

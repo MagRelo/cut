@@ -92,10 +92,9 @@ export function Leagues() {
   return (
     <div className='container mx-auto px-4 py-8'>
       <div className='flex justify-between items-center mb-8'>
-        <h1 className='text-3xl font-bold text-gray-900'>My Leagues</h1>
         <Link
           to='/leagues/new'
-          className='bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700'>
+          className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700'>
           Create New League
         </Link>
       </div>
@@ -105,7 +104,9 @@ export function Leagues() {
           <p className='text-gray-600 mb-4'>
             You haven't joined any leagues yet.
           </p>
-          <Link to='/leagues/new' className='text-blue-600 hover:text-blue-800'>
+          <Link
+            to='/leagues/new'
+            className='text-emerald-600 hover:text-emerald-500'>
             Create your first league
           </Link>
         </div>
@@ -181,8 +182,8 @@ export function Leagues() {
                             league.isPrivate
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                               : isJoining
-                              ? 'bg-blue-100 text-blue-400 cursor-wait'
-                              : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                              ? 'bg-emerald-100 text-emerald-400 cursor-wait'
+                              : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
                           }`}>
                           {isJoining ? 'Joining...' : 'Join'}
                         </button>
