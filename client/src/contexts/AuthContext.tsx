@@ -34,11 +34,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+
     if (token) {
       api
         .get<User>('/auth/me')
         .then((response) => {
           setUser(response);
+
+          // We also need to get a fresh stream token here
+          api
+            .get<{ streamToken: string }>('/auth/stream-token')
+            .then(({ streamToken: newStreamToken }) => {
+              setStreamToken(newStreamToken);
+            })
+            .catch((error) => {
+              console.error('Failed to get stream token:', error);
+            });
         })
         .catch(() => {
           logout();

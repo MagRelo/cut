@@ -7,6 +7,7 @@ import { sendEmail } from '../lib/email';
 import { authenticateToken } from '../middleware/auth';
 import { Prisma, User, Team, League } from '@prisma/client';
 import { generateUserToken, ensureStreamUser } from '../lib/getStream';
+import { AuthUser } from '../types/auth';
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;
@@ -389,6 +390,27 @@ router.get('/me', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get current user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get fresh stream token
+router.get('/stream-token', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user as AuthUser;
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // Generate fresh GetStream token and ensure user exists
+    const streamToken = generateUserToken(user.id);
+    await ensureStreamUser(user.id, {
+      name: user.name,
+    });
+
+    res.json({ streamToken });
+  } catch (error) {
+    console.error('Error generating stream token:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

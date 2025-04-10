@@ -24,7 +24,9 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({ leagueId }) => {
 
   // Use useCallback to memoize the connection function
   const initializeChat = useCallback(async () => {
-    if (!leagueId || !user?.id) return;
+    if (!leagueId || !user?.id) {
+      return;
+    }
 
     try {
       await connectToLeague(leagueId);

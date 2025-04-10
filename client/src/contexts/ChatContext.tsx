@@ -65,12 +65,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         hasInitialized.current = true;
 
         // Check if we're already connected as this user
-        if (streamClient.userID === user.id) {
+        const hasUser = !!streamClient.userID;
+
+        if (hasUser && streamClient.userID === user.id) {
           setIsInitialized(true);
           return;
         }
 
         await chatService.connectUser(user.id, streamToken);
+
+        // Verify connection was successful
+        if (!streamClient.userID) {
+          throw new Error(
+            'Stream client failed to connect after connectUser call'
+          );
+        }
+
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to connect to Stream:', error);
@@ -94,6 +104,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const waitForInitialization = async (timeoutMs = 5000): Promise<boolean> => {
     const startTime = Date.now();
+
     while (Date.now() - startTime < timeoutMs) {
       if (streamClient.userID) {
         return true;
@@ -105,6 +116,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const connectToLeague = useCallback(
     async (leagueId: string) => {
+      // First ensure we have the required data
+      if (!user?.id || !streamToken) {
+        throw new Error('Missing required user data for league connection');
+      }
+
       // If we're already connecting to this league, return the existing promise
       if (connectionAttemptRef.current?.leagueId === leagueId) {
         return connectionAttemptRef.current.promise;
@@ -118,13 +134,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       try {
         setIsConnecting(true);
 
-        // Wait for initialization if needed
+        // Ensure Stream client is properly initialized first
         if (!streamClient.userID) {
-          const initialized = await waitForInitialization();
+          await chatService.connectUser(user.id, streamToken);
+
+          // Wait for client to be ready
+          const initialized = await waitForInitialization(10000); // Increased timeout to 10 seconds
           if (!initialized) {
-            throw new Error(
-              'Timed out waiting for Stream client to initialize'
-            );
+            throw new Error('Failed to initialize Stream client');
           }
         }
 
@@ -158,14 +175,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         await connectionPromise;
       } catch (error) {
         console.error('Failed to connect to league channel:', error);
-        // Clear the connection attempt on error
-        if (connectionAttemptRef.current?.leagueId === leagueId) {
-          connectionAttemptRef.current = null;
-        }
         throw error;
       }
     },
-    [currentChannel]
+    [currentChannel, user?.id, streamToken, waitForInitialization]
   );
 
   const value = React.useMemo(
