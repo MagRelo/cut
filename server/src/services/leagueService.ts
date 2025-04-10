@@ -12,6 +12,7 @@ import {
   ValidationError,
   UnauthorizedError,
 } from '../utils/errors';
+import { createOrUpdateLeagueChannel, streamClient } from '../lib/getStream';
 
 const prisma = new PrismaClient();
 
@@ -77,7 +78,7 @@ export class LeagueService {
     userId: string,
     data: CreateLeagueDto
   ): Promise<LeagueWithMembersAndSettings> {
-    return prisma.league.create({
+    const league = await prisma.league.create({
       data: {
         ...data,
         commissionerId: userId,
@@ -94,6 +95,11 @@ export class LeagueService {
         members: true,
       },
     });
+
+    // Create GetStream channel for the league
+    await createOrUpdateLeagueChannel(league.id, league.name, [userId]);
+
+    return league;
   }
 
   async updateLeague(
@@ -103,7 +109,7 @@ export class LeagueService {
   ): Promise<LeagueWithMembersAndSettings> {
     await this.verifyCommissioner(leagueId, userId);
 
-    return prisma.league.update({
+    const updatedLeague = await prisma.league.update({
       where: { id: leagueId },
       data,
       include: {
@@ -111,10 +117,22 @@ export class LeagueService {
         members: true,
       },
     });
+
+    // Update GetStream channel if name changed
+    if (data.name) {
+      const channel = streamClient.channel('league', `league-${leagueId}`);
+      await channel.update({ name: data.name });
+    }
+
+    return updatedLeague;
   }
 
   async deleteLeague(leagueId: string, userId: string): Promise<void> {
     await this.verifyCommissioner(leagueId, userId);
+
+    // Delete GetStream channel
+    const channel = streamClient.channel('league', `league-${leagueId}`);
+    await channel.delete();
 
     await prisma.league.delete({
       where: { id: leagueId },
@@ -181,13 +199,19 @@ export class LeagueService {
       throw new ValidationError('Already a member of this league');
     }
 
-    return prisma.leagueMembership.create({
+    const membership = await prisma.leagueMembership.create({
       data: {
         userId,
         leagueId,
         role: 'MEMBER',
       },
     });
+
+    // Add user to GetStream channel
+    const channel = streamClient.channel('league', `league-${leagueId}`);
+    await channel.addMembers([userId]);
+
+    return membership;
   }
 
   async leaveLeague(leagueId: string, userId: string): Promise<void> {
@@ -208,15 +232,15 @@ export class LeagueService {
       throw new ValidationError('Commissioner cannot leave the league');
     }
 
+    // Remove user from GetStream channel
+    const channel = streamClient.channel('league', `league-${leagueId}`);
+    await channel.removeMembers([userId]);
+
     // Find the user's team in this league
     const team = await prisma.team.findFirst({
       where: {
         leagueId,
-        users: {
-          some: {
-            id: userId,
-          },
-        },
+        userId: userId,
       },
     });
 

@@ -7,6 +7,10 @@ import { SeedData } from './types';
 import { getPgaLeaderboard } from '../src/lib/pgaLeaderboard';
 import { prepareTournamentData } from '../src/controllers/tournamentController';
 import { refreshPlayers } from '../src/lib/playerRefresh';
+import {
+  ensureStreamUser,
+  initializeStreamChannelTypes,
+} from '../src/lib/getStream';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +26,10 @@ async function main() {
   try {
     console.log('Starting database seeding...');
 
+    // Initialize Stream channel types
+    console.log('Initializing Stream channel types...');
+    await initializeStreamChannelTypes();
+
     // Load seed data
     console.log('Loading seed data...');
     const seedData = await loadSeedData();
@@ -31,7 +39,7 @@ async function main() {
     const users = await Promise.all(
       seedData.users.map(async (userData) => {
         const hashedPassword = await bcrypt.hash(userData.password, 10);
-        return prisma.user.upsert({
+        const user = await prisma.user.upsert({
           where: { email: userData.email },
           update: {},
           create: {
@@ -41,6 +49,13 @@ async function main() {
             emailVerified: true,
           },
         });
+
+        // Sync user with GetStream
+        await ensureStreamUser(user.id, {
+          name: user.name,
+        });
+
+        return user;
       })
     );
 

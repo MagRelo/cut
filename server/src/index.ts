@@ -8,6 +8,7 @@ import leagueRoutes from './routes/leagues';
 import hyperliquidRoutes from './routes/hyperliquid';
 import playerRoutes from './routes/player.routes';
 import tournamentRoutes from './routes/tournaments';
+import chatRoutes from './routes/chat';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { requestLogger } from './middleware/logger';
@@ -34,6 +35,9 @@ const requiredEnvVars = [
   'HYPERLIQUID_API_URL',
   'HYPERLIQUID_PRIVATE_KEY',
   'PGA_API_KEY',
+  'GETSTREAM_API_KEY',
+  'GETSTREAM_API_SECRET',
+  'GETSTREAM_APP_ID',
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -70,6 +74,7 @@ app.use('/api/leagues', leagueRoutes);
 app.use('/api/hyperliquid', hyperliquidRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Protected routes
 app.use('/api/protected', authenticateToken, (req, res) => {

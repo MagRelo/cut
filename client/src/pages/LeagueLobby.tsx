@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import type { Team } from '../services/api';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { TeamFormComponent } from '../components/team/TeamFormComponent';
+import { LeagueChat } from '../components/LeagueChat';
 
 interface League {
   id: string;
@@ -226,6 +227,18 @@ export const LeagueLobby: React.FC = () => {
     </div>
   );
 
+  const renderChatContent = () => {
+    if (!leagueId || !isMember) {
+      return (
+        <div className='p-4 text-center text-gray-500'>
+          You must be a member of this league to participate in chat.
+        </div>
+      );
+    }
+
+    return <LeagueChat leagueId={leagueId} />;
+  };
+
   if (isLoading) {
     return (
       <div className='px-4 py-6'>
@@ -348,15 +361,10 @@ export const LeagueLobby: React.FC = () => {
             </div>
 
             {/* Main Content Grid */}
-            <div className='grid grid-cols-5 border-t border-gray-200'>
+            <div className='grid grid-cols-5 border-t border-gray-200 h-full overflow-hidden'>
               {/* Left Column: Chat (3/5 width) */}
-              <div className='col-span-3 overflow-hidden'>
-                <div className='h-full flex flex-col'>
-                  <div className='flex-1 overflow-y-auto p-4'>
-                    {/* Chat component will go here */}
-                    <p className='text-gray-500'>Chat coming soon...</p>
-                  </div>
-                </div>
+              <div className='col-span-3 h-full overflow-hidden'>
+                <div className='h-full'>{renderChatContent()}</div>
               </div>
 
               {/* Right Column: Teams, Create Team, Live Bets (2/5 width) */}
@@ -690,12 +698,7 @@ export const LeagueLobby: React.FC = () => {
 
             {/* Mobile Content */}
             <div className='flex-1 overflow-y-auto'>
-              {activeTab === 'chat' && (
-                <div className='p-4'>
-                  <p className='text-gray-500'>Chat coming soon...</p>
-                </div>
-              )}
-              {/* Rest of mobile content */}
+              {activeTab === 'chat' && renderChatContent()}
               {activeTab === 'teams' && (
                 <div className='p-4'>
                   <div className='space-y-0'>

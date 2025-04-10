@@ -31,6 +31,7 @@ interface ApiConfig {
 
 interface AuthResponse {
   token: string;
+  streamToken: string;
   id: string;
   email: string;
   name: string;
@@ -197,14 +198,28 @@ export class ApiService {
   }
 
   // Auth endpoints
-  async login(email: string, password: string) {
-    const response = await this.request<AuthResponse>('POST', '/auth/login', {
-      email,
-      password,
-    });
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('userId', response.id);
-    return response;
+  async login(email: string, password: string): Promise<AuthResponse> {
+    try {
+      const response = await this.request<AuthResponse>('POST', '/auth/login', {
+        email,
+        password,
+      });
+
+      console.log('API login response:', {
+        hasToken: !!response.token,
+        hasStreamToken: !!response.streamToken,
+        userId: response.id,
+      });
+
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   }
 
   async register(email: string, password: string, name: string) {

@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma';
 import { sendEmail } from '../lib/email';
 import { authenticateToken } from '../middleware/auth';
 import { Prisma, User, Team, League } from '@prisma/client';
+import { generateUserToken, ensureStreamUser } from '../lib/getStream';
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;
@@ -84,6 +85,12 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Generate GetStream token and ensure user exists
+    const streamToken = generateUserToken(user.id);
+    await ensureStreamUser(user.id, {
+      name: user.name,
+    });
+
     res.json({
       id: user.id,
       email: user.email,
@@ -96,6 +103,7 @@ router.post('/login', async (req, res) => {
         leagueName: team.league.name,
       })),
       token,
+      streamToken,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -127,6 +135,11 @@ router.post('/register', async (req, res) => {
         password: hashedPassword,
         name,
       },
+    });
+
+    // Create GetStream user
+    await ensureStreamUser(user.id, {
+      name: user.name,
     });
 
     // Generate verification token
