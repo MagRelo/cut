@@ -1,7 +1,7 @@
 {
   "name": "cut",
   "version": "1.0.0",
-  "description": "Bet the Cut application",
+  "description": "the Cut application",
   "type": "module",
   "scripts": {
     "start": "node dist/index.js",

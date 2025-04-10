@@ -1,6 +1,6 @@
 # API Routes Documentation
 
-This document provides a comprehensive list of all API routes available in the Bet the Cut application.
+This document provides a comprehensive list of all API routes available in the Cut application.
 
 ## Authentication Routes
 

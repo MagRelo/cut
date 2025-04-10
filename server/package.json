@@ -1,7 +1,7 @@
 {
-  "name": "betthecut-server",
+  "name": "server",
   "version": "1.0.0",
-  "description": "Server for Bet the Cut application",
+  "description": "Server for the Cut application",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

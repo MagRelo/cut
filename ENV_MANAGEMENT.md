@@ -1,6 +1,6 @@
-# Environment Management Guide
+# Environment Management
 
-This document outlines the environment configuration management for Bet the Cut project, covering both client and server applications.
+This document outlines the environment configuration management for the Cut project, covering both client and server applications.
 
 ## Environment Files Structure
 

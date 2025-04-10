@@ -336,7 +336,7 @@ router.post('/resend-verification', async (req, res) => {
       to: user.email,
       subject: 'Verify your email',
       html: `
-        <h1>Welcome to Bet the Cut!</h1>
+        <h1>Welcome to the Cut!</h1>
         <p>Please click the link below to verify your email:</p>
         <a href="${process.env.CLIENT_URL}/verify-email?token=${verificationToken}">
           Verify Email
