@@ -1,10 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
-import type { Team } from '../services/api';
+import type {
+  Team as BaseTeam,
+  TeamPlayer as BaseTeamPlayer,
+} from '../services/api';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { TeamFormComponent } from '../components/team/TeamFormComponent';
 import { LeagueChat } from '../components/LeagueChat';
+
+interface Round {
+  strokes: number;
+  total?: number;
+  icon?: string;
+  holes?: {
+    pars: number[];
+    holes: number[];
+    scores: (number | null)[];
+    stableford: (number | null)[];
+  };
+  ratio?: number;
+}
+
+interface TeamPlayer extends Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> {
+  r1?: Round;
+  r2?: Round;
+  r3?: Round;
+  r4?: Round;
+}
+
+interface Team extends Omit<BaseTeam, 'players'> {
+  players: TeamPlayer[];
+}
 
 interface League {
   id: string;
@@ -548,16 +575,16 @@ export const LeagueLobby: React.FC = () => {
                                                 '-'}
                                             </td>
                                             <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r1?.strokes || '-'}
+                                              {player.r1?.total || '-'}
                                             </td>
                                             <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r2?.strokes || '-'}
+                                              {player.r2?.total || '-'}
                                             </td>
                                             <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r3?.strokes || '-'}
+                                              {player.r3?.total || '-'}
                                             </td>
                                             <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                              {player.r4?.strokes || '-'}
+                                              {player.r4?.total || '-'}
                                             </td>
                                             <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                                               {player.cut || '-'}
@@ -822,16 +849,16 @@ export const LeagueLobby: React.FC = () => {
                                         {player.leaderboardPosition || '-'}
                                       </td>
                                       <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r1?.strokes || '-'}
+                                        {player.r1?.total || '-'}
                                       </td>
                                       <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r2?.strokes || '-'}
+                                        {player.r2?.total || '-'}
                                       </td>
                                       <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r3?.strokes || '-'}
+                                        {player.r3?.total || '-'}
                                       </td>
                                       <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                        {player.r4?.strokes || '-'}
+                                        {player.r4?.total || '-'}
                                       </td>
                                       <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                                         {player.cut || '-'}

@@ -80,8 +80,6 @@ class ChatService {
   }
 
   async connectUser(userId: string, userToken: string) {
-    console.log('Connecting user:', userId, userToken);
-
     try {
       // If already connected as this user, don't reconnect
       if (

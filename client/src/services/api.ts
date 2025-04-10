@@ -205,14 +205,9 @@ export class ApiService {
         password,
       });
 
-      console.log('API login response:', {
-        hasToken: !!response.token,
-        hasStreamToken: !!response.streamToken,
-        userId: response.id,
-      });
-
       if (response.token) {
         localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.id);
       }
 
       return response;

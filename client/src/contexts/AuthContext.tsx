@@ -53,18 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    console.log('Login response:', {
-      hasToken: !!response.token,
-      hasStreamToken: !!response.streamToken,
-      userId: response.id,
-    });
-    const { token: _, streamToken: newStreamToken, ...userData } = response;
+    const { streamToken: newStreamToken, ...userData } = response;
     setUser(userData);
     setStreamToken(newStreamToken);
   };
 
   const logout = () => {
-    console.log('Logging out, clearing tokens');
     localStorage.removeItem('token');
     setUser(null);
     setStreamToken(null);
@@ -73,15 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = (userData: User) => {
     setUser(userData);
   };
-
-  // Debug log auth state changes
-  useEffect(() => {
-    console.log('Auth state updated:', {
-      isLoggedIn: !!user,
-      userId: user?.id,
-      hasStreamToken: !!streamToken,
-    });
-  }, [user, streamToken]);
 
   return (
     <AuthContext.Provider

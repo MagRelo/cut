@@ -43,61 +43,34 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     promise: Promise<void>;
   } | null>(null);
 
-  // Debug log whenever auth state changes
-  useEffect(() => {
-    console.log('Auth state changed:', {
-      userId: user?.id,
-      hasStreamToken: !!streamToken,
-      hasInitialized: hasInitialized.current,
-      isInitialized,
-    });
-  }, [user?.id, streamToken, isInitialized]);
-
   useEffect(() => {
     let cleanupFunction = false;
 
     const initChat = async () => {
-      // Log the state at the start of initialization
-      console.log('Checking chat initialization:', {
-        userId: user?.id,
-        hasStreamToken: !!streamToken,
-        hasInitialized: hasInitialized.current,
-        cleanupFunction,
-      });
-
       // Only initialize once and when we have the required data
       if (!user?.id || !streamToken) {
-        console.log('Missing required data for initialization:', {
-          hasUserId: !!user?.id,
-          hasStreamToken: !!streamToken,
-        });
         return;
       }
 
       if (hasInitialized.current) {
-        console.log('Chat already initialized');
         return;
       }
 
       if (cleanupFunction) {
-        console.log('Cleanup in progress, skipping initialization');
         return;
       }
 
       try {
-        console.log('Starting Stream connection for user:', user.id);
         setIsConnecting(true);
         hasInitialized.current = true;
 
         // Check if we're already connected as this user
         if (streamClient.userID === user.id) {
-          console.log('Already connected as current user');
           setIsInitialized(true);
           return;
         }
 
         await chatService.connectUser(user.id, streamToken);
-        console.log('Stream connection successful');
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to connect to Stream:', error);
@@ -114,7 +87,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
     // Cleanup function
     return () => {
-      console.log('Running cleanup function');
       cleanupFunction = true;
       setIsInitialized(false);
     };
@@ -135,15 +107,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     async (leagueId: string) => {
       // If we're already connecting to this league, return the existing promise
       if (connectionAttemptRef.current?.leagueId === leagueId) {
-        console.log(
-          'Already connecting to this league, returning existing promise'
-        );
         return connectionAttemptRef.current.promise;
       }
 
       // If we're already connected to this league, don't reconnect
       if (currentChannel?.id === `league-${leagueId}`) {
-        console.log('Already connected to this league channel');
         return;
       }
 
