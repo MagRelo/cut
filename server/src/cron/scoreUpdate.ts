@@ -25,7 +25,7 @@ export function startScoreUpdateCron() {
   console.log('Starting score update cron job...');
 
   // Run every 10 minutes
-  cron.schedule('*/10 * * * *', async () => {
+  cron.schedule('*/1 * * * *', async () => {
     try {
       // Find tournament that is IN_PROGRESS
       const activeTournament = await prisma.tournament.findFirst({

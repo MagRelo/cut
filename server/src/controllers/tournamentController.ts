@@ -25,10 +25,7 @@ function prepareTournamentData(
     city,
     state,
     timezone: leaderboardData.timezone,
-    status:
-      leaderboardData.tournamentStatus === 'LIVE'
-        ? TournamentStatus.IN_PROGRESS
-        : TournamentStatus.UPCOMING,
+    status: leaderboardData.tournamentStatus,
     roundStatusDisplay: leaderboardData.roundStatusDisplay,
     roundDisplay: leaderboardData.roundDisplay,
     currentRound: leaderboardData.currentRound,
