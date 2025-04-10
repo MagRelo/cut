@@ -12,7 +12,7 @@ const scoreUpdateService = new ScoreUpdateService();
 // 3. Have logic to determine when a tournament is active
 const CURRENT_TOURNAMENT_ID = process.env.CURRENT_TOURNAMENT_ID;
 
-// Schedule the job to run every 10 minutes
+// Schedule the job to run based on environment variable frequency
 export function startScoreUpdateCron() {
   // Check if score update cron should be enabled
   if (process.env.ENABLE_SCORE_UPDATE_CRON !== 'true') {
@@ -22,10 +22,22 @@ export function startScoreUpdateCron() {
     return;
   }
 
-  console.log('Starting score update cron job...');
+  let cronFrequency = process.env.FREQUENCY_SCORE_UPDATE_CRON || '*/10 * * * *';
+
+  // Validate cron expression
+  if (!cron.validate(cronFrequency)) {
+    console.error(
+      `Invalid cron expression: ${cronFrequency}. Defaulting to every 10 minutes.`
+    );
+    cronFrequency = '*/10 * * * *';
+  }
+
+  console.log(
+    `Starting score update cron job with frequency: ${cronFrequency}`
+  );
 
   // Run every 10 minutes
-  cron.schedule('*/1 * * * *', async () => {
+  cron.schedule(cronFrequency, async () => {
     try {
       // Find tournament that is IN_PROGRESS
       const activeTournament = await prisma.tournament.findFirst({
