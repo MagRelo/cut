@@ -96,7 +96,7 @@ export const initializeStreamChannelTypes = async () => {
       console.log('League channel type already exists');
       return;
     }
-    console.error('Error initializing league channel type:', error);
-    throw error;
+    console.error('Error initializing league channel type: league');
+    // throw error;
   }
 };

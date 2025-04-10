@@ -39,7 +39,7 @@ export function startScoreUpdateCron() {
         return;
       }
 
-      await scoreUpdateService.updateAllScores(activeTournament.id);
+      await scoreUpdateService.updateAllScores(activeTournament.pgaTourId);
 
       console.log('Player Scores updated via cron');
     } catch (error) {
