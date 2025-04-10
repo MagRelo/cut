@@ -73,8 +73,8 @@ function calculateRoundIcon(holes: FormattedHoles): string {
   const ratio = calculateHolesRemainingRatio(holes);
   const adjustedScore = roundScore / ratio;
 
-  if (adjustedScore > 11) return ' 🔥';
-  if (adjustedScore < 0) return ' ❄️';
+  if (adjustedScore > 11) return '🔥';
+  if (adjustedScore < 0) return '❄️';
   return '';
 }
 

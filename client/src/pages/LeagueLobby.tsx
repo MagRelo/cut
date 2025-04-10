@@ -59,6 +59,7 @@ interface Tournament {
   startDate: string;
   endDate: string;
   beautyImage?: string;
+  currentRound?: number;
 }
 
 interface TournamentOdds {
@@ -631,10 +632,30 @@ export const LeagueLobby: React.FC = () => {
                                                         </div>
                                                       )}
                                                       <div className='ml-4'>
-                                                        <div className='text-sm font-medium text-gray-900'>
+                                                        <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
                                                           {player.player
                                                             .displayName ||
                                                             player.player.name}
+                                                          {tournament?.currentRound &&
+                                                            (() => {
+                                                              const round =
+                                                                `r${tournament.currentRound}` as keyof TeamPlayer;
+                                                              const roundData =
+                                                                player[
+                                                                  round
+                                                                ] as
+                                                                  | Round
+                                                                  | undefined;
+                                                              return (
+                                                                roundData?.icon && (
+                                                                  <span>
+                                                                    {
+                                                                      roundData.icon
+                                                                    }
+                                                                  </span>
+                                                                )
+                                                              );
+                                                            })()}
                                                         </div>
                                                       </div>
                                                     </div>
@@ -921,10 +942,26 @@ export const LeagueLobby: React.FC = () => {
                                                   </div>
                                                 )}
                                                 <div className='ml-4'>
-                                                  <div className='text-sm font-medium text-gray-900'>
+                                                  <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
                                                     {player.player
                                                       .displayName ||
                                                       player.player.name}
+                                                    {tournament?.currentRound &&
+                                                      (() => {
+                                                        const round =
+                                                          `r${tournament.currentRound}` as keyof TeamPlayer;
+                                                        const roundData =
+                                                          player[round] as
+                                                            | Round
+                                                            | undefined;
+                                                        return (
+                                                          roundData?.icon && (
+                                                            <span>
+                                                              {roundData.icon}
+                                                            </span>
+                                                          )
+                                                        );
+                                                      })()}
                                                   </div>
                                                 </div>
                                               </div>
