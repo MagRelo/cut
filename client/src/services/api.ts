@@ -17,11 +17,14 @@ interface Tournament {
   endDate: string;
 }
 
-interface TournamentOdds {
-  [bookmaker: string]: Array<{
-    name: string;
-    price: number;
-  }>;
+interface TournamentOddsResponse {
+  data: {
+    [bookmaker: string]: Array<{
+      name: string;
+      price: number;
+    }>;
+  };
+  updatedAt: string;
 }
 
 interface ApiConfig {
@@ -295,7 +298,7 @@ export class ApiService {
     const bookmakerQuery = bookmakers
       ? `?bookmakers=${bookmakers.join(',')}`
       : '';
-    return this.request<TournamentOdds>(
+    return this.request<TournamentOddsResponse>(
       'GET',
       `/pga/odds/${tournamentKey}${bookmakerQuery}`
     );

@@ -52,17 +52,23 @@ interface Tournament {
   id: string;
   name: string;
   location: string;
+  city?: string;
+  state?: string;
   course: string;
   status: 'upcoming' | 'in-progress' | 'completed';
   startDate: string;
   endDate: string;
+  beautyImage?: string;
 }
 
 interface TournamentOdds {
-  [key: string]: Array<{
-    name: string;
-    price: number;
-  }>;
+  data: {
+    [key: string]: Array<{
+      name: string;
+      price: number;
+    }>;
+  };
+  updatedAt: string;
 }
 
 type TabSection =
@@ -191,56 +197,61 @@ export const LeagueLobby: React.FC = () => {
   };
 
   const renderOddsList = () => {
-    if (!tournamentOdds?.draftkings) {
+    if (!tournamentOdds?.data?.draftkings) {
       return <p className='text-gray-500'>Loading odds...</p>;
     }
 
     return (
-      <div className='overflow-hidden'>
-        <table className='min-w-full divide-y divide-gray-200'>
-          <thead className='bg-gray-50'>
-            <tr>
-              <th
-                scope='col'
-                className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                Player
-              </th>
-              <th
-                scope='col'
-                className='px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                Odds
-              </th>
-            </tr>
-          </thead>
-          <tbody className='bg-white divide-y divide-gray-200'>
-            {tournamentOdds.draftkings
-              .sort((a, b) => a.price - b.price) // Sort by odds (lowest to highest)
-              .map((outcome, index) => (
-                <tr
-                  key={outcome.name}
-                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
-                    {outcome.name}
-                  </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500'>
-                    {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      <div className='space-y-4'>
+        <div className='text-sm text-gray-500 italic'>
+          Updated at{' '}
+          {new Date(tournamentOdds.updatedAt).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })}
+        </div>
+        <div className='overflow-hidden'>
+          <table className='min-w-full divide-y divide-gray-200'>
+            <thead className='bg-gray-50'>
+              <tr>
+                <th
+                  scope='col'
+                  className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Player
+                </th>
+                <th
+                  scope='col'
+                  className='px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Odds
+                </th>
+              </tr>
+            </thead>
+            <tbody className='bg-white divide-y divide-gray-200'>
+              {tournamentOdds.data.draftkings
+                .sort((a, b) => a.price - b.price) // Sort by odds (lowest to highest)
+                .map((outcome, index) => (
+                  <tr
+                    key={outcome.name}
+                    className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
+                      {outcome.name}
+                    </td>
+                    <td className='px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500'>
+                      {outcome.price > 0 ? `+${outcome.price}` : outcome.price}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
 
   const renderLiveBetsContent = () => (
     <div className='space-y-8'>
-      <div>
-        <h2 className='text-lg font-semibold mb-4'>
-          Tournament Odds (DraftKings)
-        </h2>
-        {renderOddsList()}
-      </div>
+      <div>{renderOddsList()}</div>
       <div>
         <h2 className='text-lg font-semibold mb-4'>Place New Bet</h2>
         {/* Bet form will go here */}
@@ -329,7 +340,7 @@ export const LeagueLobby: React.FC = () => {
               ? 'text-emerald-600 border-b-2 border-emerald-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
-          Live Bets
+          Live Odds
         </button>
         {isMember && (
           <button
@@ -367,22 +378,63 @@ export const LeagueLobby: React.FC = () => {
               </div>
 
               {/* Tournament Info - Takes up 2 columns */}
-              <div className='col-span-2 p-6 border-l border-gray-200'>
+              <div className='col-span-2 relative overflow-hidden border-l border-gray-200'>
                 {tournament ? (
-                  <>
-                    <h2 className='text-lg font-semibold text-gray-900'>
-                      {tournament.name}
-                    </h2>
-                    <div className='mt-2 space-y-1 text-sm text-gray-600'>
-                      <p>{tournament.location}</p>
-                      <p>{tournament.course}</p>
-                      <p className='capitalize'>
-                        {tournament.status.replace('-', ' ')}
-                      </p>
+                  <div className='relative h-full'>
+                    {tournament.beautyImage ? (
+                      <>
+                        <div
+                          className='absolute inset-0 bg-cover bg-center'
+                          style={{
+                            backgroundImage: `url(${tournament.beautyImage})`,
+                          }}
+                        />
+                        <div className='absolute inset-0 bg-black/50' />{' '}
+                        {/* Dark overlay for text contrast */}
+                      </>
+                    ) : (
+                      <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
+                    )}
+                    <div className='relative p-6 text-white h-full flex flex-col'>
+                      <div>
+                        <h2 className='text-2xl font-bold tracking-tight'>
+                          {tournament.name}
+                        </h2>
+                        <div className='mt-2 space-y-2'>
+                          <p className='text-white/90'>{tournament.course}</p>
+                          <p className='flex items-center text-white/90'>
+                            <svg
+                              className='h-5 w-5 mr-2'
+                              fill='none'
+                              stroke='currentColor'
+                              viewBox='0 0 24 24'>
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z'
+                              />
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M15 11a3 3 0 11-6 0 3 3 0 016 0z'
+                              />
+                            </svg>
+                            {tournament.city && tournament.state
+                              ? `${tournament.city}, ${tournament.state}`
+                              : tournament.location}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <p className='text-gray-500'>No tournament scheduled</p>
+                  <div className='h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-6'>
+                    <p className='text-gray-500 text-center'>
+                      No tournament scheduled
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -427,7 +479,7 @@ export const LeagueLobby: React.FC = () => {
                             ? 'border-emerald-500 text-emerald-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}>
-                        Live Bets
+                        Live Odds
                       </button>
                       {isMember && (
                         <button
@@ -503,30 +555,25 @@ export const LeagueLobby: React.FC = () => {
                                             <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               Player
                                             </th>
-                                            {/* Position column to be used later for tournament position tracking
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              Pos
-                                            </th>
-                                            */}
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               R1
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               R2
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               R3
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               R4
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               Cut
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               Bonus
                                             </th>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                               Total
                                             </th>
                                           </tr>
@@ -566,30 +613,25 @@ export const LeagueLobby: React.FC = () => {
                                                     </div>
                                                   </div>
                                                 </td>
-                                                {/* Position column to be used later for tournament position tracking
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                                  {player.leaderboardPosition || '-'}
-                                                </td>
-                                                */}
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.r1?.total || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.r2?.total || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.r3?.total || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.r4?.total || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.cut || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.bonus || '-'}
                                                 </td>
-                                                <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                                   {player.total || '-'}
                                                 </td>
                                               </tr>
@@ -781,30 +823,25 @@ export const LeagueLobby: React.FC = () => {
                                       <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         Player
                                       </th>
-                                      {/* Position column to be used later for tournament position tracking
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        Pos
-                                      </th>
-                                      */}
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         R1
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         R2
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         R3
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         R4
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         Cut
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         Bonus
                                       </th>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                                         Total
                                       </th>
                                     </tr>
@@ -840,30 +877,25 @@ export const LeagueLobby: React.FC = () => {
                                               </div>
                                             </div>
                                           </td>
-                                          {/* Position column to be used later for tournament position tracking
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                                            {player.leaderboardPosition || '-'}
-                                          </td>
-                                          */}
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.r1?.total || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.r2?.total || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.r3?.total || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.r4?.total || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.cut || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.bonus || '-'}
                                           </td>
-                                          <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
                                             {player.total || '-'}
                                           </td>
                                         </tr>

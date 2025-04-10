@@ -7,6 +7,7 @@ import { getActivePlayers } from '../lib/pgaField';
 import { refreshPlayers } from '../lib/playerRefresh';
 import { getGolfTournamentOdds } from '../lib/pgaOdds';
 import { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -121,7 +122,7 @@ router.get('/odds/:tournamentKey', async (req, res) => {
 
     const bookmakerList = bookmakers
       ? (bookmakers as string).split(',').sort().join(',')
-      : null;
+      : '';
 
     // Check cache first
     const cachedData = await prisma.oddsCache.findUnique({
@@ -135,7 +136,10 @@ router.get('/odds/:tournamentKey', async (req, res) => {
 
     // If we have valid cached data less than 1 hour old
     if (cachedData && isLessThanOneHourOld(cachedData.updatedAt)) {
-      return res.json(cachedData.data);
+      return res.json({
+        data: cachedData.data,
+        updatedAt: cachedData.updatedAt.toISOString(),
+      });
     }
 
     // Fetch fresh data
@@ -145,7 +149,7 @@ router.get('/odds/:tournamentKey', async (req, res) => {
     );
 
     // Update or create cache entry
-    await prisma.oddsCache.upsert({
+    const updatedCache = await prisma.oddsCache.upsert({
       where: {
         tournamentKey_bookmakers: {
           tournamentKey,
@@ -153,17 +157,20 @@ router.get('/odds/:tournamentKey', async (req, res) => {
         },
       },
       update: {
-        data: odds,
+        data: JSON.parse(JSON.stringify(odds)) as Prisma.InputJsonValue,
         updatedAt: new Date(),
       },
       create: {
         tournamentKey,
         bookmakers: bookmakerList,
-        data: odds,
+        data: JSON.parse(JSON.stringify(odds)) as Prisma.InputJsonValue,
       },
     });
 
-    res.json(odds);
+    res.json({
+      data: odds,
+      updatedAt: updatedCache.updatedAt.toISOString(),
+    });
   } catch (error) {
     console.error('Error fetching tournament odds:', error);
     res.status(500).json({
