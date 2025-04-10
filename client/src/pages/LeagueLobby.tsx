@@ -653,6 +653,7 @@ export const LeagueLobby: React.FC = () => {
                           teamId={userTeam?.id}
                           leagueId={leagueId}
                           initialTeam={userTeam || undefined}
+                          tournamentStatus={tournament?.status}
                           onSuccess={(teamId, leagueId) => {
                             // Refresh teams data after creation
                             api
@@ -916,6 +917,7 @@ export const LeagueLobby: React.FC = () => {
                     teamId={userTeam?.id}
                     leagueId={leagueId}
                     initialTeam={userTeam || undefined}
+                    tournamentStatus={tournament?.status}
                     onSuccess={(teamId, leagueId) => {
                       // Refresh teams data after creation
                       api.getTeamsByLeague(leagueId).then((updatedTeams) => {

@@ -11,6 +11,7 @@ interface TeamFormComponentProps {
   onSuccess: (teamId: string, leagueId: string) => void;
   onCancel: () => void;
   initialTeam?: Team;
+  tournamentStatus?: 'upcoming' | 'in-progress' | 'completed';
 }
 
 export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
@@ -19,8 +20,10 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
   onSuccess,
   onCancel,
   initialTeam,
+  tournamentStatus,
 }) => {
   const isEditMode = Boolean(teamId);
+  const isFormDisabled = tournamentStatus !== 'upcoming';
 
   const [teamName, setTeamName] = useState(initialTeam?.name || '');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
@@ -127,6 +130,29 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
       {error && <ErrorMessage message={error} />}
 
       <form onSubmit={handleSubmit} className='space-y-8'>
+        {isFormDisabled && (
+          <div className='bg-yellow-50 border-l-4 border-yellow-400 p-4'>
+            <div className='flex'>
+              <div className='flex-shrink-0'>
+                <svg
+                  className='h-5 w-5 text-yellow-400'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'>
+                  <path
+                    fillRule='evenodd'
+                    d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              </div>
+              <div className='ml-3'>
+                <p className='text-sm text-yellow-700'>
+                  Team changes are only allowed before the tournament begins.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className='space-y-6'>
           <div>
             <label
@@ -140,8 +166,9 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
                 id='teamName'
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
-                className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base'
+                className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base disabled:bg-gray-100 disabled:text-gray-500'
                 placeholder='Enter your team name'
+                disabled={isFormDisabled}
               />
             </div>
           </div>
@@ -166,7 +193,8 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
                     id={`player-${index}`}
                     value={selectedPlayers[index] || ''}
                     onChange={(e) => handlePlayerSelect(e, index)}
-                    className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white'>
+                    disabled={isFormDisabled}
+                    className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500'>
                     <option value=''>Select a player...</option>
                     {availablePlayers
                       .filter(
@@ -193,12 +221,13 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
           <button
             type='button'
             onClick={onCancel}
-            className='px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-emerald-500 focus:ring-offset-2 focus:ring-emerald-500 transition-colors'>
+            className='px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-emerald-500 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+            disabled={isFormDisabled}>
             Cancel
           </button>
           <button
             type='submit'
-            disabled={isSaving}
+            disabled={isSaving || isFormDisabled}
             className='px-6 py-3 text-base font-medium text-white bg-emerald-600 border border-transparent rounded-lg shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-emerald-500 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
             {isSaving
               ? isEditMode
