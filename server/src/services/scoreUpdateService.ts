@@ -1,20 +1,14 @@
-import { PrismaClient, Prisma, Player } from '@prisma/client';
+import { PrismaClient, Prisma, Player, TeamPlayer } from '@prisma/client';
 import { fetchScorecard } from '../lib/pgaScorecard';
 
 const prisma = new PrismaClient();
 
-interface PlayerWithPgaTourId extends Player {
-  pgaTourId: string | null;
+interface TeamPlayerWithPlayer extends TeamPlayer {
+  player: Player;
 }
-
-type PlayerWithTeam = Prisma.PlayerGetPayload<{
-  include: { team: true };
-}> &
-  PlayerWithPgaTourId;
 
 interface RoundData {
   holes: {
-    holes: number[];
     pars: number[];
     scores: number[];
     stableford: number[];
@@ -37,64 +31,71 @@ interface ScorecardData {
 }
 
 export class ScoreUpdateService {
-  private async getActivePlayers(): Promise<PlayerWithTeam[]> {
-    const players = (await prisma.player.findMany({
+  private async getActiveTeamPlayers(): Promise<TeamPlayerWithPlayer[]> {
+    const teamPlayers = await prisma.teamPlayer.findMany({
       where: {
-        isActive: true,
-        pgaTourId: {
-          not: null,
+        active: true,
+        player: {
+          pgaTourId: {
+            not: null,
+          },
         },
-      } as Prisma.PlayerWhereInput,
-      include: {
-        team: true,
       },
-    })) as unknown as PlayerWithTeam[];
-    return players;
+      include: {
+        player: true,
+      },
+    });
+    return teamPlayers;
   }
 
-  private async updatePlayerScore(
-    playerId: string,
+  public async updateScore(
+    teamPlayerId: string,
     tournamentId: string,
     pgaTourId: string
   ) {
     try {
-      const scorecard = (await fetchScorecard(
-        pgaTourId,
-        tournamentId
-      )) as ScorecardData;
+      const scorecard = await fetchScorecard(pgaTourId, tournamentId);
       if (!scorecard) return;
 
-      await prisma.$executeRaw`
-        UPDATE "Player"
-        SET 
-          r1 = ${scorecard.R1 ? JSON.stringify(scorecard.R1) : null}::jsonb,
-          r2 = ${scorecard.R2 ? JSON.stringify(scorecard.R2) : null}::jsonb,
-          r3 = ${scorecard.R3 ? JSON.stringify(scorecard.R3) : null}::jsonb,
-          r4 = ${scorecard.R4 ? JSON.stringify(scorecard.R4) : null}::jsonb,
-          total = ${scorecard.stablefordTotal}
-        WHERE id = ${playerId}
-      `;
+      const data: Prisma.TeamPlayerUpdateInput = {
+        r1: scorecard.R1 || Prisma.JsonNull,
+        r2: scorecard.R2 || Prisma.JsonNull,
+        r3: scorecard.R3 || Prisma.JsonNull,
+        r4: scorecard.R4 || Prisma.JsonNull,
+        total: scorecard.stablefordTotal,
+      };
+
+      await prisma.teamPlayer.update({
+        where: { id: teamPlayerId },
+        data,
+      });
     } catch (error) {
-      console.error(`Error updating score for player ${playerId}:`, error);
+      console.error(
+        `Error updating score for team player ${teamPlayerId}:`,
+        error
+      );
+      throw error;
     }
   }
 
   async updateAllScores(tournamentId: string) {
     try {
-      console.log('Starting score update for all active players...');
-      const activePlayers = await this.getActivePlayers();
-      console.log(`Found ${activePlayers.length} active players`);
+      console.log('Starting score update for all active team players...');
+      const activeTeamPlayers = await this.getActiveTeamPlayers();
+      console.log(`Found ${activeTeamPlayers.length} active team players`);
 
-      const updatePromises = activePlayers.map((player) => {
-        if (!player.pgaTourId) {
-          console.warn(`No PGA Tour ID found for player ${player.id}`);
+      const updatePromises = activeTeamPlayers.map((teamPlayer) => {
+        if (!teamPlayer.player.pgaTourId) {
+          console.warn(
+            `No PGA Tour ID found for player ${teamPlayer.player.id}`
+          );
           return Promise.resolve();
         }
 
-        return this.updatePlayerScore(
-          player.id,
+        return this.updateScore(
+          teamPlayer.id,
           tournamentId,
-          player.pgaTourId
+          teamPlayer.player.pgaTourId
         );
       });
 

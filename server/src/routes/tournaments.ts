@@ -14,6 +14,7 @@ const router = express.Router();
 // Public routes
 router.get('/', tournamentController.getAllTournaments);
 router.get('/current', tournamentController.getCurrentTournament);
+router.get('/:id', tournamentController.updateTournament);
 router.get(
   '/:id',
   validate(z.object({ params: tournamentIdSchema })),
@@ -22,7 +23,6 @@ router.get(
 
 // Protected routes
 // router.post('/create', authenticateToken, tournamentController.createTournament);
-router.put('/:id', authenticateToken, tournamentController.updateTournament);
 
 router.delete(
   '/:id',

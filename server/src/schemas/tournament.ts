@@ -9,6 +9,7 @@ export const TournamentStatus = {
 
 // Base schema for tournament fields
 const tournamentBaseSchema = {
+  pgaTourId: z.string(),
   name: z.string().min(2, 'Tournament name must be at least 2 characters'),
   startDate: z.string().datetime('Invalid start date'),
   endDate: z.string().datetime('Invalid end date'),

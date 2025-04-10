@@ -1,33 +1,49 @@
 import { z } from 'zod';
 
-export const playerSchema = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-});
+export const playerSchema = z
+  .object({
+    firstName: z.string().optional().default(''),
+    lastName: z.string().optional().default(''),
+  })
+  .catchall(z.unknown());
 
 export const holeSchema = z.object({
-  par: z.number(),
-  holeNumber: z.number(),
-  score: z.string(),
+  par: z
+    .union([z.number(), z.string()])
+    .transform((val) => (typeof val === 'string' ? parseInt(val) : val)),
+  holeNumber: z
+    .union([z.number(), z.string()])
+    .transform((val) => (typeof val === 'string' ? parseInt(val) : val)),
+  score: z.string().nullable().default('-'),
 });
 
-export const nineSchema = z.object({
-  parTotal: z.number(),
-  holes: z.array(holeSchema),
-});
+export const nineSchema = z
+  .object({
+    parTotal: z
+      .union([z.number(), z.string()])
+      .transform((val) => (typeof val === 'string' ? parseInt(val) : val)),
+    holes: z.array(holeSchema).default([]),
+  })
+  .catchall(z.unknown());
 
-export const roundScoreSchema = z.object({
-  roundNumber: z.number(),
-  firstNine: nineSchema,
-  secondNine: nineSchema,
-});
+export const roundScoreSchema = z
+  .object({
+    roundNumber: z
+      .union([z.number(), z.string()])
+      .transform((val) => (typeof val === 'string' ? parseInt(val) : val)),
+    firstNine: nineSchema.nullable().default(null),
+    secondNine: nineSchema.nullable().default(null),
+  })
+  .catchall(z.unknown());
 
-export const scorecardDataSchema = z.object({
-  tournamentName: z.string(),
-  id: z.string(),
-  player: playerSchema,
-  roundScores: z.array(roundScoreSchema),
-});
+export const scorecardDataSchema = z
+  .object({
+    tournamentName: z.string().optional().default(''),
+    id: z.string().optional().default(''),
+    player: playerSchema.nullable().default(null),
+    roundScores: z.array(roundScoreSchema).default([]),
+  })
+  .catchall(z.unknown());
 
 export const formattedHolesSchema = z.object({
   holes: z.array(z.number()),
@@ -55,18 +71,41 @@ export const scorecardSchema = z.object({
   stablefordTotal: z.number(),
 });
 
-export const scorecardResponseSchema = z.object({
-  data: z.object({
-    scorecardV2: scorecardDataSchema,
-  }),
-  errors: z
-    .array(
-      z.object({
-        message: z.string(),
+export const scorecardResponseSchema = z
+  .object({
+    data: z
+      .object({
+        scorecardV2: scorecardDataSchema,
       })
-    )
-    .optional(),
-});
+      .nullable()
+      .optional(),
+    errors: z
+      .array(
+        z
+          .object({
+            message: z.string(),
+          })
+          .catchall(z.unknown())
+      )
+      .optional(),
+  })
+  .catchall(z.unknown())
+  .transform((data) => {
+    // If data is null or undefined, return a default structure
+    if (!data || !data.data || !data.data.scorecardV2) {
+      return {
+        data: {
+          scorecardV2: {
+            tournamentName: '',
+            id: '',
+            player: null,
+            roundScores: [],
+          },
+        },
+      };
+    }
+    return data;
+  });
 
 export type Player = z.infer<typeof playerSchema>;
 export type Hole = z.infer<typeof holeSchema>;

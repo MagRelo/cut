@@ -40,6 +40,8 @@ export function startScoreUpdateCron() {
       }
 
       await scoreUpdateService.updateAllScores(activeTournament.id);
+
+      console.log('Player Scores updated via cron');
     } catch (error) {
       console.error('Error in score update cron job:', error);
     }

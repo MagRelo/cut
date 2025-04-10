@@ -18,6 +18,13 @@ export const teamPlayerIdSchema = z.object({
   playerId: z.string().cuid('Invalid player ID'),
 });
 
+// Schema for updating team player score
+export const updateTeamPlayerScoreSchema = z.object({
+  teamPlayerId: z.string().cuid('Invalid team player ID'),
+  tournamentId: z.string(),
+  pgaTourId: z.string(),
+});
+
 // Types derived from schemas
 export type CreateTeamPlayerBody = z.infer<typeof createTeamPlayerSchema>;
 export type UpdateTeamPlayerBody = z.infer<typeof updateTeamPlayerSchema>;

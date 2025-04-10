@@ -17,6 +17,7 @@ function prepareTournamentData(
 ): Prisma.TournamentCreateInput {
   const [city, state] = leaderboardData.location.split(', ');
   const data = {
+    pgaTourId: leaderboardData.tournamentId,
     name: leaderboardData.tournamentName,
     startDate: new Date(), // Current date as fallback
     endDate: new Date(new Date().setDate(new Date().getDate() + 4)), // 4 days from now as fallback
@@ -125,18 +126,16 @@ export const tournamentController = {
         ? JSON.parse(JSON.stringify(leaderboardData.weather))
         : null;
 
+      // Update tournament with PGA Tour data
       const tournament = await prisma.tournament.update({
         where: { id },
         data: {
-          status:
-            leaderboardData.tournamentStatus === 'LIVE'
-              ? TournamentStatus.IN_PROGRESS
-              : TournamentStatus.UPCOMING,
+          status: leaderboardData.tournamentStatus as string,
           roundStatusDisplay: leaderboardData.roundStatusDisplay || null,
           roundDisplay: leaderboardData.roundDisplay || null,
           currentRound: leaderboardData.currentRound || null,
           weather: weatherData,
-        } as any, // Type assertion to bypass type checking temporarily
+        },
       });
 
       res.json(tournament);

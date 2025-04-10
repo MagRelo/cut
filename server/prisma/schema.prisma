@@ -119,6 +119,7 @@ model TeamPlayer {
 
 model Tournament {
   id                 String             @id @default(cuid())
+  pgaTourId          String             @unique
   name               String
   startDate          DateTime
   endDate            DateTime
