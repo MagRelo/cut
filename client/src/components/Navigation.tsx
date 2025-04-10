@@ -16,7 +16,9 @@ export const Navigation: React.FC = () => {
         <div className='flex justify-between h-16'>
           <div className='flex'>
             <div className='flex-shrink-0 flex items-center'>
-              <Link to='/' className='text-xl font-bold text-emerald-600'>
+              <Link
+                to={user ? '/leagues' : '/'}
+                className='text-xl font-bold text-emerald-600'>
                 the Cut
               </Link>
             </div>

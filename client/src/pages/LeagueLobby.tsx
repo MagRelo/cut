@@ -509,21 +509,23 @@ export const LeagueLobby: React.FC = () => {
                               <div
                                 key={team.id}
                                 className={`${
-                                  index === 0 ? 'border-t' : ''
-                                } border-b border-gray-200`}>
-                                <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                } hover:bg-gray-100/70 transition-colors`}>
+                                <div className='w-full'>
                                   <button
                                     onClick={() => toggleTeam(team.id)}
-                                    className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                                    <h3 className='text-base font-medium text-gray-700'>
-                                      {team.name}
-                                    </h3>
-                                    <div className='flex items-center space-x-2'>
-                                      <span className='text-sm font-medium text-gray-600'>
+                                    className='w-full px-4 py-2 flex justify-between items-center'>
+                                    <div className='flex items-center'>
+                                      <h3 className='text-base font-medium text-gray-900'>
+                                        {team.name}
+                                      </h3>
+                                    </div>
+                                    <div className='flex items-center space-x-4'>
+                                      <span className='text-sm font-semibold text-gray-900'>
                                         {calculateTeamScore(team)}
                                       </span>
                                       <svg
-                                        className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                        className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
                                           expandedTeams.has(team.id)
                                             ? 'rotate-180'
                                             : ''
@@ -544,100 +546,125 @@ export const LeagueLobby: React.FC = () => {
                                 <div
                                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
                                     expandedTeams.has(team.id)
-                                      ? 'max-h-[1000px]'
+                                      ? 'max-h-[1000px] border-t border-gray-200'
                                       : 'max-h-0'
                                   }`}>
-                                  <div className='px-2 pb-1.5'>
-                                    <div className='overflow-x-auto'>
-                                      <table className='min-w-full divide-y divide-gray-200'>
-                                        <thead>
-                                          <tr>
-                                            <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              Player
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              R1
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              R2
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              R3
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              R4
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              Cut
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              Bonus
-                                            </th>
-                                            <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                              Total
-                                            </th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className='bg-white divide-y divide-gray-200'>
-                                          {team.players
-                                            .sort(
-                                              (a: TeamPlayer, b: TeamPlayer) =>
-                                                (b.total || 0) - (a.total || 0)
-                                            )
-                                            .map((player) => (
-                                              <tr key={player.id}>
-                                                <td className='px-6 py-4 whitespace-nowrap'>
-                                                  <div className='flex items-center'>
-                                                    {player.player.imageUrl && (
-                                                      <div className='flex-shrink-0 h-10 w-10'>
-                                                        <img
-                                                          className='h-10 w-10 rounded-full object-cover'
-                                                          src={
-                                                            player.player
-                                                              .imageUrl
-                                                          }
-                                                          alt={
-                                                            player.player
-                                                              .displayName ||
-                                                            player.player.name
-                                                          }
-                                                        />
-                                                      </div>
-                                                    )}
-                                                    <div className='ml-4'>
-                                                      <div className='text-sm font-medium text-gray-900'>
-                                                        {player.player
-                                                          .displayName ||
-                                                          player.player.name}
+                                  <div className='px-4 py-2'>
+                                    <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
+                                      <div className='inline-block min-w-full align-middle'>
+                                        <table className='min-w-full divide-y divide-gray-200'>
+                                          <thead className='bg-gray-50/50'>
+                                            <tr>
+                                              <th
+                                                scope='col'
+                                                className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
+                                                Player
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                R1
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                R2
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                R3
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                R4
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                Cut
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                Bonus
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                Total
+                                              </th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className='divide-y divide-gray-200'>
+                                            {team.players
+                                              .sort(
+                                                (
+                                                  a: TeamPlayer,
+                                                  b: TeamPlayer
+                                                ) =>
+                                                  (b.total || 0) -
+                                                  (a.total || 0)
+                                              )
+                                              .map((player) => (
+                                                <tr
+                                                  key={player.id}
+                                                  className='hover:bg-gray-50/50'>
+                                                  <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
+                                                    <div className='flex items-center'>
+                                                      {player.player
+                                                        .imageUrl && (
+                                                        <div className='flex-shrink-0 h-10 w-10 relative'>
+                                                          <img
+                                                            className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
+                                                            src={
+                                                              player.player
+                                                                .imageUrl
+                                                            }
+                                                            alt={
+                                                              player.player
+                                                                .displayName ||
+                                                              player.player.name
+                                                            }
+                                                          />
+                                                        </div>
+                                                      )}
+                                                      <div className='ml-4'>
+                                                        <div className='text-sm font-medium text-gray-900'>
+                                                          {player.player
+                                                            .displayName ||
+                                                            player.player.name}
+                                                        </div>
                                                       </div>
                                                     </div>
-                                                  </div>
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r1?.total ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r2?.total ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r3?.total ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r4?.total ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.cut ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.bonus ?? '-'}
-                                                </td>
-                                                <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.total ?? '-'}
-                                                </td>
-                                              </tr>
-                                            ))}
-                                        </tbody>
-                                      </table>
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.r1?.total ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.r2?.total ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.r3?.total ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.r4?.total ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.cut ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.bonus ?? '-'}
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
+                                                    {player.total ?? '-'}
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -778,21 +805,23 @@ export const LeagueLobby: React.FC = () => {
                         <div
                           key={team.id}
                           className={`${
-                            index === 0 ? 'border-t' : ''
-                          } border-b border-gray-200`}>
-                          <div className='w-full px-2 py-1.5 flex justify-between items-center'>
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          } hover:bg-gray-100/70 transition-colors`}>
+                          <div className='w-full'>
                             <button
                               onClick={() => toggleTeam(team.id)}
-                              className='flex-1 flex justify-between items-center hover:bg-gray-100/50 transition-colors'>
-                              <h3 className='text-base font-medium text-gray-700'>
-                                {team.name}
-                              </h3>
-                              <div className='flex items-center space-x-2'>
-                                <span className='text-sm font-medium text-gray-600'>
+                              className='w-full px-4 py-2 flex justify-between items-center'>
+                              <div className='flex items-center'>
+                                <h3 className='text-base font-medium text-gray-900'>
+                                  {team.name}
+                                </h3>
+                              </div>
+                              <div className='flex items-center space-x-4'>
+                                <span className='text-sm font-semibold text-gray-900'>
                                   {calculateTeamScore(team)}
                                 </span>
                                 <svg
-                                  className={`w-4 h-4 text-gray-400 transform transition-transform ${
+                                  className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
                                     expandedTeams.has(team.id)
                                       ? 'rotate-180'
                                       : ''
@@ -813,96 +842,119 @@ export const LeagueLobby: React.FC = () => {
                           <div
                             className={`overflow-hidden transition-all duration-300 ease-in-out ${
                               expandedTeams.has(team.id)
-                                ? 'max-h-[1000px]'
+                                ? 'max-h-[1000px] border-t border-gray-200'
                                 : 'max-h-0'
                             }`}>
-                            <div className='px-2 pb-1.5'>
-                              <div className='overflow-x-auto'>
-                                <table className='min-w-full divide-y divide-gray-200'>
-                                  <thead>
-                                    <tr>
-                                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        Player
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        R1
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        R2
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        R3
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        R4
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        Cut
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        Bonus
-                                      </th>
-                                      <th className='w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                        Total
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className='bg-white divide-y divide-gray-200'>
-                                    {team.players
-                                      .sort(
-                                        (a: TeamPlayer, b: TeamPlayer) =>
-                                          (b.total || 0) - (a.total || 0)
-                                      )
-                                      .map((player) => (
-                                        <tr key={player.id}>
-                                          <td className='px-6 py-4 whitespace-nowrap'>
-                                            <div className='flex items-center'>
-                                              {player.player.imageUrl && (
-                                                <div className='flex-shrink-0 h-10 w-10'>
-                                                  <img
-                                                    className='h-10 w-10 rounded-full object-cover'
-                                                    src={player.player.imageUrl}
-                                                    alt={
-                                                      player.player
-                                                        .displayName ||
-                                                      player.player.name
-                                                    }
-                                                  />
-                                                </div>
-                                              )}
-                                              <div className='ml-4'>
-                                                <div className='text-sm font-medium text-gray-900'>
-                                                  {player.player.displayName ||
-                                                    player.player.name}
+                            <div className='px-4 py-2'>
+                              <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
+                                <div className='inline-block min-w-full align-middle'>
+                                  <table className='min-w-full divide-y divide-gray-200'>
+                                    <thead className='bg-gray-50/50'>
+                                      <tr>
+                                        <th
+                                          scope='col'
+                                          className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
+                                          Player
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          R1
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          R2
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          R3
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          R4
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          Cut
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          Bonus
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          Total
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className='divide-y divide-gray-200'>
+                                      {team.players
+                                        .sort(
+                                          (a: TeamPlayer, b: TeamPlayer) =>
+                                            (b.total || 0) - (a.total || 0)
+                                        )
+                                        .map((player) => (
+                                          <tr
+                                            key={player.id}
+                                            className='hover:bg-gray-50/50'>
+                                            <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
+                                              <div className='flex items-center'>
+                                                {player.player.imageUrl && (
+                                                  <div className='flex-shrink-0 h-10 w-10 relative'>
+                                                    <img
+                                                      className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
+                                                      src={
+                                                        player.player.imageUrl
+                                                      }
+                                                      alt={
+                                                        player.player
+                                                          .displayName ||
+                                                        player.player.name
+                                                      }
+                                                    />
+                                                  </div>
+                                                )}
+                                                <div className='ml-4'>
+                                                  <div className='text-sm font-medium text-gray-900'>
+                                                    {player.player
+                                                      .displayName ||
+                                                      player.player.name}
+                                                  </div>
                                                 </div>
                                               </div>
-                                            </div>
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r1?.total ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r2?.total ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r3?.total ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r4?.total ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.cut ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.bonus ?? '-'}
-                                          </td>
-                                          <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.total ?? '-'}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                  </tbody>
-                                </table>
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.r1?.total ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.r2?.total ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.r3?.total ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.r4?.total ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.cut ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.bonus ?? '-'}
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
+                                              {player.total ?? '-'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
                             </div>
                           </div>
