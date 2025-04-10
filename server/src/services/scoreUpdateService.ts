@@ -100,7 +100,6 @@ export class ScoreUpdateService {
       });
 
       await Promise.all(updatePromises);
-      console.log('Score update completed successfully');
     } catch (error) {
       console.error('Error updating scores:', error);
       throw error;
