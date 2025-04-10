@@ -614,25 +614,25 @@ export const LeagueLobby: React.FC = () => {
                                                   </div>
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r1?.total || '-'}
+                                                  {player.r1?.total ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r2?.total || '-'}
+                                                  {player.r2?.total ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r3?.total || '-'}
+                                                  {player.r3?.total ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.r4?.total || '-'}
+                                                  {player.r4?.total ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.cut || '-'}
+                                                  {player.cut ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.bonus || '-'}
+                                                  {player.bonus ?? '-'}
                                                 </td>
                                                 <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                                  {player.total || '-'}
+                                                  {player.total ?? '-'}
                                                 </td>
                                               </tr>
                                             ))}
@@ -878,25 +878,25 @@ export const LeagueLobby: React.FC = () => {
                                             </div>
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r1?.total || '-'}
+                                            {player.r1?.total ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r2?.total || '-'}
+                                            {player.r2?.total ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r3?.total || '-'}
+                                            {player.r3?.total ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.r4?.total || '-'}
+                                            {player.r4?.total ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.cut || '-'}
+                                            {player.cut ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.bonus || '-'}
+                                            {player.bonus ?? '-'}
                                           </td>
                                           <td className='px-2 py-4 whitespace-nowrap text-sm text-center text-gray-500'>
-                                            {player.total || '-'}
+                                            {player.total ?? '-'}
                                           </td>
                                         </tr>
                                       ))}
