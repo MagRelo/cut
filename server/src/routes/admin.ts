@@ -36,7 +36,7 @@ router.get(
   requireAdmin,
   async (req, res, next) => {
     try {
-      const records = await prisma.SystemProcessRecord.findMany({
+      const records = await prisma.systemProcessRecord.findMany({
         orderBy: {
           createdAt: 'desc',
         },
