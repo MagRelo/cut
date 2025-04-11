@@ -5,6 +5,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  userType: string;
   teams: Array<{
     id: string;
     name: string;
@@ -23,6 +24,7 @@ interface AuthContextData {
   register: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
+  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -94,6 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await api.resetPassword(token, password);
   };
 
+  const isAdmin = () => {
+    return user?.userType === 'ADMIN';
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         forgotPassword,
         resetPassword,
+        isAdmin,
       }}>
       {children}
     </AuthContext.Provider>

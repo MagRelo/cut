@@ -18,6 +18,7 @@ type AuthUser = {
   id: string;
   email: string;
   name: string;
+  userType: string;
   teams: AuthTeam[];
 };
 
@@ -81,6 +82,7 @@ export const authenticateToken = async (
       id: user.id,
       email: user.email,
       name: user.name,
+      userType: user.userType,
       teams: user.teams.map((team) => ({
         id: team.id,
         name: team.name,

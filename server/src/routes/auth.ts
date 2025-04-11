@@ -13,7 +13,7 @@ type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;
 };
 
-type UserWithTeams = User & {
+type UserWithTeams = Omit<User, 'teams'> & {
   teams: TeamWithLeague[];
 };
 
@@ -88,6 +88,7 @@ router.post('/login', async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      userType: user.userType,
       token,
       streamToken,
       teams: user.teams.map((team) => ({
@@ -146,6 +147,7 @@ router.post('/register', async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      userType: user.userType,
       token,
       teams: [],
     });
@@ -277,6 +279,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      userType: user.userType,
       teams: user.teams.map((team) => ({
         id: team.id,
         name: team.name,

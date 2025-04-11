@@ -20,6 +20,7 @@ export interface SeedUser {
   name: string;
   password: string;
   isCommissioner?: boolean;
+  userType?: 'ADMIN' | 'USER';
   team: SeedTeam;
 }
 

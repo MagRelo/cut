@@ -15,6 +15,8 @@ import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
+import { AdminPage } from './pages/AdminPage';
 import { UserSettings } from './pages/UserSettings';
 
 export const App: React.FC = () => {
@@ -30,6 +32,12 @@ export const App: React.FC = () => {
               <Route path='/register' element={<Register />} />
               <Route path='/forgot-password' element={<ForgotPassword />} />
               <Route path='/reset-password' element={<ResetPassword />} />
+
+              {/* Admin Routes */}
+              <Route element={<AdminRoute />}>
+                <Route path='/admin' element={<AdminPage />} />
+              </Route>
+
               <Route
                 path='/settings'
                 element={

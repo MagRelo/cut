@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Navigation: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -33,6 +33,17 @@ export const Navigation: React.FC = () => {
                   }`}>
                   Leagues
                 </Link>
+                {isAdmin() && (
+                  <Link
+                    to='/admin'
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      isActive('/admin')
+                        ? 'border-emerald-500 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}>
+                    Admin
+                  </Link>
+                )}
               </div>
             )}
           </div>

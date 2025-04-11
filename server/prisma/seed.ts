@@ -44,6 +44,7 @@ async function main() {
             email: userData.email,
             name: userData.name,
             password: hashedPassword,
+            userType: userData.userType || 'USER',
           },
         });
 
