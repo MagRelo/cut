@@ -142,6 +142,19 @@ model Tournament {
   timelineEntries    TimelineEntry[]
 }
 
+model SystemProcessRecord {
+  id          String   @id @default(cuid())
+  processType String   // Type of process (e.g., "SCORE_UPDATE")
+  status      String   // SUCCESS or FAILURE
+  processData Json     // Process-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([processType])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model TournamentPlayer {
   id                  String     @id @default(cuid())
   tournament          Tournament @relation(fields: [tournamentId], references: [id])

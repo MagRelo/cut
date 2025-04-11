@@ -1,6 +1,13 @@
-import { PrismaClient, Prisma, Player, TeamPlayer } from '@prisma/client';
+import {
+  PrismaClient,
+  Prisma,
+  Player,
+  TeamPlayer,
+  Tournament,
+} from '@prisma/client';
 import { TimelineService } from './timelineService';
 import { fetchScorecard } from '../lib/pgaScorecard';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
 
 const prisma = new PrismaClient();
 const timelineService = new TimelineService();
@@ -32,7 +39,47 @@ interface ScorecardData {
   stablefordTotal: number;
 }
 
+interface ProcessStats {
+  tournamentUpdated: boolean;
+  playerScoresUpdated: number;
+  timelineEntriesCreated: number;
+}
+
 export class ScoreUpdateService {
+  private async logProcessExecution(
+    tournament: Tournament,
+    stats: ProcessStats,
+    error?: Error
+  ) {
+    try {
+      await prisma.systemProcessRecord.create({
+        data: {
+          processType: 'SCORE_UPDATE',
+          status: error ? 'FAILURE' : 'SUCCESS',
+          processData: {
+            tournamentId: tournament.id,
+            pgaTourId: tournament.pgaTourId,
+            status: tournament.status,
+            roundStatusDisplay: tournament.roundStatusDisplay,
+            stats: {
+              tournamentUpdated: stats.tournamentUpdated,
+              playerScoresUpdated: stats.playerScoresUpdated,
+              timelineEntriesCreated: stats.timelineEntriesCreated,
+            },
+            error: error
+              ? {
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : null,
+          },
+        },
+      });
+    } catch (logError) {
+      console.error('Failed to log process execution:', logError);
+    }
+  }
+
   private async getActiveTeamPlayers(): Promise<TeamPlayerWithPlayer[]> {
     const teamPlayers = await prisma.teamPlayer.findMany({
       where: {
@@ -48,6 +95,60 @@ export class ScoreUpdateService {
       },
     });
     return teamPlayers;
+  }
+
+  private async updateTournamentRecord(): Promise<Tournament> {
+    try {
+      // Get the most recently updated tournament
+      const currentTournament = await prisma.tournament.findFirst({
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
+
+      // Fetch latest leaderboard data
+      const leaderboardData = await getPgaLeaderboard();
+
+      // If current tournament exists and pgaTourId matches, update it
+      if (
+        currentTournament &&
+        currentTournament.pgaTourId === leaderboardData.tournamentId
+      ) {
+        return prisma.tournament.update({
+          where: { id: currentTournament.id },
+          data: {
+            status: leaderboardData.tournamentStatus,
+            roundStatusDisplay: leaderboardData.roundStatusDisplay,
+            roundDisplay: leaderboardData.roundDisplay,
+            currentRound: leaderboardData.currentRound,
+            weather: leaderboardData.weather,
+          },
+        });
+      }
+
+      // If pgaTourId doesn't match, create new tournament record
+      return prisma.tournament.create({
+        data: {
+          pgaTourId: leaderboardData.tournamentId,
+          name: leaderboardData.tournamentName,
+          course: leaderboardData.courseName,
+          city: leaderboardData.location.split(', ')[0],
+          state: leaderboardData.location.split(', ')[1],
+          timezone: leaderboardData.timezone,
+          status: leaderboardData.tournamentStatus,
+          roundStatusDisplay: leaderboardData.roundStatusDisplay,
+          roundDisplay: leaderboardData.roundDisplay,
+          currentRound: leaderboardData.currentRound,
+          weather: leaderboardData.weather,
+          beautyImage: leaderboardData.beautyImage,
+          startDate: new Date(), // You might want to get this from the API
+          endDate: new Date(new Date().setDate(new Date().getDate() + 4)), // Default to 4 days
+        },
+      });
+    } catch (error) {
+      console.error('Error updating tournament record:', error);
+      throw error;
+    }
   }
 
   public async updateScore(
@@ -81,10 +182,34 @@ export class ScoreUpdateService {
   }
 
   async updateAllScores(tournamentId: string) {
+    const stats: ProcessStats = {
+      tournamentUpdated: false,
+      playerScoresUpdated: 0,
+      timelineEntriesCreated: 0,
+    };
+
+    let tournament: Tournament | null = null;
+
     try {
-      console.log('Starting score update for all active team players...');
+      // Step 1: Always update the tournament record
+      tournament = await this.updateTournamentRecord();
+      stats.tournamentUpdated = true;
+
+      // Only proceed with score and timeline updates if round is in progress or complete
+      if (
+        !['In Progress', 'Complete'].includes(
+          tournament.roundStatusDisplay || ''
+        )
+      ) {
+        await this.logProcessExecution(tournament, stats);
+        console.log(
+          `updateScores ran via cron at ${new Date().toLocaleString()}`
+        );
+        return { success: true };
+      }
+
+      // Step 2: Update player scores
       const activeTeamPlayers = await this.getActiveTeamPlayers();
-      console.log(`Found ${activeTeamPlayers.length} active team players`);
 
       const updatePromises = activeTeamPlayers.map((teamPlayer) => {
         if (!teamPlayer.player.pgaTourId) {
@@ -102,25 +227,25 @@ export class ScoreUpdateService {
       });
 
       await Promise.all(updatePromises);
+      stats.playerScoresUpdated = activeTeamPlayers.length;
 
-      // Get the tournament to check current round
-      const tournament = await prisma.tournament.findUnique({
-        where: { pgaTourId: tournamentId },
-      });
-
-      if (!tournament) {
-        throw new Error('Tournament not found');
-      }
-
-      // After updating all scores, create timeline entries
+      // Step 3: Create timeline entries
       await timelineService.createTimelineEntries(
         tournament.id,
         tournament.currentRound || 1
       );
+      stats.timelineEntriesCreated = 1;
 
+      await this.logProcessExecution(tournament, stats);
+      console.log(
+        `updateScores ran via cron at ${new Date().toLocaleString()}`
+      );
       return { success: true };
     } catch (error) {
       console.error('Error updating scores:', error);
+      if (error instanceof Error && tournament) {
+        await this.logProcessExecution(tournament, stats, error);
+      }
       throw error;
     }
   }
