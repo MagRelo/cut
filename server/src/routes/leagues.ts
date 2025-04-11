@@ -43,6 +43,11 @@ router.post(
   leagueController.joinLeague.bind(leagueController)
 );
 router.post(
+  '/join-with-invite',
+  authenticateToken,
+  leagueController.joinLeagueWithInviteCode.bind(leagueController)
+);
+router.post(
   '/:id/leave',
   authenticateToken,
   leagueController.leaveLeague.bind(leagueController)

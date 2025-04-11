@@ -7,6 +7,9 @@ export interface SeedLeagueSettings {
 export interface SeedLeague {
   name: string;
   description: string;
+  isPrivate?: boolean;
+  inviteCode?: string;
+  maxTeams?: number;
   settings: SeedLeagueSettings;
 }
 

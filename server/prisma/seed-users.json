@@ -2,6 +2,9 @@
   "league": {
     "name": "Ballstrikers",
     "description": "20 Years of Trash Talk and Questionable Picks.",
+    "isPrivate": true,
+    "inviteCode": "TESTCODE",
+    "maxTeams": 11,
     "settings": {
       "rosterSize": 8,
       "weeklyStarters": 4,

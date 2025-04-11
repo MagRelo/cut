@@ -32,6 +32,7 @@ export interface CreateLeagueDto {
   name: string;
   description?: string;
   isPrivate?: boolean;
+  inviteCode?: string;
   maxTeams?: number;
 }
 
@@ -39,6 +40,7 @@ export interface UpdateLeagueDto {
   name?: string;
   description?: string;
   isPrivate?: boolean;
+  inviteCode?: string;
   maxTeams?: number;
 }
 
@@ -74,13 +76,48 @@ export class LeagueService {
     return league;
   }
 
+  private async generateInviteCode(): Promise<string> {
+    const maxAttempts = 5;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      // Generate a random 8-character alphanumeric code
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
+      }
+
+      // Check if this code already exists
+      const existingLeague = await prisma.league.findUnique({
+        where: { inviteCode: code },
+      });
+
+      if (!existingLeague) {
+        return code;
+      }
+
+      attempts++;
+    }
+
+    throw new Error(
+      'Failed to generate unique invite code after multiple attempts'
+    );
+  }
+
   async createLeague(
     userId: string,
     data: CreateLeagueDto
   ): Promise<LeagueWithMembersAndSettings> {
+    // If the league is private, generate an invite code
+    const inviteCode = data.isPrivate ? await this.generateInviteCode() : null;
+
     const league = await prisma.league.create({
       data: {
         ...data,
+        inviteCode,
         commissionerId: userId,
         settings: { create: {} },
         members: {
@@ -187,7 +224,7 @@ export class LeagueService {
 
     if (league.isPrivate) {
       throw new ValidationError(
-        'This league is private and requires an invitation'
+        'This league is private. Please use the invite code to join.'
       );
     }
 
@@ -312,5 +349,45 @@ export class LeagueService {
     }
 
     return settings;
+  }
+
+  async joinLeagueWithInviteCode(
+    userId: string,
+    inviteCode: string
+  ): Promise<Prisma.LeagueMembershipGetPayload<{}>> {
+    const league = await prisma.league.findUnique({
+      where: {
+        inviteCode: inviteCode,
+      },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!league) {
+      throw new ValidationError('Invalid invite code');
+    }
+
+    if (league.members.length >= league.maxTeams) {
+      throw new ValidationError('League is full');
+    }
+
+    if (league.members.some((m) => m.userId === userId)) {
+      throw new ValidationError('Already a member of this league');
+    }
+
+    const membership = await prisma.leagueMembership.create({
+      data: {
+        userId,
+        leagueId: league.id,
+        role: 'MEMBER',
+      },
+    });
+
+    // Add user to GetStream channel
+    const channel = streamClient.channel('league', `league-${league.id}`);
+    await channel.addMembers([userId]);
+
+    return membership;
   }
 }

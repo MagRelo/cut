@@ -11,8 +11,10 @@ import {
   ensureStreamUser,
   initializeStreamChannelTypes,
 } from '../src/lib/getStream';
+import { LeagueService } from '../src/services/leagueService';
 
 const prisma = new PrismaClient();
+const leagueService = new LeagueService();
 
 async function loadSeedData(): Promise<SeedData> {
   const __filename = fileURLToPath(import.meta.url);
@@ -64,31 +66,28 @@ async function main() {
       throw new Error('No commissioner found in seed data');
     }
 
-    const league = await prisma.league.create({
-      data: {
-        name: seedData.league.name,
-        description: seedData.league.description,
-        commissioner: {
-          connect: { id: commissioner.id },
-        },
-        settings: {
-          create: seedData.league.settings,
-        },
-      },
+    const league = await leagueService.createLeague(commissioner.id, {
+      name: seedData.league.name,
+      description: seedData.league.description,
+      isPrivate: seedData.league.isPrivate ?? false,
+      inviteCode: seedData.league.inviteCode,
+      maxTeams: seedData.league.maxTeams ?? 8,
     });
 
-    // Add league memberships
+    // Add league memberships for non-commissioner users
     console.log('Adding league memberships...');
     await Promise.all(
-      users.map((user, i) =>
-        prisma.leagueMembership.create({
-          data: {
-            user: { connect: { id: user.id } },
-            league: { connect: { id: league.id } },
-            role: seedData.users[i].isCommissioner ? 'COMMISSIONER' : 'MEMBER',
-          },
-        })
-      )
+      users
+        .filter((user) => user.id !== commissioner.id)
+        .map((user) =>
+          prisma.leagueMembership.create({
+            data: {
+              user: { connect: { id: user.id } },
+              league: { connect: { id: league.id } },
+              role: 'MEMBER',
+            },
+          })
+        )
     );
 
     // Refresh PGA Tour players first to ensure we have all players

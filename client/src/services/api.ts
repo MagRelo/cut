@@ -105,6 +105,14 @@ interface CreateTeamPayload {
   players: string[];
 }
 
+interface LeagueMembership {
+  id: string;
+  userId: string;
+  leagueId: string;
+  role: string;
+  joinedAt: string;
+}
+
 export interface Player {
   id: string;
   pgaTourId: string;
@@ -330,6 +338,12 @@ export class ApiService {
 
   async joinLeague(leagueId: string) {
     return this.request<League>('POST', `/leagues/${leagueId}/join`);
+  }
+
+  async joinLeagueWithInviteCode(inviteCode: string) {
+    return this.request<LeagueMembership>('POST', '/leagues/join-with-invite', {
+      inviteCode,
+    });
   }
 
   async leaveLeague(leagueId: string): Promise<void> {

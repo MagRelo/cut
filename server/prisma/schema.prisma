@@ -41,6 +41,7 @@ model League {
   name           String
   description    String?
   isPrivate      Boolean            @default(false)
+  inviteCode     String?            @unique
   maxTeams       Int                @default(8)
   commissioner   User               @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
   commissionerId String

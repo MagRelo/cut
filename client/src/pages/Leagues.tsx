@@ -73,11 +73,18 @@ export function Leagues() {
   return (
     <div className='container mx-auto px-4 py-8'>
       <div className='flex justify-between items-center mb-8'>
-        <Link
-          to='/leagues/new'
-          className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700'>
-          Create New League
-        </Link>
+        <div className='space-x-4'>
+          <Link
+            to='/leagues/new'
+            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700'>
+            Create New League
+          </Link>
+          <Link
+            to='/leagues/join'
+            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700'>
+            Join Private League
+          </Link>
+        </div>
       </div>
 
       {leagues.length === 0 ? (
@@ -158,11 +165,9 @@ export function Leagues() {
                             e.stopPropagation();
                             handleJoinLeague(e, league.id);
                           }}
-                          disabled={isJoining || league.isPrivate}
+                          disabled={isJoining}
                           className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${
-                            league.isPrivate
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : isJoining
+                            isJoining
                               ? 'bg-emerald-100 text-emerald-400 cursor-wait'
                               : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
                           }`}>

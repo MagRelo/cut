@@ -233,4 +233,29 @@ export class LeagueController {
       }
     }
   }
+
+  async joinLeagueWithInviteCode(req: Request, res: Response) {
+    try {
+      const { inviteCode } = req.body;
+      const userId = req.user?.id;
+
+      if (!inviteCode) {
+        return res.status(400).json({ message: 'Invite code is required' });
+      }
+
+      const membership = await leagueService.joinLeagueWithInviteCode(
+        userId!,
+        inviteCode
+      );
+      res.json(membership);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: 'An unexpected error occurred' });
+    }
+  }
 }

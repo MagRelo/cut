@@ -47,6 +47,7 @@ interface League {
     role: string;
     joinedAt: string;
   }>;
+  inviteCode?: string;
 }
 
 interface Tournament {
@@ -781,6 +782,16 @@ export const LeagueLobby: React.FC = () => {
                                     : 'Public League'}
                                 </dd>
                               </div>
+                              {league.isPrivate && league.inviteCode && (
+                                <div className='flex justify-between items-center'>
+                                  <dt className='text-sm text-gray-500'>
+                                    Invite Code
+                                  </dt>
+                                  <dd className='text-sm font-medium text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded'>
+                                    {league.inviteCode}
+                                  </dd>
+                                </div>
+                              )}
                             </dl>
                             <div className='pt-4 border-t'>
                               <button
@@ -1085,6 +1096,16 @@ export const LeagueLobby: React.FC = () => {
                               : 'Public League'}
                           </dd>
                         </div>
+                        {league.isPrivate && league.inviteCode && (
+                          <div className='flex justify-between items-center'>
+                            <dt className='text-sm text-gray-500'>
+                              Invite Code
+                            </dt>
+                            <dd className='text-sm font-medium text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded'>
+                              {league.inviteCode}
+                            </dd>
+                          </div>
+                        )}
                       </dl>
                       <div className='pt-4 border-t'>
                         <button

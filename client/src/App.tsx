@@ -8,6 +8,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { LeagueLobby } from './pages/LeagueLobby';
 import { Leagues } from './pages/Leagues';
 import { CreateLeague } from './pages/CreateLeague';
+import { JoinPrivateLeague } from './pages/JoinPrivateLeague';
 import { Order } from './pages/Order';
 import { TeamForm } from './pages/TeamForm';
 import { Navigation } from './components/Navigation';
@@ -66,6 +67,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <CreateLeague />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/leagues/join'
+                element={
+                  <ProtectedRoute>
+                    <JoinPrivateLeague />
                   </ProtectedRoute>
                 }
               />
