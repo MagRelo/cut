@@ -14,11 +14,13 @@ export interface CreateTeamDto {
   name: string;
   leagueId: string;
   players: string[];
+  color?: string;
 }
 
 export interface UpdateTeamDto {
   name?: string;
   players?: string[];
+  color?: string;
 }
 
 export interface AddPlayerDto {
@@ -173,6 +175,7 @@ export class TeamService {
     const team = await prisma.team.create({
       data: {
         name: data.name,
+        color: data.color,
         userId,
         leagueId: data.leagueId,
         players: {
@@ -316,7 +319,8 @@ export class TeamService {
       return tx.team.update({
         where: { id: teamId },
         data: {
-          name: data.name,
+          ...(data.name && { name: data.name }),
+          ...(data.color && { color: data.color }),
           ...(data.players && {
             players: {
               create: players.map((player) => ({
@@ -520,7 +524,12 @@ export class TeamService {
   }
 
   // Create a new team for a user in a league
-  async createTeamForUser(userId: string, leagueId: string, name: string) {
+  async createTeamForUser(
+    userId: string,
+    leagueId: string,
+    name: string,
+    color?: string
+  ) {
     // First verify user is a member of the league
     const membership = await prisma.leagueMembership.findUnique({
       where: {
@@ -550,6 +559,7 @@ export class TeamService {
     const team = await prisma.team.create({
       data: {
         name,
+        color,
         userId,
         leagueId,
       },

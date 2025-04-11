@@ -103,6 +103,7 @@ interface CreateTeamPayload {
   name: string;
   leagueId: string;
   players: string[];
+  color?: string;
 }
 
 interface LeagueMembership {
@@ -149,6 +150,7 @@ export interface TeamPlayer {
 export interface Team {
   id: string;
   name: string;
+  color: string;
   players: TeamPlayer[];
   userId: string;
   leagueId: string;

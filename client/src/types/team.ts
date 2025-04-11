@@ -41,6 +41,7 @@ export interface TeamPlayer {
 export interface Team {
   id: string;
   name: string;
+  color: string;
   players: TeamPlayer[];
   isUserTeam?: boolean;
   leagueId: string;

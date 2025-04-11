@@ -20,11 +20,19 @@ declare module 'express-serve-static-core' {
 const createTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
   players: z.array(z.string()).min(4).max(4),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
+    .optional(),
 });
 
 const updateTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
   players: z.array(z.string()).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
+    .optional(),
 });
 
 // Get all teams for a specific league
@@ -76,11 +84,12 @@ router.get('/league/:leagueId/my-team', authenticateToken, async (req, res) => {
 // Create a new team for a league
 router.post('/league/:leagueId/team', authenticateToken, async (req, res) => {
   try {
-    const { name, players } = createTeamSchema.parse(req.body);
+    const { name, players, color } = createTeamSchema.parse(req.body);
     const team = await teamService.createTeam(req.user.id, {
       name,
       leagueId: req.params.leagueId,
       players,
+      color,
     });
     res.status(201).json(team);
   } catch (error) {
@@ -97,10 +106,11 @@ router.post('/league/:leagueId/team', authenticateToken, async (req, res) => {
 // Update a team
 router.put('/:teamId', authenticateToken, async (req, res) => {
   try {
-    const { name, players } = updateTeamSchema.parse(req.body);
+    const { name, players, color } = updateTeamSchema.parse(req.body);
     const team = await teamService.updateTeam(req.params.teamId, req.user.id, {
       name,
       players,
+      color,
     });
     res.json(team);
   } catch (error) {

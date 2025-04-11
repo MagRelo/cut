@@ -52,10 +52,6 @@ export function startScoreUpdateCron() {
       }
 
       await scoreUpdateService.updateAllScores(activeTournament.pgaTourId);
-
-      console.log(
-        `Player Scores updated via cron at ${new Date().toLocaleString()}`
-      );
     } catch (error) {
       console.error('Error in score update cron job:', error);
     }

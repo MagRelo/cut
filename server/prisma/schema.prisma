@@ -24,6 +24,7 @@ model User {
 model Team {
   id        String       @id @default(cuid())
   name      String
+  color     String      @default("#059669")
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   league    League       @relation(fields: [leagueId], references: [id])

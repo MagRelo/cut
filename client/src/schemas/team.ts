@@ -10,6 +10,10 @@ export const playerSchema = z.object({
 export const teamUpdateSchema = z.object({
   name: z.string().optional(),
   players: z.array(z.string()).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
+    .optional(),
 });
 
 export const activePlayersSchema = z.object({

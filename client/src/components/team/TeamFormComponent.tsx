@@ -29,6 +29,7 @@ export const TeamFormComponent: React.FC<TeamFormProps> = ({
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
     initialTeam?.players.map((p) => p.player.id) || []
   );
+  const [teamColor, setTeamColor] = useState(initialTeam?.color || '#059669');
   const [availablePlayers, setAvailablePlayers] = useState<PGAPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +85,7 @@ export const TeamFormComponent: React.FC<TeamFormProps> = ({
         const updatePayload: TeamUpdatePayload = {
           name: teamName,
           players: selectedPlayers,
+          color: teamColor,
         };
         await api.updateTeam(teamId, updatePayload);
         onSuccess(teamId, team?.leagueId || '');
@@ -92,6 +94,7 @@ export const TeamFormComponent: React.FC<TeamFormProps> = ({
           name: teamName,
           leagueId,
           players: selectedPlayers,
+          color: teamColor,
         });
         onSuccess(newTeam.id, leagueId);
       }
@@ -179,6 +182,38 @@ export const TeamFormComponent: React.FC<TeamFormProps> = ({
                 onChange={(e) => setTeamName(e.target.value)}
                 className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base disabled:bg-gray-100 disabled:text-gray-500'
                 placeholder='Enter your team name'
+                disabled={isFormDisabled}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor='teamColor'
+              className='block text-sm font-medium text-gray-900'>
+              Team Color
+            </label>
+            <div className='mt-1 flex items-center gap-3'>
+              <input
+                type='color'
+                id='teamColor'
+                value={teamColor}
+                onChange={(e) => setTeamColor(e.target.value)}
+                className='h-10 w-20 rounded border border-gray-300 p-1 disabled:opacity-50'
+                disabled={isFormDisabled}
+              />
+              <input
+                type='text'
+                value={teamColor}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  if (/^#[0-9A-Fa-f]{0,6}$/.test(newColor)) {
+                    setTeamColor(newColor);
+                  }
+                }}
+                className='appearance-none w-32 px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-sm font-mono disabled:bg-gray-100 disabled:text-gray-500'
+                placeholder='#000000'
+                maxLength={7}
                 disabled={isFormDisabled}
               />
             </div>

@@ -15,6 +15,7 @@ export interface SeedLeague {
 
 export interface SeedTeam {
   name: string;
+  color?: string;
   players: string[]; // pgaTourIds
 }
 
