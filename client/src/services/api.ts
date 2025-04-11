@@ -247,6 +247,13 @@ export class ApiService {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request<MessageResponse>('POST', '/auth/reset-password', {
+      currentPassword,
+      newPassword,
+    });
+  }
+
   async getTeamsByLeague(leagueId: string) {
     return this.request<Team[]>('GET', `/teams/league/${leagueId}`);
   }

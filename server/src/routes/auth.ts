@@ -36,8 +36,8 @@ const forgotPasswordSchema = z.object({
 });
 
 const resetPasswordSchema = z.object({
-  token: z.string(),
-  newPassword: z.string().min(6),
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 // Login route
@@ -208,37 +208,43 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // Reset password route
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authenticateToken, async (req, res) => {
   try {
-    const { token, newPassword } = resetPasswordSchema.parse(req.body);
+    const { currentPassword, newPassword } = resetPasswordSchema.parse(
+      req.body
+    );
 
-    // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as {
-      userId: string;
-    };
+    // Get user from authenticated request
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
     await prisma.user.update({
-      where: { id: decoded.userId },
+      where: { id: req.user.id },
       data: { password: hashedPassword },
     });
 
-    res.json({ message: 'Password reset successful' });
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
     console.error('Reset password error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(400).json({ message: 'Failed to reset password' });
   }
 });
 
