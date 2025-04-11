@@ -17,7 +17,6 @@
       "name": "Shane Bird",
       "password": "partytime",
       "isCommissioner": true,
-      "userType": "ADMIN",
       "team": {
         "name": "Birds of Prey",
         "players": ["39971", "29725", "46442", "46970"]
@@ -27,6 +26,7 @@
       "email": "mattlovan@gmail.com",
       "name": "Matt Lovan",
       "password": "partytime",
+      "userType": "ADMIN",
       "team": {
         "name": "Noodles",
         "players": ["46046", "33204", "47993", "39324"]

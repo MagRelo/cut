@@ -159,7 +159,12 @@ export const Timeline: React.FC<TimelineProps> = ({
   const data = {
     labels:
       timelineData.teams[0]?.dataPoints.map((dp) =>
-        new Date(dp.timestamp).toLocaleTimeString()
+        new Date(dp.timestamp).toLocaleString('en-US', {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false,
+        })
       ) || [],
     datasets: topTeams.map((team) => ({
       label: team.name,
