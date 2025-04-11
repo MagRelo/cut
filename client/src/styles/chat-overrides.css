@@ -3,9 +3,9 @@
   --str-chat__primary-color: #059669; /* Emerald 600 - matches the green theme */
   --str-chat__secondary-color: #dc004e;
   --str-chat__primary-background: #ffffff;
-  --str-chat__secondary-background: #f4f4f5; /* Light gray for received messages */
+  --str-chat__secondary-background: #ffffff; /* White for message bubbles */
   --str-chat__border-color: #e5e7eb;
-  --str-chat__own-message-bg: #e4e4e7; /* Slightly darker gray for own messages */
+  --str-chat__own-message-bg: #ffffff; /* White for own messages */
   --str-chat__message-text-color: #111827;
   --str-chat__secondary-text-color: #6b7280;
   --str-chat__border-radius: 0.5rem;
@@ -45,8 +45,11 @@
 
 /* Message list container */
 .str-chat__list {
-  background-color: var(--str-chat__primary-background);
+  background-color: #f1f3f5;
   padding: 1rem;
+  border: 1px solid var(--str-chat__border-color);
+  margin: 0.5rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Individual message styling */

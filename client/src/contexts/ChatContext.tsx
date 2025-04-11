@@ -49,6 +49,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const initChat = async () => {
       // Only initialize once and when we have the required data
       if (!user?.id || !streamToken) {
+        // Clean up chat connection if user logs out
+        await chatService.disconnectUser();
+        setCurrentChannel(null);
+        setIsInitialized(false);
+        hasInitialized.current = false;
         return;
       }
 

@@ -90,15 +90,12 @@ class ChatService {
       }
 
       // Disconnect any existing user first
-      if (streamClient.userID) {
-        await this.disconnectUser();
-      }
+      await this.disconnectUser();
 
       // Connect the new user
       await streamClient.connectUser(
         {
           id: userId,
-          // Add any additional user data here if needed
         },
         userToken
       );
@@ -110,7 +107,11 @@ class ChatService {
 
   async disconnectUser() {
     try {
-      await streamClient.disconnectUser();
+      if (streamClient.userID) {
+        await streamClient.disconnectUser();
+        // Ensure the client is properly cleaned up
+        streamClient.closeConnection();
+      }
     } catch (error) {
       console.error('Error disconnecting from Stream:', error);
     }

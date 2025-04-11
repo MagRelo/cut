@@ -10,6 +10,7 @@ import {
 } from 'stream-chat-react';
 import { useChatContext } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from './common/LoadingSpinner';
 
 // Import the Stream Chat CSS first (base styles)
 import 'stream-chat-react/dist/css/v2/index.css';
@@ -42,7 +43,11 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({ leagueId }) => {
   }, [initializeChat]);
 
   if (!currentChannel || isConnecting) {
-    return <div>Loading chat...</div>;
+    return (
+      <div className='h-full flex items-center justify-center'>
+        <LoadingSpinner size='large' />
+      </div>
+    );
   }
 
   return (
