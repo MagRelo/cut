@@ -1,7 +1,9 @@
 import { PrismaClient, Prisma, Player, TeamPlayer } from '@prisma/client';
+import { TimelineService } from './timelineService';
 import { fetchScorecard } from '../lib/pgaScorecard';
 
 const prisma = new PrismaClient();
+const timelineService = new TimelineService();
 
 interface TeamPlayerWithPlayer extends TeamPlayer {
   player: Player;
@@ -100,6 +102,23 @@ export class ScoreUpdateService {
       });
 
       await Promise.all(updatePromises);
+
+      // Get the tournament to check current round
+      const tournament = await prisma.tournament.findUnique({
+        where: { pgaTourId: tournamentId },
+      });
+
+      if (!tournament) {
+        throw new Error('Tournament not found');
+      }
+
+      // After updating all scores, create timeline entries
+      await timelineService.createTimelineEntries(
+        tournament.id,
+        tournament.currentRound || 1
+      );
+
+      return { success: true };
     } catch (error) {
       console.error('Error updating scores:', error);
       throw error;

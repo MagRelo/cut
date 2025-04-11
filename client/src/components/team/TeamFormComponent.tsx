@@ -5,16 +5,16 @@ import { api } from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 
-interface TeamFormComponentProps {
+interface TeamFormProps {
   teamId?: string;
-  leagueId?: string;
+  leagueId: string;
   onSuccess: (teamId: string, leagueId: string) => void;
   onCancel: () => void;
   initialTeam?: Team;
-  tournamentStatus?: 'upcoming' | 'in-progress' | 'completed';
+  tournamentStatus?: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
-export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
+export const TeamFormComponent: React.FC<TeamFormProps> = ({
   teamId,
   leagueId,
   onSuccess,
@@ -22,8 +22,8 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
   initialTeam,
   tournamentStatus,
 }) => {
-  const isEditMode = Boolean(teamId);
-  const isFormDisabled = isEditMode && tournamentStatus !== 'upcoming';
+  const isEditMode = !!teamId;
+  const isFormDisabled = isEditMode && tournamentStatus !== 'UPCOMING';
 
   const [teamName, setTeamName] = useState(initialTeam?.name || '');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
@@ -141,7 +141,7 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
       )}
 
       <form onSubmit={handleSubmit} className='space-y-8'>
-        {isEditMode && tournamentStatus !== 'upcoming' && (
+        {isEditMode && tournamentStatus !== 'UPCOMING' && (
           <div className='bg-yellow-50 border-l-4 border-yellow-400 p-4'>
             <div className='flex'>
               <div className='flex-shrink-0'>

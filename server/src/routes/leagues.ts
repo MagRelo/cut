@@ -1,9 +1,13 @@
 import express from 'express';
 import { LeagueController } from '../controllers/leagueController';
 import { authenticateToken } from '../middleware/auth';
+import timelineRoutes from './timeline.routes';
 
 const router = express.Router();
 const leagueController = new LeagueController();
+
+// Mount timeline routes with authentication
+router.use('/:leagueId/timeline', authenticateToken, timelineRoutes);
 
 // League Routes
 router.post(

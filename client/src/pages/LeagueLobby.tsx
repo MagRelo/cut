@@ -8,6 +8,7 @@ import type {
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { TeamFormComponent } from '../components/team/TeamFormComponent';
 import { LeagueChat } from '../components/LeagueChat';
+import { Timeline } from './Timeline';
 
 interface Round {
   strokes: number;
@@ -52,12 +53,12 @@ interface Tournament {
   id: string;
   name: string;
   location: string;
-  city?: string;
-  state?: string;
   course: string;
-  status: 'upcoming' | 'in-progress' | 'completed';
+  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
   startDate: string;
   endDate: string;
+  city?: string;
+  state?: string;
   beautyImage?: string;
   currentRound?: number;
 }
@@ -321,7 +322,7 @@ export const LeagueLobby: React.FC = () => {
               ? 'text-emerald-600 border-b-2 border-emerald-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}>
-          Teams
+          Scores
         </button>
         {isMember && (
           <button
@@ -460,7 +461,7 @@ export const LeagueLobby: React.FC = () => {
                             ? 'border-emerald-500 text-emerald-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}>
-                        Teams
+                        Scores
                       </button>
                       {isMember && (
                         <button
@@ -500,6 +501,15 @@ export const LeagueLobby: React.FC = () => {
                   <div className='p-4 flex-1 overflow-y-auto'>
                     {rightColumnTab === 'teams' && (
                       <div className='h-full overflow-y-auto'>
+                        {leagueId &&
+                          tournament &&
+                          tournament.status === 'IN_PROGRESS' && (
+                            <Timeline
+                              className='mb-4'
+                              leagueId={leagueId}
+                              tournamentId={tournament.id}
+                            />
+                          )}
                         <div className='space-y-0'>
                           {teams
                             .sort(
@@ -695,33 +705,35 @@ export const LeagueLobby: React.FC = () => {
                       </div>
                     )}
 
-                    {rightColumnTab === 'createTeam' && isMember && (
-                      <div className='h-full overflow-y-auto'>
-                        <TeamFormComponent
-                          teamId={userTeam?.id}
-                          leagueId={leagueId}
-                          initialTeam={userTeam || undefined}
-                          tournamentStatus={tournament?.status}
-                          onSuccess={(_, leagueId) => {
-                            // Refresh teams data after creation
-                            api
-                              .getTeamsByLeague(leagueId)
-                              .then((updatedTeams) => {
-                                setTeams(updatedTeams);
-                                const updatedUserTeam = updatedTeams.find(
-                                  (team) =>
-                                    team.userId ===
-                                    localStorage.getItem('userId')
-                                );
-                                setUserTeam(updatedUserTeam || null);
-                              });
-                            // Switch back to teams tab
-                            setRightColumnTab('teams');
-                          }}
-                          onCancel={() => setRightColumnTab('teams')}
-                        />
-                      </div>
-                    )}
+                    {rightColumnTab === 'createTeam' &&
+                      isMember &&
+                      leagueId && (
+                        <div className='h-full overflow-y-auto'>
+                          <TeamFormComponent
+                            teamId={userTeam?.id}
+                            leagueId={leagueId}
+                            initialTeam={userTeam || undefined}
+                            tournamentStatus={tournament?.status}
+                            onSuccess={(_, leagueId) => {
+                              // Refresh teams data after creation
+                              api
+                                .getTeamsByLeague(leagueId)
+                                .then((updatedTeams) => {
+                                  setTeams(updatedTeams);
+                                  const updatedUserTeam = updatedTeams.find(
+                                    (team) =>
+                                      team.userId ===
+                                      localStorage.getItem('userId')
+                                  );
+                                  setUserTeam(updatedUserTeam || null);
+                                });
+                              // Switch back to teams tab
+                              setRightColumnTab('teams');
+                            }}
+                            onCancel={() => setRightColumnTab('teams')}
+                          />
+                        </div>
+                      )}
 
                     {rightColumnTab === 'liveBets' && (
                       <div className='h-full overflow-y-auto p-4'>
@@ -802,7 +814,8 @@ export const LeagueLobby: React.FC = () => {
               {tournament && (
                 <div className='mt-2 text-sm text-gray-600'>
                   <p>
-                    {tournament.name} - {tournament.status.replace('-', ' ')}
+                    {tournament.name} -{' '}
+                    {tournament.status.toLowerCase().replace('_', ' ')}
                   </p>
                 </div>
               )}
@@ -816,6 +829,15 @@ export const LeagueLobby: React.FC = () => {
               {activeTab === 'chat' && renderChatContent()}
               {activeTab === 'teams' && (
                 <div className='p-4'>
+                  {leagueId &&
+                    tournament &&
+                    tournament.status === 'IN_PROGRESS' && (
+                      <Timeline
+                        className='mb-4'
+                        leagueId={leagueId}
+                        tournamentId={tournament.id}
+                      />
+                    )}
                   <div className='space-y-0'>
                     {teams
                       .sort(
@@ -1000,7 +1022,7 @@ export const LeagueLobby: React.FC = () => {
                   </div>
                 </div>
               )}
-              {activeTab === 'createTeam' && isMember && (
+              {activeTab === 'createTeam' && isMember && leagueId && (
                 <div className='p-4'>
                   <TeamFormComponent
                     teamId={userTeam?.id}

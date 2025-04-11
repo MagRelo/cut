@@ -6,7 +6,6 @@ import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { LeagueLobby } from './pages/LeagueLobby';
-import { Timeline } from './pages/Timeline';
 import { Leagues } from './pages/Leagues';
 import { CreateLeague } from './pages/CreateLeague';
 import { Order } from './pages/Order';
@@ -83,14 +82,6 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <TeamForm />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/timeline'
-                element={
-                  <ProtectedRoute>
-                    <Timeline />
                   </ProtectedRoute>
                 }
               />

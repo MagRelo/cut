@@ -12,7 +12,7 @@ interface Tournament {
   name: string;
   location: string;
   course: string;
-  status: 'upcoming' | 'in-progress' | 'completed';
+  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
   startDate: string;
   endDate: string;
 }
@@ -352,6 +352,45 @@ export class ApiService {
       { name: data.name, players: data.players }
     );
     return response;
+  }
+
+  async getLeagueTimeline(
+    leagueId: string,
+    tournamentId: string,
+    startTime?: string,
+    endTime?: string,
+    interval?: number
+  ) {
+    try {
+      const params = new URLSearchParams({
+        tournamentId,
+        ...(startTime && { startTime }),
+        ...(endTime && { endTime }),
+        ...(interval && { interval: interval.toString() }),
+      });
+
+      return this.request<{
+        teams: Array<{
+          id: string;
+          name: string;
+          color: string;
+          dataPoints: Array<{
+            timestamp: string;
+            score: number;
+            roundNumber?: number;
+          }>;
+        }>;
+        tournament: {
+          id: string;
+          name: string;
+          currentRound: number;
+          status: string;
+        };
+      }>('GET', `/leagues/${leagueId}/timeline?${params.toString()}`);
+    } catch (error) {
+      console.error('Error in getLeagueTimeline:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { subHours, format } from 'date-fns';
+import { api } from '../services/api';
 
 // Register Chart.js components
 ChartJS.register(
@@ -23,45 +23,106 @@ ChartJS.register(
   Legend
 );
 
-// Generate sample data for the last 4 hours with 10-minute intervals
-const generateTimePoints = () => {
-  const points = [];
-  for (let i = 24; i >= 0; i--) {
-    points.push(format(subHours(new Date(), i), 'R1'));
+interface TimelineProps {
+  className?: string;
+  leagueId: string;
+  tournamentId: string;
+}
+
+interface TimelineData {
+  teams: {
+    id: string;
+    name: string;
+    color: string;
+    dataPoints: {
+      timestamp: string;
+      score: number;
+      roundNumber?: number;
+    }[];
+  }[];
+  tournament: {
+    id: string;
+    name: string;
+    currentRound: number;
+    status: string;
+  };
+}
+
+export const Timeline: React.FC<TimelineProps> = ({
+  className = '',
+  leagueId,
+  tournamentId,
+}) => {
+  const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTimelineData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Calculate time range (last 24 hours)
+        const endTime = new Date();
+        const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
+
+        const data = (await api.getLeagueTimeline(
+          leagueId,
+          tournamentId,
+          startTime.toISOString(),
+          endTime.toISOString()
+        )) as TimelineData;
+
+        setTimelineData(data);
+      } catch {
+        setError('Failed to load timeline data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTimelineData();
+    // Refresh data every 10 minutes
+    const interval = setInterval(fetchTimelineData, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [leagueId, tournamentId]);
+
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <div
+          className='bg-white rounded-lg shadow-sm p-4 flex items-center justify-center'
+          style={{ height: '200px' }}>
+          <div className='text-gray-500'>Loading timeline data...</div>
+        </div>
+      </div>
+    );
   }
-  return points;
-};
 
-// Sample data for each team
-const generateTeamData = (baseValue: number, volatility: number) => {
-  return Array.from({ length: 25 }, (_, i) => {
-    const progress = i / 24; // Progress through the timeline
-    const randomFactor = (Math.random() - 0.5) * volatility;
-    return baseValue * (1 + progress) + randomFactor;
-  });
-};
-
-const teams = [
-  { name: 'BONEHAMMERS', color: '#3b82f6', baseValue: 14, volatility: 5 },
-  { name: 'DOOGDIGGLER', color: '#22c55e', baseValue: 2, volatility: 3 },
-  { name: 'MYERS', color: '#ef4444', baseValue: 9, volatility: 4 },
-  { name: 'NEELY', color: '#ec4899', baseValue: 17, volatility: 6 },
-  { name: 'NOODLES', color: '#94a3b8', baseValue: 0, volatility: 2 },
-  { name: 'ORANGE SNAKES', color: '#f97316', baseValue: 0, volatility: 2 },
-  { name: 'BUMBLE BEE', color: '#eab308', baseValue: 13, volatility: 4 },
-  { name: 'DUCK HOOKERS', color: '#06b6d4', baseValue: 0, volatility: 2 },
-  { name: 'BIRDS OF PREY', color: '#8b5cf6', baseValue: 5, volatility: 3 },
-  { name: 'JIMMY', color: '#6366f1', baseValue: -5, volatility: 4 },
-];
-
-export const Timeline: React.FC = () => {
-  const timeLabels = generateTimePoints();
+  if (error || !timelineData) {
+    return (
+      <div className={className}>
+        <div
+          className='bg-white rounded-lg shadow-sm p-4 flex items-center justify-center'
+          style={{ height: '200px' }}>
+          <div className='text-red-500'>
+            {error || 'Failed to load timeline data'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const data = {
-    labels: timeLabels,
-    datasets: teams.map((team) => ({
+    labels:
+      timelineData.teams[0]?.dataPoints.map((dp) =>
+        new Date(dp.timestamp).toLocaleTimeString()
+      ) || [],
+    datasets: timelineData.teams.map((team) => ({
       label: team.name,
-      data: generateTeamData(team.baseValue, team.volatility),
+      data: team.dataPoints.map((dp) => dp.score),
       borderColor: team.color,
       backgroundColor: team.color,
       borderWidth: 2,
@@ -81,18 +142,10 @@ export const Timeline: React.FC = () => {
     plugins: {
       legend: {
         position: 'top' as const,
+        display: false, // Hide legend since we show team names in the list below
       },
       title: {
-        display: true,
-        text: 'Team Scores',
-        color: '#6b7280',
-        font: {
-          size: 16,
-          weight: 500,
-        },
-        padding: {
-          bottom: 30,
-        },
+        display: false, // Hide title since we show tournament info above
       },
     },
     scales: {
@@ -100,7 +153,7 @@ export const Timeline: React.FC = () => {
         display: true,
         title: {
           display: true,
-          text: 'Round',
+          text: 'Time',
         },
         grid: {
           display: false,
@@ -120,18 +173,10 @@ export const Timeline: React.FC = () => {
   };
 
   return (
-    <div className='py-6'>
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-emerald-600'>
-          Texas Children's Houston Open
-        </h1>
-        <div className='text-gray-600'>Memorial Park Golf Course</div>
-        <div className='text-sm text-gray-500'>R1 - In Progress</div>
-      </div>
-
+    <div className={className}>
       <div
         className='bg-white rounded-lg shadow-sm p-4'
-        style={{ height: '600px' }}>
+        style={{ height: '200px' }}>
         <Line data={data} options={options} />
       </div>
     </div>

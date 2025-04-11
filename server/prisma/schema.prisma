@@ -31,6 +31,7 @@ model Team {
   owner     User         @relation(fields: [userId], references: [id])
   userId    String
   players   TeamPlayer[]
+  timelineEntries TimelineEntry[]
 
   @@unique([userId, leagueId])
 }
@@ -48,6 +49,7 @@ model League {
   settings       LeagueSettings?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  timelineEntries TimelineEntry[]
 }
 
 model LeagueSettings {
@@ -137,6 +139,7 @@ model Tournament {
   players            TournamentPlayer[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+  timelineEntries    TimelineEntry[]
 }
 
 model TournamentPlayer {
@@ -201,4 +204,21 @@ model OddsCache {
 
   @@unique([tournamentKey, bookmakers])
   @@index([tournamentKey, bookmakers])
+}
+
+model TimelineEntry {
+  id          String   @id @default(cuid())
+  leagueId    String
+  teamId      String
+  tournamentId String
+  timestamp   DateTime
+  totalScore  Int
+  roundNumber Int?     // Current round when score was recorded
+
+  league      League     @relation(fields: [leagueId], references: [id])
+  team        Team       @relation(fields: [teamId], references: [id])
+  tournament  Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@index([leagueId, tournamentId, timestamp])
+  @@index([teamId, tournamentId, timestamp])
 }
