@@ -11,8 +11,10 @@ import {
 import { useChatContext } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 
-// Import the Stream Chat CSS
+// Import the Stream Chat CSS first (base styles)
 import 'stream-chat-react/dist/css/v2/index.css';
+// Import custom overrides (must come after base styles)
+import '../styles/chat-overrides.css';
 
 interface LeagueChatProps {
   leagueId: string;
@@ -50,7 +52,7 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({ leagueId }) => {
           <Window>
             <ChannelHeader />
             <MessageList />
-            <MessageInput />
+            <MessageInput focus />
           </Window>
           <Thread />
         </Channel>
