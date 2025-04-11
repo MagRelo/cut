@@ -9,6 +9,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { TeamFormComponent } from '../components/team/TeamFormComponent';
 import { LeagueChat } from '../components/LeagueChat';
 import { Timeline } from './Timeline';
+import { PlayerScorecard } from '../components/player/PlayerScorecard';
 
 interface Round {
   strokes: number;
@@ -85,6 +86,9 @@ type RightColumnTab = TabSection;
 export const LeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
+    new Set()
+  );
   const [teams, setTeams] = useState<Team[]>([]);
   const [league, setLeague] = useState<League | null>(null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -193,6 +197,18 @@ export const LeagueLobby: React.FC = () => {
     });
   };
 
+  const togglePlayer = (playerId: string) => {
+    setExpandedPlayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(playerId)) {
+        next.delete(playerId);
+      } else {
+        next.add(playerId);
+      }
+      return next;
+    });
+  };
+
   const calculateTeamScore = (team: Team) => {
     return team.players
       .filter((player) => player.active)
@@ -279,6 +295,159 @@ export const LeagueLobby: React.FC = () => {
 
     return <LeagueChat leagueId={leagueId} />;
   };
+
+  const renderPlayerRow = (player: TeamPlayer) => (
+    <React.Fragment key={player.id}>
+      <tr className='hover:bg-gray-50/50'>
+        <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
+          <div className='flex items-center'>
+            {player.player.imageUrl && (
+              <div className='flex-shrink-0 h-10 w-10 relative'>
+                <img
+                  className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
+                  src={player.player.imageUrl}
+                  alt={player.player.displayName || player.player.name}
+                />
+              </div>
+            )}
+            <div className='ml-4'>
+              <button
+                onClick={() => togglePlayer(player.id)}
+                className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
+                {player.player.displayName || player.player.name}
+                {tournament?.currentRound &&
+                  (() => {
+                    const round =
+                      `r${tournament.currentRound}` as keyof TeamPlayer;
+                    const roundData = player[round] as Round | undefined;
+                    return roundData?.icon && <span>{roundData.icon}</span>;
+                  })()}
+                <svg
+                  className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
+                    expandedPlayers.has(player.id) ? 'rotate-180' : ''
+                  }`}
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M19 9l-7 7-7-7'
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.leaderboardPosition || '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r1?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r2?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r3?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r4?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.cut ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.bonus ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
+          {player.total ?? '-'}
+        </td>
+      </tr>
+      {expandedPlayers.has(player.id) && (
+        <tr>
+          <td colSpan={9} className='p-0'>
+            <div className='border-t border-gray-200 bg-gray-50/50 pl-8'>
+              <PlayerScorecard
+                player={player}
+                currentRound={tournament?.currentRound}
+                className='rounded-none shadow-none'
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+
+  const renderTeamPlayers = (team: Team) => (
+    <div className='px-4 py-2'>
+      <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
+        <div className='inline-block min-w-full align-middle'>
+          <table className='min-w-full divide-y divide-gray-200'>
+            <thead className='bg-gray-50/50'>
+              <tr>
+                <th
+                  scope='col'
+                  className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
+                  Player
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Pos
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R1
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R2
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R3
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R4
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Cut
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Bonus
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-200'>
+              {team.players
+                .sort(
+                  (a: TeamPlayer, b: TeamPlayer) =>
+                    (b.total || 0) - (a.total || 0)
+                )
+                .map(renderPlayerRow)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -562,153 +731,7 @@ export const LeagueLobby: React.FC = () => {
                                       ? 'max-h-[1000px] border-t border-gray-200'
                                       : 'max-h-0'
                                   }`}>
-                                  <div className='px-4 py-2'>
-                                    <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
-                                      <div className='inline-block min-w-full align-middle'>
-                                        <table className='min-w-full divide-y divide-gray-200'>
-                                          <thead className='bg-gray-50/50'>
-                                            <tr>
-                                              <th
-                                                scope='col'
-                                                className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
-                                                Player
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                Pos
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                R1
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                R2
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                R3
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                R4
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                Cut
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                Bonus
-                                              </th>
-                                              <th
-                                                scope='col'
-                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                                Total
-                                              </th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className='divide-y divide-gray-200'>
-                                            {team.players
-                                              .sort(
-                                                (
-                                                  a: TeamPlayer,
-                                                  b: TeamPlayer
-                                                ) =>
-                                                  (b.total || 0) -
-                                                  (a.total || 0)
-                                              )
-                                              .map((player) => (
-                                                <tr
-                                                  key={player.id}
-                                                  className='hover:bg-gray-50/50'>
-                                                  <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
-                                                    <div className='flex items-center'>
-                                                      {player.player
-                                                        .imageUrl && (
-                                                        <div className='flex-shrink-0 h-10 w-10 relative'>
-                                                          <img
-                                                            className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
-                                                            src={
-                                                              player.player
-                                                                .imageUrl
-                                                            }
-                                                            alt={
-                                                              player.player
-                                                                .displayName ||
-                                                              player.player.name
-                                                            }
-                                                          />
-                                                        </div>
-                                                      )}
-                                                      <div className='ml-4'>
-                                                        <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
-                                                          {player.player
-                                                            .displayName ||
-                                                            player.player.name}
-                                                          {tournament?.currentRound &&
-                                                            (() => {
-                                                              const round =
-                                                                `r${tournament.currentRound}` as keyof TeamPlayer;
-                                                              const roundData =
-                                                                player[
-                                                                  round
-                                                                ] as
-                                                                  | Round
-                                                                  | undefined;
-                                                              return (
-                                                                roundData?.icon && (
-                                                                  <span>
-                                                                    {
-                                                                      roundData.icon
-                                                                    }
-                                                                  </span>
-                                                                )
-                                                              );
-                                                            })()}
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.leaderboardPosition ||
-                                                      '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.r1?.total ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.r2?.total ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.r3?.total ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.r4?.total ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.cut ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                                    {player.bonus ?? '-'}
-                                                  </td>
-                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
-                                                    {player.total ?? '-'}
-                                                  </td>
-                                                </tr>
-                                              ))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>
-                                  </div>
+                                  {renderTeamPlayers(team)}
                                 </div>
                               </div>
                             ))}
@@ -910,143 +933,7 @@ export const LeagueLobby: React.FC = () => {
                                 ? 'max-h-[1000px] border-t border-gray-200'
                                 : 'max-h-0'
                             }`}>
-                            <div className='px-4 py-2'>
-                              <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
-                                <div className='inline-block min-w-full align-middle'>
-                                  <table className='min-w-full divide-y divide-gray-200'>
-                                    <thead className='bg-gray-50/50'>
-                                      <tr>
-                                        <th
-                                          scope='col'
-                                          className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
-                                          Player
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Pos
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R1
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R2
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R3
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          R4
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Cut
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Bonus
-                                        </th>
-                                        <th
-                                          scope='col'
-                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                                          Total
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className='divide-y divide-gray-200'>
-                                      {team.players
-                                        .sort(
-                                          (a: TeamPlayer, b: TeamPlayer) =>
-                                            (b.total || 0) - (a.total || 0)
-                                        )
-                                        .map((player) => (
-                                          <tr
-                                            key={player.id}
-                                            className='hover:bg-gray-50/50'>
-                                            <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
-                                              <div className='flex items-center'>
-                                                {player.player.imageUrl && (
-                                                  <div className='flex-shrink-0 h-10 w-10 relative'>
-                                                    <img
-                                                      className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
-                                                      src={
-                                                        player.player.imageUrl
-                                                      }
-                                                      alt={
-                                                        player.player
-                                                          .displayName ||
-                                                        player.player.name
-                                                      }
-                                                    />
-                                                  </div>
-                                                )}
-                                                <div className='ml-4'>
-                                                  <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
-                                                    {player.player
-                                                      .displayName ||
-                                                      player.player.name}
-                                                    {tournament?.currentRound &&
-                                                      (() => {
-                                                        const round =
-                                                          `r${tournament.currentRound}` as keyof TeamPlayer;
-                                                        const roundData =
-                                                          player[round] as
-                                                            | Round
-                                                            | undefined;
-                                                        return (
-                                                          roundData?.icon && (
-                                                            <span>
-                                                              {roundData.icon}
-                                                            </span>
-                                                          )
-                                                        );
-                                                      })()}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.leaderboardPosition ||
-                                                '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.r1?.total ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.r2?.total ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.r3?.total ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.r4?.total ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.cut ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-                                              {player.bonus ?? '-'}
-                                            </td>
-                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
-                                              {player.total ?? '-'}
-                                            </td>
-                                          </tr>
-                                        ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            </div>
+                            {renderTeamPlayers(team)}
                           </div>
                         </div>
                       ))}
