@@ -7,7 +7,7 @@ echo "Starting deployment process..."
 
 # Build frontend
 echo "Building frontend..."
-cd ../../client
+cd ../client
 npm install
 npm run build
 
@@ -23,7 +23,8 @@ npx prisma migrate deploy
 
 # Build and push Docker image
 echo "Building Docker image..."
-docker build -t betthecut:latest .
+cd ..  # Go to root directory
+docker build -t betthecut:latest -f server/Dockerfile .
 
 # Optional: Push to registry (uncomment and modify as needed)
 # echo "Pushing to registry..."

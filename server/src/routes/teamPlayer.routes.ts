@@ -6,6 +6,7 @@ import {
   updateTeamPlayerSchema,
   teamPlayerIdSchema,
 } from '../schemas/teamPlayer';
+import { z } from 'zod';
 
 const router = express.Router();
 
@@ -19,21 +20,34 @@ router.post(
 // Remove player from team
 router.delete(
   '/:teamId/:playerId',
-  validateRequest({ params: teamPlayerIdSchema }),
+  validateRequest({
+    params: z.object({
+      teamId: z.string().cuid('Invalid team ID'),
+      playerId: z.string().cuid('Invalid player ID'),
+    }),
+  }),
   teamPlayerController.removePlayerFromTeam
 );
 
 // Get all players in a team
 router.get(
   '/team/:teamId',
-  validateRequest({ params: { teamId: teamPlayerIdSchema.shape.teamId } }),
+  validateRequest({
+    params: z.object({
+      teamId: z.string().cuid('Invalid team ID'),
+    }),
+  }),
   teamPlayerController.getTeamPlayers
 );
 
 // Get all teams for a player
 router.get(
   '/player/:playerId',
-  validateRequest({ params: { playerId: teamPlayerIdSchema.shape.playerId } }),
+  validateRequest({
+    params: z.object({
+      playerId: z.string().cuid('Invalid player ID'),
+    }),
+  }),
   teamPlayerController.getPlayerTeams
 );
 

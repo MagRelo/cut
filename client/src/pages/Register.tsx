@@ -25,7 +25,7 @@ export function Register() {
     try {
       await register(email, password, name);
       navigate('/');
-    } catch (err) {
+    } catch {
       setError('Failed to create an account');
     } finally {
       setLoading(false);

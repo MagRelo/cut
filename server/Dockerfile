@@ -14,7 +14,7 @@ RUN npm install --production
 COPY dist/ ./dist/
 
 # Copy built frontend
-COPY ../client/dist/ ./public/
+COPY client/dist/ ./public/
 
 # Expose port
 EXPOSE 3000

@@ -146,6 +146,68 @@ export class TeamPlayerController {
       throw new ApiError(500, 'Failed to update team player score');
     }
   };
+
+  async addPlayerToTeam(req: Request, res: Response) {
+    const { teamId, playerId } = req.params;
+    const teamPlayer = await prisma.teamPlayer.create({
+      data: {
+        teamId,
+        playerId,
+        active: true,
+      },
+      include: {
+        player: true,
+      },
+    });
+    res.json(teamPlayer);
+  }
+
+  async removePlayerFromTeam(req: Request, res: Response) {
+    const { teamId, playerId } = req.params;
+    await prisma.teamPlayer.delete({
+      where: {
+        teamId_playerId: {
+          teamId,
+          playerId,
+        },
+      },
+    });
+    res.sendStatus(204);
+  }
+
+  async getTeamPlayers(req: Request, res: Response) {
+    const { teamId } = req.params;
+    const players = await prisma.teamPlayer.findMany({
+      where: { teamId },
+      include: { player: true },
+    });
+    res.json(players);
+  }
+
+  async getPlayerTeams(req: Request, res: Response) {
+    const { playerId } = req.params;
+    const teams = await prisma.teamPlayer.findMany({
+      where: { playerId },
+      include: { team: true },
+    });
+    res.json(teams);
+  }
+
+  async updateTeamPlayerStatus(req: Request, res: Response) {
+    const { teamId, playerId } = req.params;
+    const { active } = req.body;
+    const teamPlayer = await prisma.teamPlayer.update({
+      where: {
+        teamId_playerId: {
+          teamId,
+          playerId,
+        },
+      },
+      data: { active },
+      include: { player: true },
+    });
+    res.json(teamPlayer);
+  }
 }
 
 export const teamPlayerController = new TeamPlayerController();
@@ -154,7 +216,7 @@ export const teamPlayerController = new TeamPlayerController();
 export const teamPlayerControllerHandler = {
   addPlayerToTeam: async (req: Request, res: Response) => {
     try {
-      const result = await addPlayerToTeam(req.body);
+      const result = await teamPlayerController.addPlayerToTeam(req, res);
       res.status(201).json(result);
     } catch (error) {
       console.error('Error adding player to team:', error);
@@ -165,8 +227,7 @@ export const teamPlayerControllerHandler = {
   removePlayerFromTeam: async (req: Request, res: Response) => {
     try {
       const { teamId, playerId } = req.params;
-      await removePlayerFromTeam(teamId, playerId);
-      res.status(204).send();
+      await teamPlayerController.removePlayerFromTeam(req, res);
     } catch (error) {
       console.error('Error removing player from team:', error);
       res.status(500).json({ error: 'Failed to remove player from team' });
@@ -176,7 +237,7 @@ export const teamPlayerControllerHandler = {
   getTeamPlayers: async (req: Request, res: Response) => {
     try {
       const { teamId } = req.params;
-      const players = await getTeamPlayers(teamId);
+      const players = await teamPlayerController.getTeamPlayers(req, res);
       res.json(players);
     } catch (error) {
       console.error('Error getting team players:', error);
@@ -187,7 +248,7 @@ export const teamPlayerControllerHandler = {
   getPlayerTeams: async (req: Request, res: Response) => {
     try {
       const { playerId } = req.params;
-      const teams = await getPlayerTeams(playerId);
+      const teams = await teamPlayerController.getPlayerTeams(req, res);
       res.json(teams);
     } catch (error) {
       console.error('Error getting player teams:', error);
@@ -198,7 +259,10 @@ export const teamPlayerControllerHandler = {
   updateTeamPlayerStatus: async (req: Request, res: Response) => {
     try {
       const { teamId, playerId } = req.params;
-      const result = await updateTeamPlayerStatus(teamId, playerId, req.body);
+      const result = await teamPlayerController.updateTeamPlayerStatus(
+        req,
+        res
+      );
       res.json(result);
     } catch (error) {
       console.error('Error updating team player status:', error);

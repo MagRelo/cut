@@ -9,7 +9,7 @@ export const TeamForm: React.FC = () => {
     leagueId?: string;
   }>();
 
-  const handleSuccess = (teamId: string, leagueId: string) => {
+  const handleSuccess = (_: string, leagueId: string) => {
     navigate(`/league-lobby/${leagueId}`);
   };
 

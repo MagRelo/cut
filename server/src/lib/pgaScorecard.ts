@@ -46,13 +46,21 @@ function formatHoles(
   const round = roundScores.find((item) => item.roundNumber === roundNumber);
   if (!round) return null;
 
+  if (!round.firstNine || !round.secondNine) {
+    return null;
+  }
+
   const allHoles = [...round.firstNine.holes, ...round.secondNine.holes];
+  const total = typeof round.total === 'number' ? round.total : 0;
 
   return {
-    holes: allHoles.map((h) => h.holeNumber),
-    pars: allHoles.map((h) => h.par),
-    scores: allHoles.map((h) => (h.score === '-' ? null : parseInt(h.score))),
-    stableford: allHoles.map((h) => calculateStableford(h.par, h.score)),
+    round: roundNumber,
+    par: allHoles.map((h) => h.par),
+    scores: allHoles.map((h) =>
+      h.score === '-' || !h.score ? null : parseInt(h.score)
+    ),
+    stableford: allHoles.map((h) => calculateStableford(h.par, h.score || '-')),
+    total,
   };
 }
 
@@ -167,10 +175,11 @@ export async function fetchScorecard(
       if (!holes) {
         rounds[`R${roundNumber}`] = {
           holes: {
-            holes: [],
-            pars: [],
+            round: roundNumber,
+            par: [],
             scores: [],
             stableford: [],
+            total: 0,
           },
           total: 0,
           ratio: 0,

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -48,12 +47,14 @@ export function UserSettings() {
                   )}
                 </div>
 
-                {user.teamId && (
+                {user.teams.length > 0 && (
                   <div>
-                    <label className='block text-sm font-medium text-gray-700'>
-                      Team ID
-                    </label>
-                    <div className='mt-1 text-gray-900'>{user.teamId}</div>
+                    <dt className='text-sm font-medium text-gray-500'>Teams</dt>
+                    {user.teams.map((team) => (
+                      <div key={team.id} className='mt-1 text-gray-900'>
+                        {team.name} ({team.leagueName})
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

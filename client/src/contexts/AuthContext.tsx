@@ -23,6 +23,11 @@ interface AuthContextData {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
+  register: (email: string, password: string, name: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -79,6 +84,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   };
 
+  const register = async (email: string, password: string, name: string) => {
+    const userData = await api.register(email, password, name);
+    setUser(userData);
+  };
+
+  const forgotPassword = async (email: string) => {
+    await api.forgotPassword(email);
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    await api.resetPassword(token, password);
+  };
+
+  const verifyEmail = async (token: string) => {
+    await api.verifyEmail(token);
+  };
+
+  const resendVerificationEmail = async () => {
+    await api.resendVerification();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -88,6 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         updateUser,
+        register,
+        forgotPassword,
+        resetPassword,
+        verifyEmail,
+        resendVerificationEmail,
       }}>
       {children}
     </AuthContext.Provider>

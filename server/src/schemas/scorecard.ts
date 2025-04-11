@@ -46,10 +46,11 @@ export const scorecardDataSchema = z
   .catchall(z.unknown());
 
 export const formattedHolesSchema = z.object({
-  holes: z.array(z.number()),
-  pars: z.array(z.number()),
+  round: z.number(),
+  par: z.array(z.number()),
   scores: z.array(z.number().nullable()),
   stableford: z.array(z.number().nullable()),
+  total: z.number(),
 });
 
 export const roundSchema = z.object({

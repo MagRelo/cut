@@ -4,9 +4,15 @@ import { z } from 'zod';
 const playerBaseSchema = {
   name: z.string().min(1, 'Name is required'),
   pgaTourId: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  displayName: z.string().optional(),
   imageUrl: z.string().url('Invalid image URL').optional(),
-  hometown: z.string().optional(),
+  country: z.string().optional(),
+  countryFlag: z.string().optional(),
   age: z.number().int().min(0).optional(),
+  inField: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 };
 
 // Schema for creating a new player

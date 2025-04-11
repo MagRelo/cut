@@ -145,14 +145,17 @@ beforeEach(async () => {
       // Create team
       testTeam = await tx.team.create({
         data: {
-          ...testData.team,
+          name: 'Test Team',
+          userId: testUser.id,
           leagueId: testLeague.id,
-          users: {
-            connect: { id: testUser.id },
-          },
         },
         include: {
-          users: true,
+          league: true,
+          players: {
+            include: {
+              player: true,
+            },
+          },
         },
       });
 

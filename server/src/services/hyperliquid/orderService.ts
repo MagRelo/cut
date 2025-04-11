@@ -7,7 +7,7 @@ import {
   RateLimitConfig,
   SimplifiedOrderParams,
 } from './types';
-import { OrderType } from 'hyperliquid';
+import { OrderType } from '@nktkas/hyperliquid';
 import { logOrderAttempt, logOrderResult } from './orderLogging';
 
 export class OrderService {

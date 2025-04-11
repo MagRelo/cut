@@ -26,11 +26,17 @@ export const getActivePlayers = async () => {
 export const createPlayer = async (data: CreatePlayerBody) => {
   const player = await prisma.player.create({
     data: {
-      name: data.name,
       pgaTourId: data.pgaTourId,
+      name: data.name,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      displayName: data.displayName,
       imageUrl: data.imageUrl,
-      hometown: data.hometown,
+      country: data.country,
+      countryFlag: data.countryFlag,
       age: data.age,
+      inField: data.inField,
+      isActive: data.isActive,
     },
     include: {
       tournaments: true,
@@ -44,10 +50,17 @@ export const updatePlayer = async (id: string, data: UpdatePlayerBody) => {
   await prisma.player.update({
     where: { id },
     data: {
+      pgaTourId: data.pgaTourId,
       name: data.name,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      displayName: data.displayName,
       imageUrl: data.imageUrl,
-      hometown: data.hometown,
+      country: data.country,
+      countryFlag: data.countryFlag,
       age: data.age,
+      inField: data.inField,
+      isActive: data.isActive,
     },
   });
 

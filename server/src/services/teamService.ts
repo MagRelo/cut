@@ -170,15 +170,11 @@ export class TeamService {
     const team = await prisma.team.create({
       data: {
         name: data.name,
+        userId,
         leagueId: data.leagueId,
-        owner: {
-          connect: { id: userId },
-        },
         players: {
-          create: players.map((player) => ({
-            player: {
-              connect: { id: player.id },
-            },
+          create: data.players.map((playerId) => ({
+            playerId,
             active: true,
           })),
         },
@@ -517,30 +513,22 @@ export class TeamService {
     }
 
     // Create the new team
-    return prisma.team.create({
+    const team = await prisma.team.create({
       data: {
         name,
-        league: {
-          connect: { id: leagueId },
-        },
         userId,
+        leagueId,
       },
       include: {
-        league: true,
         players: {
           include: {
             player: true,
           },
         },
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
       },
     });
+
+    return team as TeamWithPlayers;
   }
 
   // Get all teams for a user
