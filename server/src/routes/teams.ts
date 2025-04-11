@@ -19,6 +19,7 @@ declare module 'express-serve-static-core' {
 // Validation schemas
 const createTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
+  players: z.array(z.string()).min(4).max(4),
 });
 
 const updateTeamSchema = z.object({
@@ -75,11 +76,11 @@ router.get('/league/:leagueId/my-team', authenticateToken, async (req, res) => {
 // Create a new team for a league
 router.post('/league/:leagueId/team', authenticateToken, async (req, res) => {
   try {
-    const { name } = createTeamSchema.parse(req.body);
+    const { name, players } = createTeamSchema.parse(req.body);
     const team = await teamService.createTeam(req.user.id, {
       name,
       leagueId: req.params.leagueId,
-      players: [], // Initially create team with no players
+      players,
     });
     res.status(201).json(team);
   } catch (error) {

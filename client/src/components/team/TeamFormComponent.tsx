@@ -23,7 +23,7 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
   tournamentStatus,
 }) => {
   const isEditMode = Boolean(teamId);
-  const isFormDisabled = tournamentStatus !== 'upcoming';
+  const isFormDisabled = isEditMode && tournamentStatus !== 'upcoming';
 
   const [teamName, setTeamName] = useState(initialTeam?.name || '');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
@@ -129,8 +129,19 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
     <div className='space-y-8'>
       {error && <ErrorMessage message={error} />}
 
+      {isSaving && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white p-8 rounded-lg shadow-xl flex flex-col items-center space-y-4'>
+            <LoadingSpinner />
+            <p className='text-lg text-gray-700'>
+              Creating team & calculating player scores...
+            </p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className='space-y-8'>
-        {isFormDisabled && (
+        {isEditMode && tournamentStatus !== 'upcoming' && (
           <div className='bg-yellow-50 border-l-4 border-yellow-400 p-4'>
             <div className='flex'>
               <div className='flex-shrink-0'>

@@ -338,7 +338,11 @@ export class ApiService {
   }
 
   async createTeam(data: CreateTeamPayload) {
-    const response = await this.request<Team>('POST', '/teams', data);
+    const response = await this.request<Team>(
+      'POST',
+      `/teams/league/${data.leagueId}/team`,
+      { name: data.name, players: data.players }
+    );
     return response;
   }
 }
