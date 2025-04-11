@@ -5,13 +5,13 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY server/package*.json ./
 
 # Install dependencies
 RUN npm install --production
 
 # Copy built backend
-COPY dist/ ./dist/
+COPY server/dist/ ./dist/
 
 # Copy built frontend
 COPY client/dist/ ./public/
