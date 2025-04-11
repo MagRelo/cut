@@ -7,7 +7,7 @@ import { sendEmail } from '../lib/email';
 import { authenticateToken } from '../middleware/auth';
 import { Prisma, User, Team, League } from '@prisma/client';
 import { generateUserToken, ensureStreamUser } from '../lib/getStream';
-import { AuthUser } from '../types/auth';
+import { AuthUser } from '../middleware/auth';
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;

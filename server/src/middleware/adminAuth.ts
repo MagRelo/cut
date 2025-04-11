@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError } from '../utils/errors';
 
-// AuthUser type is already defined in Express namespace by auth.ts
+// Express.Request.user is typed with AuthUser from auth.ts via express.d.ts
 
 export const requireAdmin = async (
   req: Request,
@@ -9,7 +9,7 @@ export const requireAdmin = async (
   next: NextFunction
 ) => {
   try {
-    const user = req.user;
+    const user = (req as any).user;
 
     if (!user) {
       throw new UnauthorizedError('Authentication required');

@@ -7,28 +7,20 @@ interface JwtPayload {
   userId: string;
 }
 
-type AuthTeam = {
+export type AuthTeam = {
   id: string;
   name: string;
   leagueId: string;
   leagueName: string;
 };
 
-type AuthUser = {
+export type AuthUser = {
   id: string;
   email: string;
   name: string;
   userType: string;
   teams: AuthTeam[];
 };
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-    }
-  }
-}
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;
@@ -37,6 +29,13 @@ type TeamWithLeague = Team & {
 type UserWithTeams = User & {
   teams: TeamWithLeague[];
 };
+
+// Helper type for routes that require authentication
+export type AuthHandler = (
+  req: Request & { user: AuthUser }, // Ensure user exists for authenticated routes
+  res: Response,
+  next: NextFunction
+) => Promise<void> | void;
 
 export const authenticateToken = async (
   req: Request,
@@ -91,7 +90,7 @@ export const authenticateToken = async (
       })),
     };
 
-    req.user = authUser;
+    (req as any).user = authUser;
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
