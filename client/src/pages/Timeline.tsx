@@ -51,6 +51,7 @@ interface TimelineProps {
   className?: string;
   leagueId: string;
   tournamentId: string;
+  tournamentStartDate: string;
 }
 
 interface TimelineData {
@@ -69,6 +70,7 @@ interface TimelineData {
     name: string;
     currentRound: number;
     status: string;
+    startDate: string;
   };
 }
 
@@ -76,6 +78,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   className = '',
   leagueId,
   tournamentId,
+  tournamentStartDate,
 }) => {
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,14 +90,12 @@ export const Timeline: React.FC<TimelineProps> = ({
         setIsLoading(true);
         setError(null);
 
-        // Calculate time range (last 24 hours)
         const endTime = new Date();
-        const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
 
         const data = (await api.getLeagueTimeline(
           leagueId,
           tournamentId,
-          startTime.toISOString(),
+          tournamentStartDate,
           endTime.toISOString()
         )) as TimelineData;
 
@@ -123,7 +124,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     const interval = setInterval(fetchTimelineData, 10 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [leagueId, tournamentId]);
+  }, [leagueId, tournamentId, tournamentStartDate]);
 
   if (isLoading) {
     return (

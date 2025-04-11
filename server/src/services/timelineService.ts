@@ -126,6 +126,7 @@ export class TimelineService {
           name: tournament.name,
           currentRound: tournament.currentRound,
           status: tournament.status,
+          startDate: tournament.startDate.toISOString(),
         },
       };
     } catch (error) {

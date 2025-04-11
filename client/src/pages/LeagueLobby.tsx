@@ -509,6 +509,7 @@ export const LeagueLobby: React.FC = () => {
                               className='mb-4'
                               leagueId={leagueId}
                               tournamentId={tournament.id}
+                              tournamentStartDate={tournament.startDate}
                             />
                           )}
                         <div className='space-y-0'>
@@ -571,6 +572,11 @@ export const LeagueLobby: React.FC = () => {
                                                 scope='col'
                                                 className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
                                                 Player
+                                              </th>
+                                              <th
+                                                scope='col'
+                                                className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                                Pos
                                               </th>
                                               <th
                                                 scope='col'
@@ -670,6 +676,10 @@ export const LeagueLobby: React.FC = () => {
                                                         </div>
                                                       </div>
                                                     </div>
+                                                  </td>
+                                                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                                    {player.leaderboardPosition ||
+                                                      '-'}
                                                   </td>
                                                   <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
                                                     {player.r1?.total ?? '-'}
@@ -847,6 +857,7 @@ export const LeagueLobby: React.FC = () => {
                         className='mb-4'
                         leagueId={leagueId}
                         tournamentId={tournament.id}
+                        tournamentStartDate={tournament.startDate}
                       />
                     )}
                   <div className='space-y-0'>
@@ -909,6 +920,11 @@ export const LeagueLobby: React.FC = () => {
                                           scope='col'
                                           className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
                                           Player
+                                        </th>
+                                        <th
+                                          scope='col'
+                                          className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                                          Pos
                                         </th>
                                         <th
                                           scope='col'
@@ -998,6 +1014,10 @@ export const LeagueLobby: React.FC = () => {
                                                   </div>
                                                 </div>
                                               </div>
+                                            </td>
+                                            <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+                                              {player.leaderboardPosition ||
+                                                '-'}
                                             </td>
                                             <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
                                               {player.r1?.total ?? '-'}

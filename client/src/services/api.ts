@@ -365,26 +365,8 @@ export class ApiService {
     return this.request<League[]>('GET', '/leagues');
   }
 
-  // Admin endpoints
-  async getSystemProcesses() {
-    return this.request<SystemProcessRecord[]>(
-      'GET',
-      '/admin/system-processes'
-    );
-  }
-
-  // Generic GET request for backward compatibility
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>('GET', endpoint);
-  }
-
-  async createTeam(data: CreateTeamPayload) {
-    const response = await this.request<Team>(
-      'POST',
-      `/teams/league/${data.leagueId}/team`,
-      { name: data.name, players: data.players }
-    );
-    return response;
+  async getTournament(tournamentId: string) {
+    return this.request<Tournament>('GET', `/tournaments/${tournamentId}`);
   }
 
   async getLeagueTimeline(
@@ -424,6 +406,28 @@ export class ApiService {
       console.error('Error in getLeagueTimeline:', error);
       throw error;
     }
+  }
+
+  // Admin endpoints
+  async getSystemProcesses() {
+    return this.request<SystemProcessRecord[]>(
+      'GET',
+      '/admin/system-processes'
+    );
+  }
+
+  // Generic GET request for backward compatibility
+  async get<T>(endpoint: string): Promise<T> {
+    return this.request<T>('GET', endpoint);
+  }
+
+  async createTeam(data: CreateTeamPayload) {
+    const response = await this.request<Team>(
+      'POST',
+      `/teams/league/${data.leagueId}/team`,
+      { name: data.name, players: data.players }
+    );
+    return response;
   }
 }
 

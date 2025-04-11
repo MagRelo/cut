@@ -8,6 +8,7 @@ import {
 import { TimelineService } from './timelineService';
 import { fetchScorecard } from '../lib/pgaScorecard';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
+import type { LeaderboardData } from '../schemas/leaderboard';
 
 const prisma = new PrismaClient();
 const timelineService = new TimelineService();
@@ -157,6 +158,13 @@ export class ScoreUpdateService {
     pgaTourId: string
   ) {
     try {
+      // Get leaderboard data first to check position and cut status
+      const leaderboardData = await getPgaLeaderboard();
+      const playerLeaderboardData = leaderboardData.players.find(
+        (p) => p.pgaTourId === pgaTourId
+      );
+
+      // Get scorecard data
       const scorecard = await fetchScorecard(pgaTourId, tournamentId);
       if (!scorecard) return;
 
@@ -167,6 +175,20 @@ export class ScoreUpdateService {
         r4: scorecard.R4 || Prisma.JsonNull,
         total: scorecard.stablefordTotal,
       };
+
+      // Add position and cut bonuses if we have leaderboard data
+      if (playerLeaderboardData) {
+        data.leaderboardPosition = playerLeaderboardData.position;
+        data.bonus = playerLeaderboardData.positionBonus;
+        data.cut = playerLeaderboardData.cutBonus;
+
+        // Update total to include bonuses
+        const baseTotal = typeof data.total === 'number' ? data.total : 0;
+        data.total =
+          baseTotal +
+          playerLeaderboardData.positionBonus +
+          playerLeaderboardData.cutBonus;
+      }
 
       await prisma.teamPlayer.update({
         where: { id: teamPlayerId },
