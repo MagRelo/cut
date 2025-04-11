@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Team } from '@prisma/client';
 import { calculateTeamScore } from '../utils/scoreCalculator';
 
 const prisma = new PrismaClient();
@@ -108,7 +108,7 @@ export class TimelineService {
           teamEntries.set(entry.teamId, {
             id: entry.teamId,
             name: entry.team.name,
-            color: entry.team.color || '#000000', // Default color if not set
+            color: entry.team.color,
             dataPoints: [],
           });
         }

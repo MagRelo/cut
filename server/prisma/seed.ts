@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
@@ -102,6 +102,7 @@ async function main() {
         const team = await prisma.team.create({
           data: {
             name: userData.team.name,
+            color: userData.team.color,
             leagueId: league.id,
             userId: user.id,
           },

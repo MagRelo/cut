@@ -98,9 +98,13 @@ export const Timeline: React.FC<TimelineProps> = ({
           endTime.toISOString()
         )) as TimelineData;
 
-        // Assign random colors to teams
+        // Only assign random colors to teams that don't have one
         const usedColors = new Set<string>();
         data.teams = data.teams.map((team) => {
+          if (team.color) {
+            usedColors.add(team.color);
+            return team;
+          }
           const color = getRandomColor(usedColors);
           usedColors.add(color);
           return { ...team, color };

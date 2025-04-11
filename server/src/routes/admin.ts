@@ -29,4 +29,25 @@ router.get(
   }
 );
 
+// Get system process records (admin only)
+router.get(
+  '/system-processes',
+  authenticateToken,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const records = await prisma.SystemProcessRecord.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 100, // Limit to last 100 records
+      });
+
+      res.json(records);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

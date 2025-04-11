@@ -19,6 +19,7 @@
       "isCommissioner": true,
       "team": {
         "name": "Birds of Prey",
+        "color": "#9600CC",
         "players": ["39971", "29725", "46442", "46970"]
       }
     },
@@ -29,6 +30,7 @@
       "userType": "ADMIN",
       "team": {
         "name": "Noodles",
+        "color": "#A3A3A3",
         "players": ["46046", "33204", "47993", "39324"]
       }
     },
@@ -38,6 +40,7 @@
       "password": "partytime",
       "team": {
         "name": "Myers",
+        "color": "#E00000",
         "players": ["51634", "33141", "36799", "45157"]
       }
     },
@@ -47,6 +50,7 @@
       "password": "partytime",
       "team": {
         "name": "Duck Hookers",
+        "color": "#00ABB8",
         "players": ["48081", "34098", "28089", "47959"]
       }
     },
@@ -56,6 +60,7 @@
       "password": "partytime",
       "team": {
         "name": "BoneHammers",
+        "color": "#0a73eb",
         "players": ["32839", "30911", "39997", "49960"]
       }
     },
@@ -65,6 +70,7 @@
       "password": "partytime",
       "team": {
         "name": "Jimmy",
+        "color": "#4700E0",
         "players": ["50525", "47504", "45486", "24024"]
       }
     },
@@ -74,6 +80,7 @@
       "password": "partytime",
       "team": {
         "name": "DoogDiggler",
+        "color": "#00B86B",
         "players": ["35450", "56630", "34046", "36689"]
       }
     },
@@ -83,6 +90,7 @@
       "password": "partytime",
       "team": {
         "name": "Orange Snakes",
+        "color": "#F58300",
         "players": ["28237", "29420", "24502", "25493"]
       }
     },
@@ -92,6 +100,7 @@
       "password": "partytime",
       "team": {
         "name": "BumbleBee",
+        "color": "#FFD60A",
         "players": ["52955", "51766", "47483", "21209"]
       }
     },
@@ -101,6 +110,7 @@
       "password": "partytime",
       "team": {
         "name": "Neely",
+        "color": "#FF48BF",
         "players": ["33448", "46717", "37378", "30925"]
       }
     }

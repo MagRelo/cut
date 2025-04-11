@@ -99,6 +99,15 @@ interface League {
   }>;
 }
 
+interface SystemProcessRecord {
+  id: string;
+  processType: string;
+  status: string;
+  processData: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CreateTeamPayload {
   name: string;
   leagueId: string;
@@ -354,6 +363,14 @@ export class ApiService {
 
   async getLeagues(): Promise<League[]> {
     return this.request<League[]>('GET', '/leagues');
+  }
+
+  // Admin endpoints
+  async getSystemProcesses() {
+    return this.request<SystemProcessRecord[]>(
+      'GET',
+      '/admin/system-processes'
+    );
   }
 
   // Generic GET request for backward compatibility
