@@ -16,7 +16,7 @@ interface Round {
   total?: number;
   icon?: string;
   holes?: {
-    pars: number[];
+    par: number[];
     holes: number[];
     scores: (number | null)[];
     stableford: (number | null)[];

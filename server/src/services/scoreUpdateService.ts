@@ -19,7 +19,7 @@ interface TeamPlayerWithPlayer extends TeamPlayer {
 
 interface RoundData {
   holes: {
-    pars: number[];
+    par: number[];
     scores: number[];
     stableford: number[];
   };

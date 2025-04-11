@@ -18,7 +18,7 @@ export function ForgotPassword() {
     try {
       await forgotPassword(email);
       setMessage('Check your inbox for password reset instructions');
-    } catch (err) {
+    } catch {
       setError('Failed to reset password');
     } finally {
       setLoading(false);
