@@ -1,12 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+type User = {
+  id: string;
+  email: string;
+  name: string;
+  userType: string;
+  teams: Array<{
+    id: string;
+    name: string;
+    leagueId: string;
+    leagueName: string;
+  }>;
+};
 
 export function JoinPrivateLeague() {
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,6 +30,11 @@ export function JoinPrivateLeague() {
 
     try {
       const membership = await api.joinLeagueWithInviteCode(inviteCode);
+
+      // Refresh auth data to get updated user info
+      const userData = await api.get<User>('/auth/me');
+      await updateUser(userData);
+
       navigate(`/league-lobby/${membership.leagueId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join league');

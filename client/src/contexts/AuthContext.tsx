@@ -21,7 +21,7 @@ interface AuthContextData {
   streamToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (user: User) => void;
+  updateUser: (user: User) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -85,8 +85,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateUser = (user: User) => {
+  const updateUser = async (user: User) => {
     setUser(user);
+    // Fetch a fresh stream token when updating user data
+    try {
+      const { streamToken: newStreamToken } = await api.get<{
+        streamToken: string;
+      }>('/auth/stream-token');
+      setStreamToken(newStreamToken);
+    } catch (error) {
+      console.error('Failed to refresh stream token:', error);
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
