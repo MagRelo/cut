@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ApiService } from '../services/api';
+import { streamClient } from '../services/chatService';
 
 interface User {
   id: string;
@@ -72,10 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStreamToken(response.streamToken);
   };
 
-  const logout = () => {
-    setUser(null);
-    setStreamToken(null);
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await streamClient.disconnectUser();
+    } catch (error) {
+      console.error('Error disconnecting from Stream:', error);
+    } finally {
+      setUser(null);
+      setStreamToken(null);
+      localStorage.removeItem('token');
+    }
   };
 
   const updateUser = (user: User) => {
