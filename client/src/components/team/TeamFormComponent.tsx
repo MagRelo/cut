@@ -194,10 +194,10 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
             </p>
             <div className='grid gap-6 mt-4'>
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index}>
+                <div key={index} className='flex items-center gap-4'>
                   <label
                     htmlFor={`player-${index}`}
-                    className='block text-sm font-medium text-gray-900 mb-2'>
+                    className='whitespace-nowrap text-sm font-medium text-gray-900 w-24'>
                     Player {index + 1}
                   </label>
                   <select
@@ -205,7 +205,7 @@ export const TeamFormComponent: React.FC<TeamFormComponentProps> = ({
                     value={selectedPlayers[index] || ''}
                     onChange={(e) => handlePlayerSelect(e, index)}
                     disabled={isFormDisabled}
-                    className='block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500'>
+                    className='flex-1 pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white disabled:bg-gray-100 disabled:text-gray-500'>
                     <option value=''>Select a player...</option>
                     {availablePlayers
                       .filter(
