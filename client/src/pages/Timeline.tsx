@@ -23,6 +23,30 @@ ChartJS.register(
   Legend
 );
 
+// Define available colors
+const TEAM_COLORS = [
+  '#0a73eb',
+  '#A3A3A3',
+  '#FF48BF',
+  '#F58300',
+  '#00ABB8',
+  '#FFD60A',
+  '#E00000',
+  '#4700E0',
+  '#9600CC',
+  '#00B86B',
+];
+
+// Function to get a random color from the list
+const getRandomColor = (usedColors: Set<string>): string => {
+  const availableColors = TEAM_COLORS.filter((color) => !usedColors.has(color));
+  if (availableColors.length === 0) {
+    // If all colors are used, start over
+    return TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)];
+  }
+  return availableColors[Math.floor(Math.random() * availableColors.length)];
+};
+
 interface TimelineProps {
   className?: string;
   leagueId: string;
@@ -74,6 +98,14 @@ export const Timeline: React.FC<TimelineProps> = ({
           endTime.toISOString()
         )) as TimelineData;
 
+        // Assign random colors to teams
+        const usedColors = new Set<string>();
+        data.teams = data.teams.map((team) => {
+          const color = getRandomColor(usedColors);
+          usedColors.add(color);
+          return { ...team, color };
+        });
+
         setTimelineData(data);
       } catch {
         setError('Failed to load timeline data');
@@ -115,12 +147,21 @@ export const Timeline: React.FC<TimelineProps> = ({
     );
   }
 
+  // Sort teams by their latest score (last data point) and take top 10
+  const topTeams = [...timelineData.teams]
+    .sort((a, b) => {
+      const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
+      const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
+      return bScore - aScore;
+    })
+    .slice(0, 10);
+
   const data = {
     labels:
       timelineData.teams[0]?.dataPoints.map((dp) =>
         new Date(dp.timestamp).toLocaleTimeString()
       ) || [],
-    datasets: timelineData.teams.map((team) => ({
+    datasets: topTeams.map((team) => ({
       label: team.name,
       data: team.dataPoints.map((dp) => dp.score),
       borderColor: team.color,
@@ -142,10 +183,32 @@ export const Timeline: React.FC<TimelineProps> = ({
     plugins: {
       legend: {
         position: 'top' as const,
-        display: false, // Hide legend since we show team names in the list below
+        display: true,
+        labels: {
+          usePointStyle: true,
+          boxWidth: 3,
+          padding: 15,
+          font: {
+            size: 11,
+          },
+          // @ts-expect-error - Ignoring type errors for now to achieve desired spacing
+          generateLabels: function (chart) {
+            const datasets = chart.data.datasets;
+            // @ts-expect-error - Ignoring type errors for now to achieve desired spacing
+            return datasets.map((dataset, i) => ({
+              text: '  ' + dataset.label + '  ', // Two spaces before and after
+              fillStyle: dataset.backgroundColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: 0,
+              pointStyle: 'circle',
+              hidden: !chart.isDatasetVisible(i),
+              index: i,
+            }));
+          },
+        },
       },
       title: {
-        display: false, // Hide title since we show tournament info above
+        display: false,
       },
     },
     scales: {
@@ -175,8 +238,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className={className}>
       <div
-        className='bg-white rounded-lg shadow-sm p-4'
-        style={{ height: '200px' }}>
+        className='bg-white rounded-lg shadow-sm p-4 timeline-chart'
+        style={{ height: '250px' }}>
         <Line data={data} options={options} />
       </div>
     </div>
