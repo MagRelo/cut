@@ -65,6 +65,9 @@ app.use(
 
 app.use(express.json());
 
+// Serve static files from the public directory
+app.use(express.static('public/dist'));
+
 // Request logging
 app.use(requestLogger);
 
@@ -83,6 +86,11 @@ app.use('/api/admin', adminRoutes);
 // Protected routes
 app.use('/api/protected', authenticateToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully' });
+});
+
+// Serve index.html for all other routes to support client-side routing
+app.get('*', (req, res) => {
+  res.sendFile('index.html', { root: 'public/dist' });
 });
 
 // Error handling
