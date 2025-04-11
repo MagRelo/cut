@@ -13,15 +13,13 @@ Base path: `/api/auth`
 | POST   | `/login`           | Authenticate user and receive JWT token |
 | POST   | `/register`        | Create a new user account               |
 | POST   | `/forgot-password` | Request password reset email            |
-| POST   | `/reset-password`  | Reset password using token from email   |
-| POST   | `/verify-email`    | Verify user's email address using token |
 
 ### Protected Routes
 
-| Method | Path                   | Description                            |
-| ------ | ---------------------- | -------------------------------------- |
-| POST   | `/resend-verification` | Resend email verification link         |
-| GET    | `/me`                  | Get current user's profile information |
+| Method | Path              | Description                            |
+| ------ | ----------------- | -------------------------------------- |
+| GET    | `/me`             | Get current user's profile information |
+| POST   | `/reset-password` | Reset password using token from email  |
 
 ## Tournament Routes
 
@@ -36,12 +34,12 @@ Base path: `/api/tournaments`
 
 ### Protected Routes
 
-| Method | Path                 | Description               |
-| ------ | -------------------- | ------------------------- |
-| POST   | `/`                  | Create a new tournament   |
-| PUT    | `/:id`               | Update tournament details |
-| DELETE | `/:id`               | Delete a tournament       |
-| POST   | `/:id/update-scores` | Update tournament scores  |
+| Method | Path                 | Description                                 |
+| ------ | -------------------- | ------------------------------------------- |
+| POST   | `/`                  | Create a new tournament                     |
+| PUT    | `/:id`               | Update tournament details                   |
+| DELETE | `/:id`               | Delete a tournament                         |
+| POST   | `/:id/update-scores` | Update tournament scores from PGA Tour data |
 
 ## Player Routes
 
@@ -56,12 +54,10 @@ Base path: `/api/players`
 
 ### Protected Routes
 
-| Method | Path                 | Description               |
-| ------ | -------------------- | ------------------------- |
-| POST   | `/`                  | Create a new player       |
-| PUT    | `/:id`               | Update player details     |
-| DELETE | `/:id`               | Delete a player           |
-| DELETE | `/:id/teams/:teamId` | Remove player from a team |
+| Method | Path         | Description         |
+| ------ | ------------ | ------------------- |
+| POST   | `/`          | Create a new player |
+| GET    | `/:id/teams` | Get player's teams  |
 
 ## League Routes
 
@@ -69,14 +65,15 @@ Base path: `/api/leagues`
 
 ### Protected Routes
 
-| Method | Path            | Description            |
-| ------ | --------------- | ---------------------- |
-| POST   | `/`             | Create a new league    |
-| GET    | `/`             | List all leagues       |
-| DELETE | `/:id`          | Delete a league        |
-| POST   | `/:id/join`     | Join a league          |
-| POST   | `/:id/leave`    | Leave a league         |
-| PUT    | `/:id/settings` | Update league settings |
+| Method | Path                  | Description              |
+| ------ | --------------------- | ------------------------ |
+| POST   | `/`                   | Create a new league      |
+| GET    | `/`                   | List all leagues         |
+| DELETE | `/:id`                | Delete a league          |
+| POST   | `/:id/join`           | Join a league            |
+| POST   | `/:id/leave`          | Leave a league           |
+| PUT    | `/:id/settings`       | Update league settings   |
+| GET    | `/:leagueId/timeline` | Get league timeline data |
 
 ## Team Routes
 
@@ -84,10 +81,31 @@ Base path: `/api/teams`
 
 ### Protected Routes
 
-| Method | Path       | Description       |
-| ------ | ---------- | ----------------- |
-| POST   | `/`        | Create a new team |
-| DELETE | `/:teamId` | Delete a team     |
+| Method | Path                | Description               |
+| ------ | ------------------- | ------------------------- |
+| POST   | `/`                 | Create a new team         |
+| DELETE | `/:teamId`          | Delete a team             |
+| GET    | `/league/:leagueId` | Get all teams in a league |
+
+## PGA Tour Routes
+
+Base path: `/api/pga`
+
+### Public Routes
+
+| Method | Path                                 | Description                         |
+| ------ | ------------------------------------ | ----------------------------------- |
+| GET    | `/players`                           | Get PGA Tour players list           |
+| GET    | `/leaderboard`                       | Get PGA Tour leaderboard data       |
+| GET    | `/scorecard/:playerId/:tournamentId` | Get player scorecard for tournament |
+| GET    | `/field/:tournamentId`               | Get active players for tournament   |
+| GET    | `/odds/:tournamentKey`               | Get tournament odds from bookmakers |
+
+### Protected Routes
+
+| Method | Path               | Description              |
+| ------ | ------------------ | ------------------------ |
+| POST   | `/players/refresh` | Refresh PGA Tour players |
 
 ## Hyperliquid Routes
 
@@ -107,6 +125,16 @@ Base path: `/api/hyperliquid`
 | POST   | `/order`          | Place a new order       |
 | GET    | `/order/:orderId` | Get order status        |
 | GET    | `/open-orders`    | Get list of open orders |
+
+## Chat Routes
+
+Base path: `/api/chat`
+
+### Protected Routes
+
+| Method | Path                         | Description                |
+| ------ | ---------------------------- | -------------------------- |
+| GET    | `/leagues/:leagueId/channel` | Get league channel details |
 
 ## Authentication
 
