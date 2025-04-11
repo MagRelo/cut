@@ -40,11 +40,6 @@ export function UserSettings() {
                     Email
                   </label>
                   <div className='mt-1 text-gray-900'>{user.email}</div>
-                  {!user.emailVerified && (
-                    <p className='mt-1 text-sm text-red-600'>
-                      Email not verified
-                    </p>
-                  )}
                 </div>
 
                 {user.teams.length > 0 && (

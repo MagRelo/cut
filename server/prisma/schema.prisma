@@ -12,7 +12,6 @@ model User {
   email             String             @unique
   password          String
   name              String
-  emailVerified     Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   ownedLeagues      League[]           @relation("LeagueCommissioner")

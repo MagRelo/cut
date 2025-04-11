@@ -13,7 +13,6 @@ function generateTestData() {
       email: `test.user.${timestamp}.${randomString}@example.com`,
       name: 'Test User',
       password: 'hashedPassword',
-      emailVerified: true,
     },
     league: {
       name: `Test League ${timestamp}`,

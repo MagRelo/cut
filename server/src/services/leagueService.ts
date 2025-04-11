@@ -97,7 +97,7 @@ export class LeagueService {
     });
 
     // Create GetStream channel for the league
-    await createOrUpdateLeagueChannel(league.id, league.name, [userId]);
+    await createOrUpdateLeagueChannel(league.id, league.name, [userId], userId);
 
     return league;
   }

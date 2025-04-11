@@ -1,25 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
-
-interface League {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  isPrivate: boolean;
-  teams: {
-    id: string;
-    name: string;
-    userId: string;
-  }[];
-  members: Array<{
-    id: string;
-    userId: string;
-    role: string;
-    joinedAt: string;
-  }>;
-}
+import { api, type League } from '../services/api';
 
 export function Leagues() {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -36,7 +17,7 @@ export function Leagues() {
 
     const fetchLeagues = async () => {
       try {
-        const data = await api.get<League[]>('/leagues');
+        const data = await api.getLeagues();
         setLeagues(data);
       } catch (err) {
         setError('Failed to load leagues');

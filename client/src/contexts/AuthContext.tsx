@@ -1,19 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
-
-interface AuthTeam {
-  id: string;
-  name: string;
-  leagueId: string;
-  leagueName: string;
-}
+import { createContext, useContext, useEffect, useState } from 'react';
+import { ApiService } from '../services/api';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  emailVerified: boolean;
-  teams: AuthTeam[];
+  teams: Array<{
+    id: string;
+    name: string;
+    leagueId: string;
+    leagueName: string;
+  }>;
 }
 
 interface AuthContextData {
@@ -26,67 +23,67 @@ interface AuthContextData {
   register: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
-  verifyEmail: (token: string) => Promise<void>;
-  resendVerificationEmail: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const AuthContext = createContext<AuthContextData | undefined>(undefined);
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [streamToken, setStreamToken] = useState<string | null>(null);
+  const api = new ApiService();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      api
-        .get<User>('/auth/me')
-        .then((response) => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await api.get<User>('/auth/me');
           setUser(response);
+          const { streamToken: newStreamToken } = await api.get<{
+            streamToken: string;
+          }>('/auth/stream-token');
+          setStreamToken(newStreamToken);
+        }
+      } catch (error: unknown) {
+        console.error('Auth check failed:', error);
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-          // We also need to get a fresh stream token here
-          api
-            .get<{ streamToken: string }>('/auth/stream-token')
-            .then(({ streamToken: newStreamToken }) => {
-              setStreamToken(newStreamToken);
-            })
-            .catch((error) => {
-              console.error('Failed to get stream token:', error);
-            });
-        })
-        .catch(() => {
-          logout();
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    const { streamToken: newStreamToken, ...userData } = response;
-    setUser(userData);
-    setStreamToken(newStreamToken);
+    setUser(response);
+    setStreamToken(response.streamToken);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
     setStreamToken(null);
+    localStorage.removeItem('token');
   };
 
-  const updateUser = (userData: User) => {
-    setUser(userData);
+  const updateUser = (user: User) => {
+    setUser(user);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const userData = await api.register(email, password, name);
-    setUser(userData);
+    const response = await api.register(email, password, name);
+    setUser(response);
+    setStreamToken(response.streamToken);
   };
 
   const forgotPassword = async (email: string) => {
@@ -95,14 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (token: string, password: string) => {
     await api.resetPassword(token, password);
-  };
-
-  const verifyEmail = async (token: string) => {
-    await api.verifyEmail(token);
-  };
-
-  const resendVerificationEmail = async () => {
-    await api.resendVerification();
   };
 
   return (
@@ -117,20 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         forgotPassword,
         resetPassword,
-        verifyEmail,
-        resendVerificationEmail,
       }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth(): AuthContextData {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-
-  return context;
 }

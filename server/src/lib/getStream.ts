@@ -49,11 +49,13 @@ export const ensureStreamUser = async (
 export const createOrUpdateLeagueChannel = async (
   leagueId: string,
   leagueName: string,
-  members: string[]
+  members: string[],
+  createdById: string
 ) => {
   const channel = streamClient.channel('league', `league-${leagueId}`, {
     name: leagueName,
     members,
+    created_by_id: createdById,
     custom_data: {
       leagueId,
       createdAt: new Date().toISOString(),

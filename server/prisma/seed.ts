@@ -39,14 +39,11 @@ async function main() {
     const users = await Promise.all(
       seedData.users.map(async (userData) => {
         const hashedPassword = await bcrypt.hash(userData.password, 10);
-        const user = await prisma.user.upsert({
-          where: { email: userData.email },
-          update: {},
-          create: {
+        const user = await prisma.user.create({
+          data: {
             email: userData.email,
-            password: hashedPassword,
             name: userData.name,
-            emailVerified: true,
+            password: hashedPassword,
           },
         });
 

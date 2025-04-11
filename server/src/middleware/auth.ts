@@ -18,7 +18,6 @@ type AuthUser = {
   id: string;
   email: string;
   name: string;
-  emailVerified: boolean;
   teams: AuthTeam[];
 };
 
@@ -82,7 +81,6 @@ export const authenticateToken = async (
       id: user.id,
       email: user.email,
       name: user.name,
-      emailVerified: user.emailVerified,
       teams: user.teams.map((team) => ({
         id: team.id,
         name: team.name,
@@ -98,6 +96,6 @@ export const authenticateToken = async (
       return res.status(401).json({ error: 'Invalid token' });
     }
     console.error('Authentication error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

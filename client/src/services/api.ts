@@ -38,7 +38,6 @@ interface AuthResponse {
   id: string;
   email: string;
   name: string;
-  emailVerified: boolean;
   teams: Array<{
     id: string;
     name: string;
@@ -248,21 +247,11 @@ export class ApiService {
     });
   }
 
-  async verifyEmail(token: string) {
-    return this.request<MessageResponse>('POST', '/auth/verify-email', {
-      token,
-    });
-  }
-
-  async resendVerification() {
-    return this.request<MessageResponse>('POST', '/auth/resend-verification');
-  }
-
-  // Team endpoints
   async getTeamsByLeague(leagueId: string) {
     return this.request<Team[]>('GET', `/teams/league/${leagueId}`);
   }
 
+  // Team endpoints
   async getTeam(teamId: string) {
     return this.request<Team>('GET', `/teams/${teamId}`);
   }
@@ -337,6 +326,10 @@ export class ApiService {
 
   async leaveLeague(leagueId: string): Promise<void> {
     return this.request<void>('POST', `/leagues/${leagueId}/leave`);
+  }
+
+  async getLeagues(): Promise<League[]> {
+    return this.request<League[]>('GET', '/leagues');
   }
 
   // Generic GET request for backward compatibility

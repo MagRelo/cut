@@ -105,13 +105,20 @@ export class LeagueController {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        throw new UnauthorizedError('User not authenticated');
+        return res.status(401).json({ error: 'User not authenticated' });
       }
 
       const leagues = await leagueService.listLeagues(userId);
       res.json(leagues);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to list leagues' });
+      console.error('Error listing leagues:', error);
+      if (error instanceof UnauthorizedError) {
+        return res.status(401).json({ error: error.message });
+      }
+      if (error instanceof ValidationError) {
+        return res.status(400).json({ error: error.message });
+      }
+      return res.status(500).json({ error: 'Failed to list leagues' });
     }
   }
 

@@ -40,10 +40,6 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(6),
 });
 
-const verifyEmailSchema = z.object({
-  token: z.string(),
-});
-
 // Login route
 router.post('/login', async (req, res) => {
   try {
@@ -76,10 +72,6 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user.emailVerified) {
-      return res.status(403).json({ error: 'Please verify your email first' });
-    }
-
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -92,26 +84,25 @@ router.post('/login', async (req, res) => {
       name: user.name,
     });
 
-    res.json({
+    return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
-      emailVerified: user.emailVerified,
+      token,
+      streamToken,
       teams: user.teams.map((team) => ({
         id: team.id,
         name: team.name,
         leagueId: team.league.id,
         leagueName: team.league.name,
       })),
-      token,
-      streamToken,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -143,23 +134,20 @@ router.post('/register', async (req, res) => {
       name: user.name,
     });
 
-    // Generate verification token
-    const verificationToken = jwt.sign(
+    // Generate JWT token for immediate login
+    const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
-    // Send verification email
-    await sendEmail({
-      to: email,
-      subject: 'Verify your email',
-      html: `Please verify your email by clicking this link: ${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`,
-    });
-
+    // Return user data and token
     res.status(201).json({
-      message:
-        'Registration successful. Please check your email to verify your account.',
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      token,
+      teams: [],
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -254,103 +242,6 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Verify email route
-router.post('/verify-email', async (req, res) => {
-  try {
-    const { token } = verifyEmailSchema.parse(req.body);
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as {
-      userId: string;
-    };
-
-    const userInclude = Prisma.validator<Prisma.UserInclude>()({
-      teams: {
-        include: {
-          league: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    });
-
-    const user = (await prisma.user.update({
-      where: { id: decoded.userId },
-      data: { emailVerified: true },
-      include: userInclude,
-    })) as UserWithTeams;
-
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      emailVerified: user.emailVerified,
-      teams: user.teams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        leagueId: team.league.id,
-        leagueName: team.league.name,
-      })),
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-    console.error('Email verification error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Resend verification email route
-router.post('/resend-verification', async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user?.id },
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    if (user.emailVerified) {
-      return res.status(400).json({ error: 'Email already verified' });
-    }
-
-    // Generate verification token
-    const verificationToken = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    // Send verification email
-    await sendEmail({
-      to: user.email,
-      subject: 'Verify your email',
-      html: `
-        <h1>Welcome to the Cut!</h1>
-        <p>Please click the link below to verify your email:</p>
-        <a href="${process.env.CLIENT_URL}/verify-email?token=${verificationToken}">
-          Verify Email
-        </a>
-      `,
-    });
-
-    res.json({ message: 'Verification email sent' });
-  } catch (error) {
-    console.error('Resend verification error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Get current user route
 router.get('/me', authenticateToken, async (req, res) => {
   try {
@@ -376,11 +267,10 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({
+    return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
-      emailVerified: user.emailVerified,
       teams: user.teams.map((team) => ({
         id: team.id,
         name: team.name,
@@ -390,7 +280,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get current user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
