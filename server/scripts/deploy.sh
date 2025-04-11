@@ -24,12 +24,17 @@ npx prisma migrate deploy
 # Build and push Docker image
 echo "Building Docker image..."
 cd ..  # Go to root directory
-docker build -t betthecut:latest -f server/Dockerfile .
 
-# Optional: Push to registry (uncomment and modify as needed)
-# echo "Pushing to registry..."
-# docker tag betthecut:latest your-registry/betthecut:latest
-# docker push your-registry/betthecut:latest
+# Set your Docker Hub username
+DOCKER_USERNAME="magrelo"  # Replace this with your Docker Hub username
+
+# Build and tag the image
+docker build -t $DOCKER_USERNAME/betthecut:latest -f server/Dockerfile .
+
+# Push to Docker Hub
+echo "Pushing to Docker Hub..."
+docker tag $DOCKER_USERNAME/betthecut:latest $DOCKER_USERNAME/betthecut:latest
+docker push $DOCKER_USERNAME/betthecut:latest
 
 echo "Deployment preparation complete!"
 echo "Next steps:"
