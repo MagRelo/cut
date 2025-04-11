@@ -72,7 +72,8 @@ export function Leagues() {
 
   return (
     <div className='container mx-auto px-4 py-8'>
-      <div className='flex justify-between items-center mb-8'>
+      {/* Move buttons to bottom on mobile, top on desktop */}
+      <div className='hidden md:flex justify-between items-center mb-8'>
         <div className='space-x-4'>
           <Link
             to='/leagues/new'
@@ -101,24 +102,24 @@ export function Leagues() {
       ) : (
         <div className='bg-white rounded-lg shadow overflow-hidden'>
           <div className='min-w-full'>
-            {/* Table Header */}
+            {/* Table Header - Hide less important columns on mobile */}
             <div className='bg-gray-50 border-b border-gray-200'>
-              <div className='grid grid-cols-4 gap-4 px-6 py-3'>
+              <div className='grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-3'>
                 <div className='text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   League Name
                 </div>
-                <div className='text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                <div className='hidden md:block text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Teams
                 </div>
-                <div className='text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                <div className='text-right md:text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Status
                 </div>
-                <div className='text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                <div className='hidden md:block text-right text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Total Bets
                 </div>
               </div>
             </div>
-            {/* Table Body */}
+            {/* Table Body - Hide less important columns on mobile */}
             <div className='divide-y divide-gray-200'>
               {leagues.map((league) => {
                 const membershipRole = getMembershipStatus(league);
@@ -127,7 +128,7 @@ export function Leagues() {
                 return (
                   <div
                     key={league.id}
-                    className={`grid grid-cols-4 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150 ${
+                    className={`grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150 ${
                       membershipRole ? 'cursor-pointer' : ''
                     }`}
                     onClick={(e) => {
@@ -144,13 +145,13 @@ export function Leagues() {
                         </span>
                       )}
                     </div>
-                    <div className='text-center text-sm text-gray-500'>
+                    <div className='hidden md:block text-center text-sm text-gray-500'>
                       {league.teams.length}
                     </div>
-                    <div className='text-center'>
+                    <div className='text-right md:text-center'>
                       {membershipRole ? (
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             membershipRole === 'COMMISSIONER'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-green-100 text-green-800'
@@ -166,7 +167,7 @@ export function Leagues() {
                             handleJoinLeague(e, league.id);
                           }}
                           disabled={isJoining}
-                          className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${
+                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md ${
                             isJoining
                               ? 'bg-emerald-100 text-emerald-400 cursor-wait'
                               : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
@@ -175,7 +176,7 @@ export function Leagues() {
                         </button>
                       )}
                     </div>
-                    <div className='text-right text-sm text-gray-500'>
+                    <div className='hidden md:block text-right text-sm text-gray-500'>
                       $0.00
                     </div>
                   </div>
@@ -185,6 +186,20 @@ export function Leagues() {
           </div>
         </div>
       )}
+
+      {/* Mobile buttons - stacked vertically at bottom */}
+      <div className='md:hidden flex flex-col space-y-3 mt-8'>
+        <Link
+          to='/leagues/new'
+          className='bg-emerald-600 text-white px-3 py-2 rounded-md hover:bg-emerald-700 text-sm text-center'>
+          Create New League
+        </Link>
+        <Link
+          to='/leagues/join'
+          className='bg-emerald-600 text-white px-3 py-2 rounded-md hover:bg-emerald-700 text-sm text-center'>
+          Join Private League
+        </Link>
+      </div>
     </div>
   );
 }
