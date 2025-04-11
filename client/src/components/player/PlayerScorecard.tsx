@@ -6,7 +6,7 @@ interface Round {
   total?: number;
   icon?: string;
   holes?: {
-    pars: number[];
+    par: number[];
     holes: number[];
     scores: (number | null)[];
     stableford: (number | null)[];
@@ -71,26 +71,28 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     // If we have scores, we should have pars
     if (!roundData?.holes) return null;
 
-    // Get pars from the API data or use standard par 4 if not available
+    // Get pars from the API data, show '-' if not available
     const pars = Array(18)
-      .fill(4)
-      .map((defaultPar, i) => {
-        const par = roundData.holes?.pars?.[i];
-        return par ?? defaultPar;
-      });
+      .fill(null)
+      .map((_, i) => roundData.holes?.par?.[i] ?? null);
 
     return (
       <tr className='border-t border-gray-200'>
         <td className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
           Par
         </td>
-        {pars.map((par: number, i: number) => (
+        {pars.map((par: number | null, i: number) => (
           <td key={i} className='px-2 py-2 text-center text-xs text-gray-600'>
-            {par}
+            {par === null ? '-' : par}
           </td>
         ))}
         <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
-          {pars.reduce((sum: number, par: number) => sum + par, 0)}
+          {pars.some((par) => par !== null)
+            ? pars.reduce(
+                (sum: number, par: number | null) => sum + (par || 0),
+                0
+              )
+            : '-'}
         </td>
       </tr>
     );
@@ -102,11 +104,13 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     // Get pars for score comparison
     const pars = Array(18)
-      .fill(4)
-      .map((defaultPar, i) => {
-        const par = roundData.holes?.pars?.[i];
-        return par ?? defaultPar;
-      });
+      .fill(null)
+      .map((_, i) => roundData.holes?.par?.[i] ?? null);
+
+    // Calculate total of actual scores
+    const scoreTotal = roundData.holes.scores
+      .filter((score): score is number => score !== null)
+      .reduce((sum, score) => sum + score, 0);
 
     return (
       <tr className='border-t border-gray-200'>
@@ -116,10 +120,10 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
         {roundData.holes.scores.map((score: number | null, i: number) => {
           const par = pars[i];
           const scoreValue = score === null ? '-' : score;
-          const scoreDiff = score === null ? 0 : score - par;
+          const scoreDiff = score === null || par === null ? 0 : score - par;
 
           let scoreClass = 'text-gray-600';
-          if (score !== null) {
+          if (score !== null && par !== null) {
             if (scoreDiff < 0) scoreClass = 'text-emerald-600 font-medium';
             else if (scoreDiff > 0) scoreClass = 'text-red-600 font-medium';
           }
@@ -133,7 +137,9 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           );
         })}
         <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
-          {roundData.total || '-'}
+          {roundData.holes.scores.some((score) => score !== null)
+            ? scoreTotal
+            : '-'}
         </td>
       </tr>
     );

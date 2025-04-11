@@ -698,6 +698,10 @@ export const LeagueLobby: React.FC = () => {
                                     onClick={() => toggleTeam(team.id)}
                                     className='w-full px-4 py-2 flex justify-between items-center'>
                                     <div className='flex items-center'>
+                                      <div
+                                        className='w-4 h-4 rounded-full mr-2'
+                                        style={{ backgroundColor: team.color }}
+                                      />
                                       <h3 className='text-base font-medium text-gray-900'>
                                         {team.name}
                                       </h3>
@@ -900,6 +904,10 @@ export const LeagueLobby: React.FC = () => {
                               onClick={() => toggleTeam(team.id)}
                               className='w-full px-4 py-2 flex justify-between items-center'>
                               <div className='flex items-center'>
+                                <div
+                                  className='w-4 h-4 rounded-full mr-2'
+                                  style={{ backgroundColor: team.color }}
+                                />
                                 <h3 className='text-base font-medium text-gray-900'>
                                   {team.name}
                                 </h3>

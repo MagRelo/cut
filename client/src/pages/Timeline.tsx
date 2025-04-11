@@ -192,30 +192,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     },
     plugins: {
       legend: {
-        position: 'top' as const,
-        display: true,
-        labels: {
-          usePointStyle: true,
-          boxWidth: 3,
-          padding: 15,
-          font: {
-            size: 11,
-          },
-          // @ts-expect-error - Ignoring type errors for now to achieve desired spacing
-          generateLabels: function (chart) {
-            const datasets = chart.data.datasets;
-            // @ts-expect-error - Ignoring type errors for now to achieve desired spacing
-            return datasets.map((dataset, i) => ({
-              text: '  ' + dataset.label + '  ', // Two spaces before and after
-              fillStyle: dataset.backgroundColor,
-              strokeStyle: dataset.borderColor,
-              lineWidth: 0,
-              pointStyle: 'circle',
-              hidden: !chart.isDatasetVisible(i),
-              index: i,
-            }));
-          },
-        },
+        display: false,
       },
       title: {
         display: false,
