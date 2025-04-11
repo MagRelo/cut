@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -83,21 +83,37 @@ export const Timeline: React.FC<TimelineProps> = ({
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const fetchTimelineData = async () => {
+    const fetchTimelineData = async (retryCount = 0) => {
+      // Clean up any existing abort controller
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController();
+
       try {
         setIsLoading(true);
         setError(null);
 
         const endTime = new Date();
 
-        const data = (await api.getLeagueTimeline(
-          leagueId,
-          tournamentId,
-          tournamentStartDate,
-          endTime.toISOString()
-        )) as TimelineData;
+        // Add timeout to the API call
+        const data = (await Promise.race([
+          api.getLeagueTimeline(
+            leagueId,
+            tournamentId,
+            tournamentStartDate,
+            endTime.toISOString()
+          ),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), 10000)
+          ),
+        ])) as TimelineData;
 
         // Only assign random colors to teams that don't have one
         const usedColors = new Set<string>();
@@ -112,18 +128,44 @@ export const Timeline: React.FC<TimelineProps> = ({
         });
 
         setTimelineData(data);
-      } catch {
+        setError(null);
+      } catch (err: unknown) {
+        // Don't set error if request was aborted
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Timeline fetch error:', err);
         setError('Failed to load timeline data');
+
+        // Implement retry logic with exponential backoff
+        if (retryCount < 3) {
+          const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          retryTimeoutRef.current = setTimeout(
+            () => fetchTimelineData(retryCount + 1),
+            retryDelay
+          );
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTimelineData();
-    // Refresh data every 10 minutes
-    const interval = setInterval(fetchTimelineData, 10 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    // Set up refresh interval
+    const intervalId = setInterval(() => fetchTimelineData(), 10 * 60 * 1000);
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [leagueId, tournamentId, tournamentStartDate]);
 
   if (isLoading) {
