@@ -57,7 +57,7 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({ leagueId }) => {
           <Window>
             <ChannelHeader />
             <MessageList />
-            <MessageInput focus />
+            <MessageInput />
           </Window>
           <Thread />
         </Channel>

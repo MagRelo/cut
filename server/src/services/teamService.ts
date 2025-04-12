@@ -201,36 +201,38 @@ export class TeamService {
       },
     });
 
-    // Get current tournament to update scores
-    const currentTournament = await prisma.tournament.findFirst({
-      where: {
-        OR: [
-          { status: TournamentStatus.IN_PROGRESS },
-          { status: TournamentStatus.UPCOMING },
-        ],
-      },
-      orderBy: {
-        startDate: 'asc',
-      },
-    });
+    // Leave this commented out for now - the deployed instance cannot run this at the moment
 
-    // If there's an active tournament, update scores for all players
-    if (
-      currentTournament &&
-      currentTournament.status === TournamentStatus.IN_PROGRESS
-    ) {
-      await Promise.all(
-        team.players.map(async (teamPlayer) => {
-          if (teamPlayer.player.pgaTourId) {
-            await scoreUpdateService.updateScore(
-              teamPlayer.id,
-              currentTournament.pgaTourId,
-              teamPlayer.player.pgaTourId
-            );
-          }
-        })
-      );
-    }
+    // // Get current tournament to update scores
+    // const currentTournament = await prisma.tournament.findFirst({
+    //   where: {
+    //     OR: [
+    //       { status: TournamentStatus.IN_PROGRESS },
+    //       { status: TournamentStatus.UPCOMING },
+    //     ],
+    //   },
+    //   orderBy: {
+    //     startDate: 'asc',
+    //   },
+    // });
+
+    // // If there's an active tournament, update scores for all players
+    // if (
+    //   currentTournament &&
+    //   currentTournament.status === TournamentStatus.IN_PROGRESS
+    // ) {
+    //   await Promise.all(
+    //     team.players.map(async (teamPlayer) => {
+    //       if (teamPlayer.player.pgaTourId) {
+    //         await scoreUpdateService.updateScore(
+    //           teamPlayer.id,
+    //           currentTournament.pgaTourId,
+    //           teamPlayer.player.pgaTourId
+    //         );
+    //       }
+    //     })
+    //   );
+    // }
 
     return team as TeamWithPlayers;
   }
