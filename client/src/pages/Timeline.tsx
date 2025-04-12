@@ -227,11 +227,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: {
-      mode: 'nearest' as const,
-      axis: 'x' as const,
-      intersect: false,
-    },
+    events: [], // This disables all interactions
     plugins: {
       legend: {
         display: false,
