@@ -11,21 +11,44 @@
     'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Make all message bubbles transparent */
+/* Reset all message related padding first */
+.str-chat__message-simple,
 .str-chat__message-simple-text-inner,
 .str-chat__message-bubble,
 .str-chat__message-text-inner,
 .str-chat__message-bubble-inner,
-.str-chat__message--me .str-chat__message-simple-text-inner,
-.str-chat__message--me .str-chat__message-bubble,
-.str-chat__message--me .str-chat__message-text-inner,
-.str-chat__message--me .str-chat__message-bubble-inner {
+.str-chat__message-text,
+.str-chat__message-inner,
+.str-chat__message-data-inner,
+.str-chat__message-text-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Then apply minimal padding only to the outer container */
+.str-chat__message-simple-text-inner {
+  background: rgba(229, 231, 235, 0.5) !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem !important;
+}
+
+/* Keep emoji-only messages and reactions transparent */
+.str-chat__message-attachment-emoji,
+.str-chat__message--has-reaction .str-chat__message-reaction-list,
+.str-chat__message-simple--emoji_only .str-chat__message-simple-text-inner,
+.str-chat__message-simple--emoji_only .str-chat__message-text-inner,
+.str-chat__message-reaction-list,
+.str-chat__reaction-list,
+.str-chat__simple-reaction-list {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  padding: 0 !important;
 }
 
-/* Message list container - keeping only this styling */
+/* Message list container */
 .str-chat__list {
   background-color: #f1f3f5;
   padding: 1rem 0.5rem;
