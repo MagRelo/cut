@@ -80,7 +80,8 @@ type TabSection =
   | 'teams'
   | 'createTeam'
   | 'liveBets'
-  | 'leagueSettings';
+  | 'leagueSettings'
+  | 'timeline';
 type RightColumnTab = TabSection;
 
 export const LeagueLobby: React.FC = () => {
@@ -494,6 +495,17 @@ export const LeagueLobby: React.FC = () => {
           }`}>
           Scores
         </button>
+        {tournament && tournament.status === 'IN_PROGRESS' && (
+          <button
+            onClick={() => setActiveTab('timeline')}
+            className={`px-3 py-2 text-sm font-medium ${
+              activeTab === 'timeline'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            Timeline
+          </button>
+        )}
         {isMember && (
           <button
             onClick={() => setActiveTab('createTeam')}
@@ -877,16 +889,6 @@ export const LeagueLobby: React.FC = () => {
               {activeTab === 'chat' && renderChatContent()}
               {activeTab === 'teams' && (
                 <div className='p-4'>
-                  {leagueId &&
-                    tournament &&
-                    tournament.status === 'IN_PROGRESS' && (
-                      <Timeline
-                        className='mb-4'
-                        leagueId={leagueId}
-                        tournamentId={tournament.id}
-                        tournamentStartDate={tournament.startDate}
-                      />
-                    )}
                   <div className='space-y-0'>
                     {teams
                       .sort(
@@ -946,6 +948,20 @@ export const LeagueLobby: React.FC = () => {
                         </div>
                       ))}
                   </div>
+                </div>
+              )}
+              {activeTab === 'timeline' && (
+                <div className='p-4'>
+                  {leagueId &&
+                    tournament &&
+                    tournament.status === 'IN_PROGRESS' && (
+                      <Timeline
+                        className='mb-4'
+                        leagueId={leagueId}
+                        tournamentId={tournament.id}
+                        tournamentStartDate={tournament.startDate}
+                      />
+                    )}
                 </div>
               )}
               {activeTab === 'createTeam' && isMember && leagueId && (
