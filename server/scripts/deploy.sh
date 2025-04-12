@@ -16,9 +16,14 @@ DOCKER_USERNAME="magrelo"  # Replace this with your Docker Hub username
 echo "Setting up Docker buildx builder..."
 docker buildx create --use --name multi-platform-builder || true
 
+# Generate unique tag using git commit SHA and timestamp
+TAG=$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M)
+echo "Building with tag: $TAG"
+
 # Build and push multi-platform image
 echo "Building and pushing multi-platform Docker image..."
 docker buildx build --platform linux/amd64,linux/arm64 \
+  -t $DOCKER_USERNAME/betthecut:$TAG \
   -t $DOCKER_USERNAME/betthecut:latest \
   -f server/Dockerfile \
   --push .
