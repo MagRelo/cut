@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import cron from 'node-cron';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 // Cleanup old cache entries
 async function cleanupOldCacheEntries() {

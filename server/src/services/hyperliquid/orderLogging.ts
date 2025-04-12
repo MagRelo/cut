@@ -1,7 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { OrderLog, OrderParams, OrderResult, OrderError } from './types.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
 
 type OrderStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
 

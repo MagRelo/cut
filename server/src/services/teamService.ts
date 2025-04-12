@@ -6,8 +6,8 @@ import {
 } from '../utils/errors.js';
 import { ScoreUpdateService } from './scoreUpdateService.js';
 import { TournamentStatus } from '../schemas/tournament.js';
+import { prisma } from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const scoreUpdateService = new ScoreUpdateService();
 
 export interface CreateTeamDto {

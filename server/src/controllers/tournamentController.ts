@@ -9,8 +9,7 @@ import {
   PGATourScorecard,
 } from '../schemas/tournament.js';
 import type { LeaderboardData } from '../schemas/leaderboard.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 function prepareTournamentData(
   leaderboardData: LeaderboardData

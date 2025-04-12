@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { fetchPGATourPlayers } from './pgaPlayers.js';
 import { getActivePlayers } from './pgaField.js';
-
-const prisma = new PrismaClient();
+import { prisma } from './prisma.js';
 
 /**
  * Refreshes the players in the database with current PGA Tour data

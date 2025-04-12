@@ -9,8 +9,8 @@ import { TimelineService } from './timelineService.js';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 import type { LeaderboardData } from '../schemas/leaderboard.js';
+import { prisma } from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const timelineService = new TimelineService();
 
 interface TeamPlayerWithPlayer extends TeamPlayer {
@@ -219,7 +219,7 @@ export class ScoreUpdateService {
 
       // Only proceed with score and timeline updates if round is in progress or complete
       if (
-        !['In Progress', 'Complete'].includes(
+        !['In Progress', 'Complete', 'Official'].includes(
           tournament.roundStatusDisplay || ''
         )
       ) {

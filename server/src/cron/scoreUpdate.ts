@@ -2,15 +2,9 @@ import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import { ScoreUpdateService } from '../services/scoreUpdateService.js';
 import { TournamentStatus } from '../schemas/tournament.js';
+import { prisma } from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const scoreUpdateService = new ScoreUpdateService();
-
-// TODO: In a real application, you would need to:
-// 1. Store the current tournament ID in the database
-// 2. Have an API to update the current tournament ID
-// 3. Have logic to determine when a tournament is active
-const CURRENT_TOURNAMENT_ID = process.env.CURRENT_TOURNAMENT_ID;
 
 // Schedule the job to run based on environment variable frequency
 export function startScoreUpdateCron() {

@@ -1,7 +1,6 @@
 import { PrismaClient, Team } from '@prisma/client';
 import { calculateTeamScore } from '../utils/scoreCalculator.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export class TimelineService {
   /**

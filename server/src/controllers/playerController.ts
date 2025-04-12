@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { CreatePlayerBody, UpdatePlayerBody } from '../schemas/player.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export const getAllPlayers = async () => {
   return prisma.player.findMany({});

@@ -13,8 +13,7 @@ import {
   UnauthorizedError,
 } from '../utils/errors.js';
 import { createOrUpdateLeagueChannel, streamClient } from '../lib/getStream.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 type LeagueWithMembers = Prisma.LeagueGetPayload<{
   include: { members: true };

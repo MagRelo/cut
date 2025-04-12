@@ -8,8 +8,7 @@ import { TournamentStatus } from '../schemas/tournament.js';
 import { ScoreUpdateService } from '../services/scoreUpdateService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 interface RequestUser {
   id: string;
