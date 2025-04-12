@@ -23,7 +23,8 @@
     "test": "npm run test --workspace=server",
     "test:coverage": "npm run test:coverage --workspace=server",
     "test:ui": "npm run test:ui --workspace=server",
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\""
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "deploy": "npm run client:build && npm run server:build && npm run server:deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

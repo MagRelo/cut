@@ -23,7 +23,7 @@ export const Navigation: React.FC = () => {
               </Link>
             </div>
             {user && (
-              <div className='hidden sm:ml-6 sm:flex sm:space-x-8'>
+              <div className='flex ml-4 sm:ml-6 space-x-4 sm:space-x-8 items-center'>
                 <Link
                   to='/leagues'
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${

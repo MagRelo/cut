@@ -1,12 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-interface LocationState {
-  from?: {
-    pathname: string;
-  };
-}
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -15,10 +9,6 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Get the redirect path from location state or default to leagues
-  const from = (location.state as LocationState)?.from?.pathname || '/leagues';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +17,7 @@ export function Login() {
 
     try {
       await login(email, password);
-      navigate(from, { replace: true });
+      navigate('/leagues', { replace: true });
     } catch {
       setError('Failed to sign in. Please check your credentials.');
     } finally {
