@@ -1,5 +1,5 @@
-import { HyperliquidClient } from './client';
-import { OrderError } from './types';
+import { HyperliquidClient } from './client.js';
+import { OrderError } from './types.js';
 
 export class WalletService {
   private client: HyperliquidClient;

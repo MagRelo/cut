@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
-import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
-import { fetchScorecard } from '../lib/pgaScorecard';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
+import { fetchScorecard } from '../lib/pgaScorecard.js';
 import {
   UpdateTournamentBody,
   TournamentStatus,
   PGATourLeaderboard,
   PGATourScorecard,
-} from '../schemas/tournament';
-import type { LeaderboardData } from '../schemas/leaderboard';
+} from '../schemas/tournament.js';
+import type { LeaderboardData } from '../schemas/leaderboard.js';
 
 const prisma = new PrismaClient();
 

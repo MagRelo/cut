@@ -1,5 +1,5 @@
 import { PrismaClient, Team } from '@prisma/client';
-import { calculateTeamScore } from '../utils/scoreCalculator';
+import { calculateTeamScore } from '../utils/scoreCalculator.js';
 
 const prisma = new PrismaClient();
 

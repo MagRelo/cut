@@ -1,8 +1,8 @@
 import express from 'express';
-import { teamPlayerController } from '../controllers/teamPlayerController';
-import { authenticateToken } from '../middleware/auth';
-import { validate } from '../middleware/validation';
-import { updateTeamPlayerScoreSchema } from '../schemas/teamPlayer';
+import { teamPlayerController } from '../controllers/teamPlayerController.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { validate } from '../middleware/validation.js';
+import { updateTeamPlayerScoreSchema } from '../schemas/teamPlayer.js';
 import { z } from 'zod';
 
 const router = express.Router();

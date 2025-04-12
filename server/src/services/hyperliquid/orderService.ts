@@ -1,14 +1,13 @@
-import { HyperliquidClient } from './client';
+import { HyperliquidClient } from './client.js';
 import {
   OrderParams,
   OrderResult,
   OrderError,
-  OrderLog,
-  RateLimitConfig,
   SimplifiedOrderParams,
-} from './types';
-import { OrderType } from '@nktkas/hyperliquid';
-import { logOrderAttempt, logOrderResult } from './orderLogging';
+  OrderType,
+  RateLimitConfig,
+} from './types.js';
+import { logOrderAttempt, logOrderResult } from './orderLogging.js';
 
 export class OrderService {
   private client: HyperliquidClient;

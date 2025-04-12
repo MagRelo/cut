@@ -1,11 +1,11 @@
 import express from 'express';
-import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
-import { fetchScorecard } from '../lib/pgaScorecard';
-import { authenticateToken } from '../middleware/auth';
-import { fetchPGATourPlayers } from '../lib/pgaPlayers';
-import { getActivePlayers } from '../lib/pgaField';
-import { refreshPlayers } from '../lib/playerRefresh';
-import { getGolfTournamentOdds } from '../lib/pgaOdds';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
+import { fetchScorecard } from '../lib/pgaScorecard.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { fetchPGATourPlayers } from '../lib/pgaPlayers.js';
+import { getActivePlayers } from '../lib/pgaField.js';
+import { refreshPlayers } from '../lib/playerRefresh.js';
+import { getGolfTournamentOdds } from '../lib/pgaOdds.js';
 import { PrismaClient } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import { ChatController } from '../controllers/chatController';
-import { authenticateToken } from '../middleware/auth';
+import { ChatController } from '../controllers/chatController.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 const chatController = new ChatController();

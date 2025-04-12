@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { playerController } from '../controllers/playerController';
-import { authenticateToken } from '../middleware/auth';
-import { validate } from '../middleware/validation';
+import { playerController } from '../controllers/playerController.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { validate } from '../middleware/validation.js';
 import {
   createPlayerSchema,
   updatePlayerSchema,
   playerIdSchema,
   teamPlayerSchema,
-} from '../schemas/player';
+} from '../schemas/player.js';
 import { z } from 'zod';
 
 const router = Router();

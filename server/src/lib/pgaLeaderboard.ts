@@ -1,12 +1,12 @@
 import * as cheerio from 'cheerio';
 import {
-  nextDataSchema,
+  type LeaderboardData,
+  type ScoringData,
   type Tournament,
   type Weather,
   type PlayerRowV3,
-  type LeaderboardData,
-  type ScoringData,
-} from '../schemas/leaderboard';
+  nextDataSchema,
+} from '../schemas/leaderboard.js';
 
 interface CacheItem {
   data: any;

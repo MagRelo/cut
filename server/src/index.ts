@@ -1,21 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import teamRoutes from './routes/teams';
-import authRoutes from './routes/auth';
-import pgaRoutes from './routes/pga';
-import leagueRoutes from './routes/leagues';
-import hyperliquidRoutes from './routes/hyperliquid';
-import playerRoutes from './routes/player.routes';
-import tournamentRoutes from './routes/tournaments';
-import chatRoutes from './routes/chat';
-import teamPlayerRoutes from './routes/teamPlayer';
-import adminRoutes from './routes/admin';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { authenticateToken } from './middleware/auth';
-import { requestLogger } from './middleware/logger';
-import { startScoreUpdateCron } from './cron/scoreUpdate';
-import { startCleanupCron } from './cron/cleanup';
+import teamRoutes from './routes/teams.js';
+import authRoutes from './routes/auth.js';
+import pgaRoutes from './routes/pga.js';
+import leagueRoutes from './routes/leagues.js';
+import hyperliquidRoutes from './routes/hyperliquid.js';
+import playerRoutes from './routes/player.routes.js';
+import tournamentRoutes from './routes/tournaments.js';
+import chatRoutes from './routes/chat.js';
+import teamPlayerRoutes from './routes/teamPlayer.js';
+import adminRoutes from './routes/admin.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { authenticateToken } from './middleware/auth.js';
+import { requestLogger } from './middleware/logger.js';
+import { startScoreUpdateCron } from './cron/scoreUpdate.js';
+import { startCleanupCron } from './cron/cleanup.js';
 
 // Load environment variables based on NODE_ENV
 const envFile =

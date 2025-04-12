@@ -1,8 +1,8 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth';
-import { OrderService } from '../services/hyperliquid/orderService';
-import { WalletService } from '../services/hyperliquid/walletService';
-import { SimplifiedOrderParams } from '../services/hyperliquid/types';
+import { authenticateToken } from '../middleware/auth.js';
+import { OrderService } from '../services/hyperliquid/orderService.js';
+import { WalletService } from '../services/hyperliquid/walletService.js';
+import { SimplifiedOrderParams } from '../services/hyperliquid/types.js';
 
 const router = express.Router();
 const orderService = new OrderService();

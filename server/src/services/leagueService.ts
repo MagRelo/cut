@@ -11,8 +11,8 @@ import {
   NotFoundError,
   ValidationError,
   UnauthorizedError,
-} from '../utils/errors';
-import { createOrUpdateLeagueChannel, streamClient } from '../lib/getStream';
+} from '../utils/errors.js';
+import { createOrUpdateLeagueChannel, streamClient } from '../lib/getStream.js';
 
 const prisma = new PrismaClient();
 

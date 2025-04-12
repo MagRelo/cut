@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { streamClient } from '../lib/getStream';
-import { prisma } from '../lib/prisma';
-import { NotFoundError, UnauthorizedError } from '../utils/errors';
+import { streamClient } from '../lib/getStream.js';
+import { prisma } from '../lib/prisma.js';
+import { NotFoundError, UnauthorizedError } from '../utils/errors.js';
 
 export class ChatController {
   async getLeagueChannel(req: Request, res: Response) {

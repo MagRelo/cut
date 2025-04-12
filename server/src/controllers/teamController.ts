@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { TeamService } from '../services/teamService';
+import { TeamService } from '../services/teamService.js';
 import {
   NotFoundError,
   ValidationError,
   UnauthorizedError,
-} from '../utils/errors';
+} from '../utils/errors.js';
 
 const teamService = new TeamService();
 

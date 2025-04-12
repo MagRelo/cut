@@ -1,4 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
+import {
+  ValidationError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../utils/errors.js';
 
 // Custom error class for API errors
 export class ApiError extends Error {

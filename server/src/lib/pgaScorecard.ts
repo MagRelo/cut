@@ -8,7 +8,7 @@ import {
   type FormattedHoles,
   type Round,
   type Scorecard,
-} from '../schemas/scorecard';
+} from '../schemas/scorecard.js';
 
 const PGA_API_KEY = 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
 const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';

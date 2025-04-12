@@ -4,7 +4,7 @@ import {
   type PGAError,
   type PlayerBio,
   type PlayerDirectoryResponse,
-} from '../schemas/pgaTour';
+} from '../schemas/pgaTour.js';
 
 const PGA_TOUR_API_KEY =
   process.env.PGA_TOUR_API_KEY || 'da2-gsrx5bibzbb4njvhl7t37wqyl4';

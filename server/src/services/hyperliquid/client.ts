@@ -1,6 +1,6 @@
 import * as hl from '@nktkas/hyperliquid';
 import { privateKeyToAccount } from 'viem/accounts';
-import { OrderParams, OrderResult } from './types';
+import { OrderParams, OrderResult } from './types.js';
 import type { PublicClient } from '@nktkas/hyperliquid';
 
 export class HyperliquidClient {

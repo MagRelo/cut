@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { fetchPGATourPlayers } from './pgaPlayers';
-import { getActivePlayers } from './pgaField';
+import { fetchPGATourPlayers } from './pgaPlayers.js';
+import { getActivePlayers } from './pgaField.js';
 
 const prisma = new PrismaClient();
 

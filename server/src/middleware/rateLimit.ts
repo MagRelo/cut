@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { RateLimitConfig } from '../services/hyperliquid/types';
+import { RateLimitConfig } from '../services/hyperliquid/types.js';
 
 const defaultConfig: RateLimitConfig = {
   maxRequests: 10,

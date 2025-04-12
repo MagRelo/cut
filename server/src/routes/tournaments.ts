@@ -1,12 +1,12 @@
 import express from 'express';
-import { tournamentController } from '../controllers/tournamentController';
-import { authenticateToken } from '../middleware/auth';
-import { validate } from '../middleware/validation';
+import { tournamentController } from '../controllers/tournamentController.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { validate } from '../middleware/validation.js';
 import {
   updateTournamentSchema,
   tournamentIdSchema,
   TournamentStatus,
-} from '../schemas/tournament';
+} from '../schemas/tournament.js';
 import { z } from 'zod';
 
 const router = express.Router();

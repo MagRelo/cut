@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import {
   CreateTeamPlayerBody,
   UpdateTeamPlayerBody,
-} from '../schemas/teamPlayer';
-import { TournamentStatus } from '../schemas/tournament';
-import { ScoreUpdateService } from '../services/scoreUpdateService';
-import { ApiError } from '../middleware/errorHandler';
+} from '../schemas/teamPlayer.js';
+import { TournamentStatus } from '../schemas/tournament.js';
+import { ScoreUpdateService } from '../services/scoreUpdateService.js';
+import { ApiError } from '../middleware/errorHandler.js';
 import { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();

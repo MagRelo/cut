@@ -9,7 +9,7 @@
     "start:prod": "NODE_ENV=production node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && npm run copy-static",
-    "copy-static": "cp -r ../client/dist ./public",
+    "copy-static": "cp -r ../client/dist ./dist/public",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

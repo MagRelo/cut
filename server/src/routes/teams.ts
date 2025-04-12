@@ -1,8 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
-import { authenticateToken } from '../middleware/auth';
-import { TeamService } from '../services/teamService';
-import { NotFoundError, UnauthorizedError } from '../utils/errors';
+import { authenticateToken } from '../middleware/auth.js';
+import { TeamService } from '../services/teamService.js';
+import { NotFoundError, UnauthorizedError } from '../utils/errors.js';
 
 const router = express.Router();
 const teamService = new TeamService();

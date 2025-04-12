@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
-import { ScoreUpdateService } from '../services/scoreUpdateService';
-import { TournamentStatus } from '../schemas/tournament';
+import { ScoreUpdateService } from '../services/scoreUpdateService.js';
+import { TournamentStatus } from '../schemas/tournament.js';
 
 const prisma = new PrismaClient();
 const scoreUpdateService = new ScoreUpdateService();

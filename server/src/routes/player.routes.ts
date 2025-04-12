@@ -1,11 +1,11 @@
 import express from 'express';
-import { playerController } from '../controllers/playerController';
-import { validateRequest } from '../middleware/validateRequest';
+import { playerController } from '../controllers/playerController.js';
+import { validateRequest } from '../middleware/validateRequest.js';
 import {
   createPlayerSchema,
   updatePlayerSchema,
   playerIdSchema,
-} from '../schemas/player';
+} from '../schemas/player.js';
 
 const router = express.Router();
 

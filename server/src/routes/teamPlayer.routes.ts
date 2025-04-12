@@ -1,11 +1,11 @@
 import express from 'express';
-import { teamPlayerController } from '../controllers/teamPlayerController';
-import { validateRequest } from '../middleware/validateRequest';
+import { teamPlayerController } from '../controllers/teamPlayerController.js';
+import { validateRequest } from '../middleware/validateRequest.js';
 import {
   createTeamPlayerSchema,
   updateTeamPlayerSchema,
   teamPlayerIdSchema,
-} from '../schemas/teamPlayer';
+} from '../schemas/teamPlayer.js';
 import { z } from 'zod';
 
 const router = express.Router();

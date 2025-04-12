@@ -5,10 +5,10 @@ import {
   TeamPlayer,
   Tournament,
 } from '@prisma/client';
-import { TimelineService } from './timelineService';
-import { fetchScorecard } from '../lib/pgaScorecard';
-import { getPgaLeaderboard } from '../lib/pgaLeaderboard';
-import type { LeaderboardData } from '../schemas/leaderboard';
+import { TimelineService } from './timelineService.js';
+import { fetchScorecard } from '../lib/pgaScorecard.js';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
+import type { LeaderboardData } from '../schemas/leaderboard.js';
 
 const prisma = new PrismaClient();
 const timelineService = new TimelineService();

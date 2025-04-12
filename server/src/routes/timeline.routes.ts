@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { TimelineService } from '../services/timelineService';
+import { TimelineService } from '../services/timelineService.js';
 import { z } from 'zod';
 import { Request, Response } from 'express';
 

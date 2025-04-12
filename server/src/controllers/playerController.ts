@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { CreatePlayerBody, UpdatePlayerBody } from '../schemas/player';
+import { CreatePlayerBody, UpdatePlayerBody } from '../schemas/player.js';
 
 const prisma = new PrismaClient();
 

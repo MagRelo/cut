@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UnauthorizedError } from '../utils/errors';
+import { UnauthorizedError } from '../utils/errors.js';
 
 // Express.Request.user is typed with AuthUser from auth.ts via express.d.ts
 

@@ -2,12 +2,12 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { prisma } from '../lib/prisma';
-import { sendEmail } from '../lib/email';
-import { authenticateToken } from '../middleware/auth';
+import { prisma } from '../lib/prisma.js';
+import { sendEmail } from '../lib/email.js';
+import { authenticateToken } from '../middleware/auth.js';
 import { Prisma, User, Team, League } from '@prisma/client';
-import { generateUserToken, ensureStreamUser } from '../lib/getStream';
-import { AuthUser } from '../middleware/auth';
+import { generateUserToken, ensureStreamUser } from '../lib/getStream.js';
+import { AuthUser } from '../middleware/auth.js';
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;

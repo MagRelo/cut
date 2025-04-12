@@ -3,9 +3,9 @@ import {
   NotFoundError,
   ValidationError,
   UnauthorizedError,
-} from '../utils/errors';
-import { ScoreUpdateService } from './scoreUpdateService';
-import { TournamentStatus } from '../schemas/tournament';
+} from '../utils/errors.js';
+import { ScoreUpdateService } from './scoreUpdateService.js';
+import { TournamentStatus } from '../schemas/tournament.js';
 
 const prisma = new PrismaClient();
 const scoreUpdateService = new ScoreUpdateService();

@@ -4,12 +4,12 @@ import {
   CreateLeagueDto,
   UpdateLeagueDto,
   UpdateSettingsDto,
-} from '../services/leagueService';
+} from '../services/leagueService.js';
 import {
   NotFoundError,
   ValidationError,
   UnauthorizedError,
-} from '../utils/errors';
+} from '../utils/errors.js';
 
 const leagueService = new LeagueService();
 
