@@ -23,7 +23,6 @@ const timelineQuerySchema = z.object({
 router.get('/', async (req: Request<TimelineParams>, res: Response) => {
   try {
     const { leagueId } = req.params;
-    console.log('Timeline request params:', req.params); // Add debugging
 
     if (!leagueId) {
       return res.status(400).json({ error: 'League ID is required' });
