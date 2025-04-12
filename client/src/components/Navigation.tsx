@@ -72,12 +72,12 @@ export const Navigation: React.FC = () => {
               <div className='space-x-4'>
                 <Link
                   to='/login'
-                  className='px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700'>
+                  className='px-3 py-1.5 text-sm bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors'>
                   Login
                 </Link>
                 <Link
                   to='/register'
-                  className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'>
+                  className='px-3 py-1.5 text-sm bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors'>
                   Register
                 </Link>
               </div>

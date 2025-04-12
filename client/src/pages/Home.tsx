@@ -6,7 +6,7 @@ export const Home: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className='min-h-screen flex flex-col items-center justify-center bg-gray-50'>
+    <div className='min-h-[60vh] md:min-h-screen flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
       <img
         src='/cut-logo.png'
         alt='Cut Logo'
