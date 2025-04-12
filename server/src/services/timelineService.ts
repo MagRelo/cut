@@ -142,21 +142,59 @@ export class TimelineService {
         throw new Error('Tournament not found');
       }
 
-      // Group entries by team
+      // Get all unique timestamps from all entries
+      const allTimestamps = [
+        ...new Set(
+          timelineEntries.map((entry) => entry.timestamp.toISOString())
+        ),
+      ].sort();
+
+      // Get all unique teams
+      const uniqueTeams = [
+        ...new Set(timelineEntries.map((entry) => entry.teamId)),
+      ];
+
+      // Create a map to store the latest score for each team at any point in time
+      const latestScores = new Map<string, number>();
+
+      // Group entries by team with normalized data points
       const teamEntries = new Map();
-      timelineEntries.forEach((entry) => {
-        if (!teamEntries.has(entry.teamId)) {
-          teamEntries.set(entry.teamId, {
-            id: entry.teamId,
-            name: entry.team.name,
-            color: entry.team.color,
+      uniqueTeams.forEach((teamId) => {
+        const teamData = timelineEntries.find(
+          (entry) => entry.teamId === teamId
+        );
+        if (teamData) {
+          teamEntries.set(teamId, {
+            id: teamId,
+            name: teamData.team.name,
+            color: teamData.team.color,
             dataPoints: [],
           });
         }
-        teamEntries.get(entry.teamId).dataPoints.push({
-          timestamp: entry.timestamp.toISOString(),
-          score: entry.totalScore,
-          roundNumber: entry.roundNumber,
+      });
+
+      // Fill in data points for all timestamps for all teams
+      allTimestamps.forEach((timestamp) => {
+        uniqueTeams.forEach((teamId) => {
+          const entry = timelineEntries.find(
+            (e) =>
+              e.teamId === teamId && e.timestamp.toISOString() === timestamp
+          );
+
+          if (entry) {
+            // Update the latest score for this team
+            latestScores.set(teamId, entry.totalScore);
+          }
+
+          // Get the current latest score for this team (or 0 if none exists)
+          const currentScore = latestScores.get(teamId) ?? 0;
+
+          // Add the data point using either the actual entry or the latest known score
+          teamEntries.get(teamId).dataPoints.push({
+            timestamp,
+            score: entry ? entry.totalScore : currentScore,
+            roundNumber: entry?.roundNumber || tournament.currentRound,
+          });
         });
       });
 
