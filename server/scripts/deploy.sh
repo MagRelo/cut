@@ -3,23 +3,7 @@
 # Exit on error
 set -e
 
-echo "Starting deployment process..."
-
-# Build frontend
-echo "Building frontend..."
-cd ../client
-npm install
-npm run build
-
-# Build backend
-echo "Building backend..."
-cd ../server
-npm install
-npm run build
-
-# Run database migrations
-echo "Running database migrations..."
-npx prisma migrate deploy
+echo "Starting build process..."
 
 # Build and push Docker image
 echo "Building Docker image..."
@@ -28,13 +12,16 @@ cd ..  # Go to root directory
 # Set your Docker Hub username
 DOCKER_USERNAME="magrelo"  # Replace this with your Docker Hub username
 
-# Build and tag the image
-docker build -t $DOCKER_USERNAME/betthecut:latest -f server/Dockerfile .
+# Set up Docker buildx builder
+echo "Setting up Docker buildx builder..."
+docker buildx create --use --name multi-platform-builder || true
 
-# Push to Docker Hub
-echo "Pushing to Docker Hub..."
-docker tag $DOCKER_USERNAME/betthecut:latest $DOCKER_USERNAME/betthecut:latest
-docker push $DOCKER_USERNAME/betthecut:latest
+# Build and push multi-platform image
+echo "Building and pushing multi-platform Docker image..."
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t $DOCKER_USERNAME/betthecut:latest \
+  -f server/Dockerfile \
+  --push .
 
 echo "Deployment preparation complete!"
 echo "Next steps:"

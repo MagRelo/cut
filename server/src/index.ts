@@ -31,9 +31,6 @@ dotenv.config({ path: envFile });
 const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_SECRET',
-  'EMAIL_HOST',
-  'EMAIL_USER',
-  'EMAIL_PASS',
   'HYPERLIQUID_API_URL',
   'HYPERLIQUID_PRIVATE_KEY',
   'PGA_API_KEY',
@@ -66,7 +63,7 @@ app.use(
 app.use(express.json());
 
 // Serve static files from the public directory
-app.use(express.static('public/dist'));
+app.use(express.static('dist/public/dist'));
 
 // Request logging
 app.use(requestLogger);
@@ -90,7 +87,7 @@ app.use('/api/protected', authenticateToken, (req, res) => {
 
 // Serve index.html for all other routes to support client-side routing
 app.get('*', (req, res) => {
-  res.sendFile('index.html', { root: 'public/dist' });
+  res.sendFile('index.html', { root: 'dist/public/dist' });
 });
 
 // Error handling
