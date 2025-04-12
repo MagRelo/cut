@@ -3,11 +3,12 @@ import { TimelineService } from '../services/timelineService.js';
 import { z } from 'zod';
 import { Request, Response } from 'express';
 
+// Define the params interface
 interface TimelineParams {
   leagueId: string;
 }
 
-const router = Router();
+const router = Router({ mergeParams: true }); // Add mergeParams: true to inherit params from parent router
 const timelineService = new TimelineService();
 
 // Validation schema for timeline query parameters
@@ -22,6 +23,12 @@ const timelineQuerySchema = z.object({
 router.get('/', async (req: Request<TimelineParams>, res: Response) => {
   try {
     const { leagueId } = req.params;
+    console.log('Timeline request params:', req.params); // Add debugging
+
+    if (!leagueId) {
+      return res.status(400).json({ error: 'League ID is required' });
+    }
+
     const query = timelineQuerySchema.parse({
       tournamentId: req.query.tournamentId,
       startTime: req.query.startTime,
