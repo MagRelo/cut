@@ -11,6 +11,7 @@ interface TimelineCreationStats {
     teamId: string;
     leagueId: string;
     error: string;
+    type: 'SCORE_CALCULATION' | 'DB_ERROR';
   }>;
 }
 
@@ -73,7 +74,22 @@ export class TimelineService {
         for (const team of league.teams) {
           stats.totalAttempted++;
           try {
-            const totalScore = calculateTeamScore(team);
+            let totalScore: number;
+            try {
+              totalScore = calculateTeamScore(team);
+            } catch (scoreError) {
+              stats.failedCreations++;
+              stats.errors.push({
+                teamId: team.id,
+                leagueId: league.id,
+                error:
+                  scoreError instanceof Error
+                    ? scoreError.message
+                    : 'Score calculation failed',
+                type: 'SCORE_CALCULATION',
+              });
+              continue; // Skip DB creation if score calculation fails
+            }
 
             await prisma.timelineEntry.create({
               data: {
@@ -86,12 +102,14 @@ export class TimelineService {
               },
             });
             stats.successfulCreations++;
-          } catch (error) {
+          } catch (dbError) {
             stats.failedCreations++;
             stats.errors.push({
               teamId: team.id,
               leagueId: league.id,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error:
+                dbError instanceof Error ? dbError.message : 'Database error',
+              type: 'DB_ERROR',
             });
           }
         }
@@ -115,16 +133,35 @@ export class TimelineService {
     interval: number = 10
   ) {
     try {
+      // Build where clause dynamically to avoid overly strict filtering
+      const where: any = {
+        leagueId,
+        tournamentId,
+      };
+
+      // Only add timestamp filters if both start and end are provided
+      if (startTime && endTime) {
+        where.timestamp = {
+          gte: startTime,
+          lte: endTime,
+        };
+      }
+      // If only start time is provided
+      else if (startTime) {
+        where.timestamp = {
+          gte: startTime,
+        };
+      }
+      // If only end time is provided
+      else if (endTime) {
+        where.timestamp = {
+          lte: endTime,
+        };
+      }
+
       // Get all timeline entries for the league within the time range
       const timelineEntries = await prisma.timelineEntry.findMany({
-        where: {
-          leagueId,
-          tournamentId,
-          timestamp: {
-            gte: startTime,
-            lte: endTime,
-          },
-        },
+        where,
         include: {
           team: true,
         },
@@ -142,59 +179,21 @@ export class TimelineService {
         throw new Error('Tournament not found');
       }
 
-      // Get all unique timestamps from all entries
-      const allTimestamps = [
-        ...new Set(
-          timelineEntries.map((entry) => entry.timestamp.toISOString())
-        ),
-      ].sort();
-
-      // Get all unique teams
-      const uniqueTeams = [
-        ...new Set(timelineEntries.map((entry) => entry.teamId)),
-      ];
-
-      // Create a map to store the latest score for each team at any point in time
-      const latestScores = new Map<string, number>();
-
-      // Group entries by team with normalized data points
+      // Group entries by team
       const teamEntries = new Map();
-      uniqueTeams.forEach((teamId) => {
-        const teamData = timelineEntries.find(
-          (entry) => entry.teamId === teamId
-        );
-        if (teamData) {
-          teamEntries.set(teamId, {
-            id: teamId,
-            name: teamData.team.name,
-            color: teamData.team.color,
+      timelineEntries.forEach((entry) => {
+        if (!teamEntries.has(entry.teamId)) {
+          teamEntries.set(entry.teamId, {
+            id: entry.teamId,
+            name: entry.team.name,
+            color: entry.team.color,
             dataPoints: [],
           });
         }
-      });
-
-      // Fill in data points for all timestamps for all teams
-      allTimestamps.forEach((timestamp) => {
-        uniqueTeams.forEach((teamId) => {
-          const entry = timelineEntries.find(
-            (e) =>
-              e.teamId === teamId && e.timestamp.toISOString() === timestamp
-          );
-
-          if (entry) {
-            // Update the latest score for this team
-            latestScores.set(teamId, entry.totalScore);
-          }
-
-          // Get the current latest score for this team (or 0 if none exists)
-          const currentScore = latestScores.get(teamId) ?? 0;
-
-          // Add the data point using either the actual entry or the latest known score
-          teamEntries.get(teamId).dataPoints.push({
-            timestamp,
-            score: entry ? entry.totalScore : currentScore,
-            roundNumber: entry?.roundNumber || tournament.currentRound,
-          });
+        teamEntries.get(entry.teamId).dataPoints.push({
+          timestamp: entry.timestamp.toISOString(),
+          score: entry.totalScore,
+          roundNumber: entry.roundNumber,
         });
       });
 

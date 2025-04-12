@@ -204,24 +204,45 @@ export const Timeline: React.FC<TimelineProps> = ({
     .slice(0, 10);
 
   const data = {
-    labels:
-      timelineData.teams[0]?.dataPoints.map((dp) =>
-        new Date(dp.timestamp).toLocaleString('en-US', {
+    labels: [
+      // Get all unique timestamps from all teams and sort them
+      ...new Set(
+        topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp))
+      ),
+    ]
+      .sort()
+      .map((timestamp) =>
+        new Date(timestamp).toLocaleString('en-US', {
           weekday: 'short',
           hour: 'numeric',
           minute: 'numeric',
           hour12: false,
         })
-      ) || [],
-    datasets: topTeams.map((team) => ({
-      label: team.name,
-      data: team.dataPoints.map((dp) => dp.score),
-      borderColor: team.color,
-      backgroundColor: team.color,
-      borderWidth: 2,
-      pointRadius: 0,
-      tension: 0.4,
-    })),
+      ),
+    datasets: topTeams.map((team) => {
+      // Create a map of timestamps to scores for this team
+      const scoreMap = new Map(
+        team.dataPoints.map((dp) => [dp.timestamp, dp.score])
+      );
+
+      // Get all unique timestamps
+      const allTimestamps = [
+        ...new Set(
+          topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))
+        ),
+      ].sort();
+
+      return {
+        label: team.name,
+        data: allTimestamps.map((timestamp) => scoreMap.get(timestamp) || null),
+        borderColor: team.color,
+        backgroundColor: team.color,
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        spanGaps: true, // This will connect lines across null values
+      };
+    }),
   };
 
   const options = {
