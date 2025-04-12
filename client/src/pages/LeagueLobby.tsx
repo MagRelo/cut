@@ -890,66 +890,62 @@ export const LeagueLobby: React.FC = () => {
             <div className='flex-1 overflow-y-auto'>
               {activeTab === 'chat' && renderChatContent()}
               {activeTab === 'teams' && (
-                <div className='p-4'>
-                  <div className='space-y-0'>
-                    {teams
-                      .sort(
-                        (a: Team, b: Team) =>
-                          calculateTeamScore(b) - calculateTeamScore(a)
-                      )
-                      .map((team: Team, index: number) => (
-                        <div
-                          key={team.id}
-                          className={`${
-                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                          } hover:bg-gray-100/70 transition-colors`}>
-                          <div className='w-full'>
-                            <button
-                              onClick={() => toggleTeam(team.id)}
-                              className='w-full px-4 py-2 flex justify-between items-center'>
-                              <div className='flex items-center'>
-                                <div
-                                  className='w-4 h-4 rounded-full mr-2'
-                                  style={{ backgroundColor: team.color }}
+                <div className='space-y-0'>
+                  {teams
+                    .sort(
+                      (a: Team, b: Team) =>
+                        calculateTeamScore(b) - calculateTeamScore(a)
+                    )
+                    .map((team: Team, index: number) => (
+                      <div
+                        key={team.id}
+                        className={`${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        } hover:bg-gray-100/70 transition-colors`}>
+                        <div className='w-full'>
+                          <button
+                            onClick={() => toggleTeam(team.id)}
+                            className='w-full px-4 py-2 flex justify-between items-center'>
+                            <div className='flex items-center'>
+                              <div
+                                className='w-4 h-4 rounded-full mr-2'
+                                style={{ backgroundColor: team.color }}
+                              />
+                              <h3 className='text-base font-medium text-gray-900'>
+                                {team.name}
+                              </h3>
+                            </div>
+                            <div className='flex items-center space-x-4'>
+                              <span className='text-sm font-semibold text-gray-900'>
+                                {calculateTeamScore(team)}
+                              </span>
+                              <svg
+                                className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+                                  expandedTeams.has(team.id) ? 'rotate-180' : ''
+                                }`}
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'>
+                                <path
+                                  strokeLinecap='round'
+                                  strokeLinejoin='round'
+                                  strokeWidth={2}
+                                  d='M19 9l-7 7-7-7'
                                 />
-                                <h3 className='text-base font-medium text-gray-900'>
-                                  {team.name}
-                                </h3>
-                              </div>
-                              <div className='flex items-center space-x-4'>
-                                <span className='text-sm font-semibold text-gray-900'>
-                                  {calculateTeamScore(team)}
-                                </span>
-                                <svg
-                                  className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-                                    expandedTeams.has(team.id)
-                                      ? 'rotate-180'
-                                      : ''
-                                  }`}
-                                  fill='none'
-                                  stroke='currentColor'
-                                  viewBox='0 0 24 24'>
-                                  <path
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                    strokeWidth={2}
-                                    d='M19 9l-7 7-7-7'
-                                  />
-                                </svg>
-                              </div>
-                            </button>
-                          </div>
-                          <div
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                              expandedTeams.has(team.id)
-                                ? 'max-h-[1000px] border-t border-gray-200'
-                                : 'max-h-0'
-                            }`}>
-                            {renderTeamPlayers(team)}
-                          </div>
+                              </svg>
+                            </div>
+                          </button>
                         </div>
-                      ))}
-                  </div>
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            expandedTeams.has(team.id)
+                              ? 'max-h-[1000px] border-t border-gray-200'
+                              : 'max-h-0'
+                          }`}>
+                          {renderTeamPlayers(team)}
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
               {activeTab === 'timeline' && (
