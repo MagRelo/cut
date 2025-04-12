@@ -43,7 +43,17 @@ interface ScorecardData {
 interface ProcessStats {
   tournamentUpdated: boolean;
   playerScoresUpdated: number;
-  timelineEntriesCreated: number;
+  timelineStats: {
+    totalTeams: number;
+    entriesAttempted: number;
+    entriesCreated: number;
+    entriesFailed: number;
+    errors: Array<{
+      teamId: string;
+      leagueId: string;
+      error: string;
+    }>;
+  };
 }
 
 export class ScoreUpdateService {
@@ -65,7 +75,13 @@ export class ScoreUpdateService {
             stats: {
               tournamentUpdated: stats.tournamentUpdated,
               playerScoresUpdated: stats.playerScoresUpdated,
-              timelineEntriesCreated: stats.timelineEntriesCreated,
+              timeline: {
+                totalTeams: stats.timelineStats.totalTeams,
+                entriesAttempted: stats.timelineStats.entriesAttempted,
+                entriesCreated: stats.timelineStats.entriesCreated,
+                entriesFailed: stats.timelineStats.entriesFailed,
+                errors: stats.timelineStats.errors,
+              },
             },
             error: error
               ? {
@@ -207,7 +223,13 @@ export class ScoreUpdateService {
     const stats: ProcessStats = {
       tournamentUpdated: false,
       playerScoresUpdated: 0,
-      timelineEntriesCreated: 0,
+      timelineStats: {
+        totalTeams: 0,
+        entriesAttempted: 0,
+        entriesCreated: 0,
+        entriesFailed: 0,
+        errors: [],
+      },
     };
 
     let tournament: Tournament | null = null;
@@ -252,11 +274,25 @@ export class ScoreUpdateService {
       stats.playerScoresUpdated = activeTeamPlayers.length;
 
       // Step 3: Create timeline entries
-      await timelineService.createTimelineEntries(
+      const timelineStats = await timelineService.createTimelineEntries(
         tournament.id,
         tournament.currentRound || 1
       );
-      stats.timelineEntriesCreated = 1;
+
+      stats.timelineStats = {
+        totalTeams: timelineStats.totalTeams,
+        entriesAttempted: timelineStats.totalAttempted,
+        entriesCreated: timelineStats.successfulCreations,
+        entriesFailed: timelineStats.failedCreations,
+        errors: timelineStats.errors,
+      };
+
+      // Log warning if not all teams got entries
+      if (timelineStats.totalTeams > timelineStats.successfulCreations) {
+        console.warn(
+          `Not all teams got timeline entries. Total teams: ${timelineStats.totalTeams}, Successful entries: ${timelineStats.successfulCreations}`
+        );
+      }
 
       await this.logProcessExecution(tournament, stats);
       console.log(

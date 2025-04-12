@@ -300,7 +300,7 @@ export const LeagueLobby: React.FC = () => {
   const renderPlayerRow = (player: TeamPlayer) => (
     <React.Fragment key={player.id}>
       <tr className='hover:bg-gray-50/50'>
-        <td className='py-2 pl-4 pr-3 whitespace-nowrap sm:pl-6 lg:pl-8'>
+        <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
           <div className='flex items-center'>
             {player.player.imageUrl && (
               <div className='flex-shrink-0 h-10 w-10 relative'>
@@ -369,12 +369,14 @@ export const LeagueLobby: React.FC = () => {
       {expandedPlayers.has(player.id) && (
         <tr>
           <td colSpan={9} className='p-0'>
-            <div className='border-t border-gray-200 bg-gray-50/50 pl-8'>
-              <PlayerScorecard
-                player={player}
-                currentRound={tournament?.currentRound}
-                className='rounded-none shadow-none'
-              />
+            <div className='border-t border-gray-200'>
+              <div className='bg-gray-600/10 px-2 pb-2'>
+                <PlayerScorecard
+                  player={player}
+                  currentRound={tournament?.currentRound}
+                  className='rounded-none shadow-none'
+                />
+              </div>
             </div>
           </td>
         </tr>
@@ -383,15 +385,15 @@ export const LeagueLobby: React.FC = () => {
   );
 
   const renderTeamPlayers = (team: Team) => (
-    <div className='px-4 py-2'>
-      <div className='overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8'>
+    <div className='py-2'>
+      <div className='overflow-x-auto'>
         <div className='inline-block min-w-full align-middle'>
           <table className='min-w-full divide-y divide-gray-200'>
             <thead className='bg-gray-50/50'>
               <tr>
                 <th
                   scope='col'
-                  className='py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6 lg:pl-8'>
+                  className='py-2 pl-2 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Player
                 </th>
                 <th

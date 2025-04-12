@@ -2,11 +2,34 @@ import { PrismaClient, Team } from '@prisma/client';
 import { calculateTeamScore } from '../utils/scoreCalculator.js';
 import { prisma } from '../lib/prisma.js';
 
+interface TimelineCreationStats {
+  totalTeams: number;
+  totalAttempted: number;
+  successfulCreations: number;
+  failedCreations: number;
+  errors: Array<{
+    teamId: string;
+    leagueId: string;
+    error: string;
+  }>;
+}
+
 export class TimelineService {
   /**
    * Creates timeline entries for all teams in active leagues for a given tournament
    */
-  async createTimelineEntries(tournamentId: string, currentRound: number) {
+  async createTimelineEntries(
+    tournamentId: string,
+    currentRound: number
+  ): Promise<TimelineCreationStats> {
+    const stats: TimelineCreationStats = {
+      totalTeams: 0,
+      totalAttempted: 0,
+      successfulCreations: 0,
+      failedCreations: 0,
+      errors: [],
+    };
+
     try {
       // Get all active leagues with their teams for this tournament
       const activeLeagues = await prisma.league.findMany({
@@ -37,25 +60,44 @@ export class TimelineService {
         },
       });
 
+      // Calculate total teams before processing
+      stats.totalTeams = activeLeagues.reduce(
+        (total, league) => total + league.teams.length,
+        0
+      );
+
       const timestamp = new Date();
 
       // Create timeline entries for each team in each league
       for (const league of activeLeagues) {
         for (const team of league.teams) {
-          const totalScore = calculateTeamScore(team);
+          stats.totalAttempted++;
+          try {
+            const totalScore = calculateTeamScore(team);
 
-          await prisma.timelineEntry.create({
-            data: {
-              leagueId: league.id,
+            await prisma.timelineEntry.create({
+              data: {
+                leagueId: league.id,
+                teamId: team.id,
+                tournamentId,
+                timestamp,
+                totalScore,
+                roundNumber: currentRound,
+              },
+            });
+            stats.successfulCreations++;
+          } catch (error) {
+            stats.failedCreations++;
+            stats.errors.push({
               teamId: team.id,
-              tournamentId,
-              timestamp,
-              totalScore,
-              roundNumber: currentRound,
-            },
-          });
+              leagueId: league.id,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
         }
       }
+
+      return stats;
     } catch (error) {
       console.error('Error creating timeline entries:', error);
       throw error;
