@@ -254,6 +254,7 @@ export const tournamentController = {
           OR: [
             { status: TournamentStatus.IN_PROGRESS },
             { status: TournamentStatus.UPCOMING },
+            { status: TournamentStatus.COMPLETED },
           ],
         },
         orderBy: {
