@@ -112,74 +112,10 @@ function isLessThanOneHourOld(date: Date): boolean {
 
 // Get tournament odds from specified bookmakers
 router.get('/odds/:tournamentKey', async (req, res) => {
-  try {
-    const { tournamentKey } = req.params;
-    const { bookmakers } = req.query;
-
-    if (!tournamentKey) {
-      return res.status(400).json({ error: 'Tournament key is required' });
-    }
-
-    const bookmakerList = bookmakers
-      ? (bookmakers as string).split(',').sort().join(',')
-      : '';
-
-    // Check cache first
-    const cachedData = await prisma.oddsCache.findUnique({
-      where: {
-        tournamentKey_bookmakers: {
-          tournamentKey,
-          bookmakers: bookmakerList,
-        },
-      },
-    });
-
-    // If we have valid cached data less than 1 hour old
-    if (cachedData && isLessThanOneHourOld(cachedData.updatedAt)) {
-      return res.json({
-        data: cachedData.data,
-        updatedAt: cachedData.updatedAt.toISOString(),
-      });
-    }
-
-    // Fetch fresh data
-    const odds = await getGolfTournamentOdds(
-      tournamentKey,
-      bookmakerList ? bookmakerList.split(',') : undefined
-    );
-
-    // Update or create cache entry
-    const updatedCache = await prisma.oddsCache.upsert({
-      where: {
-        tournamentKey_bookmakers: {
-          tournamentKey,
-          bookmakers: bookmakerList,
-        },
-      },
-      update: {
-        data: JSON.parse(JSON.stringify(odds)) as Prisma.InputJsonValue,
-        updatedAt: new Date(),
-      },
-      create: {
-        tournamentKey,
-        bookmakers: bookmakerList,
-        data: JSON.parse(JSON.stringify(odds)) as Prisma.InputJsonValue,
-      },
-    });
-
-    res.json({
-      data: odds,
-      updatedAt: updatedCache.updatedAt.toISOString(),
-    });
-  } catch (error) {
-    console.error('Error fetching tournament odds:', error);
-    res.status(500).json({
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch tournament odds',
-    });
-  }
+  res.json({
+    data: [],
+    updatedAt: new Date().toISOString(),
+  });
 });
 
 // Cleanup old cache entries (can be called periodically)
