@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 interface User {
   id: string;
@@ -47,7 +48,12 @@ export function AdminPage() {
     fetchData();
   }, [activeTab]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <LoadingSpinner size='large' />
+      </div>
+    );
   if (error) return <div>Error: {error}</div>;
 
   return (

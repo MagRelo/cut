@@ -10,6 +10,7 @@ import { TeamFormComponent } from '../components/team/TeamFormComponent';
 import { LeagueChat } from '../components/LeagueChat';
 import { Timeline } from './Timeline';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 interface Round {
   strokes: number;
@@ -455,7 +456,7 @@ export const LeagueLobby: React.FC = () => {
   if (isLoading) {
     return (
       <div className='px-4 py-6'>
-        <div className='text-center text-gray-600'>Loading league data...</div>
+        <LoadingSpinner size='large' />
       </div>
     );
   }
@@ -497,17 +498,19 @@ export const LeagueLobby: React.FC = () => {
           }`}>
           Scores
         </button>
-        {tournament && tournament.status === 'IN_PROGRESS' && (
-          <button
-            onClick={() => setActiveTab('timeline')}
-            className={`px-3 py-2 text-sm font-medium ${
-              activeTab === 'timeline'
-                ? 'text-emerald-600 border-b-2 border-emerald-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}>
-            Timeline
-          </button>
-        )}
+        {tournament &&
+          (tournament.status === 'IN_PROGRESS' ||
+            tournament.status === 'COMPLETED') && (
+            <button
+              onClick={() => setActiveTab('timeline')}
+              className={`px-3 py-2 text-sm font-medium ${
+                activeTab === 'timeline'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              Timeline
+            </button>
+          )}
         {isMember && (
           <button
             onClick={() => setActiveTab('createTeam')}
@@ -545,7 +548,7 @@ export const LeagueLobby: React.FC = () => {
 
   return (
     <div className='h-[calc(100vh-64px)] bg-gray-50 overflow-hidden'>
-      <div className='max-w-7xl mx-auto h-full p-4'>
+      <div className='max-w-7xl mx-auto h-full lg:p-4'>
         {isDesktop ? (
           <div className='h-full grid grid-rows-[auto,1fr] bg-white rounded-lg overflow-hidden border border-gray-200'>
             {/* Desktop layout content */}
@@ -687,7 +690,8 @@ export const LeagueLobby: React.FC = () => {
                       <div className='h-full overflow-y-auto'>
                         {leagueId &&
                           tournament &&
-                          tournament.status === 'IN_PROGRESS' && (
+                          (tournament.status === 'IN_PROGRESS' ||
+                            tournament.status === 'COMPLETED') && (
                             <Timeline
                               className='mb-4'
                               leagueId={leagueId}
@@ -952,7 +956,8 @@ export const LeagueLobby: React.FC = () => {
                 <div className='p-4'>
                   {leagueId &&
                     tournament &&
-                    tournament.status === 'IN_PROGRESS' && (
+                    (tournament.status === 'IN_PROGRESS' ||
+                      tournament.status === 'COMPLETED') && (
                       <Timeline
                         className='mb-4'
                         leagueId={leagueId}
