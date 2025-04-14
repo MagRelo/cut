@@ -33,19 +33,7 @@ export function startScoreUpdateCron() {
   // Run every 10 minutes
   cron.schedule(cronFrequency, async () => {
     try {
-      // Find tournament that is IN_PROGRESS
-      const activeTournament = await prisma.tournament.findFirst({
-        where: {
-          status: TournamentStatus.IN_PROGRESS,
-        },
-      });
-
-      if (!activeTournament) {
-        console.log('No active tournament found. Skipping score update.');
-        return;
-      }
-
-      await scoreUpdateService.updateAllScores(activeTournament.pgaTourId);
+      await scoreUpdateService.updateAllScores();
     } catch (error) {
       console.error('Error in score update cron job:', error);
     }

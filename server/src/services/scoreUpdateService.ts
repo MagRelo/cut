@@ -219,7 +219,7 @@ export class ScoreUpdateService {
     }
   }
 
-  async updateAllScores(tournamentId: string) {
+  async updateAllScores() {
     const stats: ProcessStats = {
       tournamentUpdated: false,
       playerScoresUpdated: 0,
@@ -239,6 +239,22 @@ export class ScoreUpdateService {
       tournament = await this.updateTournamentRecord();
       stats.tournamentUpdated = true;
 
+      // Return early if tournament update failed
+      if (!tournament) {
+        await this.logProcessExecution(tournament, stats);
+        console.log('Tournament update failed, skipping remaining updates');
+        return { success: false };
+      }
+
+      // Only continue if tournament is in progress
+      if (tournament.status !== 'IN_PROGRESS') {
+        await this.logProcessExecution(tournament, stats);
+        console.log(
+          `Tournament status is ${tournament.status}, skipping updates`
+        );
+        return { success: true };
+      }
+
       // Only proceed with score and timeline updates if round is in progress or complete
       if (
         !['In Progress', 'Complete', 'Official'].includes(
@@ -254,6 +270,9 @@ export class ScoreUpdateService {
 
       // Step 2: Update player scores
       const activeTeamPlayers = await this.getActiveTeamPlayers();
+
+      // At this point we know tournament is not null due to earlier check
+      const tournamentId = tournament!.pgaTourId;
 
       const updatePromises = activeTeamPlayers.map((teamPlayer) => {
         if (!teamPlayer.player.pgaTourId) {
