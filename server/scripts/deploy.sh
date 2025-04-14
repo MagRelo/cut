@@ -30,7 +30,5 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 echo "Deployment preparation complete!"
 echo "Next steps:"
-echo "1. Update environment variables"
-echo "2. Deploy container to production environment"
-echo "3. Verify deployment"
-echo "4. Monitor for issues" 
+echo "1. SSH: ssh root@45.55.136.214"
+echo "2. Pull & start: docker compose up -d --pull always"
