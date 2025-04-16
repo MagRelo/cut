@@ -1,17 +1,10 @@
 import express from 'express';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
-import { authenticateToken } from '../middleware/auth.js';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers.js';
 import { getActivePlayers } from '../lib/pgaField.js';
 import { refreshPlayers } from '../lib/playerRefresh.js';
-import { getGolfTournamentOdds } from '../lib/pgaOdds.js';
-import {
-  getTournamentSchedule,
-  getTournamentField,
-  getLiveTournamentLeaderboard,
-  getPlayersScorecard,
-} from '../lib/sportsradar/sportsRadar.js';
+// import { getGolfTournamentOdds } from '../lib/pgaOdds.js'; leave this
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -136,118 +129,5 @@ async function cleanupOldCacheEntries() {
     },
   });
 }
-
-// Test Routes for SportsRadar API
-
-// Get tournament schedule
-router.get('/test/schedule', async (req, res) => {
-  try {
-    const year = req.query.year
-      ? parseInt(req.query.year as string)
-      : undefined;
-    const schedule = await getTournamentSchedule(year);
-    res.json({
-      message: 'Successfully fetched tournament schedule from SportsRadar',
-      data: schedule,
-    });
-  } catch (error) {
-    console.error('Error testing SportsRadar tournament schedule:', error);
-    res.status(500).json({
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch tournament schedule',
-      details: error instanceof Error ? error.stack : undefined,
-    });
-  }
-});
-
-// Get tournament field
-router.get('/test/field/:tournamentId', async (req, res) => {
-  try {
-    const { tournamentId } = req.params;
-    const year = req.query.year
-      ? parseInt(req.query.year as string)
-      : undefined;
-
-    if (!tournamentId) {
-      return res.status(400).json({ error: 'Tournament ID is required' });
-    }
-
-    const field = await getTournamentField(tournamentId, year);
-    res.json({
-      message: 'Successfully fetched tournament field from SportsRadar',
-      data: field,
-    });
-  } catch (error) {
-    console.error('Error testing SportsRadar tournament field:', error);
-    res.status(500).json({
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch tournament field',
-      details: error instanceof Error ? error.stack : undefined,
-    });
-  }
-});
-
-// Get tournament leaderboard
-router.get('/test/leaderboard/:tournamentId', async (req, res) => {
-  try {
-    const { tournamentId } = req.params;
-    const year = req.query.year
-      ? parseInt(req.query.year as string)
-      : undefined;
-    const round = (req.query.round as string) || undefined;
-
-    if (!tournamentId) {
-      return res.status(400).json({ error: 'Tournament ID is required' });
-    }
-
-    const leaderboard = await getLiveTournamentLeaderboard(
-      tournamentId,
-      round,
-      year
-    );
-    res.json({
-      message: 'Successfully fetched tournament round scores from SportsRadar',
-      data: leaderboard,
-    });
-  } catch (error) {
-    console.error('Error testing SportsRadar tournament leaderboard:', error);
-    res.status(500).json({
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch tournament leaderboard',
-      details: error instanceof Error ? error.stack : undefined,
-    });
-  }
-});
-
-// Get tournament round scorecards
-router.get('/test/scorecards/:tournamentId', async (req, res) => {
-  try {
-    const { tournamentId } = req.params;
-    const year = req.query.year
-      ? parseInt(req.query.year as string)
-      : undefined;
-    const roundNumber = (req.query.round as string) || '01';
-
-    if (!tournamentId) {
-      return res.status(400).json({ error: 'Tournament ID is required' });
-    }
-
-    const scorecards = await getPlayersScorecard(
-      tournamentId,
-      roundNumber,
-      year
-    );
-    res.json(scorecards);
-  } catch (error) {
-    console.error('Error fetching tournament scorecards:', error);
-    res.status(500).json({ error: 'Failed to fetch tournament scorecards' });
-  }
-});
 
 export default router;

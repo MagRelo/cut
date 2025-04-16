@@ -10,8 +10,6 @@ interface CacheItem<T> {
 // Cache storage with 5 minute duration
 const cache: { [key: string]: CacheItem<any> } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-// Update base URL to match working example
 const BASE_URL = 'https://api.sportradar.com/golf/trial/pga/v3/en';
 
 // Types based on XSD schemas
@@ -111,6 +109,93 @@ interface TournamentScores {
   };
 }
 
+interface TournamentSummary {
+  id: string;
+  name: string;
+  coverage: string;
+  currency: string;
+  start_date: string;
+  end_date: string;
+  event_type: string;
+  field: Player[];
+  parent_id: string;
+  points: number;
+  purse: number;
+  rounds: {
+    number: number;
+    status: string;
+    coverage: string;
+    complete: boolean;
+    scoring_complete: boolean;
+  }[];
+  seasons: {
+    id: string;
+    name: string;
+    year: number;
+  }[];
+  status: string;
+  venue: Venue;
+}
+
+interface PlayerRound {
+  score: number;
+  strokes: number;
+  thru: number;
+  eagles: number;
+  birdies: number;
+  pars: number;
+  bogeys: number;
+  double_bogeys: number;
+  other_scores: number;
+  holes_in_one: number;
+  sequence: number;
+}
+
+interface LeaderboardPlayer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  country: string;
+  position: number;
+  tied: boolean;
+  money: number;
+  points: number;
+  score: number;
+  strokes: number;
+  abbr_name: string;
+  rounds: PlayerRound[];
+}
+
+interface TournamentLeaderboard {
+  id: string;
+  name: string;
+  event_type: string;
+  purse: number;
+  winning_share: number;
+  currency: string;
+  points: number;
+  start_date: string;
+  end_date: string;
+  course_timezone: string;
+  status: string;
+  cutline?: number;
+  projected_cutline?: number;
+  cut_round?: number;
+  parent_id: string;
+  seasons: Array<{
+    id: string;
+    year: number;
+    tour: {
+      id: string;
+      alias: string;
+      name: string;
+    };
+  }>;
+  coverage: string;
+  playoff?: LeaderboardPlayer[];
+  leaderboard: LeaderboardPlayer[];
+}
+
 async function fetchFromApi<T>(endpoint: string): Promise<T> {
   const apiKey = process.env.SPORTS_RADAR_API_KEY;
   if (!apiKey) {
@@ -176,6 +261,28 @@ export async function getTournamentSchedule(
 }
 
 /**
+ * Get the complete tournament summary including field, rounds, venue, etc.
+ */
+export async function getTournamentSummary(
+  tournamentId: string,
+  year: number = 2025
+): Promise<TournamentSummary> {
+  const cacheKey = `summary_${year}_${tournamentId}`;
+  const now = Date.now();
+
+  if (cache[cacheKey] && now - cache[cacheKey].timestamp < CACHE_DURATION) {
+    return cache[cacheKey].data;
+  }
+
+  const data = await fetchFromApi<TournamentSummary>(
+    `/${year}/tournaments/${tournamentId}/summary.json`
+  );
+
+  cache[cacheKey] = { data, timestamp: now };
+  return data;
+}
+
+/**
  * Get the field (list of players) for a specific tournament
  */
 export async function getTournamentField(
@@ -204,31 +311,22 @@ export async function getTournamentField(
 }
 
 /**
- * Get the live leaderboard for a tournament round
+ * Get the live leaderboard for a tournament
  */
-export async function getLiveTournamentLeaderboard(
+export async function getTournamentLeaderboard(
   tournamentId: string,
-  roundNumber: string = '01',
   year: number = 2025
-): Promise<{
-  round: {
-    number: string;
-    players: Player[];
-  };
-}> {
-  const cacheKey = `leaderboard_${year}_${tournamentId}_${roundNumber}`;
+): Promise<TournamentLeaderboard> {
+  const cacheKey = `leaderboard_${year}_${tournamentId}`;
   const now = Date.now();
 
   if (cache[cacheKey] && now - cache[cacheKey].timestamp < CACHE_DURATION) {
     return cache[cacheKey].data;
   }
 
-  const data = await fetchFromApi<{
-    round: {
-      number: string;
-      players: Player[];
-    };
-  }>(`/${year}/tournaments/${tournamentId}/rounds/${roundNumber}/scores.json`);
+  const data = await fetchFromApi<TournamentLeaderboard>(
+    `/${year}/tournaments/${tournamentId}/leaderboard.json`
+  );
 
   cache[cacheKey] = { data, timestamp: now };
   return data;
