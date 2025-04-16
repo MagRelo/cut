@@ -2,199 +2,23 @@
 // the API key is a .env variable called SPORTS_RADAR_API_KEY
 // we need to fetch the following:
 
-interface CacheItem<T> {
-  data: T;
-  timestamp: number;
-}
+import type {
+  Tournament,
+  TournamentSummary,
+  TournamentScores,
+  TournamentLeaderboard,
+  Player,
+  CacheItem,
+  PlayerRound,
+  LeaderboardPlayer,
+} from './sportsRadar/types.js';
 
 // Cache storage with 5 minute duration
 const cache: { [key: string]: CacheItem<any> } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Update base URL to match working example
 const BASE_URL = 'https://api.sportradar.com/golf/trial/pga/v3/en';
-
-// Types based on XSD schemas
-interface Venue {
-  id: string;
-  name: string;
-  city: string;
-  state: string;
-  country: string;
-  courses: Course[];
-}
-
-interface Course {
-  id: string;
-  name: string;
-  yardage: number;
-  par: number;
-  holes: number;
-}
-
-interface Tournament {
-  id: string;
-  name: string;
-  status: 'scheduled' | 'inprogress' | 'completed' | 'cancelled';
-  type: string;
-  purse: number;
-  start_date: string;
-  end_date: string;
-  course_timezone: string;
-  venue: Venue;
-  current_round: number;
-  round_state: string;
-  cut_line?: number;
-  projected_cut_line?: number;
-  cut_round?: number;
-}
-
-interface Player {
-  id: string;
-  first_name: string;
-  last_name: string;
-  country: string;
-  rank?: number;
-  status?: string;
-  score?: number;
-  strokes?: number;
-  position?: number;
-  tied?: boolean;
-}
-
-interface Round {
-  number: number;
-  status: string;
-  score: number;
-  strokes: number;
-  holes: Hole[];
-}
-
-interface Hole {
-  number: number;
-  par: number;
-  score?: number;
-  strokes?: number;
-}
-
-interface Scorecard {
-  tournament_id: string;
-  player_id: string;
-  rounds: Round[];
-  total_score: number;
-  total_strokes: number;
-}
-
-interface TournamentOdds {
-  tournament_id: string;
-  players: Array<{
-    id: string;
-    first_name: string;
-    last_name: string;
-    odds: number;
-  }>;
-}
-
-interface PlayerScores {
-  id: string;
-  first_name: string;
-  last_name: string;
-  rounds: Round[];
-  total_score: number;
-  total_strokes: number;
-}
-
-interface TournamentScores {
-  round: {
-    number: string;
-    players: PlayerScores[];
-  };
-}
-
-interface TournamentSummary {
-  id: string;
-  name: string;
-  coverage: string;
-  currency: string;
-  start_date: string;
-  end_date: string;
-  event_type: string;
-  field: Player[];
-  parent_id: string;
-  points: number;
-  purse: number;
-  rounds: {
-    number: number;
-    status: string;
-    coverage: string;
-    complete: boolean;
-    scoring_complete: boolean;
-  }[];
-  seasons: {
-    id: string;
-    name: string;
-    year: number;
-  }[];
-  status: string;
-  venue: Venue;
-}
-
-interface PlayerRound {
-  score: number;
-  strokes: number;
-  thru: number;
-  eagles: number;
-  birdies: number;
-  pars: number;
-  bogeys: number;
-  double_bogeys: number;
-  other_scores: number;
-  holes_in_one: number;
-  sequence: number;
-}
-
-interface LeaderboardPlayer {
-  id: string;
-  first_name: string;
-  last_name: string;
-  country: string;
-  position: number;
-  tied: boolean;
-  money: number;
-  points: number;
-  score: number;
-  strokes: number;
-  abbr_name: string;
-  rounds: PlayerRound[];
-}
-
-interface TournamentLeaderboard {
-  id: string;
-  name: string;
-  event_type: string;
-  purse: number;
-  winning_share: number;
-  currency: string;
-  points: number;
-  start_date: string;
-  end_date: string;
-  course_timezone: string;
-  status: string;
-  cutline?: number;
-  projected_cutline?: number;
-  cut_round?: number;
-  parent_id: string;
-  seasons: Array<{
-    id: string;
-    year: number;
-    tour: {
-      id: string;
-      alias: string;
-      name: string;
-    };
-  }>;
-  coverage: string;
-  playoff?: LeaderboardPlayer[];
-  leaderboard: LeaderboardPlayer[];
-}
 
 async function fetchFromApi<T>(endpoint: string): Promise<T> {
   const apiKey = process.env.SPORTS_RADAR_API_KEY;

@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 import { prisma } from '../lib/prisma.js';
+import { TournamentSeedService } from '../services/tournamentSeedService.js';
 
 const router = Router();
+const tournamentSeedService = new TournamentSeedService();
 
 // Get all users (admin only)
 router.get(
@@ -44,6 +46,28 @@ router.get(
       });
 
       res.json(records);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Seed tournaments route
+router.get(
+  '/seed-tournaments',
+  authenticateToken,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const year = req.query.year
+        ? parseInt(req.query.year as string)
+        : undefined;
+      const tournaments = await tournamentSeedService.seedTournamentData(year);
+      res.json({
+        message: 'Tournament data seeded successfully',
+        count: tournaments.length,
+        tournaments,
+      });
     } catch (error) {
       next(error);
     }
