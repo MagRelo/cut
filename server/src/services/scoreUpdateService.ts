@@ -1,14 +1,7 @@
-import {
-  PrismaClient,
-  Prisma,
-  Player,
-  TeamPlayer,
-  Tournament,
-} from '@prisma/client';
+import { Prisma, Player, TeamPlayer, Tournament } from '@prisma/client';
 import { TimelineService } from './timelineService.js';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
-import type { LeaderboardData } from '../schemas/leaderboard.js';
 import { prisma } from '../lib/prisma.js';
 
 const timelineService = new TimelineService();
