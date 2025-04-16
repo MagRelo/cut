@@ -11,7 +11,7 @@ import type {
   CacheItem,
   PlayerRound,
   LeaderboardPlayer,
-} from './sportsRadar/types.js';
+} from './types.js';
 
 // Cache storage with 5 minute duration
 const cache: { [key: string]: CacheItem<any> } = {};
@@ -26,6 +26,8 @@ async function fetchFromApi<T>(endpoint: string): Promise<T> {
     throw new Error('SPORTS_RADAR_API_KEY environment variable not set');
   }
 
+  console.log('fetching from api', `${endpoint}`);
+
   const url = `${BASE_URL}${endpoint}?api_key=${apiKey}`;
 
   try {
@@ -38,6 +40,7 @@ async function fetchFromApi<T>(endpoint: string): Promise<T> {
     if (!response.ok) {
       switch (response.status) {
         case 429:
+          console.log(response.statusText);
           throw new Error('Rate limit exceeded. Please try again later.');
         case 403:
           throw new Error('Access forbidden. Invalid API key.');
@@ -176,4 +179,26 @@ export async function getPlayersScorecard(
   );
   cache[cacheKey] = { data, timestamp: now };
   return data;
+}
+
+/**
+ * Get all player profiles from SportsRadar API
+ */
+export async function getAllPlayerProfiles(
+  year: number = 2025
+): Promise<Player[]> {
+  const cacheKey = `player_profiles_${year}`;
+  const now = Date.now();
+
+  if (cache[cacheKey] && now - cache[cacheKey].timestamp < CACHE_DURATION) {
+    return cache[cacheKey].data;
+  }
+
+  const data = await fetchFromApi<{
+    players: Player[];
+  }>(`/${year}/players/profiles.json`);
+
+  const result = data.players;
+  cache[cacheKey] = { data: result, timestamp: now };
+  return result;
 }

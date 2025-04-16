@@ -4,8 +4,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SeedData } from './types';
-import { getPgaLeaderboard } from '../src/lib/pgaLeaderboard';
-import { prepareTournamentData } from '../src/controllers/tournamentController';
 import { refreshPlayers } from '../src/lib/playerRefresh';
 import {
   ensureStreamUser,
@@ -90,10 +88,6 @@ async function main() {
         )
     );
 
-    // Refresh PGA Tour players first to ensure we have all players
-    console.log('Refreshing PGA Tour players...');
-    await refreshPlayers();
-
     // Create teams and add players
     console.log('Creating teams and adding players...');
     await Promise.all(
@@ -130,18 +124,10 @@ async function main() {
       })
     );
 
-    // Create current tournament
-    console.log('Seeding current tournament data...');
-    const leaderboardData = await getPgaLeaderboard();
-    const tournament = await prisma.tournament.create({
-      data: prepareTournamentData(leaderboardData),
-    });
-
     console.log('Seed data created successfully:');
     console.log('Users created:', users.length);
     console.log('League created:', { id: league.id, name: league.name });
     console.log('Teams created:', users.length);
-    console.log('Tournament created:', tournament.name);
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;

@@ -21,21 +21,6 @@ model User {
   orderLogs         UserOrderLog[]
 }
 
-model Team {
-  id        String       @id @default(cuid())
-  name      String
-  color     String      @default("#059669")
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  league    League       @relation(fields: [leagueId], references: [id])
-  leagueId  String
-  owner     User         @relation(fields: [userId], references: [id])
-  userId    String
-  players   TeamPlayer[]
-  timelineEntries TimelineEntry[]
-
-  @@unique([userId, leagueId])
-}
 
 model League {
   id             String             @id @default(cuid())
@@ -80,24 +65,22 @@ model LeagueMembership {
   @@unique([userId, leagueId])
 }
 
-model Player {
-  id          String             @id @default(cuid())
-  pgaTourId   String?            @unique
-  name        String
-  firstName   String?
-  lastName    String?
-  displayName String?
-  imageUrl    String?
-  country     String?
-  countryFlag String?
-  age         Int?
-  inField     Boolean            @default(false)
-  isActive    Boolean            @default(false)
-  teams       TeamPlayer[]
-  tournaments TournamentPlayer[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  color     String      @default("#059669")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  league    League       @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  owner     User         @relation(fields: [userId], references: [id])
+  userId    String
+  players   TeamPlayer[]
+  timelineEntries TimelineEntry[]
+
+  @@unique([userId, leagueId])
 }
+
 
 model TeamPlayer {
   id                  String   @id @default(cuid())
@@ -121,9 +104,57 @@ model TeamPlayer {
   @@index([playerId])
 }
 
+
+model Player {
+  // Internal ID Management
+  id          String   @id @default(cuid())
+  sportsRadarId   String  @unique  // SportsRadar's UUID
+
+  // Base Data from SportsRadar API
+  first_name    String?
+  last_name     String?
+  name          String?  // "LastName, FirstName" format
+  abbr_name     String?  // e.g. "D.Johnson"
+  height        Int?     // in inches
+  weight        Int?     // in pounds
+  birthday      String?  // ISO date format
+  country       String?
+  residence     String?
+  birth_place   String?
+  college       String?
+  turned_pro    Int?
+  member        Boolean?
+  handedness    String?  // "R" or "L"
+  
+  // Additional PGA Tour Data (Optional)
+  pga_pgaTourId     String?  @unique
+  pga_imageUrl      String?  
+  pga_displayName   String?  
+  
+  // Status Fields
+  isActive    Boolean   @default(false)
+  inField     Boolean   @default(false)
+
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastSyncedAt DateTime?
+
+  // Relationships (maintaining existing relationships)
+  teams       TeamPlayer[]
+  tournaments TournamentPlayer[]
+
+  @@index([pga_pgaTourId])
+  @@index([sportsRadarId])
+  @@index([isActive])
+  @@index([inField])
+}
+
+
 model Tournament {
   id                 String             @id @default(cuid())
-  pgaTourId          String             @unique
+  pgaTourId          String             
+  sportsRadarId      String             
   name               String
   startDate          DateTime
   endDate            DateTime
@@ -133,7 +164,7 @@ model Tournament {
   timezone           String
   venue              Json?
   purse              Float?
-  status             String // UPCOMING, IN_PROGRESS, COMPLETED
+  status             String 
   roundStatusDisplay String?
   roundDisplay       String?
   currentRound       Int?
@@ -141,6 +172,7 @@ model Tournament {
   beautyImage        String?
   cutLine            String?
   cutRound           String?
+  manualActive       Boolean            @default(false)
   players            TournamentPlayer[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

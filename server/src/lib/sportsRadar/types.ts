@@ -31,7 +31,6 @@ export interface Tournament {
   course_timezone: string;
   venue: Venue;
   current_round: number;
-  round_state: string;
   cut_line?: number;
   projected_cut_line?: number;
   cut_round?: number;
@@ -41,7 +40,19 @@ export interface Player {
   id: string;
   first_name: string;
   last_name: string;
+  height: number;
+  weight: number;
+  birthday: string;
   country: string;
+  residence: string;
+  birth_place: string;
+  college: string;
+  turned_pro: number;
+  member: boolean;
+  updated: string;
+  handedness: string;
+  abbr_name: string;
+  name: string;
   rank?: number;
   status?: string;
   score?: number;

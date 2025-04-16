@@ -4,10 +4,9 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "userType" TEXT NOT NULL DEFAULT 'USER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "teamId" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -16,9 +15,11 @@ CREATE TABLE "User" (
 CREATE TABLE "Team" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#059669',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "leagueId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
 
     CONSTRAINT "Team_pkey" PRIMARY KEY ("id")
 );
@@ -29,6 +30,7 @@ CREATE TABLE "League" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "isPrivate" BOOLEAN NOT NULL DEFAULT false,
+    "inviteCode" TEXT,
     "maxTeams" INTEGER NOT NULL DEFAULT 8,
     "commissionerId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -67,19 +69,29 @@ CREATE TABLE "LeagueMembership" (
 -- CreateTable
 CREATE TABLE "Player" (
     "id" TEXT NOT NULL,
-    "pgaTourId" TEXT,
+    "sportsRadarId" TEXT,
+    "first_name" TEXT NOT NULL,
+    "last_name" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "firstName" TEXT,
-    "lastName" TEXT,
-    "displayName" TEXT,
-    "imageUrl" TEXT,
-    "country" TEXT,
-    "countryFlag" TEXT,
-    "age" INTEGER,
-    "inField" BOOLEAN NOT NULL DEFAULT false,
+    "abbr_name" TEXT NOT NULL,
+    "height" INTEGER NOT NULL,
+    "weight" INTEGER NOT NULL,
+    "birthday" TEXT NOT NULL,
+    "country" TEXT NOT NULL,
+    "residence" TEXT NOT NULL,
+    "birth_place" TEXT NOT NULL,
+    "college" TEXT,
+    "turned_pro" INTEGER NOT NULL,
+    "member" BOOLEAN NOT NULL,
+    "handedness" TEXT NOT NULL,
+    "pga_pgaTourId" TEXT,
+    "pga_imageUrl" TEXT,
+    "pga_displayName" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "inField" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastSyncedAt" TIMESTAMP(3),
 
     CONSTRAINT "Player_pkey" PRIMARY KEY ("id")
 );
@@ -91,6 +103,14 @@ CREATE TABLE "TeamPlayer" (
     "playerId" TEXT NOT NULL,
     "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "active" BOOLEAN NOT NULL DEFAULT true,
+    "leaderboardPosition" TEXT,
+    "r1" JSONB,
+    "r2" JSONB,
+    "r3" JSONB,
+    "r4" JSONB,
+    "cut" INTEGER,
+    "bonus" INTEGER,
+    "total" INTEGER,
 
     CONSTRAINT "TeamPlayer_pkey" PRIMARY KEY ("id")
 );
@@ -98,6 +118,8 @@ CREATE TABLE "TeamPlayer" (
 -- CreateTable
 CREATE TABLE "Tournament" (
     "id" TEXT NOT NULL,
+    "pgaTourId" TEXT NOT NULL,
+    "sportsRadarId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
@@ -105,6 +127,7 @@ CREATE TABLE "Tournament" (
     "city" TEXT NOT NULL,
     "state" TEXT NOT NULL,
     "timezone" TEXT NOT NULL,
+    "venue" JSONB,
     "purse" DOUBLE PRECISION,
     "status" TEXT NOT NULL,
     "roundStatusDisplay" TEXT,
@@ -112,10 +135,24 @@ CREATE TABLE "Tournament" (
     "currentRound" INTEGER,
     "weather" JSONB,
     "beautyImage" TEXT,
+    "cutLine" TEXT,
+    "cutRound" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Tournament_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SystemProcessRecord" (
+    "id" TEXT NOT NULL,
+    "processType" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "processData" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SystemProcessRecord_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -181,8 +218,27 @@ CREATE TABLE "OddsCache" (
     CONSTRAINT "OddsCache_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "TimelineEntry" (
+    "id" TEXT NOT NULL,
+    "leagueId" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "tournamentId" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "totalScore" INTEGER NOT NULL,
+    "roundNumber" INTEGER,
+
+    CONSTRAINT "TimelineEntry_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Team_userId_leagueId_key" ON "Team"("userId", "leagueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "League_inviteCode_key" ON "League"("inviteCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LeagueSettings_leagueId_key" ON "LeagueSettings"("leagueId");
@@ -191,7 +247,22 @@ CREATE UNIQUE INDEX "LeagueSettings_leagueId_key" ON "LeagueSettings"("leagueId"
 CREATE UNIQUE INDEX "LeagueMembership_userId_leagueId_key" ON "LeagueMembership"("userId", "leagueId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Player_pgaTourId_key" ON "Player"("pgaTourId");
+CREATE UNIQUE INDEX "Player_sportsRadarId_key" ON "Player"("sportsRadarId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Player_pga_pgaTourId_key" ON "Player"("pga_pgaTourId");
+
+-- CreateIndex
+CREATE INDEX "Player_pga_pgaTourId_idx" ON "Player"("pga_pgaTourId");
+
+-- CreateIndex
+CREATE INDEX "Player_sportsRadarId_idx" ON "Player"("sportsRadarId");
+
+-- CreateIndex
+CREATE INDEX "Player_isActive_idx" ON "Player"("isActive");
+
+-- CreateIndex
+CREATE INDEX "Player_inField_idx" ON "Player"("inField");
 
 -- CreateIndex
 CREATE INDEX "TeamPlayer_teamId_idx" ON "TeamPlayer"("teamId");
@@ -201,6 +272,15 @@ CREATE INDEX "TeamPlayer_playerId_idx" ON "TeamPlayer"("playerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TeamPlayer_teamId_playerId_key" ON "TeamPlayer"("teamId", "playerId");
+
+-- CreateIndex
+CREATE INDEX "SystemProcessRecord_processType_idx" ON "SystemProcessRecord"("processType");
+
+-- CreateIndex
+CREATE INDEX "SystemProcessRecord_status_idx" ON "SystemProcessRecord"("status");
+
+-- CreateIndex
+CREATE INDEX "SystemProcessRecord_createdAt_idx" ON "SystemProcessRecord"("createdAt");
 
 -- CreateIndex
 CREATE INDEX "TournamentPlayer_tournamentId_idx" ON "TournamentPlayer"("tournamentId");
@@ -226,11 +306,17 @@ CREATE INDEX "OddsCache_tournamentKey_bookmakers_idx" ON "OddsCache"("tournament
 -- CreateIndex
 CREATE UNIQUE INDEX "OddsCache_tournamentKey_bookmakers_key" ON "OddsCache"("tournamentKey", "bookmakers");
 
--- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "TimelineEntry_leagueId_tournamentId_timestamp_idx" ON "TimelineEntry"("leagueId", "tournamentId", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "TimelineEntry_teamId_tournamentId_timestamp_idx" ON "TimelineEntry"("teamId", "tournamentId", "timestamp");
 
 -- AddForeignKey
 ALTER TABLE "Team" ADD CONSTRAINT "Team_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Team" ADD CONSTRAINT "Team_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "League" ADD CONSTRAINT "League_commissionerId_fkey" FOREIGN KEY ("commissionerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -258,3 +344,12 @@ ALTER TABLE "TournamentPlayer" ADD CONSTRAINT "TournamentPlayer_playerId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "UserOrderLog" ADD CONSTRAINT "UserOrderLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TimelineEntry" ADD CONSTRAINT "TimelineEntry_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TimelineEntry" ADD CONSTRAINT "TimelineEntry_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TimelineEntry" ADD CONSTRAINT "TimelineEntry_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

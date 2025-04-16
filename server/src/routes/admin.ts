@@ -55,8 +55,7 @@ router.get(
 // Seed tournaments route
 router.get(
   '/seed-tournaments',
-  authenticateToken,
-  requireAdmin,
+
   async (req, res, next) => {
     try {
       const year = req.query.year
