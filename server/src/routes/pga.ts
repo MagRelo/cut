@@ -3,7 +3,6 @@ import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { fetchPGATourPlayers } from '../lib/pgaPlayers.js';
 import { getActivePlayers } from '../lib/pgaField.js';
-import { refreshPlayers } from '../lib/playerRefresh.js';
 // import { getGolfTournamentOdds } from '../lib/pgaOdds.js'; leave this
 import { PrismaClient } from '@prisma/client';
 
@@ -63,20 +62,6 @@ router.get('/scorecard/:playerId/:tournamentId', async (req, res) => {
           ? error.message
           : 'Failed to fetch scorecard data',
     });
-  }
-});
-
-// Refresh PGA Tour players
-router.post('/players/refresh', async (req, res) => {
-  try {
-    const createdPlayers = await refreshPlayers();
-    res.json({
-      message: 'Players refreshed successfully',
-      count: createdPlayers.count,
-    });
-  } catch (error) {
-    console.error('Error refreshing players:', error);
-    res.status(500).json({ error: 'Failed to refresh players' });
   }
 });
 

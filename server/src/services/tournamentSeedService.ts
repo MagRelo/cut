@@ -34,7 +34,8 @@ export class TournamentSeedService {
             currentRound: tournament.current_round,
             cutLine: tournament.cut_line?.toString(),
             cutRound: tournament.cut_round?.toString(),
-            venue: tournament.venue,
+            // Convert venue to a plain JSON object that Prisma can handle
+            venue: JSON.parse(JSON.stringify(tournament.venue)),
             course: tournament.venue.courses[0]?.name || '',
             city: tournament.venue.city || '',
             state: tournament.venue.state || '',
@@ -142,30 +143,5 @@ export class PlayerSeedService {
       console.error('Error seeding player data:', error);
       throw error;
     }
-  }
-
-  /**
-   * Seeds players from multiple tournaments
-   * @param tournamentIds Array of tournament IDs to fetch players from
-   * @param year Optional year for the tournaments
-   * @returns Array of all processed players
-   */
-  async seedPlayersFromMultipleTournaments(
-    tournamentIds: string[],
-    year?: number
-  ) {
-    const allPlayers = new Set();
-
-    for (const tournamentId of tournamentIds) {
-      try {
-        const players = await this.seedPlayerData(tournamentId, year);
-        players.forEach((player) => allPlayers.add(player));
-      } catch (error) {
-        console.error(`Error processing tournament ${tournamentId}:`, error);
-        // Continue with next tournament even if one fails
-      }
-    }
-
-    return Array.from(allPlayers);
   }
 }

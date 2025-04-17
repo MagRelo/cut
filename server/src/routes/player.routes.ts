@@ -22,27 +22,6 @@ router.get(
   playerController.getPlayerById
 );
 
-// Create new player
-router.post(
-  '/',
-  validateRequest({ body: createPlayerSchema }),
-  playerController.createPlayer
-);
-
-// Update player
-router.put(
-  '/:id',
-  validateRequest({ params: playerIdSchema, body: updatePlayerSchema }),
-  playerController.updatePlayer
-);
-
-// Delete player
-router.delete(
-  '/:id',
-  validateRequest({ params: playerIdSchema }),
-  playerController.deletePlayer
-);
-
 // Sync PGA Tour players
 // router.post('/sync', playerController.syncPGATourPlayers);
 

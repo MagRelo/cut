@@ -9,7 +9,6 @@ import hyperliquidRoutes from './routes/hyperliquid.js';
 import playerRoutes from './routes/player.routes.js';
 import tournamentRoutes from './routes/tournaments.js';
 import chatRoutes from './routes/chat.js';
-import teamPlayerRoutes from './routes/teamPlayer.js';
 import adminRoutes from './routes/admin.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authenticateToken } from './middleware/auth.js';
@@ -77,7 +76,6 @@ app.use('/api/hyperliquid', hyperliquidRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/team-players', teamPlayerRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Protected routes

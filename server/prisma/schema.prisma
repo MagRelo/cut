@@ -142,7 +142,6 @@ model Player {
 
   // Relationships (maintaining existing relationships)
   teams       TeamPlayer[]
-  tournaments TournamentPlayer[]
 
   @@index([pga_pgaTourId])
   @@index([sportsRadarId])
@@ -173,7 +172,6 @@ model Tournament {
   cutLine            String?
   cutRound           String?
   manualActive       Boolean            @default(false)
-  players            TournamentPlayer[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   timelineEntries    TimelineEntry[]
@@ -190,30 +188,6 @@ model SystemProcessRecord {
   @@index([processType])
   @@index([status])
   @@index([createdAt])
-}
-
-model TournamentPlayer {
-  id                  String     @id @default(cuid())
-  tournament          Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentId        String
-  player              Player     @relation(fields: [playerId], references: [id])
-  playerId            String
-  leaderboardPosition Int?
-  isActive            Boolean    @default(true)
-  r1Score             Int? // Round scores in Stableford format
-  r2Score             Int?
-  r3Score             Int?
-  r4Score             Int?
-  totalScore          Int?
-  cut                 Boolean    @default(false)
-  earnings            Float?
-  fedExPoints         Int?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-
-  @@unique([tournamentId, playerId])
-  @@index([tournamentId])
-  @@index([playerId])
 }
 
 model UserOrderLog {
@@ -235,14 +209,6 @@ model UserOrderLog {
   @@index([status])
 }
 
-model Schedule {
-  id             String   @id @default(cuid())
-  tournamentId   String   @unique
-  tournamentName String
-  isActive       Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
 
 model OddsCache {
   id            String   @id @default(cuid())

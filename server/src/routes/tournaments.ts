@@ -31,13 +31,6 @@ router.delete(
   tournamentController.deleteTournament
 );
 
-router.post(
-  '/:id/update-scores',
-  authenticateToken,
-  validate(z.object({ params: tournamentIdSchema })),
-  tournamentController.updateTournamentScores
-);
-
 // New route for updating tournament status
 router.patch(
   '/:id/status',

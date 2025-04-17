@@ -1,14 +1,11 @@
-import { PrismaClient, Prisma, Team, TeamPlayer, Player } from '@prisma/client';
+import { Team, TeamPlayer, Player } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
   UnauthorizedError,
 } from '../utils/errors.js';
-import { ScoreUpdateService } from './scoreUpdateService.js';
 import { TournamentStatus } from '../schemas/tournament.js';
 import { prisma } from '../lib/prisma.js';
-
-const scoreUpdateService = new ScoreUpdateService();
 
 export interface CreateTeamDto {
   name: string;

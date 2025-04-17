@@ -11,9 +11,7 @@ import {
 import type { LeaderboardData } from '../schemas/leaderboard.js';
 import { prisma } from '../lib/prisma.js';
 
-function prepareTournamentData(
-  leaderboardData: LeaderboardData
-): Prisma.TournamentCreateInput {
+function prepareTournamentData(leaderboardData: LeaderboardData) {
   const [city, state] = leaderboardData.location.split(', ');
   const data = {
     pgaTourId: leaderboardData.tournamentId,
@@ -31,7 +29,7 @@ function prepareTournamentData(
     weather: leaderboardData.weather,
     beautyImage: leaderboardData.beautyImage,
   };
-  return data as unknown as Prisma.TournamentCreateInput;
+  return data;
 }
 
 export { prepareTournamentData };
@@ -41,13 +39,6 @@ export const tournamentController = {
   async getAllTournaments(req: Request, res: Response) {
     try {
       const tournaments = await prisma.tournament.findMany({
-        include: {
-          players: {
-            include: {
-              player: true,
-            },
-          },
-        },
         orderBy: {
           startDate: 'desc',
         },
@@ -65,16 +56,6 @@ export const tournamentController = {
       const { id } = req.params;
       const tournament = await prisma.tournament.findUnique({
         where: { id },
-        include: {
-          players: {
-            include: {
-              player: true,
-            },
-            orderBy: {
-              leaderboardPosition: 'asc',
-            },
-          },
-        },
       });
 
       if (!tournament) {
@@ -91,15 +72,9 @@ export const tournamentController = {
   // Create a new tournament
   async createTournament(req: Request, res: Response) {
     try {
-      // Fetch current tournament data from PGA Tour
-      const leaderboardData = await getPgaLeaderboard();
+      console.log('Creating tournament: NOT IMPLEMENTED');
 
-      // Extract tournament details from leaderboard data
-      const tournament = await prisma.tournament.create({
-        data: prepareTournamentData(leaderboardData),
-      });
-
-      res.status(201).json(tournament);
+      res.status(400).json({ message: 'Tournament creation not implemented' });
     } catch (error) {
       console.error('Error creating tournament:', error);
       res.status(500).json({ error: 'Failed to create tournament' });
@@ -152,76 +127,6 @@ export const tournamentController = {
     } catch (error) {
       console.error('Error deleting tournament:', error);
       res.status(500).json({ error: 'Failed to delete tournament' });
-    }
-  },
-
-  // Update tournament scores from PGA Tour data
-  async updateTournamentScores(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const tournament = await prisma.tournament.findUnique({
-        where: { id },
-        include: {
-          players: {
-            include: {
-              player: true,
-            },
-          },
-        },
-      });
-
-      if (!tournament) {
-        return res.status(404).json({ error: 'Tournament not found' });
-      }
-
-      // Only allow score updates for IN_PROGRESS tournaments
-      if (tournament.status !== TournamentStatus.IN_PROGRESS) {
-        return res.status(400).json({
-          error:
-            'Tournament scores can only be updated when tournament is in progress',
-        });
-      }
-
-      // Get current leaderboard data
-      const leaderboardData =
-        (await getPgaLeaderboard()) as unknown as PGATourLeaderboard;
-
-      // Update each player's scores
-      for (const tournamentPlayer of tournament.players) {
-        const leaderboardPlayer = leaderboardData.players.find(
-          (p) => p.pgaTourId === tournamentPlayer.player.pgaTourId
-        );
-
-        if (leaderboardPlayer) {
-          const scorecard = (await fetchScorecard(
-            leaderboardPlayer.id,
-            leaderboardData.tournamentId
-          )) as PGATourScorecard;
-
-          await prisma.tournamentPlayer.update({
-            where: {
-              id: tournamentPlayer.id,
-            },
-            data: {
-              leaderboardPosition: leaderboardPlayer.position,
-              isActive: true,
-              r1Score: scorecard?.r1Score,
-              r2Score: scorecard?.r2Score,
-              r3Score: scorecard?.r3Score,
-              r4Score: scorecard?.r4Score,
-              totalScore: scorecard?.totalScore,
-              cut: leaderboardPlayer.status === 'CUT',
-              earnings: leaderboardPlayer.earnings,
-              fedExPoints: leaderboardPlayer.fedExPoints,
-            },
-          });
-        }
-      }
-
-      res.json({ message: 'Tournament scores updated successfully' });
-    } catch (error) {
-      console.error('Error updating tournament scores:', error);
-      res.status(500).json({ error: 'Failed to update tournament scores' });
     }
   },
 

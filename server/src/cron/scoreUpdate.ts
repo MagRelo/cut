@@ -1,10 +1,10 @@
 import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
-import { ScoreUpdateService } from '../services/scoreUpdateService.js';
 import { TournamentStatus } from '../schemas/tournament.js';
 import { prisma } from '../lib/prisma.js';
 
-const scoreUpdateService = new ScoreUpdateService();
+// import { ScoreUpdateService } from '../services/scoreUpdateService.js';
+// const scoreUpdateService = new ScoreUpdateService();
 
 // Schedule the job to run based on environment variable frequency
 export function startScoreUpdateCron() {
@@ -33,7 +33,8 @@ export function startScoreUpdateCron() {
   // Run every 10 minutes
   cron.schedule(cronFrequency, async () => {
     try {
-      await scoreUpdateService.updateAllScores();
+      // await scoreUpdateService.updateAllScores();
+      console.log('Score update not implemented');
     } catch (error) {
       console.error('Error in score update cron job:', error);
     }

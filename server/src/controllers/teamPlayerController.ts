@@ -1,13 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import {
   CreateTeamPlayerBody,
   UpdateTeamPlayerBody,
 } from '../schemas/teamPlayer.js';
 import { TournamentStatus } from '../schemas/tournament.js';
-import { ScoreUpdateService } from '../services/scoreUpdateService.js';
-import { ApiError } from '../middleware/errorHandler.js';
-import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 interface RequestUser {
@@ -107,45 +104,6 @@ export const updateTeamPlayerStatus = async (
 };
 
 export class TeamPlayerController {
-  private scoreUpdateService: ScoreUpdateService;
-
-  constructor() {
-    this.scoreUpdateService = new ScoreUpdateService();
-  }
-
-  public updateScore = async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { teamPlayerId, tournamentId, pgaTourId } = req.body;
-
-      const teamPlayer = await prisma.teamPlayer.findFirst({
-        where: {
-          id: teamPlayerId,
-          team: {
-            userId: req.user?.id,
-          },
-        },
-      });
-
-      if (!teamPlayer) {
-        throw new ApiError(404, 'Team player not found or unauthorized');
-      }
-
-      await this.scoreUpdateService.updateScore(
-        teamPlayerId,
-        tournamentId,
-        pgaTourId
-      );
-
-      res.json({ message: 'Score updated successfully' });
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      console.error('Error updating team player score:', error);
-      throw new ApiError(500, 'Failed to update team player score');
-    }
-  };
-
   async addPlayerToTeam(req: Request, res: Response) {
     const { teamId, playerId } = req.params;
     const teamPlayer = await prisma.teamPlayer.create({
@@ -266,33 +224,6 @@ export const teamPlayerControllerHandler = {
     } catch (error) {
       console.error('Error updating team player status:', error);
       res.status(500).json({ error: 'Failed to update team player status' });
-    }
-  },
-
-  updateScore: async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { teamPlayerId, tournamentId, pgaTourId } = req.body;
-
-      const teamPlayer = await prisma.teamPlayer.findFirst({
-        where: {
-          id: teamPlayerId,
-          team: {
-            userId: req.user?.id,
-          },
-        },
-      });
-
-      if (!teamPlayer) {
-        throw new ApiError(404, 'Team player not found or unauthorized');
-      }
-
-      await teamPlayerController.updateScore(req, res);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      console.error('Error updating team player score:', error);
-      throw new ApiError(500, 'Failed to update team player score');
     }
   },
 };

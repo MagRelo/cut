@@ -20,28 +20,6 @@ router.get(
   playerController.getPlayerById
 );
 
-// Protected routes
-router.post(
-  '/',
-  authenticateToken,
-  validate(z.object({ body: createPlayerSchema })),
-  playerController.createPlayer
-);
-
-router.put(
-  '/:id',
-  authenticateToken,
-  validate(z.object({ params: playerIdSchema, body: updatePlayerSchema })),
-  playerController.updatePlayer
-);
-
-router.delete(
-  '/:id',
-  authenticateToken,
-  validate(z.object({ params: playerIdSchema })),
-  playerController.deletePlayer
-);
-
 // Team management routes
 router.post(
   '/:id/teams',
@@ -54,11 +32,6 @@ router.delete(
   authenticateToken,
   validate(z.object({ params: playerIdSchema })),
   playerController.removePlayerFromTeam
-);
-router.get(
-  '/:id/teams',
-  validate(z.object({ params: playerIdSchema })),
-  playerController.getPlayerTeams
 );
 
 export default router;
