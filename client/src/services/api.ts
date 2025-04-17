@@ -12,7 +12,17 @@ interface Tournament {
   name: string;
   location: string;
   course: string;
-  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
+  beautyImage: string | null;
+  status:
+    | 'scheduled'
+    | 'inprogress'
+    | 'delayed'
+    | 'cancelled'
+    | 'created'
+    | 'complete'
+    | 'closed'
+    | 'playoff'
+    | 'reopened';
   startDate: string;
   endDate: string;
 }

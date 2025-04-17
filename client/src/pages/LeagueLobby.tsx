@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import type {
   Team as BaseTeam,
   TeamPlayer as BaseTeamPlayer,
+  Tournament,
 } from '../services/api';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { TeamFormComponent } from '../components/team/TeamFormComponent';
@@ -11,6 +12,20 @@ import { LeagueChat } from '../components/LeagueChat';
 import { Timeline } from './Timeline';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+
+// Helper function to get user-friendly tournament status
+const getTournamentStatusDisplay = (status: Tournament['status']): string => {
+  switch (status) {
+    case 'scheduled':
+      return 'Upcoming';
+    case 'inprogress':
+      return 'In Progress';
+    case 'complete':
+      return 'Completed';
+    default:
+      return '';
+  }
+};
 
 interface Round {
   strokes: number;
@@ -50,20 +65,6 @@ interface League {
     joinedAt: string;
   }>;
   inviteCode?: string;
-}
-
-interface Tournament {
-  id: string;
-  name: string;
-  location: string;
-  course: string;
-  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
-  startDate: string;
-  endDate: string;
-  city?: string;
-  state?: string;
-  beautyImage?: string;
-  currentRound?: number;
 }
 
 interface TournamentOdds {
@@ -317,13 +318,6 @@ export const LeagueLobby: React.FC = () => {
                 onClick={() => togglePlayer(player.id)}
                 className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
                 {player.player.displayName || player.player.name}
-                {tournament?.currentRound &&
-                  (() => {
-                    const round =
-                      `r${tournament.currentRound}` as keyof TeamPlayer;
-                    const roundData = player[round] as Round | undefined;
-                    return roundData?.icon && <span>{roundData.icon}</span>;
-                  })()}
                 <svg
                   className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
                     expandedPlayers.has(player.id) ? 'rotate-180' : ''
@@ -374,7 +368,6 @@ export const LeagueLobby: React.FC = () => {
               <div className='bg-gray-600/10 px-2 pb-2'>
                 <PlayerScorecard
                   player={player}
-                  currentRound={tournament?.currentRound}
                   className='rounded-none shadow-none'
                 />
               </div>
@@ -499,8 +492,8 @@ export const LeagueLobby: React.FC = () => {
           Scores
         </button>
         {tournament &&
-          (tournament.status === 'IN_PROGRESS' ||
-            tournament.status === 'COMPLETED') && (
+          (tournament.status === 'inprogress' ||
+            tournament.status === 'complete') && (
             <button
               onClick={() => setActiveTab('timeline')}
               className={`px-3 py-2 text-sm font-medium ${
@@ -570,12 +563,12 @@ export const LeagueLobby: React.FC = () => {
               <div className='col-span-2 relative overflow-hidden border-l border-gray-200'>
                 {tournament ? (
                   <div className='relative h-full'>
-                    {tournament.beautyImage ? (
+                    {tournament?.beautyImage ? (
                       <>
                         <div
                           className='absolute inset-0 bg-cover bg-center'
                           style={{
-                            backgroundImage: `url(${tournament.beautyImage})`,
+                            backgroundImage: `url(${tournament?.beautyImage})`,
                           }}
                         />
                         <div className='absolute inset-0 bg-black/50' />{' '}
@@ -610,9 +603,7 @@ export const LeagueLobby: React.FC = () => {
                                 d='M15 11a3 3 0 11-6 0 3 3 0 016 0z'
                               />
                             </svg>
-                            {tournament.city && tournament.state
-                              ? `${tournament.city}, ${tournament.state}`
-                              : tournament.location}
+                            {tournament.location}
                           </p>
                         </div>
                       </div>
@@ -690,8 +681,8 @@ export const LeagueLobby: React.FC = () => {
                       <div className='h-full overflow-y-auto'>
                         {leagueId &&
                           tournament &&
-                          (tournament.status === 'IN_PROGRESS' ||
-                            tournament.status === 'COMPLETED') && (
+                          (tournament.status === 'inprogress' ||
+                            tournament.status === 'complete') && (
                             <Timeline
                               className='mb-4'
                               leagueId={leagueId}
@@ -769,7 +760,15 @@ export const LeagueLobby: React.FC = () => {
                             teamId={userTeam?.id}
                             leagueId={leagueId}
                             initialTeam={userTeam || undefined}
-                            tournamentStatus={tournament?.status}
+                            tournamentStatus={
+                              tournament?.status === 'scheduled'
+                                ? ('UPCOMING' as const)
+                                : tournament?.status === 'inprogress'
+                                ? ('IN_PROGRESS' as const)
+                                : tournament?.status === 'complete'
+                                ? ('COMPLETED' as const)
+                                : undefined
+                            }
                             onSuccess={(_, leagueId) => {
                               // Refresh teams data after creation
                               api
@@ -881,7 +880,7 @@ export const LeagueLobby: React.FC = () => {
                 <div className='mt-2 text-sm text-gray-600'>
                   <p>
                     {tournament.name} -{' '}
-                    {tournament.status.toLowerCase().replace('_', ' ')}
+                    {getTournamentStatusDisplay(tournament.status)}
                   </p>
                 </div>
               )}
@@ -956,8 +955,8 @@ export const LeagueLobby: React.FC = () => {
                 <div className='p-4'>
                   {leagueId &&
                     tournament &&
-                    (tournament.status === 'IN_PROGRESS' ||
-                      tournament.status === 'COMPLETED') && (
+                    (tournament.status === 'inprogress' ||
+                      tournament.status === 'complete') && (
                       <Timeline
                         className='mb-4'
                         leagueId={leagueId}
@@ -973,7 +972,15 @@ export const LeagueLobby: React.FC = () => {
                     teamId={userTeam?.id}
                     leagueId={leagueId}
                     initialTeam={userTeam || undefined}
-                    tournamentStatus={tournament?.status}
+                    tournamentStatus={
+                      tournament?.status === 'scheduled'
+                        ? ('UPCOMING' as const)
+                        : tournament?.status === 'inprogress'
+                        ? ('IN_PROGRESS' as const)
+                        : tournament?.status === 'complete'
+                        ? ('COMPLETED' as const)
+                        : undefined
+                    }
                     onSuccess={(_, leagueId) => {
                       // Refresh teams data after creation
                       api.getTeamsByLeague(leagueId).then((updatedTeams) => {
