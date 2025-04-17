@@ -140,7 +140,7 @@ export interface Player {
   firstName: string | null;
   lastName: string | null;
   displayName: string | null;
-  imageUrl: string | null;
+  pga_imageUrl: string | null;
   country: string | null;
   countryFlag: string | null;
   age: number | null;

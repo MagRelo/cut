@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
+import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ interface TeamPlayerWithPlayer {
   active: boolean;
   player: {
     id: string;
-    pgaTourId: string | null;
+    pga_pgaTourId: string | null;
   };
 }
 
@@ -41,7 +42,7 @@ export class ScoreUpdateService {
       where: {
         active: true,
         player: {
-          pgaTourId: {
+          pga_pgaTourId: {
             not: null,
           },
         },
@@ -56,18 +57,22 @@ export class ScoreUpdateService {
   public async updateScore(
     teamPlayerId: string,
     tournamentId: string,
-    pgaTourId: string
+    pgaTourId: string,
+    leaderboardPlayer: any
   ) {
     try {
       const scorecard = await fetchScorecard(pgaTourId, tournamentId);
       if (!scorecard) return;
 
       const data = {
+        cut: leaderboardPlayer.cutBonus,
+        bonus: leaderboardPlayer.positionBonus,
+        leaderboardPosition: leaderboardPlayer.position,
+        total: scorecard.stablefordTotal,
         r1: scorecard.R1 || null,
         r2: scorecard.R2 || null,
         r3: scorecard.R3 || null,
         r4: scorecard.R4 || null,
-        total: scorecard.stablefordTotal,
       };
 
       await prisma.teamPlayer.update({
@@ -83,24 +88,41 @@ export class ScoreUpdateService {
     }
   }
 
-  async updateAllScores(tournamentId: string) {
+  async updateAllScores() {
     try {
       console.log('Starting score update for all active team players...');
+
+      const tournament = await prisma.tournament.findFirst({
+        where: { manualActive: true },
+      });
+
+      if (!tournament) {
+        console.error(`Active Tournament not found`);
+        return;
+      }
+
+      const { players: leaderboardPlayers } = await getPgaLeaderboard();
+
       const activeTeamPlayers = await this.getActiveTeamPlayers();
       console.log(`Found ${activeTeamPlayers.length} active team players`);
 
       const updatePromises = activeTeamPlayers.map((teamPlayer) => {
-        if (!teamPlayer.player.pgaTourId) {
+        if (!teamPlayer.player.pga_pgaTourId) {
           console.warn(
             `No PGA Tour ID found for player ${teamPlayer.player.id}`
           );
           return Promise.resolve();
         }
 
+        const leaderboardPlayer = leaderboardPlayers.find(
+          (player) => player.player.id === teamPlayer.player.pga_pgaTourId
+        );
+
         return this.updateScore(
           teamPlayer.id,
-          tournamentId,
-          teamPlayer.player.pgaTourId
+          tournament.pgaTourId,
+          teamPlayer.player.pga_pgaTourId,
+          leaderboardPlayer || null
         );
       });
 

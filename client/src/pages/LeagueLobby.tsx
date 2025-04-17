@@ -304,11 +304,11 @@ export const LeagueLobby: React.FC = () => {
       <tr className='hover:bg-gray-50/50'>
         <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
           <div className='flex items-center'>
-            {player.player.imageUrl && (
+            {player.player.pga_imageUrl && (
               <div className='flex-shrink-0 h-10 w-10 relative'>
                 <img
                   className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
-                  src={player.player.imageUrl}
+                  src={player.player.pga_imageUrl}
                   alt={player.player.displayName || player.player.name}
                 />
               </div>
