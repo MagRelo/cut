@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SeedData } from './types';
-import { refreshPlayers } from '../src/lib/playerRefresh';
 import {
   ensureStreamUser,
   initializeStreamChannelTypes,
@@ -106,7 +105,7 @@ async function main() {
         await Promise.all(
           userData.team.players.map(async (pgaTourId) => {
             const player = await prisma.player.findFirst({
-              where: { pgaTourId },
+              where: { pga_pgaTourId: pgaTourId },
             });
             if (player) {
               await prisma.teamPlayer.create({

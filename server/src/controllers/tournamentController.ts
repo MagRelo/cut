@@ -156,11 +156,7 @@ export const tournamentController = {
     try {
       const tournament = await prisma.tournament.findFirst({
         where: {
-          OR: [
-            { status: TournamentStatus.IN_PROGRESS },
-            { status: TournamentStatus.UPCOMING },
-            { status: TournamentStatus.COMPLETED },
-          ],
+          manualActive: true,
         },
         orderBy: {
           startDate: 'asc',
