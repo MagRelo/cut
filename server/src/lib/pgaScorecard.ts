@@ -86,6 +86,54 @@ function calculateRoundIcon(holes: FormattedHoles): string {
   return '';
 }
 
+async function fetchScorecardData(playerId: string, tournamentId: string) {
+  const query = `
+  query {
+    scorecardV2(playerId: "${playerId}", id: "${tournamentId}") {
+      tournamentName
+      id
+      player {
+        firstName
+        lastName
+      }
+      roundScores {
+        roundNumber
+        firstNine {
+          parTotal
+          holes {
+            par
+            holeNumber
+            score
+          }
+        }
+        secondNine {
+          parTotal
+          holes {
+            par
+            holeNumber
+            score
+          }
+        }
+      }
+    }
+  }
+`;
+  const response = await fetch(PGA_API_URL, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': PGA_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function fetchScorecard(
   playerId: string,
   tournamentId: string
@@ -102,62 +150,16 @@ export async function fetchScorecard(
 } | null> {
   if (!playerId || !tournamentId) return null;
 
-  const query = `
-    query {
-      scorecardV2(playerId: "${playerId}", id: "${tournamentId}") {
-        tournamentName
-        id
-        player {
-          firstName
-          lastName
-        }
-        roundScores {
-          roundNumber
-          firstNine {
-            parTotal
-            holes {
-              par
-              holeNumber
-              score
-            }
-          }
-          secondNine {
-            parTotal
-            holes {
-              par
-              holeNumber
-              score
-            }
-          }
-        }
-      }
-    }
-  `;
-
   try {
-    const response = await fetch(PGA_API_URL, {
-      method: 'POST',
-      headers: {
-        'X-API-Key': PGA_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
-    });
+    const data = await fetchScorecardData(playerId, tournamentId);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
     const validatedData = scorecardResponseSchema.parse(data);
-
     if (
       !validatedData.data?.scorecardV2 ||
       !validatedData.data.scorecardV2.player
     ) {
       return null;
     }
-
     const pgaScorecard = validatedData.data.scorecardV2;
     const rounds: Record<
       string,

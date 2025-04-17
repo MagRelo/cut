@@ -26,10 +26,9 @@ async function fetchFromApi<T>(endpoint: string): Promise<T> {
     throw new Error('SPORTS_RADAR_API_KEY environment variable not set');
   }
 
-  console.log('fetching from api', `${endpoint}`);
-
   const url = `${BASE_URL}${endpoint}?api_key=${apiKey}`;
 
+  // console.log('fetching from api', `${url}`); -
   try {
     const response = await fetch(url, {
       headers: {
@@ -201,4 +200,46 @@ export async function getAllPlayerProfiles(
   const result = data.players;
   cache[cacheKey] = { data: result, timestamp: now };
   return result;
+}
+
+/**
+ * Combined tournament data including leaderboard and all round scorecards
+ */
+export interface TournamentCompleteData {
+  leaderboard: TournamentLeaderboard;
+  roundScorecards: {
+    [key: string]: TournamentScores;
+  };
+}
+
+/**
+ * Get complete tournament data including leaderboard and all round scorecards in one call
+ */
+export async function getTournamentCompleteData(
+  tournamentId: string,
+  year: number = 2025
+): Promise<TournamentCompleteData> {
+  const rounds = ['01', '02', '03', '04'];
+
+  try {
+    // Fetch leaderboard and all round scorecards in parallel
+    const [leaderboard, ...roundScores] = await Promise.all([
+      getTournamentLeaderboard(tournamentId, year),
+      ...rounds.map((round) => getPlayersScorecard(tournamentId, round, year)),
+    ]);
+
+    // Combine round scores into an object with round numbers as keys
+    const roundScorecards = rounds.reduce((acc, round, index) => {
+      acc[round] = roundScores[index];
+      return acc;
+    }, {} as { [key: string]: TournamentScores });
+
+    return {
+      leaderboard,
+      roundScorecards,
+    };
+  } catch (error) {
+    console.error('Error fetching complete tournament data:', error);
+    throw error;
+  }
 }
