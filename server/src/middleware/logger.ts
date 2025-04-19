@@ -9,8 +9,12 @@ export const requestLogger = (
 
   // Add listener for when response finishes
   res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`${res.statusCode} - ${duration}ms: ${req.path}`);
+    const statusCode = res.statusCode;
+    // Only log 4xx and 5xx status codes
+    if (statusCode >= 400) {
+      const duration = Date.now() - start;
+      console.log(`${statusCode} - ${duration}ms: ${req.path}`);
+    }
   });
 
   next();

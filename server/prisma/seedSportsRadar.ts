@@ -23,16 +23,18 @@ async function main() {
 
     // select a tournament using the tournament name
     const tournamentName = 'RBC Heritage';
+    const tournamentId = 'R2025012';
     const tournament = tournaments.find(
       (tournament) => tournament.name === tournamentName
     );
-    // updat tournament to set manualActive to true
+    // update tournament to set manualActive to true
     await prisma.tournament.update({
       where: {
         id: tournament?.id,
       },
       data: {
         manualActive: true,
+        pgaTourId: tournamentId,
       },
     });
 
@@ -42,7 +44,7 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 10000));
       console.log('Awake...' + new Date().toISOString());
 
-      // update players in field
+      // THE FIELD - SPORTS RADAR
       const tournamentField = await getTournamentField(
         tournament.sportsRadarId
       );
@@ -57,7 +59,7 @@ async function main() {
         },
       });
 
-      // update players with pgaData - do not fail if they are not found and or/error
+      // PGA DATAupdate players with pgaData - do not fail if they are not found and or/error
       const pgaData = await fetchPGATourPlayers();
 
       // Function to normalize names for comparison

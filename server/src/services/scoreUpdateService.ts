@@ -62,7 +62,12 @@ export class ScoreUpdateService {
   ) {
     try {
       const scorecard = await fetchScorecard(pgaTourId, tournamentId);
-      if (!scorecard) return;
+      if (!scorecard) {
+        console.error(
+          `No scorecard found for player ${pgaTourId} in tournament ${tournamentId}`
+        );
+        return;
+      }
 
       const data = {
         cut: leaderboardPlayer.cutBonus,
@@ -95,7 +100,6 @@ export class ScoreUpdateService {
       const tournament = await prisma.tournament.findFirst({
         where: { manualActive: true },
       });
-
       if (!tournament) {
         console.error(`Active Tournament not found`);
         return;
