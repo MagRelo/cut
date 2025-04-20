@@ -17,6 +17,11 @@ async function main() {
     const tournamentSeedService = new TournamentSeedService();
     const tournaments = await tournamentSeedService.seedTournamentData();
 
+    // sleep for 5 seconds
+    console.log('Sleeping for 5 seconds...' + new Date().toISOString());
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    console.log('Awake...' + new Date().toISOString());
+
     // refresh players
     const playerSeedService = new PlayerSeedService();
     await playerSeedService.seedPlayerData();
@@ -39,9 +44,9 @@ async function main() {
     });
 
     if (tournament) {
-      // sleep for 20 seconds
+      // sleep for 5 seconds
       console.log('Sleeping for 10 seconds...' + new Date().toISOString());
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       console.log('Awake...' + new Date().toISOString());
 
       // THE FIELD - SPORTS RADAR

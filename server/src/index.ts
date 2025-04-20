@@ -10,6 +10,7 @@ import playerRoutes from './routes/player.routes.js';
 import tournamentRoutes from './routes/tournaments.js';
 import chatRoutes from './routes/chat.js';
 import adminRoutes from './routes/admin.js';
+import publicLeagueRoutes from './routes/publicLeagues.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authenticateToken } from './middleware/auth.js';
 import { requestLogger } from './middleware/logger.js';
@@ -77,7 +78,7 @@ app.use('/api/players', playerRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/public-leagues', publicLeagueRoutes);
 // Protected routes
 app.use('/api/protected', authenticateToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully' });

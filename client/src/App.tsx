@@ -16,7 +16,9 @@ import { Navigation } from './components/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-
+import { PublicLeagueList } from './pages/PublicLeagueList';
+import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
+import { PublicCreateLeague } from './pages/PublicCreateLeague';
 import { UserSettings } from './pages/UserSettings';
 
 export const App: React.FC = () => {
@@ -32,6 +34,17 @@ export const App: React.FC = () => {
               <Route path='/register' element={<Register />} />
               <Route path='/forgot-password' element={<ForgotPassword />} />
               <Route path='/reset-password' element={<ResetPassword />} />
+
+              {/* Public League Routes */}
+              <Route path='/public/leagues' element={<PublicLeagueList />} />
+              <Route
+                path='/public/leagues/new'
+                element={<PublicCreateLeague />}
+              />
+              <Route
+                path='/public/league/:leagueId'
+                element={<PublicLeagueLobby />}
+              />
 
               {/* Admin Routes */}
               <Route
