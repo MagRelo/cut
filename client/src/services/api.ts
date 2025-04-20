@@ -5,6 +5,7 @@ import {
   type ActivePlayersPayload,
   type PGAPlayer,
 } from '../schemas/team';
+import { type Scorecard } from '../types/scorecard';
 // import type { Team } from '../types/team';
 
 interface Tournament {
@@ -438,6 +439,14 @@ export class ApiService {
       { name: data.name, players: data.players }
     );
     return response;
+  }
+
+  async saveScorecard(scorecard: Scorecard) {
+    return this.request<MessageResponse>(
+      'POST',
+      '/admin/save-scorecard',
+      scorecard
+    );
   }
 }
 
