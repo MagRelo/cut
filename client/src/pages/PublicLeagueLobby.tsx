@@ -7,6 +7,54 @@ import {
   type Tournament,
 } from '../services/publicLeagueApi';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
+import { PlayerScorecard } from '../components/player/PlayerScorecard';
+
+interface Player {
+  id: string;
+  pgaTourId: string;
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  pga_imageUrl: string | null;
+  country: string | null;
+  countryFlag: string | null;
+  age: number | null;
+  inField: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Round {
+  strokes: number;
+  total?: number;
+}
+
+interface TeamPlayer {
+  id: string;
+  teamId: string;
+  playerId: string;
+  active: boolean;
+  player: Player;
+  leaderboardPosition?: string;
+  r1?: Round;
+  r2?: Round;
+  r3?: Round;
+  r4?: Round;
+  cut?: number;
+  bonus?: number;
+  total?: number;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  color: string;
+  players: TeamPlayer[];
+  userId: string;
+  leagueId: string;
+}
 
 export const PublicLeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
@@ -15,6 +63,10 @@ export const PublicLeagueLobby: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
+  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
+    new Set()
+  );
 
   const fetchLeague = async () => {
     if (!leagueId) return;
@@ -50,6 +102,181 @@ export const PublicLeagueLobby: React.FC = () => {
     }
     return '';
   };
+
+  const toggleTeam = (teamId: string) => {
+    setExpandedTeams((prev) => {
+      const next = new Set(prev);
+      if (next.has(teamId)) {
+        next.delete(teamId);
+      } else {
+        next.add(teamId);
+      }
+      return next;
+    });
+  };
+
+  const togglePlayer = (playerId: string) => {
+    setExpandedPlayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(playerId)) {
+        next.delete(playerId);
+      } else {
+        next.add(playerId);
+      }
+      return next;
+    });
+  };
+
+  const calculateTeamScore = (team: Team) => {
+    return team.players
+      .filter((player) => player.active)
+      .reduce((sum, player) => sum + (player.total || 0), 0);
+  };
+
+  const renderPlayerRow = (player: TeamPlayer) => (
+    <React.Fragment key={player.id}>
+      <tr className='hover:bg-gray-50/50'>
+        <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
+          <div className='flex items-center'>
+            {player.player.pga_imageUrl && (
+              <div className='flex-shrink-0 h-10 w-10 relative'>
+                <img
+                  className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
+                  src={player.player.pga_imageUrl}
+                  alt={player.player.displayName || player.player.name}
+                />
+              </div>
+            )}
+            <div className='ml-4'>
+              <button
+                onClick={() => togglePlayer(player.id)}
+                className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
+                {player.player.displayName || player.player.name}
+                <svg
+                  className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
+                    expandedPlayers.has(player.id) ? 'rotate-180' : ''
+                  }`}
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M19 9l-7 7-7-7'
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </td>
+
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
+          {player.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.leaderboardPosition || '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r1?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r2?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r3?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.r4?.total ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.cut ?? '-'}
+        </td>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.bonus ?? '-'}
+        </td>
+      </tr>
+      {expandedPlayers.has(player.id) && (
+        <tr>
+          <td colSpan={9} className='p-0'>
+            <div className='border-t border-gray-200'>
+              <div className='bg-gray-600/10 px-2 pb-2'>
+                <PlayerScorecard
+                  player={player}
+                  className='rounded-none shadow-none'
+                />
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+
+  const renderTeamPlayers = (team: Team) => (
+    <div className='py-2'>
+      <div className='overflow-x-auto'>
+        <div className='inline-block min-w-full align-middle'>
+          <table className='min-w-full divide-y divide-gray-200'>
+            <thead className='bg-gray-50/50'>
+              <tr>
+                <th
+                  scope='col'
+                  className='py-2 pl-2 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Player
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Total
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Pos
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R1
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R2
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R3
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  R4
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Cut
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Bonus
+                </th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-200'>
+              {team.players
+                .sort((a, b) => (b.total || 0) - (a.total || 0))
+                .map(renderPlayerRow)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -120,55 +347,67 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
         </div>
 
-        {/* Other Teams Section */}
+        {/* Teams Section */}
         <div className='bg-white rounded-lg shadow'>
-          <div className='p-6'>
-            <div className='space-y-4'>
+          <div>
+            <div className='space-y-0'>
               {league.teams.length === 0 ? (
                 <div className='text-gray-500 text-center py-4'>
                   No teams yet. Create one to get started!
                 </div>
               ) : (
                 [...league.teams]
-                  .sort((a, b) => {
-                    const totalA = a.players.reduce(
-                      (total, player) => total + (player.total || 0),
-                      0
-                    );
-                    const totalB = b.players.reduce(
-                      (total, player) => total + (player.total || 0),
-                      0
-                    );
-                    return totalB - totalA; // Sort descending
-                  })
-                  .map((team) => {
-                    const totalPoints = team.players.reduce(
-                      (total, player) => total + (player.total || 0),
-                      0
-                    );
-
-                    return (
-                      <div
-                        key={team.id}
-                        className='border-b pb-4 last:border-b-0 last:pb-0'>
-                        <div className='flex justify-between items-center'>
-                          <div className='flex items-center gap-3'>
+                  .sort((a, b) => calculateTeamScore(b) - calculateTeamScore(a))
+                  .map((team, index) => (
+                    <div
+                      key={team.id}
+                      className={`${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      } hover:bg-gray-100/70 transition-colors`}>
+                      <div className='w-full'>
+                        <button
+                          onClick={() => toggleTeam(team.id)}
+                          className='w-full px-4 py-2 flex justify-between items-center'>
+                          <div className='flex items-center'>
                             <div
-                              className='w-4 h-4 rounded-full'
+                              className='w-4 h-4 rounded-full mr-2'
                               style={{ backgroundColor: team.color }}
-                              title={`Team Color: ${team.color}`}
                             />
-                            <h3 className='font-semibold text-gray-900'>
+                            <h3 className='text-base font-medium text-gray-900'>
                               {team.name}
                             </h3>
                           </div>
-                          <div className='text-gray-900 font-medium'>
-                            {totalPoints} pts
+                          <div className='flex items-center space-x-4'>
+                            <span className='text-sm font-semibold text-gray-900'>
+                              {calculateTeamScore(team)}
+                            </span>
+                            <svg
+                              className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+                                expandedTeams.has(team.id) ? 'rotate-180' : ''
+                              }`}
+                              fill='none'
+                              stroke='currentColor'
+                              viewBox='0 0 24 24'>
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M19 9l-7 7-7-7'
+                              />
+                            </svg>
                           </div>
-                        </div>
+                        </button>
                       </div>
-                    );
-                  })
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                          expandedTeams.has(team.id)
+                            ? 'max-h-[1000px] border-t border-gray-200'
+                            : 'max-h-0'
+                        }`}>
+                        {renderTeamPlayers(team)}
+                      </div>
+                    </div>
+                  ))
               )}
             </div>
           </div>
