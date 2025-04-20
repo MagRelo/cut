@@ -89,6 +89,7 @@ model TeamPlayer {
   player              Player   @relation(fields: [playerId], references: [id])
   playerId            String
   addedAt             DateTime @default(now())
+  updatedAt           DateTime @updatedAt
   active              Boolean  @default(true)
   leaderboardPosition String?
   r1                  Json? // { strokes: number }
