@@ -16,6 +16,14 @@ export const Home: React.FC = () => {
       <p className='text-xl text-gray-600 mb-8'>
         The Ultimate Golf Tournament Pool
       </p>
+
+      <Link
+        to='/public/leagues'
+        className='inline-flex items-center px-6 py-3 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
+        View Public Leagues
+      </Link>
+      <hr className='w-full max-w-lg border-gray-200 mb-8' />
+
       <div className='space-x-4'>
         {user ? (
           <Link
@@ -24,18 +32,18 @@ export const Home: React.FC = () => {
             View Leagues
           </Link>
         ) : (
-          <>
+          <div className='space-x-4 mb-8'>
             <Link
               to='/login'
-              className='inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
+              className='inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
               Login
             </Link>
             <Link
               to='/register'
-              className='inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
+              className='inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
               Register
             </Link>
-          </>
+          </div>
         )}
       </div>
     </div>

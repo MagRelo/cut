@@ -48,7 +48,7 @@ export const Navigation: React.FC = () => {
             )}
           </div>
           <div className='flex items-center'>
-            {user ? (
+            {user && (
               <Link
                 to='/settings'
                 className={`ml-4 p-2 rounded-full hover:bg-gray-100 ${
@@ -68,19 +68,6 @@ export const Navigation: React.FC = () => {
                   />
                 </svg>
               </Link>
-            ) : (
-              <div className='space-x-4'>
-                <Link
-                  to='/login'
-                  className='px-3 py-1.5 text-sm bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors'>
-                  Login
-                </Link>
-                <Link
-                  to='/register'
-                  className='px-3 py-1.5 text-sm bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors'>
-                  Register
-                </Link>
-              </div>
             )}
           </div>
         </div>

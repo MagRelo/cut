@@ -136,6 +136,9 @@ export const PublicLeagueLobby: React.FC = () => {
   const renderPlayerRow = (player: TeamPlayer) => (
     <React.Fragment key={player.id}>
       <tr className='hover:bg-gray-50/50'>
+        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+          {player.leaderboardPosition || '-'}
+        </td>
         <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
           <div className='flex items-center'>
             {player.player.pga_imageUrl && (
@@ -174,9 +177,7 @@ export const PublicLeagueLobby: React.FC = () => {
         <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
           {player.total ?? '-'}
         </td>
-        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
-          {player.leaderboardPosition || '-'}
-        </td>
+
         <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
           {player.r1?.total ?? '-'}
         </td>
@@ -214,55 +215,56 @@ export const PublicLeagueLobby: React.FC = () => {
   );
 
   const renderTeamPlayers = (team: Team) => (
-    <div className='py-2'>
+    <div className='pb-4'>
       <div className='overflow-x-auto'>
         <div className='inline-block min-w-full align-middle'>
           <table className='min-w-full divide-y divide-gray-200'>
-            <thead className='bg-gray-50/50'>
+            <thead className='bg-gray-100'>
               <tr>
                 <th
                   scope='col'
-                  className='py-2 pl-2 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                  Player
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                  Total
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   Pos
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Player
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Total
+                </th>
+
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   R1
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   R2
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   R3
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   R4
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   Cut
                 </th>
                 <th
                   scope='col'
-                  className='px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
                   Bonus
                 </th>
               </tr>
@@ -297,17 +299,17 @@ export const PublicLeagueLobby: React.FC = () => {
   }
 
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <div className='max-w-4xl mx-auto space-y-6'>
+    <div className='container mx-auto px-4 py-4'>
+      <div className='max-w-4xl mx-auto space-y-4'>
         <div className='bg-white rounded-lg shadow'>
-          <div className='p-6'>
+          <div className='p-4'>
             <div className='flex justify-between items-center mb-2'>
-              <h1 className='text-3xl font-bold'>{league.name}</h1>
+              <h1 className='text-2xl font-bold'>{league.name}</h1>
             </div>
 
             {/* Tournament Information */}
             {league.tournament && (
-              <div className='relative overflow-hidden rounded-lg border border-gray-200'>
+              <div className='relative overflow-hidden rounded-lg border border-gray-200 mt-2'>
                 {league.tournament.beautyImage ? (
                   <>
                     <div
@@ -321,13 +323,13 @@ export const PublicLeagueLobby: React.FC = () => {
                 ) : (
                   <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
                 )}
-                <div className='relative p-6 text-white'>
+                <div className='relative p-4 text-white'>
                   <div className='flex justify-between items-center'>
                     <p className='text-2xl font-bold tracking-tight'>
                       {league.tournament.name}
                     </p>
                   </div>
-                  <div className='mt-2 space-y-2'>
+                  <div className='mt-1 space-y-1'>
                     {league.tournament.venue && (
                       <p className='text-white/90'>
                         {formatVenue(league.tournament)}
@@ -352,7 +354,7 @@ export const PublicLeagueLobby: React.FC = () => {
           <div>
             <div className='space-y-0'>
               {league.teams.length === 0 ? (
-                <div className='text-gray-500 text-center py-4'>
+                <div className='text-gray-500 text-center py-3'>
                   No teams yet. Create one to get started!
                 </div>
               ) : (
@@ -455,8 +457,8 @@ export const PublicLeagueLobby: React.FC = () => {
 
         {/* Share Section */}
         <div className='bg-white rounded-lg shadow'>
-          <div className='p-6'>
-            <div className='flex flex-col items-center space-y-4'>
+          <div className='p-4'>
+            <div className='flex flex-col items-center space-y-3'>
               <h2 className='text-lg font-semibold text-gray-900'>
                 Share League
               </h2>
@@ -497,7 +499,7 @@ export const PublicLeagueLobby: React.FC = () => {
                   </>
                 )}
               </button>
-              <div className='p-4 bg-white rounded-lg border border-gray-200'>
+              <div className='p-3 bg-white rounded-lg border border-gray-200'>
                 <QRCodeSVG value={window.location.href} size={128} />
               </div>
             </div>

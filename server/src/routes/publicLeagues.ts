@@ -318,34 +318,35 @@ router.post('/:leagueId/teams', async (req, res) => {
       where: { manualActive: true },
     });
 
-    if (tournament) {
-      // Get the created team players with their PGA IDs
-      const teamPlayers = await prisma.teamPlayer.findMany({
-        where: { teamId: team.id },
-        include: { player: true },
-      });
+    // Leave this here and commented out until the API errors are resolved
+    // if (tournament) {
+    //   // Get the created team players with their PGA IDs
+    //   const teamPlayers = await prisma.teamPlayer.findMany({
+    //     where: { teamId: team.id },
+    //     include: { player: true },
+    //   });
 
-      // Get the leaderboard data
-      const { players: leaderboardPlayers } = await getPgaLeaderboard();
+    //   // Get the leaderboard data
+    //   const { players: leaderboardPlayers } = await getPgaLeaderboard();
 
-      // Update scores for each player
-      for (const teamPlayer of teamPlayers) {
-        if (teamPlayer.player.pga_pgaTourId) {
-          const leaderboardPlayer = leaderboardPlayers.find(
-            (p: LeaderboardPlayer) =>
-              p.player.id === teamPlayer.player.pga_pgaTourId
-          );
-          if (leaderboardPlayer) {
-            await scoreUpdateService.updateScore(
-              teamPlayer.id,
-              tournament.pgaTourId,
-              teamPlayer.player.pga_pgaTourId,
-              leaderboardPlayer
-            );
-          }
-        }
-      }
-    }
+    //   // Update scores for each player
+    //   for (const teamPlayer of teamPlayers) {
+    //     if (teamPlayer.player.pga_pgaTourId) {
+    //       const leaderboardPlayer = leaderboardPlayers.find(
+    //         (p: LeaderboardPlayer) =>
+    //           p.player.id === teamPlayer.player.pga_pgaTourId
+    //       );
+    //       if (leaderboardPlayer) {
+    //         await scoreUpdateService.updateScore(
+    //           teamPlayer.id,
+    //           tournament.pgaTourId,
+    //           teamPlayer.player.pga_pgaTourId,
+    //           leaderboardPlayer
+    //         );
+    //       }
+    //     }
+    //   }
+    // }
 
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: team.id },
@@ -435,34 +436,35 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
         where: { manualActive: true },
       });
 
-      if (tournament) {
-        // Get the updated team players with their PGA IDs
-        const teamPlayers = await prisma.teamPlayer.findMany({
-          where: { teamId },
-          include: { player: true },
-        });
+      // Leave this here and commented out until the API errors are resolved
+      // if (tournament) {
+      //   // Get the updated team players with their PGA IDs
+      //   const teamPlayers = await prisma.teamPlayer.findMany({
+      //     where: { teamId },
+      //     include: { player: true },
+      //   });
 
-        // Get the leaderboard data
-        const { players: leaderboardPlayers } = await getPgaLeaderboard();
+      //   // Get the leaderboard data
+      //   const { players: leaderboardPlayers } = await getPgaLeaderboard();
 
-        // Update scores for each player
-        for (const teamPlayer of teamPlayers) {
-          if (teamPlayer.player.pga_pgaTourId) {
-            const leaderboardPlayer = leaderboardPlayers.find(
-              (p: LeaderboardPlayer) =>
-                p.player.id === teamPlayer.player.pga_pgaTourId
-            );
-            if (leaderboardPlayer) {
-              await scoreUpdateService.updateScore(
-                teamPlayer.id,
-                tournament.pgaTourId,
-                teamPlayer.player.pga_pgaTourId,
-                leaderboardPlayer
-              );
-            }
-          }
-        }
-      }
+      //   // Update scores for each player
+      //   for (const teamPlayer of teamPlayers) {
+      //     if (teamPlayer.player.pga_pgaTourId) {
+      //       const leaderboardPlayer = leaderboardPlayers.find(
+      //         (p: LeaderboardPlayer) =>
+      //           p.player.id === teamPlayer.player.pga_pgaTourId
+      //       );
+      //       if (leaderboardPlayer) {
+      //         await scoreUpdateService.updateScore(
+      //           teamPlayer.id,
+      //           tournament.pgaTourId,
+      //           teamPlayer.player.pga_pgaTourId,
+      //           leaderboardPlayer
+      //         );
+      //       }
+      //     }
+      //   }
+      // }
     }
 
     const teamWithPlayers = await prisma.team.findUnique({

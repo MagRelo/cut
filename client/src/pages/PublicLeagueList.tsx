@@ -66,26 +66,42 @@ export const PublicLeagueList: React.FC = () => {
 
         {/* Active Tournament Section */}
         {activeTournament && (
-          <div className='bg-white rounded-lg shadow mb-6'>
-            <div className='p-6'>
-              <h2 className='text-xl font-semibold mb-2'>Active Tournament</h2>
-              <div className='text-gray-600'>
-                <p className='font-medium text-lg'>{activeTournament.name}</p>
-                <div className='mt-2 text-sm space-y-1'>
-                  <p>
-                    {new Date(activeTournament.startDate).toLocaleDateString()}{' '}
-                    - {new Date(activeTournament.endDate).toLocaleDateString()}
-                  </p>
+          <div className='relative overflow-hidden rounded-lg border border-gray-200 mb-6'>
+            {activeTournament.beautyImage ? (
+              <>
+                <div
+                  className='absolute inset-0 bg-cover bg-center'
+                  style={{
+                    backgroundImage: `url(${activeTournament.beautyImage})`,
+                  }}
+                />
+                <div className='absolute inset-0 bg-black/50' />
+              </>
+            ) : (
+              <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
+            )}
+            <div className='relative p-6 text-white'>
+              <div className='flex justify-between items-center'>
+                <p className='text-2xl font-bold tracking-tight'>
+                  {activeTournament.name}
+                </p>
+              </div>
+              <div className='mt-2 space-y-2'>
+                <div className='text-white/90'>
                   {activeTournament.venue && (
                     <p>{formatVenue(activeTournament)}</p>
                   )}
                   {activeTournament.location && (
                     <p>{formatTournamentLocation(activeTournament)}</p>
                   )}
-                  {activeTournament.purse && (
-                    <p>Purse: ${activeTournament.purse.toLocaleString()}</p>
-                  )}
                 </div>
+                <a
+                  href='https://www.pgatour.com/leaderboard'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
+                  Leaderboard ↗
+                </a>
               </div>
             </div>
           </div>
