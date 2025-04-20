@@ -45,6 +45,7 @@ interface TeamPlayer {
   cut?: number;
   bonus?: number;
   total?: number;
+  updatedAt: Date;
 }
 
 interface Team {
@@ -131,6 +132,34 @@ export const PublicLeagueLobby: React.FC = () => {
     return team.players
       .filter((player) => player.active)
       .reduce((sum, player) => sum + (player.total || 0), 0);
+  };
+
+  const findMostRecentPlayerUpdate = (): Date | null => {
+    if (!league?.teams.length) return null;
+
+    let mostRecent: Date | null = null;
+    league.teams.forEach((team) => {
+      team.players.forEach((player) => {
+        const playerDate = new Date(player.updatedAt);
+        if (!mostRecent || playerDate > mostRecent) {
+          mostRecent = playerDate;
+        }
+      });
+    });
+    return mostRecent;
+  };
+
+  const formatUpdateTime = (date: Date | null): string => {
+    if (!date) return 'No updates yet';
+
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours % 12 || 12;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
   };
 
   const renderPlayerRow = (player: TeamPlayer) => (
@@ -411,6 +440,10 @@ export const PublicLeagueLobby: React.FC = () => {
                     </div>
                   ))
               )}
+            </div>
+            {/* Last Update Time */}
+            <div className='text-xs text-gray-400 text-center py-2 border-t border-gray-100'>
+              Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
             </div>
           </div>
         </div>

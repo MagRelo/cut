@@ -36,6 +36,7 @@ export interface TeamPlayer {
   cut?: number;
   bonus?: number;
   total?: number;
+  updatedAt: Date;
 }
 
 export interface Team {
