@@ -16,6 +16,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { requestLogger } from './middleware/logger.js';
 import { startScoreUpdateCron } from './cron/scoreUpdate.js';
 import { startCleanupCron } from './cron/cleanup.js';
+import { startApiHealthCheckCron } from './cron/apiHealthCheck.js';
 
 // Load environment variables based on NODE_ENV
 const envFile =
@@ -99,6 +100,7 @@ try {
   // Start the cron jobs
   startScoreUpdateCron();
   startCleanupCron();
+  startApiHealthCheckCron();
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);

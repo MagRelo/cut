@@ -331,55 +331,52 @@ export const PublicLeagueLobby: React.FC = () => {
     <div className='container mx-auto px-4 py-4'>
       <div className='max-w-4xl mx-auto space-y-4'>
         <div className='bg-white rounded-lg shadow'>
-          <div className='p-4'>
-            <div className='flex justify-between items-center mb-2'>
-              <h1 className='text-2xl font-bold'>{league.name}</h1>
-            </div>
-
-            {/* Tournament Information */}
-            {league.tournament && (
-              <div className='relative overflow-hidden rounded-lg border border-gray-200 mt-2'>
-                {league.tournament.beautyImage ? (
-                  <>
-                    <div
-                      className='absolute inset-0 bg-cover bg-center'
-                      style={{
-                        backgroundImage: `url(${league.tournament.beautyImage})`,
-                      }}
-                    />
-                    <div className='absolute inset-0 bg-black/50' />
-                  </>
-                ) : (
-                  <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
-                )}
-                <div className='relative p-4 text-white'>
-                  <div className='flex justify-between items-center'>
-                    <p className='text-2xl font-bold tracking-tight'>
-                      {league.tournament.name}
+          {/* Tournament Information */}
+          {league.tournament && (
+            <div className='relative overflow-hidden rounded-lg border border-gray-200 mt-2'>
+              {league.tournament.beautyImage ? (
+                <>
+                  <div
+                    className='absolute inset-0 bg-cover bg-center'
+                    style={{
+                      backgroundImage: `url(${league.tournament.beautyImage})`,
+                    }}
+                  />
+                  <div className='absolute inset-0 bg-black/50' />
+                </>
+              ) : (
+                <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
+              )}
+              <div className='relative p-4 text-white'>
+                <div className='flex justify-between items-center'>
+                  <p className='text-2xl font-bold tracking-tight'>
+                    {league.tournament.name}
+                  </p>
+                </div>
+                <div className='mt-1 space-y-1'>
+                  {league.tournament.venue && (
+                    <p className='text-white/90'>
+                      {formatVenue(league.tournament)}
                     </p>
-                  </div>
-                  <div className='mt-1 space-y-1'>
-                    {league.tournament.venue && (
-                      <p className='text-white/90'>
-                        {formatVenue(league.tournament)}
-                      </p>
-                    )}
-                    <a
-                      href='https://www.pgatour.com/leaderboard'
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
-                      Leaderboard ↗
-                    </a>
-                  </div>
+                  )}
+                  <a
+                    href='https://www.pgatour.com/leaderboard'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
+                    Leaderboard ↗
+                  </a>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Teams Section */}
         <div className='bg-white rounded-lg shadow'>
+          <div className='flex justify-between items-center p-4'>
+            <h1 className='text-2xl font-bold'>{league.name}</h1>
+          </div>
           <div>
             <div className='space-y-0'>
               {league.teams.length === 0 ? (
