@@ -55,18 +55,9 @@ export const PublicLeagueList: React.FC = () => {
   return (
     <div className='container mx-auto px-4 py-8'>
       <div className='max-w-4xl mx-auto'>
-        <div className='flex justify-between items-center mb-8'>
-          <h1 className='text-3xl font-bold'>Public Leagues</h1>
-          <Link
-            to='/public/leagues/new'
-            className='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'>
-            Create League
-          </Link>
-        </div>
-
         {/* Active Tournament Section */}
         {activeTournament && (
-          <div className='relative overflow-hidden rounded-lg border border-gray-200 mb-6'>
+          <div className='relative overflow-hidden rounded-lg border border-gray-200 mb-4'>
             {activeTournament.beautyImage ? (
               <>
                 <div
@@ -106,6 +97,16 @@ export const PublicLeagueList: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Header Section */}
+        <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0'>
+          <h1 className='text-3xl font-bold'>Public Leagues</h1>
+          <Link
+            to='/public/leagues/new'
+            className='text-white bg-emerald-600/90 hover:bg-emerald-500 px-4 py-2 rounded-lg transition-colors duration-150 inline-flex items-center gap-1'>
+            <span className='text-sm font-medium'>+ Add League</span>
+          </Link>
+        </div>
 
         {/* League List Section */}
         <div className='bg-white rounded-lg shadow'>

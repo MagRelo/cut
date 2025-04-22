@@ -11,7 +11,7 @@ export const Navigation: React.FC = () => {
   };
 
   return (
-    <nav className='bg-white shadow-sm border-b border-gray-200'>
+    <footer className='bg-white shadow-[0_-1px_2px_rgba(0,0,0,0.1)] border-t border-gray-200 mt-auto'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between h-16'>
           <div className='flex'>
@@ -26,20 +26,20 @@ export const Navigation: React.FC = () => {
               <div className='flex ml-4 sm:ml-6 space-x-4 sm:space-x-8 items-center'>
                 <Link
                   to='/leagues'
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
                     isActive('/leagues')
-                      ? 'border-emerald-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      ? 'text-emerald-500'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}>
                   Leagues
                 </Link>
                 {isAdmin() && (
                   <Link
                     to='/admin'
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
                       isActive('/admin')
-                        ? 'border-emerald-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        ? 'text-emerald-500'
+                        : 'text-gray-500 hover:text-gray-700'
                     }`}>
                     Admin
                   </Link>
@@ -72,6 +72,6 @@ export const Navigation: React.FC = () => {
           </div>
         </div>
       </div>
-    </nav>
+    </footer>
   );
 };

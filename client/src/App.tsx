@@ -26,101 +26,103 @@ export const App: React.FC = () => {
     <AuthProvider>
       <ChatProvider>
         <Router>
-          <div className='min-h-screen bg-gray-100'>
+          <div className='min-h-screen bg-gray-100 flex flex-col'>
+            <div className='flex-grow'>
+              <Routes>
+                <Route path='/' element={<Home />} />
+                <Route path='/login' element={<Login />} />
+                <Route path='/register' element={<Register />} />
+                <Route path='/forgot-password' element={<ForgotPassword />} />
+                <Route path='/reset-password' element={<ResetPassword />} />
+
+                {/* Public League Routes */}
+                <Route path='/public/leagues' element={<PublicLeagueList />} />
+                <Route
+                  path='/public/leagues/new'
+                  element={<PublicCreateLeague />}
+                />
+                <Route
+                  path='/public/league/:leagueId'
+                  element={<PublicLeagueLobby />}
+                />
+
+                {/* Admin Routes */}
+                <Route
+                  path='/admin'
+                  element={
+                    <ProtectedRoute>
+                      <AdminPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path='/settings'
+                  element={
+                    <ProtectedRoute>
+                      <UserSettings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/order'
+                  element={
+                    <ProtectedRoute>
+                      <Order />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/leagues'
+                  element={
+                    <ProtectedRoute>
+                      <Leagues />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/leagues/new'
+                  element={
+                    <ProtectedRoute>
+                      <CreateLeague />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/leagues/join'
+                  element={
+                    <ProtectedRoute>
+                      <JoinPrivateLeague />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/league-lobby/:leagueId'
+                  element={
+                    <ProtectedRoute>
+                      <LeagueLobby />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/league/:leagueId/create-team'
+                  element={
+                    <ProtectedRoute>
+                      <TeamForm />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/team/:teamId/edit'
+                  element={
+                    <ProtectedRoute>
+                      <TeamForm />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </div>
             <Navigation />
-            <Routes>
-              <Route path='/' element={<Home />} />
-              <Route path='/login' element={<Login />} />
-              <Route path='/register' element={<Register />} />
-              <Route path='/forgot-password' element={<ForgotPassword />} />
-              <Route path='/reset-password' element={<ResetPassword />} />
-
-              {/* Public League Routes */}
-              <Route path='/public/leagues' element={<PublicLeagueList />} />
-              <Route
-                path='/public/leagues/new'
-                element={<PublicCreateLeague />}
-              />
-              <Route
-                path='/public/league/:leagueId'
-                element={<PublicLeagueLobby />}
-              />
-
-              {/* Admin Routes */}
-              <Route
-                path='/admin'
-                element={
-                  <ProtectedRoute>
-                    <AdminPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path='/settings'
-                element={
-                  <ProtectedRoute>
-                    <UserSettings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/order'
-                element={
-                  <ProtectedRoute>
-                    <Order />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/leagues'
-                element={
-                  <ProtectedRoute>
-                    <Leagues />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/leagues/new'
-                element={
-                  <ProtectedRoute>
-                    <CreateLeague />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/leagues/join'
-                element={
-                  <ProtectedRoute>
-                    <JoinPrivateLeague />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/league-lobby/:leagueId'
-                element={
-                  <ProtectedRoute>
-                    <LeagueLobby />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/league/:leagueId/create-team'
-                element={
-                  <ProtectedRoute>
-                    <TeamForm />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path='/team/:teamId/edit'
-                element={
-                  <ProtectedRoute>
-                    <TeamForm />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
           </div>
         </Router>
       </ChatProvider>
