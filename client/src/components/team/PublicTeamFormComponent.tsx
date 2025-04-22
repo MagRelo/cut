@@ -250,19 +250,19 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                 Choose 4 players for your team. Each player can only be selected
                 once.
               </p>
-              <div className='grid gap-6 mt-4'>
+              <div className='space-y-4 mt-4'>
                 {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className='flex items-center gap-4'>
+                  <div key={index} className='space-y-2'>
                     <label
                       htmlFor={`player-${index}`}
-                      className='whitespace-nowrap text-sm font-medium text-gray-900 w-24'>
+                      className='block text-sm font-medium text-gray-900'>
                       Player {index + 1}
                     </label>
                     <select
                       id={`player-${index}`}
                       value={selectedPlayers[index] || ''}
                       onChange={(e) => handlePlayerSelect(e, index)}
-                      className='flex-1 pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white'>
+                      className='block w-full pl-3 pr-10 py-3 text-base border border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white'>
                       <option value=''>Select a player...</option>
                       {availablePlayers
                         .filter(
@@ -270,9 +270,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                             !selectedPlayers.includes(p.id) ||
                             selectedPlayers[index] === p.id
                         )
-                        .sort((a, b) =>
-                          (a.lastName || '').localeCompare(b.lastName || '')
-                        )
+                        .sort((a, b) => a.name.localeCompare(b.name))
                         .map((player) => (
                           <option key={player.id} value={player.id}>
                             {player.name}
