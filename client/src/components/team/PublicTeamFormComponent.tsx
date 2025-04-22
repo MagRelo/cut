@@ -258,25 +258,41 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                       className='block text-sm font-medium text-gray-900'>
                       Player {index + 1}
                     </label>
-                    <select
-                      id={`player-${index}`}
-                      value={selectedPlayers[index] || ''}
-                      onChange={(e) => handlePlayerSelect(e, index)}
-                      className='block w-full pl-3 pr-10 py-3 text-base border border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 rounded-lg shadow-sm bg-white'>
-                      <option value=''>Select a player...</option>
-                      {availablePlayers
-                        .filter(
-                          (p) =>
-                            !selectedPlayers.includes(p.id) ||
-                            selectedPlayers[index] === p.id
-                        )
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((player) => (
-                          <option key={player.id} value={player.id}>
-                            {player.name}
-                          </option>
-                        ))}
-                    </select>
+                    <div className='relative'>
+                      <select
+                        id={`player-${index}`}
+                        value={selectedPlayers[index] || ''}
+                        onChange={(e) => handlePlayerSelect(e, index)}
+                        className='appearance-none block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-3 pr-10 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'>
+                        <option value=''>Select a player...</option>
+                        {availablePlayers
+                          .filter(
+                            (p) =>
+                              !selectedPlayers.includes(p.id) ||
+                              selectedPlayers[index] === p.id
+                          )
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {player.name}
+                            </option>
+                          ))}
+                      </select>
+                      <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3'>
+                        <svg
+                          className='h-5 w-5 text-gray-400'
+                          viewBox='0 0 20 20'
+                          fill='none'
+                          stroke='currentColor'>
+                          <path
+                            d='M7 7l3-3 3 3m0 6l-3 3-3-3'
+                            strokeWidth='1.5'
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
