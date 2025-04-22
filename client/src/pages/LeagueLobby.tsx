@@ -336,7 +336,7 @@ export const LeagueLobby: React.FC = () => {
             </div>
           </div>
         </td>
-        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+        <td className='px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
           {player.leaderboardPosition || '-'}
         </td>
         <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>

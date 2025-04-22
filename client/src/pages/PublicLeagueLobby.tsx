@@ -165,7 +165,7 @@ export const PublicLeagueLobby: React.FC = () => {
   const renderPlayerRow = (player: TeamPlayer) => (
     <React.Fragment key={player.id}>
       <tr className='hover:bg-gray-50/50'>
-        <td className='px-3 py-2 whitespace-nowrap text-sm text-center text-gray-600'>
+        <td className='px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
           {player.leaderboardPosition || '-'}
         </td>
         <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
