@@ -5,6 +5,7 @@ import { api } from '../../services/api';
 import { publicLeagueApi } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
+import type { LeagueTeam } from '../../services/publicLeagueApi';
 
 interface PublicTeamFormProps {
   leagueId: string;
@@ -38,7 +39,12 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
         setAvailablePlayers(players);
 
         // Find my team in the league
-        const team = league.teams.find((t) => t.userId === userId);
+        const teams: Team[] = league.leagueTeams.map(
+          (lt: LeagueTeam) => lt.team
+        );
+        const team: Team | undefined = teams.find(
+          (t: Team) => t.userId === userId
+        );
         if (team) {
           setMyTeam(team);
           setTeamName(team.name);
@@ -95,7 +101,12 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
 
       // Refresh the league data
       const updatedLeague = await publicLeagueApi.getLeague(leagueId);
-      const updatedTeam = updatedLeague.teams.find((t) => t.userId === userId);
+      const updatedTeams: Team[] = updatedLeague.leagueTeams.map(
+        (lt: LeagueTeam) => lt.team
+      );
+      const updatedTeam: Team | undefined = updatedTeams.find(
+        (t: Team) => t.userId === userId
+      );
       setMyTeam(updatedTeam || null);
       setIsEditing(false);
       if (onSuccess) onSuccess();
@@ -220,27 +231,41 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                 className='block text-sm font-medium text-gray-900'>
                 Team Color
               </label>
-              <div className='mt-1 flex items-center gap-3'>
-                <input
-                  type='color'
-                  id='teamColor'
-                  value={teamColor}
-                  onChange={(e) => setTeamColor(e.target.value)}
-                  className='h-10 w-20 rounded border border-gray-300 p-1'
-                />
-                <input
-                  type='text'
-                  value={teamColor}
-                  onChange={(e) => {
-                    const newColor = e.target.value;
-                    if (/^#[0-9A-Fa-f]{0,6}$/.test(newColor)) {
-                      setTeamColor(newColor);
-                    }
-                  }}
-                  className='appearance-none w-32 px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-sm font-mono'
-                  placeholder='#000000'
-                  maxLength={7}
-                />
+              <div className='mt-2 grid grid-cols-5 gap-3'>
+                {[
+                  '#0a73eb',
+                  '#A3A3A3',
+                  '#FF48BF',
+                  '#F58300',
+                  '#00ABB8',
+                  '#FFD60A',
+                  '#E00000',
+                  '#4700E0',
+                  '#9600CC',
+                  '#00B86B',
+                ].map((color) => (
+                  <label
+                    key={color}
+                    className='flex flex-col items-center cursor-pointer'>
+                    <input
+                      type='radio'
+                      name='teamColor'
+                      value={color}
+                      checked={teamColor === color}
+                      onChange={() => setTeamColor(color)}
+                      className='sr-only'
+                    />
+                    <span
+                      className={`h-8 w-8 rounded-full border-2 ${
+                        teamColor === color
+                          ? 'border-emerald-500 border-4 ring-emerald-400/50 ring-2'
+                          : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className='text-xs mt-1 font-mono'>{color}</span>
+                  </label>
+                ))}
               </div>
             </div>
 

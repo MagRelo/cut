@@ -44,14 +44,18 @@ interface Tournament {
   beautyImage?: string;
 }
 
-interface PublicLeague {
+export interface LeagueTeam {
+  team: Team;
+}
+
+export interface PublicLeague {
   id: string;
   name: string;
   description?: string;
   maxTeams: number;
   memberCount: number;
   createdAt: string;
-  teams: Team[];
+  leagueTeams: LeagueTeam[];
   tournament?: Tournament;
 }
 
@@ -208,7 +212,6 @@ export const publicLeagueApi = new PublicLeagueApiService();
 
 // Export type definitions
 export type {
-  PublicLeague,
   Tournament,
   PublicLeaguesResponse,
   CreatePublicLeaguePayload,

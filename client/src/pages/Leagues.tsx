@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, type League } from '../services/api';
+import { api, type League as ApiLeague, type Team } from '../services/api';
+
+// Extend League type to include leagueTeams for local use
+interface LeagueTeam {
+  team: Team;
+}
+interface LeagueWithTeams extends ApiLeague {
+  leagueTeams: LeagueTeam[];
+}
 
 export function Leagues() {
-  const [leagues, setLeagues] = useState<League[]>([]);
+  const [leagues, setLeagues] = useState<LeagueWithTeams[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -18,7 +26,12 @@ export function Leagues() {
     const fetchLeagues = async () => {
       try {
         const data = await api.getLeagues();
-        setLeagues(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const leaguesWithTeams: LeagueWithTeams[] = data.map((l: any) => ({
+          ...l,
+          leagueTeams: l.leagueTeams ?? [],
+        }));
+        setLeagues(leaguesWithTeams);
       } catch (err) {
         setError('Failed to load leagues');
         console.error('Error fetching leagues:', err);
@@ -30,7 +43,7 @@ export function Leagues() {
     fetchLeagues();
   }, []);
 
-  const getMembershipStatus = (league: League) => {
+  const getMembershipStatus = (league: LeagueWithTeams) => {
     if (!userId) return null;
     const membership = league.members.find(
       (member) => member.userId === userId
@@ -124,6 +137,9 @@ export function Leagues() {
               {leagues.map((league) => {
                 const membershipRole = getMembershipStatus(league);
                 const isJoining = joiningLeagueId === league.id;
+                const teams: Team[] = league.leagueTeams.map(
+                  (lt: LeagueTeam) => lt.team
+                );
 
                 return (
                   <div
@@ -146,7 +162,7 @@ export function Leagues() {
                       )}
                     </div>
                     <div className='hidden md:block text-center text-sm text-gray-500'>
-                      {league.teams.length}
+                      {teams.length}
                     </div>
                     <div className='text-right md:text-center'>
                       {membershipRole ? (

@@ -214,27 +214,32 @@ export class TeamService {
     return team as TeamWithPlayers;
   }
 
-  // async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
-  //   const teams = await prisma.team.findMany({
-  //     where: { leagueId },
-  //     include: {
-  //       players: {
-  //         include: {
-  //           player: true,
-  //         },
-  //       },
-  //       owner: {
-  //         select: {
-  //           id: true,
-  //           email: true,
-  //           name: true,
-  //         },
-  //       },
-  //     },
-  //   });
-
-  //   return teams as TeamWithPlayers[];
-  // }
+  // Get all teams for a specific league using LeagueTeam join table
+  async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
+    const leagueTeams = await prisma.leagueTeam.findMany({
+      where: { leagueId },
+      include: {
+        team: {
+          include: {
+            players: {
+              include: {
+                player: true,
+              },
+            },
+            owner: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    // Map to just the team objects
+    return leagueTeams.map((lt) => lt.team as TeamWithPlayers);
+  }
 
   async updateTeam(
     teamId: string,

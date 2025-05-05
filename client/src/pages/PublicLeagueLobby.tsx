@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   publicLeagueApi,
-  type PublicLeague,
   type Tournament,
+  type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
@@ -58,9 +58,17 @@ interface Team {
   leagueId: string;
 }
 
+interface LeagueTeam {
+  team: Team;
+}
+
+interface PublicLeagueWithTeams extends ApiPublicLeague {
+  leagueTeams: LeagueTeam[];
+}
+
 export const PublicLeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
-  const [league, setLeague] = useState<PublicLeague | null>(null);
+  const [league, setLeague] = useState<PublicLeagueWithTeams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
@@ -75,7 +83,12 @@ export const PublicLeagueLobby: React.FC = () => {
 
     try {
       const data = await publicLeagueApi.getLeague(leagueId);
-      setLeague(data);
+      // Ensure leagueTeams is present for type safety
+      const leagueWithTeams: PublicLeagueWithTeams = {
+        ...data,
+        leagueTeams: (data as { leagueTeams?: LeagueTeam[] }).leagueTeams ?? [],
+      };
+      setLeague(leagueWithTeams);
     } catch (err) {
       setError('Failed to load league details');
       console.error('Error fetching league:', err);
@@ -136,11 +149,12 @@ export const PublicLeagueLobby: React.FC = () => {
   };
 
   const findMostRecentPlayerUpdate = (): Date | null => {
-    if (!league?.teams.length) return null;
+    if (!league?.leagueTeams?.length) return null;
 
     let mostRecent: Date | null = null;
-    league.teams.forEach((team) => {
-      team.players.forEach((player) => {
+    league.leagueTeams.forEach((lt: LeagueTeam) => {
+      const team = lt.team;
+      team.players.forEach((player: TeamPlayer) => {
         const playerDate = new Date(player.updatedAt);
         if (!mostRecent || playerDate > mostRecent) {
           mostRecent = playerDate;
@@ -328,6 +342,9 @@ export const PublicLeagueLobby: React.FC = () => {
     );
   }
 
+  const teams: Team[] =
+    league.leagueTeams?.map((lt: LeagueTeam) => lt.team) ?? [];
+
   return (
     <div className='container mx-auto px-4 py-4'>
       <div className='max-w-4xl mx-auto space-y-4'>
@@ -380,14 +397,17 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
           <div>
             <div className='space-y-0'>
-              {league.teams.length === 0 ? (
+              {teams.length === 0 ? (
                 <div className='text-gray-500 text-center py-3'>
                   No teams yet. Create one to get started!
                 </div>
               ) : (
-                [...league.teams]
-                  .sort((a, b) => calculateTeamScore(b) - calculateTeamScore(a))
-                  .map((team, index) => (
+                [...teams]
+                  .sort(
+                    (a: Team, b: Team) =>
+                      calculateTeamScore(b) - calculateTeamScore(a)
+                  )
+                  .map((team: Team, index: number) => (
                     <div
                       key={team.id}
                       className={`${
@@ -447,12 +467,10 @@ export const PublicLeagueLobby: React.FC = () => {
         </div>
 
         {/* My Team Section */}
-        {league.teams.length < league.maxTeams &&
+        {teams.length < league.maxTeams &&
           leagueId &&
           (() => {
-            const userTeam = league.teams.find(
-              (team) => team.userId === userId
-            );
+            const userTeam = teams.find((team: Team) => team.userId === userId);
             const isScheduled = league.tournament?.status === 'scheduled';
 
             // Case 1: No userId -> always show form

@@ -65,11 +65,22 @@ router.get('/', async (req, res) => {
           isPrivate: false,
         },
         include: {
-          teams: {
+          leagueTeams: {
             include: {
-              players: {
+              team: {
                 include: {
-                  player: true,
+                  players: {
+                    include: {
+                      player: true,
+                    },
+                  },
+                  owner: {
+                    select: {
+                      id: true,
+                      email: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -115,7 +126,11 @@ router.post('/', async (req, res) => {
         },
       },
       include: {
-        teams: true,
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
       },
     });
 
@@ -142,11 +157,22 @@ router.get('/:leagueId', async (req, res) => {
           isPrivate: false,
         },
         include: {
-          teams: {
+          leagueTeams: {
             include: {
-              players: {
+              team: {
                 include: {
-                  player: true,
+                  players: {
+                    include: {
+                      player: true,
+                    },
+                  },
+                  owner: {
+                    select: {
+                      id: true,
+                      email: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -196,7 +222,11 @@ router.post('/:leagueId/join', async (req, res) => {
         isPrivate: false,
       },
       include: {
-        teams: true,
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
       },
     });
 
@@ -275,6 +305,13 @@ router.post('/:leagueId/teams', async (req, res) => {
         id: leagueId,
         isPrivate: false,
       },
+      include: {
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
+      },
     });
 
     if (!league) {
@@ -283,24 +320,32 @@ router.post('/:leagueId/teams', async (req, res) => {
     }
 
     // Check if user already has a team in this league
-    const existingTeam = await prisma.team.findFirst({
+    const existingLeagueTeam = await prisma.leagueTeam.findFirst({
       where: {
         leagueId,
-        userId: data.userId,
+        team: { userId: data.userId },
       },
     });
 
-    if (existingTeam) {
+    if (existingLeagueTeam) {
       res.status(400).json({ error: 'User already has a team in this league' });
       return;
     }
 
+    // Create the team
     const team = await prisma.team.create({
       data: {
         name: data.name,
         color: data.color || '#000000',
-        leagueId,
         userId: data.userId,
+      },
+    });
+
+    // Link the team to the league via LeagueTeam
+    await prisma.leagueTeam.create({
+      data: {
+        leagueId,
+        teamId: team.id,
       },
     });
 
@@ -385,6 +430,13 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
         id: leagueId,
         isPrivate: false,
       },
+      include: {
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
+      },
     });
 
     if (!league) {
@@ -393,15 +445,17 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
     }
 
     // Verify team exists and belongs to user
-    const team = await prisma.team.findFirst({
+    const leagueTeam = await prisma.leagueTeam.findFirst({
       where: {
-        id: teamId,
         leagueId,
-        userId: data.userId,
+        team: { id: teamId, userId: data.userId },
+      },
+      include: {
+        team: true,
       },
     });
 
-    if (!team) {
+    if (!leagueTeam) {
       res.status(404).json({ error: 'Team not found or unauthorized' });
       return;
     }
