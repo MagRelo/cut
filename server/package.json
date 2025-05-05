@@ -14,16 +14,17 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:seedSportsRadar": "tsx prisma/seedSportsRadar.ts",
+    "prisma:seedPGA": "tsx prisma/seedPGA.ts",
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
     "db:logs": "docker compose logs -f",
-    "db:reset": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seed",
-    "db:reset2": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seedSportsRadar && npm run prisma:seed",
+    "db:reset": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate",
+    "db:reset2": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seedPGA && npm run prisma:seed",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "export:tournament-players": "tsx scripts/exportTournamentPlayersCSV.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -91,14 +91,6 @@ model TeamPlayer {
   addedAt             DateTime @default(now())
   updatedAt           DateTime @updatedAt
   active              Boolean  @default(true)
-  leaderboardPosition String?
-  r1                  Json? // { strokes: number }
-  r2                  Json? // { strokes: number }
-  r3                  Json? // { strokes: number }
-  r4                  Json? // { strokes: number }
-  cut                 Int?
-  bonus               Int?
-  total               Int?
 
   @@unique([teamId, playerId])
   @@index([teamId])
@@ -109,28 +101,19 @@ model TeamPlayer {
 model Player {
   // Internal ID Management
   id          String   @id @default(cuid())
-  sportsRadarId   String  @unique  // SportsRadar's UUID
 
-  // Base Data from SportsRadar API
-  first_name    String?
-  last_name     String?
-  name          String?  // "LastName, FirstName" format
-  abbr_name     String?  // e.g. "D.Johnson"
-  height        Int?     // in inches
-  weight        Int?     // in pounds
-  birthday      String?  // ISO date format
-  country       String?
-  residence     String?
-  birth_place   String?
-  college       String?
-  turned_pro    Int?
-  member        Boolean?
-  handedness    String?  // "R" or "L"
+  // insert additional PGA data
   
   // Additional PGA Tour Data (Optional)
   pga_pgaTourId     String?  @unique
   pga_imageUrl      String?  
   pga_displayName   String?  
+  pga_firstName     String?
+  pga_lastName      String?
+  pga_shortName     String?
+  pga_country       String?
+  pga_countryFlag   String?
+  pga_age           Int?
   
   // Status Fields
   isActive    Boolean   @default(false)
@@ -143,9 +126,9 @@ model Player {
 
   // Relationships (maintaining existing relationships)
   teams       TeamPlayer[]
+  tournamentPlayers TournamentPlayer[]
 
   @@index([pga_pgaTourId])
-  @@index([sportsRadarId])
   @@index([isActive])
   @@index([inField])
 }
@@ -154,7 +137,6 @@ model Player {
 model Tournament {
   id                 String             @id @default(cuid())
   pgaTourId          String             
-  sportsRadarId      String             
   name               String
   startDate          DateTime
   endDate            DateTime
@@ -176,6 +158,7 @@ model Tournament {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   timelineEntries    TimelineEntry[]
+  tournamentPlayers  TournamentPlayer[]
 }
 
 model SystemProcessRecord {
@@ -238,5 +221,27 @@ model TimelineEntry {
 
   @@index([leagueId, tournamentId, timestamp])
   @@index([teamId, tournamentId, timestamp])
+}
+
+model TournamentPlayer {
+  id          String     @id @default(cuid())
+  tournament  Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+  player      Player     @relation(fields: [playerId], references: [id])
+  playerId    String
+  leaderboardPosition String?
+  r1          Json? // { strokes: number }
+  r2          Json? // { strokes: number }
+  r3          Json? // { strokes: number }
+  r4          Json? // { strokes: number }
+  cut         Int?
+  bonus       Int?
+  total       Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
 }
 
