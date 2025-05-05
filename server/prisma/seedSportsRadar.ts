@@ -29,6 +29,7 @@ async function main() {
     // select a tournament using the tournament name
     const tournamentName = 'RBC Heritage';
     const tournamentId = 'R2025012';
+
     const tournament = tournaments.find(
       (tournament) => tournament.name === tournamentName
     );
@@ -120,8 +121,6 @@ async function main() {
 
       // Match and update players
       await matchAndUpdatePlayers(pgaData, dbPlayers);
-
-      // now we can update the player with the pgaData
     }
   } catch (error) {
     console.error('Error seeding database:', error);

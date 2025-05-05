@@ -20,6 +20,7 @@ import { PublicLeagueList } from './pages/PublicLeagueList';
 import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
 import { PublicCreateLeague } from './pages/PublicCreateLeague';
 import { UserSettings } from './pages/UserSettings';
+// import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
   return (
@@ -27,6 +28,8 @@ export const App: React.FC = () => {
       <ChatProvider>
         <Router>
           <div className='min-h-screen bg-gray-100 flex flex-col'>
+            {/* TODO: Remove this when we're ready to go live */}
+            {/* <MaintenanceOverlay /> */}
             <div className='flex-grow'>
               <Routes>
                 <Route path='/' element={<Home />} />

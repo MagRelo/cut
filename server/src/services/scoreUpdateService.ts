@@ -122,11 +122,18 @@ export class ScoreUpdateService {
           (player) => player.player.id === teamPlayer.player.pga_pgaTourId
         );
 
+        if (!leaderboardPlayer) {
+          console.warn(
+            `No leaderboard player found for player ${teamPlayer.player.pga_pgaTourId}`
+          );
+          return Promise.resolve();
+        }
+
         return this.updateScore(
           teamPlayer.id,
           tournament.pgaTourId,
           teamPlayer.player.pga_pgaTourId,
-          leaderboardPlayer || null
+          leaderboardPlayer
         );
       });
 
