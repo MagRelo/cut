@@ -136,19 +136,20 @@ interface LeagueMembership {
 
 export interface Player {
   id: string;
-  pgaTourId: string;
-  name: string;
-  firstName: string | null;
-  lastName: string | null;
-  displayName: string | null;
-  pga_imageUrl: string | null;
-  country: string | null;
-  countryFlag: string | null;
-  age: number | null;
-  inField: boolean;
+  pga_pgaTourId?: string | null;
+  pga_imageUrl?: string | null;
+  pga_displayName?: string | null;
+  pga_firstName?: string | null;
+  pga_lastName?: string | null;
+  pga_shortName?: string | null;
+  pga_country?: string | null;
+  pga_countryFlag?: string | null;
+  pga_age?: number | null;
   isActive: boolean;
+  inField: boolean;
   createdAt: Date;
   updatedAt: Date;
+  lastSyncedAt?: Date | null;
 }
 
 export interface TeamPlayer {

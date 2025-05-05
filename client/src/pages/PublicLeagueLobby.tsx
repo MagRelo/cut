@@ -11,19 +11,20 @@ import { PlayerScorecard } from '../components/player/PlayerScorecard';
 
 interface Player {
   id: string;
-  pgaTourId: string;
-  name: string;
-  firstName: string | null;
-  lastName: string | null;
-  displayName: string | null;
-  pga_imageUrl: string | null;
-  country: string | null;
-  countryFlag: string | null;
-  age: number | null;
-  inField: boolean;
+  pga_pgaTourId?: string | null;
+  pga_imageUrl?: string | null;
+  pga_displayName?: string | null;
+  pga_firstName?: string | null;
+  pga_lastName?: string | null;
+  pga_shortName?: string | null;
+  pga_country?: string | null;
+  pga_countryFlag?: string | null;
+  pga_age?: number | null;
   isActive: boolean;
+  inField: boolean;
   createdAt: Date;
   updatedAt: Date;
+  lastSyncedAt?: Date | null;
 }
 
 interface Round {
@@ -175,7 +176,7 @@ export const PublicLeagueLobby: React.FC = () => {
                 <img
                   className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
                   src={player.player.pga_imageUrl}
-                  alt={player.player.displayName || player.player.name}
+                  alt={player.player.pga_displayName || ''}
                 />
               </div>
             )}
@@ -183,7 +184,7 @@ export const PublicLeagueLobby: React.FC = () => {
               <button
                 onClick={() => togglePlayer(player.id)}
                 className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
-                {player.player.displayName || player.player.name}
+                {player.player.pga_displayName || ''}
                 <svg
                   className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
                     expandedPlayers.has(player.id) ? 'rotate-180' : ''

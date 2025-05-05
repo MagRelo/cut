@@ -150,7 +150,9 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
               <div
                 key={teamPlayer.player.id}
                 className='p-3 bg-gray-50 rounded-lg'>
-                <div className='font-medium'>{teamPlayer.player.name}</div>
+                <div className='font-medium'>
+                  {teamPlayer.player.pga_displayName}
+                </div>
                 <div className='text-sm text-gray-500'>
                   {teamPlayer.active ? 'Active' : 'Inactive'}
                 </div>
@@ -271,10 +273,15 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                               !selectedPlayers.includes(p.id) ||
                               selectedPlayers[index] === p.id
                           )
-                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .sort(
+                            (a, b) =>
+                              a.pga_displayName?.localeCompare(
+                                b.pga_displayName || ''
+                              ) || 0
+                          )
                           .map((player) => (
                             <option key={player.id} value={player.id}>
-                              {player.name}
+                              {player.pga_displayName}
                             </option>
                           ))}
                       </select>
