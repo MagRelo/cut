@@ -32,11 +32,11 @@ model League {
   commissioner   User               @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
   commissionerId String
   members        LeagueMembership[]
-  teams          Team[]
   settings       LeagueSettings?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   timelineEntries TimelineEntry[]
+  leagueTeams    LeagueTeam[]
 }
 
 model LeagueSettings {
@@ -66,21 +66,31 @@ model LeagueMembership {
 }
 
 model Team {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  color     String      @default("#059669")
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  league    League       @relation(fields: [leagueId], references: [id])
-  leagueId  String
-  owner     User         @relation(fields: [userId], references: [id])
-  userId    String
+  color     String   @default("#059669")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner     User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
   players   TeamPlayer[]
   timelineEntries TimelineEntry[]
-
-  @@unique([userId, leagueId])
+  leagueTeams LeagueTeam[]
 }
 
+model LeagueTeam {
+  id        String   @id @default(cuid())
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leagueId, teamId])
+  @@index([leagueId])
+  @@index([teamId])
+}
 
 model TeamPlayer {
   id                  String   @id @default(cuid())

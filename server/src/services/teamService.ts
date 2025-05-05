@@ -9,7 +9,6 @@ import { prisma } from '../lib/prisma.js';
 
 export interface CreateTeamDto {
   name: string;
-  leagueId: string;
   players: string[];
   color?: string;
 }
@@ -77,7 +76,8 @@ export class TeamService {
   private async verifyTeamOwnership(
     teamId: string,
     userId: string
-  ): Promise<TeamWithPlayersAndLeague> {
+  ): Promise<TeamWithPlayers> {
+    // Fetch the team with owner and players
     const team = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
@@ -93,12 +93,6 @@ export class TeamService {
             name: true,
           },
         },
-        league: {
-          include: {
-            members: true,
-            settings: true,
-          },
-        },
       },
     });
 
@@ -110,49 +104,42 @@ export class TeamService {
       throw new UnauthorizedError('You are not the owner of this team');
     }
 
-    const membership = team.league.members.find(
-      (m: { userId: string }) => m.userId === userId
-    );
+    // Find the LeagueTeam entry for this team
+    const leagueTeam = await prisma.leagueTeam.findFirst({
+      where: { teamId },
+    });
+    if (!leagueTeam) {
+      throw new UnauthorizedError(
+        'This team is not associated with any league'
+      );
+    }
+
+    // Check that the user is a member of the league
+    const membership = await prisma.leagueMembership.findUnique({
+      where: {
+        userId_leagueId: {
+          userId,
+          leagueId: leagueTeam.leagueId,
+        },
+      },
+    });
     if (!membership) {
       throw new UnauthorizedError('You are not a member of this league');
     }
 
-    return team as TeamWithPlayersAndLeague;
+    return team as TeamWithPlayers;
   }
 
   async createTeam(
     userId: string,
     data: CreateTeamDto
   ): Promise<TeamWithPlayers> {
-    // Check if user is a member of the league
-    const league = await prisma.league.findUnique({
-      where: { id: data.leagueId },
-      include: {
-        members: true,
-        teams: true,
-      },
+    // Check if user already has a team
+    const existingTeam = await prisma.team.findFirst({
+      where: { userId },
     });
-
-    if (!league) {
-      throw new NotFoundError('League not found');
-    }
-
-    const membership = league.members.find(
-      (m: { userId: string }) => m.userId === userId
-    );
-    if (!membership) {
-      throw new UnauthorizedError('You are not a member of this league');
-    }
-
-    // Check if league has reached max teams
-    if (league.teams.length >= league.maxTeams) {
-      throw new ValidationError('League has reached maximum number of teams');
-    }
-
-    // Check if user already has a team in this league
-    const existingTeam = league.teams.find((t) => t.userId === userId);
     if (existingTeam) {
-      throw new ValidationError('You already have a team in this league');
+      throw new ValidationError('User already has a team');
     }
 
     // First, find all players by their IDs
@@ -169,12 +156,12 @@ export class TeamService {
     }
 
     // Create team with players using their database IDs
+    // NOTE: If you see a type error here about leagueId, run `npx prisma generate` to update the client after schema changes.
     const team = await prisma.team.create({
       data: {
         name: data.name,
         color: data.color,
         userId,
-        leagueId: data.leagueId,
         players: {
           create: data.players.map((playerId) => ({
             playerId,
@@ -197,39 +184,6 @@ export class TeamService {
         },
       },
     });
-
-    // Leave this commented out for now - the deployed instance cannot run this at the moment
-
-    // // Get current tournament to update scores
-    // const currentTournament = await prisma.tournament.findFirst({
-    //   where: {
-    //     OR: [
-    //       { status: TournamentStatus.IN_PROGRESS },
-    //       { status: TournamentStatus.UPCOMING },
-    //     ],
-    //   },
-    //   orderBy: {
-    //     startDate: 'asc',
-    //   },
-    // });
-
-    // // If there's an active tournament, update scores for all players
-    // if (
-    //   currentTournament &&
-    //   currentTournament.status === TournamentStatus.IN_PROGRESS
-    // ) {
-    //   await Promise.all(
-    //     team.players.map(async (teamPlayer) => {
-    //       if (teamPlayer.player.pgaTourId) {
-    //         await scoreUpdateService.updateScore(
-    //           teamPlayer.id,
-    //           currentTournament.pgaTourId,
-    //           teamPlayer.player.pgaTourId
-    //         );
-    //       }
-    //     })
-    //   );
-    // }
 
     return team as TeamWithPlayers;
   }
@@ -260,27 +214,27 @@ export class TeamService {
     return team as TeamWithPlayers;
   }
 
-  async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
-    const teams = await prisma.team.findMany({
-      where: { leagueId },
-      include: {
-        players: {
-          include: {
-            player: true,
-          },
-        },
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-      },
-    });
+  // async getTeamsByLeague(leagueId: string): Promise<TeamWithPlayers[]> {
+  //   const teams = await prisma.team.findMany({
+  //     where: { leagueId },
+  //     include: {
+  //       players: {
+  //         include: {
+  //           player: true,
+  //         },
+  //       },
+  //       owner: {
+  //         select: {
+  //           id: true,
+  //           email: true,
+  //           name: true,
+  //         },
+  //       },
+  //     },
+  //   });
 
-    return teams as TeamWithPlayers[];
-  }
+  //   return teams as TeamWithPlayers[];
+  // }
 
   async updateTeam(
     teamId: string,
@@ -492,8 +446,20 @@ export class TeamService {
   ): Promise<TeamWithPlayers> {
     const team = await this.verifyTeamOwnership(teamId, userId);
 
+    // Get the leagueId via LeagueTeam
+    const leagueTeam = await prisma.leagueTeam.findFirst({
+      where: { teamId },
+    });
+    if (!leagueTeam) {
+      throw new ValidationError('Team is not associated with a league');
+    }
+
     // Get league settings for weekly starter limit
-    const weeklyStarterLimit = team.league.settings?.weeklyStarters ?? 4;
+    const league = await prisma.league.findUnique({
+      where: { id: leagueTeam.leagueId },
+      include: { settings: true },
+    });
+    const weeklyStarterLimit = league?.settings?.weeklyStarters ?? 4;
 
     if (playerIds.length > weeklyStarterLimit) {
       throw new ValidationError(
@@ -544,13 +510,14 @@ export class TeamService {
     }
 
     // Check if user already has a team in this league
-    const existingTeam = await prisma.team.findFirst({
+    const existingLeagueTeam = await prisma.leagueTeam.findFirst({
       where: {
-        AND: [{ userId }, { leagueId }],
+        leagueId,
+        team: { userId },
       },
     });
 
-    if (existingTeam) {
+    if (existingLeagueTeam) {
       throw new Error('User already has a team in this league');
     }
 
@@ -560,7 +527,6 @@ export class TeamService {
         name,
         color,
         userId,
-        leagueId,
       },
       include: {
         players: {
@@ -568,6 +534,14 @@ export class TeamService {
             player: true,
           },
         },
+      },
+    });
+
+    // Link the team to the league via LeagueTeam
+    await prisma.leagueTeam.create({
+      data: {
+        leagueId,
+        teamId: team.id,
       },
     });
 
@@ -581,7 +555,6 @@ export class TeamService {
         userId,
       },
       include: {
-        league: true,
         players: {
           include: {
             player: true,
@@ -600,26 +573,31 @@ export class TeamService {
 
   // Get a user's team for a specific league
   async getUserLeagueTeam(userId: string, leagueId: string) {
-    return prisma.team.findFirst({
+    const leagueTeam = await prisma.leagueTeam.findFirst({
       where: {
-        AND: [{ userId }, { leagueId }],
+        leagueId,
+        team: { userId },
       },
       include: {
-        league: true,
-        players: {
+        team: {
           include: {
-            player: true,
-          },
-        },
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
+            players: {
+              include: {
+                player: true,
+              },
+            },
+            owner: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
+    return leagueTeam?.team ?? null;
   }
 
   // Update team details
@@ -643,7 +621,6 @@ export class TeamService {
       where: { id: teamId },
       data,
       include: {
-        league: true,
         players: {
           include: {
             player: true,
