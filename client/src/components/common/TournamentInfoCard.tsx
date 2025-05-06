@@ -19,7 +19,7 @@ export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   };
 
   return (
-    <div className='relative overflow-hidden rounded-lg border border-gray-200 mt-2'>
+    <div className='relative overflow-hidden md:rounded-lg border border-gray-200'>
       {tournament.beautyImage ? (
         <>
           <div

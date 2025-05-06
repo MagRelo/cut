@@ -233,7 +233,7 @@ export const PublicSingleTeam: React.FC = () => {
       </div>
       <div className='max-w-2xl mx-auto bg-white rounded-lg shadow relative px-6 pt-6'>
         <h2 className='text-lg font-semibold mb-2'>
-          Players
+          My Golfers
           {/* Edit icon button */}
           <button
             className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
@@ -242,7 +242,7 @@ export const PublicSingleTeam: React.FC = () => {
             Edit
           </button>
         </h2>
-        <div className='overflow-x-auto'>
+        <div className='overflow-x-auto -mx-4 md:mx-0'>
           <table className='min-w-full divide-y divide-gray-200'>
             <thead className='bg-gray-100'>
               <tr>

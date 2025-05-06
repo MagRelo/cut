@@ -64,18 +64,71 @@ router.get('/teams', async (req, res) => {
       res.status(400).json({ error: 'userId query parameter is required' });
       return;
     }
+
+    // Get the active tournament
+    const activeTournament = await prisma.tournament.findFirst({
+      where: { manualActive: true },
+    });
+
     const team = await prisma.team.findFirst({
       where: { userId },
       include: {
         players: {
           include: {
-            player: true,
+            player: {
+              include: {
+                tournamentPlayers: activeTournament
+                  ? {
+                      where: { tournamentId: activeTournament.id },
+                    }
+                  : true,
+              },
+            },
           },
         },
       },
     });
 
-    res.json(team);
+    if (!team) {
+      res.json(null);
+      return;
+    }
+
+    // Transform to match frontend structure
+    const formattedTeam = {
+      id: team.id,
+      name: team.name,
+      color: team.color,
+      players: team.players.map((tp) => {
+        const tournamentPlayer =
+          tp.player.tournamentPlayers && tp.player.tournamentPlayers[0];
+        return {
+          id: tp.id,
+          teamId: tp.teamId,
+          playerId: tp.playerId,
+          active: tp.active,
+          player: {
+            ...tp.player,
+            tournamentPlayers: undefined, // Remove to avoid leaking backend structure
+          },
+          leaderboardPosition:
+            tournamentPlayer?.leaderboardPosition ?? undefined,
+          r1: tournamentPlayer?.r1 ?? undefined,
+          r2: tournamentPlayer?.r2 ?? undefined,
+          r3: tournamentPlayer?.r3 ?? undefined,
+          r4: tournamentPlayer?.r4 ?? undefined,
+          cut: tournamentPlayer?.cut ?? undefined,
+          bonus: tournamentPlayer?.bonus ?? undefined,
+          total: tournamentPlayer?.total ?? undefined,
+          updatedAt: tournamentPlayer?.updatedAt ?? tp.updatedAt,
+        };
+      }),
+      leagueId: '', // Not available in this context
+      createdAt: team.createdAt,
+      updatedAt: team.updatedAt,
+    };
+
+    res.json(formattedTeam);
   } catch (error) {
     console.error('Error fetching team:', error);
     res.status(500).json({ error: 'Failed to fetch team' });
