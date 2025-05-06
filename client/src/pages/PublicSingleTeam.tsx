@@ -66,6 +66,33 @@ export const PublicSingleTeam: React.FC = () => {
     });
   };
 
+  const findMostRecentPlayerUpdate = (): Date | null => {
+    if (!team) return null;
+
+    let mostRecent: Date | null = null;
+
+    team.players.forEach((player: TeamPlayer) => {
+      const playerDate = new Date(player.updatedAt);
+      if (!mostRecent || playerDate > mostRecent) {
+        mostRecent = playerDate;
+      }
+    });
+    return mostRecent;
+  };
+
+  const formatUpdateTime = (date: Date | null): string => {
+    if (!date) return 'No updates yet';
+
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours % 12 || 12;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
+  };
+
   const renderPlayerRow = (player: TeamPlayer) => (
     <React.Fragment key={player.id}>
       <tr className='hover:bg-gray-50/50'>
@@ -145,7 +172,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className='mx-auto px-4 py-8'>
+      <div className='mx-auto md:px-4 md:py-8'>
         <LoadingSpinner />
       </div>
     );
@@ -153,7 +180,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (error) {
     return (
-      <div className='mx-auto px-4 py-8'>
+      <div className='mx-auto md:px-4 md:py-8'>
         <ErrorMessage message={error} />
       </div>
     );
@@ -162,7 +189,7 @@ export const PublicSingleTeam: React.FC = () => {
   // If no team, show the form to create one
   if (!team) {
     return (
-      <div className='mx-auto px-4 py-8'>
+      <div className='mx-auto md:px-4 md:py-8'>
         <PublicTeamFormComponent leagueId={''} />
       </div>
     );
@@ -170,7 +197,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isEditing) {
     return (
-      <div className='mx-auto px-4 py-8'>
+      <div className='mx-auto md:px-4 md:py-8'>
         <div className='max-w-2xl mx-auto'>
           <PublicTeamFormComponent
             leagueId={''}
@@ -187,94 +214,97 @@ export const PublicSingleTeam: React.FC = () => {
   }
 
   return (
-    <div className='mx-auto px-4 py-8'>
+    <div className='mx-auto md:px-4 md:py-8'>
       <div className='max-w-2xl mx-auto'>
         {/* Tournament Info Card */}
         {tournamentLoading ? (
-          <div className='mb-6'>
+          <div className='md:mb-6'>
             <LoadingSpinner />
           </div>
         ) : tournamentError ? (
-          <div className='mb-6'>
+          <div className='md:mb-6'>
             <ErrorMessage message={tournamentError} />
           </div>
         ) : tournament ? (
-          <div className='mb-6'>
+          <div className='md:mb-6'>
             <TournamentInfoCard tournament={tournament} />
           </div>
         ) : null}
       </div>
-      <div className='max-w-2xl mx-auto bg-white rounded-lg shadow p-6 relative'>
-        <div className='mb-6'>
-          <h2 className='text-lg font-semibold mb-2'>
-            Players
-            {/* Edit icon button */}
-            <button
-              className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
-              title='Edit Team'
-              onClick={() => setIsEditing(true)}>
-              Edit
-            </button>
-          </h2>
-          <div className='overflow-x-auto'>
-            <table className='min-w-full divide-y divide-gray-200'>
-              <thead className='bg-gray-100'>
-                <tr>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    Pos
-                  </th>
-                  <th
-                    scope='col'
-                    className='py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    Player
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    Total
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    R1
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    R2
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    R3
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    R4
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    Cut
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                    Bonus
-                  </th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-gray-200'>
-                {team.players
-                  .slice()
-                  .sort((a, b) => (b.total || 0) - (a.total || 0))
-                  .map(renderPlayerRow)}
-              </tbody>
-            </table>
-          </div>
+      <div className='max-w-2xl mx-auto bg-white rounded-lg shadow relative px-6 pt-6'>
+        <h2 className='text-lg font-semibold mb-2'>
+          Players
+          {/* Edit icon button */}
+          <button
+            className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
+            title='Edit Team'
+            onClick={() => setIsEditing(true)}>
+            Edit
+          </button>
+        </h2>
+        <div className='overflow-x-auto'>
+          <table className='min-w-full divide-y divide-gray-200'>
+            <thead className='bg-gray-100'>
+              <tr>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Pos
+                </th>
+                <th
+                  scope='col'
+                  className='py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Player
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Total
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  R1
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  R2
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  R3
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  R4
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Cut
+                </th>
+                <th
+                  scope='col'
+                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+                  Bonus
+                </th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-200'>
+              {team.players
+                .slice()
+                .sort((a, b) => (b.total || 0) - (a.total || 0))
+                .map(renderPlayerRow)}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Last Update Time */}
+        <div className='text-xs text-gray-400 text-center p-4 border-t border-gray-100 '>
+          Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
         </div>
       </div>
 
@@ -285,13 +315,17 @@ export const PublicSingleTeam: React.FC = () => {
         <button
           onClick={() => navigate('/public/leagues')}
           className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
-          Join A League
+          Join a League <small>&#9658;</small>
         </button>
       </div>
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>
-        <Share url={window.location.href} title='Share' />
+        <Share
+          url={window.location.href}
+          title='Share!'
+          subtitle='Free &#x2022; No Signup Required'
+        />
       </div>
     </div>
   );

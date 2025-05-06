@@ -4,11 +4,13 @@ import { QRCodeSVG } from 'qrcode.react';
 interface ShareProps {
   url: string;
   title?: string;
+  subtitle?: string;
 }
 
 export const Share: React.FC<ShareProps> = ({
   url,
-  title = 'Share League',
+  title = 'Share',
+  subtitle = 'Share with your friends',
 }) => {
   const [showCopied, setShowCopied] = useState(false);
 
@@ -22,7 +24,9 @@ export const Share: React.FC<ShareProps> = ({
     <div className='bg-white rounded-lg shadow w-fit min-w-0'>
       <div className='p-4'>
         <div className='flex flex-col items-center space-y-3'>
-          <h2 className='text-lg font-semibold text-gray-900'>{title}</h2>
+          <h2 className='text-xl font-semibold text-gray-700'>{title}</h2>
+          <p className='text-sm text-gray-500'>{subtitle}</p>
+
           <button
             onClick={handleShare}
             className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors'>
