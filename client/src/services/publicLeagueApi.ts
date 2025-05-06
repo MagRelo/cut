@@ -119,7 +119,7 @@ export class PublicLeagueApiService {
 
   // Public League endpoints
   async listLeagues(): Promise<PublicLeaguesResponse> {
-    return this.request<PublicLeaguesResponse>('GET', '/public-leagues');
+    return this.request<PublicLeaguesResponse>('GET', '/public');
   }
 
   async createLeague(data: CreatePublicLeaguePayload): Promise<PublicLeague> {
@@ -127,14 +127,14 @@ export class PublicLeagueApiService {
     const userGuid =
       localStorage.getItem('publicUserGuid') || crypto.randomUUID();
 
-    return this.request<PublicLeague>('POST', '/public-leagues', {
+    return this.request<PublicLeague>('POST', '/public', {
       ...data,
       userId: userGuid,
     });
   }
 
   async getLeague(leagueId: string): Promise<PublicLeague> {
-    return this.request<PublicLeague>('GET', `/public-leagues/${leagueId}`);
+    return this.request<PublicLeague>('GET', `/public/${leagueId}`);
   }
 
   async joinLeague(leagueId: string): Promise<PublicLeague> {
@@ -147,13 +147,9 @@ export class PublicLeagueApiService {
       localStorage.setItem('publicUserGuid', userGuid);
     }
 
-    return this.request<PublicLeague>(
-      'POST',
-      `/public-leagues/${leagueId}/join`,
-      {
-        userId: userGuid,
-      }
-    );
+    return this.request<PublicLeague>('POST', `/public/${leagueId}/join`, {
+      userId: userGuid,
+    });
   }
 
   async leaveLeague(leagueId: string): Promise<void> {
@@ -162,7 +158,7 @@ export class PublicLeagueApiService {
       throw new Error('No user GUID found. Cannot leave league.');
     }
 
-    return this.request<void>('POST', `/public-leagues/${leagueId}/leave`, {
+    return this.request<void>('POST', `/public/${leagueId}/leave`, {
       userId: userGuid,
     });
   }
@@ -180,7 +176,7 @@ export class PublicLeagueApiService {
       localStorage.setItem('publicUserGuid', userGuid);
     }
 
-    return this.request<Team>('POST', `/public-leagues/${leagueId}/teams`, {
+    return this.request<Team>('POST', `/public/${leagueId}/teams`, {
       ...data,
       userId: userGuid,
     });
@@ -196,14 +192,47 @@ export class PublicLeagueApiService {
       throw new Error('No user GUID found. Cannot update team.');
     }
 
-    return this.request<Team>(
-      'PUT',
-      `/public-leagues/${leagueId}/teams/${teamId}`,
-      {
-        ...data,
-        userId: userGuid,
-      }
-    );
+    return this.request<Team>('PUT', `/public/${leagueId}/teams/${teamId}`, {
+      ...data,
+      userId: userGuid,
+    });
+  }
+
+  async createStandaloneTeam(data: CreatePublicTeamPayload): Promise<Team> {
+    // Generate a random user GUID if not stored in localStorage
+    const userGuid =
+      localStorage.getItem('publicUserGuid') || crypto.randomUUID();
+
+    // Store the user GUID for future use
+    if (!localStorage.getItem('publicUserGuid')) {
+      localStorage.setItem('publicUserGuid', userGuid);
+    }
+
+    return this.request<Team>('POST', `/public/teams`, {
+      ...data,
+      userId: userGuid,
+    });
+  }
+
+  async updateStandaloneTeam(
+    teamId: string,
+    data: UpdatePublicTeamPayload
+  ): Promise<Team> {
+    const userGuid = localStorage.getItem('publicUserGuid');
+    if (!userGuid) {
+      throw new Error('No user GUID found. Cannot update team.');
+    }
+
+    return this.request<Team>('PUT', `/public/teams/${teamId}`, {
+      ...data,
+      userId: userGuid,
+    });
+  }
+
+  async getStandaloneTeam(): Promise<Team> {
+    const userGuid = localStorage.getItem('publicUserGuid');
+
+    return this.request<Team>('GET', `/public/teams?userId=${userGuid}`);
   }
 }
 

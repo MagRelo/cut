@@ -180,12 +180,14 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow ${className}`}>
+    <div className={`bg-gray-100 rounded-lg shadow ${className}`}>
       {/* Round selector */}
-      <div className='px-4 py-3 border-b border-gray-200'>
+      <div className='px-1 py-1 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-2'>
-            <span className='text-sm font-medium text-gray-900'>Round:</span>
+            <span className='text-sm font-medium text-gray-500 pl-1'>
+              Round:
+            </span>
             <div className='flex space-x-1'>
               {[1, 2, 3, 4].map((round) => {
                 const roundData = getRoundData(round);

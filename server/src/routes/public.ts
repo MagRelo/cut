@@ -2,15 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { ScoreUpdateService } from '../services/scoreUpdateService.js';
-import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
-
-interface LeaderboardPlayer {
-  player: {
-    id: string;
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
 
 const router = Router();
 const scoreUpdateService = new ScoreUpdateService();
@@ -54,6 +45,161 @@ const updateTeamSchema = z.object({
   players: z.array(z.string()).optional(),
   color: z.string().optional(),
   userId: z.string().uuid(),
+});
+
+// TEAMS
+// Get a standalone team by userId
+router.get('/teams', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId || typeof userId !== 'string') {
+      res.status(400).json({ error: 'userId query parameter is required' });
+      return;
+    }
+    const team = await prisma.team.findFirst({
+      where: { userId },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
+    res.json(team);
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    res.status(500).json({ error: 'Failed to fetch team' });
+  }
+});
+
+// Create a team (not in a league)
+router.post('/teams', async (req, res) => {
+  try {
+    const data = createTeamSchema.parse(req.body);
+
+    // Ensure user exists
+    await ensureUserExists(data.userId);
+
+    // Check if user already has a team with the same name (optional, or skip this check)
+    // const existingTeam = await prisma.team.findFirst({
+    //   where: { userId: data.userId, name: data.name },
+    // });
+    // if (existingTeam) {
+    //   res.status(400).json({ error: 'User already has a team with this name' });
+    //   return;
+    // }
+
+    // Create the team
+    const team = await prisma.team.create({
+      data: {
+        name: data.name,
+        color: data.color || '#000000',
+        userId: data.userId,
+      },
+    });
+
+    // Create team players
+    await prisma.teamPlayer.createMany({
+      data: data.players.map((playerId) => ({
+        teamId: team.id,
+        playerId,
+        active: true, // Set active to true for standalone teams
+      })),
+    });
+
+    // Get the active tournament (optional, for future use)
+    // const tournament = await prisma.tournament.findFirst({
+    //   where: { manualActive: true },
+    // });
+
+    const teamWithPlayers = await prisma.team.findUnique({
+      where: { id: team.id },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
+    res.json(teamWithPlayers);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
+    console.error('Error creating team:', error);
+    res.status(500).json({ error: 'Failed to create team' });
+  }
+});
+
+// Update a team (not in a league)
+router.put('/teams/:teamId', async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const data = updateTeamSchema.parse(req.body);
+
+    // Ensure user exists
+    await ensureUserExists(data.userId);
+
+    // Verify team exists and belongs to user
+    const team = await prisma.team.findFirst({
+      where: { id: teamId, userId: data.userId },
+    });
+    if (!team) {
+      res.status(404).json({ error: 'Team not found or unauthorized' });
+      return;
+    }
+
+    // Update team
+    await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        name: data.name,
+        color: data.color,
+      },
+    });
+
+    // Update players if provided
+    if (data.players) {
+      // Remove existing players
+      await prisma.teamPlayer.deleteMany({
+        where: { teamId },
+      });
+
+      // Add new players
+      await prisma.teamPlayer.createMany({
+        data: data.players.map((playerId) => ({
+          teamId,
+          playerId,
+          active: true, // Set active to true for standalone teams
+        })),
+      });
+    }
+
+    const teamWithPlayers = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
+    res.json(teamWithPlayers);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
+    console.error('Error updating team:', error);
+    res.status(500).json({ error: 'Failed to update team' });
+  }
 });
 
 // List all public leagues

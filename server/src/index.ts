@@ -1,16 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import teamRoutes from './routes/teams.js';
 import authRoutes from './routes/auth.js';
 import pgaRoutes from './routes/pga.js';
 import leagueRoutes from './routes/leagues.js';
 import hyperliquidRoutes from './routes/hyperliquid.js';
-import playerRoutes from './routes/player.routes.js';
-import tournamentRoutes from './routes/tournaments.js';
+import playerRoutes from './routes/player.js';
+
 import chatRoutes from './routes/chat.js';
 import adminRoutes from './routes/admin.js';
-import publicLeagueRoutes from './routes/publicLeagues.js';
+import publicLeagueRoutes from './routes/public.js';
+
+// Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authenticateToken } from './middleware/auth.js';
 import { requestLogger } from './middleware/logger.js';
@@ -70,20 +71,16 @@ app.use(express.static('dist/public/dist'));
 app.use(requestLogger);
 
 // Register routes
-app.use('/api/teams', teamRoutes);
+// app.use('/api/pga', pgaRoutes);
+// app.use('/api/leagues', leagueRoutes);
+// app.use('/api/hyperliquid', hyperliquidRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/pga', pgaRoutes);
-app.use('/api/leagues', leagueRoutes);
-app.use('/api/hyperliquid', hyperliquidRoutes);
-app.use('/api/players', playerRoutes);
-app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/public-leagues', publicLeagueRoutes);
-// Protected routes
-app.use('/api/protected', authenticateToken, (req, res) => {
-  res.json({ message: 'Protected route accessed successfully' });
-});
+
+//
+app.use('/api/players', playerRoutes);
+app.use('/api/public', publicLeagueRoutes);
 
 // Serve index.html for all other routes to support client-side routing
 app.get('*', (req, res) => {

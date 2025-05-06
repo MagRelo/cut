@@ -152,6 +152,12 @@ export interface Player {
   lastSyncedAt?: Date | null;
 }
 
+export interface Round {
+  strokes: number;
+  total?: number;
+  // Add other fields as needed
+}
+
 export interface TeamPlayer {
   id: string;
   teamId: string;
@@ -159,10 +165,10 @@ export interface TeamPlayer {
   active: boolean;
   player: Player;
   leaderboardPosition?: string;
-  r1?: { strokes: number };
-  r2?: { strokes: number };
-  r3?: { strokes: number };
-  r4?: { strokes: number };
+  r1?: Round;
+  r2?: Round;
+  r3?: Round;
+  r4?: Round;
   cut?: number;
   bonus?: number;
   total?: number;

@@ -20,6 +20,8 @@ import { PublicLeagueList } from './pages/PublicLeagueList';
 import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
 import { PublicCreateLeague } from './pages/PublicCreateLeague';
 import { UserSettings } from './pages/UserSettings';
+import { PublicSingleTeam } from './pages/PublicSingleTeam';
+// import { PublicTeamFormComponent } from 'components/team/PublicTeamFormComponent';
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
@@ -48,6 +50,7 @@ export const App: React.FC = () => {
                   path='/public/league/:leagueId'
                   element={<PublicLeagueLobby />}
                 />
+                <Route path='/public/team' element={<PublicSingleTeam />} />
 
                 {/* Admin Routes */}
                 <Route

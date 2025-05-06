@@ -10,14 +10,18 @@ import type { LeagueTeam } from '../../services/publicLeagueApi';
 interface PublicTeamFormProps {
   leagueId: string;
   onSuccess?: () => void;
+  editMode?: boolean;
+  onCancel?: () => void;
 }
 
 export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
   leagueId,
   onSuccess,
+  editMode,
+  onCancel,
 }) => {
   const userId = localStorage.getItem('publicUserGuid');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!!editMode);
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [teamName, setTeamName] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
@@ -27,24 +31,24 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sync isEditing with editMode prop if provided
+  useEffect(() => {
+    if (typeof editMode === 'boolean') {
+      setIsEditing(editMode);
+    }
+  }, [editMode]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [players, league] = await Promise.all([
+        const [players, team] = await Promise.all([
           api.getPGATourPlayers(),
-          publicLeagueApi.getLeague(leagueId),
+          publicLeagueApi.getStandaloneTeam(),
         ]);
 
         setAvailablePlayers(players);
 
-        // Find my team in the league
-        const teams: Team[] = league.leagueTeams.map(
-          (lt: LeagueTeam) => lt.team
-        );
-        const team: Team | undefined = teams.find(
-          (t: Team) => t.userId === userId
-        );
         if (team) {
           setMyTeam(team);
           setTeamName(team.name);
@@ -76,11 +80,6 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
       return;
     }
 
-    // if (!userId) {
-    //   setError('User ID is required');
-    //   return;
-    // }
-
     setIsSaving(true);
     setError(null);
 
@@ -99,17 +98,23 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
         });
       }
 
-      // Refresh the league data
-      const updatedLeague = await publicLeagueApi.getLeague(leagueId);
-      const updatedTeams: Team[] = updatedLeague.leagueTeams.map(
-        (lt: LeagueTeam) => lt.team
-      );
-      const updatedTeam: Team | undefined = updatedTeams.find(
-        (t: Team) => t.userId === userId
-      );
+      let updatedTeam: Team | undefined = undefined;
+      if (!leagueId) {
+        // Standalone mode: fetch standalone team
+        updatedTeam = await publicLeagueApi.getStandaloneTeam();
+      } else {
+        // League mode: fetch league and find user's team
+        const updatedLeague = await publicLeagueApi.getLeague(leagueId);
+        const updatedTeams: Team[] = updatedLeague.leagueTeams.map(
+          (lt: LeagueTeam) => lt.team
+        );
+        updatedTeam = updatedTeams.find((t: Team) => t.userId === userId);
+      }
       setMyTeam(updatedTeam || null);
-      setIsEditing(false);
-      if (onSuccess) onSuccess();
+      if (updatedTeam) {
+        setIsEditing(false);
+        if (onSuccess) onSuccess();
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -137,7 +142,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
     return <LoadingSpinner />;
   }
 
-  if (!isEditing && myTeam) {
+  if (!isEditing && myTeam && Array.isArray(myTeam.players)) {
     return (
       <div className='bg-white rounded-lg shadow p-6'>
         <div className='flex justify-between items-center mb-4'>
@@ -177,20 +182,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
 
   return (
     <div className='bg-white rounded-lg shadow p-6'>
-      <div className='space-y-8'>
-        <div className='flex justify-between items-center'>
-          <h2 className='text-xl font-semibold'>
-            {myTeam ? 'Edit Team' : 'Create Your Team'}
-          </h2>
-          {isEditing && (
-            <button
-              onClick={() => setIsEditing(false)}
-              className='text-gray-600 hover:text-gray-800'>
-              Cancel
-            </button>
-          )}
-        </div>
-
+      <div className=''>
         {error && <ErrorMessage message={error} />}
 
         {isSaving && (
@@ -207,6 +199,75 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
 
         <form onSubmit={handleSubmit} className='space-y-8'>
           <div className='space-y-6'>
+            <div className='space-y-4'>
+              <h2 className='text-xl font-semibold text-gray-900'>
+                {isEditing && (
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (onCancel) onCancel();
+                    }}
+                    className='float-right text-gray-400 focus:outline-none text-sm'>
+                    cancel
+                  </button>
+                )}
+                Select Your Golfers
+              </h2>
+              <div className='space-y-4 mt-4'>
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className='space-y-2'>
+                    <label
+                      htmlFor={`player-${index}`}
+                      className='block text-sm font-medium text-gray-900'>
+                      Player {index + 1}
+                    </label>
+                    <div className='relative'>
+                      <select
+                        id={`player-${index}`}
+                        value={selectedPlayers[index] || ''}
+                        onChange={(e) => handlePlayerSelect(e, index)}
+                        className='appearance-none block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-3 pr-10 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'>
+                        <option value=''>Select a player...</option>
+                        {availablePlayers
+                          .filter(
+                            (p) =>
+                              !selectedPlayers.includes(p.id) ||
+                              selectedPlayers[index] === p.id
+                          )
+                          .sort(
+                            (a, b) =>
+                              a.pga_displayName?.localeCompare(
+                                b.pga_displayName || ''
+                              ) || 0
+                          )
+                          .map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {player.pga_displayName}
+                            </option>
+                          ))}
+                      </select>
+                      <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3'>
+                        <svg
+                          className='h-5 w-5 text-gray-400'
+                          viewBox='0 0 20 20'
+                          fill='none'
+                          stroke='currentColor'>
+                          <path
+                            d='M7 7l3-3 3 3m0 6l-3 3-3-3'
+                            strokeWidth='1.5'
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <h2 className='text-xl font-semibold text-gray-900'>
+              Setup Your Team
+            </h2>
             <div>
               <label
                 htmlFor='teamName'
@@ -263,69 +324,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                       }`}
                       style={{ backgroundColor: color }}
                     />
-                    <span className='text-xs mt-1 font-mono'>{color}</span>
                   </label>
-                ))}
-              </div>
-            </div>
-
-            <div className='space-y-4'>
-              <h2 className='text-xl font-semibold text-gray-900'>
-                Select Your Players
-              </h2>
-              <p className='text-sm text-gray-500'>
-                Choose 4 players for your team. Each player can only be selected
-                once.
-              </p>
-              <div className='space-y-4 mt-4'>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className='space-y-2'>
-                    <label
-                      htmlFor={`player-${index}`}
-                      className='block text-sm font-medium text-gray-900'>
-                      Player {index + 1}
-                    </label>
-                    <div className='relative'>
-                      <select
-                        id={`player-${index}`}
-                        value={selectedPlayers[index] || ''}
-                        onChange={(e) => handlePlayerSelect(e, index)}
-                        className='appearance-none block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-3 pr-10 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'>
-                        <option value=''>Select a player...</option>
-                        {availablePlayers
-                          .filter(
-                            (p) =>
-                              !selectedPlayers.includes(p.id) ||
-                              selectedPlayers[index] === p.id
-                          )
-                          .sort(
-                            (a, b) =>
-                              a.pga_displayName?.localeCompare(
-                                b.pga_displayName || ''
-                              ) || 0
-                          )
-                          .map((player) => (
-                            <option key={player.id} value={player.id}>
-                              {player.pga_displayName}
-                            </option>
-                          ))}
-                      </select>
-                      <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3'>
-                        <svg
-                          className='h-5 w-5 text-gray-400'
-                          viewBox='0 0 20 20'
-                          fill='none'
-                          stroke='currentColor'>
-                          <path
-                            d='M7 7l3-3 3 3m0 6l-3 3-3-3'
-                            strokeWidth='1.5'
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
                 ))}
               </div>
             </div>
