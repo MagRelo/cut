@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { publicLeagueApi } from '../services/publicLeagueApi';
+import { publicLeagueApi, Tournament } from '../services/publicLeagueApi';
+import type { Team, TeamPlayer } from '../services/api';
+
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
-import type { Team, TeamPlayer } from '../services/api';
+import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
+import { Share } from '../components/common/Share';
+import { useNavigate } from 'react-router-dom';
 
 export const PublicSingleTeam: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
@@ -14,6 +18,10 @@ export const PublicSingleTeam: React.FC = () => {
     new Set()
   );
   const [isEditing, setIsEditing] = useState(false);
+  const [tournament, setTournament] = useState<Tournament | undefined>();
+  const [tournamentLoading, setTournamentLoading] = useState(true);
+  const [tournamentError, setTournamentError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchTeam = async () => {
     setIsLoading(true);
@@ -28,8 +36,22 @@ export const PublicSingleTeam: React.FC = () => {
     }
   };
 
+  const fetchTournament = async () => {
+    setTournamentLoading(true);
+    setTournamentError(null);
+    try {
+      const result = await publicLeagueApi.getCurrentTournament();
+      setTournament(result);
+    } catch {
+      setTournamentError('Failed to load tournament');
+    } finally {
+      setTournamentLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTeam();
+    fetchTournament();
   }, []);
 
   const togglePlayer = (playerId: string) => {
@@ -166,19 +188,34 @@ export const PublicSingleTeam: React.FC = () => {
 
   return (
     <div className='mx-auto px-4 py-8'>
+      <div className='max-w-2xl mx-auto'>
+        {/* Tournament Info Card */}
+        {tournamentLoading ? (
+          <div className='mb-6'>
+            <LoadingSpinner />
+          </div>
+        ) : tournamentError ? (
+          <div className='mb-6'>
+            <ErrorMessage message={tournamentError} />
+          </div>
+        ) : tournament ? (
+          <div className='mb-6'>
+            <TournamentInfoCard tournament={tournament} />
+          </div>
+        ) : null}
+      </div>
       <div className='max-w-2xl mx-auto bg-white rounded-lg shadow p-6 relative'>
-        <h1 className='text-2xl font-bold mb-4' style={{ color: team.color }}>
-          {/* Edit icon button */}
-          <button
-            className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
-            title='Edit Team'
-            onClick={() => setIsEditing(true)}>
-            Edit
-          </button>
-          {team.name}
-        </h1>
         <div className='mb-6'>
-          <h2 className='text-lg font-semibold mb-2'>Players</h2>
+          <h2 className='text-lg font-semibold mb-2'>
+            Players
+            {/* Edit icon button */}
+            <button
+              className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
+              title='Edit Team'
+              onClick={() => setIsEditing(true)}>
+              Edit
+            </button>
+          </h2>
           <div className='overflow-x-auto'>
             <table className='min-w-full divide-y divide-gray-200'>
               <thead className='bg-gray-100'>
@@ -239,6 +276,22 @@ export const PublicSingleTeam: React.FC = () => {
             </table>
           </div>
         </div>
+      </div>
+
+      <hr className='my-8' />
+
+      {/* New button to navigate to public leagues */}
+      <div className='max-w-2xl mx-auto mt-6 flex justify-center mb-6'>
+        <button
+          onClick={() => navigate('/public/leagues')}
+          className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
+          Join A League
+        </button>
+      </div>
+
+      {/* Share Section */}
+      <div className='flex justify-center my-8'>
+        <Share url={window.location.href} title='Share' />
       </div>
     </div>
   );

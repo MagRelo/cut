@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import {
   publicLeagueApi,
-  type Tournament,
   type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
+import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
+import { Share } from '../components/common/Share';
 
 interface Player {
   id: string;
@@ -71,7 +71,6 @@ export const PublicLeagueLobby: React.FC = () => {
   const [league, setLeague] = useState<PublicLeagueWithTeams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCopied, setShowCopied] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
@@ -101,22 +100,6 @@ export const PublicLeagueLobby: React.FC = () => {
     console.log('PublicLeagueLobby mounted with userId:', userId);
     fetchLeague();
   }, [leagueId]);
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setShowCopied(true);
-    setTimeout(() => setShowCopied(false), 2000);
-  };
-
-  const formatVenue = (tournament: Tournament): string => {
-    if (typeof tournament.venue === 'string') {
-      return tournament.venue;
-    }
-    if (tournament.venue) {
-      return tournament.venue.name || '';
-    }
-    return '';
-  };
 
   const toggleTeam = (teamId: string) => {
     setExpandedTeams((prev) => {
@@ -351,42 +334,7 @@ export const PublicLeagueLobby: React.FC = () => {
         <div className='bg-white rounded-lg shadow'>
           {/* Tournament Information */}
           {league.tournament && (
-            <div className='relative overflow-hidden rounded-lg border border-gray-200 mt-2'>
-              {league.tournament.beautyImage ? (
-                <>
-                  <div
-                    className='absolute inset-0 bg-cover bg-center'
-                    style={{
-                      backgroundImage: `url(${league.tournament.beautyImage})`,
-                    }}
-                  />
-                  <div className='absolute inset-0 bg-black/50' />
-                </>
-              ) : (
-                <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
-              )}
-              <div className='relative p-4 text-white'>
-                <div className='flex justify-between items-center'>
-                  <p className='text-2xl font-bold tracking-tight'>
-                    {league.tournament.name}
-                  </p>
-                </div>
-                <div className='mt-1 space-y-1'>
-                  {league.tournament.venue && (
-                    <p className='text-white/90'>
-                      {formatVenue(league.tournament)}
-                    </p>
-                  )}
-                  <a
-                    href='https://www.pgatour.com/leaderboard'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
-                    Leaderboard ↗
-                  </a>
-                </div>
-              </div>
-            </div>
+            <TournamentInfoCard tournament={league.tournament} />
           )}
         </div>
 
@@ -505,55 +453,7 @@ export const PublicLeagueLobby: React.FC = () => {
           })()}
 
         {/* Share Section */}
-        <div className='bg-white rounded-lg shadow'>
-          <div className='p-4'>
-            <div className='flex flex-col items-center space-y-3'>
-              <h2 className='text-lg font-semibold text-gray-900'>
-                Share League
-              </h2>
-              <button
-                onClick={handleShare}
-                className='inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors'>
-                {showCopied ? (
-                  <>
-                    <svg
-                      className='w-4 h-4 mr-2 text-green-500'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'>
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M5 13l4 4L19 7'
-                      />
-                    </svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className='w-4 h-4 mr-2'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'>
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
-                      />
-                    </svg>
-                    Copy Link
-                  </>
-                )}
-              </button>
-              <div className='p-3 bg-white rounded-lg border border-gray-200'>
-                <QRCodeSVG value={window.location.href} size={128} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <Share url={window.location.href} />
       </div>
     </div>
   );

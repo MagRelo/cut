@@ -234,6 +234,10 @@ export class PublicLeagueApiService {
 
     return this.request<Team>('GET', `/public/teams?userId=${userGuid}`);
   }
+
+  async getCurrentTournament(): Promise<Tournament | undefined> {
+    return this.request<Tournament | undefined>('GET', '/public/tournament');
+  }
 }
 
 // Create and export a singleton instance

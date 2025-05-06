@@ -47,6 +47,14 @@ const updateTeamSchema = z.object({
   userId: z.string().uuid(),
 });
 
+// Get current Tournament
+router.get('/tournament', async (req, res) => {
+  const tournament = await prisma.tournament.findFirst({
+    where: { manualActive: true },
+  });
+  res.json(tournament);
+});
+
 // TEAMS
 // Get a standalone team by userId
 router.get('/teams', async (req, res) => {
