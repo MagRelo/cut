@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Tournament } from '../../services/publicLeagueApi';
+import { Link } from 'react-router-dom';
 
 interface TournamentInfoCardProps {
   tournament: Tournament;
@@ -8,16 +9,6 @@ interface TournamentInfoCardProps {
 export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
   tournament,
 }) => {
-  const formatVenue = (tournament: Tournament): string => {
-    if (typeof tournament.venue === 'string') {
-      return tournament.venue;
-    }
-    if (tournament.venue) {
-      return tournament.venue.name || '';
-    }
-    return '';
-  };
-
   return (
     <div className='relative overflow-hidden md:rounded-lg border border-gray-200'>
       {tournament.beautyImage ? (
@@ -36,9 +27,14 @@ export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
           <p className='text-2xl font-bold tracking-tight'>{tournament.name}</p>
         </div>
         <div className='mt-1 space-y-1'>
-          {tournament.venue && (
-            <p className='text-white/90'>{formatVenue(tournament)}</p>
-          )}
+          <p className='text-white font-semibold'>
+            {tournament.roundStatusDisplay}
+          </p>
+          <Link
+            to='/public/team'
+            className='inline-block mt-2 mr-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
+            My Team
+          </Link>
           <a
             href='https://www.pgatour.com/leaderboard'
             target='_blank'

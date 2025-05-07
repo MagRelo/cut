@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { publicLeagueApi, Tournament } from '../services/publicLeagueApi';
 import type { Team, TeamPlayer } from '../services/api';
 
@@ -8,7 +10,6 @@ import { PublicTeamFormComponent } from '../components/team/PublicTeamFormCompon
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
 import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 import { Share } from '../components/common/Share';
-import { useNavigate } from 'react-router-dom';
 
 export const PublicSingleTeam: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
@@ -190,7 +191,29 @@ export const PublicSingleTeam: React.FC = () => {
   if (!team) {
     return (
       <div className='mx-auto md:px-4 md:py-8'>
-        <PublicTeamFormComponent leagueId={''} />
+        {/* Tournament Info Card */}
+        {tournamentLoading ? (
+          <div className='md:mb-6'>
+            <LoadingSpinner />
+          </div>
+        ) : tournamentError ? (
+          <div className='md:mb-6'>
+            <ErrorMessage message={tournamentError} />
+          </div>
+        ) : tournament ? (
+          <div className='md:mb-6'>
+            <TournamentInfoCard tournament={tournament} />
+          </div>
+        ) : null}
+        <PublicTeamFormComponent
+          leagueId={''}
+          editMode={true}
+          onCancel={() => setIsEditing(false)}
+          onSuccess={() => {
+            setIsEditing(false);
+            fetchTeam();
+          }}
+        />
       </div>
     );
   }
@@ -199,6 +222,20 @@ export const PublicSingleTeam: React.FC = () => {
     return (
       <div className='mx-auto md:px-4 md:py-8'>
         <div className='max-w-2xl mx-auto'>
+          {/* Tournament Info Card */}
+          {tournamentLoading ? (
+            <div className='md:mb-6'>
+              <LoadingSpinner />
+            </div>
+          ) : tournamentError ? (
+            <div className='md:mb-6'>
+              <ErrorMessage message={tournamentError} />
+            </div>
+          ) : tournament ? (
+            <div className='md:mb-6'>
+              <TournamentInfoCard tournament={tournament} />
+            </div>
+          ) : null}
           <PublicTeamFormComponent
             leagueId={''}
             editMode={true}

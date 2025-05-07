@@ -118,7 +118,25 @@ export class ScoreUpdateService {
         return;
       }
 
-      const { players: leaderboardPlayers } = await getPgaLeaderboard();
+      const { players: leaderboardPlayers, ...tournamentData } =
+        await getPgaLeaderboard();
+
+      // Update tournament with latest leaderboard data
+      await prisma.tournament.update({
+        where: { id: tournament.id },
+        data: {
+          status: tournamentData.tournamentStatus,
+          roundStatusDisplay: tournamentData.roundStatusDisplay,
+          roundDisplay: tournamentData.roundDisplay,
+          currentRound: tournamentData.currentRound,
+          weather: tournamentData.weather,
+          beautyImage: tournamentData.beautyImage,
+          course: tournamentData.courseName,
+          city: tournamentData.location.split(',')[0].trim(),
+          state: tournamentData.location.split(',')[1].trim(),
+          timezone: tournamentData.timezone,
+        },
+      });
 
       const activePlayers = await this.getActiveTeamPlayers();
       console.log(`Found ${activePlayers.length} active team players`);

@@ -5,6 +5,7 @@ import {
   type PublicLeague,
   type Tournament,
 } from '../services/publicLeagueApi';
+import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 
 export const PublicLeagueList: React.FC = () => {
   const [leagues, setLeagues] = useState<PublicLeague[]>([]);
@@ -31,73 +32,11 @@ export const PublicLeagueList: React.FC = () => {
     fetchLeagues();
   }, []);
 
-  const formatTournamentLocation = (tournament: Tournament): string => {
-    if (typeof tournament.location === 'string') {
-      return tournament.location;
-    }
-    if (tournament.location) {
-      const loc = tournament.location;
-      return [loc.city, loc.state, loc.country].filter(Boolean).join(', ');
-    }
-    return '';
-  };
-
-  const formatVenue = (tournament: Tournament): string => {
-    if (typeof tournament.venue === 'string') {
-      return tournament.venue;
-    }
-    if (tournament.venue) {
-      return tournament.venue.name || '';
-    }
-    return '';
-  };
-
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <div className='max-w-4xl mx-auto'>
-        {/* Active Tournament Section */}
-        {activeTournament && (
-          <div className='relative overflow-hidden rounded-lg border border-gray-200 mb-4'>
-            {activeTournament.beautyImage ? (
-              <>
-                <div
-                  className='absolute inset-0 bg-cover bg-center'
-                  style={{
-                    backgroundImage: `url(${activeTournament.beautyImage})`,
-                  }}
-                />
-                <div className='absolute inset-0 bg-black/50' />
-              </>
-            ) : (
-              <div className='absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700' />
-            )}
-            <div className='relative p-6 text-white'>
-              <div className='flex justify-between items-center'>
-                <p className='text-2xl font-bold tracking-tight'>
-                  {activeTournament.name}
-                </p>
-              </div>
-              <div className='mt-2 space-y-2'>
-                <div className='text-white/90'>
-                  {activeTournament.venue && (
-                    <p>{formatVenue(activeTournament)}</p>
-                  )}
-                  {activeTournament.location && (
-                    <p>{formatTournamentLocation(activeTournament)}</p>
-                  )}
-                </div>
-                <a
-                  href='https://www.pgatour.com/leaderboard'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
-                  Leaderboard ↗
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-
+    <div className='container mx-auto '>
+      {/* Active Tournament Section */}
+      {activeTournament && <TournamentInfoCard tournament={activeTournament} />}
+      <div className='max-w-4xl mx-auto px-4 py-8'>
         {/* Header Section */}
         <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0'>
           <h1 className='text-3xl font-bold'>Public Leagues</h1>

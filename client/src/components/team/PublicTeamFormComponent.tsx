@@ -184,7 +184,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
     <div className='bg-white rounded-lg shadow p-6'>
       <div className=''>
         {error && <ErrorMessage message={error} />}
-
+        {/* 
         {isSaving && (
           <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
             <div className='bg-white p-8 rounded-lg shadow-xl flex flex-col items-center space-y-4'>
@@ -195,7 +195,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
               </p>
             </div>
           </div>
-        )}
+        )} */}
 
         <form onSubmit={handleSubmit} className='space-y-8'>
           <div className='space-y-6'>
@@ -334,7 +334,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
             <button
               type='submit'
               disabled={isSaving}
-              className='px-6 py-3 text-base font-medium text-white bg-emerald-600 border border-transparent rounded-lg shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
               {isSaving
                 ? myTeam
                   ? 'Saving...'

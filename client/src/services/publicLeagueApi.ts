@@ -42,6 +42,8 @@ interface Tournament {
   venue?: string | TournamentVenue;
   location?: string | TournamentLocation;
   beautyImage?: string;
+  course?: string;
+  roundStatusDisplay?: string;
 }
 
 export interface LeagueTeam {

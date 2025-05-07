@@ -4,7 +4,6 @@ import {
   publicLeagueApi,
   type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
-import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
 import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 import { Share } from '../components/common/Share';
@@ -329,14 +328,14 @@ export const PublicLeagueLobby: React.FC = () => {
     league.leagueTeams?.map((lt: LeagueTeam) => lt.team) ?? [];
 
   return (
-    <div className='container mx-auto px-4 py-4'>
-      <div className='max-w-4xl mx-auto space-y-4'>
-        <div className='bg-white rounded-lg shadow'>
-          {/* Tournament Information */}
-          {league.tournament && (
-            <TournamentInfoCard tournament={league.tournament} />
-          )}
-        </div>
+    <div className='container mx-auto'>
+      {/* Tournament Information */}
+      {league.tournament && (
+        <TournamentInfoCard tournament={league.tournament} />
+      )}
+
+      <div className='max-w-4xl mx-auto px-4 py-4'>
+        <div className='bg-white rounded-lg shadow'></div>
 
         {/* Teams Section */}
         <div className='bg-white rounded-lg shadow'>
@@ -414,46 +413,14 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
         </div>
 
-        {/* My Team Section */}
-        {teams.length < league.maxTeams &&
-          leagueId &&
-          (() => {
-            const userTeam = teams.find((team: Team) => team.userId === userId);
-            const isScheduled = league.tournament?.status === 'scheduled';
-
-            // Case 1: No userId -> always show form
-            if (!userId)
-              return (
-                <PublicTeamFormComponent
-                  leagueId={leagueId}
-                  onSuccess={fetchLeague}
-                />
-              );
-
-            // Case 2: Has userId but no team -> show form
-            if (!userTeam)
-              return (
-                <PublicTeamFormComponent
-                  leagueId={leagueId}
-                  onSuccess={fetchLeague}
-                />
-              );
-
-            // Case 3: Has team and tournament is scheduled -> show form
-            if (userTeam && isScheduled)
-              return (
-                <PublicTeamFormComponent
-                  leagueId={leagueId}
-                  onSuccess={fetchLeague}
-                />
-              );
-
-            // Case 4: Has team but tournament in progress -> don't show form
-            return null;
-          })()}
-
         {/* Share Section */}
-        <Share url={window.location.href} />
+        <div className='flex justify-center my-8'>
+          <Share
+            url={window.location.href}
+            title='Share!'
+            subtitle='Free &#x2022; No Signup Required'
+          />
+        </div>
       </div>
     </div>
   );
