@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   publicLeagueApi,
   type PublicLeague as ApiPublicLeague,
@@ -76,6 +76,7 @@ export const PublicLeagueLobby: React.FC = () => {
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
     new Set()
   );
+  const navigate = useNavigate();
 
   const fetchLeague = async () => {
     if (!leagueId) return;
@@ -316,8 +317,8 @@ export const PublicLeagueLobby: React.FC = () => {
       // Refresh the league data after joining
       await fetchLeague();
     } catch (err) {
-      setError('Failed to join league');
       console.error('Error joining league:', err);
+      setError('Failed to join league');
     } finally {
       setIsActionLoading(false);
     }
@@ -352,6 +353,16 @@ export const PublicLeagueLobby: React.FC = () => {
       <div className='container mx-auto px-4 py-8'>
         <div className='text-red-600 text-center'>
           {error || 'League not found'}
+        </div>
+
+        <p className='text-center my-4'>Make sure you have created a team.</p>
+
+        <div className='flex justify-center my-8'>
+          <button
+            onClick={() => navigate('/public/team')}
+            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+            My Team
+          </button>
         </div>
       </div>
     );

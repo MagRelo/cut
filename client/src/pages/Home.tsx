@@ -14,11 +14,21 @@ export const Home: React.FC = () => {
       />
       <h1 className='text-6xl font-bold text-emerald-600 mb-8'>the Cut</h1>
 
-      <Link
-        to='/public/team'
-        className='inline-flex items-center px-6 py-3 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-        Create a Team <small>&#9658;</small>
-      </Link>
+      <div>
+        <Link
+          to='/public/team'
+          className='inline-flex items-center px-4 py-2 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
+          Create a Team
+        </Link>
+      </div>
+      <div>
+        <Link
+          to='/public/leagues'
+          className='inline-flex items-center px-4 py-2 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
+          View Leagues
+        </Link>
+      </div>
+
       <hr className='w-full max-w-lg border-gray-200 mb-8' />
 
       {/* Keep this for later */}
