@@ -357,52 +357,85 @@ router.get('/:leagueId', async (req, res) => {
   try {
     const { leagueId } = req.params;
 
-    const [league, activeTournament] = await Promise.all([
-      prisma.league.findFirst({
-        where: {
-          id: leagueId,
-          isPrivate: false,
-        },
-        include: {
-          leagueTeams: {
-            include: {
-              team: {
-                include: {
-                  players: {
-                    include: {
-                      player: true,
+    // First get the active tournament
+    const activeTournament = await prisma.tournament.findFirst({
+      where: { manualActive: true },
+    });
+
+    // Then get the league with tournament player data
+    const league = await prisma.league.findFirst({
+      where: {
+        id: leagueId,
+        isPrivate: false,
+      },
+      include: {
+        leagueTeams: {
+          include: {
+            team: {
+              include: {
+                players: {
+                  include: {
+                    player: {
+                      include: {
+                        tournamentPlayers: activeTournament
+                          ? {
+                              where: { tournamentId: activeTournament.id },
+                            }
+                          : true,
+                      },
                     },
                   },
-                  owner: {
-                    select: {
-                      id: true,
-                      email: true,
-                      name: true,
-                    },
+                },
+                owner: {
+                  select: {
+                    id: true,
+                    email: true,
+                    name: true,
                   },
                 },
               },
             },
           },
         },
-      }),
-      prisma.tournament.findFirst({
-        where: { manualActive: true },
-      }),
-    ]);
+      },
+    });
 
     if (!league) {
       res.status(404).json({ error: 'League not found' });
       return;
     }
 
-    // Add tournament to response
-    const response = {
+    // Transform the response to match frontend expectations
+    const transformedLeague = {
       ...league,
+      leagueTeams: league.leagueTeams.map((lt) => ({
+        team: {
+          ...lt.team,
+          players: lt.team.players.map((tp) => {
+            const tournamentPlayer = tp.player.tournamentPlayers?.[0];
+            return {
+              ...tp,
+              leaderboardPosition: tournamentPlayer?.leaderboardPosition,
+              r1: tournamentPlayer?.r1,
+              r2: tournamentPlayer?.r2,
+              r3: tournamentPlayer?.r3,
+              r4: tournamentPlayer?.r4,
+              cut: tournamentPlayer?.cut,
+              bonus: tournamentPlayer?.bonus,
+              total: tournamentPlayer?.total,
+              updatedAt: tournamentPlayer?.updatedAt || tp.updatedAt,
+              player: {
+                ...tp.player,
+                tournamentPlayers: undefined, // Remove to avoid leaking backend structure
+              },
+            };
+          }),
+        },
+      })),
       tournament: activeTournament,
     };
 
-    res.json(response);
+    res.json(transformedLeague);
   } catch (error) {
     console.error('Error fetching public league:', error);
     res.status(500).json({ error: 'Failed to fetch league' });

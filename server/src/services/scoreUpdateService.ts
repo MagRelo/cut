@@ -61,14 +61,15 @@ export class ScoreUpdateService {
   public async updateScore(
     teamPlayerId: string,
     tournamentId: string,
+    tournamentPgaTourId: string,
     pgaTourId: string,
     leaderboardPlayer: any
   ) {
     try {
-      const scorecard = await fetchScorecard(pgaTourId, tournamentId);
+      const scorecard = await fetchScorecard(pgaTourId, tournamentPgaTourId);
       if (!scorecard) {
         console.error(
-          `No scorecard found for player ${pgaTourId} in tournament ${tournamentId}`
+          `No scorecard found for player ${pgaTourId} in tournament ${tournamentPgaTourId}`
         );
         return;
       }
@@ -107,11 +108,35 @@ export class ScoreUpdateService {
     }
   }
 
+  private async recordProcessStatus(
+    status: 'SUCCESS' | 'FAILURE',
+    tournament: any,
+    activePlayers: TeamPlayerWithPlayer[],
+    error?: any
+  ) {
+    await prisma.systemProcessRecord.create({
+      data: {
+        processType: 'SCORE_UPDATE',
+        status,
+        processData: {
+          tournamentId: tournament.id,
+          tournamentName: tournament.name,
+          playersUpdated: activePlayers.length,
+          timestamp: new Date().toISOString(),
+          ...(error && { error: error.message || String(error) }),
+        },
+      },
+    });
+  }
+
   async updateAllScores() {
+    let tournament: any;
+    let activePlayers: TeamPlayerWithPlayer[] = [];
+
     try {
       console.log('Starting score update for all active team players...');
 
-      const tournament = await prisma.tournament.findFirst({
+      tournament = await prisma.tournament.findFirst({
         where: { manualActive: true },
       });
       if (!tournament) {
@@ -158,7 +183,7 @@ export class ScoreUpdateService {
       console.log('Set inField to false for all other players.');
 
       // Update scores for active team players
-      const activePlayers = await this.getActiveTeamPlayers();
+      activePlayers = await this.getActiveTeamPlayers();
       console.log(`Found ${activePlayers.length} active team players`);
       const updatePromises = activePlayers.map((player) => {
         if (!player.player.pga_pgaTourId) {
@@ -180,6 +205,7 @@ export class ScoreUpdateService {
         return this.updateScore(
           player.id,
           tournament.id,
+          tournament.pgaTourId,
           player.player.pga_pgaTourId,
           leaderboardPlayer
         );
@@ -187,8 +213,18 @@ export class ScoreUpdateService {
 
       await Promise.all(updatePromises);
       console.log('Score update completed successfully at', new Date());
+
+      await this.recordProcessStatus('SUCCESS', tournament, activePlayers);
     } catch (error) {
       console.error('Error updating scores:', error);
+      if (tournament && activePlayers.length > 0) {
+        await this.recordProcessStatus(
+          'FAILURE',
+          tournament,
+          activePlayers,
+          error
+        );
+      }
       throw error;
     }
   }
