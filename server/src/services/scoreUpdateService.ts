@@ -2,8 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 import { getActivePlayers } from '../lib/pgaField.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 interface TeamPlayerWithPlayer {
   id: string;
