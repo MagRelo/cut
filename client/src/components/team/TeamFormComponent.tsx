@@ -249,10 +249,16 @@ export const TeamFormComponent: React.FC<TeamFormProps> = ({
                             !selectedPlayers.includes(p.id) ||
                             selectedPlayers[index] === p.id
                         )
-                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .sort(
+                          (a, b) =>
+                            a.pga_displayName?.localeCompare(
+                              b.pga_displayName || ''
+                            ) || 0
+                        )
                         .map((player) => (
                           <option key={player.id} value={player.id}>
-                            {player.name}
+                            {player.pga_displayName ||
+                              `${player.pga_firstName} ${player.pga_lastName}`}
                           </option>
                         ))}
                     </select>

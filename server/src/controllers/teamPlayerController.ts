@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthUser } from '../middleware/auth.js';
 
 import {
   CreateTeamPlayerBody,
@@ -7,12 +8,8 @@ import {
 import { TournamentStatus } from '../schemas/tournament.js';
 import { prisma } from '../lib/prisma.js';
 
-interface RequestUser {
-  id: string;
-}
-
 interface AuthenticatedRequest extends Request {
-  user: RequestUser;
+  user: AuthUser;
 }
 
 // Core TeamPlayer operations

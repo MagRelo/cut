@@ -32,13 +32,13 @@ export const PlayerRow: React.FC<PlayerRowProps> = ({
             className='w-full px-2 py-1 border rounded'>
             <option value=''>Select a player...</option>
             {pgaPlayers
-              ?.filter((p) => p && p.id && p.firstName && p.lastName)
+              ?.filter((p) => p && p.id && p.pga_firstName && p.pga_lastName)
               .sort((a, b) =>
-                (a.lastName || '').localeCompare(b.lastName || '')
+                (a.pga_lastName || '').localeCompare(b.pga_lastName || '')
               )
               .map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.lastName}, {p.firstName}
+                  {p.pga_lastName}, {p.pga_firstName}
                 </option>
               ))}
           </select>

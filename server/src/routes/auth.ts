@@ -40,13 +40,11 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
-// Login route
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = loginSchema.parse(req.body);
-
-    const userInclude = Prisma.validator<Prisma.UserInclude>()({
-      teams: {
+// Update the userInclude type
+const userInclude = {
+  teams: {
+    include: {
+      leagueTeams: {
         include: {
           league: {
             select: {
@@ -56,12 +54,19 @@ router.post('/login', async (req, res) => {
           },
         },
       },
-    });
+    },
+  },
+} satisfies Prisma.UserInclude;
 
-    const user = (await prisma.user.findUnique({
+// Login route
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = loginSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
       where: { email },
       include: userInclude,
-    })) as UserWithTeams | null;
+    });
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -91,12 +96,14 @@ router.post('/login', async (req, res) => {
       userType: user.userType,
       token,
       streamToken,
-      teams: user.teams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        leagueId: team.league.id,
-        leagueName: team.league.name,
-      })),
+      teams: user.teams.flatMap((team) =>
+        team.leagueTeams.map((lt) => ({
+          id: team.id,
+          name: team.name,
+          leagueId: lt.league.id,
+          leagueName: lt.league.name,
+        }))
+      ),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -216,6 +223,10 @@ router.post('/reset-password', authenticateToken, async (req, res) => {
       req.body
     );
 
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
     // Get user from authenticated request
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -253,23 +264,14 @@ router.post('/reset-password', authenticateToken, async (req, res) => {
 // Get current user route
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const userInclude = Prisma.validator<Prisma.UserInclude>()({
-      teams: {
-        include: {
-          league: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    });
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
 
-    const user = (await prisma.user.findUnique({
-      where: { id: req.user!.id },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
       include: userInclude,
-    })) as UserWithTeams | null;
+    });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -280,12 +282,14 @@ router.get('/me', authenticateToken, async (req, res) => {
       email: user.email,
       name: user.name,
       userType: user.userType,
-      teams: user.teams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        leagueId: team.league.id,
-        leagueName: team.league.name,
-      })),
+      teams: user.teams.flatMap((team) =>
+        team.leagueTeams.map((lt) => ({
+          id: team.id,
+          name: team.name,
+          leagueId: lt.league.id,
+          leagueName: lt.league.name,
+        }))
+      ),
     });
   } catch (error) {
     console.error('Get current user error:', error);

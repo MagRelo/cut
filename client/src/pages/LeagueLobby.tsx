@@ -309,7 +309,12 @@ export const LeagueLobby: React.FC = () => {
                 <img
                   className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
                   src={player.player.pga_imageUrl}
-                  alt={player.player.displayName || player.player.name}
+                  alt={
+                    player.player.pga_displayName ||
+                    player.player.pga_firstName +
+                      ' ' +
+                      player.player.pga_lastName
+                  }
                 />
               </div>
             )}
@@ -317,7 +322,10 @@ export const LeagueLobby: React.FC = () => {
               <button
                 onClick={() => togglePlayer(player.id)}
                 className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
-                {player.player.displayName || player.player.name}
+                {player.player.pga_displayName ||
+                  player.player.pga_firstName +
+                    ' ' +
+                    player.player.pga_lastName}
                 <svg
                   className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
                     expandedPlayers.has(player.id) ? 'rotate-180' : ''

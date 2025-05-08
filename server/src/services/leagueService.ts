@@ -175,35 +175,48 @@ export class LeagueService {
     });
   }
 
-  async getLeague(leagueId: string): Promise<LeagueWithAll> {
+  async getLeague(id: string) {
     const league = await prisma.league.findUnique({
-      where: { id: leagueId },
+      where: { id },
       include: {
-        settings: true,
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
         members: true,
-        teams: true,
+        settings: true,
       },
     });
 
     if (!league) {
-      throw new NotFoundError('League not found');
+      throw new Error('League not found');
     }
 
     return league;
   }
 
-  async listLeagues(
-    userId: string,
-    includePrivate: boolean = false
-  ): Promise<LeagueWithAll[]> {
+  async getLeagues() {
     return prisma.league.findMany({
+      include: {
+        leagueTeams: {
+          include: {
+            team: true,
+          },
+        },
+        members: true,
+        settings: true,
+      },
+    });
+  }
+
+  async getLeagueTeams(leagueId: string) {
+    return prisma.leagueTeam.findMany({
       where: {
-        OR: [{ isPrivate: false }, { members: { some: { userId } } }],
+        leagueId,
       },
       include: {
-        settings: true,
-        members: true,
-        teams: true,
+        team: true,
       },
     });
   }
@@ -275,8 +288,12 @@ export class LeagueService {
     // Find the user's team in this league
     const team = await prisma.team.findFirst({
       where: {
-        leagueId,
-        userId: userId,
+        userId,
+        leagueTeams: {
+          some: {
+            leagueId,
+          },
+        },
       },
     });
 

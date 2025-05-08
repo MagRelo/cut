@@ -96,7 +96,6 @@ async function main() {
           data: {
             name: userData.team.name,
             color: userData.team.color,
-            leagueId: league.id,
             userId: user.id,
           },
         });

@@ -35,25 +35,42 @@ export class TimelineService {
       // Get all active leagues with their teams for this tournament
       const activeLeagues = await prisma.league.findMany({
         where: {
-          teams: {
+          leagueTeams: {
             some: {
-              players: {
-                some: {
-                  active: true,
+              team: {
+                players: {
+                  some: {
+                    active: true,
+                  },
                 },
               },
             },
           },
         },
         include: {
-          teams: {
+          leagueTeams: {
             include: {
-              players: {
-                where: {
-                  active: true,
-                },
+              team: {
                 include: {
-                  player: true,
+                  players: {
+                    where: {
+                      active: true,
+                    },
+                    include: {
+                      player: {
+                        include: {
+                          tournamentPlayers: {
+                            where: {
+                              tournamentId,
+                            },
+                            select: {
+                              total: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -63,7 +80,7 @@ export class TimelineService {
 
       // Calculate total teams before processing
       stats.totalTeams = activeLeagues.reduce(
-        (total, league) => total + league.teams.length,
+        (total, league) => total + league.leagueTeams.length,
         0
       );
 
@@ -71,12 +88,22 @@ export class TimelineService {
 
       // Create timeline entries for each team in each league
       for (const league of activeLeagues) {
-        for (const team of league.teams) {
+        for (const leagueTeam of league.leagueTeams) {
+          const team = leagueTeam.team;
+          // Transform the team data to match TeamWithPlayers type
+          const teamWithPlayers = {
+            ...team,
+            players: team.players.map((tp) => ({
+              ...tp,
+              total: tp.player.tournamentPlayers[0]?.total ?? null,
+            })),
+          };
+
           stats.totalAttempted++;
           try {
             let totalScore: number;
             try {
-              totalScore = calculateTeamScore(team);
+              totalScore = calculateTeamScore(teamWithPlayers);
             } catch (scoreError) {
               stats.failedCreations++;
               stats.errors.push({

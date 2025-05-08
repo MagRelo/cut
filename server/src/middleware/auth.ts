@@ -58,14 +58,7 @@ export const authenticateToken = async (
 
     const userInclude = {
       teams: {
-        include: {
-          league: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        include: {},
       },
     } satisfies Prisma.UserInclude;
 

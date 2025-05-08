@@ -108,7 +108,7 @@ export class LeagueController {
         return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const leagues = await leagueService.listLeagues(userId);
+      const leagues = await leagueService.getLeagues();
       res.json(leagues);
     } catch (error) {
       console.error('Error listing leagues:', error);
