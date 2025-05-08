@@ -70,6 +70,7 @@ export const PublicLeagueLobby: React.FC = () => {
   const [league, setLeague] = useState<PublicLeagueWithTeams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
@@ -306,6 +307,38 @@ export const PublicLeagueLobby: React.FC = () => {
     </div>
   );
 
+  const handleJoinLeague = async () => {
+    if (!leagueId) return;
+
+    setIsActionLoading(true);
+    try {
+      await publicLeagueApi.joinLeague(leagueId);
+      // Refresh the league data after joining
+      await fetchLeague();
+    } catch (err) {
+      setError('Failed to join league');
+      console.error('Error joining league:', err);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleLeaveLeague = async () => {
+    if (!leagueId) return;
+
+    setIsActionLoading(true);
+    try {
+      await publicLeagueApi.leaveLeague(leagueId);
+      // Refresh the league data after leaving
+      await fetchLeague();
+    } catch (err) {
+      setError('Failed to leave league');
+      console.error('Error leaving league:', err);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className='container mx-auto px-4 py-8'>
@@ -326,6 +359,8 @@ export const PublicLeagueLobby: React.FC = () => {
 
   const teams: Team[] =
     league.leagueTeams?.map((lt: LeagueTeam) => lt.team) ?? [];
+
+  const userHasTeam = teams.some((team) => team.userId === userId);
 
   return (
     <div className='container mx-auto'>
@@ -413,10 +448,31 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
         </div>
 
+        {/* Add/Leave League Buttons */}
+        <div className='flex justify-center my-8'>
+          {userHasTeam ? (
+            <button
+              onClick={handleLeaveLeague}
+              disabled={isActionLoading}
+              className='bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              {isActionLoading ? 'Leaving...' : 'Leave League'}
+            </button>
+          ) : (
+            <button
+              onClick={handleJoinLeague}
+              disabled={isActionLoading}
+              className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              {isActionLoading ? 'Joining...' : 'Join League'}
+            </button>
+          )}
+        </div>
+
         {/* Share Section */}
         <div className='flex justify-center my-8'>
           <Share
-            url={window.location.href}
+            url={`${
+              import.meta.env.VITE_BASE_URL || window.location.origin
+            }/public/team`}
             title='Share!'
             subtitle='Free &#x2022; No Signup Required'
           />

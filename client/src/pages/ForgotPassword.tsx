@@ -40,8 +40,8 @@ export function ForgotPassword() {
             </div>
           )}
           {message && (
-            <div className='rounded-md bg-green-50 p-4'>
-              <div className='text-sm text-green-700'>{message}</div>
+            <div className='rounded-md bg-emerald-50 p-4'>
+              <div className='text-sm text-emerald-700'>{message}</div>
             </div>
           )}
           <div>

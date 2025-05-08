@@ -42,7 +42,7 @@ export const PublicLeagueList: React.FC = () => {
           <h1 className='text-3xl font-bold'>Public Leagues</h1>
           <Link
             to='/public/leagues/new'
-            className='text-white bg-emerald-600/90 hover:bg-emerald-500 px-4 py-2 rounded-lg transition-colors duration-150 inline-flex items-center gap-1'>
+            className='text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors duration-150 inline-flex items-center gap-1'>
             <span className='text-sm font-medium'>+ Add League</span>
           </Link>
         </div>

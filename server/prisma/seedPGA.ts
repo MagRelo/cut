@@ -101,7 +101,7 @@ async function main() {
     console.log('Players upserted.');
 
     // 3. For a selected tournament, update inField for players in the field
-    const selectedTournamentName = 'THE CJ CUP Byron Nelson'; // Change as needed
+    const selectedTournamentName = 'Truist Championship'; // Change as needed
     const selectedTournament = await prisma.tournament.findFirst({
       where: { name: selectedTournamentName },
     });

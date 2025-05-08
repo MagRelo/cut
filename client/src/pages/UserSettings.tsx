@@ -125,8 +125,8 @@ export function UserSettings() {
               </h2>
               <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
                 {successMessage && (
-                  <div className='rounded-md bg-green-50 p-4'>
-                    <p className='text-sm text-green-700'>{successMessage}</p>
+                  <div className='rounded-md bg-emerald-50 p-4'>
+                    <p className='text-sm text-emerald-700'>{successMessage}</p>
                   </div>
                 )}
                 {errors.root && (

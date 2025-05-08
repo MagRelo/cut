@@ -167,10 +167,10 @@ export function Leagues() {
                     <div className='text-right md:text-center'>
                       {membershipRole ? (
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             membershipRole === 'COMMISSIONER'
                               ? 'bg-purple-100 text-purple-800'
-                              : 'bg-green-100 text-green-800'
+                              : 'bg-emerald-100 text-emerald-800'
                           }`}>
                           {membershipRole === 'COMMISSIONER'
                             ? 'Commissioner'

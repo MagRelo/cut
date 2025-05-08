@@ -50,7 +50,7 @@ export const TeamHeader: React.FC<TeamHeaderProps> = ({
               </button>
               <button
                 onClick={() => onEditModeChange('active')}
-                className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'>
+                className='px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700'>
                 Set Active Players
               </button>
             </>

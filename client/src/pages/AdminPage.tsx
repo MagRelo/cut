@@ -121,7 +121,7 @@ export function AdminPage() {
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               user.userType === 'ADMIN'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                             {user.userType}
@@ -167,7 +167,7 @@ export function AdminPage() {
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               process.status === 'SUCCESS'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-red-100 text-red-800'
                             }`}>
                             {process.status}

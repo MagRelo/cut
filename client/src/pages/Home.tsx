@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext';
 
 export const Home: React.FC = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   return (
     <div className='min-h-[60vh] md:min-h-screen flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
@@ -21,6 +21,8 @@ export const Home: React.FC = () => {
       </Link>
       <hr className='w-full max-w-lg border-gray-200 mb-8' />
 
+      {/* Keep this for later */}
+      {/* 
       <div className='space-x-4'>
         {user ? (
           <Link
@@ -42,7 +44,7 @@ export const Home: React.FC = () => {
             </Link>
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

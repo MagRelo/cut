@@ -26,7 +26,7 @@ export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
         <div className='flex justify-between items-center'>
           <p className='text-2xl font-bold tracking-tight'>{tournament.name}</p>
         </div>
-        <div className='mt-1 space-y-1'>
+        <div className='mt-1 space-y-2'>
           <p className='text-white font-semibold'>
             {tournament.roundStatusDisplay}
           </p>

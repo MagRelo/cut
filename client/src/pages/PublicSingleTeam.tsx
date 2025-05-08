@@ -205,6 +205,7 @@ export const PublicSingleTeam: React.FC = () => {
             <TournamentInfoCard tournament={tournament} />
           </div>
         ) : null}
+
         <PublicTeamFormComponent
           leagueId={''}
           editMode={true}
@@ -352,7 +353,7 @@ export const PublicSingleTeam: React.FC = () => {
         <button
           onClick={() => navigate('/public/leagues')}
           className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
-          Join a League <small>&#9658;</small>
+          Leagues <small>&#9658;</small>
         </button>
       </div>
 

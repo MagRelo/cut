@@ -455,12 +455,32 @@ router.post('/:leagueId/join', async (req, res) => {
       return;
     }
 
-    // Create membership
-    await prisma.leagueMembership.create({
-      data: {
-        leagueId,
-        userId,
-      },
+    // Create both membership and league team entries
+    await prisma.$transaction(async (tx) => {
+      // Get the user's existing team
+      const existingTeam = await tx.team.findFirst({
+        where: { userId },
+      });
+
+      if (!existingTeam) {
+        throw new Error('User must have a team before joining a league');
+      }
+
+      // Create the membership and league team entries
+      await Promise.all([
+        tx.leagueMembership.create({
+          data: {
+            leagueId,
+            userId,
+          },
+        }),
+        tx.leagueTeam.create({
+          data: {
+            leagueId,
+            teamId: existingTeam.id,
+          },
+        }),
+      ]);
     });
 
     res.json(league);
@@ -481,14 +501,32 @@ router.post('/:leagueId/leave', async (req, res) => {
       return;
     }
 
-    // No need to ensure user exists here since we're just removing membership
-
-    // Delete membership
-    await prisma.leagueMembership.deleteMany({
+    // Find the user's team in this league
+    const leagueTeam = await prisma.leagueTeam.findFirst({
       where: {
         leagueId,
-        userId,
+        team: { userId },
       },
+    });
+
+    // Delete league-related entries in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete the league membership
+      await tx.leagueMembership.deleteMany({
+        where: {
+          leagueId,
+          userId,
+        },
+      });
+
+      // If there's a league team entry, delete it
+      if (leagueTeam) {
+        await tx.leagueTeam.delete({
+          where: {
+            id: leagueTeam.id,
+          },
+        });
+      }
     });
 
     res.status(204).send();

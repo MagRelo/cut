@@ -184,18 +184,6 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
     <div className='bg-white rounded-lg shadow p-6'>
       <div className=''>
         {error && <ErrorMessage message={error} />}
-        {/* 
-        {isSaving && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-            <div className='bg-white p-8 rounded-lg shadow-xl flex flex-col items-center space-y-4'>
-              <LoadingSpinner />
-              <p className='text-lg text-gray-700'>
-                {myTeam ? 'Updating' : 'Creating'} team & calculating player
-                scores...
-              </p>
-            </div>
-          </div>
-        )} */}
 
         <form onSubmit={handleSubmit} className='space-y-8'>
           <div className='space-y-6'>
@@ -236,13 +224,15 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                           )
                           .sort(
                             (a, b) =>
-                              a.pga_displayName?.localeCompare(
-                                b.pga_displayName || ''
+                              (a.pga_lastName || '').localeCompare(
+                                b.pga_lastName || ''
                               ) || 0
                           )
                           .map((player) => (
                             <option key={player.id} value={player.id}>
-                              {player.pga_displayName}
+                              {`${player.pga_lastName || ''}, ${
+                                player.pga_firstName || ''
+                              }`}
                             </option>
                           ))}
                       </select>

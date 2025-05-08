@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
+import { getActivePlayers } from '../lib/pgaField.js';
 
 const prisma = new PrismaClient();
 
@@ -86,13 +87,13 @@ export class ScoreUpdateService {
       await prisma.tournamentPlayer.upsert({
         where: {
           tournamentId_playerId: {
-            tournamentId: '123',
+            tournamentId: tournamentId,
             playerId: teamPlayerId,
           },
         },
         update: data,
         create: {
-          tournamentId: '123',
+          tournamentId: tournamentId,
           playerId: teamPlayerId,
           ...data,
         },
@@ -138,9 +139,27 @@ export class ScoreUpdateService {
         },
       });
 
+      // Update inField status for players in the field
+      const fieldData = await getActivePlayers(tournament.pgaTourId);
+      const fieldPlayerIds = fieldData.players.map((p) => p.id);
+      await prisma.player.updateMany({
+        where: { pga_pgaTourId: { in: fieldPlayerIds } },
+        data: { inField: true },
+      });
+      console.log(
+        `Updated inField status for ${fieldPlayerIds.length} players in '${tournament.name}'.`
+      );
+
+      // Optionally, set inField to false for all others
+      await prisma.player.updateMany({
+        where: { pga_pgaTourId: { notIn: fieldPlayerIds } },
+        data: { inField: false },
+      });
+      console.log('Set inField to false for all other players.');
+
+      // Update scores for active team players
       const activePlayers = await this.getActiveTeamPlayers();
       console.log(`Found ${activePlayers.length} active team players`);
-
       const updatePromises = activePlayers.map((player) => {
         if (!player.player.pga_pgaTourId) {
           console.warn(`No PGA Tour ID found for player ${player.player.id}`);
@@ -160,7 +179,7 @@ export class ScoreUpdateService {
 
         return this.updateScore(
           player.id,
-          tournament.pgaTourId,
+          tournament.id,
           player.player.pga_pgaTourId,
           leaderboardPlayer
         );
