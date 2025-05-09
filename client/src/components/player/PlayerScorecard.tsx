@@ -32,8 +32,6 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   currentRound = 1,
   className = '',
 }) => {
-  const [selectedRound, setSelectedRound] = useState(currentRound);
-
   // Get the round data for the selected round
   const getRoundData = (roundNumber: number) => {
     const roundKey = `r${roundNumber}` as keyof Pick<
@@ -42,6 +40,19 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     >;
     return player[roundKey];
   };
+
+  // Find the latest round with data
+  const getLatestRoundWithData = () => {
+    for (let round = 4; round >= 1; round--) {
+      const roundData = getRoundData(round);
+      if (roundData?.holes?.scores?.some((score) => score !== null)) {
+        return round;
+      }
+    }
+    return currentRound;
+  };
+
+  const [selectedRound, setSelectedRound] = useState(getLatestRoundWithData());
 
   const roundData = getRoundData(selectedRound);
   const hasHoleData =
@@ -185,7 +196,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
       <div className='px-1 py-1 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-2'>
-            <span className='text-sm font-medium text-gray-500 pl-1'>
+            <span className='text-xs font-medium text-gray-500 pl-1'>
               Round:
             </span>
             <div className='flex space-x-1'>
@@ -196,25 +207,21 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
                   (score) => score !== null
                 );
 
+                if (!hasData) return null;
+
                 return (
                   <button
                     key={round}
                     onClick={() => setSelectedRound(round)}
-                    disabled={!hasData}
                     className={`
-                      px-3 py-1 text-sm font-medium rounded
+                      px-2 py-0.5 text-xs font-medium rounded border
                       ${
                         isActive
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : hasData
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                          ? 'bg-white text-gray-900 border-emerald-500'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
                       }
                     `}>
                     {round}
-                    {roundData?.icon && (
-                      <span className='ml-1'>{roundData.icon}</span>
-                    )}
                   </button>
                 );
               })}
