@@ -28,7 +28,7 @@ export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
         </div>
         <div className='mt-1 space-y-2'>
           <p className='text-white font-semibold'>
-            {tournament.roundStatusDisplay}
+            {tournament.roundDisplay} &#183; {tournament.roundStatusDisplay}
           </p>
           <Link
             to='/public/team'

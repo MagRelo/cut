@@ -44,6 +44,7 @@ interface Tournament {
   beautyImage?: string;
   course?: string;
   roundStatusDisplay?: string;
+  roundDisplay?: string;
 }
 
 export interface LeagueTeam {

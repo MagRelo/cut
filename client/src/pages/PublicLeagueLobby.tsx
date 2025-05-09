@@ -374,13 +374,15 @@ export const PublicLeagueLobby: React.FC = () => {
   const userHasTeam = teams.some((team) => team.userId === userId);
 
   return (
-    <div className='container mx-auto'>
-      {/* Tournament Information */}
-      {league.tournament && (
-        <TournamentInfoCard tournament={league.tournament} />
-      )}
+    <div className='container mx-auto  md:py-8'>
+      <div className='max-w-2xl mx-auto'>
+        {/* Tournament Information */}
+        {league.tournament && (
+          <TournamentInfoCard tournament={league.tournament} />
+        )}
+      </div>
 
-      <div className='max-w-4xl mx-auto px-4 py-4'>
+      <div className='max-w-2xl mx-auto px-4 py-4'>
         <div className='bg-white rounded-lg shadow'></div>
 
         {/* Teams Section */}

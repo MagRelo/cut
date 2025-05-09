@@ -221,7 +221,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isEditing) {
     return (
-      <div className='mx-auto md:px-4 md:py-8'>
+      <div className='mx-auto md:px-4 md:py-4'>
         <div className='max-w-2xl mx-auto'>
           {/* Tournament Info Card */}
           {tournamentLoading ? (
@@ -372,7 +372,7 @@ export const PublicSingleTeam: React.FC = () => {
         <button
           onClick={() => navigate('/public/leagues')}
           className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
-          Leagues <small>&#9658;</small>
+          View Leagues
         </button>
       </div>
 
