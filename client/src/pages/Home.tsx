@@ -8,9 +8,9 @@ export const Home: React.FC = () => {
   return (
     <div className='flex-1 w-full flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
       <img
-        src='/cut-logo.png'
+        src='/cut-logo2.jpeg'
         alt='Cut Logo'
-        className='w-48 h-48 mb-6 border-2 border-amber-400 shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
+        className='w-48 h-48 mb-6 border-2 border-emerald-500 shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
       />
       <h1 className='text-6xl font-bold text-emerald-600 mb-8'>the Cut</h1>
 
