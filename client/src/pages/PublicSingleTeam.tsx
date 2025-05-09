@@ -270,11 +270,15 @@ export const PublicSingleTeam: React.FC = () => {
         ) : null}
       </div>
       <div className='max-w-2xl mx-auto bg-white rounded-lg shadow relative px-6 pt-6'>
-        <h2 className='text-lg font-semibold mb-2'>
-          My Golfers
+        <h2 className='text-lg font-semibold mb-2 flex items-center gap-2'>
+          <div
+            className='w-4 h-4 rounded-full'
+            style={{ backgroundColor: team.color }}
+          />
+          {team.name}
           {/* Edit icon button */}
           <button
-            className='float-right text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
+            className='ml-auto text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
             title='Edit Team'
             onClick={() => setIsEditing(true)}>
             Edit

@@ -486,7 +486,7 @@ export const PublicLeagueLobby: React.FC = () => {
             <button
               onClick={handleLeaveLeague}
               disabled={isActionLoading}
-              className='bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200'>
               {isActionLoading ? 'Leaving...' : 'Leave League'}
             </button>
           ) : (
