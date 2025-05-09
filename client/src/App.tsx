@@ -27,7 +27,7 @@ export const App: React.FC = () => {
           <div className='min-h-screen bg-gray-100 flex flex-col'>
             {/* TODO: Remove this when we're ready to go live */}
             {/* <MaintenanceOverlay /> */}
-            <div className='flex-grow'>
+            <div className='flex flex-col flex-grow'>
               <Routes>
                 <Route path='/' element={<Home />} />
                 <Route path='/login' element={<Login />} />

@@ -32,7 +32,7 @@ export const TournamentInfoCard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className='relative overflow-hidden md:rounded-lg border border-gray-200 p-4'>
+      <div className='relative overflow-hidden md:rounded-lg p-4'>
         <LoadingSpinner />
       </div>
     );
@@ -40,7 +40,7 @@ export const TournamentInfoCard: React.FC = () => {
 
   if (error) {
     return (
-      <div className='relative overflow-hidden md:rounded-lg border border-gray-200 p-4'>
+      <div className='relative overflow-hidden md:rounded-lg p-4'>
         <ErrorMessage message={error} />
       </div>
     );
@@ -51,7 +51,7 @@ export const TournamentInfoCard: React.FC = () => {
   }
 
   return (
-    <div className='relative overflow-hidden md:rounded-lg border border-gray-200'>
+    <div className='relative overflow-hidden md:rounded-lg'>
       {tournament.beautyImage ? (
         <>
           <div

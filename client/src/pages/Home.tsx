@@ -6,7 +6,7 @@ export const Home: React.FC = () => {
   // const { user } = useAuth();
 
   return (
-    <div className='min-h-[60vh] md:min-h-screen flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
+    <div className='flex-1 w-full flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
       <img
         src='/cut-logo.png'
         alt='Cut Logo'
@@ -14,22 +14,18 @@ export const Home: React.FC = () => {
       />
       <h1 className='text-6xl font-bold text-emerald-600 mb-8'>the Cut</h1>
 
-      <div>
+      <div className='flex flex-col md:flex-row gap-4 mt-8'>
         <Link
           to='/public/team'
-          className='inline-flex items-center px-4 py-2 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-          Create a Team
+          className='inline-flex items-center px-4 py-2 rounded-lg text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
+          My Team
         </Link>
-      </div>
-      <div>
         <Link
           to='/public/leagues'
-          className='inline-flex items-center px-4 py-2 mb-8 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-          View Leagues
+          className='inline-flex items-center px-4 py-2 rounded-lg text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
+          Leagues
         </Link>
       </div>
-
-      <hr className='w-full max-w-lg border-gray-200 mb-8' />
 
       {/* Keep this for later */}
       {/* 
