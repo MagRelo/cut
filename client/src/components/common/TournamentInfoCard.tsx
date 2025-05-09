@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   publicLeagueApi,
   type Tournament,
@@ -11,6 +11,7 @@ export const TournamentInfoCard: React.FC = () => {
   const [tournament, setTournament] = useState<Tournament | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const fetchTournament = async () => {
@@ -72,14 +73,27 @@ export const TournamentInfoCard: React.FC = () => {
           </p>
           <Link
             to='/public/team'
-            className='inline-block mt-2 mr-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
+            className={`inline-block mt-2 mr-2 text-white/90 hover:text-white text-sm font-medium border-2 ${
+              location.pathname === '/public/team'
+                ? 'border-white'
+                : 'border-white/30'
+            } rounded px-3 py-1 hover:border-white/60 transition-colors`}>
             My Team
+          </Link>
+          <Link
+            to='/public/leagues'
+            className={`inline-block mt-2 mr-2 text-white/90 hover:text-white text-sm font-medium border-2 ${
+              location.pathname === '/public/leagues'
+                ? 'border-white'
+                : 'border-white/30'
+            } rounded px-3 py-1 hover:border-white/60 transition-colors`}>
+            Leagues
           </Link>
           <a
             href='https://www.pgatour.com/leaderboard'
             target='_blank'
             rel='noopener noreferrer'
-            className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium border border-white/30 rounded px-3 py-1 hover:border-white/60 transition-colors'>
+            className='inline-block mt-2 text-white/90 hover:text-white text-sm font-medium rounded px-3 py-1 transition-colors'>
             Leaderboard ↗
           </a>
         </div>
