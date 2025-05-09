@@ -3,15 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   publicLeagueApi,
   type PublicLeague,
-  type Tournament,
 } from '../services/publicLeagueApi';
-import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 
 export const PublicLeagueList: React.FC = () => {
   const [leagues, setLeagues] = useState<PublicLeague[]>([]);
-  const [activeTournament, setActiveTournament] = useState<Tournament | null>(
-    null
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +15,6 @@ export const PublicLeagueList: React.FC = () => {
       try {
         const data = await publicLeagueApi.listLeagues();
         setLeagues(data.leagues);
-        setActiveTournament(data.tournament || null);
       } catch (err) {
         setError('Failed to load leagues');
         console.error('Error fetching leagues:', err);
@@ -34,14 +28,7 @@ export const PublicLeagueList: React.FC = () => {
 
   return (
     <div className='container mx-auto md:py-8'>
-      <div className='max-w-2xl mx-auto'>
-        {/* Active Tournament Section */}
-        {activeTournament && (
-          <TournamentInfoCard tournament={activeTournament} />
-        )}
-      </div>
-
-      <div className='max-w-2xl mx-auto px-4 py-8'>
+      <div className='max-w-2xl mx-auto p-4'>
         {/* Header Section */}
         <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0'>
           <h1 className='text-3xl font-bold'>Public Leagues</h1>

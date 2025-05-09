@@ -5,7 +5,6 @@ import {
   type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
-import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 import { Share } from '../components/common/Share';
 
 interface Player {
@@ -374,141 +373,132 @@ export const PublicLeagueLobby: React.FC = () => {
   const userHasTeam = teams.some((team) => team.userId === userId);
 
   return (
-    <div className='container mx-auto  md:py-8'>
-      <div className='max-w-2xl mx-auto'>
-        {/* Tournament Information */}
-        {league.tournament && (
-          <TournamentInfoCard tournament={league.tournament} />
+    <div className='px-4 py-4'>
+      <div className='bg-white rounded-lg shadow'></div>
+
+      {/* Teams Section */}
+      <div className='bg-white rounded-lg shadow'>
+        <div className='flex justify-between items-center p-4'>
+          <h1 className='text-2xl font-bold'>{league.name}</h1>
+        </div>
+        <div>
+          <div className='space-y-0'>
+            {teams.length === 0 ? (
+              <div className='text-gray-500 text-center py-3'>
+                No teams yet. Create one to get started!
+              </div>
+            ) : (
+              [...teams]
+                .sort(
+                  (a: Team, b: Team) =>
+                    calculateTeamScore(b) - calculateTeamScore(a)
+                )
+                .map((team: Team, index: number) => (
+                  <div
+                    key={team.id}
+                    className={`${
+                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                    } hover:bg-gray-100/70 transition-colors`}>
+                    <div className='w-full'>
+                      <button
+                        onClick={() => toggleTeam(team.id)}
+                        className='w-full px-4 py-2 flex justify-between items-center'>
+                        <div className='flex items-center'>
+                          <div
+                            className='w-4 h-4 rounded-full mr-2'
+                            style={{ backgroundColor: team.color }}
+                          />
+                          <h3 className='text-base font-medium text-gray-900'>
+                            {team.name}
+                          </h3>
+                        </div>
+                        <div className='flex items-center space-x-4'>
+                          <span className='text-sm font-semibold text-gray-900'>
+                            {calculateTeamScore(team)}
+                          </span>
+                          <svg
+                            className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+                              expandedTeams.has(team.id) ? 'rotate-180' : ''
+                            }`}
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'>
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth={2}
+                              d='M19 9l-7 7-7-7'
+                            />
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        expandedTeams.has(team.id)
+                          ? 'max-h-[1000px] border-t border-gray-200'
+                          : 'max-h-0'
+                      }`}>
+                      {renderTeamPlayers(team)}
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+          {/* Last Update Time */}
+          <div className='text-xs text-gray-400 text-center py-2 border-t border-gray-100 flex items-center justify-center gap-2'>
+            <span>
+              Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
+            </span>
+            <button
+              onClick={fetchLeague}
+              className='p-1 hover:bg-gray-100 rounded-full transition-colors'
+              title='Refresh data'>
+              <svg
+                className='w-4 h-4'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Leave League Buttons */}
+      <div className='flex justify-center my-8'>
+        {userHasTeam ? (
+          <button
+            onClick={handleLeaveLeague}
+            disabled={isActionLoading}
+            className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200'>
+            {isActionLoading ? 'Leaving...' : 'Leave League'}
+          </button>
+        ) : (
+          <button
+            onClick={handleJoinLeague}
+            disabled={isActionLoading}
+            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+            {isActionLoading ? 'Joining...' : 'Join League'}
+          </button>
         )}
       </div>
 
-      <div className='max-w-2xl mx-auto px-4 py-4'>
-        <div className='bg-white rounded-lg shadow'></div>
-
-        {/* Teams Section */}
-        <div className='bg-white rounded-lg shadow'>
-          <div className='flex justify-between items-center p-4'>
-            <h1 className='text-2xl font-bold'>{league.name}</h1>
-          </div>
-          <div>
-            <div className='space-y-0'>
-              {teams.length === 0 ? (
-                <div className='text-gray-500 text-center py-3'>
-                  No teams yet. Create one to get started!
-                </div>
-              ) : (
-                [...teams]
-                  .sort(
-                    (a: Team, b: Team) =>
-                      calculateTeamScore(b) - calculateTeamScore(a)
-                  )
-                  .map((team: Team, index: number) => (
-                    <div
-                      key={team.id}
-                      className={`${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                      } hover:bg-gray-100/70 transition-colors`}>
-                      <div className='w-full'>
-                        <button
-                          onClick={() => toggleTeam(team.id)}
-                          className='w-full px-4 py-2 flex justify-between items-center'>
-                          <div className='flex items-center'>
-                            <div
-                              className='w-4 h-4 rounded-full mr-2'
-                              style={{ backgroundColor: team.color }}
-                            />
-                            <h3 className='text-base font-medium text-gray-900'>
-                              {team.name}
-                            </h3>
-                          </div>
-                          <div className='flex items-center space-x-4'>
-                            <span className='text-sm font-semibold text-gray-900'>
-                              {calculateTeamScore(team)}
-                            </span>
-                            <svg
-                              className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-                                expandedTeams.has(team.id) ? 'rotate-180' : ''
-                              }`}
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'>
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M19 9l-7 7-7-7'
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                          expandedTeams.has(team.id)
-                            ? 'max-h-[1000px] border-t border-gray-200'
-                            : 'max-h-0'
-                        }`}>
-                        {renderTeamPlayers(team)}
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-            {/* Last Update Time */}
-            <div className='text-xs text-gray-400 text-center py-2 border-t border-gray-100 flex items-center justify-center gap-2'>
-              <span>
-                Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
-              </span>
-              <button
-                onClick={fetchLeague}
-                className='p-1 hover:bg-gray-100 rounded-full transition-colors'
-                title='Refresh data'>
-                <svg
-                  className='w-4 h-4'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Add/Leave League Buttons */}
-        <div className='flex justify-center my-8'>
-          {userHasTeam ? (
-            <button
-              onClick={handleLeaveLeague}
-              disabled={isActionLoading}
-              className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200'>
-              {isActionLoading ? 'Leaving...' : 'Leave League'}
-            </button>
-          ) : (
-            <button
-              onClick={handleJoinLeague}
-              disabled={isActionLoading}
-              className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
-              {isActionLoading ? 'Joining...' : 'Join League'}
-            </button>
-          )}
-        </div>
-
-        {/* Share Section */}
-        <div className='flex justify-center my-8'>
-          <Share
-            url={`${
-              import.meta.env.VITE_BASE_URL || window.location.origin
-            }/public/team`}
-            title='Share!'
-            subtitle='Free &#x2022; No Signup Required'
-          />
-        </div>
+      {/* Share Section */}
+      <div className='flex justify-center my-8'>
+        <Share
+          url={`${
+            import.meta.env.VITE_BASE_URL || window.location.origin
+          }/public/team`}
+          title='Share!'
+          subtitle='Free &#x2022; No Signup Required'
+        />
       </div>
     </div>
   );

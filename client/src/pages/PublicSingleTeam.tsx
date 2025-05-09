@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { publicLeagueApi, Tournament } from '../services/publicLeagueApi';
+import { publicLeagueApi } from '../services/publicLeagueApi';
 import type { Team, TeamPlayer } from '../services/api';
 
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { PlayerScorecard } from '../components/player/PlayerScorecard';
-import { TournamentInfoCard } from '../components/common/TournamentInfoCard';
 import { Share } from '../components/common/Share';
 
 export const PublicSingleTeam: React.FC = () => {
@@ -19,9 +18,6 @@ export const PublicSingleTeam: React.FC = () => {
     new Set()
   );
   const [isEditing, setIsEditing] = useState(false);
-  const [tournament, setTournament] = useState<Tournament | undefined>();
-  const [tournamentLoading, setTournamentLoading] = useState(true);
-  const [tournamentError, setTournamentError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchTeam = async () => {
@@ -37,22 +33,8 @@ export const PublicSingleTeam: React.FC = () => {
     }
   };
 
-  const fetchTournament = async () => {
-    setTournamentLoading(true);
-    setTournamentError(null);
-    try {
-      const result = await publicLeagueApi.getCurrentTournament();
-      setTournament(result);
-    } catch {
-      setTournamentError('Failed to load tournament');
-    } finally {
-      setTournamentLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchTeam();
-    fetchTournament();
   }, []);
 
   const togglePlayer = (playerId: string) => {
@@ -173,7 +155,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className='mx-auto md:px-4 md:py-8'>
+      <div className='px-4 py-4'>
         <LoadingSpinner />
       </div>
     );
@@ -181,7 +163,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (error) {
     return (
-      <div className='mx-auto md:px-4 md:py-8'>
+      <div className='px-4 py-4'>
         <ErrorMessage message={error} />
       </div>
     );
@@ -190,22 +172,7 @@ export const PublicSingleTeam: React.FC = () => {
   // If no team, show the form to create one
   if (!team) {
     return (
-      <div className='mx-auto md:px-4 md:py-8'>
-        {/* Tournament Info Card */}
-        {tournamentLoading ? (
-          <div className='md:mb-6'>
-            <LoadingSpinner />
-          </div>
-        ) : tournamentError ? (
-          <div className='md:mb-6'>
-            <ErrorMessage message={tournamentError} />
-          </div>
-        ) : tournament ? (
-          <div className='md:mb-6'>
-            <TournamentInfoCard tournament={tournament} />
-          </div>
-        ) : null}
-
+      <div className='px-4 py-4'>
         <PublicTeamFormComponent
           leagueId={''}
           editMode={true}
@@ -221,55 +188,23 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isEditing) {
     return (
-      <div className='mx-auto md:px-4 md:py-4'>
-        <div className='max-w-2xl mx-auto'>
-          {/* Tournament Info Card */}
-          {tournamentLoading ? (
-            <div className='md:mb-6'>
-              <LoadingSpinner />
-            </div>
-          ) : tournamentError ? (
-            <div className='md:mb-6'>
-              <ErrorMessage message={tournamentError} />
-            </div>
-          ) : tournament ? (
-            <div className='md:mb-6'>
-              <TournamentInfoCard tournament={tournament} />
-            </div>
-          ) : null}
-          <PublicTeamFormComponent
-            leagueId={''}
-            editMode={true}
-            onCancel={() => setIsEditing(false)}
-            onSuccess={() => {
-              setIsEditing(false);
-              fetchTeam();
-            }}
-          />
-        </div>
+      <div className='px-4 py-4'>
+        <PublicTeamFormComponent
+          leagueId={''}
+          editMode={true}
+          onCancel={() => setIsEditing(false)}
+          onSuccess={() => {
+            setIsEditing(false);
+            fetchTeam();
+          }}
+        />
       </div>
     );
   }
 
   return (
-    <div className='mx-auto md:px-4 md:py-8'>
-      <div className='max-w-2xl mx-auto'>
-        {/* Tournament Info Card */}
-        {tournamentLoading ? (
-          <div className='md:mb-6'>
-            <LoadingSpinner />
-          </div>
-        ) : tournamentError ? (
-          <div className='md:mb-6'>
-            <ErrorMessage message={tournamentError} />
-          </div>
-        ) : tournament ? (
-          <div className='md:mb-6'>
-            <TournamentInfoCard tournament={tournament} />
-          </div>
-        ) : null}
-      </div>
-      <div className='max-w-2xl mx-auto bg-white rounded-lg shadow relative px-6 pt-6'>
+    <div className='px-4 py-4'>
+      <div className='bg-white rounded-lg shadow relative px-6 pt-6'>
         <h2 className='text-lg font-semibold mb-2 flex items-center gap-2'>
           <div
             className='w-4 h-4 rounded-full'

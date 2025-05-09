@@ -1,14 +1,54 @@
-import React from 'react';
-import type { Tournament } from '../../services/publicLeagueApi';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  publicLeagueApi,
+  type Tournament,
+} from '../../services/publicLeagueApi';
+import { LoadingSpinner } from './LoadingSpinner';
+import { ErrorMessage } from './ErrorMessage';
 
-interface TournamentInfoCardProps {
-  tournament: Tournament;
-}
+export const TournamentInfoCard: React.FC = () => {
+  const [tournament, setTournament] = useState<Tournament | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export const TournamentInfoCard: React.FC<TournamentInfoCardProps> = ({
-  tournament,
-}) => {
+  useEffect(() => {
+    const fetchTournament = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await publicLeagueApi.getCurrentTournament();
+        setTournament(result);
+      } catch {
+        setError('Failed to load tournament');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTournament();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className='relative overflow-hidden md:rounded-lg border border-gray-200 p-4'>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='relative overflow-hidden md:rounded-lg border border-gray-200 p-4'>
+        <ErrorMessage message={error} />
+      </div>
+    );
+  }
+
+  if (!tournament) {
+    return null;
+  }
+
   return (
     <div className='relative overflow-hidden md:rounded-lg border border-gray-200'>
       {tournament.beautyImage ? (
