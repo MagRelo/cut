@@ -308,6 +308,16 @@ export const PublicLeagueLobby: React.FC = () => {
       <div className='bg-white rounded-lg shadow'>
         <div className='flex justify-between items-center p-4'>
           <h1 className='text-2xl font-bold'>{league.name}</h1>
+
+          {/* join button */}
+          {!userHasTeam && (
+            <button
+              onClick={handleJoinLeague}
+              disabled={isActionLoading}
+              className='float-right ml-4 bg-emerald-600 text-white px-3 py-1 text-sm rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              Join
+            </button>
+          )}
         </div>
         <div>
           <div className='space-y-0'>
@@ -399,23 +409,18 @@ export const PublicLeagueLobby: React.FC = () => {
         </div>
       </div>
 
-      {/* Add/Leave League Buttons */}
+      {/* Leave League Buttons */}
       <div className='flex justify-center my-8'>
         {userHasTeam ? (
           <button
             onClick={handleLeaveLeague}
             disabled={isActionLoading}
-            className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200'>
+            className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 text-sm disabled:cursor-not-allowed border border-gray-200'>
             {isActionLoading ? 'Leaving...' : 'Leave League'}
           </button>
-        ) : (
-          <button
-            onClick={handleJoinLeague}
-            disabled={isActionLoading}
-            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
-            {isActionLoading ? 'Joining...' : 'Join League'}
-          </button>
-        )}
+        ) : null}
+
+        <hr className='border-t border-gray-200 ' />
       </div>
 
       {/* Share Section */}
