@@ -249,11 +249,7 @@ export const PublicSingleTeam: React.FC = () => {
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>
-        <Share
-          url={window.location.href}
-          title='Share!'
-          subtitle='Free &#x2022; No Signup Required'
-        />
+        <Share url={window.location.href} title='Share' subtitle='' />
       </div>
     </div>
   );

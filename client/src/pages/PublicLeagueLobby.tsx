@@ -429,8 +429,8 @@ export const PublicLeagueLobby: React.FC = () => {
           url={`${
             import.meta.env.VITE_BASE_URL || window.location.origin
           }/public/team`}
-          title='Share!'
-          subtitle='Free &#x2022; No Signup Required'
+          title='Share'
+          subtitle=''
         />
       </div>
     </div>
