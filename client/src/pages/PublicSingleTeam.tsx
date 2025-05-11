@@ -136,7 +136,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   return (
     <div className='px-4 py-4'>
-      <div className='bg-white rounded-lg shadow relative px-6 pt-6'>
+      <div className='bg-white rounded shadow relative px-6 pt-6'>
         <h2 className='text-lg font-semibold mb-2 flex items-center gap-2'>
           <div
             className='w-4 h-4 rounded-full'
@@ -242,7 +242,7 @@ export const PublicSingleTeam: React.FC = () => {
       <div className='max-w-2xl mx-auto mt-6 flex justify-center mb-6'>
         <button
           onClick={() => navigate('/public/leagues')}
-          className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
+          className='px-6 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
           View Leagues
         </button>
       </div>

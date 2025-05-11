@@ -181,7 +181,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
   }
 
   return (
-    <div className='bg-white rounded-lg shadow p-6'>
+    <div className='bg-white rounded shadow p-6'>
       <div className=''>
         {error && <ErrorMessage message={error} />}
 
@@ -270,7 +270,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
                   id='teamName'
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base'
+                  className='appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-base'
                   placeholder='Enter your team name'
                 />
               </div>
@@ -324,7 +324,7 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
             <button
               type='submit'
               disabled={isSaving}
-              className='px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
+              className='px-6 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
               {isSaving
                 ? myTeam
                   ? 'Saving...'

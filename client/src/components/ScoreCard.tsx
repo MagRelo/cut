@@ -12,7 +12,7 @@ interface ScoreCardProps {
 
 export const ScoreCard: React.FC<ScoreCardProps> = ({ player1, player2 }) => {
   return (
-    <div className='bg-white rounded-lg shadow-sm mb-2 overflow-hidden'>
+    <div className='bg-white rounded shadow-sm mb-2 overflow-hidden'>
       <div
         className={`grid grid-cols-2 ${
           player1.score > 0 ? 'bg-green-50' : ''

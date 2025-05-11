@@ -21,7 +21,7 @@ export const Share: React.FC<ShareProps> = ({
   };
 
   return (
-    <div className='bg-white rounded-lg shadow w-fit min-w-0'>
+    <div className='bg-white rounded shadow w-fit min-w-0'>
       <div className='p-4'>
         <div className='flex flex-col items-center space-y-3'>
           <h2 className='text-xl font-semibold text-gray-700'>{title}</h2>
@@ -64,7 +64,7 @@ export const Share: React.FC<ShareProps> = ({
               </>
             )}
           </button>
-          <div className='p-3 bg-white rounded-lg border border-gray-200'>
+          <div className='p-3 bg-white rounded border border-gray-200'>
             <QRCodeSVG value={url} size={128} />
           </div>
         </div>

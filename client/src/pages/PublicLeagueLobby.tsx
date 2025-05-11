@@ -302,10 +302,10 @@ export const PublicLeagueLobby: React.FC = () => {
 
   return (
     <div className='px-4 py-4'>
-      <div className='bg-white rounded-lg shadow'></div>
+      <div className='bg-white rounded shadow'></div>
 
       {/* Teams Section */}
-      <div className='bg-white rounded-lg shadow'>
+      <div className='bg-white rounded shadow'>
         <div className='flex justify-between items-center p-4'>
           <h1 className='text-2xl font-bold'>{league.name}</h1>
 

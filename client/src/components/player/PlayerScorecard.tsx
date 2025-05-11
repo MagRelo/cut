@@ -191,7 +191,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   };
 
   return (
-    <div className={`bg-gray-100 rounded-lg shadow ${className}`}>
+    <div className={`bg-gray-100 rounded shadow ${className}`}>
       {/* Round selector */}
       <div className='px-1 py-1 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
@@ -214,7 +214,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
                     key={round}
                     onClick={() => setSelectedRound(round)}
                     className={`
-                      px-2 py-0.5 text-xs font-medium rounded border
+                      px-2 py-0.5 text-xs font-medium rounded-md border
                       ${
                         isActive
                           ? 'bg-white text-gray-900 border-emerald-500'
