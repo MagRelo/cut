@@ -1,45 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { PGAPlayer } from '../../schemas/team';
 import type { Team } from '../../services/api';
 import { api } from '../../services/api';
-import { publicLeagueApi } from '../../services/publicLeagueApi';
+import { usePublicLeagueApi } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
-import type { LeagueTeam } from '../../services/publicLeagueApi';
 
 interface PublicTeamFormProps {
-  leagueId: string;
   onSuccess?: () => void;
   editMode?: boolean;
   onCancel?: () => void;
 }
 
-export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
-  leagueId,
+export const PublicTeamFormComponent = ({
   onSuccess,
-  editMode,
+  editMode = false,
   onCancel,
-}) => {
-  const userId = localStorage.getItem('publicUserGuid');
-  const [isEditing, setIsEditing] = useState(!!editMode);
-  const [myTeam, setMyTeam] = useState<Team | null>(null);
+}: PublicTeamFormProps) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(editMode);
+
   const [teamName, setTeamName] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [teamColor, setTeamColor] = useState('#059669');
   const [availablePlayers, setAvailablePlayers] = useState<PGAPlayer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [myTeam, setMyTeam] = useState<Team | null>(null);
 
-  // Sync isEditing with editMode prop if provided
-  useEffect(() => {
-    if (typeof editMode === 'boolean') {
-      setIsEditing(editMode);
-    }
-  }, [editMode]);
+  const publicLeagueApi = usePublicLeagueApi();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
+      if (!isMounted) return;
+
       try {
         setIsLoading(true);
         const [players, team] = await Promise.all([
@@ -47,8 +43,9 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
           publicLeagueApi.getStandaloneTeam(),
         ]);
 
-        setAvailablePlayers(players);
+        if (!isMounted) return;
 
+        setAvailablePlayers(players);
         if (team) {
           setMyTeam(team);
           setTeamName(team.name);
@@ -56,16 +53,21 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
           setTeamColor(team.color);
         }
       } catch (err) {
+        if (!isMounted) return;
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    console.log('userId', userId);
-
     fetchData();
-  }, [leagueId, userId]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [publicLeagueApi]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,33 +87,22 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
 
     try {
       if (myTeam) {
-        await publicLeagueApi.updateTeam(leagueId, myTeam.id, {
+        await publicLeagueApi.updateStandaloneTeam(myTeam.id, {
           name: teamName,
           players: selectedPlayers,
           color: teamColor,
         });
       } else {
-        await publicLeagueApi.createTeam(leagueId, {
+        await publicLeagueApi.createStandaloneTeam({
           name: teamName,
           players: selectedPlayers,
           color: teamColor,
         });
       }
 
-      let updatedTeam: Team | undefined = undefined;
-      if (!leagueId) {
-        // Standalone mode: fetch standalone team
-        updatedTeam = await publicLeagueApi.getStandaloneTeam();
-      } else {
-        // League mode: fetch league and find user's team
-        const updatedLeague = await publicLeagueApi.getLeague(leagueId);
-        const updatedTeams: Team[] = updatedLeague.leagueTeams.map(
-          (lt: LeagueTeam) => lt.team
-        );
-        updatedTeam = updatedTeams.find((t: Team) => t.userId === userId);
-      }
-      setMyTeam(updatedTeam || null);
+      const updatedTeam = await publicLeagueApi.getStandaloneTeam();
       if (updatedTeam) {
+        setMyTeam(updatedTeam);
         setIsEditing(false);
         if (onSuccess) onSuccess();
       }
@@ -131,11 +122,9 @@ export const PublicTeamFormComponent: React.FC<PublicTeamFormProps> = ({
     index: number
   ) => {
     const playerId = e.target.value;
-    setSelectedPlayers((prev) => {
-      const newPlayers = [...prev];
-      newPlayers[index] = playerId;
-      return newPlayers;
-    });
+    const newPlayers = [...selectedPlayers];
+    newPlayers[index] = playerId;
+    setSelectedPlayers(newPlayers);
   };
 
   if (isLoading) {

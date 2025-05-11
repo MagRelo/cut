@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { publicLeagueApi } from '../services/publicLeagueApi';
+import { usePublicLeagueApi } from '../services/publicLeagueApi';
 import type { Team, TeamPlayer } from '../services/api';
 
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -19,6 +19,7 @@ export const PublicSingleTeam: React.FC = () => {
   );
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const publicLeagueApi = usePublicLeagueApi();
 
   const fetchTeam = async () => {
     setIsLoading(true);
@@ -35,7 +36,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   useEffect(() => {
     fetchTeam();
-  }, []);
+  }, [publicLeagueApi]);
 
   const togglePlayer = (playerId: string) => {
     setExpandedPlayers((prev) => {

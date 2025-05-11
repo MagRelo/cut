@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  publicLeagueApi,
+  usePublicLeagueApi,
   type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
@@ -76,6 +76,7 @@ export const PublicLeagueLobby: React.FC = () => {
     new Set()
   );
   const navigate = useNavigate();
+  const publicLeagueApi = usePublicLeagueApi();
 
   const fetchLeague = async () => {
     if (!leagueId) return;

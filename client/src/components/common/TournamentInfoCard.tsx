@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  publicLeagueApi,
+  usePublicLeagueApi,
   type Tournament,
 } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from './LoadingSpinner';
@@ -12,6 +12,7 @@ export const TournamentInfoCard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const location = useLocation();
+  const publicLeagueApi = usePublicLeagueApi();
 
   useEffect(() => {
     const fetchTournament = async () => {

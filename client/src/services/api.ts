@@ -258,7 +258,12 @@ export class ApiService {
     }
   }
 
-  async register(email: string, password: string, name: string) {
+  async register(
+    email: string,
+    password: string,
+    name: string,
+    anonymousGuid?: string
+  ): Promise<AuthResponse> {
     const response = await this.request<AuthResponse>(
       'POST',
       '/auth/register',
@@ -266,6 +271,7 @@ export class ApiService {
         email,
         password,
         name,
+        anonymousGuid,
       }
     );
     localStorage.setItem('token', response.token);

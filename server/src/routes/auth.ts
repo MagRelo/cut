@@ -29,6 +29,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
+  anonymousGuid: z.string().uuid().optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -117,7 +118,9 @@ router.post('/login', async (req, res) => {
 // Register route
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = registerSchema.parse(req.body);
+    const { email, password, name, anonymousGuid } = registerSchema.parse(
+      req.body
+    );
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -129,6 +132,105 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // If this is an anonymous user upgrade, we need to transfer their data
+    if (anonymousGuid) {
+      // Find the anonymous user
+      const anonymousUser = await prisma.user.findUnique({
+        where: { id: anonymousGuid },
+        include: {
+          teams: {
+            include: {
+              leagueTeams: {
+                include: {
+                  league: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!anonymousUser) {
+        return res.status(400).json({ error: 'Anonymous user not found' });
+      }
+
+      // Create the new user and transfer data in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the new user
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name,
+          },
+        });
+
+        // Transfer all teams and their league associations
+        for (const team of anonymousUser.teams) {
+          // Update the team's owner
+          await tx.team.update({
+            where: { id: team.id },
+            data: { userId: newUser.id },
+          });
+
+          // Transfer league memberships
+          for (const leagueTeam of team.leagueTeams) {
+            await tx.leagueMembership.create({
+              data: {
+                leagueId: leagueTeam.league.id,
+                userId: newUser.id,
+              },
+            });
+          }
+        }
+
+        // Delete the anonymous user
+        await tx.user.delete({
+          where: { id: anonymousGuid },
+        });
+
+        return newUser;
+      });
+
+      // Create GetStream user
+      await ensureStreamUser(result.id, {
+        name: result.name,
+      });
+
+      // Generate JWT token for immediate login
+      const token = jwt.sign(
+        { userId: result.id },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+
+      // Get the user's teams with league info
+      const userWithTeams = await prisma.user.findUnique({
+        where: { id: result.id },
+        include: userInclude,
+      });
+
+      // Return user data and token
+      return res.status(201).json({
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        userType: result.userType,
+        token,
+        streamToken: generateUserToken(result.id),
+        teams:
+          userWithTeams?.teams.flatMap((team) =>
+            team.leagueTeams.map((lt) => ({
+              id: team.id,
+              name: team.name,
+              leagueId: lt.league.id,
+              leagueName: lt.league.name,
+            }))
+          ) || [],
+      });
+    }
+
+    // Regular registration flow for non-anonymous users
     const user = await prisma.user.create({
       data: {
         email,
@@ -156,6 +258,7 @@ router.post('/register', async (req, res) => {
       name: user.name,
       userType: user.userType,
       token,
+      streamToken: generateUserToken(user.id),
       teams: [],
     });
   } catch (error) {

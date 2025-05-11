@@ -1,4 +1,6 @@
+import { useCallback, useMemo } from 'react';
 import type { Team } from './api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ApiConfig {
   baseURL: string;
@@ -84,167 +86,179 @@ interface UpdatePublicTeamPayload {
   color?: string;
 }
 
-export class PublicLeagueApiService {
-  private config: ApiConfig;
+const config: ApiConfig = {
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  headers: {},
+};
 
-  constructor() {
-    this.config = {
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-      headers: {},
-    };
+async function request<T>(
+  method: string,
+  endpoint: string,
+  data?: unknown
+): Promise<T> {
+  const response = await fetch(`${config.baseURL}${endpoint}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...config.headers,
+    },
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  private async request<T>(
-    method: string,
-    endpoint: string,
-    data?: unknown
-  ): Promise<T> {
-    const response = await fetch(`${this.config.baseURL}${endpoint}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.config.headers,
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Return undefined for 204 responses
-    if (response.status === 204) {
-      return undefined as T;
-    }
-
-    return response.json();
+  // Return undefined for 204 responses
+  if (response.status === 204) {
+    return undefined as T;
   }
 
-  // Public League endpoints
-  async listLeagues(): Promise<PublicLeaguesResponse> {
-    return this.request<PublicLeaguesResponse>('GET', '/public');
-  }
-
-  async createLeague(data: CreatePublicLeaguePayload): Promise<PublicLeague> {
-    // Get or generate user GUID
-    const userGuid =
-      localStorage.getItem('publicUserGuid') || crypto.randomUUID();
-
-    return this.request<PublicLeague>('POST', '/public', {
-      ...data,
-      userId: userGuid,
-    });
-  }
-
-  async getLeague(leagueId: string): Promise<PublicLeague> {
-    return this.request<PublicLeague>('GET', `/public/${leagueId}`);
-  }
-
-  async joinLeague(leagueId: string): Promise<PublicLeague> {
-    // Get or generate user GUID
-    const userGuid =
-      localStorage.getItem('publicUserGuid') || crypto.randomUUID();
-
-    // Store the user GUID if it's new
-    if (!localStorage.getItem('publicUserGuid')) {
-      localStorage.setItem('publicUserGuid', userGuid);
-    }
-
-    return this.request<PublicLeague>('POST', `/public/${leagueId}/join`, {
-      userId: userGuid,
-    });
-  }
-
-  async leaveLeague(leagueId: string): Promise<void> {
-    const userGuid = localStorage.getItem('publicUserGuid');
-    if (!userGuid) {
-      throw new Error('No user GUID found. Cannot leave league.');
-    }
-
-    return this.request<void>('POST', `/public/${leagueId}/leave`, {
-      userId: userGuid,
-    });
-  }
-
-  async createTeam(
-    leagueId: string,
-    data: CreatePublicTeamPayload
-  ): Promise<Team> {
-    // Generate a random user GUID if not stored in localStorage
-    const userGuid =
-      localStorage.getItem('publicUserGuid') || crypto.randomUUID();
-
-    // Store the user GUID for future use
-    if (!localStorage.getItem('publicUserGuid')) {
-      localStorage.setItem('publicUserGuid', userGuid);
-    }
-
-    return this.request<Team>('POST', `/public/${leagueId}/teams`, {
-      ...data,
-      userId: userGuid,
-    });
-  }
-
-  async updateTeam(
-    leagueId: string,
-    teamId: string,
-    data: UpdatePublicTeamPayload
-  ): Promise<Team> {
-    const userGuid = localStorage.getItem('publicUserGuid');
-    if (!userGuid) {
-      throw new Error('No user GUID found. Cannot update team.');
-    }
-
-    return this.request<Team>('PUT', `/public/${leagueId}/teams/${teamId}`, {
-      ...data,
-      userId: userGuid,
-    });
-  }
-
-  async createStandaloneTeam(data: CreatePublicTeamPayload): Promise<Team> {
-    // Generate a random user GUID if not stored in localStorage
-    const userGuid =
-      localStorage.getItem('publicUserGuid') || crypto.randomUUID();
-
-    // Store the user GUID for future use
-    if (!localStorage.getItem('publicUserGuid')) {
-      localStorage.setItem('publicUserGuid', userGuid);
-    }
-
-    return this.request<Team>('POST', `/public/teams`, {
-      ...data,
-      userId: userGuid,
-    });
-  }
-
-  async updateStandaloneTeam(
-    teamId: string,
-    data: UpdatePublicTeamPayload
-  ): Promise<Team> {
-    const userGuid = localStorage.getItem('publicUserGuid');
-    if (!userGuid) {
-      throw new Error('No user GUID found. Cannot update team.');
-    }
-
-    return this.request<Team>('PUT', `/public/teams/${teamId}`, {
-      ...data,
-      userId: userGuid,
-    });
-  }
-
-  async getStandaloneTeam(): Promise<Team> {
-    const userGuid = localStorage.getItem('publicUserGuid');
-
-    return this.request<Team>('GET', `/public/teams?userId=${userGuid}`);
-  }
-
-  async getCurrentTournament(): Promise<Tournament | undefined> {
-    return this.request<Tournament | undefined>('GET', '/public/tournament');
-  }
+  return response.json();
 }
 
-// Create and export a singleton instance
-export const publicLeagueApi = new PublicLeagueApiService();
+export function usePublicLeagueApi() {
+  const { getOrCreateAnonymousUser, user } = useAuth();
+
+  // Helper to get the user identifier (either logged in user ID or anonymous GUID)
+  const getUserIdentifier = useCallback(() => {
+    if (user) {
+      return user.id;
+    }
+    const { guid } = getOrCreateAnonymousUser();
+    return guid;
+  }, [user, getOrCreateAnonymousUser]);
+
+  const listLeagues = useCallback(async (): Promise<PublicLeaguesResponse> => {
+    return request<PublicLeaguesResponse>('GET', '/public');
+  }, []);
+
+  const createLeague = useCallback(
+    async (data: CreatePublicLeaguePayload): Promise<PublicLeague> => {
+      const userId = getUserIdentifier();
+      return request<PublicLeague>('POST', '/public', {
+        ...data,
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const getLeague = useCallback(
+    async (leagueId: string): Promise<PublicLeague> => {
+      return request<PublicLeague>('GET', `/public/${leagueId}`);
+    },
+    []
+  );
+
+  const joinLeague = useCallback(
+    async (leagueId: string): Promise<PublicLeague> => {
+      const userId = getUserIdentifier();
+      return request<PublicLeague>('POST', `/public/${leagueId}/join`, {
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const leaveLeague = useCallback(
+    async (leagueId: string): Promise<void> => {
+      const userId = getUserIdentifier();
+      return request<void>('POST', `/public/${leagueId}/leave`, {
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const createTeam = useCallback(
+    async (leagueId: string, data: CreatePublicTeamPayload): Promise<Team> => {
+      const userId = getUserIdentifier();
+      return request<Team>('POST', `/public/${leagueId}/teams`, {
+        ...data,
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const updateTeam = useCallback(
+    async (
+      leagueId: string,
+      teamId: string,
+      data: UpdatePublicTeamPayload
+    ): Promise<Team> => {
+      const userId = getUserIdentifier();
+      return request<Team>('PUT', `/public/${leagueId}/teams/${teamId}`, {
+        ...data,
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const createStandaloneTeam = useCallback(
+    async (data: CreatePublicTeamPayload): Promise<Team> => {
+      const userId = getUserIdentifier();
+      return request<Team>('POST', `/public/teams`, {
+        ...data,
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const updateStandaloneTeam = useCallback(
+    async (teamId: string, data: UpdatePublicTeamPayload): Promise<Team> => {
+      const userId = getUserIdentifier();
+      return request<Team>('PUT', `/public/teams/${teamId}`, {
+        ...data,
+        userId,
+      });
+    },
+    [getUserIdentifier]
+  );
+
+  const getStandaloneTeam = useCallback(async (): Promise<Team> => {
+    const userId = getUserIdentifier();
+    return request<Team>('GET', `/public/teams?userId=${userId}`);
+  }, [getUserIdentifier]);
+
+  const getCurrentTournament = useCallback(async (): Promise<
+    Tournament | undefined
+  > => {
+    return request<Tournament | undefined>('GET', '/public/tournament');
+  }, []);
+
+  return useMemo(
+    () => ({
+      listLeagues,
+      createLeague,
+      getLeague,
+      joinLeague,
+      leaveLeague,
+      createTeam,
+      updateTeam,
+      createStandaloneTeam,
+      updateStandaloneTeam,
+      getStandaloneTeam,
+      getCurrentTournament,
+    }),
+    [
+      listLeagues,
+      createLeague,
+      getLeague,
+      joinLeague,
+      leaveLeague,
+      createTeam,
+      updateTeam,
+      createStandaloneTeam,
+      updateStandaloneTeam,
+      getStandaloneTeam,
+      getCurrentTournament,
+    ]
+  );
+}
 
 // Export type definitions
 export type {

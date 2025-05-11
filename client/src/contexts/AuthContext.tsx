@@ -15,8 +15,13 @@ interface User {
   }>;
 }
 
+interface AnonymousUser {
+  guid: string;
+}
+
 interface AuthContextData {
   user: User | null;
+  anonymousUser: AnonymousUser | null;
   loading: boolean;
   streamToken: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -26,6 +31,12 @@ interface AuthContextData {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   isAdmin: () => boolean;
+  getOrCreateAnonymousUser: () => AnonymousUser;
+  upgradeAnonymousUser: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -40,6 +51,9 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [anonymousUser, setAnonymousUser] = useState<AnonymousUser | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [streamToken, setStreamToken] = useState<string | null>(null);
   const api = new ApiService();
@@ -55,6 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             streamToken: string;
           }>('/auth/stream-token');
           setStreamToken(newStreamToken);
+        } else {
+          // Check for anonymous user
+          const guid = localStorage.getItem('publicUserGuid');
+          if (guid) {
+            setAnonymousUser({ guid });
+          }
         }
       } catch (error: unknown) {
         console.error('Auth check failed:', error);
@@ -67,10 +87,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
+  const getOrCreateAnonymousUser = (): AnonymousUser => {
+    if (anonymousUser) {
+      return anonymousUser;
+    }
+
+    const guid = crypto.randomUUID();
+    localStorage.setItem('publicUserGuid', guid);
+    const newAnonymousUser = { guid };
+    setAnonymousUser(newAnonymousUser);
+    return newAnonymousUser;
+  };
+
+  const upgradeAnonymousUser = async (
+    email: string,
+    password: string,
+    name: string
+  ) => {
+    if (!anonymousUser) {
+      throw new Error('No anonymous user to upgrade');
+    }
+
+    // Register the user with their anonymous GUID
+    const response = await api.register(
+      email,
+      password,
+      name,
+      anonymousUser.guid
+    );
+    setUser(response);
+    setStreamToken(response.streamToken);
+    setAnonymousUser(null);
+    localStorage.removeItem('publicUserGuid');
+  };
+
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
     setUser(response);
     setStreamToken(response.streamToken);
+    // Clear anonymous user if it exists
+    if (anonymousUser) {
+      setAnonymousUser(null);
+      localStorage.removeItem('publicUserGuid');
+    }
   };
 
   const logout = async () => {
@@ -102,6 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await api.register(email, password, name);
     setUser(response);
     setStreamToken(response.streamToken);
+    // Clear anonymous user if it exists
+    if (anonymousUser) {
+      setAnonymousUser(null);
+      localStorage.removeItem('publicUserGuid');
+    }
   };
 
   const forgotPassword = async (email: string) => {
@@ -120,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        anonymousUser,
         loading,
         streamToken,
         login,
@@ -129,6 +194,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forgotPassword,
         resetPassword,
         isAdmin,
+        getOrCreateAnonymousUser,
+        upgradeAnonymousUser,
       }}>
       {children}
     </AuthContext.Provider>

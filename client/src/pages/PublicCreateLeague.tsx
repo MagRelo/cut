@@ -3,7 +3,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { publicLeagueApi } from '../services/publicLeagueApi';
+import { usePublicLeagueApi } from '../services/publicLeagueApi';
 
 // Validation schema
 const createLeagueSchema = z.object({
@@ -21,6 +21,7 @@ type CreateLeagueFormData = z.infer<typeof createLeagueSchema>;
 
 export function PublicCreateLeague() {
   const navigate = useNavigate();
+  const publicLeagueApi = usePublicLeagueApi();
   const {
     register,
     handleSubmit,
@@ -40,7 +41,7 @@ export function PublicCreateLeague() {
         // You might want to add proper error handling/toast here
       }
     },
-    [navigate]
+    [navigate, publicLeagueApi]
   );
 
   return (

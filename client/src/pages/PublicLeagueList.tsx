@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  publicLeagueApi,
+  usePublicLeagueApi,
   type PublicLeague,
 } from '../services/publicLeagueApi';
 
@@ -9,6 +9,7 @@ export const PublicLeagueList: React.FC = () => {
   const [leagues, setLeagues] = useState<PublicLeague[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const publicLeagueApi = usePublicLeagueApi();
 
   useEffect(() => {
     const fetchLeagues = async () => {
