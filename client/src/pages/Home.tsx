@@ -10,9 +10,9 @@ export const Home: React.FC = () => {
       <img
         src='/cut-logo2.jpeg'
         alt='Cut Logo'
-        className='w-48 h-48 mb-6 border-2 border-emerald-500 shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
+        className='w-48 h-48 mb-6 border-2 border-black shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
       />
-      <h1 className='text-6xl font-bold text-emerald-600 mb-8'>the Cut</h1>
+      <h1 className='text-6xl font-bold text-black mb-8'>the Cut</h1>
 
       <div className='flex flex-col md:flex-row gap-4 mt-8'>
         <Link
