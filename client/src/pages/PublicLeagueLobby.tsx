@@ -5,7 +5,7 @@ import {
   type PublicLeague as ApiPublicLeague,
 } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
-import { PlayerRow } from '../components/player/PlayerRow';
+import { PlayerTable } from '../components/player/PlayerRow';
 
 interface Player {
   id: string;
@@ -72,9 +72,6 @@ export const PublicLeagueLobby: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
-  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
-    new Set()
-  );
   const navigate = useNavigate();
   const publicLeagueApi = usePublicLeagueApi();
 
@@ -109,18 +106,6 @@ export const PublicLeagueLobby: React.FC = () => {
         next.delete(teamId);
       } else {
         next.add(teamId);
-      }
-      return next;
-    });
-  };
-
-  const togglePlayer = (playerId: string) => {
-    setExpandedPlayers((prev) => {
-      const next = new Set(prev);
-      if (next.has(playerId)) {
-        next.delete(playerId);
-      } else {
-        next.add(playerId);
       }
       return next;
     });
@@ -161,78 +146,9 @@ export const PublicLeagueLobby: React.FC = () => {
     return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
   };
 
-  const renderPlayerRow = (player: TeamPlayer) => (
-    <PlayerRow
-      key={player.id}
-      player={player}
-      isExpanded={expandedPlayers.has(player.id)}
-      onToggle={togglePlayer}
-    />
-  );
-
   const renderTeamPlayers = (team: Team) => (
     <div className='pb-4'>
-      <div className='overflow-x-auto'>
-        <div className='inline-block min-w-full align-middle'>
-          <table className='min-w-full divide-y divide-gray-200'>
-            <thead className='bg-gray-100'>
-              <tr>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  Pos
-                </th>
-                <th
-                  scope='col'
-                  className='py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  Player
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  Total
-                </th>
-
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  R1
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  R2
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  R3
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  R4
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  Cut
-                </th>
-                <th
-                  scope='col'
-                  className='px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
-                  Bonus
-                </th>
-              </tr>
-            </thead>
-            <tbody className='divide-y divide-gray-200'>
-              {team.players
-                .sort((a, b) => (b.total || 0) - (a.total || 0))
-                .map(renderPlayerRow)}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <PlayerTable players={team.players} />
     </div>
   );
 
