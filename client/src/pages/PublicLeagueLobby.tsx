@@ -3,40 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePublicLeagueApi } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
 import { PlayerTable } from '../components/player/PlayerRow';
-import { type PublicLeagueWithTeams, type LeagueTeam } from '../types/league';
-import { type Player } from '../types/player';
-import { type Team } from '../types/team';
+import { type PublicLeague } from '../types/league';
+import { type Team, type TeamPlayer } from '../types/team';
 
-interface Round {
-  strokes: number;
-  total?: number;
+interface LeagueResponse extends PublicLeague {
+  commissionerId: string;
 }
-
-interface TeamPlayer {
-  id: string;
-  teamId: string;
-  playerId: string;
-  active: boolean;
-  player: Player;
-  leaderboardPosition?: string;
-  r1?: Round;
-  r2?: Round;
-  r3?: Round;
-  r4?: Round;
-  cut?: number;
-  bonus?: number;
-  total?: number;
-  updatedAt: Date;
-}
-
-// interface PublicLeagueWithTeams
-//   extends Omit<PublicLeagueWithTeams, 'leagueTeams'> {
-//   leagueTeams: Array<LeagueTeam & { team: Team & { players: TeamPlayer[] } }>;
-// }
 
 export const PublicLeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
-  const [league, setLeague] = useState<PublicLeagueWithTeams | null>(null);
+  const [league, setLeague] = useState<PublicLeague | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -49,24 +25,41 @@ export const PublicLeagueLobby: React.FC = () => {
     if (!leagueId) return;
 
     try {
-      const data = await publicLeagueApi.getLeague(leagueId);
-      // Ensure leagueTeams is present for type safety
-      const leagueWithTeams: PublicLeagueWithTeams = {
+      const data = (await publicLeagueApi.getLeague(
+        leagueId
+      )) as LeagueResponse;
+
+      if (!data) {
+        setError('League not found');
+        return;
+      }
+
+      const leagueWithTeams: PublicLeague = {
         ...data,
-        leagueTeams: (data as { leagueTeams?: LeagueTeam[] }).leagueTeams ?? [],
+        isPublic: data.isPublic ?? false,
+        memberCount: data.memberCount ?? 0,
+        teamCount: data.teamCount ?? 0,
+        teams: data.teams ?? [],
+        members: data.members ?? [],
+        owner: data.owner ?? {
+          id: data.commissionerId,
+          name: 'League Owner',
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+        },
       };
       setLeague(leagueWithTeams);
-    } catch (err) {
+    } catch {
       setError('Failed to load league details');
-      console.error('Error fetching league:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('PublicLeagueLobby mounted with userId:', userId);
-    fetchLeague();
+    fetchLeague().catch(() => {
+      setError('Failed to initialize league');
+    });
   }, [leagueId]);
 
   const toggleTeam = (teamId: string) => {
@@ -83,16 +76,18 @@ export const PublicLeagueLobby: React.FC = () => {
 
   const calculateTeamScore = (team: Team) => {
     return team.players
-      .filter((player) => player.active)
-      .reduce((sum, player) => sum + (player.total || 0), 0);
+      .filter((player: TeamPlayer) => player.active)
+      .reduce(
+        (sum: number, player: TeamPlayer) => sum + (player.total || 0),
+        0
+      );
   };
 
   const findMostRecentPlayerUpdate = (): Date | null => {
-    if (!league?.leagueTeams?.length) return null;
+    if (!league?.teams?.length) return null;
 
     let mostRecent: Date | null = null;
-    league.leagueTeams.forEach((lt: LeagueTeam) => {
-      const team = lt.team;
+    league.teams.forEach((team: Team) => {
       team.players.forEach((player: TeamPlayer) => {
         const playerDate = new Date(player.updatedAt);
         if (!mostRecent || playerDate > mostRecent) {
@@ -128,10 +123,8 @@ export const PublicLeagueLobby: React.FC = () => {
     setIsActionLoading(true);
     try {
       await publicLeagueApi.joinLeague(leagueId);
-      // Refresh the league data after joining
       await fetchLeague();
-    } catch (err) {
-      console.error('Error joining league:', err);
+    } catch {
       setError('Failed to join league');
     } finally {
       setIsActionLoading(false);
@@ -144,11 +137,9 @@ export const PublicLeagueLobby: React.FC = () => {
     setIsActionLoading(true);
     try {
       await publicLeagueApi.leaveLeague(leagueId);
-      // Refresh the league data after leaving
       await fetchLeague();
-    } catch (err) {
+    } catch {
       setError('Failed to leave league');
-      console.error('Error leaving league:', err);
     } finally {
       setIsActionLoading(false);
     }
@@ -182,9 +173,7 @@ export const PublicLeagueLobby: React.FC = () => {
     );
   }
 
-  const teams: Team[] =
-    league.leagueTeams?.map((lt: LeagueTeam) => lt.team) ?? [];
-
+  const teams: Team[] = league.teams ?? [];
   const userHasTeam = teams.some((team) => team.userId === userId);
 
   return (

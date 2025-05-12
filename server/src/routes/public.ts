@@ -391,29 +391,27 @@ router.get('/leagues/:leagueId', async (req, res) => {
 
     const transformedLeague = {
       ...league,
-      leagueTeams: league.leagueTeams.map((lt) => ({
-        team: {
-          ...lt.team,
-          players: lt.team.players.map((tp) => {
-            const tournamentPlayer = tp.player.tournamentPlayers?.[0];
-            return {
-              ...tp,
-              leaderboardPosition: tournamentPlayer?.leaderboardPosition,
-              r1: tournamentPlayer?.r1,
-              r2: tournamentPlayer?.r2,
-              r3: tournamentPlayer?.r3,
-              r4: tournamentPlayer?.r4,
-              cut: tournamentPlayer?.cut,
-              bonus: tournamentPlayer?.bonus,
-              total: tournamentPlayer?.total,
-              updatedAt: tournamentPlayer?.updatedAt || tp.updatedAt,
-              player: {
-                ...tp.player,
-                tournamentPlayers: undefined,
-              },
-            };
-          }),
-        },
+      teams: league.leagueTeams.map((lt) => ({
+        ...lt.team,
+        players: lt.team.players.map((tp) => {
+          const tournamentPlayer = tp.player.tournamentPlayers?.[0];
+          return {
+            ...tp,
+            leaderboardPosition: tournamentPlayer?.leaderboardPosition,
+            r1: tournamentPlayer?.r1,
+            r2: tournamentPlayer?.r2,
+            r3: tournamentPlayer?.r3,
+            r4: tournamentPlayer?.r4,
+            cut: tournamentPlayer?.cut,
+            bonus: tournamentPlayer?.bonus,
+            total: tournamentPlayer?.total,
+            updatedAt: tournamentPlayer?.updatedAt || tp.updatedAt,
+            player: {
+              ...tp.player,
+              tournamentPlayers: undefined,
+            },
+          };
+        }),
       })),
       tournament: activeTournament,
     };

@@ -43,7 +43,7 @@ export const usePublicLeagueApi = () => {
     method: string,
     endpoint: string,
     data?: unknown
-  ): Promise<T> => {
+  ): Promise<T | null> => {
     const { guid } = getOrCreateAnonymousUser();
     const response = await fetch(`${config.baseURL}${endpoint}`, {
       method,
@@ -58,13 +58,21 @@ export const usePublicLeagueApi = () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    // For DELETE requests or empty responses, return null
+    if (method === 'DELETE' || response.status === 204) {
+      return null;
+    }
+
     return response.json();
   };
 
-  const getLeagues = useCallback(
-    () => request<PublicLeaguesResponse>('GET', '/public/leagues'),
-    []
-  );
+  const getLeagues = useCallback(async () => {
+    const result = await request<PublicLeaguesResponse>(
+      'GET',
+      '/public/leagues'
+    );
+    return result ?? { leagues: [] };
+  }, []);
 
   const getLeague = useCallback(
     (leagueId: string) =>
@@ -151,7 +159,11 @@ export const usePublicLeagueApi = () => {
   const getCurrentTournament = useCallback(async (): Promise<
     Tournament | undefined
   > => {
-    return request<Tournament | undefined>('GET', '/public/tournaments/active');
+    const result = await request<Tournament>(
+      'GET',
+      '/public/tournaments/active'
+    );
+    return result ?? undefined;
   }, []);
 
   return useMemo(

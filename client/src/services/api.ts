@@ -9,7 +9,6 @@ import { type TournamentPlayer } from '../types/player';
 import {
   type League,
   type LeagueMember,
-  type LeagueTeam,
   type Tournament,
 } from '../types/league';
 import { type Team } from '../types/team';
@@ -386,5 +385,5 @@ export class ApiService {
 export const api = new ApiService();
 
 // Export type definitions
-export type { League, LeagueMember, LeagueTeam };
+export type { League, LeagueMember };
 export type { Tournament };

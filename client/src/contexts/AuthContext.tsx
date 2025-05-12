@@ -65,10 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (token) {
           const response = await api.get<User>('/auth/me');
           setUser(response);
-          const { streamToken: newStreamToken } = await api.get<{
-            streamToken: string;
-          }>('/auth/stream-token');
-          setStreamToken(newStreamToken);
         } else {
           // Check for anonymous user
           const guid = localStorage.getItem('publicUserGuid');
@@ -90,6 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getOrCreateAnonymousUser = (): AnonymousUser => {
     if (anonymousUser) {
       return anonymousUser;
+    }
+
+    const storedGuid = localStorage.getItem('publicUserGuid');
+    if (storedGuid) {
+      const newAnonymousUser = { guid: storedGuid };
+      setAnonymousUser(newAnonymousUser);
+      return newAnonymousUser;
     }
 
     const guid = crypto.randomUUID();

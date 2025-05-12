@@ -1,5 +1,4 @@
 import { type Team } from './team';
-import { type TeamPlayer } from './team';
 
 export interface LeagueSettings {
   id: string;
@@ -46,15 +45,6 @@ export interface PublicLeague extends League {
   owner: Member;
 }
 
-export interface LeagueTeam {
-  id: string;
-  leagueId: string;
-  teamId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  team: Team;
-}
-
 export interface Tournament {
   id: string;
   name: string;
@@ -96,9 +86,4 @@ export interface TournamentCourse {
   holes: number;
   par: number;
   yardage: number;
-}
-
-export interface PublicLeagueWithTeams
-  extends Omit<PublicLeague, 'leagueTeams'> {
-  leagueTeams: Array<LeagueTeam & { team: Team & { players: TeamPlayer[] } }>;
 }
