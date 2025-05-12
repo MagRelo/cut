@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  usePublicLeagueApi,
-  type Tournament,
-} from '../../services/publicLeagueApi';
+import { usePublicLeagueApi } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
+import { type Tournament } from '../../types/league';
 
 export const TournamentInfoCard: React.FC = () => {
   const [tournament, setTournament] = useState<Tournament | undefined>();

@@ -1,0 +1,104 @@
+import { type Team } from './team';
+import { type TeamPlayer } from './team';
+
+export interface LeagueSettings {
+  id: string;
+  rosterSize: number;
+  weeklyStarters: number;
+  scoringType: string;
+  draftDate?: Date | null;
+  seasonStart?: Date | null;
+  seasonEnd?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LeagueMember {
+  id: string;
+  userId: string;
+  leagueId: string;
+  role: string;
+  joinedAt: Date;
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  email?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface League {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PublicLeague extends League {
+  isPublic: boolean;
+  memberCount: number;
+  teamCount: number;
+  teams: Team[];
+  members: Member[];
+  owner: Member;
+}
+
+export interface LeagueTeam {
+  id: string;
+  leagueId: string;
+  teamId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  team: Team;
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  pgaTourId: string;
+  startDate: string;
+  endDate: string;
+  manualActive: boolean;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  purse?: number;
+  venue?: TournamentVenue;
+  location?: TournamentLocation;
+  beautyImage?: string;
+  course?: string;
+  roundStatusDisplay?: string;
+  roundDisplay?: string;
+}
+
+export interface TournamentVenue {
+  id: string;
+  name: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  courses?: TournamentCourse[];
+  zipcode?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface TournamentLocation {
+  city: string;
+  state?: string;
+  country: string;
+}
+
+export interface TournamentCourse {
+  id: string;
+  name: string;
+  holes: number;
+  par: number;
+  yardage: number;
+}
+
+export interface PublicLeagueWithTeams
+  extends Omit<PublicLeague, 'leagueTeams'> {
+  leagueTeams: Array<LeagueTeam & { team: Team & { players: TeamPlayer[] } }>;
+}

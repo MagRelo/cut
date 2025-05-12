@@ -13,14 +13,13 @@ async function ensureUserExists(userId: string): Promise<void> {
   });
 
   if (!existingUser) {
-    // Create a dummy user with the userId
     await prisma.user.create({
       data: {
         id: userId,
         email: `public-${userId}@betthecut.temp`,
-        password: 'dummy-not-usable', // This password can't be used to login
+        password: 'dummy-not-usable',
         name: `Public User ${userId.slice(0, 6)}`,
-        userType: 'PUBLIC', // Special type for public users
+        userType: 'PUBLIC',
       },
     });
   }
@@ -47,16 +46,20 @@ const updateTeamSchema = z.object({
   userId: z.string().uuid(),
 });
 
-// Get current Tournament
-router.get('/tournament', async (req, res) => {
-  const tournament = await prisma.tournament.findFirst({
-    where: { manualActive: true },
-  });
-  res.json(tournament);
+// 1. Tournament Routes
+router.get('/tournaments/active', async (req, res) => {
+  try {
+    const tournament = await prisma.tournament.findFirst({
+      where: { manualActive: true },
+    });
+    res.json(tournament);
+  } catch (error) {
+    console.error('Error fetching active tournament:', error);
+    res.status(500).json({ error: 'Failed to fetch tournament' });
+  }
 });
 
-// TEAMS
-// Get a standalone team by userId
+// 2. Team Routes (standalone)
 router.get('/teams', async (req, res) => {
   try {
     const { userId } = req.query;
@@ -65,7 +68,6 @@ router.get('/teams', async (req, res) => {
       return;
     }
 
-    // Get the active tournament
     const activeTournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
     });
@@ -86,6 +88,20 @@ router.get('/teams', async (req, res) => {
             },
           },
         },
+        leagueTeams: {
+          include: {
+            league: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                _count: {
+                  select: { leagueTeams: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -94,7 +110,6 @@ router.get('/teams', async (req, res) => {
       return;
     }
 
-    // Transform to match frontend structure
     const formattedTeam = {
       id: team.id,
       name: team.name,
@@ -109,7 +124,7 @@ router.get('/teams', async (req, res) => {
           active: tp.active,
           player: {
             ...tp.player,
-            tournamentPlayers: undefined, // Remove to avoid leaking backend structure
+            tournamentPlayers: undefined,
           },
           leaderboardPosition:
             tournamentPlayer?.leaderboardPosition ?? undefined,
@@ -123,9 +138,15 @@ router.get('/teams', async (req, res) => {
           updatedAt: tournamentPlayer?.updatedAt ?? tp.updatedAt,
         };
       }),
-      leagueId: '', // Not available in this context
+      leagueId: '',
       createdAt: team.createdAt,
       updatedAt: team.updatedAt,
+      leagues: team.leagueTeams.map((lt) => ({
+        id: lt.league.id,
+        name: lt.league.name,
+        description: lt.league.description,
+        teamCount: lt.league._count.leagueTeams,
+      })),
     };
 
     res.json(formattedTeam);
@@ -135,24 +156,11 @@ router.get('/teams', async (req, res) => {
   }
 });
 
-// Create a team (not in a league)
 router.post('/teams', async (req, res) => {
   try {
     const data = createTeamSchema.parse(req.body);
-
-    // Ensure user exists
     await ensureUserExists(data.userId);
 
-    // Check if user already has a team with the same name (optional, or skip this check)
-    // const existingTeam = await prisma.team.findFirst({
-    //   where: { userId: data.userId, name: data.name },
-    // });
-    // if (existingTeam) {
-    //   res.status(400).json({ error: 'User already has a team with this name' });
-    //   return;
-    // }
-
-    // Create the team
     const team = await prisma.team.create({
       data: {
         name: data.name,
@@ -161,19 +169,13 @@ router.post('/teams', async (req, res) => {
       },
     });
 
-    // Create team players
     await prisma.teamPlayer.createMany({
       data: data.players.map((playerId) => ({
         teamId: team.id,
         playerId,
-        active: true, // Set active to true for standalone teams
+        active: true,
       })),
     });
-
-    // Get the active tournament (optional, for future use)
-    // const tournament = await prisma.tournament.findFirst({
-    //   where: { manualActive: true },
-    // });
 
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: team.id },
@@ -186,7 +188,7 @@ router.post('/teams', async (req, res) => {
       },
     });
 
-    res.json(teamWithPlayers);
+    res.status(201).json(teamWithPlayers);
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -197,16 +199,12 @@ router.post('/teams', async (req, res) => {
   }
 });
 
-// Update a team (not in a league)
 router.put('/teams/:teamId', async (req, res) => {
   try {
     const { teamId } = req.params;
     const data = updateTeamSchema.parse(req.body);
-
-    // Ensure user exists
     await ensureUserExists(data.userId);
 
-    // Verify team exists and belongs to user
     const team = await prisma.team.findFirst({
       where: { id: teamId, userId: data.userId },
     });
@@ -215,7 +213,6 @@ router.put('/teams/:teamId', async (req, res) => {
       return;
     }
 
-    // Update team
     await prisma.team.update({
       where: { id: teamId },
       data: {
@@ -224,19 +221,16 @@ router.put('/teams/:teamId', async (req, res) => {
       },
     });
 
-    // Update players if provided
     if (data.players) {
-      // Remove existing players
       await prisma.teamPlayer.deleteMany({
         where: { teamId },
       });
 
-      // Add new players
       await prisma.teamPlayer.createMany({
         data: data.players.map((playerId) => ({
           teamId,
           playerId,
-          active: true, // Set active to true for standalone teams
+          active: true,
         })),
       });
     }
@@ -263,8 +257,8 @@ router.put('/teams/:teamId', async (req, res) => {
   }
 });
 
-// List all public leagues
-router.get('/', async (req, res) => {
+// 3. League Routes
+router.get('/leagues', async (req, res) => {
   try {
     const [leagues, activeTournament] = await Promise.all([
       prisma.league.findMany({
@@ -299,25 +293,19 @@ router.get('/', async (req, res) => {
       }),
     ]);
 
-    // Add tournament to response
-    const response = {
+    res.json({
       leagues,
       tournament: activeTournament,
-    };
-
-    res.json(response);
+    });
   } catch (error) {
     console.error('Error fetching public leagues:', error);
     res.status(500).json({ error: 'Failed to fetch leagues' });
   }
 });
 
-// Create a new public league
-router.post('/', async (req, res) => {
+router.post('/leagues', async (req, res) => {
   try {
     const data = createLeagueSchema.parse(req.body);
-
-    // Ensure user exists
     await ensureUserExists(data.userId);
 
     const league = await prisma.league.create({
@@ -325,7 +313,7 @@ router.post('/', async (req, res) => {
         name: data.name,
         description: data.description,
         isPrivate: false,
-        maxTeams: 100, // Default max teams for public leagues
+        maxTeams: 100,
         commissioner: {
           connect: {
             id: data.userId,
@@ -341,7 +329,7 @@ router.post('/', async (req, res) => {
       },
     });
 
-    res.json(league);
+    res.status(201).json(league);
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -352,17 +340,13 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get a specific public league
-router.get('/:leagueId', async (req, res) => {
+router.get('/leagues/:leagueId', async (req, res) => {
   try {
     const { leagueId } = req.params;
-
-    // First get the active tournament
     const activeTournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
     });
 
-    // Then get the league with tournament player data
     const league = await prisma.league.findFirst({
       where: {
         id: leagueId,
@@ -405,7 +389,6 @@ router.get('/:leagueId', async (req, res) => {
       return;
     }
 
-    // Transform the response to match frontend expectations
     const transformedLeague = {
       ...league,
       leagueTeams: league.leagueTeams.map((lt) => ({
@@ -426,7 +409,7 @@ router.get('/:leagueId', async (req, res) => {
               updatedAt: tournamentPlayer?.updatedAt || tp.updatedAt,
               player: {
                 ...tp.player,
-                tournamentPlayers: undefined, // Remove to avoid leaking backend structure
+                tournamentPlayers: undefined,
               },
             };
           }),
@@ -442,8 +425,8 @@ router.get('/:leagueId', async (req, res) => {
   }
 });
 
-// Join a public league
-router.post('/:leagueId/join', async (req, res) => {
+// 4. League Membership Routes
+router.post('/leagues/:leagueId/members', async (req, res) => {
   try {
     const { leagueId } = req.params;
     const { userId } = req.body;
@@ -453,7 +436,6 @@ router.post('/:leagueId/join', async (req, res) => {
       return;
     }
 
-    // Ensure user exists
     await ensureUserExists(userId);
 
     const league = await prisma.league.findFirst({
@@ -475,7 +457,6 @@ router.post('/:leagueId/join', async (req, res) => {
       return;
     }
 
-    // Check if user is already a member
     const existingMembership = await prisma.leagueMembership.findFirst({
       where: {
         leagueId,
@@ -484,13 +465,11 @@ router.post('/:leagueId/join', async (req, res) => {
     });
 
     if (existingMembership) {
-      res.json(league); // Already a member, return league
+      res.json(league);
       return;
     }
 
-    // Create both membership and league team entries
     await prisma.$transaction(async (tx) => {
-      // Get the user's existing team
       const existingTeam = await tx.team.findFirst({
         where: { userId },
       });
@@ -499,7 +478,6 @@ router.post('/:leagueId/join', async (req, res) => {
         throw new Error('User must have a team before joining a league');
       }
 
-      // Create the membership and league team entries
       await Promise.all([
         tx.leagueMembership.create({
           data: {
@@ -516,15 +494,14 @@ router.post('/:leagueId/join', async (req, res) => {
       ]);
     });
 
-    res.json(league);
+    res.status(201).json(league);
   } catch (error) {
     console.error('Error joining public league:', error);
     res.status(500).json({ error: 'Failed to join league' });
   }
 });
 
-// Leave a public league
-router.post('/:leagueId/leave', async (req, res) => {
+router.delete('/leagues/:leagueId/members', async (req, res) => {
   try {
     const { leagueId } = req.params;
     const { userId } = req.body;
@@ -534,7 +511,6 @@ router.post('/:leagueId/leave', async (req, res) => {
       return;
     }
 
-    // Find the user's team in this league
     const leagueTeam = await prisma.leagueTeam.findFirst({
       where: {
         leagueId,
@@ -542,9 +518,7 @@ router.post('/:leagueId/leave', async (req, res) => {
       },
     });
 
-    // Delete league-related entries in a transaction
     await prisma.$transaction(async (tx) => {
-      // Delete the league membership
       await tx.leagueMembership.deleteMany({
         where: {
           leagueId,
@@ -552,7 +526,6 @@ router.post('/:leagueId/leave', async (req, res) => {
         },
       });
 
-      // If there's a league team entry, delete it
       if (leagueTeam) {
         await tx.leagueTeam.delete({
           where: {
@@ -569,13 +542,11 @@ router.post('/:leagueId/leave', async (req, res) => {
   }
 });
 
-// Create a team in a public league
-router.post('/:leagueId/teams', async (req, res) => {
+// 5. League Team Routes
+router.post('/leagues/:leagueId/teams', async (req, res) => {
   try {
     const { leagueId } = req.params;
     const data = createTeamSchema.parse(req.body);
-
-    // Ensure user exists
     await ensureUserExists(data.userId);
 
     const league = await prisma.league.findFirst({
@@ -597,7 +568,6 @@ router.post('/:leagueId/teams', async (req, res) => {
       return;
     }
 
-    // Check if user already has a team in this league
     const existingLeagueTeam = await prisma.leagueTeam.findFirst({
       where: {
         leagueId,
@@ -610,7 +580,6 @@ router.post('/:leagueId/teams', async (req, res) => {
       return;
     }
 
-    // Create the team
     const team = await prisma.team.create({
       data: {
         name: data.name,
@@ -619,7 +588,6 @@ router.post('/:leagueId/teams', async (req, res) => {
       },
     });
 
-    // Link the team to the league via LeagueTeam
     await prisma.leagueTeam.create({
       data: {
         leagueId,
@@ -627,49 +595,13 @@ router.post('/:leagueId/teams', async (req, res) => {
       },
     });
 
-    // Create team players
-    const createdPlayers = await prisma.teamPlayer.createMany({
+    await prisma.teamPlayer.createMany({
       data: data.players.map((playerId) => ({
         teamId: team.id,
         playerId,
-        active: true, // Set active to true for public leagues
+        active: true,
       })),
     });
-
-    // Get the active tournament
-    const tournament = await prisma.tournament.findFirst({
-      where: { manualActive: true },
-    });
-
-    // Leave this here and commented out until the API errors are resolved
-    // if (tournament) {
-    //   // Get the created team players with their PGA IDs
-    //   const teamPlayers = await prisma.teamPlayer.findMany({
-    //     where: { teamId: team.id },
-    //     include: { player: true },
-    //   });
-
-    //   // Get the leaderboard data
-    //   const { players: leaderboardPlayers } = await getPgaLeaderboard();
-
-    //   // Update scores for each player
-    //   for (const teamPlayer of teamPlayers) {
-    //     if (teamPlayer.player.pga_pgaTourId) {
-    //       const leaderboardPlayer = leaderboardPlayers.find(
-    //         (p: LeaderboardPlayer) =>
-    //           p.player.id === teamPlayer.player.pga_pgaTourId
-    //       );
-    //       if (leaderboardPlayer) {
-    //         await scoreUpdateService.updateScore(
-    //           teamPlayer.id,
-    //           tournament.pgaTourId,
-    //           teamPlayer.player.pga_pgaTourId,
-    //           leaderboardPlayer
-    //         );
-    //       }
-    //     }
-    //   }
-    // }
 
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: team.id },
@@ -682,7 +614,7 @@ router.post('/:leagueId/teams', async (req, res) => {
       },
     });
 
-    res.json(teamWithPlayers);
+    res.status(201).json(teamWithPlayers);
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -693,16 +625,12 @@ router.post('/:leagueId/teams', async (req, res) => {
   }
 });
 
-// Update a team in a public league
-router.put('/:leagueId/teams/:teamId', async (req, res) => {
+router.put('/leagues/:leagueId/teams/:teamId', async (req, res) => {
   try {
     const { leagueId, teamId } = req.params;
     const data = updateTeamSchema.parse(req.body);
-
-    // Ensure user exists
     await ensureUserExists(data.userId);
 
-    // Verify league exists and is public
     const league = await prisma.league.findFirst({
       where: {
         id: leagueId,
@@ -722,7 +650,6 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
       return;
     }
 
-    // Verify team exists and belongs to user
     const leagueTeam = await prisma.leagueTeam.findFirst({
       where: {
         leagueId,
@@ -738,7 +665,6 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
       return;
     }
 
-    // Update team
     const updatedTeam = await prisma.team.update({
       where: { id: teamId },
       data: {
@@ -747,56 +673,18 @@ router.put('/:leagueId/teams/:teamId', async (req, res) => {
       },
     });
 
-    // Update players if provided
     if (data.players) {
-      // Remove existing players
       await prisma.teamPlayer.deleteMany({
         where: { teamId },
       });
 
-      // Add new players
       await prisma.teamPlayer.createMany({
         data: data.players.map((playerId) => ({
           teamId,
           playerId,
-          active: true, // Set active to true for public leagues
+          active: true,
         })),
       });
-
-      // Get the active tournament
-      const tournament = await prisma.tournament.findFirst({
-        where: { manualActive: true },
-      });
-
-      // Leave this here and commented out until the API errors are resolved
-      // if (tournament) {
-      //   // Get the updated team players with their PGA IDs
-      //   const teamPlayers = await prisma.teamPlayer.findMany({
-      //     where: { teamId },
-      //     include: { player: true },
-      //   });
-
-      //   // Get the leaderboard data
-      //   const { players: leaderboardPlayers } = await getPgaLeaderboard();
-
-      //   // Update scores for each player
-      //   for (const teamPlayer of teamPlayers) {
-      //     if (teamPlayer.player.pga_pgaTourId) {
-      //       const leaderboardPlayer = leaderboardPlayers.find(
-      //         (p: LeaderboardPlayer) =>
-      //           p.player.id === teamPlayer.player.pga_pgaTourId
-      //       );
-      //       if (leaderboardPlayer) {
-      //         await scoreUpdateService.updateScore(
-      //           teamPlayer.id,
-      //           tournament.pgaTourId,
-      //           teamPlayer.player.pga_pgaTourId,
-      //           leaderboardPlayer
-      //         );
-      //       }
-      //     }
-      //   }
-      // }
     }
 
     const teamWithPlayers = await prisma.team.findUnique({

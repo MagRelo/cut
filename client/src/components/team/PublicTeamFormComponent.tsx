@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { PGAPlayer } from '../../schemas/team';
-import type { Team } from '../../services/api';
+import type { Team } from '../../types/team';
 import { api } from '../../services/api';
 import { usePublicLeagueApi } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -156,7 +156,7 @@ export const PublicTeamFormComponent = ({
                 key={teamPlayer.player.id}
                 className='p-3 bg-gray-50 rounded-lg'>
                 <div className='font-medium'>
-                  {teamPlayer.player.pga_displayName}
+                  {teamPlayer.player.displayName}
                 </div>
                 <div className='text-sm text-gray-500'>
                   {teamPlayer.active ? 'Active' : 'Inactive'}

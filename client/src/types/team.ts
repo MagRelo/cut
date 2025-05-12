@@ -1,26 +1,10 @@
+import { type Player } from './player';
+import { type League } from './league';
 interface RoundData {
   putts: number;
   strokes: number;
   fairwaysHit: number;
   greensInRegulation: number;
-}
-
-export interface Player {
-  id: string;
-  pga_pgaTourId?: string | null;
-  pga_imageUrl?: string | null;
-  pga_displayName?: string | null;
-  pga_firstName?: string | null;
-  pga_lastName?: string | null;
-  pga_shortName?: string | null;
-  pga_country?: string | null;
-  pga_countryFlag?: string | null;
-  pga_age?: number | null;
-  isActive: boolean;
-  inField: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lastSyncedAt?: Date | null;
 }
 
 export interface TeamPlayer {
@@ -47,8 +31,10 @@ export interface Team {
   players: TeamPlayer[];
   isUserTeam?: boolean;
   leagueId: string;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
+  leagues: League[];
 }
 
 export interface TeamUpdatePayload {

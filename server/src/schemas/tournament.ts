@@ -53,7 +53,7 @@ export type UpdateTournamentBody = z.infer<typeof updateTournamentSchema>;
 export type TournamentIdParam = z.infer<typeof tournamentIdSchema>;
 
 // Types for PGA Tour data
-export type PGATourPlayer = {
+export type TournamentPlayer = {
   id: string;
   pgaTourId: string;
   position: number;
@@ -67,12 +67,25 @@ export type PGATourPlayer = {
   status: string;
   earnings?: number;
   fedExPoints?: number;
+  imageUrl?: string | null;
+  displayName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  shortName?: string | null;
+  country?: string | null;
+  countryFlag?: string | null;
+  age?: number | null;
+  isActive: boolean;
+  inField: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastSyncedAt?: Date | null;
 };
 
 export type PGATourLeaderboard = {
   tournamentId: string;
   status: keyof typeof TournamentStatus;
-  players: PGATourPlayer[];
+  players: TournamentPlayer[];
 };
 
 export type PGATourScorecard = {

@@ -3,30 +3,17 @@ import {
   activePlayersSchema,
   type TeamUpdatePayload,
   type ActivePlayersPayload,
-  type PGAPlayer,
 } from '../schemas/team';
 import { type Scorecard } from '../types/scorecard';
+import { type TournamentPlayer } from '../types/player';
+import {
+  type League,
+  type LeagueMember,
+  type LeagueTeam,
+  type Tournament,
+} from '../types/league';
+import { type Team } from '../types/team';
 // import type { Team } from '../types/team';
-
-interface Tournament {
-  id: string;
-  name: string;
-  location: string;
-  course: string;
-  beautyImage: string | null;
-  status:
-    | 'scheduled'
-    | 'inprogress'
-    | 'delayed'
-    | 'cancelled'
-    | 'created'
-    | 'complete'
-    | 'closed'
-    | 'playoff'
-    | 'reopened';
-  startDate: string;
-  endDate: string;
-}
 
 interface TournamentOddsResponse {
   data: {
@@ -93,23 +80,6 @@ interface OrderResponse {
   timestamp: number;
 }
 
-interface League {
-  id: string;
-  name: string;
-  description?: string;
-  isPrivate: boolean;
-  maxTeams: number;
-  memberCount: number;
-  createdAt: string;
-  teams: Team[];
-  members: Array<{
-    id: string;
-    userId: string;
-    role: string;
-    joinedAt: string;
-  }>;
-}
-
 interface SystemProcessRecord {
   id: string;
   processType: string;
@@ -126,62 +96,10 @@ interface CreateTeamPayload {
   color?: string;
 }
 
-interface LeagueMembership {
-  id: string;
-  userId: string;
-  leagueId: string;
-  role: string;
-  joinedAt: string;
-}
-
-export interface Player {
-  id: string;
-  pga_pgaTourId?: string | null;
-  pga_imageUrl?: string | null;
-  pga_displayName?: string | null;
-  pga_firstName?: string | null;
-  pga_lastName?: string | null;
-  pga_shortName?: string | null;
-  pga_country?: string | null;
-  pga_countryFlag?: string | null;
-  pga_age?: number | null;
-  isActive: boolean;
-  inField: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lastSyncedAt?: Date | null;
-}
-
 export interface Round {
   strokes: number;
   total?: number;
   // Add other fields as needed
-}
-
-export interface TeamPlayer {
-  id: string;
-  teamId: string;
-  playerId: string;
-  active: boolean;
-  player: Player;
-  leaderboardPosition?: string;
-  r1?: Round;
-  r2?: Round;
-  r3?: Round;
-  r4?: Round;
-  cut?: number;
-  bonus?: number;
-  total?: number;
-  updatedAt: Date;
-}
-
-export interface Team {
-  id: string;
-  name: string;
-  color: string;
-  players: TeamPlayer[];
-  userId: string;
-  leagueId: string;
 }
 
 export class ApiService {
@@ -324,7 +242,7 @@ export class ApiService {
 
   // PGA Tour endpoints
   async getPGATourPlayers() {
-    return this.request<PGAPlayer[]>('GET', '/players/active');
+    return this.request<TournamentPlayer[]>('GET', '/players/active');
   }
 
   async getCurrentTournament(): Promise<Tournament | null> {
@@ -377,7 +295,7 @@ export class ApiService {
   }
 
   async joinLeagueWithInviteCode(inviteCode: string) {
-    return this.request<LeagueMembership>('POST', '/leagues/join-with-invite', {
+    return this.request<LeagueMember>('POST', '/leagues/join-with-invite', {
       inviteCode,
     });
   }
@@ -468,5 +386,5 @@ export class ApiService {
 export const api = new ApiService();
 
 // Export type definitions
-export type { PGAPlayer, League };
+export type { League, LeagueMember, LeagueTeam };
 export type { Tournament };

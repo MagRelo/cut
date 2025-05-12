@@ -1,29 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  usePublicLeagueApi,
-  type PublicLeague as ApiPublicLeague,
-} from '../services/publicLeagueApi';
+import { usePublicLeagueApi } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
 import { PlayerTable } from '../components/player/PlayerRow';
-
-interface Player {
-  id: string;
-  pga_pgaTourId?: string | null;
-  pga_imageUrl?: string | null;
-  pga_displayName?: string | null;
-  pga_firstName?: string | null;
-  pga_lastName?: string | null;
-  pga_shortName?: string | null;
-  pga_country?: string | null;
-  pga_countryFlag?: string | null;
-  pga_age?: number | null;
-  isActive: boolean;
-  inField: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lastSyncedAt?: Date | null;
-}
+import { type PublicLeagueWithTeams, type LeagueTeam } from '../types/league';
+import { type Player } from '../types/player';
+import { type Team } from '../types/team';
 
 interface Round {
   strokes: number;
@@ -47,22 +29,10 @@ interface TeamPlayer {
   updatedAt: Date;
 }
 
-interface Team {
-  id: string;
-  name: string;
-  color: string;
-  players: TeamPlayer[];
-  userId: string;
-  leagueId: string;
-}
-
-interface LeagueTeam {
-  team: Team;
-}
-
-interface PublicLeagueWithTeams extends ApiPublicLeague {
-  leagueTeams: LeagueTeam[];
-}
+// interface PublicLeagueWithTeams
+//   extends Omit<PublicLeagueWithTeams, 'leagueTeams'> {
+//   leagueTeams: Array<LeagueTeam & { team: Team & { players: TeamPlayer[] } }>;
+// }
 
 export const PublicLeagueLobby: React.FC = () => {
   const { leagueId } = useParams<{ leagueId: string }>();
