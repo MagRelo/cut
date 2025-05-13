@@ -5,6 +5,14 @@ set -e
 
 echo "Starting build process..."
 
+# Generate unique tag using git commit SHA and timestamp
+TAG=$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M)
+echo "Building with tag: $TAG"
+
+# Update service worker version
+echo "Updating service worker version..."
+sed -i '' "s/__VERSION__/$TAG/g" ../client/public/service-worker.js
+
 # Build and push Docker image
 echo "Building Docker image..."
 cd ..  # Go to root directory
@@ -15,10 +23,6 @@ DOCKER_USERNAME="magrelo"  # Replace this with your Docker Hub username
 # Set up Docker buildx builder
 echo "Setting up Docker buildx builder..."
 docker buildx create --use --name multi-platform-builder || true
-
-# Generate unique tag using git commit SHA and timestamp
-TAG=$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M)
-echo "Building with tag: $TAG"
 
 # Build and push multi-platform image
 echo "Building and pushing multi-platform Docker image..."

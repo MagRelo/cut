@@ -3,6 +3,12 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './index.css';
 import { PostHogProvider } from 'posthog-js/react';
+import { registerServiceWorker } from './utils/serviceWorkerRegistration';
+
+// Register service worker in production
+if (import.meta.env.PROD) {
+  registerServiceWorker();
+}
 
 const app = (
   <React.StrictMode>
