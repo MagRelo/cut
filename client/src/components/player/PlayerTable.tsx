@@ -24,23 +24,23 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({ players }) => {
   };
 
   return (
-    <div className='w-full'>
-      <table className='w-full table-fixed divide-y divide-gray-200'>
+    <div className='w-full overflow-x-auto'>
+      <table className='w-full min-w-[320px] table-fixed divide-y divide-gray-200'>
         <thead className='bg-gray-100'>
           <tr>
             <th
               scope='col'
-              className='w-16 px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
               Pos
             </th>
             <th
               scope='col'
-              className='w-64 py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-48 sm:w-64 py-2 pl-2 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
               Player
             </th>
             <th
               scope='col'
-              className='w-16 px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
               Total
             </th>
           </tr>
@@ -52,21 +52,12 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({ players }) => {
             .map((player) => (
               <React.Fragment key={player.id}>
                 <tr className='hover:bg-gray-50/50'>
-                  <td className='px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
+                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
                     {player.leaderboardPosition || '-'}
                   </td>
                   <td className='py-2 pl-2 pr-3 whitespace-nowrap'>
                     <div className='flex items-center'>
-                      {player.player.pga_imageUrl && (
-                        <div className='flex-shrink-0 h-10 w-10 relative'>
-                          <img
-                            className='h-10 w-10 rounded-full object-cover ring-2 ring-white'
-                            src={player.player.pga_imageUrl}
-                            alt={player.player.pga_displayName || ''}
-                          />
-                        </div>
-                      )}
-                      <div className='ml-4'>
+                      <div>
                         <button
                           onClick={() => togglePlayer(player.id)}
                           className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
@@ -89,7 +80,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({ players }) => {
                       </div>
                     </div>
                   </td>
-                  <td className='px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
+                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
                     {player.total ?? '-'}
                   </td>
                 </tr>
