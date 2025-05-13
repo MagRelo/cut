@@ -98,7 +98,7 @@ export const PublicSingleTeam: React.FC = () => {
   // If no team, show the form to create one
   if (!team) {
     return (
-      <div className='px-4 py-4'>
+      <div className='px-4 py-2'>
         <div className='flex items-center justify-between mb-2 mt-2'>
           <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
         </div>
@@ -116,7 +116,7 @@ export const PublicSingleTeam: React.FC = () => {
 
   if (isEditing) {
     return (
-      <div className='px-4 py-4'>
+      <div className='px-4 py-2'>
         <div className='flex items-center justify-between mb-2 mt-2'>
           <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
         </div>
@@ -134,7 +134,7 @@ export const PublicSingleTeam: React.FC = () => {
   }
 
   return (
-    <div className='px-4 py-4'>
+    <div className='px-4 py-2'>
       <div className='flex items-center justify-between mb-2 mt-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
       </div>
