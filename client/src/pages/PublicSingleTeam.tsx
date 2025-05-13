@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { usePublicLeagueApi } from '../services/publicLeagueApi';
@@ -8,11 +8,13 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
 import { Share } from '../components/common/Share';
-import { PlayerTable } from '../components/player/PlayerRow';
+// import { PlayerTable } from '../components/player/PlayerTable';
 import { LeagueCard } from '../components/LeagueCard';
-
+import { PlayerCards } from '../components/player/PlayerCards';
+import { Tournament } from 'types/league';
 export const PublicSingleTeam: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
+  const [tournament, setTournament] = useState<Tournament | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,7 +47,7 @@ export const PublicSingleTeam: React.FC = () => {
     return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
   };
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -56,11 +58,26 @@ export const PublicSingleTeam: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [publicLeagueApi]);
+
+  const fetchTournament = useCallback(async () => {
+    const result = await publicLeagueApi.getCurrentTournament();
+    setTournament(result || null);
+  }, [publicLeagueApi]);
 
   useEffect(() => {
     fetchTeam();
-  }, [publicLeagueApi]);
+    fetchTournament();
+  }, [fetchTeam, fetchTournament]);
+
+  // const calculateTeamScore = (team: Team) => {
+  //   return team.players
+  //     .filter((player: TeamPlayer) => player.active)
+  //     .reduce(
+  //       (sum: number, player: TeamPlayer) => sum + (player.total || 0),
+  //       0
+  //     );
+  // };
 
   if (isLoading) {
     return (
@@ -82,6 +99,9 @@ export const PublicSingleTeam: React.FC = () => {
   if (!team) {
     return (
       <div className='px-4 py-4'>
+        <div className='flex items-center justify-between mb-2 mt-2'>
+          <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
+        </div>
         <PublicTeamFormComponent
           editMode={true}
           onCancel={() => setIsEditing(false)}
@@ -97,6 +117,10 @@ export const PublicSingleTeam: React.FC = () => {
   if (isEditing) {
     return (
       <div className='px-4 py-4'>
+        <div className='flex items-center justify-between mb-2 mt-2'>
+          <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
+        </div>
+
         <PublicTeamFormComponent
           editMode={true}
           onCancel={() => setIsEditing(false)}
@@ -111,26 +135,45 @@ export const PublicSingleTeam: React.FC = () => {
 
   return (
     <div className='px-4 py-4'>
-      <h2 className='text-3xl font-extrabold text-gray-500 mb-2 mt-2'>
-        My Team
-      </h2>
+      <div className='flex items-center justify-between mb-2 mt-2'>
+        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
+      </div>
+      <div className=''>
+        <h2 className='text-lg font-semibold mb-2 flex items-center gap-3'>
+          <div className='flex items-center gap-2 flex-1 min-w-0'>
+            <div
+              className='w-4 h-4 rounded-full flex-shrink-0'
+              style={{ backgroundColor: team.color }}
+            />
+            <span
+              className='text-2xl font-bold relative overflow-hidden whitespace-nowrap pr-6 block flex-1 min-w-0'
+              style={{ display: 'block' }}>
+              {team.name}
+              <span
+                className='pointer-events-none absolute right-0 top-0 h-full w-10'
+                style={{
+                  background:
+                    'linear-gradient(to left, rgb(243 244 246) 70%, transparent 100%)',
+                }}
+              />
+            </span>
+          </div>
 
-      <div className='bg-white rounded shadow relative px-6 pt-6'>
-        <h2 className='text-lg font-semibold mb-2 flex items-center gap-2'>
-          <div
-            className='w-4 h-4 rounded-full'
-            style={{ backgroundColor: team.color }}
-          />
-          {team.name}
-          {/* Edit icon button */}
           <button
-            className='ml-auto text-gray-400 hover:text-emerald-600 focus:outline-none text-sm'
-            title='Edit Team'
-            onClick={() => setIsEditing(true)}>
+            onClick={() => setIsEditing(true)}
+            className='px-3 py-1 text-xs bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
             Edit
           </button>
+
+          {/* <span className='text-base font-semibold text-gray-900'>
+            {calculateTeamScore(team)} pts
+          </span> */}
         </h2>
-        <PlayerTable players={team.players} />
+        {/* <PlayerTable players={team.players} /> */}
+        <PlayerCards
+          players={team.players}
+          roundDisplay={tournament?.roundDisplay || '1'}
+        />
 
         {/* Last Update Time */}
         <div className='text-xs text-gray-400 text-center py-2 border-t border-gray-100 flex items-center justify-center gap-2'>
@@ -157,22 +200,24 @@ export const PublicSingleTeam: React.FC = () => {
         </div>
       </div>
 
-      <h2 className='text-3xl font-extrabold text-gray-500 mb-2 mt-6'>
-        My Leagues
-      </h2>
-
-      {team.leagues.map((league) => (
-        <LeagueCard key={league.id} league={league} />
-      ))}
-
-      {/* New button to navigate to public leagues */}
-      <div className='max-w-2xl mx-auto mt-6 flex justify-center mb-6'>
+      <div className='flex items-center justify-between mb-2 mt-6'>
+        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
+          My Leagues
+        </h2>
         <button
           onClick={() => navigate('/public/leagues')}
-          className='px-6 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
-          View Leagues
+          className='px-3 py-1 text-xs bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
+          View All
         </button>
       </div>
+
+      <div className='space-y-2'>
+        {team.leagues.map((league) => (
+          <LeagueCard key={league.id} league={league} />
+        ))}
+      </div>
+
+      <hr className='my-8' />
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>

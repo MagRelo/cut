@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePublicLeagueApi } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
-import { PlayerTable } from '../components/player/PlayerRow';
+import { PlayerTable } from '../components/player/PlayerTable';
 import { type PublicLeague } from '../types/league';
 import { type Team, type TeamPlayer } from '../types/team';
 

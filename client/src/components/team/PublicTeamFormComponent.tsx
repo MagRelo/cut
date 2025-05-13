@@ -156,7 +156,7 @@ export const PublicTeamFormComponent = ({
                 key={teamPlayer.player.id}
                 className='p-3 bg-gray-50 rounded-lg'>
                 <div className='font-medium'>
-                  {teamPlayer.player.displayName}
+                  {teamPlayer.player.pga_displayName}
                 </div>
                 <div className='text-sm text-gray-500'>
                   {teamPlayer.active ? 'Active' : 'Inactive'}
@@ -245,7 +245,7 @@ export const PublicTeamFormComponent = ({
               </div>
             </div>
             <h2 className='text-xl font-semibold text-gray-900'>
-              Setup Your Team
+              Team Display
             </h2>
             <div>
               <label

@@ -16,9 +16,9 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ league }) => (
           <h3 className='text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors'>
             {league.name}
           </h3>
-          {league.description && (
+          {/* {league.description && (
             <p className='text-gray-600 mt-1 text-sm'>{league.description}</p>
-          )}
+          )} */}
         </div>
         <div className='text-gray-400 group-hover:text-emerald-500 transition-colors'>
           <svg

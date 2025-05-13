@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
-import type { TeamPlayer as BaseTeamPlayer } from '../../services/api';
-
-interface Round {
-  strokes: number;
-  total?: number;
-  icon?: string;
-  holes?: {
-    par: number[];
-    holes: number[];
-    scores: (number | null)[];
-    stableford: (number | null)[];
-  };
-  ratio?: number;
-}
+import type { TeamPlayer as BaseTeamPlayer, RoundData } from '../../types/team';
 
 type TeamPlayer = Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> & {
-  r1?: Round;
-  r2?: Round;
-  r3?: Round;
-  r4?: Round;
+  r1?: RoundData;
+  r2?: RoundData;
+  r3?: RoundData;
+  r4?: RoundData;
 };
 
 interface PlayerScorecardProps {
@@ -45,7 +32,9 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   const getLatestRoundWithData = () => {
     for (let round = 4; round >= 1; round--) {
       const roundData = getRoundData(round);
-      if (roundData?.holes?.scores?.some((score) => score !== null)) {
+      if (
+        roundData?.holes?.scores?.some((score: number | null) => score !== null)
+      ) {
         return round;
       }
     }
@@ -120,8 +109,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     // Calculate total of actual scores
     const scoreTotal = roundData.holes.scores
-      .filter((score): score is number => score !== null)
-      .reduce((sum, score) => sum + score, 0);
+      .filter((score: number | null): score is number => score !== null)
+      .reduce((sum: number, score: number) => sum + score, 0);
 
     return (
       <tr className='border-t border-gray-200'>
@@ -148,7 +137,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           );
         })}
         <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
-          {roundData.holes.scores.some((score) => score !== null)
+          {roundData.holes.scores.some((score: number | null) => score !== null)
             ? scoreTotal
             : '-'}
         </td>

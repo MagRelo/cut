@@ -1,10 +1,17 @@
 import { type Player } from './player';
 import { type League } from './league';
-interface RoundData {
-  putts: number;
+
+export interface RoundData {
   strokes: number;
-  fairwaysHit: number;
-  greensInRegulation: number;
+  total?: number;
+  icon?: string;
+  holes?: {
+    par: number[];
+    holes: number[];
+    scores: (number | null)[];
+    stableford: (number | null)[];
+  };
+  ratio?: number;
 }
 
 export interface TeamPlayer {
