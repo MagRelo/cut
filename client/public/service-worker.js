@@ -1,5 +1,5 @@
 const CACHE_NAME = 'cut-app-v1';
-const VERSION = '__VERSION__'; // This will be replaced during build
+const VERSION = 'abb856c-202505131842'; // This will be replaced during build
 const urlsToCache = [
   '/',
   '/index.html',

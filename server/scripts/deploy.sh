@@ -24,7 +24,7 @@ cp public/service-worker.js dist/
 
 # Build and push Docker image
 echo "Building Docker image..."
-cd ../server
+cd ..  # Go to root directory
 
 # Set your Docker Hub username
 DOCKER_USERNAME="magrelo"
@@ -38,7 +38,7 @@ echo "Building and pushing multi-platform Docker image..."
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t $DOCKER_USERNAME/betthecut:$TAG \
   -t $DOCKER_USERNAME/betthecut:latest \
-  -f Dockerfile \
+  -f server/Dockerfile \
   --push .
 
 echo "Deployment preparation complete!"
