@@ -12,6 +12,7 @@ import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCards } from '../components/player/PlayerCards';
 import { Tournament } from 'types/league';
+
 export const PublicSingleTeam: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -58,17 +59,17 @@ export const PublicSingleTeam: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [publicLeagueApi]);
+  }, [publicLeagueApi, setIsLoading, setError, setTeam]);
 
   const fetchTournament = useCallback(async () => {
     const result = await publicLeagueApi.getCurrentTournament();
     setTournament(result || null);
-  }, [publicLeagueApi]);
+  }, [publicLeagueApi, setTournament]);
 
   useEffect(() => {
     fetchTeam();
     fetchTournament();
-  }, [fetchTeam, fetchTournament]);
+  }, []);
 
   // const calculateTeamScore = (team: Team) => {
   //   return team.players

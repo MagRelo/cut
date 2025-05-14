@@ -14,14 +14,6 @@ echo "Building client..."
 cd ../client
 npm run build
 
-# Update service worker version
-echo "Updating service worker version..."
-sed -i '' "s/__VERSION__/$TAG/g" public/service-worker.js
-
-# Copy service worker to dist
-echo "Copying service worker to dist..."
-cp public/service-worker.js dist/
-
 # Build and push Docker image
 echo "Building Docker image..."
 cd ..  # Go to root directory
