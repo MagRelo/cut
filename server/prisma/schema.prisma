@@ -240,6 +240,7 @@ model TournamentPlayer {
   player      Player     @relation(fields: [playerId], references: [id])
   playerId    String
   leaderboardPosition String?
+  leaderboardTotal String?
   r1          Json? // { strokes: number }
   r2          Json? // { strokes: number }
   r3          Json? // { strokes: number }

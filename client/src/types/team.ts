@@ -10,8 +10,10 @@ export interface RoundData {
     holes: number[];
     scores: (number | null)[];
     stableford: (number | null)[];
+    total: number;
   };
   ratio?: number;
+  stablefordTotal?: number;
 }
 
 export interface TeamPlayer {
@@ -21,6 +23,7 @@ export interface TeamPlayer {
   active: boolean;
   player: Player;
   leaderboardPosition?: string;
+  leaderboardTotal?: string;
   r1?: RoundData;
   r2?: RoundData;
   r3?: RoundData;

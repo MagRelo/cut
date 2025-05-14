@@ -128,6 +128,7 @@ router.get('/teams', async (req, res) => {
           },
           leaderboardPosition:
             tournamentPlayer?.leaderboardPosition ?? undefined,
+          leaderboardTotal: tournamentPlayer?.leaderboardTotal ?? undefined,
           r1: tournamentPlayer?.r1 ?? undefined,
           r2: tournamentPlayer?.r2 ?? undefined,
           r3: tournamentPlayer?.r3 ?? undefined,
@@ -398,6 +399,7 @@ router.get('/leagues/:leagueId', async (req, res) => {
           return {
             ...tp,
             leaderboardPosition: tournamentPlayer?.leaderboardPosition,
+            leaderboardTotal: tournamentPlayer?.leaderboardTotal,
             r1: tournamentPlayer?.r1,
             r2: tournamentPlayer?.r2,
             r3: tournamentPlayer?.r3,

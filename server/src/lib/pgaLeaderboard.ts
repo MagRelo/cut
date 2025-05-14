@@ -190,6 +190,7 @@ function parsePlayers_V3(players: PlayerRowV3[]): LeaderboardData['players'] {
         ...player,
         playerName: player.player.firstName + ' ' + player.player.lastName,
         pgaTourId: player.player.id,
+        leaderboardTotal: player.scoringData.total,
         position,
         positionBonus,
         cutBonus,

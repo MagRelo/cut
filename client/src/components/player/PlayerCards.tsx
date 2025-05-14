@@ -6,6 +6,17 @@ interface PlayerCardsProps {
   roundDisplay?: string;
 }
 
+interface LabelProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
+  <span className={`text-sm font-medium text-gray-400 pr-1 ${className}`}>
+    {children}
+  </span>
+);
+
 export const PlayerCards: React.FC<PlayerCardsProps> = ({
   players,
   roundDisplay,
@@ -41,7 +52,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
   };
 
   return (
-    <div className='grid grid-cols-1 gap-2'>
+    <div className='grid grid-cols-1 gap-3'>
       {players
         .slice()
         .sort((a, b) => (b.total || 0) - (a.total || 0))
@@ -51,9 +62,9 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
           return (
             <div
               key={player.id}
-              className='bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
+              className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
               {/* Top Row */}
-              <div className='p-4 border-b border-gray-200'>
+              <div className='px-4 py-3 border-b border-gray-200'>
                 <div className='flex items-center space-x-4'>
                   {player.player.pga_imageUrl && (
                     <div className='flex-shrink-0'>
@@ -68,12 +79,12 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     <div className='flex items-center justify-between'>
                       <div className='text-base font-bold text-gray-900 truncate'>
                         {/* optionally add the round icon of the current round */}
-                        {currentRound?.round && (
-                          <span className='text-xl text-gray-600 font-bold ml-1'>
-                            {currentRound.data.icon}
-                          </span>
-                        )}
-
+                        {currentRound?.round &&
+                          currentRound.data.icon !== '' && (
+                            <span className='text-xl text-gray-600 font-bold ml-1'>
+                              {currentRound.data.icon}
+                            </span>
+                          )}
                         {player.player.pga_displayName || ''}
                       </div>
                       <div className='flex items-center'>
@@ -82,17 +93,27 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                         </span>
                       </div>
                     </div>
+
+                    {/* Position*/}
                     <div className='flex items-center space-x-6 mt-1'>
                       <div className='text-sm text-gray-500'>
-                        POS:{' '}
+                        <Label>POS</Label>{' '}
                         <span className='font-medium text-gray-700 ml-1'>
                           {player.leaderboardPosition}
                         </span>
                       </div>
+
+                      {/* Total */}
                       <div className='text-sm text-gray-500 flex items-center'>
-                        TOTAL:{' '}
-                        <span className='font-medium text-gray-700 ml-1'>
-                          {''}
+                        <Label>TOTAL</Label>{' '}
+                        <span
+                          className={`font-medium ml-1 ${
+                            player.leaderboardTotal === 'E' ||
+                            !player.leaderboardTotal?.startsWith('-')
+                              ? 'text-gray-700'
+                              : 'text-red-600'
+                          }`}>
+                          {player.leaderboardTotal}
                         </span>
                       </div>
                     </div>
@@ -107,21 +128,21 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     {/* RND label*/}
                     <div className='flex items-center flex-shrink-0 border-r border-gray-400 h-full'>
                       <div className='text-sm font-medium text-gray-500 min-w-[65px]'>
-                        Round {currentRound.round.slice(1)}
+                        <Label>Round {currentRound.round.slice(1)}</Label>
                       </div>
                     </div>
 
                     {/* RND */}
                     <div className='text-sm text-gray-500 text-left whitespace-nowrap'>
-                      {currentRound.round}:{' '}
+                      <Label>{currentRound.round}</Label>{' '}
                       <span className='font-medium text-gray-700 ml-1'>
-                        {currentRound.data.total}
+                        {currentRound.data.holes?.total}
                       </span>
                     </div>
 
                     {/* PTS */}
                     <div className='text-sm text-gray-500 text-left whitespace-nowrap'>
-                      PTS:{' '}
+                      <Label>PTS</Label>{' '}
                       <span className='font-medium text-gray-700 ml-1'>
                         {currentRound.data.total}
                       </span>
@@ -130,12 +151,12 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     {/* % */}
                     <div className='text-sm text-gray-500 flex-1 min-w-0 text-center py-1'>
                       <div className='flex items-center w-full'>
-                        <span className='text-xs text-gray-400 mr-2 -mt-px'>
+                        <Label className='text-xs text-gray-400 mr-2 -mt-px'>
                           %
-                        </span>
+                        </Label>
                         <div className='w-full h-2 bg-gray-200 rounded-full relative'>
                           <div
-                            className='h-2 bg-emerald-400 rounded-full transition-all duration-300'
+                            className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
                             style={{
                               width: `${Math.round(
                                 (currentRound.data.ratio || 0) * 100

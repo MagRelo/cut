@@ -76,6 +76,7 @@ export class ScoreUpdateService {
         cut: leaderboardPlayer.cutBonus,
         bonus: leaderboardPlayer.positionBonus,
         leaderboardPosition: leaderboardPlayer.position,
+        leaderboardTotal: leaderboardPlayer.leaderboardTotal,
         total: scorecard.stablefordTotal,
         r1: scorecard.R1 || null,
         r2: scorecard.R2 || null,

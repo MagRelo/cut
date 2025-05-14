@@ -12,6 +12,7 @@ import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCards } from '../components/player/PlayerCards';
 import { Tournament } from 'types/league';
+// import { TeamCard } from '../components/team/TeamCard';
 
 export const PublicSingleTeam: React.FC = () => {
   const [team, setTeam] = useState<Team | null>(null);
@@ -200,6 +201,8 @@ export const PublicSingleTeam: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* <TeamCard team={team} roundDisplay='R1' /> */}
 
       <div className='flex items-center justify-between mb-2 mt-6'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
