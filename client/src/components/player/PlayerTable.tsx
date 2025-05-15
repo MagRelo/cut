@@ -105,7 +105,9 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                     {player.leaderboardTotal || '-'}
                   </td>
                   <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
-                    {player.total ?? '-'}
+                    {(player.total ?? 0) +
+                      (player.cut ?? 0) +
+                      (player.bonus ?? 0)}
                   </td>
                 </tr>
                 {expandedPlayers.has(player.id) && (
