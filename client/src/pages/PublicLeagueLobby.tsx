@@ -190,7 +190,11 @@ export const PublicLeagueLobby: React.FC = () => {
                 )
                 .map((team: Team) => (
                   <div key={team.id} className='mb-4'>
-                    <TeamCard key={team.id} team={team} roundDisplay='R1' />
+                    <TeamCard
+                      key={team.id}
+                      team={team}
+                      roundDisplay={league.tournament?.roundDisplay}
+                    />
                   </div>
                 ))
             )}
