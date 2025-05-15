@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { HelpButton } from './HelpButton';
 
 export const Navigation: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -15,12 +16,13 @@ export const Navigation: React.FC = () => {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between h-16'>
           <div className='flex'>
-            <div className='flex-shrink-0 flex items-center'>
+            <div className='flex-shrink-0 flex items-center gap-4'>
               <Link
                 to={user ? '/leagues' : '/'}
                 className='text-xl font-bold text-black'>
                 the Cut
               </Link>
+              <HelpButton />
             </div>
             {user && (
               <div className='flex ml-4 sm:ml-6 space-x-4 sm:space-x-8 items-center'>

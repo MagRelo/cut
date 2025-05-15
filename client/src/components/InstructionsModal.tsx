@@ -1,0 +1,54 @@
+import React from 'react';
+
+interface InstructionsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className='fixed inset-0 bg-black/50 flex justify-center items-center z-50'>
+      <div className='bg-white p-5 rounded-lg w-[90%] max-w-[500px] shadow-lg'>
+        <div className='flex justify-between items-center mb-5'>
+          <h2 className='text-2xl font-semibold m-0 flex items-center'>
+            <img
+              src='/cut-logo2.png'
+              alt='Cut Logo'
+              className='w-9 h-9 mr-2 float-left rounded-full border-2 border-gray-300'
+            />
+            Welcome to the Cut!
+          </h2>
+          <button
+            onClick={onClose}
+            className='text-gray-600 text-2xl hover:text-gray-800 cursor-pointer bg-transparent border-none p-0'>
+            ×
+          </button>
+        </div>
+        <div className='mb-5'>
+          <h3 className='text-lg font-medium mb-2.5'>the Cut</h3>
+          <p className='mb-2'>
+            the Cut is a free weekly fantasy golf competition. Create your team
+            and join a league to compete against other players.
+          </p>
+
+          <h3 className='text-lg font-medium mb-2.5'>How to Play</h3>
+          <ul className='list-disc pl-5 space-y-2'>
+            <li>Each PGA tournament is a new competition.</li>
+            <li>Select four golfers to compete in each tournament.</li>
+            <li>Points are earned using Stableford scoring.</li>
+            <li>Join a league or create your own and invite your friends!</li>
+          </ul>
+        </div>
+        <div className='text-right'>
+          <button
+            onClick={onClose}
+            className='bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition-colors'>
+            Got it!
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

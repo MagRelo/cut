@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ApiService } from '../services/api';
 import { streamClient } from '../services/chatService';
+import { InstructionsModal } from '../components/InstructionsModal';
 
 interface User {
   id: string;
@@ -37,6 +38,7 @@ interface AuthContextData {
     password: string,
     name: string
   ) => Promise<void>;
+  openInstructions: () => void;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -56,21 +58,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
   const [streamToken, setStreamToken] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
   const api = new ApiService();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeAuth = async () => {
       try {
         const token = localStorage.getItem('token');
+        const guid = localStorage.getItem('publicUserGuid');
+        const hasSeenInstructions = localStorage.getItem('hasSeenInstructions');
+
         if (token) {
           const response = await api.get<User>('/auth/me');
           setUser(response);
         } else {
           // Check for anonymous user
-          const guid = localStorage.getItem('publicUserGuid');
           if (guid) {
             setAnonymousUser({ guid });
           }
+        }
+
+        // Show instructions if user hasn't seen them before
+        if (!hasSeenInstructions) {
+          setShowInstructions(true);
         }
       } catch (error: unknown) {
         console.error('Auth check failed:', error);
@@ -80,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    checkAuth();
+    initializeAuth();
   }, []);
 
   const getOrCreateAnonymousUser = (): AnonymousUser => {
@@ -183,6 +193,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user?.userType === 'ADMIN';
   };
 
+  const handleCloseInstructions = () => {
+    setShowInstructions(false);
+    localStorage.setItem('hasSeenInstructions', 'true');
+  };
+
+  const openInstructions = () => {
+    setShowInstructions(true);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -199,8 +218,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         getOrCreateAnonymousUser,
         upgradeAnonymousUser,
+        openInstructions,
       }}>
       {children}
+      <InstructionsModal
+        isOpen={showInstructions}
+        onClose={handleCloseInstructions}
+      />
     </AuthContext.Provider>
   );
 }
