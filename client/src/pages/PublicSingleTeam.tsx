@@ -48,6 +48,17 @@ export const PublicSingleTeam: React.FC = () => {
     return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
   };
 
+  const isEditingAllowed = (): boolean => {
+    if (tournament?.status !== 'NOT_STARTED') return false;
+    if (!team?.updatedAt) return true;
+
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const lastUpdate = new Date(team.updatedAt);
+
+    return lastUpdate < fiveDaysAgo;
+  };
+
   const fetchTeam = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -162,9 +173,9 @@ export const PublicSingleTeam: React.FC = () => {
 
           <button
             onClick={() => setIsEditing(true)}
-            disabled={tournament?.status !== 'NOT_STARTED'}
+            disabled={!isEditingAllowed()}
             className={`px-3 py-1 text-xs rounded shadow font-semibold transition-colors duration-150 ${
-              tournament?.status !== 'NOT_STARTED'
+              !isEditingAllowed()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}>
