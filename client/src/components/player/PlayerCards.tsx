@@ -58,7 +58,13 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
     <div className='grid grid-cols-1 gap-3'>
       {players
         .slice()
-        .sort((a, b) => (b.total || 0) - (a.total || 0))
+        .sort(
+          (a, b) =>
+            (b.total || 0) +
+            (b.cut || 0) +
+            (b.bonus || 0) -
+            ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+        )
         .map((player) => {
           const currentRound = getCurrentRound(player);
 

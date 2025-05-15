@@ -59,7 +59,13 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
         <tbody className='divide-y divide-gray-200'>
           {players
             .slice()
-            .sort((a, b) => (b.total || 0) - (a.total || 0))
+            .sort(
+              (a, b) =>
+                (b.total || 0) +
+                (b.cut || 0) +
+                (b.bonus || 0) -
+                ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+            )
             .map((player) => (
               <React.Fragment key={player.id}>
                 <tr className='hover:bg-gray-50/50'>

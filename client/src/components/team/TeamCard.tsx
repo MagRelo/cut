@@ -125,7 +125,13 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
             {/* Player Round Icons */}
             <div className='flex items-center space-x-2 h-8'>
               {team.players
-                .sort((a, b) => (b.total || 0) - (a.total || 0))
+                .sort(
+                  (a, b) =>
+                    (b.total || 0) +
+                    (b.cut || 0) +
+                    (b.bonus || 0) -
+                    ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+                )
                 .slice(0, 4)
                 .map((player, index) => {
                   const currentRound = getCurrentRound(player);
