@@ -101,8 +101,16 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                   <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
                     {player.leaderboardPosition || '-'}
                   </td>
-                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
-                    {player.leaderboardTotal || '-'}
+                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-center'>
+                    <span
+                      className={`${
+                        player.leaderboardTotal === 'E' ||
+                        !player.leaderboardTotal?.startsWith('-')
+                          ? 'text-gray-600'
+                          : 'text-red-600'
+                      }`}>
+                      {player.leaderboardTotal || '-'}
+                    </span>
                   </td>
                   <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
                     {(player.total ?? 0) +
