@@ -245,7 +245,7 @@ export const PublicLeagueLobby: React.FC = () => {
           url={`${
             import.meta.env.VITE_BASE_URL || window.location.origin
           }/public/team?leagueId=${leagueId}`}
-          title='Share'
+          title={'Invite to ' + league.name}
           subtitle=''
         />
       </div>

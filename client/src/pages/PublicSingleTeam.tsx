@@ -238,7 +238,7 @@ export const PublicSingleTeam: React.FC = () => {
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>
-        <Share url={window.location.href} title='Share' subtitle='' />
+        <Share url={window.location.href} title='Share the Cut' subtitle='' />
       </div>
     </div>
   );
