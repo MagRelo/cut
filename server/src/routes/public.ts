@@ -37,6 +37,7 @@ const createTeamSchema = z.object({
   players: z.array(z.string()),
   color: z.string().optional(),
   userId: z.string().uuid(),
+  leagueId: z.string().cuid('Invalid league ID').optional(),
 });
 
 const updateTeamSchema = z.object({
@@ -170,6 +171,16 @@ router.post('/teams', async (req, res) => {
       },
     });
 
+    // If leagueId is provided, create the league team association
+    if (data.leagueId) {
+      await prisma.leagueTeam.create({
+        data: {
+          leagueId: data.leagueId,
+          teamId: team.id,
+        },
+      });
+    }
+
     await prisma.teamPlayer.createMany({
       data: data.players.map((playerId) => ({
         teamId: team.id,
@@ -186,6 +197,18 @@ router.post('/teams', async (req, res) => {
             player: true,
           },
         },
+        leagueTeams: data.leagueId
+          ? {
+              include: {
+                league: {
+                  include: {
+                    members: true,
+                    settings: true,
+                  },
+                },
+              },
+            }
+          : undefined,
       },
     });
 

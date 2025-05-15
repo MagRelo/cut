@@ -82,6 +82,11 @@ export const PublicTeamFormComponent = ({
       return;
     }
 
+    // check if leagueId is provided as query param
+    const leagueId = new URLSearchParams(window.location.search).get(
+      'leagueId'
+    );
+
     setIsSaving(true);
     setError(null);
 
@@ -97,6 +102,7 @@ export const PublicTeamFormComponent = ({
           name: teamName,
           players: selectedPlayers,
           color: teamColor,
+          leagueId: leagueId || undefined,
         });
       }
 

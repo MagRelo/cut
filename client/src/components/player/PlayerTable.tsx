@@ -36,22 +36,22 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
           <tr>
             <th
               scope='col'
-              className='w-48 sm:w-64 py-2 pl-3 pr-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-48 sm:w-64 py-2 pl-3 pr-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Player
             </th>
             <th
               scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Pos
             </th>
             <th
               scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Total
             </th>
             <th
               scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               PTS
             </th>
           </tr>

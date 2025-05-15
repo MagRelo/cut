@@ -22,6 +22,7 @@ interface CreatePublicTeamPayload {
   name: string;
   players: string[];
   color?: string;
+  leagueId?: string;
 }
 
 interface UpdatePublicTeamPayload {

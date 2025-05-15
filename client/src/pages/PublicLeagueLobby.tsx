@@ -304,7 +304,7 @@ export const PublicLeagueLobby: React.FC = () => {
         <Share
           url={`${
             import.meta.env.VITE_BASE_URL || window.location.origin
-          }/public/team`}
+          }/public/team?leagueId=${leagueId}`}
           title='Share'
           subtitle=''
         />
