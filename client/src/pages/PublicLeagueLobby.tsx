@@ -200,7 +200,7 @@ export const PublicLeagueLobby: React.FC = () => {
             )}
           </div>
           {/* Last Update Time */}
-          <div className='text-xs text-gray-400 text-center py-2 border-t border-gray-100 flex items-center justify-center gap-2'>
+          <div className='text-xs text-gray-400 text-center py-3 border-t border-gray-100 flex items-center justify-center gap-2'>
             <span>
               Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
             </span>

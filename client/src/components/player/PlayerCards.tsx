@@ -126,7 +126,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
 
               {/* Bottom Row */}
               {currentRound ? (
-                <div className='p-1 pt-2 bg-gray-50'>
+                <div className='p-1 bg-gray-50'>
                   <div className='flex items-center justify-between gap-x-4 px-3'>
                     {/* TEAM button */}
                     <button
