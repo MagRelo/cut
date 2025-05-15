@@ -163,7 +163,12 @@ export const PublicSingleTeam: React.FC = () => {
 
           <button
             onClick={() => setIsEditing(true)}
-            className='px-3 py-1 text-xs bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>
+            disabled={tournament?.status !== 'NOT_STARTED'}
+            className={`px-3 py-1 text-xs rounded shadow font-semibold transition-colors duration-150 ${
+              tournament?.status !== 'NOT_STARTED'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+            }`}>
             Edit
           </button>
 

@@ -52,7 +52,7 @@ export interface Tournament {
   startDate: string;
   endDate: string;
   manualActive: boolean;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: string;
   purse?: number;
   venue?: TournamentVenue;
   location?: TournamentLocation;
