@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePublicLeagueApi } from '../services/publicLeagueApi';
 import { Share } from '../components/common/Share';
-import { PlayerTable } from '../components/player/PlayerTable';
 import { type PublicLeague } from '../types/league';
 import { type Team, type TeamPlayer } from '../types/team';
+import { TeamCard } from '../components/team/TeamCard';
 
 interface LeagueResponse extends PublicLeague {
   commissionerId: string;
@@ -17,7 +17,6 @@ export const PublicLeagueLobby: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
-  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const publicLeagueApi = usePublicLeagueApi();
 
@@ -62,18 +61,6 @@ export const PublicLeagueLobby: React.FC = () => {
     });
   }, [leagueId]);
 
-  const toggleTeam = (teamId: string) => {
-    setExpandedTeams((prev) => {
-      const next = new Set(prev);
-      if (next.has(teamId)) {
-        next.delete(teamId);
-      } else {
-        next.add(teamId);
-      }
-      return next;
-    });
-  };
-
   const calculateTeamScore = (team: Team) => {
     return team.players
       .filter((player: TeamPlayer) => player.active)
@@ -110,12 +97,6 @@ export const PublicLeagueLobby: React.FC = () => {
 
     return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
   };
-
-  const renderTeamPlayers = (team: Team) => (
-    <div className='pb-4'>
-      <PlayerTable players={team.players} />
-    </div>
-  );
 
   const handleJoinLeague = async () => {
     if (!leagueId) return;
@@ -181,7 +162,7 @@ export const PublicLeagueLobby: React.FC = () => {
       <div className='bg-white rounded shadow'></div>
 
       {/* Teams Section */}
-      <div className='bg-white rounded shadow'>
+      <div className=''>
         <div className='flex justify-between items-center p-4'>
           <h1 className='text-2xl font-bold'>{league.name}</h1>
 
@@ -196,7 +177,7 @@ export const PublicLeagueLobby: React.FC = () => {
           )}
         </div>
         <div>
-          <div className='space-y-0'>
+          <div className='space-y-4'>
             {teams.length === 0 ? (
               <div className='text-gray-500 text-center py-3'>
                 No teams yet. Create one to get started!
@@ -207,54 +188,9 @@ export const PublicLeagueLobby: React.FC = () => {
                   (a: Team, b: Team) =>
                     calculateTeamScore(b) - calculateTeamScore(a)
                 )
-                .map((team: Team, index: number) => (
-                  <div
-                    key={team.id}
-                    className={`${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    } hover:bg-gray-100/70 transition-colors`}>
-                    <div className='w-full'>
-                      <button
-                        onClick={() => toggleTeam(team.id)}
-                        className='w-full px-4 py-2 flex justify-between items-center'>
-                        <div className='flex items-center'>
-                          <div
-                            className='w-4 h-4 rounded-full mr-2'
-                            style={{ backgroundColor: team.color }}
-                          />
-                          <h3 className='text-base font-medium text-gray-900'>
-                            {team.name}
-                          </h3>
-                        </div>
-                        <div className='flex items-center space-x-4'>
-                          <span className='text-sm font-semibold text-gray-900'>
-                            {calculateTeamScore(team)}
-                          </span>
-                          <svg
-                            className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-                              expandedTeams.has(team.id) ? 'rotate-180' : ''
-                            }`}
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'>
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M19 9l-7 7-7-7'
-                            />
-                          </svg>
-                        </div>
-                      </button>
-                    </div>
-                    <div
-                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                        expandedTeams.has(team.id)
-                          ? 'max-h-[1000px] border-t border-gray-200'
-                          : 'max-h-0'
-                      }`}>
-                      {renderTeamPlayers(team)}
-                    </div>
+                .map((team: Team) => (
+                  <div key={team.id} className='mb-4'>
+                    <TeamCard key={team.id} team={team} roundDisplay='R1' />
                   </div>
                 ))
             )}

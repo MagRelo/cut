@@ -23,7 +23,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
 
   // Calculate team total
   const teamTotal = team.players.reduce(
-    (sum, player) => sum + (player.total || 0),
+    (sum, player) =>
+      sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0),
     0
   );
 
@@ -86,7 +87,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
               </span>
             </div>
             <div className='flex items-center'>
-              <span className='text-2xl text-gray-600 font-bold'>
+              <span className='text-xl text-gray-600 font-bold'>
                 {teamTotal}
               </span>
             </div>
@@ -118,37 +119,40 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
                       d='M19 9l-7 7-7-7'
                     />
                   </svg>
-                  <Label className='ml-1'>
-                    Round {roundDisplay?.slice(1) || '1'}
-                  </Label>
+                  <Label className='ml-1'>TEAM</Label>
                 </button>
               </div>
             </div>
 
             {/* Player Round Icons */}
             <div className='flex items-center space-x-2 h-8'>
-              {team.players.slice(0, 4).map((player, index) => {
-                const currentRound = getCurrentRound(player);
-                return (
-                  <div
-                    key={index}
-                    className='flex-shrink-0 flex items-center h-8'>
-                    {currentRound?.data.icon ? (
-                      <span className='text-xl text-gray-600 font-bold'>
-                        {currentRound.data.icon}
-                      </span>
-                    ) : (
-                      <span className='text-xl text-gray-400'>⚪</span>
-                    )}
-                  </div>
-                );
-              })}
+              {team.players
+                .sort((a, b) => (b.total || 0) - (a.total || 0))
+                .slice(0, 4)
+                .map((player, index) => {
+                  const currentRound = getCurrentRound(player);
+                  return (
+                    <div
+                      key={index}
+                      className='flex-shrink-0 flex items-center h-8'>
+                      {currentRound?.data.icon ? (
+                        <span className='text-xl text-gray-600 font-bold'>
+                          {currentRound.data.icon}
+                        </span>
+                      ) : (
+                        <span className='text-xl text-gray-400'>⚪</span>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
 
             {/* Progress Bar */}
             <div className='flex-1 min-w-0 text-center flex items-center h-8'>
               <div className='flex items-center w-full'>
-                <Label className='text-xs text-gray-400 mr-2 -mt-px'>%</Label>
+                <Label className='text-xs text-gray-400 mr-2 -mt-px'>
+                  {roundDisplay}
+                </Label>
                 <div className='w-full h-2 bg-gray-200 rounded-full relative'>
                   <div
                     className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { TeamPlayer } from '../../types/team';
+import { PlayerScorecard } from './PlayerScorecard';
 
 interface PlayerCardsProps {
   players: TeamPlayer[];
@@ -21,6 +22,8 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
   players,
   roundDisplay,
 }) => {
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
+
   const getCurrentRound = (player: TeamPlayer) => {
     // If roundDisplay is specified, try to use that round
     if (roundDisplay !== undefined) {
@@ -81,7 +84,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                         {/* optionally add the round icon of the current round */}
                         {currentRound?.round &&
                           currentRound.data.icon !== '' && (
-                            <span className='text-xl text-gray-600 font-bold ml-1'>
+                            <span className='text-xl text-gray-600 font-bold mr-1'>
                               {currentRound.data.icon}
                             </span>
                           )}
@@ -124,16 +127,40 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
               {/* Bottom Row */}
               {currentRound ? (
                 <div className='p-1 pt-2 bg-gray-50'>
-                  <div className='flex justify-between items-stretch gap-x-4 px-3'>
-                    {/* RND label*/}
-                    <div className='flex items-center flex-shrink-0 border-r border-gray-400 h-full'>
-                      <div className='text-sm font-medium text-gray-500 min-w-[65px]'>
-                        <Label>Round {currentRound.round.slice(1)}</Label>
-                      </div>
-                    </div>
+                  <div className='flex items-center justify-between gap-x-4 px-3'>
+                    {/* TEAM button */}
+                    <button
+                      onClick={() =>
+                        setExpandedPlayerId(
+                          expandedPlayerId === player.id ? null : player.id
+                        )
+                      }
+                      className='flex items-center text-sm text-gray-500 text-left whitespace-nowrap hover:text-gray-700 transition-colors focus:outline-none'
+                      aria-label={
+                        expandedPlayerId === player.id
+                          ? 'Hide scorecard'
+                          : 'Show scorecard'
+                      }
+                      type='button'>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 mr-1 ${
+                          expandedPlayerId === player.id ? 'rotate-180' : ''
+                        }`}
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'>
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M19 9l-7 7-7-7'
+                        />
+                      </svg>
+                      <Label>CARD</Label>
+                    </button>
 
                     {/* RND */}
-                    <div className='text-sm text-gray-500 text-left whitespace-nowrap'>
+                    <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
                       <Label>{currentRound.round}</Label>{' '}
                       <span className='font-medium text-gray-700 ml-1'>
                         {currentRound.data.holes?.total}
@@ -141,7 +168,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     </div>
 
                     {/* PTS */}
-                    <div className='text-sm text-gray-500 text-left whitespace-nowrap'>
+                    <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
                       <Label>PTS</Label>{' '}
                       <span className='font-medium text-gray-700 ml-1'>
                         {currentRound.data.total}
@@ -149,29 +176,41 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     </div>
 
                     {/* % */}
-                    <div className='text-sm text-gray-500 flex-1 min-w-0 text-center py-1'>
-                      <div className='flex items-center w-full'>
-                        <Label className='text-xs text-gray-400 mr-2 -mt-px'>
-                          %
-                        </Label>
-                        <div className='w-full h-2 bg-gray-200 rounded-full relative'>
-                          <div
-                            className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
-                            style={{
-                              width: `${Math.round(
-                                (currentRound.data.ratio || 0) * 100
-                              )}%`,
-                            }}
-                            aria-label='Round completion'
-                          />
-                          <span className='sr-only'>
-                            {Math.round((currentRound.data.ratio || 0) * 100)}%
-                            complete
-                          </span>
-                        </div>
+                    <div className='text-sm text-gray-500 flex-1 min-w-0 text-center py-1 flex items-center'>
+                      <Label className='text-xs text-gray-400 mr-2 -mt-px'>
+                        %
+                      </Label>
+                      <div className='w-full h-2 bg-gray-200 rounded-full relative'>
+                        <div
+                          className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
+                          style={{
+                            width: `${Math.round(
+                              (currentRound.data.ratio || 0) * 100
+                            )}%`,
+                          }}
+                          aria-label='Round completion'
+                        />
+                        <span className='sr-only'>
+                          {Math.round((currentRound.data.ratio || 0) * 100)}%
+                          complete
+                        </span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Expanded Scorecard Section */}
+                  {expandedPlayerId === player.id && (
+                    <div className='mt-2 border-t border-gray-200'>
+                      <PlayerScorecard
+                        player={player}
+                        currentRound={
+                          currentRound?.round
+                            ? parseInt(currentRound.round.slice(1))
+                            : 1
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

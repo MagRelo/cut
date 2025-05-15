@@ -74,7 +74,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                             (() => {
                               const round = getCurrentRound(player);
                               return round?.data.icon ? (
-                                <span className='text-lg mr-1'>
+                                <span className='text-lg'>
                                   {round.data.icon}
                                 </span>
                               ) : null;
