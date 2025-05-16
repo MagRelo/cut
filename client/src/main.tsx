@@ -14,8 +14,7 @@ const app = (
       <PostHogProvider
         apiKey={import.meta.env.VITE_POSTHOG_KEY}
         options={{
-          api_host:
-            import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
+          api_host: 'https://analytics.mattlovan.dev',
           loaded: (posthog) => {
             if (import.meta.env.DEV) posthog.debug();
           },
