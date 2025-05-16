@@ -23,7 +23,8 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "deploy": "bash scripts/deploy.sh",
-    "export:tournament-players": "tsx scripts/exportTournamentPlayersCSV.ts"
+    "export:tournament-players": "tsx scripts/exportTournamentPlayersCSV.ts",
+    "delete-team": "tsx scripts/deleteTeam.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
