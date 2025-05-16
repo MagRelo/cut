@@ -15,7 +15,6 @@ export const getPlayerById = async (id: string) => {
 export const getActivePlayers = async () => {
   return prisma.player.findMany({
     where: {
-      isActive: true,
       inField: true,
     },
   });
