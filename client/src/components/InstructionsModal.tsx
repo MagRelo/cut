@@ -25,17 +25,18 @@ export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
           </button>
         </div>
         <div className='mb-5'>
-          <h3 className='text-lg font-medium mb-2.5'>the Cut</h3>
           <p className='mb-2'>
-            the Cut is a free weekly fantasy golf competition. Create your team
-            and join a league to compete against other players.
+            <b>the Cut</b> is a free weekly fantasy golf competition. Each PGA
+            tournament is a new competition.
           </p>
 
-          <h3 className='text-lg font-medium mb-2.5'>How to Play</h3>
-          <ul className='list-disc pl-5 space-y-2'>
-            <li>Each PGA tournament is a new competition.</li>
+          <h3 className='text-lg font-medium '>Create a Team</h3>
+          <ul className='list-disc pl-5 space-y-2 mb-2.5'>
             <li>Select four golfers to compete in each tournament.</li>
-            <li>Points are earned using Stableford scoring.</li>
+          </ul>
+
+          <h3 className='text-lg font-medium '>Join a League</h3>
+          <ul className='list-disc pl-5 space-y-2 mb-2.5'>
             <li>Join a league or create your own and invite your friends!</li>
           </ul>
         </div>
