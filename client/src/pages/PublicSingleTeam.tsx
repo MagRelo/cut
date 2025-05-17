@@ -176,10 +176,10 @@ export const PublicSingleTeam: React.FC = () => {
             disabled={!isEditingAllowed()}
             className={`px-3 py-1 text-xs rounded shadow font-semibold transition-colors duration-150 ${
               !isEditingAllowed()
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}>
-            Edit
+            {isEditingAllowed() ? 'Edit' : 'Locked'}
           </button>
 
           {/* <span className='text-base font-semibold text-gray-900'>

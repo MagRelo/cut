@@ -68,15 +68,26 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
             )
             .map((player) => (
               <React.Fragment key={player.id}>
-                <tr className='hover:bg-gray-50/50'>
+                <tr
+                  onClick={() => togglePlayer(player.id)}
+                  className='hover:bg-gray-50/50 cursor-pointer'
+                  role='button'
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      togglePlayer(player.id);
+                    }
+                  }}
+                  aria-label={
+                    expandedPlayers.has(player.id)
+                      ? 'Hide scorecard'
+                      : 'Show scorecard'
+                  }>
                   <td className='py-2 pl-3 pr-3 whitespace-nowrap'>
                     <div className='flex items-center'>
                       <div>
-                        <button
-                          onClick={() => togglePlayer(player.id)}
-                          className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
+                        <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
                           {/* Player Icon for current round */}
-
                           <span>
                             {player.player.pga_displayName || ''}
 
@@ -104,7 +115,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                               d='M19 9l-7 7-7-7'
                             />
                           </svg>
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </td>

@@ -40,6 +40,8 @@ export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
             <li>Join a league or create your own and invite your friends!</li>
           </ul>
         </div>
+
+        <hr className='my-4' />
         <div className='text-right'>
           <button
             onClick={onClose}
