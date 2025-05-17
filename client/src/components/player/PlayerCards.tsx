@@ -71,7 +71,26 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
           return (
             <div
               key={player.id}
-              className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
+              onClick={() =>
+                setExpandedPlayerId(
+                  expandedPlayerId === player.id ? null : player.id
+                )
+              }
+              className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer'
+              role='button'
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setExpandedPlayerId(
+                    expandedPlayerId === player.id ? null : player.id
+                  );
+                }
+              }}
+              aria-label={
+                expandedPlayerId === player.id
+                  ? 'Hide scorecard'
+                  : 'Show scorecard'
+              }>
               {/* Top Row */}
               <div className='px-4 py-3 border-b border-gray-200'>
                 <div className='flex items-center space-x-4'>
@@ -135,19 +154,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                 <div className='p-1 bg-gray-50'>
                   <div className='flex items-center justify-between gap-x-4 px-3'>
                     {/* TEAM button */}
-                    <button
-                      onClick={() =>
-                        setExpandedPlayerId(
-                          expandedPlayerId === player.id ? null : player.id
-                        )
-                      }
-                      className='flex items-center text-sm text-gray-500 text-left whitespace-nowrap hover:text-gray-700 transition-colors focus:outline-none'
-                      aria-label={
-                        expandedPlayerId === player.id
-                          ? 'Hide scorecard'
-                          : 'Show scorecard'
-                      }
-                      type='button'>
+                    <div className='flex items-center text-sm text-gray-500 text-left whitespace-nowrap'>
                       <svg
                         className={`w-4 h-4 text-gray-400 transition-transform duration-200 mr-1 ${
                           expandedPlayerId === player.id ? 'rotate-180' : ''
@@ -163,7 +170,7 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                         />
                       </svg>
                       <Label>CARD</Label>
-                    </button>
+                    </div>
 
                     {/* RND */}
                     <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>

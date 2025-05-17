@@ -70,7 +70,17 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
 
   return (
     <div>
-      <div className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
+      <div
+        onClick={() => setExpanded((prev) => !prev)}
+        className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer'
+        role='button'
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setExpanded((prev) => !prev);
+          }
+        }}
+        aria-label={expanded ? 'Hide players' : 'Show players'}>
         {/* Top Row */}
         <div className='px-4 py-3 pb-2 border-b border-gray-200'>
           <div className='flex items-center justify-between'>
@@ -98,11 +108,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
             {/* RND label with chevron */}
             <div className='flex items-center flex-shrink-0'>
               <div className='text-sm font-medium text-gray-500 min-w-[65px] flex items-center'>
-                <button
-                  onClick={() => setExpanded((prev) => !prev)}
-                  className='flex items-center w-full p-1 rounded hover:bg-gray-100 transition-colors'
-                  aria-label={expanded ? 'Hide players' : 'Show players'}
-                  type='button'>
+                <div className='flex items-center w-full p-1 rounded'>
                   <svg
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                       expanded ? 'rotate-180' : ''
@@ -118,7 +124,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
                     />
                   </svg>
                   <Label className='ml-1'>TEAM</Label>
-                </button>
+                </div>
               </div>
             </div>
 
