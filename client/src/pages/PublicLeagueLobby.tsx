@@ -65,7 +65,8 @@ export const PublicLeagueLobby: React.FC = () => {
     return team.players
       .filter((player: TeamPlayer) => player.active)
       .reduce(
-        (sum: number, player: TeamPlayer) => sum + (player.total || 0),
+        (sum: number, player: TeamPlayer) =>
+          sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0),
         0
       );
   };
@@ -163,8 +164,10 @@ export const PublicLeagueLobby: React.FC = () => {
 
       {/* Teams Section */}
       <div className=''>
-        <div className='flex justify-between items-center p-4'>
-          <h1 className='text-2xl font-bold'>{league.name}</h1>
+        <div className='flex justify-between items-center px-4 pb-2'>
+          <h1 className='text-3xl font-extrabold tracking-tight text-gray-900'>
+            {league.name}
+          </h1>
 
           {/* join button */}
           {!userHasTeam && (
