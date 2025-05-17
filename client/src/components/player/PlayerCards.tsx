@@ -117,7 +117,9 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                       </div>
                       <div className='flex items-center'>
                         <span className='text-xl text-gray-600 font-bold ml-1'>
-                          {player.total || '0'}
+                          {(player.total || 0) +
+                            (player.cut || 0) +
+                            (player.bonus || 0)}
                         </span>
                       </div>
                     </div>
