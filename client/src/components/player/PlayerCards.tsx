@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { TeamPlayer } from '../../types/team';
+import type { TeamPlayer, RoundData } from '../../types/team';
 import { PlayerScorecard } from './PlayerScorecard';
 
 interface PlayerCardsProps {
@@ -52,6 +52,25 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
       }
     }
     return null;
+  };
+
+  const calculateScoreToPar = (roundData: RoundData): string => {
+    if (roundData.ratio === 0) return '-';
+
+    const totalScore = roundData?.holes?.scores.reduce(
+      (sum: number, score: number | null) => sum + (score || 0),
+      0
+    );
+
+    const totalPar = roundData?.holes?.scores.reduce(
+      (sum: number, score: number | null, index: number) =>
+        score !== null ? sum + (roundData.holes?.par[index] || 0) : sum,
+      0
+    );
+    const scoreToPar = totalScore && totalPar ? totalScore - totalPar : 0;
+
+    if (scoreToPar === 0) return 'E';
+    return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
   };
 
   return (
@@ -178,7 +197,9 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                     <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
                       <Label>{currentRound.round}</Label>{' '}
                       <span className='font-medium text-gray-700 ml-1'>
-                        {currentRound.data.holes?.total}
+                        {currentRound.data.holes?.scores
+                          ? calculateScoreToPar(currentRound.data)
+                          : '-'}
                       </span>
                     </div>
 
