@@ -50,17 +50,17 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
+      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
         Hole
       </th>
       {Array.from({ length: 18 }, (_, i) => (
         <th
           key={i}
-          className='px-2 py-2 text-center text-xs font-medium text-gray-500'>
+          className='px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[2.25rem] w-[2.25rem]'>
           {i + 1}
         </th>
       ))}
-      <th className='px-3 py-2 text-center text-xs font-medium text-gray-500'>
+      <th className='px-3 py-2 text-center text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
         Total
       </th>
     </tr>
@@ -78,15 +78,17 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
           Par
         </td>
         {pars.map((par: number | null, i: number) => (
-          <td key={i} className='px-2 py-2 text-center text-xs text-gray-600'>
+          <td
+            key={i}
+            className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem]'>
             {par === null ? '-' : par}
           </td>
         ))}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
           {pars.some((par) => par !== null)
             ? pars.reduce(
                 (sum: number, par: number | null) => sum + (par || 0),
@@ -102,10 +104,10 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   const renderScores = () => {
     if (!roundData?.holes?.scores?.length) return null;
 
-    // // Get pars for score comparison
-    // const pars = Array(18)
-    //   .fill(null)
-    //   .map((_, i) => roundData.holes?.par?.[i] ?? null);
+    // Get pars for score comparison
+    const pars = Array(18)
+      .fill(null)
+      .map((_, i) => roundData.holes?.par?.[i] ?? null);
 
     // Calculate total of actual scores
     const scoreTotal = roundData.holes.scores
@@ -114,29 +116,42 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200 bg-gray-50'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
           Score
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
-          // const par = pars[i];
+          const par = pars[i];
           const scoreValue = score === null ? '-' : score;
-          // const scoreDiff = score === null || par === null ? 0 : score - par;
+          const scoreDiff = score === null || par === null ? 0 : score - par;
 
-          // let scoreClass = '';
-          // if (score !== null && par !== null) {
-          //   if (scoreDiff < 0) scoreClass = 'text-emerald-600 font-medium';
-          //   else if (scoreDiff > 0) scoreClass = 'text-red-600 font-medium';
-          // }
+          let content: React.ReactNode = scoreValue;
+          if (score !== null && par !== null) {
+            if (scoreDiff < 0) {
+              // Circle for below par
+              content = (
+                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded-full '>
+                  {score}
+                </span>
+              );
+            } else if (scoreDiff > 0) {
+              // Square for above par
+              content = (
+                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-gray-300 '>
+                  {score}
+                </span>
+              );
+            }
+          }
 
           return (
             <td
               key={i}
-              className={`px-2 py-2 text-center text-xs text-gray-600`}>
-              {scoreValue}
+              className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem]'>
+              {content}
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
           {roundData.holes.scores.some((score: number | null) => score !== null)
             ? scoreTotal
             : '-'}
@@ -150,7 +165,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     if (!roundData?.holes?.stableford?.length) return null;
     return (
       <tr className='border-t border-gray-200 bg-gray-50'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
@@ -163,12 +178,12 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           return (
             <td
               key={i}
-              className={`px-2 py-2 text-center text-xs ${pointsClass}`}>
+              className={`px-2 py-2 text-center text-xs ${pointsClass} min-w-[2.25rem] w-[2.25rem]`}>
               {points === null ? '-' : points}
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
           {roundData.holes.stableford.reduce(
             (sum: number, points: number | null) =>
               sum + (points === null ? 0 : points),
