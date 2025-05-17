@@ -215,7 +215,9 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
 
                   {/* Expanded Scorecard Section */}
                   {expandedPlayerId === player.id && (
-                    <div className='mt-2 border-t border-gray-200'>
+                    <div
+                      className='mt-2 border-t border-gray-200'
+                      onClick={(e) => e.stopPropagation()}>
                       <PlayerScorecard
                         player={player}
                         currentRound={

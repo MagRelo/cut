@@ -19,6 +19,24 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            // Add other large dependencies here if needed
+          },
+        },
+      },
+      // Ensure proper cache busting
+      assetsDir: 'assets',
+      // Generate manifest for better cache control
+      manifest: true,
+      // Enable source maps in production for better debugging
+      sourcemap: mode === 'production',
+      // Optimize chunk size
+      chunkSizeWarningLimit: 1000,
+    },
     define: {
       // Expose env variables to the client
       'process.env.VITE_NODE_ENV': JSON.stringify(env.VITE_NODE_ENV),
