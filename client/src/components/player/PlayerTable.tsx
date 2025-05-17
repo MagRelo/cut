@@ -76,16 +76,20 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                           onClick={() => togglePlayer(player.id)}
                           className='text-sm font-medium text-gray-900 flex items-center gap-2 hover:text-emerald-600'>
                           {/* Player Icon for current round */}
-                          {getCurrentRound &&
-                            (() => {
-                              const round = getCurrentRound(player);
-                              return round?.data.icon ? (
-                                <span className='text-lg'>
-                                  {round.data.icon}
-                                </span>
-                              ) : null;
-                            })()}
-                          {player.player.pga_displayName || ''}
+
+                          <span>
+                            {player.player.pga_displayName || ''}
+
+                            {getCurrentRound &&
+                              (() => {
+                                const round = getCurrentRound(player);
+                                return round?.data.icon ? (
+                                  <span className='text-lg pl-2'>
+                                    {round.data.icon}
+                                  </span>
+                                ) : null;
+                              })()}
+                          </span>
                           <svg
                             className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${
                               expandedPlayers.has(player.id) ? 'rotate-180' : ''

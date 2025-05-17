@@ -70,7 +70,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
 
   return (
     <div>
-      <div className='bg-white  shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
+      <div className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200'>
         {/* Top Row */}
         <div className='px-4 py-3 pb-2 border-b border-gray-200'>
           <div className='flex items-center justify-between'>
@@ -154,7 +154,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
             {/* Progress Bar */}
             <div className='flex-1 min-w-0 text-center flex items-center h-8'>
               <div className='flex items-center w-full'>
-                <Label className='text-xs text-gray-400 mr-2 -mt-px'>
+                <Label className='text-sm text-gray-400 mr-1 -mt-px'>
                   {roundDisplay}
                 </Label>
                 <div className='w-full h-2 bg-gray-200 rounded-full relative'>
