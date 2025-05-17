@@ -18,13 +18,6 @@ const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
   </span>
 );
 
-const CircleLabel: React.FC<LabelProps> = ({ children, className = '' }) => (
-  <span
-    className={`inline-flex items-center justify-center w-6 h-6 rounded-full border border-gray-300 text-sm font-light text-gray-400 ${className} mb-1`}>
-    {children}
-  </span>
-);
-
 export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
   const [expanded, setExpanded] = React.useState(false);
 
@@ -81,17 +74,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
 
     if (ratios.length === 0) return 0;
     return ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length;
-  };
-
-  const getPlayerIcon = (player: Team['players'][0]) => {
-    if (
-      player.leaderboardPosition === 'CUT' ||
-      player.leaderboardPosition === 'DQ'
-    ) {
-      return <CircleLabel>X</CircleLabel>;
-    }
-    const currentRound = getCurrentRound(player);
-    return currentRound?.data.icon || <CircleLabel>&nbsp;</CircleLabel>;
   };
 
   return (
@@ -166,13 +148,18 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
                 )
                 .slice(0, 4)
                 .map((player, index) => {
+                  const currentRound = getCurrentRound(player);
                   return (
                     <div
                       key={index}
                       className='flex-shrink-0 flex items-center h-8'>
-                      <span className='text-xl text-gray-600 font-bold'>
-                        {getPlayerIcon(player)}
-                      </span>
+                      {currentRound?.data.icon ? (
+                        <span className='text-xl text-gray-600 font-bold'>
+                          {currentRound.data.icon}
+                        </span>
+                      ) : (
+                        <span className='text-xl text-gray-400'>⚪</span>
+                      )}
                     </div>
                   );
                 })}
