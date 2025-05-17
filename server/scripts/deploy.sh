@@ -36,4 +36,4 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 echo "Deployment preparation complete!"
 echo "Next steps:"
 echo "1. SSH: ssh root@45.55.136.214"
-echo "2. Pull & start: cd ../etc/dockercompose && docker image prune -a -f && docker compose up -d"
+echo "2. Pull & start: cd ../etc/dockercompose && docker image prune -a -f && docker compose up -d --pull always"

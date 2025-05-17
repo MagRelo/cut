@@ -220,15 +220,23 @@ export const PlayerCards: React.FC<PlayerCardsProps> = ({
                         <div
                           className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
                           style={{
-                            width: `${Math.round(
-                              (currentRound.data.ratio || 0) * 100
-                            )}%`,
+                            width: `${
+                              player.leaderboardPosition === 'CUT' ||
+                              player.leaderboardPosition === 'DQ'
+                                ? 100
+                                : Math.round(
+                                    (currentRound.data.ratio || 0) * 100
+                                  )
+                            }%`,
                           }}
                           aria-label='Round completion'
                         />
                         <span className='sr-only'>
-                          {Math.round((currentRound.data.ratio || 0) * 100)}%
-                          complete
+                          {player.leaderboardPosition === 'CUT' ||
+                          player.leaderboardPosition === 'DQ'
+                            ? 100
+                            : Math.round((currentRound.data.ratio || 0) * 100)}
+                          % complete
                         </span>
                       </div>
                     </div>

@@ -60,6 +60,14 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
   // Calculate team's average ratio for the current round
   const getTeamRatio = () => {
     const ratios = team.players.map((player) => {
+      // if the player postition is "CUT" or "DQ" or then return 1
+      if (
+        player.leaderboardPosition === 'CUT' ||
+        player.leaderboardPosition === 'DQ'
+      ) {
+        return 1;
+      }
+
       const round = getCurrentRound(player);
       return round?.data.ratio || 0;
     });
