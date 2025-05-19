@@ -12,6 +12,46 @@ interface LabelProps {
   className?: string;
 }
 
+interface RoundIconProps {
+  currentRound: { round: string; data: { icon?: string } } | null;
+  leaderboardPosition?: string;
+}
+
+const RoundIcon: React.FC<RoundIconProps> = ({
+  currentRound,
+  leaderboardPosition,
+}) => {
+  if (leaderboardPosition === 'CUT') {
+    return (
+      <div className='flex-shrink-0 flex items-center h-8'>
+        <svg
+          className='w-5 h-5 text-gray-400'
+          viewBox='0 0 24 24'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='2'
+          strokeLinecap='round'
+          strokeLinejoin='round'>
+          <line x1='18' y1='6' x2='6' y2='18' />
+          <line x1='6' y1='6' x2='18' y2='18' />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div className='flex-shrink-0 flex items-center h-8'>
+      {currentRound?.data.icon ? (
+        <span className='text-xl text-gray-600 font-bold'>
+          {currentRound.data.icon}
+        </span>
+      ) : (
+        <span className='text-xl text-gray-400'>⚪</span>
+      )}
+    </div>
+  );
+};
+
 const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
   <span className={`text-sm font-medium text-gray-400 pr-1 ${className}`}>
     {children}
@@ -150,17 +190,11 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
                 .map((player, index) => {
                   const currentRound = getCurrentRound(player);
                   return (
-                    <div
+                    <RoundIcon
                       key={index}
-                      className='flex-shrink-0 flex items-center h-8'>
-                      {currentRound?.data.icon ? (
-                        <span className='text-xl text-gray-600 font-bold'>
-                          {currentRound.data.icon}
-                        </span>
-                      ) : (
-                        <span className='text-xl text-gray-400'>⚪</span>
-                      )}
-                    </div>
+                      currentRound={currentRound}
+                      leaderboardPosition={player.leaderboardPosition}
+                    />
                   );
                 })}
             </div>
