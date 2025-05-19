@@ -10,7 +10,7 @@ import { PublicTeamFormComponent } from '../components/team/PublicTeamFormCompon
 import { Share } from '../components/common/Share';
 // import { PlayerTable } from '../components/player/PlayerTable';
 import { LeagueCard } from '../components/LeagueCard';
-import { PlayerCards } from '../components/player/PlayerCards';
+import { PlayerCard } from '../components/player/PlayerCard';
 import { Tournament } from 'types/league';
 
 export const PublicSingleTeam: React.FC = () => {
@@ -181,16 +181,27 @@ export const PublicSingleTeam: React.FC = () => {
             }`}>
             {isEditingAllowed() ? 'Edit' : 'Locked'}
           </button>
-
-          {/* <span className='text-base font-semibold text-gray-900'>
-            {calculateTeamScore(team)} pts
-          </span> */}
         </h2>
-        {/* <PlayerTable players={team.players} /> */}
-        <PlayerCards
-          players={team.players}
-          roundDisplay={tournament?.roundDisplay || '1'}
-        />
+
+        {/* Player cards */}
+        <div className='grid grid-cols-1 gap-3'>
+          {team.players
+            .slice()
+            .sort(
+              (a, b) =>
+                (b.total || 0) +
+                (b.cut || 0) +
+                (b.bonus || 0) -
+                ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+            )
+            .map((player) => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                roundDisplay={tournament?.roundDisplay || '1'}
+              />
+            ))}
+        </div>
 
         {/* Last Update Time */}
         <div className='text-xs text-gray-400 text-center py-3 border-t border-gray-100 flex items-center justify-center gap-2'>

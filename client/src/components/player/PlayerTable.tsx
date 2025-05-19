@@ -29,6 +29,26 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
     });
   };
 
+  const calculateScoreToPar = (roundData: RoundData): string => {
+    if (roundData.ratio === 0) return '-';
+
+    const totalScore = roundData?.holes?.scores.reduce(
+      (sum: number, score: number | null) => sum + (score || 0),
+      0
+    );
+
+    const totalPar = roundData?.holes?.scores.reduce(
+      (sum: number, score: number | null, index: number) =>
+        score !== null ? sum + (roundData.holes?.par[index] || 0) : sum,
+      0
+    );
+
+    const scoreToPar = totalScore && totalPar ? totalScore - totalPar : 0;
+
+    if (scoreToPar === 0) return 'E';
+    return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
+  };
+
   return (
     <div className='w-full overflow-x-auto'>
       <table className='w-full table-fixed divide-y divide-gray-200'>
@@ -36,23 +56,28 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
           <tr>
             <th
               scope='col'
-              className='w-48 sm:w-64 py-2 pl-3 pr-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
-              Player
-            </th>
-            <th
-              scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='w-12 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Pos
             </th>
             <th
               scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              className='px-4 py-2 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              Player
+            </th>
+            <th
+              scope='col'
+              className='w-12 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Total
             </th>
             <th
               scope='col'
-              className='w-12 sm:w-16 px-2 sm:px-3 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
-              PTS
+              className='w-10 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              R4
+            </th>
+            <th
+              scope='col'
+              className='w-12 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              THRU
             </th>
           </tr>
         </thead>
@@ -83,7 +108,10 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       ? 'Hide scorecard'
                       : 'Show scorecard'
                   }>
-                  <td className='py-2 pl-3 pr-3 whitespace-nowrap'>
+                  <td className='w-10 py-2 text-center text-xs font-bold'>
+                    {player.leaderboardPosition || '-'}
+                  </td>
+                  <td className='px-4 py-2 text-left'>
                     <div className='flex items-center'>
                       <div>
                         <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
@@ -119,10 +147,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       </div>
                     </div>
                   </td>
-                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-gray-600 text-center'>
-                    {player.leaderboardPosition || '-'}
-                  </td>
-                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-xs font-bold text-center'>
+                  <td className='w-10 py-2 text-center text-xs font-bold'>
                     <span
                       className={`${
                         player.leaderboardTotal === 'E' ||
@@ -133,10 +158,21 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       {player.leaderboardTotal || '-'}
                     </span>
                   </td>
-                  <td className='px-2 sm:px-3 py-2 whitespace-nowrap text-sm text-center font-medium text-gray-900'>
-                    {(player.total ?? 0) +
-                      (player.cut ?? 0) +
-                      (player.bonus ?? 0)}
+                  <td className='w-12 py-2 text-center text-sm font-medium text-gray-900'>
+                    {getCurrentRound?.(player)?.data
+                      ? calculateScoreToPar(getCurrentRound(player)!.data)
+                      : '-'}
+                  </td>
+                  <td className='w-12 py-2 text-center text-sm font-medium text-gray-900'>
+                    {(() => {
+                      const round = getCurrentRound?.(player);
+                      if (!round?.data.holes?.scores) return 0;
+                      return (
+                        round.data.holes.scores.filter(
+                          (score) => score !== null
+                        ).length || '-'
+                      );
+                    })()}
                   </td>
                 </tr>
                 {expandedPlayers.has(player.id) && (
