@@ -1,33 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { usePublicLeagueApi } from '../../services/publicLeagueApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
-import { type Tournament } from '../../types/league';
+import { useTournament } from '../../contexts/TournamentContext';
 
 export const TournamentInfoCard: React.FC = () => {
-  const [tournament, setTournament] = useState<Tournament | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { currentTournament, isLoading, error } = useTournament();
   const location = useLocation();
-  const publicLeagueApi = usePublicLeagueApi();
-
-  useEffect(() => {
-    const fetchTournament = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await publicLeagueApi.getCurrentTournament();
-        setTournament(result);
-      } catch {
-        setError('Failed to load tournament');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTournament();
-  }, []);
 
   if (isLoading) {
     return (
@@ -40,22 +19,22 @@ export const TournamentInfoCard: React.FC = () => {
   if (error) {
     return (
       <div className='relative overflow-hidden md:rounded-lg p-4'>
-        <ErrorMessage message={error} />
+        <ErrorMessage message={error.message} />
       </div>
     );
   }
 
-  if (!tournament) {
+  if (!currentTournament) {
     return null;
   }
 
   return (
     <div className='relative overflow-hidden md:rounded-lg'>
-      {tournament.beautyImage ? (
+      {currentTournament.beautyImage ? (
         <>
           <div
             className='absolute inset-0 bg-cover bg-center'
-            style={{ backgroundImage: `url(${tournament.beautyImage})` }}
+            style={{ backgroundImage: `url(${currentTournament.beautyImage})` }}
           />
           <div className='absolute inset-0 bg-black/50' />
         </>
@@ -64,11 +43,14 @@ export const TournamentInfoCard: React.FC = () => {
       )}
       <div className='relative p-4 text-white'>
         <div className='flex justify-between items-center'>
-          <p className='text-2xl font-bold tracking-tight'>{tournament.name}</p>
+          <p className='text-3xl font-bold tracking-tight'>
+            {currentTournament.name}
+          </p>
         </div>
         <div className='mt-1 space-y-2'>
-          <p className='text-white font-semibold'>
-            {tournament.roundDisplay} &#183; {tournament.roundStatusDisplay}
+          <p className='text-white font-semibold text-xl'>
+            {currentTournament.roundDisplay} &#183;{' '}
+            {currentTournament.roundStatusDisplay}
           </p>
           <Link
             to='/public/team'

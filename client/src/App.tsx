@@ -6,9 +6,9 @@ import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { AdminPage } from './pages/AdminPage';
-import { Navigation } from './components/Navigation';
+import { Navigation } from './components/common/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
-import { ChatProvider } from './contexts/ChatContext';
+import { TournamentProvider } from './contexts/TournamentContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicLeagueList } from './pages/PublicLeagueList';
 import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
@@ -22,7 +22,7 @@ import { PublicLeagueLayout } from './components/layouts/PublicLeagueLayout';
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <ChatProvider>
+      <TournamentProvider>
         <Router>
           <div className='min-h-screen bg-gray-100 flex flex-col'>
             {/* TODO: Remove this when we're ready to go live */}
@@ -75,7 +75,7 @@ export const App: React.FC = () => {
             <Navigation />
           </div>
         </Router>
-      </ChatProvider>
+      </TournamentProvider>
     </AuthProvider>
   );
 };

@@ -10,7 +10,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { api } from '../services/api';
+import { useLeagueApi } from '../services/leagueApi';
+import type { TimelineData } from '../services/leagueApi';
 
 // Register Chart.js components
 ChartJS.register(
@@ -54,26 +55,6 @@ interface TimelineProps {
   tournamentStartDate: string;
 }
 
-interface TimelineData {
-  teams: {
-    id: string;
-    name: string;
-    color: string;
-    dataPoints: {
-      timestamp: string;
-      score: number;
-      roundNumber?: number;
-    }[];
-  }[];
-  tournament: {
-    id: string;
-    name: string;
-    currentRound: number;
-    status: string;
-    startDate: string;
-  };
-}
-
 export const Timeline: React.FC<TimelineProps> = ({
   className = '',
   leagueId,
@@ -85,6 +66,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const leagueApi = useLeagueApi();
 
   useEffect(() => {
     const fetchTimelineData = async (retryCount = 0) => {
@@ -104,7 +86,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
         // Add timeout to the API call
         const data = (await Promise.race([
-          api.getLeagueTimeline(
+          leagueApi.getLeagueTimeline(
             leagueId,
             tournamentId,
             tournamentStartDate,

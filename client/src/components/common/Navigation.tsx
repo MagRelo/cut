@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { HelpButton } from './HelpButton';
 
 export const Navigation: React.FC = () => {
@@ -17,24 +17,13 @@ export const Navigation: React.FC = () => {
         <div className='flex justify-between h-16'>
           <div className='flex'>
             <div className='flex-shrink-0 flex items-center gap-4'>
-              <Link
-                to={user ? '/leagues' : '/'}
-                className='text-xl font-bold text-black'>
+              <Link to='/' className='text-xl font-bold text-black'>
                 the Cut
               </Link>
               <HelpButton />
             </div>
             {user && (
               <div className='flex ml-4 sm:ml-6 space-x-4 sm:space-x-8 items-center'>
-                <Link
-                  to='/leagues'
-                  className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
-                    isActive('/leagues')
-                      ? 'text-emerald-500'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}>
-                  Leagues
-                </Link>
                 {isAdmin() && (
                   <Link
                     to='/admin'
@@ -50,7 +39,7 @@ export const Navigation: React.FC = () => {
             )}
           </div>
           <div className='flex items-center'>
-            {user && (
+            {!user?.isAnonymous && (
               <Link
                 to='/settings'
                 className={`ml-4 p-2 rounded-full hover:bg-gray-100 ${

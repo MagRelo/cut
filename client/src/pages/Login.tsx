@@ -17,7 +17,7 @@ export function Login() {
 
     try {
       await login(email, password);
-      navigate('/leagues', { replace: true });
+      navigate('/public/leagues', { replace: true });
     } catch {
       setError('Failed to sign in. Please check your credentials.');
     } finally {

@@ -1,13 +1,25 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { ApiService } from '../services/api';
-import { streamClient } from '../services/chatService';
-import { InstructionsModal } from '../components/InstructionsModal';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
+import { InstructionsModal } from '../components/common/InstructionsModal';
 
-interface User {
+interface BaseUser {
   id: string;
+  isAnonymous: boolean;
+}
+
+interface AuthenticatedUser extends BaseUser {
+  isAnonymous: false;
   email: string;
   name: string;
   userType: string;
+  token: string;
+  streamToken: string;
   teams: Array<{
     id: string;
     name: string;
@@ -16,23 +28,29 @@ interface User {
   }>;
 }
 
-interface AnonymousUser {
+interface AnonymousUser extends BaseUser {
+  isAnonymous: true;
   guid: string;
 }
 
+type User = AuthenticatedUser | AnonymousUser;
+
 interface AuthContextData {
   user: User | null;
-  anonymousUser: AnonymousUser | null;
   loading: boolean;
   streamToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  updateUser: (user: User) => Promise<void>;
+  updateUser: (user: AuthenticatedUser) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<void>;
   isAdmin: () => boolean;
-  getOrCreateAnonymousUser: () => AnonymousUser;
+  getCurrentUser: () => User;
   upgradeAnonymousUser: (
     email: string,
     password: string,
@@ -53,173 +71,330 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [anonymousUser, setAnonymousUser] = useState<AnonymousUser | null>(
-    null
-  );
   const [loading, setLoading] = useState(true);
   const [streamToken, setStreamToken] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
-  const api = new ApiService();
+
+  const config = useMemo(
+    () => ({
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }),
+    []
+  );
+
+  const request = useCallback(
+    async <T,>(
+      method: string,
+      endpoint: string,
+      data?: unknown,
+      isPublic: boolean = false
+    ): Promise<T> => {
+      const headers: Record<string, string> = {
+        ...config.headers,
+      };
+
+      const token = localStorage.getItem('token');
+      const guid = localStorage.getItem('publicUserGuid');
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (guid) {
+        headers['X-User-Guid'] = guid;
+      }
+
+      if (isPublic) {
+        headers['X-Public-Api'] = 'true';
+      }
+
+      const response = await fetch(`${config.baseURL}${endpoint}`, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          throw new Error('Authentication failed');
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      return response.json();
+    },
+    [config]
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await request<void>('POST', '/auth/logout');
+    } catch (error) {
+      console.error('Error on logout:', error);
+    } finally {
+      setUser(null);
+      setStreamToken(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('userId');
+    }
+  }, []);
+
+  const getCurrentUser = useCallback((): User => {
+    if (user) {
+      return user;
+    }
+    const storedGuid = localStorage.getItem('publicUserGuid');
+    if (storedGuid) {
+      const anonymousUser: AnonymousUser = {
+        id: storedGuid,
+        isAnonymous: true,
+        guid: storedGuid,
+      };
+      setUser(anonymousUser);
+      return anonymousUser;
+    }
+    const guid = crypto.randomUUID();
+    localStorage.setItem('publicUserGuid', guid);
+    const anonymousUser: AnonymousUser = {
+      id: guid,
+      isAnonymous: true,
+      guid,
+    };
+    setUser(anonymousUser);
+    return anonymousUser;
+  }, [user]);
 
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('Initializing auth');
+
       try {
         const token = localStorage.getItem('token');
         const guid = localStorage.getItem('publicUserGuid');
         const hasSeenInstructions = localStorage.getItem('hasSeenInstructions');
 
         if (token) {
-          const response = await api.get<User>('/auth/me');
-          setUser(response);
+          console.log('Using token', token);
+          const response = await request<AuthenticatedUser>('GET', '/auth/me');
+          const authenticatedUser: AuthenticatedUser = {
+            ...response,
+            isAnonymous: false,
+          };
+          setUser(authenticatedUser);
+        } else if (guid) {
+          console.log('Using guid', guid);
+
+          const anonymousUser: AnonymousUser = {
+            id: guid,
+            isAnonymous: true,
+            guid,
+          };
+          setUser(anonymousUser);
         } else {
-          // Check for anonymous user
-          if (guid) {
-            setAnonymousUser({ guid });
-          }
+          const newGuid = crypto.randomUUID();
+          localStorage.setItem('publicUserGuid', newGuid);
+          const anonymousUser: AnonymousUser = {
+            id: newGuid,
+            isAnonymous: true,
+            guid: newGuid,
+          };
+          setUser(anonymousUser);
         }
 
-        // Show instructions if user hasn't seen them before
         if (!hasSeenInstructions) {
           setShowInstructions(true);
         }
       } catch (error: unknown) {
         console.error('Auth check failed:', error);
-        logout();
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
-  }, []);
+  }, [request]);
 
-  const getOrCreateAnonymousUser = (): AnonymousUser => {
-    if (anonymousUser) {
-      return anonymousUser;
-    }
+  const upgradeAnonymousUser = useCallback(
+    async (email: string, password: string, name: string) => {
+      const currentUser = getCurrentUser();
+      if (!currentUser.isAnonymous) {
+        throw new Error('User is already authenticated');
+      }
 
-    const storedGuid = localStorage.getItem('publicUserGuid');
-    if (storedGuid) {
-      const newAnonymousUser = { guid: storedGuid };
-      setAnonymousUser(newAnonymousUser);
-      return newAnonymousUser;
-    }
-
-    const guid = crypto.randomUUID();
-    localStorage.setItem('publicUserGuid', guid);
-    const newAnonymousUser = { guid };
-    setAnonymousUser(newAnonymousUser);
-    return newAnonymousUser;
-  };
-
-  const upgradeAnonymousUser = async (
-    email: string,
-    password: string,
-    name: string
-  ) => {
-    if (!anonymousUser) {
-      throw new Error('No anonymous user to upgrade');
-    }
-
-    // Register the user with their anonymous GUID
-    const response = await api.register(
-      email,
-      password,
-      name,
-      anonymousUser.guid
-    );
-    setUser(response);
-    setStreamToken(response.streamToken);
-    setAnonymousUser(null);
-    localStorage.removeItem('publicUserGuid');
-  };
-
-  const login = async (email: string, password: string) => {
-    const response = await api.login(email, password);
-    setUser(response);
-    setStreamToken(response.streamToken);
-    // Clear anonymous user if it exists
-    if (anonymousUser) {
-      setAnonymousUser(null);
+      const response = await request<AuthenticatedUser>(
+        'POST',
+        '/auth/register',
+        {
+          email,
+          password,
+          name,
+          anonymousGuid: currentUser.guid,
+        },
+        true
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      setStreamToken(response.streamToken);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.id);
       localStorage.removeItem('publicUserGuid');
-    }
-  };
+    },
+    [request, getCurrentUser]
+  );
 
-  const logout = async () => {
-    try {
-      await streamClient.disconnectUser();
-    } catch (error) {
-      console.error('Error disconnecting from Stream:', error);
-    } finally {
-      setUser(null);
-      setStreamToken(null);
-      localStorage.removeItem('token');
-    }
-  };
-
-  const updateUser = async (user: User) => {
-    setUser(user);
-    // Fetch a fresh stream token when updating user data
-    try {
-      const { streamToken: newStreamToken } = await api.get<{
-        streamToken: string;
-      }>('/auth/stream-token');
-      setStreamToken(newStreamToken);
-    } catch (error) {
-      console.error('Failed to refresh stream token:', error);
-    }
-  };
-
-  const register = async (email: string, password: string, name: string) => {
-    const response = await api.register(email, password, name);
-    setUser(response);
-    setStreamToken(response.streamToken);
-    // Clear anonymous user if it exists
-    if (anonymousUser) {
-      setAnonymousUser(null);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const response = await request<AuthenticatedUser>(
+        'POST',
+        '/auth/login',
+        { email, password },
+        true
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      setStreamToken(response.streamToken);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.id);
       localStorage.removeItem('publicUserGuid');
-    }
-  };
+    },
+    [request]
+  );
 
-  const forgotPassword = async (email: string) => {
-    await api.forgotPassword(email);
-  };
+  const updateUser = useCallback(
+    async (updatedUser: AuthenticatedUser) => {
+      setUser(updatedUser);
+      try {
+        const { streamToken: newStreamToken } = await request<{
+          streamToken: string;
+        }>('GET', '/auth/stream-token');
+        setStreamToken(newStreamToken);
+      } catch (error) {
+        console.error('Failed to refresh stream token:', error);
+      }
+    },
+    [request]
+  );
 
-  const resetPassword = async (token: string, password: string) => {
-    await api.resetPassword(token, password);
-  };
+  const register = useCallback(
+    async (email: string, password: string, name: string) => {
+      const response = await request<AuthenticatedUser>(
+        'POST',
+        '/auth/register',
+        { email, password, name },
+        true
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      setStreamToken(response.streamToken);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.id);
+      localStorage.removeItem('publicUserGuid');
+    },
+    [request]
+  );
 
-  const isAdmin = () => {
-    return user?.userType === 'ADMIN';
-  };
+  const forgotPassword = useCallback(
+    async (email: string) => {
+      await request<{ message: string }>(
+        'POST',
+        '/auth/forgot-password',
+        { email },
+        true
+      );
+    },
+    [request]
+  );
 
-  const handleCloseInstructions = () => {
+  const resetPassword = useCallback(
+    async (token: string, password: string) => {
+      await request<{ message: string }>(
+        'POST',
+        '/auth/reset-password',
+        { token, newPassword: password },
+        true
+      );
+    },
+    [request]
+  );
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      await request<{ message: string }>('POST', '/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+    },
+    [request]
+  );
+
+  const isAdmin = useCallback(() => {
+    return Boolean(user && !user.isAnonymous && user.userType === 'ADMIN');
+  }, [user]);
+
+  const handleCloseInstructions = useCallback(() => {
     setShowInstructions(false);
     localStorage.setItem('hasSeenInstructions', 'true');
-  };
+  }, []);
 
-  const openInstructions = () => {
+  const openInstructions = useCallback(() => {
     setShowInstructions(true);
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      user,
+      loading,
+      streamToken,
+      login,
+      logout,
+      updateUser,
+      register,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+      isAdmin,
+      getCurrentUser,
+      upgradeAnonymousUser,
+      openInstructions,
+    }),
+    [
+      user,
+      loading,
+      streamToken,
+      login,
+      logout,
+      updateUser,
+      register,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+      isAdmin,
+      getCurrentUser,
+      upgradeAnonymousUser,
+      openInstructions,
+    ]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        anonymousUser,
-        loading,
-        streamToken,
-        login,
-        logout,
-        updateUser,
-        register,
-        forgotPassword,
-        resetPassword,
-        isAdmin,
-        getOrCreateAnonymousUser,
-        upgradeAnonymousUser,
-        openInstructions,
-      }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
       <InstructionsModal
         isOpen={showInstructions}

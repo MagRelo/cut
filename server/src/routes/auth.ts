@@ -6,15 +6,10 @@ import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { Prisma, User, Team, League } from '@prisma/client';
-import { generateUserToken, ensureStreamUser } from '../lib/getStream.js';
 import { AuthUser } from '../middleware/auth.js';
 
 type TeamWithLeague = Team & {
   league: Pick<League, 'id' | 'name'>;
-};
-
-type UserWithTeams = Omit<User, 'teams'> & {
-  teams: TeamWithLeague[];
 };
 
 const router = express.Router();
@@ -84,19 +79,12 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Generate GetStream token and ensure user exists
-    const streamToken = generateUserToken(user.id);
-    await ensureStreamUser(user.id, {
-      name: user.name,
-    });
-
     return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       userType: user.userType,
       token,
-      streamToken,
       teams: user.teams.flatMap((team) =>
         team.leagueTeams.map((lt) => ({
           id: team.id,
@@ -192,11 +180,6 @@ router.post('/register', async (req, res) => {
         return newUser;
       });
 
-      // Create GetStream user
-      await ensureStreamUser(result.id, {
-        name: result.name,
-      });
-
       // Generate JWT token for immediate login
       const token = jwt.sign(
         { userId: result.id },
@@ -217,7 +200,6 @@ router.post('/register', async (req, res) => {
         name: result.name,
         userType: result.userType,
         token,
-        streamToken: generateUserToken(result.id),
         teams:
           userWithTeams?.teams.flatMap((team) =>
             team.leagueTeams.map((lt) => ({
@@ -239,11 +221,6 @@ router.post('/register', async (req, res) => {
       },
     });
 
-    // Create GetStream user
-    await ensureStreamUser(user.id, {
-      name: user.name,
-    });
-
     // Generate JWT token for immediate login
     const token = jwt.sign(
       { userId: user.id },
@@ -258,7 +235,6 @@ router.post('/register', async (req, res) => {
       name: user.name,
       userType: user.userType,
       token,
-      streamToken: generateUserToken(user.id),
       teams: [],
     });
   } catch (error) {
@@ -397,27 +373,6 @@ router.get('/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get current user error:', error);
     return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get fresh stream token
-router.get('/stream-token', authenticateToken, async (req, res) => {
-  try {
-    const user = req.user as AuthUser;
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    // Generate fresh GetStream token and ensure user exists
-    const streamToken = generateUserToken(user.id);
-    await ensureStreamUser(user.id, {
-      name: user.name,
-    });
-
-    res.json({ streamToken });
-  } catch (error) {
-    console.error('Error generating stream token:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

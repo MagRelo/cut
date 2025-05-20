@@ -3,11 +3,6 @@ import { type Team } from '../types/team';
 import { useAuth } from '../contexts/AuthContext';
 import { type PublicLeague, type Tournament } from '../types/league';
 
-interface ApiConfig {
-  baseURL: string;
-  headers: Record<string, string>;
-}
-
 interface PublicLeaguesResponse {
   leagues: PublicLeague[];
   tournament?: Tournament;
@@ -32,40 +27,44 @@ interface UpdatePublicTeamPayload {
 }
 
 export const usePublicLeagueApi = () => {
-  const { getOrCreateAnonymousUser } = useAuth();
-  const config: ApiConfig = {
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
+  const { getCurrentUser } = useAuth();
 
-  const request = async <T>(
-    method: string,
-    endpoint: string,
-    data?: unknown
-  ): Promise<T | null> => {
-    const { guid } = getOrCreateAnonymousUser();
-    const response = await fetch(`${config.baseURL}${endpoint}`, {
-      method,
+  const config = useMemo(
+    () => ({
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
       headers: {
-        ...config.headers,
-        'X-User-Guid': guid,
+        'Content-Type': 'application/json',
       },
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    }),
+    []
+  );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  const request = useCallback(
+    async <T>(
+      method: string,
+      endpoint: string,
+      data?: unknown
+    ): Promise<T | null> => {
+      const user = getCurrentUser();
+      const response = await fetch(`${config.baseURL}${endpoint}`, {
+        method,
+        headers: {
+          ...config.headers,
+          'X-User-Guid': user.id,
+        },
+        body: data ? JSON.stringify(data) : undefined,
+      });
 
-    // For DELETE requests or empty responses, return null
-    if (method === 'DELETE' || response.status === 204) {
-      return null;
-    }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    return response.json();
-  };
+      return method === 'DELETE' || response.status === 204
+        ? null
+        : response.json();
+    },
+    [config, getCurrentUser]
+  );
 
   const getLeagues = useCallback(async () => {
     const result = await request<PublicLeaguesResponse>(
@@ -73,88 +72,71 @@ export const usePublicLeagueApi = () => {
       '/public/leagues'
     );
     return result ?? { leagues: [] };
-  }, []);
+  }, [request]);
 
   const getLeague = useCallback(
     (leagueId: string) =>
       request<PublicLeague>('GET', `/public/leagues/${leagueId}`),
-    []
+    [request]
   );
 
-  const createLeague = useCallback((data: CreatePublicLeaguePayload) => {
-    const { guid } = getOrCreateAnonymousUser();
-    return request<PublicLeague>('POST', '/public/leagues', {
-      ...data,
-      userId: guid,
-    });
-  }, []);
+  const createLeague = useCallback(
+    (data: CreatePublicLeaguePayload) =>
+      request<PublicLeague>('POST', '/public/leagues', data),
+    [request]
+  );
 
   const joinLeague = useCallback(
     (leagueId: string) => {
-      const { guid } = getOrCreateAnonymousUser();
+      const user = getCurrentUser();
       return request<PublicLeague>(
         'POST',
         `/public/leagues/${leagueId}/members`,
         {
-          userId: guid,
+          userId: user.id,
         }
       );
     },
-    [getOrCreateAnonymousUser]
+    [request, getCurrentUser]
   );
 
   const leaveLeague = useCallback(
     (leagueId: string) => {
-      const { guid } = getOrCreateAnonymousUser();
+      const user = getCurrentUser();
       return request<void>('DELETE', `/public/leagues/${leagueId}/members`, {
-        userId: guid,
+        userId: user.id,
       });
     },
-    [getOrCreateAnonymousUser]
+    [request, getCurrentUser]
   );
 
   const createTeam = useCallback(
-    (leagueId: string, data: CreatePublicTeamPayload) => {
-      const { guid } = getOrCreateAnonymousUser();
-      return request<Team>('POST', `/public/leagues/${leagueId}/teams`, {
-        ...data,
-        userId: guid,
-      });
-    },
-    [getOrCreateAnonymousUser]
+    (leagueId: string, data: CreatePublicTeamPayload) =>
+      request<Team>('POST', `/public/leagues/${leagueId}/teams`, data),
+    [request]
   );
 
   const updateTeam = useCallback(
     (leagueId: string, teamId: string, data: UpdatePublicTeamPayload) =>
       request<Team>('PUT', `/public/leagues/${leagueId}/teams/${teamId}`, data),
-    []
+    [request]
   );
 
   const getStandaloneTeam = useCallback(() => {
-    const { guid } = getOrCreateAnonymousUser();
-    return request<Team>('GET', `/public/teams?userId=${guid}`);
-  }, [getOrCreateAnonymousUser]);
+    const user = getCurrentUser();
+    return request<Team>('GET', `/public/teams?userId=${user.id}`);
+  }, [request, getCurrentUser]);
 
   const createStandaloneTeam = useCallback(
-    (data: CreatePublicTeamPayload) => {
-      const { guid } = getOrCreateAnonymousUser();
-      return request<Team>('POST', '/public/teams', {
-        ...data,
-        userId: guid,
-      });
-    },
-    [getOrCreateAnonymousUser]
+    (data: CreatePublicTeamPayload) =>
+      request<Team>('POST', '/public/teams', data),
+    [request]
   );
 
   const updateStandaloneTeam = useCallback(
-    (teamId: string, data: UpdatePublicTeamPayload) => {
-      const { guid } = getOrCreateAnonymousUser();
-      return request<Team>('PUT', `/public/teams/${teamId}`, {
-        ...data,
-        userId: guid,
-      });
-    },
-    [getOrCreateAnonymousUser]
+    (teamId: string, data: UpdatePublicTeamPayload) =>
+      request<Team>('PUT', `/public/teams/${teamId}`, data),
+    [request]
   );
 
   const getCurrentTournament = useCallback(async (): Promise<
@@ -165,7 +147,7 @@ export const usePublicLeagueApi = () => {
       '/public/tournaments/active'
     );
     return result ?? undefined;
-  }, []);
+  }, [request]);
 
   return useMemo(
     () => ({

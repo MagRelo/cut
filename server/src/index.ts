@@ -1,19 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';
-import pgaRoutes from './routes/pga.js';
-import leagueRoutes from './routes/leagues.js';
-import hyperliquidRoutes from './routes/hyperliquid.js';
-import playerRoutes from './routes/player.js';
 
-import chatRoutes from './routes/chat.js';
+import authRoutes from './routes/auth.js';
+import playersRoutes from './routes/player.js';
+import teamsRoutes from './routes/teams.js';
 import adminRoutes from './routes/admin.js';
+import tournamentRoutes from './routes/tournament.js';
 import publicLeagueRoutes from './routes/public.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { authenticateToken } from './middleware/auth.js';
 import { requestLogger } from './middleware/logger.js';
 import { startScoreUpdateCron } from './cron/scoreUpdate.js';
 import { startCleanupCron } from './cron/cleanup.js';
@@ -33,8 +30,6 @@ dotenv.config({ path: envFile });
 const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_SECRET',
-  'HYPERLIQUID_API_URL',
-  'HYPERLIQUID_PRIVATE_KEY',
   'PGA_API_KEY',
   'GETSTREAM_API_KEY',
   'GETSTREAM_API_SECRET',
@@ -77,15 +72,12 @@ app.use(
 app.use(requestLogger);
 
 // Register routes
-// app.use('/api/pga', pgaRoutes);
 // app.use('/api/leagues', leagueRoutes);
-// app.use('/api/hyperliquid', hyperliquidRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
-
-//
-app.use('/api/players', playerRoutes);
+app.use('/api/teams', teamsRoutes);
+app.use('/api/players', playersRoutes);
+app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/public', publicLeagueRoutes);
 
 // Serve index.html for all other routes to support client-side routing

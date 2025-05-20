@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePublicLeagueApi } from '../services/publicLeagueApi';
+import { useLeagueApi } from '../services/leagueApi';
 import { Share } from '../components/common/Share';
 import { type PublicLeague } from '../types/league';
 import { type Team, type TeamPlayer } from '../types/team';
@@ -18,15 +18,13 @@ export const PublicLeagueLobby: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
   const navigate = useNavigate();
-  const publicLeagueApi = usePublicLeagueApi();
+  const leagueApi = useLeagueApi();
 
   const fetchLeague = async () => {
     if (!leagueId) return;
 
     try {
-      const data = (await publicLeagueApi.getLeague(
-        leagueId
-      )) as LeagueResponse;
+      const data = (await leagueApi.getLeague(leagueId)) as LeagueResponse;
 
       if (!data) {
         setError('League not found');
@@ -104,7 +102,7 @@ export const PublicLeagueLobby: React.FC = () => {
 
     setIsActionLoading(true);
     try {
-      await publicLeagueApi.joinLeague(leagueId);
+      await leagueApi.joinLeague(leagueId);
       await fetchLeague();
     } catch {
       setError('Failed to join league');
@@ -118,7 +116,7 @@ export const PublicLeagueLobby: React.FC = () => {
 
     setIsActionLoading(true);
     try {
-      await publicLeagueApi.leaveLeague(leagueId);
+      await leagueApi.leaveLeague(leagueId);
       await fetchLeague();
     } catch {
       setError('Failed to leave league');

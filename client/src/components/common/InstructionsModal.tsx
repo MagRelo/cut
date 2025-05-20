@@ -26,8 +26,8 @@ export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
         </div>
         <div className='mb-5'>
           <p className='mb-2'>
-            <b>the Cut</b> is a free weekly fantasy golf competition. Each PGA
-            tournament is a new competition.
+            <b>the Cut</b> is a free weekly fantasy golf competition. Each week
+            is a new game.
           </p>
 
           <h3 className='text-lg font-medium '>Create a Team</h3>

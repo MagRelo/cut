@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { api } from '../services/api';
 import { useState } from 'react';
 
 const passwordResetSchema = z
@@ -20,7 +19,7 @@ const passwordResetSchema = z
 type PasswordResetFormData = z.infer<typeof passwordResetSchema>;
 
 export function UserSettings() {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const navigate = useNavigate();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -36,7 +35,7 @@ export function UserSettings() {
 
   const onSubmit = async (data: PasswordResetFormData) => {
     try {
-      await api.changePassword(data.currentPassword, data.newPassword);
+      await changePassword(data.currentPassword, data.newPassword);
       reset();
       setSuccessMessage('Password updated successfully');
     } catch (error) {
@@ -55,6 +54,23 @@ export function UserSettings() {
 
   if (!user) {
     return null;
+  }
+
+  if (user.isAnonymous) {
+    return (
+      <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+        <div className='max-w-3xl mx-auto'>
+          <div className='bg-white shadow rounded-lg p-6'>
+            <h1 className='text-2xl font-bold text-gray-900 mb-6'>
+              User Settings
+            </h1>
+            <p className='text-gray-600'>
+              Please log in to access user settings.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

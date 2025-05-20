@@ -102,9 +102,10 @@ export interface Round {
 }
 
 export class ApiService {
+  private static instance: ApiService;
   private config: ApiConfig;
 
-  constructor() {
+  private constructor() {
     this.config = {
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
       headers: {},
@@ -112,6 +113,13 @@ export class ApiService {
 
     // Initialize auth token from localStorage
     this.setAuthToken(localStorage.getItem('token'));
+  }
+
+  public static getInstance(): ApiService {
+    if (!ApiService.instance) {
+      ApiService.instance = new ApiService();
+    }
+    return ApiService.instance;
   }
 
   private setAuthToken(token: string | null) {
@@ -382,7 +390,7 @@ export class ApiService {
 }
 
 // Create and export a singleton instance
-export const api = new ApiService();
+export const api = ApiService.getInstance();
 
 // Export type definitions
 export type { League, LeagueMember };

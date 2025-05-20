@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePublicLeagueApi } from '../services/publicLeagueApi';
+import { useLeagueApi } from '../services/leagueApi';
 import { LeagueCard } from '../components/LeagueCard';
-import { type PublicLeague } from '../types/league';
+import { type League } from '../types/league';
 
 export const PublicLeagueList: React.FC = () => {
-  const [leagues, setLeagues] = useState<PublicLeague[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const publicLeagueApi = usePublicLeagueApi();
+  const leagueApi = useLeagueApi();
 
   useEffect(() => {
     const fetchLeagues = async () => {
       try {
-        const data = await publicLeagueApi.getLeagues();
-        setLeagues(data.leagues);
+        const data = await leagueApi.getLeagues();
+        setLeagues(data);
       } catch (err) {
         setError('Failed to load leagues');
         console.error('Error fetching leagues:', err);
