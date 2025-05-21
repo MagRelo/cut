@@ -9,7 +9,7 @@ export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
   return (
     <div className='fixed inset-0 bg-black/50 flex justify-center items-center z-50'>
       <div className='bg-white p-5 rounded-lg w-[90%] max-w-[500px] shadow-lg'>
-        <div className='flex justify-between items-center mb-5'>
+        <div className='flex justify-between items-center mb-3'>
           <h2 className='text-2xl font-semibold m-0 flex items-center'>
             <img
               src='/cut-logo2.png'
@@ -24,10 +24,10 @@ export function InstructionsModal({ isOpen, onClose }: InstructionsModalProps) {
             ×
           </button>
         </div>
+
         <div className='mb-5'>
           <p className='mb-2'>
-            <b>the Cut</b> is a free weekly fantasy golf competition. Each week
-            is a new game.
+            <b>the Cut</b> is a free weekly fantasy golf competition.
           </p>
 
           <h3 className='text-lg font-medium '>Create a Team</h3>

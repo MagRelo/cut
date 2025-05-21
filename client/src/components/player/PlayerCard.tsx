@@ -131,7 +131,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
               <div className='text-sm text-gray-500'>
                 <Label>POS</Label>{' '}
                 <span className='font-medium text-gray-700 ml-1'>
-                  {player.leaderboardPosition}
+                  {player.leaderboardPosition || '–'}
                 </span>
               </div>
 
@@ -145,7 +145,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
                       ? 'text-gray-700'
                       : 'text-red-600'
                   }`}>
-                  {player.leaderboardTotal}
+                  {player.leaderboardTotal || '–'}
                 </span>
               </div>
             </div>

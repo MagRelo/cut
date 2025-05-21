@@ -7,6 +7,20 @@ import { useTournament } from '../../contexts/TournamentContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 
+interface LabelProps {
+  children: React.ReactNode;
+  className?: string;
+  htmlFor?: string;
+}
+
+const Label: React.FC<LabelProps> = ({ children, className = '', htmlFor }) => (
+  <label
+    className={`text-sm font-bold text-gray-900 pr-1 ${className}`}
+    htmlFor={htmlFor}>
+    {children}
+  </label>
+);
+
 interface PublicTeamFormProps {
   team?: Team | null;
   loading?: boolean;
@@ -153,62 +167,55 @@ export const PublicTeamFormComponent = ({
               )}
               Team Info
             </h2>
-
-            <div>
-              <label
-                htmlFor='team-name'
-                className='block text-sm font-medium text-gray-900'>
-                Team Name
-              </label>
-              <input
-                type='text'
-                id='team-name'
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                className='mt-1 block w-full rounded-lg border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'
-                placeholder='Enter team name'
-              />
-            </div>
-            <div>
-              <label
-                htmlFor='team-color'
-                className='block text-sm font-medium text-gray-900'>
-                Team Color
-              </label>
-              <div className='mt-2 grid grid-cols-5 gap-3'>
-                {[
-                  '#0a73eb',
-                  '#A3A3A3',
-                  '#FF48BF',
-                  '#F58300',
-                  '#00ABB8',
-                  '#FFD60A',
-                  '#E00000',
-                  '#4700E0',
-                  '#9600CC',
-                  '#00B86B',
-                ].map((color) => (
-                  <label
-                    key={color}
-                    className='flex flex-col items-center cursor-pointer'>
-                    <input
-                      type='radio'
-                      name='teamColor'
-                      value={color}
-                      checked={teamColor === color}
-                      onChange={() => setTeamColor(color)}
-                      className='sr-only'
-                    />
-                    <span
-                      className={`h-8 w-8 rounded-full border-4 ${
-                        teamColor === color
-                          ? 'border-gray-700 border border-9'
-                          : ''
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  </label>
-                ))}
+            <div className='space-y-4 ml-3'>
+              <div>
+                <Label htmlFor='team-name'>TEAM NAME</Label>
+                <input
+                  type='text'
+                  id='team-name'
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  className='mt-1 block w-full rounded-lg border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500'
+                  placeholder='Enter team name'
+                />
+              </div>
+              <div>
+                <Label htmlFor='team-color'>TEAM COLOR</Label>
+                <div className='mt-2 grid grid-cols-5 gap-3'>
+                  {[
+                    '#0a73eb',
+                    '#A3A3A3',
+                    '#FF48BF',
+                    '#F58300',
+                    '#00ABB8',
+                    '#FFD60A',
+                    '#E00000',
+                    '#4700E0',
+                    '#9600CC',
+                    '#00B86B',
+                  ].map((color) => (
+                    <label
+                      key={color}
+                      className='flex flex-col items-center cursor-pointer'>
+                      <input
+                        type='radio'
+                        name='teamColor'
+                        value={color}
+                        checked={teamColor === color}
+                        onChange={() => setTeamColor(color)}
+                        className='sr-only'
+                      />
+                      <span
+                        className={`h-8 w-8 rounded-full border-4 ring-2 ring-white ${
+                          teamColor === color
+                            ? 'border-gray-900 border border-9'
+                            : 'border-white'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -226,14 +233,10 @@ export const PublicTeamFormComponent = ({
               )}
               Select Your Golfers
             </h2>
-            <div className='space-y-4 mt-4'>
+            <div className='space-y-4 mt-4 ml-3'>
               {Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className='space-y-2'>
-                  <label
-                    htmlFor={`player-${index}`}
-                    className='block text-sm font-medium text-gray-900'>
-                    Player {index + 1}
-                  </label>
+                  <Label htmlFor={`player-${index}`}>GOLFER {index + 1}</Label>
                   <div className='relative'>
                     <select
                       id={`player-${index}`}
