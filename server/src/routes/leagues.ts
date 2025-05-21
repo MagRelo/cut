@@ -1,7 +1,7 @@
 import express from 'express';
 import { LeagueController } from '../controllers/leagueController.js';
 import { authenticateToken } from '../middleware/auth.js';
-import timelineRoutes from './timeline.routes.js';
+import timelineRoutes from './timeline.js';
 
 const router = express.Router();
 const leagueController = new LeagueController();

@@ -227,7 +227,7 @@ export const useLeagueApi = () => {
 
       return request<TimelineData>(
         'GET',
-        `/leagues/${leagueId}/timeline?${params.toString()}`
+        `/timeline/${leagueId}?${params.toString()}`
       );
     } catch (error) {
       console.error('Error in getLeagueTimeline:', error);

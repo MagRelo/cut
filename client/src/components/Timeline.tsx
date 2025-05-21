@@ -135,7 +135,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     fetchTimelineData();
 
-    // Set up refresh interval
+    // Set up refresh interval: every 10 minutes
     const intervalId = setInterval(() => fetchTimelineData(), 10 * 60 * 1000);
 
     // Cleanup function

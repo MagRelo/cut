@@ -8,7 +8,7 @@ import teamsRoutes from './routes/teams.js';
 import adminRoutes from './routes/admin.js';
 import tournamentRoutes from './routes/tournament.js';
 import publicLeagueRoutes from './routes/public.js';
-
+import timelineRoutes from './routes/timeline.js';
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
@@ -73,6 +73,7 @@ app.use(requestLogger);
 
 // Register routes
 // app.use('/api/leagues', leagueRoutes);
+app.use('/api/timeline', timelineRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teams', teamsRoutes);
