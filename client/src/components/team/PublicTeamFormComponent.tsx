@@ -224,13 +224,6 @@ export const PublicTeamFormComponent = ({
 
           <div className='space-y-4'>
             <h2 className='text-xl font-semibold text-gray-900'>
-              {onCancel && (
-                <button
-                  onClick={onCancel}
-                  className='float-right text-gray-400 focus:outline-none text-sm'>
-                  cancel
-                </button>
-              )}
               Select Your Golfers
             </h2>
             <div className='space-y-4 mt-4 ml-3'>
@@ -284,7 +277,15 @@ export const PublicTeamFormComponent = ({
             </div>
           </div>
 
-          <div className='flex justify-end'>
+          <div className='flex justify-end gap-3'>
+            {onCancel && (
+              <button
+                type='button'
+                onClick={onCancel}
+                className='inline-flex justify-center rounded-lg border border-gray-300 bg-white py-2 px-4 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2'>
+                Cancel
+              </button>
+            )}
             <button
               type='submit'
               disabled={isSaving}
