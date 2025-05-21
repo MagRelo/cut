@@ -15,7 +15,7 @@ interface LabelProps {
 
 const Label: React.FC<LabelProps> = ({ children, className = '', htmlFor }) => (
   <label
-    className={`text-sm font-bold text-gray-900 pr-1 ${className}`}
+    className={`text-sm font-bold text-gray-600 pr-1 ${className}`}
     htmlFor={htmlFor}>
     {children}
   </label>
@@ -157,15 +157,8 @@ export const PublicTeamFormComponent = ({
         <form onSubmit={handleSubmit} className='space-y-8'>
           {/* Team Setup */}
           <div className='space-y-4'>
-            <h2 className='text-xl font-semibold text-gray-900'>
-              {onCancel && (
-                <button
-                  onClick={onCancel}
-                  className='float-right text-gray-400 focus:outline-none text-sm'>
-                  cancel
-                </button>
-              )}
-              Team Info
+            <h2 className='text-xl font-semibold text-gray-400 border-b border-gray-300'>
+              TEAM INFO
             </h2>
             <div className='space-y-4 ml-3'>
               <div>
@@ -223,10 +216,10 @@ export const PublicTeamFormComponent = ({
           {/* Select Your Golfers */}
 
           <div className='space-y-4'>
-            <h2 className='text-xl font-semibold text-gray-900'>
-              Select Your Golfers
+            <h2 className='text-xl font-semibold text-gray-400 border-b border-gray-300'>
+              TEAM ROSTER
             </h2>
-            <div className='space-y-4 mt-4 ml-3'>
+            <div className='space-y-4 ml-3'>
               {Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className='space-y-2'>
                   <Label htmlFor={`player-${index}`}>GOLFER {index + 1}</Label>
