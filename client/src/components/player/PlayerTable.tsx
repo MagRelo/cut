@@ -7,11 +7,13 @@ interface PlayerTableProps {
   getCurrentRound?: (
     player: TeamPlayer
   ) => { round: string; data: RoundData } | null;
+  currentRound: string;
 }
 
 export const PlayerTable: React.FC<PlayerTableProps> = ({
   players,
   getCurrentRound,
+  currentRound,
 }) => {
   const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(
     new Set()
@@ -72,7 +74,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
             <th
               scope='col'
               className='w-10 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
-              R4
+              {currentRound}
             </th>
             <th
               scope='col'

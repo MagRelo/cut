@@ -228,6 +228,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
           <PlayerTable
             players={team.players}
             getCurrentRound={getCurrentRound}
+            currentRound={roundDisplay || ''}
           />
         </div>
       )}

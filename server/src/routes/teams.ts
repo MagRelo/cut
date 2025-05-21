@@ -31,6 +31,12 @@ const createTeamSchema = z.object({
   leagueId: z.string().cuid('Invalid league ID').optional(),
 });
 
+const createTeamInLeagueSchema = z.object({
+  name: z.string().min(3).max(50),
+  players: z.array(z.string()),
+  color: z.string().optional(),
+});
+
 const updateTeamSchema = z.object({
   name: z.string().min(3).max(50).optional(),
   players: z.array(z.string()).optional(),
@@ -265,6 +271,83 @@ router.put('/:teamId', async (req, res) => {
     }
     console.error('Error updating team:', error);
     res.status(500).json({ error: 'Failed to update team' });
+  }
+});
+
+// Create Team in League
+router.post('/league/:leagueId/team', async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const data = createTeamInLeagueSchema.parse(req.body);
+    const userId = getUserIdFromHeaders(req);
+
+    await ensureUserExists(userId);
+
+    // Verify league exists
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+    });
+
+    if (!league) {
+      res.status(404).json({ error: 'League not found' });
+      return;
+    }
+
+    // Create the team
+    const team = await prisma.team.create({
+      data: {
+        name: data.name,
+        color: data.color || '#000000',
+        userId,
+      },
+    });
+
+    // Create league team association
+    await prisma.leagueTeam.create({
+      data: {
+        leagueId,
+        teamId: team.id,
+      },
+    });
+
+    // Add players to team
+    await prisma.teamPlayer.createMany({
+      data: data.players.map((playerId) => ({
+        teamId: team.id,
+        playerId,
+        active: true,
+      })),
+    });
+
+    const teamWithPlayers = await prisma.team.findUnique({
+      where: { id: team.id },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+        leagueTeams: {
+          include: {
+            league: {
+              include: {
+                members: true,
+                settings: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(201).json(teamWithPlayers);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
+    console.error('Error creating team in league:', error);
+    res.status(500).json({ error: 'Failed to create team in league' });
   }
 });
 

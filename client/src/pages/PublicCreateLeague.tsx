@@ -39,7 +39,7 @@ export const PublicCreateLeague: React.FC = () => {
           description: data.description,
           isPrivate: false,
         });
-        navigate(`/leagues/${league.id}`);
+        navigate(`/public/leagues/${league.id}`);
       } catch (error) {
         console.error('Error creating league:', error);
       }
