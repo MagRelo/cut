@@ -26,20 +26,20 @@ async function ensureUserExists(userId: string): Promise<void> {
 // Validation schemas
 const createTeamSchema = z.object({
   name: z.string().min(3).max(50),
-  players: z.array(z.string()),
+  players: z.array(z.string()).max(4),
   color: z.string().optional(),
   leagueId: z.string().cuid('Invalid league ID').optional(),
 });
 
 const createTeamInLeagueSchema = z.object({
   name: z.string().min(3).max(50),
-  players: z.array(z.string()),
+  players: z.array(z.string()).max(4),
   color: z.string().optional(),
 });
 
 const updateTeamSchema = z.object({
   name: z.string().min(3).max(50).optional(),
-  players: z.array(z.string()).optional(),
+  players: z.array(z.string()).max(4).optional(),
   color: z.string().optional(),
 });
 
@@ -239,17 +239,22 @@ router.put('/:teamId', async (req, res) => {
     });
 
     if (data.players) {
+      // First remove all existing players
       await prisma.teamPlayer.deleteMany({
         where: { teamId },
       });
 
-      await prisma.teamPlayer.createMany({
-        data: data.players.map((playerId) => ({
-          teamId,
-          playerId,
-          active: true,
-        })),
-      });
+      // Filter out empty strings and create team players
+      const validPlayers = data.players.filter((playerId) => playerId !== '');
+      if (validPlayers.length > 0) {
+        await prisma.teamPlayer.createMany({
+          data: validPlayers.map((playerId) => ({
+            teamId,
+            playerId,
+            active: true,
+          })),
+        });
+      }
     }
 
     const teamWithPlayers = await prisma.team.findUnique({

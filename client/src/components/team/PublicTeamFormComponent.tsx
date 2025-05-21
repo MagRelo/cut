@@ -82,8 +82,8 @@ export const PublicTeamFormComponent = ({
       return;
     }
 
-    if (selectedPlayers.length !== 4) {
-      setFormError('Please select exactly 4 players');
+    if (selectedPlayers.length > 4) {
+      setFormError('You can select at most 4 players');
       return;
     }
 
@@ -150,10 +150,6 @@ export const PublicTeamFormComponent = ({
   return (
     <div className='bg-white rounded shadow p-6'>
       <div className=''>
-        {(formError || error) && (
-          <ErrorMessage message={formError || error || ''} />
-        )}
-
         <form onSubmit={handleSubmit} className='space-y-8'>
           {/* Team Setup */}
           <div className='space-y-4'>
@@ -214,7 +210,6 @@ export const PublicTeamFormComponent = ({
           </div>
 
           {/* Select Your Golfers */}
-
           <div className='space-y-4'>
             <h2 className='text-xl font-semibold text-gray-400 border-b border-gray-300'>
               TEAM ROSTER
@@ -286,6 +281,10 @@ export const PublicTeamFormComponent = ({
               {isSaving ? 'Saving...' : team ? 'Update Team' : 'Create Team'}
             </button>
           </div>
+
+          {(formError || error) && (
+            <ErrorMessage message={formError || error || ''} />
+          )}
         </form>
       </div>
     </div>
