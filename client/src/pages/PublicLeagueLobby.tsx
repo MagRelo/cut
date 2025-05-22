@@ -6,6 +6,8 @@ import { type PublicLeague } from '../types/league';
 import { type Team, type TeamPlayer } from '../types/team';
 import { TeamCard } from '../components/team/TeamCard';
 
+import { Timeline } from '../components/Timeline';
+
 interface LeagueResponse extends PublicLeague {
   commissionerId: string;
 }
@@ -16,6 +18,7 @@ export const PublicLeagueLobby: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const userId = localStorage.getItem('publicUserGuid');
   const navigate = useNavigate();
   const leagueApi = useLeagueApi();
@@ -158,14 +161,33 @@ export const PublicLeagueLobby: React.FC = () => {
 
   return (
     <div className='px-4 py-4'>
-      <div className='bg-white rounded shadow'></div>
-
       {/* Teams Section */}
       <div className=''>
-        <div className='flex justify-between items-center px-4 pb-2'>
-          <h1 className='text-3xl font-extrabold tracking-tight text-gray-900'>
+        <div className='flex justify-between items-center py-2'>
+          <h1 className='text-4xl font-extrabold tracking-tight text-gray-500'>
             {league.name}
           </h1>
+
+          <button
+            onClick={() => setIsTimelineOpen(!isTimelineOpen)}
+            className='w-full flex items-center justify-between ml-4'>
+            {/* <span>📈</span> */}
+
+            <svg
+              className={`w-5 h-5 transform transition-transform ${
+                isTimelineOpen ? 'rotate-180' : ''
+              }`}
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M19 9l-7 7-7-7'
+              />
+            </svg>
+          </button>
 
           {/* join button */}
           {!userHasTeam && (
@@ -177,6 +199,19 @@ export const PublicLeagueLobby: React.FC = () => {
             </button>
           )}
         </div>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            isTimelineOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+          <Timeline
+            leagueId={leagueId || ''}
+            tournamentId={league.tournament?.id || ''}
+            tournamentStartDate={league.tournament?.startDate || ''}
+            className='mb-4 border border-gray-300'
+          />
+        </div>
+
         <div>
           <div className='space-y-4'>
             {teams.length === 0 ? (

@@ -198,7 +198,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           weekday: 'short',
           hour: 'numeric',
           minute: 'numeric',
-          hour12: false,
+          hourCycle: 'h12',
         })
       ),
     datasets: topTeams.map((team) => {
@@ -241,9 +241,9 @@ export const Timeline: React.FC<TimelineProps> = ({
     },
     scales: {
       x: {
-        display: true,
+        display: false,
         title: {
-          display: true,
+          display: false,
           text: 'Time',
         },
         grid: {
@@ -253,7 +253,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       y: {
         display: true,
         title: {
-          display: true,
+          display: false,
           text: 'Score',
         },
         grid: {
@@ -266,7 +266,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className={className}>
       <div
-        className='bg-white rounded-lg shadow-sm p-4 timeline-chart'
+        className='bg-white shadow-sm p-4 timeline-chart'
         style={{ height: '250px' }}>
         <Line data={data} options={options} />
       </div>
