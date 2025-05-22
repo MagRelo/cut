@@ -163,38 +163,48 @@ export const PublicLeagueLobby: React.FC = () => {
     <div className='px-4 py-4'>
       {/* Teams Section */}
       <div className=''>
-        <div className='flex justify-between items-center py-2'>
-          <h1 className='text-4xl font-extrabold tracking-tight text-gray-500'>
-            {league.name}
-          </h1>
+        <div className='flex justify-between items-center mb-3'>
+          <div className='flex items-center gap-4'>
+            <h1 className='text-4xl font-extrabold tracking-tight text-gray-500'>
+              {league.name}
+            </h1>
 
-          <button
-            onClick={() => setIsTimelineOpen(!isTimelineOpen)}
-            className='w-full flex items-center justify-between ml-4'>
-            {/* <span>📈</span> */}
-
-            <svg
-              className={`w-5 h-5 transform transition-transform ${
-                isTimelineOpen ? 'rotate-180' : ''
-              }`}
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M19 9l-7 7-7-7'
-              />
-            </svg>
-          </button>
+            <button
+              onClick={() => setIsTimelineOpen(!isTimelineOpen)}
+              className='items-center justify-between mt-1 border border-gray-200 rounded-md p-2 bg-gray-50'>
+              <svg
+                className={`w-5 h-5 transform transition-transform ${
+                  isTimelineOpen ? 'rotate-180' : ''
+                }`}
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 32 32'>
+                {/* X and Y axes crossing at center */}
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={1.5}
+                  stroke='#9ca3af'
+                  d='M4 16h24M16 4v24'
+                />
+                {/* Sine wave crossing through origin with increased amplitude */}
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={3.5}
+                  stroke='#22c55e'
+                  d='M0 16c4-12 12-12 16 0s12 12 16 0'
+                />
+              </svg>
+            </button>
+          </div>
 
           {/* join button */}
           {!userHasTeam && (
             <button
               onClick={handleJoinLeague}
               disabled={isActionLoading}
-              className='float-right ml-4 bg-emerald-600 text-white px-3 py-1 text-sm rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              className='bg-emerald-600 text-white px-3 py-1 text-sm rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
               Join
             </button>
           )}
@@ -208,7 +218,7 @@ export const PublicLeagueLobby: React.FC = () => {
             leagueId={leagueId || ''}
             tournamentId={league.tournament?.id || ''}
             tournamentStartDate={league.tournament?.startDate || ''}
-            className='mb-4 border border-gray-300'
+            className='mb-4 border border-gray-200'
           />
         </div>
 
