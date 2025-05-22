@@ -178,25 +178,28 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
 
             {/* Player Round Icons */}
             <div className='flex items-center space-x-2 h-8'>
-              {team.players
-                .sort(
+              {[...Array(4)].map((_, index) => {
+                const player = team.players.sort(
                   (a, b) =>
                     (b.total || 0) +
                     (b.cut || 0) +
                     (b.bonus || 0) -
                     ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
-                )
-                .slice(0, 4)
-                .map((player, index) => {
-                  const currentRound = getCurrentRound(player);
-                  return (
-                    <RoundIcon
-                      key={index}
-                      currentRound={currentRound}
-                      leaderboardPosition={player.leaderboardPosition}
-                    />
-                  );
-                })}
+                )[index];
+
+                if (!player) {
+                  return <div key={index} className='flex-shrink-0 w-5 h-8' />;
+                }
+
+                const currentRound = getCurrentRound(player);
+                return (
+                  <RoundIcon
+                    key={index}
+                    currentRound={currentRound}
+                    leaderboardPosition={player.leaderboardPosition}
+                  />
+                );
+              })}
             </div>
 
             {/* Progress Bar */}

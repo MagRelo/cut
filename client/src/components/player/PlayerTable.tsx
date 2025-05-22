@@ -58,18 +58,18 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
           <tr>
             <th
               scope='col'
-              className='w-12 py-2 pl-1 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
-              Pos
-            </th>
-            <th
-              scope='col'
               className='px-4 py-2 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
               Player
             </th>
             <th
               scope='col'
-              className='w-12 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
-              Total
+              className='w-12 py-2 pl-1 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-gray-200'>
+              Pos
+            </th>
+            <th
+              scope='col'
+              className='w-12 py-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-b-2 border-r border-gray-200'>
+              TOT
             </th>
             <th
               scope='col'
@@ -86,13 +86,19 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
         <tbody className='divide-y divide-gray-200'>
           {players
             .slice()
-            .sort(
-              (a, b) =>
-                (b.total || 0) +
-                (b.cut || 0) +
-                (b.bonus || 0) -
-                ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
-            )
+            .sort((a, b) => {
+              // Handle cases where position might be "-" or undefined
+              const getPosition = (pos: string | undefined) => {
+                if (!pos || pos === '-') return Infinity;
+                // Remove "T" prefix if present and convert to number
+                return parseInt(pos.replace('T', ''));
+              };
+
+              return (
+                getPosition(a.leaderboardPosition) -
+                getPosition(b.leaderboardPosition)
+              );
+            })
             .map((player) => (
               <React.Fragment key={player.id}>
                 <tr
@@ -110,9 +116,6 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       ? 'Hide scorecard'
                       : 'Show scorecard'
                   }>
-                  <td className='w-10 py-2 pl-1  text-center text-xs font-bold text-gray-600'>
-                    {player.leaderboardPosition || '-'}
-                  </td>
                   <td className='px-2 py-2 text-left'>
                     <div className='flex items-center'>
                       <div>
@@ -149,7 +152,10 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       </div>
                     </div>
                   </td>
-                  <td className='w-12 py-2 text-center text-sm font-bold'>
+                  <td className='w-10 py-2 pl-1  text-center text-xs font-bold text-gray-600'>
+                    {player.leaderboardPosition || '-'}
+                  </td>
+                  <td className='w-12 py-2 text-center text-sm font-bold border-r border-gray-200'>
                     <span
                       className={`${
                         player.leaderboardTotal === 'E' ||
@@ -160,7 +166,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                       {player.leaderboardTotal || '-'}
                     </span>
                   </td>
-                  <td className='w-10 py-2 text-center text-sm font-medium text-gray-900'>
+                  <td className='w-10 py-2 text-center text-sm font-medium text-gray-800'>
                     {getCurrentRound?.(player)?.data
                       ? calculateScoreToPar(getCurrentRound(player)!.data)
                       : '-'}

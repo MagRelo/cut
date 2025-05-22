@@ -50,17 +50,17 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
+      <th className='px-3 py-2 text-left text-xs font-bold text-gray-400 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
         Hole
       </th>
       {Array.from({ length: 18 }, (_, i) => (
         <th
           key={i}
-          className='px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[2.25rem] w-[2.25rem]'>
+          className='px-2 py-2 text-center text-xs font-bold text-gray-400 min-w-[2.25rem] w-[2.25rem]'>
           {i + 1}
         </th>
       ))}
-      <th className='px-3 py-2 text-center text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
+      <th className='px-3 py-2 text-center text-xs font-bold text-gray-400 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
         Total
       </th>
     </tr>
@@ -78,17 +78,17 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
           Par
         </td>
         {pars.map((par: number | null, i: number) => (
           <td
             key={i}
-            className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem]'>
+            className='px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[2.25rem] w-[2.25rem]'>
             {par === null ? '-' : par}
           </td>
         ))}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-600 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
           {pars.some((par) => par !== null)
             ? pars.reduce(
                 (sum: number, par: number | null) => sum + (par || 0),
@@ -115,8 +115,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
       .reduce((sum: number, score: number) => sum + score, 0);
 
     return (
-      <tr className='border-t border-gray-200 bg-gray-50'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
+      <tr className='border-t border-gray-200 bg-white'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
           Score
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
@@ -151,7 +151,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
           {roundData.holes.scores.some((score: number | null) => score !== null)
             ? scoreTotal
             : '-'}
@@ -164,8 +164,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   const renderStableford = () => {
     if (!roundData?.holes?.stableford?.length) return null;
     return (
-      <tr className='border-t border-gray-200 bg-gray-50'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem]'>
+      <tr className='border-t border-gray-200 '>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
@@ -178,12 +178,12 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           return (
             <td
               key={i}
-              className={`px-2 py-2 text-center text-xs ${pointsClass} min-w-[2.25rem] w-[2.25rem]`}>
+              className={`px-2 py-2 text-center text-xs font-medium ${pointsClass} min-w-[2.25rem] w-[2.25rem]`}>
               {points === null ? '-' : points}
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem]'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
           {roundData.holes.stableford.reduce(
             (sum: number, points: number | null) =>
               sum + (points === null ? 0 : points),
