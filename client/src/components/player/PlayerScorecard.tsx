@@ -50,7 +50,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-semibold text-gray-600 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
+      <th className='px-3 py-2 text-left text-xs font-semibold text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
         Round {currentRound}
       </th>
       {Array.from({ length: 18 }, (_, i) => (
@@ -246,7 +246,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
       {/* Scorecard table */}
       <div className='overflow-x-auto'>
         {hasHoleData ? (
-          <table className='min-w-full divide-y '>
+          <table className='min-w-full divide-y'>
             <thead>{renderHoleNumbers()}</thead>
             <tbody>
               {renderPars()}
