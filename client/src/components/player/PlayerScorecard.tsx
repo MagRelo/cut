@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
 import type { TeamPlayer as BaseTeamPlayer, RoundData } from '../../types/team';
 
 type TeamPlayer = Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> & {
@@ -41,26 +41,26 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     return currentRound;
   };
 
-  const [selectedRound, setSelectedRound] = useState(getLatestRoundWithData());
+  // const [selectedRound, setSelectedRound] = useState(getLatestRoundWithData());
 
-  const roundData = getRoundData(selectedRound);
+  const roundData = getRoundData(getLatestRoundWithData());
   const hasHoleData =
     roundData?.holes?.scores && roundData.holes.scores.length > 0;
 
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-bold text-gray-400 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
-        Hole
+      <th className='px-3 py-2 text-left text-xs font-bold text-gray-600 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        Round {currentRound}
       </th>
       {Array.from({ length: 18 }, (_, i) => (
         <th
           key={i}
-          className='px-2 py-2 text-center text-xs font-bold text-gray-400 min-w-[2.25rem] w-[2.25rem]'>
+          className='px-2 py-2 text-center text-xs font-bold text-gray-500 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
           {i + 1}
         </th>
       ))}
-      <th className='px-3 py-2 text-center text-xs font-bold text-gray-400 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
+      <th className='px-3 py-2 text-center text-xs font-bold text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
         Total
       </th>
     </tr>
@@ -78,17 +78,17 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           Par
         </td>
         {pars.map((par: number | null, i: number) => (
           <td
             key={i}
-            className='px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[2.25rem] w-[2.25rem]'>
+            className='px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
             {par === null ? '-' : par}
           </td>
         ))}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-600 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-600 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           {pars.some((par) => par !== null)
             ? pars.reduce(
                 (sum: number, par: number | null) => sum + (par || 0),
@@ -116,7 +116,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200 bg-white'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           Score
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
@@ -129,14 +129,14 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             if (scoreDiff < 0) {
               // Circle for below par
               content = (
-                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded-full '>
+                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-emerald-500 rounded-full '>
                   {score}
                 </span>
               );
             } else if (scoreDiff > 0) {
               // Square for above par
               content = (
-                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-gray-300 '>
+                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-red-400 '>
                   {score}
                 </span>
               );
@@ -146,12 +146,12 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           return (
             <td
               key={i}
-              className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem]'>
+              className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
               {content}
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           {roundData.holes.scores.some((score: number | null) => score !== null)
             ? scoreTotal
             : '-'}
@@ -164,26 +164,26 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   const renderStableford = () => {
     if (!roundData?.holes?.stableford?.length) return null;
     return (
-      <tr className='border-t border-gray-200 '>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-r border-gray-300'>
+      <tr className='border-t border-gray-200 bg-gray-50'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
           let pointsClass = 'text-gray-600';
           if (points !== null) {
-            if (points > 0) pointsClass = 'text-emerald-600 font-medium';
-            else if (points < 0) pointsClass = 'text-red-600 font-medium';
+            if (points > 0) pointsClass = 'text-emerald-600 font-bold';
+            else if (points < 0) pointsClass = 'text-red-600 font-bold';
           }
 
           return (
             <td
               key={i}
-              className={`px-2 py-2 text-center text-xs font-medium ${pointsClass} min-w-[2.25rem] w-[2.25rem]`}>
+              className={`px-2 py-2 text-center text-xs font-medium ${pointsClass} min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300`}>
               {points === null ? '-' : points}
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-l border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
           {roundData.holes.stableford.reduce(
             (sum: number, points: number | null) =>
               sum + (points === null ? 0 : points),
@@ -197,7 +197,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   return (
     <div className={`bg-gray-100 ${className}`}>
       {/* Round selector */}
-      <div className='px-1 py-1 border-b border-gray-200'>
+      {/* <div className='px-1 py-1 border-b border-gray-200'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-2'>
             <span className='text-xs font-medium text-gray-500 pl-1'>
@@ -237,12 +237,16 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             </span>
           )}
         </div>
-      </div>
+      </div> */}
+
+      {/* <p className='text-sm text-gray-500 px-4 py-2'>
+        {player.player.pga_displayName}
+      </p> */}
 
       {/* Scorecard table */}
       <div className='overflow-x-auto'>
         {hasHoleData ? (
-          <table className='min-w-full divide-y divide-gray-200'>
+          <table className='min-w-full divide-y '>
             <thead>{renderHoleNumbers()}</thead>
             <tbody>
               {renderPars()}
@@ -252,7 +256,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           </table>
         ) : (
           <div className='p-8 text-center text-gray-500'>
-            No scorecard data available for Round {selectedRound}
+            No scorecard data available for Round {getLatestRoundWithData()}
           </div>
         )}
       </div>

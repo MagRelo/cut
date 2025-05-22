@@ -224,7 +224,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
           {/* Expanded Scorecard Section */}
           {expandedPlayerId === player.id && (
             <div
-              className='mt-2 border-t border-gray-200'
+              className='mt-2  shadow-sm'
               onClick={(e) => e.stopPropagation()}>
               <PlayerScorecard
                 player={player}
