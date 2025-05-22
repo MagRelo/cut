@@ -186,14 +186,12 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                 {expandedPlayers.has(player.id) && (
                   <tr>
                     <td colSpan={4} className='p-0'>
-                      <div className='shadow-sm'>
-                        <div className='w-full overflow-x-auto'>
-                          <div className='inline-block min-w-full'>
-                            <PlayerScorecard
-                              player={player}
-                              className='rounded-none shadow-none'
-                            />
-                          </div>
+                      <div className=''>
+                        <div className='w-full overflow-x-auto shadow-sm'>
+                          <PlayerScorecard
+                            player={player}
+                            className='rounded-none shadow-none'
+                          />
                         </div>
                       </div>
                     </td>

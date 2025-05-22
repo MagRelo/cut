@@ -50,7 +50,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-bold text-gray-600 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+      <th className='px-3 py-2 text-left text-xs font-semibold text-gray-600 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
         Round {currentRound}
       </th>
       {Array.from({ length: 18 }, (_, i) => (
@@ -60,7 +60,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           {i + 1}
         </th>
       ))}
-      <th className='px-3 py-2 text-center text-xs font-bold text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+      <th className='px-3 py-2 text-center text-xs font-bold text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
         Total
       </th>
     </tr>
@@ -78,7 +78,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
           Par
         </td>
         {pars.map((par: number | null, i: number) => (
@@ -88,7 +88,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             {par === null ? '-' : par}
           </td>
         ))}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-600 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-600 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
           {pars.some((par) => par !== null)
             ? pars.reduce(
                 (sum: number, par: number | null) => sum + (par || 0),
@@ -116,7 +116,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
 
     return (
       <tr className='border-t border-gray-200 bg-white'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
           Score
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
@@ -151,7 +151,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
           {roundData.holes.scores.some((score: number | null) => score !== null)
             ? scoreTotal
             : '-'}
@@ -165,7 +165,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     if (!roundData?.holes?.stableford?.length) return null;
     return (
       <tr className='border-t border-gray-200 bg-gray-50'>
-        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
@@ -183,7 +183,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
             </td>
           );
         })}
-        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border border-gray-300'>
+        <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
           {roundData.holes.stableford.reduce(
             (sum: number, points: number | null) =>
               sum + (points === null ? 0 : points),
