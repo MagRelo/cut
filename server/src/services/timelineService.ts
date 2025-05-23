@@ -157,7 +157,8 @@ export class TimelineService {
     tournamentId: string,
     startTime?: Date,
     endTime?: Date,
-    interval: number = 10
+    interval: number = 10,
+    teamIds?: string[]
   ) {
     try {
       // Build where clause dynamically to avoid overly strict filtering
@@ -165,6 +166,13 @@ export class TimelineService {
         leagueId,
         tournamentId,
       };
+
+      // Add team filter if teamIds are provided
+      if (teamIds && teamIds.length > 0) {
+        where.teamId = {
+          in: teamIds,
+        };
+      }
 
       // Only add timestamp filters if both start and end are provided
       if (startTime && endTime) {

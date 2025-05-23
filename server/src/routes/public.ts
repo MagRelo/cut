@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { ScoreUpdateService } from '../services/scoreUpdateService.js';
+import { TimelineService } from '../services/timelineService.js';
 
 const router = Router();
-const scoreUpdateService = new ScoreUpdateService();
+const timelineService = new TimelineService();
 
 // Helper function to ensure user exists or create with dummy data
 async function ensureUserExists(userId: string): Promise<void> {
@@ -157,6 +157,15 @@ router.get('/leagues/:leagueId', async (req, res) => {
       },
       include: {
         leagueTeams: {
+          where: activeTournament
+            ? {
+                team: {
+                  updatedAt: {
+                    gte: activeTournament.startDate,
+                  },
+                },
+              }
+            : undefined,
           include: {
             team: {
               include: {
@@ -192,6 +201,19 @@ router.get('/leagues/:leagueId', async (req, res) => {
       return;
     }
 
+    let timelineData: any;
+    if (activeTournament) {
+      // get timeline data
+      timelineData = await timelineService.getLeagueTimeline(
+        league.id,
+        activeTournament.id,
+        undefined,
+        undefined,
+        10,
+        league.leagueTeams.map((lt) => lt.team.id)
+      );
+    }
+
     const transformedLeague = {
       ...league,
       teams: league.leagueTeams.map((lt) => ({
@@ -218,6 +240,7 @@ router.get('/leagues/:leagueId', async (req, res) => {
         }),
       })),
       tournament: activeTournament,
+      timelineData,
     };
 
     res.json(transformedLeague);

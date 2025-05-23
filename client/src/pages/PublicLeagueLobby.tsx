@@ -48,6 +48,8 @@ export const PublicLeagueLobby: React.FC = () => {
           createdAt: new Date(data.createdAt),
           updatedAt: new Date(data.updatedAt),
         },
+        tournament: data.tournament,
+        timelineData: data.timelineData,
       };
       setLeague(leagueWithTeams);
     } catch {
@@ -217,12 +219,16 @@ export const PublicLeagueLobby: React.FC = () => {
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
             isTimelineOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
-          <Timeline
-            leagueId={leagueId || ''}
-            tournamentId={league.tournament?.id || ''}
-            tournamentStartDate={league.tournament?.startDate || ''}
-            className='mb-4 border border-gray-200'
-          />
+          {league?.timelineData ? (
+            <Timeline
+              timelineData={league.timelineData}
+              className='mb-4 border border-gray-200'
+            />
+          ) : (
+            <div className='text-gray-500 text-center py-3'>
+              No timeline data available
+            </div>
+          )}
         </div>
 
         <div>

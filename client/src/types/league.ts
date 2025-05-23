@@ -1,4 +1,5 @@
 import { type Team } from './team';
+import { type TimelineData } from '../services/leagueApi';
 
 export interface LeagueSettings {
   id: string;
@@ -44,6 +45,7 @@ export interface PublicLeague extends League {
   members: Member[];
   owner: Member;
   tournament: Tournament;
+  timelineData?: TimelineData;
 }
 
 export interface Tournament {
