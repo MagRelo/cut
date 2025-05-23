@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
@@ -72,8 +71,6 @@ export const Home: React.FC = () => {
           My Team
         </Link>
       </div>
-
-      <LoadingSpinner />
 
       {/* Keep this for later */}
       {/* 
