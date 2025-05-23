@@ -10,7 +10,7 @@ export const Home: React.FC = () => {
       <img
         src='/cut-logo2.jpeg'
         alt='Cut Logo'
-        className='w-48 h-48 mb-6 rounded-full border-2 border-gray-500 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
+        className='w-48 h-48 mb-6 rounded-full border-2 border-gray-400 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
       />
       <h1 className='text-6xl font-bold text-black mb-8'>the Cut</h1>
 

@@ -165,7 +165,7 @@ export const PublicLeagueLobby: React.FC = () => {
       <div className=''>
         <div className='flex justify-between items-center mb-3'>
           <div className='flex items-center gap-4'>
-            <h1 className='text-4xl font-extrabold tracking-tight text-gray-700'>
+            <h1 className='text-4xl font-extrabold tracking-tight text-gray-800'>
               {league.name}
             </h1>
 

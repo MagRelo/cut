@@ -21,9 +21,11 @@ export const Navigation: React.FC = () => {
                 <img
                   src='/cut-logo2.png'
                   alt='logo'
-                  className='w-10 h-10 rounded-full border-2 border-gray-500 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
+                  className='w-10 h-10 rounded-full border border-gray-400 shadow-[0_2px_3px_rgba(0,0,0,0.1)]'
                 />
-                <span className='text-xl font-bold text-black'>the Cut</span>
+                <span className='text-2xl font-semibold text-black font-display'>
+                  the Cut
+                </span>
               </Link>
 
               <HelpButton />
@@ -33,7 +35,7 @@ export const Navigation: React.FC = () => {
                 {isAdmin() && (
                   <Link
                     to='/admin'
-                    className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
+                    className={`inline-flex items-center px-1 pt-1 text-lg font-medium ${
                       isActive('/admin')
                         ? 'text-emerald-500'
                         : 'text-gray-500 hover:text-gray-700'

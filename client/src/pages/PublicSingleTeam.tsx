@@ -126,8 +126,8 @@ export const PublicSingleTeam: React.FC = () => {
   }
 
   return (
-    <div className='px-4 py-2'>
-      <div className='flex items-center justify-between mb-2 mt-2'>
+    <div className='p-4'>
+      <div className='flex items-center justify-between mb-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
       </div>
 
