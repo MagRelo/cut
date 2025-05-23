@@ -266,7 +266,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className={className}>
       <div
-        className='bg-white shadow-sm p-4 timeline-chart'
+        className='bg-white border border-gray-100 p-4 timeline-chart'
         style={{ height: '250px' }}>
         <Line data={data} options={options} />
       </div>

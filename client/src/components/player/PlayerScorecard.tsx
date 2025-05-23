@@ -10,17 +10,18 @@ type TeamPlayer = Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> & {
 
 interface PlayerScorecardProps {
   player: TeamPlayer;
-  currentRound?: number;
+  roundDisplay: string;
   className?: string;
 }
 
 export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   player,
-  currentRound = 1,
+  roundDisplay,
   className = '',
 }) => {
   // Get the round data for the selected round
-  const getRoundData = (roundNumber: number) => {
+  const getRoundData = (roundDisplay: string) => {
+    const roundNumber = parseInt(roundDisplay.replace('R', ''));
     const roundKey = `r${roundNumber}` as keyof Pick<
       TeamPlayer,
       'r1' | 'r2' | 'r3' | 'r4'
@@ -28,30 +29,15 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
     return player[roundKey];
   };
 
-  // Find the latest round with data
-  const getLatestRoundWithData = () => {
-    for (let round = 4; round >= 1; round--) {
-      const roundData = getRoundData(round);
-      if (
-        roundData?.holes?.scores?.some((score: number | null) => score !== null)
-      ) {
-        return round;
-      }
-    }
-    return currentRound;
-  };
-
-  // const [selectedRound, setSelectedRound] = useState(getLatestRoundWithData());
-
-  const roundData = getRoundData(getLatestRoundWithData());
+  const roundData = getRoundData(roundDisplay);
   const hasHoleData =
     roundData?.holes?.scores && roundData.holes.scores.length > 0;
 
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className='bg-gray-200'>
-      <th className='px-3 py-2 text-left text-xs font-semibold text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
-        Round {currentRound}
+      <th className='px-3 py-2 text-left text-xs font-bold text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
+        Round {roundDisplay.replace('R', '')}
       </th>
       {Array.from({ length: 18 }, (_, i) => (
         <th
@@ -256,7 +242,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           </table>
         ) : (
           <div className='p-8 text-center text-gray-500'>
-            No scorecard data available for Round {getLatestRoundWithData()}
+            No scorecard data available for {roundDisplay}
           </div>
         )}
       </div>

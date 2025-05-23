@@ -230,8 +230,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
         <div className='width-full border border-gray-200 bg-white rounded-b-lg'>
           <PlayerTable
             players={team.players}
-            getCurrentRound={getCurrentRound}
-            currentRound={roundDisplay || ''}
+            roundDisplay={roundDisplay || ''}
           />
         </div>
       )}

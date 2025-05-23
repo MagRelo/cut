@@ -4,7 +4,7 @@ import { PlayerScorecard } from './PlayerScorecard';
 
 interface PlayerCardsProps {
   player: TeamPlayer;
-  roundDisplay?: string;
+  roundDisplay: string;
 }
 
 interface LabelProps {
@@ -25,31 +25,16 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
 
   const getCurrentRound = (player: TeamPlayer) => {
-    // If roundDisplay is specified, try to use that round
-    if (roundDisplay !== undefined) {
-      const roundNumber = roundDisplay.replace('R', '');
-      const roundData = player[`r${roundNumber}` as keyof TeamPlayer];
-      if (
-        roundData &&
-        typeof roundData === 'object' &&
-        'total' in roundData &&
-        roundData.total !== undefined
-      ) {
-        return { round: `R${roundNumber}`, data: roundData };
-      }
-    }
+    const roundNumber = roundDisplay.replace('R', '');
+    const roundData = player[`r${roundNumber}` as keyof TeamPlayer];
 
-    // Fallback to finding the latest round with data
-    for (let round = 4; round >= 1; round--) {
-      const roundData = player[`r${round}` as keyof TeamPlayer];
-      if (
-        roundData &&
-        typeof roundData === 'object' &&
-        'total' in roundData &&
-        roundData.total !== undefined
-      ) {
-        return { round: `R${round}`, data: roundData };
-      }
+    if (
+      roundData &&
+      typeof roundData === 'object' &&
+      'total' in roundData &&
+      roundData.total !== undefined
+    ) {
+      return { round: `R${roundNumber}`, data: roundData };
     }
     return null;
   };
@@ -108,7 +93,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
           )}
           <div className='flex-1 min-w-0'>
             <div className='flex items-center justify-between'>
-              <div className='text-xl font-bold text-gray-800 truncate'>
+              <div className='text-xl font-semibold text-gray-800 truncate'>
                 {player.player.pga_displayName || ''}
                 {/* optionally add the round icon of the current round */}
                 {currentRound?.round && currentRound.data.icon !== '' && (
@@ -130,7 +115,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             <div className='flex items-center space-x-6 mt-1'>
               <div className='text-sm text-gray-500'>
                 <Label>POS</Label>
-                <span className='font-bold text-gray-700 ml-1'>
+                <span className='font-bold text-gray-600 ml-1'>
                   {player.leaderboardPosition || '–'}
                 </span>
               </div>
@@ -142,7 +127,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
                   className={`font-bold ml-1 ${
                     player.leaderboardTotal === 'E' ||
                     !player.leaderboardTotal?.startsWith('-')
-                      ? 'text-gray-700'
+                      ? 'text-gray-600'
                       : 'text-red-600'
                   }`}>
                   {player.leaderboardTotal || '–'}
@@ -179,7 +164,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             {/* RND */}
             <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
               <Label>{currentRound.round}</Label>{' '}
-              <span className='font-bold text-gray-700 ml-2'>
+              <span className='font-bold text-gray-600 ml-2'>
                 {currentRound.data.holes?.scores
                   ? calculateScoreToPar(currentRound.data)
                   : '-'}
@@ -189,14 +174,16 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             {/* PTS */}
             <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
               <Label>PTS</Label>{' '}
-              <span className='font-bold text-gray-700 ml-2'>
+              <span className='font-bold text-gray-600 ml-2'>
                 {currentRound.data.total}
               </span>
             </div>
 
             {/* % */}
             <div className='text-sm text-gray-500 flex-1 min-w-0 text-center py-1 flex items-center'>
-              <Label className='text-xs text-gray-400 mr-2 -mt-px'>%</Label>
+              <Label className='text-xs font-bold text-gray-400 mr-2 -mt-px'>
+                %
+              </Label>
               <div className='w-full h-2 bg-gray-200 rounded-full relative'>
                 <div
                   className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
@@ -228,11 +215,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
               onClick={(e) => e.stopPropagation()}>
               <PlayerScorecard
                 player={player}
-                currentRound={
-                  currentRound?.round
-                    ? parseInt(currentRound.round.slice(1))
-                    : 1
-                }
+                roundDisplay={currentRound.round}
               />
             </div>
           )}
