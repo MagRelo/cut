@@ -17,9 +17,15 @@ export const Navigation: React.FC = () => {
         <div className='flex justify-between h-16'>
           <div className='flex'>
             <div className='flex-shrink-0 flex items-center gap-4'>
-              <Link to='/' className='text-xl font-bold text-black'>
-                the Cut
+              <Link to='/' className='flex items-center gap-2'>
+                <img
+                  src='/cut-logo2.png'
+                  alt='logo'
+                  className='w-10 h-10 rounded-full border-2 border-gray-500 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
+                />
+                <span className='text-xl font-bold text-black'>the Cut</span>
               </Link>
+
               <HelpButton />
             </div>
             {user && (

@@ -171,7 +171,7 @@ export const PublicLeagueLobby: React.FC = () => {
 
             <button
               onClick={() => setIsTimelineOpen(!isTimelineOpen)}
-              className='items-center justify-between mt-1 border border-gray-200 rounded-md p-2 bg-gray-50'>
+              className='items-center justify-between border border-gray-200 rounded-md p-2 bg-gray-50'>
               <svg
                 className={`w-5 h-5 transform transition-transform ${
                   isTimelineOpen ? 'rotate-180' : ''

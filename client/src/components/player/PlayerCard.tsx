@@ -108,7 +108,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
           )}
           <div className='flex-1 min-w-0'>
             <div className='flex items-center justify-between'>
-              <div className='text-base font-bold text-gray-900 truncate'>
+              <div className='text-xl font-bold text-gray-800 truncate'>
                 {player.player.pga_displayName || ''}
                 {/* optionally add the round icon of the current round */}
                 {currentRound?.round && currentRound.data.icon !== '' && (
@@ -129,17 +129,17 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             {/* Position*/}
             <div className='flex items-center space-x-6 mt-1'>
               <div className='text-sm text-gray-500'>
-                <Label>POS</Label>{' '}
-                <span className='font-medium text-gray-700 ml-1'>
+                <Label>POS</Label>
+                <span className='font-bold text-gray-700 ml-1'>
                   {player.leaderboardPosition || '–'}
                 </span>
               </div>
 
               {/* Total */}
               <div className='text-sm text-gray-500 flex items-center'>
-                <Label>TOTAL</Label>{' '}
+                <Label>TOTAL</Label>
                 <span
-                  className={`font-medium ml-1 ${
+                  className={`font-bold ml-1 ${
                     player.leaderboardTotal === 'E' ||
                     !player.leaderboardTotal?.startsWith('-')
                       ? 'text-gray-700'
@@ -179,7 +179,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             {/* RND */}
             <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
               <Label>{currentRound.round}</Label>{' '}
-              <span className='font-medium text-gray-700 ml-1'>
+              <span className='font-bold text-gray-700 ml-2'>
                 {currentRound.data.holes?.scores
                   ? calculateScoreToPar(currentRound.data)
                   : '-'}
@@ -189,7 +189,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
             {/* PTS */}
             <div className='text-sm text-gray-500 text-left whitespace-nowrap flex items-center'>
               <Label>PTS</Label>{' '}
-              <span className='font-medium text-gray-700 ml-1'>
+              <span className='font-bold text-gray-700 ml-2'>
                 {currentRound.data.total}
               </span>
             </div>
