@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-// import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
@@ -21,7 +21,7 @@ export const Home: React.FC = () => {
         (fantasy golf)
       </h4>
 
-      <hr className='w-full border-gray-200 my-4' />
+      <hr className='w-full border-gray-200 my-8' />
       {/* Instructions */}
 
       {/* How to play */}
@@ -52,12 +52,12 @@ export const Home: React.FC = () => {
             compete with your friends
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            Join a league (or create your own) and invite your friends.
+            Join a league or create your own.
           </p>
         </div>
       </div>
 
-      <hr className='w-full border-gray-200 my-4' />
+      <hr className='w-full border-gray-200 my-8' />
 
       {/* How to play */}
       <div>
@@ -72,6 +72,8 @@ export const Home: React.FC = () => {
           My Team
         </Link>
       </div>
+
+      <LoadingSpinner />
 
       {/* Keep this for later */}
       {/* 

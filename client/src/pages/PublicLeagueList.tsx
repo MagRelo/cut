@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLeagueApi } from '../services/leagueApi';
 import { LeagueCard } from '../components/LeagueCard';
 import { type League } from '../types/league';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const PublicLeagueList: React.FC = () => {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -42,7 +43,9 @@ export const PublicLeagueList: React.FC = () => {
         {/* League List Section */}
         <div className='space-y-2 mb-20'>
           {isLoading ? (
-            <div className='text-center py-4'>Loading leagues...</div>
+            <div className='text-center py-4'>
+              <LoadingSpinner />
+            </div>
           ) : error ? (
             <div className='text-red-600 text-center py-4'>{error}</div>
           ) : leagues.length === 0 ? (

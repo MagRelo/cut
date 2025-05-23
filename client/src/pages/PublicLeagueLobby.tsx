@@ -7,6 +7,7 @@ import { type Team, type TeamPlayer } from '../types/team';
 import { TeamCard } from '../components/team/TeamCard';
 
 import { Timeline } from '../components/Timeline';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 interface LeagueResponse extends PublicLeague {
   commissionerId: string;
@@ -131,7 +132,9 @@ export const PublicLeagueLobby: React.FC = () => {
   if (isLoading) {
     return (
       <div className='container mx-auto px-4 py-8'>
-        <div className='text-center'>Loading league details...</div>
+        <div className='text-center'>
+          <LoadingSpinner />
+        </div>
       </div>
     );
   }

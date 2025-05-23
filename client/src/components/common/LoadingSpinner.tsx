@@ -8,17 +8,23 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'medium',
 }) => {
   const sizeClasses = {
-    small: 'h-8 w-8',
-    medium: 'h-12 w-12',
-    large: 'h-16 w-16',
+    small: 'h-1.5',
+    medium: 'h-2',
+    large: 'h-3',
   };
 
   return (
     <div className='py-6'>
       <div className='flex items-center justify-center'>
         <div
-          className={`animate-spin rounded-full border-t-2 border-b-2 border-emerald-500 ${sizeClasses[size]}`}
-        />
+          className={`w-32 ${sizeClasses[size]} bg-gray-200 rounded-full overflow-hidden relative`}>
+          <div
+            className={`${sizeClasses[size]} bg-emerald-600/70 rounded-full absolute inset-0`}
+            style={{
+              animation: 'progress 1.5s ease-in-out infinite',
+            }}
+          />
+        </div>
       </div>
     </div>
   );
