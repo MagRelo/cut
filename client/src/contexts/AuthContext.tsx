@@ -6,7 +6,6 @@ import {
   useMemo,
   useCallback,
 } from 'react';
-import { InstructionsModal } from '../components/common/InstructionsModal';
 
 interface BaseUser {
   id: string;
@@ -56,7 +55,6 @@ interface AuthContextData {
     password: string,
     name: string
   ) => Promise<void>;
-  openInstructions: () => void;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -73,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [streamToken, setStreamToken] = useState<string | null>(null);
-  const [showInstructions, setShowInstructions] = useState(false);
 
   const config = useMemo(
     () => ({
@@ -177,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem('token');
         const guid = localStorage.getItem('publicUserGuid');
-        const hasSeenInstructions = localStorage.getItem('hasSeenInstructions');
 
         if (token) {
           console.log('Using token', token);
@@ -205,10 +201,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             guid: newGuid,
           };
           setUser(anonymousUser);
-        }
-
-        if (!hasSeenInstructions) {
-          setShowInstructions(true);
         }
       } catch (error: unknown) {
         console.error('Auth check failed:', error);
@@ -349,15 +341,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user && !user.isAnonymous && user.userType === 'ADMIN');
   }, [user]);
 
-  const handleCloseInstructions = useCallback(() => {
-    setShowInstructions(false);
-    localStorage.setItem('hasSeenInstructions', 'true');
-  }, []);
-
-  const openInstructions = useCallback(() => {
-    setShowInstructions(true);
-  }, []);
-
   const contextValue = useMemo(
     () => ({
       user,
@@ -373,7 +356,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,
-      openInstructions,
     }),
     [
       user,
@@ -389,17 +371,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,
-      openInstructions,
     ]
   );
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-      <InstructionsModal
-        isOpen={showInstructions}
-        onClose={handleCloseInstructions}
-      />
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }

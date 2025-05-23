@@ -6,7 +6,7 @@ export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
 
   return (
-    <div className='flex-1 w-full flex flex-col items-center justify-center bg-gray-50 pt-16 md:py-12'>
+    <div className='flex-1 w-full flex flex-col items-center  bg-gray-50 pt-16 md:py-12 pb-20'>
       <img
         src='/cut-logo2.jpeg'
         alt='Cut Logo'
@@ -14,22 +14,58 @@ export const Home: React.FC = () => {
       />
       <h1 className='text-6xl font-bold text-black mb-8'>the Cut</h1>
 
-      <p className='inline-flex items-center justify-center mb-2 mx-10 text-center text-lg font-medium'>
-        Free Weekly Fantasy Golf
-      </p>
+      <h4 className='text-2xl font-bold text-gray-800 mb-4'>
+        keep the group chat alive
+      </h4>
+      <h4 className='text-2xl font-bold text-emerald-600 mb-2'>
+        (fantasy golf)
+      </h4>
 
-      {/* Instructions button "how to play" */}
-      {/* <button
-        onClick={() => {
-          openInstructions();
-        }}
-        className='inline-flex items-center px-1 pt-1 text-lg font-lg text-gray-500 hover:text-gray-700'>
-        What is the Cut?
-      </button> */}
+      <hr className='w-full border-gray-200 my-4' />
+      {/* Instructions */}
+
+      {/* How to play */}
+      <div>
+        <h3 className='text-4xl font-bold text-gray-400 mb-2'>how to play</h3>
+      </div>
+
+      <div className='flex flex-col items-center text-center gap-8 mt-4'>
+        <div>
+          <h3 className='text-2xl font-bold text-gray-800 mb-2'>
+            this week's tournament
+          </h3>
+          <p className='text-gray-700 max-w-xs'>
+            Every week is a new competition. Play every week or skip a week - no
+            big deal.
+          </p>
+        </div>
+        <div>
+          <h3 className='text-2xl font-bold text-gray-800 mb-2'>
+            set your lineup
+          </h3>
+          <p className='text-gray-700 max-w-xs'>
+            Select any four players from the tournament field each week.
+          </p>
+        </div>
+        <div>
+          <h3 className='text-2xl font-bold text-gray-800 mb-2'>
+            compete with your friends
+          </h3>
+          <p className='text-gray-700 max-w-xs'>
+            Join a league (or create your own) and invite your friends.
+          </p>
+        </div>
+      </div>
 
       <hr className='w-full border-gray-200 my-4' />
 
-      <div className='flex flex-col md:flex-row gap-4 mt-4'>
+      {/* How to play */}
+      <div>
+        <h3 className='text-4xl font-bold text-gray-400 mb-2'>get started</h3>
+      </div>
+
+      {/* CTA buttons */}
+      <div className='flex flex-col md:flex-row gap-4 mt-8'>
         <Link
           to='/public/team'
           className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>

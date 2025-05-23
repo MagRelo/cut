@@ -259,6 +259,12 @@ export const Timeline: React.FC<TimelineProps> = ({
         grid: {
           color: '#e5e7eb',
         },
+        ticks: {
+          font: {
+            family: 'Inter, system-ui, -apple-system, sans-serif',
+            size: 9,
+          },
+        },
       },
     },
   };
