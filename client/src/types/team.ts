@@ -41,7 +41,11 @@ export interface Team {
   players: TeamPlayer[];
   isUserTeam?: boolean;
   leagueId: string;
-  userId: string;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   leagues: League[];

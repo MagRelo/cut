@@ -35,6 +35,21 @@ export interface League {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
+  owner?: {
+    id: string;
+    name: string;
+  };
+  leagueTeams?: Array<{
+    team: {
+      id: string;
+      name: string;
+      owner: {
+        id: string;
+        name: string;
+        email: string;
+      };
+    };
+  }>;
 }
 
 export interface PublicLeague extends League {
