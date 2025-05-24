@@ -8,7 +8,7 @@ import type { Team } from '../types/team';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
-import { PublicTeamFormComponent } from '../components/team/PublicTeamFormComponent';
+import { TeamForm } from '../components/team/TeamForm';
 import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
@@ -54,16 +54,6 @@ export const PublicSingleTeam: React.FC = () => {
     const day = date.getDate();
 
     return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
-  };
-
-  const isEditingAllowed = (): boolean => {
-    if (currentTournament?.status == 'NOT_STARTED') return true;
-
-    // If the tournament has started, only allow editing if the team
-    // has not been updated since before the tournament starts, ie allow one edit
-    if (!currentTournament?.startDate) return false;
-    if (!team?.updatedAt) return false;
-    return new Date(currentTournament.startDate) > new Date(team.updatedAt);
   };
 
   const fetchTeam = async () => {
@@ -127,18 +117,36 @@ export const PublicSingleTeam: React.FC = () => {
 
   return (
     <div className='p-4'>
+      {/* Team Info */}
       <div className='flex items-center justify-between mb-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
       </div>
+      {/* 
+      <div className='mb-4'>
+        <TeamForm
+          onSuccess={handleSuccess}
+          showTeamInfo={true}
+          showPlayerSelect={false}
+        />
+      </div>
+
+      <div className='flex items-center justify-between mb-2'>
+        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Lineup</h2>
+      </div>
+      <TeamForm
+        onSuccess={handleSuccess}
+        showTeamInfo={false}
+        showPlayerSelect={true}
+      /> */}
 
       {/* Team Section */}
       <div className=''>
         {!team ? (
           // Create Mode
-          <PublicTeamFormComponent onSuccess={handleSuccess} />
+          <TeamForm onSuccess={handleSuccess} />
         ) : isEditing ? (
           // Edit Mode
-          <PublicTeamFormComponent
+          <TeamForm
             team={team}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
@@ -169,13 +177,8 @@ export const PublicSingleTeam: React.FC = () => {
 
               <button
                 onClick={handleEdit}
-                disabled={!isEditingAllowed()}
-                className={`px-3 py-1 text-xs rounded shadow font-semibold transition-colors duration-150 ${
-                  !isEditingAllowed()
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                }`}>
-                {isEditingAllowed() ? 'Edit' : 'Locked'}
+                className='px-3 py-1 text-xs rounded shadow font-semibold transition-colors duration-150 bg-emerald-600 text-white hover:bg-emerald-700'>
+                Edit
               </button>
             </h2>
 
