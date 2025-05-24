@@ -46,6 +46,7 @@ export interface Team {
     name: string;
     email: string;
   };
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
   leagues: League[];

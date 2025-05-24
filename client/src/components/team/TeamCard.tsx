@@ -179,13 +179,19 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
             {/* Player Round Icons */}
             <div className='flex items-center space-x-2 h-8'>
               {[...Array(4)].map((_, index) => {
-                const player = team.players.sort(
-                  (a, b) =>
-                    (b.total || 0) +
-                    (b.cut || 0) +
-                    (b.bonus || 0) -
-                    ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
-                )[index];
+                const player = team.players.sort((a, b) => {
+                  // Handle cases where position might be "-" or undefined
+                  const getPosition = (pos: string | undefined) => {
+                    if (!pos || pos === '-') return Infinity;
+                    // Remove "T" prefix if present and convert to number
+                    return parseInt(pos.replace('T', ''));
+                  };
+
+                  return (
+                    getPosition(a.leaderboardPosition) -
+                    getPosition(b.leaderboardPosition)
+                  );
+                })[index];
 
                 if (!player) {
                   return <div key={index} className='flex-shrink-0 w-5 h-8' />;

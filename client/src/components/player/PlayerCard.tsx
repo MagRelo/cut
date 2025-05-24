@@ -93,7 +93,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
           )}
           <div className='flex-1 min-w-0'>
             <div className='flex items-center justify-between'>
-              <div className='text-xl font-semibold text-gray-800 truncate'>
+              <div className='text-lg font-semibold text-gray-600 truncate'>
                 {player.player.pga_displayName || ''}
                 {/* optionally add the round icon of the current round */}
                 {currentRound?.round && currentRound.data.icon !== '' && (

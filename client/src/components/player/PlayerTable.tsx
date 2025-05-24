@@ -163,7 +163,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                     </td>
 
                     {/* TOTAL */}
-                    <td className='w-12 py-2 text-center text-sm font-bold '>
+                    <td className='w-12 py-2 text-center text-sm font-bold text-gray-600'>
                       <span
                         className={`${
                           player.leaderboardTotal === 'E' ||

@@ -10,16 +10,17 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ league }) => (
   <div className='group'>
     <Link
       to={`/public/league/${league.id}`}
-      className='block bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 p-4 rounded-lg transition-all duration-200 hover:shadow-sm'>
+      className='block bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 p-4 rounded-lg transition-all duration-200 shadow-sm'>
       <div className='flex justify-between items-center'>
-        <div>
-          <h3 className='text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors'>
+        <div className='flex items-baseline gap-2'>
+          <h3 className='text-xl font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors'>
             {league.name}
           </h3>
-          {/* {league.description && (
-            <p className='text-gray-600 mt-1 text-sm'>{league.description}</p>
-          )} */}
+          <p className='text-gray-400 text-med'>
+            {league.leagueTeams?.length} members
+          </p>
         </div>
+
         <div className='text-gray-400 group-hover:text-emerald-500 transition-colors'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
