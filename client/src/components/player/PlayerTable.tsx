@@ -96,9 +96,23 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
               // Handle cases where position might be "-" or undefined
               const getPosition = (pos: string | undefined) => {
                 if (!pos || pos === '-') return Infinity;
+                if (pos === 'CUT') return Infinity;
                 // Remove "T" prefix if present and convert to number
                 return parseInt(pos.replace('T', ''));
               };
+
+              // If both players are CUT, sort by total points
+              if (
+                a.leaderboardPosition === 'CUT' &&
+                b.leaderboardPosition === 'CUT'
+              ) {
+                return (
+                  (b.total || 0) +
+                  (b.cut || 0) +
+                  (b.bonus || 0) -
+                  ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+                );
+              }
 
               return (
                 getPosition(a.leaderboardPosition) -
