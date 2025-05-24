@@ -16,9 +16,11 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ league }) => (
           <h3 className='text-xl font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors'>
             {league.name}
           </h3>
-          <p className='text-gray-400 text-med'>
-            {league.leagueTeams?.length} members
-          </p>
+          {league.leagueTeams && (
+            <p className='text-gray-400 text-med'>
+              {league.leagueTeams.length} members
+            </p>
+          )}
         </div>
 
         <div className='text-gray-400 group-hover:text-emerald-500 transition-colors'>
