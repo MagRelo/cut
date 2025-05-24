@@ -11,7 +11,7 @@ export const Home: React.FC = () => {
         alt='Cut Logo'
         className='w-48 h-48 mb-6 rounded-full border-2 border-gray-400 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
       />
-      <h1 className='text-6xl font-bold text-black mb-8'>the Cut</h1>
+      <h1 className='text-6xl font-bold text-black mb-4'>the Cut</h1>
 
       <h4 className='text-2xl font-bold text-gray-800 mb-4'>
         keep the group chat alive

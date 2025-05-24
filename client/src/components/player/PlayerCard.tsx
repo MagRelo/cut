@@ -122,7 +122,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
 
               {/* Total */}
               <div className='text-sm text-gray-500 flex items-center'>
-                <Label>TOTAL</Label>
+                <Label>TOT</Label>
                 <span
                   className={`font-bold ml-1 ${
                     player.leaderboardTotal === 'E' ||
