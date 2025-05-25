@@ -13,7 +13,7 @@ export const Home: React.FC = () => {
       />
       <h1 className='text-6xl font-bold text-black mb-4'>the Cut</h1>
 
-      <h4 className='text-2xl font-bold text-gray-800 mb-4'>
+      <h4 className='text-2xl font-bold text-gray-800 mb-3'>
         keep the group chat alive
       </h4>
       <h4 className='text-2xl font-bold text-emerald-600 mb-2'>
@@ -25,13 +25,13 @@ export const Home: React.FC = () => {
 
       {/* How to play */}
       <div>
-        <h3 className='text-4xl font-bold text-gray-400 mb-2'>how to play</h3>
+        <h3 className='text-4xl font-bold text-gray-400 mb-6'>how to play</h3>
       </div>
 
       <div className='flex flex-col items-center text-center gap-8 mt-4'>
         <div>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
-            this week's tournament
+            weekly tournament
           </h3>
           <p className='text-gray-700 max-w-xs'>
             Every week is a new competition. Play every week or skip a week - no
@@ -43,15 +43,17 @@ export const Home: React.FC = () => {
             set your lineup
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            Select any four players from the tournament field each week.
+            Select any four players from the tournament field each week. Join a
+            league to compete with your friends.
           </p>
         </div>
         <div>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
-            compete with your friends
+            throw it in the group chat
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            Join a league or create your own.
+            It's a good excuse to stay in touch and talk about golf - each and
+            every week.
           </p>
         </div>
       </div>
@@ -60,15 +62,21 @@ export const Home: React.FC = () => {
 
       {/* How to play */}
       <div>
-        <h3 className='text-4xl font-bold text-gray-400 mb-2'>get started</h3>
+        <h3 className='text-4xl font-bold text-gray-400 mb-8'>get started</h3>
       </div>
 
       {/* CTA buttons */}
-      <div className='flex flex-col md:flex-row gap-4 mt-8'>
+      <div className='flex flex-row flex-wrap gap-4 justify-center'>
         <Link
           to='/public/team'
           className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
           My Team
+        </Link>
+
+        <Link
+          to='public/leagues'
+          className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
+          Leagues
         </Link>
       </div>
 

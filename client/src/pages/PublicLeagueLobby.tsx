@@ -144,18 +144,21 @@ export const PublicLeagueLobby: React.FC = () => {
   if (error || !league) {
     return (
       <div className='container mx-auto px-4 py-8'>
-        <div className='text-red-600 text-center'>
-          {error || 'League not found'}
-        </div>
+        <div className='bg-white rounded-lg shadow-md border border-gray-100 p-6 max-w-md mx-auto'>
+          <div className='text-red-600 text-center'>
+            <span className='sm pr-2'>❌</span>
+            {error || 'League not found'}
+          </div>
 
-        <p className='text-center my-4'>Make sure you have created a team.</p>
+          <p className='text-center my-4'>Make sure you have created a team.</p>
 
-        <div className='flex justify-center my-8'>
-          <button
-            onClick={() => navigate('/public/team')}
-            className='bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
-            My Team
-          </button>
+          <div className='flex justify-center my-2'>
+            <button
+              onClick={() => navigate('/public/team')}
+              className='bg-emerald-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
+              My Team
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -88,9 +88,15 @@ export const PublicLeagueList: React.FC = () => {
               </div>
             ) : (
               <div className='space-y-2'>
-                {otherLeagues.map((league) => (
-                  <LeagueCard key={league.id} league={league} />
-                ))}
+                {[...otherLeagues]
+                  .sort(
+                    (a, b) =>
+                      (b.leagueTeams?.length ?? 0) -
+                      (a.leagueTeams?.length ?? 0)
+                  )
+                  .map((league) => (
+                    <LeagueCard key={league.id} league={league} />
+                  ))}
               </div>
             )}
           </div>
