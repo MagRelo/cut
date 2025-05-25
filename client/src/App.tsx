@@ -17,7 +17,7 @@ import { UserSettings } from './pages/UserSettings';
 import { PublicSingleTeam } from './pages/PublicSingleTeam';
 import { PublicLeagueLayout } from './components/layouts/PublicLeagueLayout';
 // import { PublicTeamFormComponent } from 'components/team/PublicTeamFormComponent';
-import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
+// import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
   return (
@@ -26,7 +26,7 @@ export const App: React.FC = () => {
         <Router>
           <div className='min-h-screen bg-gray-100 flex flex-col'>
             {/* TODO: Remove this when we're ready to go live */}
-            <MaintenanceOverlay />
+            {/* <MaintenanceOverlay /> */}
             <div className='flex flex-col flex-grow'>
               <Routes>
                 <Route path='/' element={<Home />} />
