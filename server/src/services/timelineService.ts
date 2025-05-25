@@ -194,28 +194,67 @@ export class TimelineService {
         };
       }
 
-      // Get all timeline entries for the league within the time range
-      const timelineEntries = await prisma.timelineEntry.findMany({
-        where,
-        include: {
-          team: true,
-        },
-        orderBy: {
-          timestamp: 'asc',
-        },
-      });
-
-      // Get tournament details
-      const tournament = await prisma.tournament.findUnique({
-        where: { id: tournamentId },
-      });
+      // Get tournament and timeline entries in parallel
+      const [tournament, timelineEntries] = await Promise.all([
+        prisma.tournament.findUnique({
+          where: { id: tournamentId },
+          select: {
+            id: true,
+            name: true,
+            currentRound: true,
+            status: true,
+            startDate: true,
+          },
+        }),
+        prisma.timelineEntry.findMany({
+          where,
+          select: {
+            timestamp: true,
+            totalScore: true,
+            roundNumber: true,
+            teamId: true,
+            team: {
+              select: {
+                name: true,
+                color: true,
+              },
+            },
+          },
+          orderBy: {
+            timestamp: 'asc',
+          },
+        }),
+      ]);
 
       if (!tournament) {
         throw new Error('Tournament not found');
       }
 
-      // Group entries by team
-      const teamEntries = new Map();
+      interface TeamEntry {
+        id: string;
+        name: string;
+        color: string;
+        dataPoints: Array<{
+          timestamp: string;
+          score: number;
+          roundNumber: number | null;
+        }>;
+      }
+
+      // Pre-allocate the Map with teamIds if provided for better performance
+      const teamEntries = new Map<string, TeamEntry>(
+        teamIds?.map((id) => [
+          id,
+          {
+            id,
+            name: '',
+            color: '',
+            dataPoints: [],
+          },
+        ]) || []
+      );
+
+      // Process entries in a single pass
       timelineEntries.forEach((entry) => {
         if (!teamEntries.has(entry.teamId)) {
           teamEntries.set(entry.teamId, {
@@ -225,11 +264,14 @@ export class TimelineService {
             dataPoints: [],
           });
         }
-        teamEntries.get(entry.teamId).dataPoints.push({
-          timestamp: entry.timestamp.toISOString(),
-          score: entry.totalScore,
-          roundNumber: entry.roundNumber,
-        });
+        const teamEntry = teamEntries.get(entry.teamId);
+        if (teamEntry) {
+          teamEntry.dataPoints.push({
+            timestamp: entry.timestamp.toISOString(),
+            score: entry.totalScore,
+            roundNumber: entry.roundNumber,
+          });
+        }
       });
 
       return {

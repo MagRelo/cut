@@ -231,6 +231,9 @@ model TimelineEntry {
 
   @@index([leagueId, tournamentId, timestamp])
   @@index([teamId, tournamentId, timestamp])
+  @@index([tournamentId, timestamp])
+  @@index([leagueId, teamId, tournamentId])
+  @@index([timestamp])
 }
 
 model TournamentPlayer {

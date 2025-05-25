@@ -146,10 +146,14 @@ router.post('/leagues', async (req, res) => {
 router.get('/leagues/:leagueId', async (req, res) => {
   try {
     const { leagueId } = req.params;
+
+    // Step 1: Fetch the active tournament first
     const activeTournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
+      select: { id: true, startDate: true, name: true },
     });
 
+    // Step 2: Use activeTournament in the league query
     const league = await prisma.league.findFirst({
       where: {
         id: leagueId,
@@ -176,6 +180,18 @@ router.get('/leagues/:leagueId', async (req, res) => {
                         tournamentPlayers: activeTournament
                           ? {
                               where: { tournamentId: activeTournament.id },
+                              select: {
+                                leaderboardPosition: true,
+                                leaderboardTotal: true,
+                                r1: true,
+                                r2: true,
+                                r3: true,
+                                r4: true,
+                                cut: true,
+                                bonus: true,
+                                total: true,
+                                updatedAt: true,
+                              },
                             }
                           : true,
                       },
@@ -203,22 +219,21 @@ router.get('/leagues/:leagueId', async (req, res) => {
 
     let timelineData: any;
     if (activeTournament) {
-      // get timeline data
       timelineData = await timelineService.getLeagueTimeline(
         league.id,
         activeTournament.id,
         undefined,
         undefined,
         10,
-        league.leagueTeams.map((lt) => lt.team.id)
+        league.leagueTeams.map((lt: any) => lt.team.id)
       );
     }
 
     const transformedLeague = {
       ...league,
-      teams: league.leagueTeams.map((lt) => ({
+      teams: league.leagueTeams.map((lt: any) => ({
         ...lt.team,
-        players: lt.team.players.map((tp) => {
+        players: lt.team.players.map((tp: any) => {
           const tournamentPlayer = tp.player.tournamentPlayers?.[0];
           return {
             ...tp,
