@@ -19,7 +19,7 @@ export const Home: React.FC = () => {
         keep the group chat alive
       </h4>
       <h4 className='text-2xl font-bold text-emerald-600 mb-2'>
-        (fantasy golf)
+        (with fantasy golf)
       </h4>
 
       <hr className='w-full border-gray-200 my-8' />
@@ -27,7 +27,7 @@ export const Home: React.FC = () => {
 
       {/* How to play */}
       <div>
-        <h3 className='text-4xl font-bold text-gray-400 mb-6'>how to play</h3>
+        <h2 className='text-4xl font-bold text-gray-400 mb-6'>how to play</h2>
       </div>
 
       <div className='flex flex-col items-center text-center gap-8 mt-4'>
@@ -40,13 +40,14 @@ export const Home: React.FC = () => {
             big deal.
           </p>
         </div>
+
         <div>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
             set your lineup
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            Select any four players from the field each week. Points are earned
-            using Stableford scoring:
+            Select any four players from the field each week. Points are awarded
+            using stableford scoring:
           </p>
           <div className='mt-4 max-w-xs relative overflow-hidden'>
             <div
@@ -59,38 +60,49 @@ export const Home: React.FC = () => {
             <InfoScorecard />
           </div>
         </div>
+
         <div>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
             throw it in the group chat
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            It's a easy excuse to stay in touch and talk about golf. Keep the
-            group chat alive.
+            <span className='text-lg font-display font-bold'>the Cut</span>{' '}
+            gives you the ingredients—now let the chat cook. Fresh action every
+            week to keep the conversation popping.
           </p>
         </div>
       </div>
 
-      <hr className='w-full border-gray-200 my-8' />
+      <hr className='w-full border-gray-200 mt-12 mb-8' />
 
       {/* How to play */}
       <div>
-        <h3 className='text-4xl font-bold text-gray-400 mb-8'>get started</h3>
+        <h2 className='text-4xl font-bold text-gray-400 mb-6'>get started</h2>
       </div>
 
-      {/* CTA buttons */}
-      <div className='flex flex-row flex-wrap gap-4 justify-center'>
-        <Link
-          to='/public/team'
-          className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
-          My Team
-        </Link>
-
-        <Link
-          to='public/leagues'
-          className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
-          Leagues
-        </Link>
+      <div className='flex flex-col items-center text-center gap-8 mt-4'>
+        <div>
+          <h3 className='text-2xl font-bold text-gray-800 mb-4'>
+            create a team
+          </h3>
+          <Link
+            to='/public/team'
+            className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
+            My Team
+          </Link>
+        </div>
+        <div>
+          <h3 className='text-2xl font-bold text-gray-800 mb-4'>
+            view leagues
+          </h3>
+          <Link
+            to='public/leagues'
+            className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
+            Leagues
+          </Link>
+        </div>
       </div>
+
       {/* 
       <div className='mt-8'>
         <InfoScorecard />

@@ -1,5 +1,6 @@
 // import React, { useState } from 'react';
 import type { TeamPlayer as BaseTeamPlayer, RoundData } from '../../types/team';
+import { ScoreDisplay, StablefordDisplay } from './ScoreDisplays';
 
 type TeamPlayer = Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> & {
   r1?: RoundData;
@@ -107,35 +108,16 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
           const par = pars[i];
-          const scoreValue = score === null ? '-' : score;
-          const scoreDiff = score === null || par === null ? 0 : score - par;
-
-          let content: React.ReactNode = scoreValue;
-          if (score !== null && par !== null) {
-            if (scoreDiff < 0) {
-              // Circle for below par
-              content = (
-                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-emerald-500 rounded-full '>
-                  {score}
-                </span>
-              );
-            } else if (scoreDiff > 0) {
-              // Square for above par
-              content = (
-                <span className='inline-flex items-center justify-center w-6 h-6 border-2 border-red-400 '>
-                  {score}
-                </span>
-              );
-            }
+          if (score === null || par === null) {
+            return (
+              <td
+                key={i}
+                className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
+                -
+              </td>
+            );
           }
-
-          return (
-            <td
-              key={i}
-              className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
-              {content}
-            </td>
-          );
+          return <ScoreDisplay key={i} score={score} par={par} />;
         })}
         <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
           {roundData.holes.scores.some((score: number | null) => score !== null)
@@ -155,19 +137,16 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
-          let pointsClass = 'text-gray-600';
-          if (points !== null) {
-            if (points > 0) pointsClass = 'text-emerald-600 font-bold';
-            else if (points < 0) pointsClass = 'text-red-600 font-bold';
+          if (points === null) {
+            return (
+              <td
+                key={i}
+                className='px-2 py-2 text-center text-xs text-gray-600 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
+                -
+              </td>
+            );
           }
-
-          return (
-            <td
-              key={i}
-              className={`px-2 py-2 text-center text-xs font-medium ${pointsClass} min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300`}>
-              {points === null ? '-' : points}
-            </td>
-          );
+          return <StablefordDisplay key={i} points={points} />;
         })}
         <td className='px-3 py-2 text-center text-xs font-medium text-gray-900 min-w-[3.5rem] w-[3.5rem] border-t border-b border-l border-gray-300'>
           {roundData.holes.stableford.reduce(
