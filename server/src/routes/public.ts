@@ -150,7 +150,6 @@ router.get('/leagues/:leagueId', async (req, res) => {
     // Step 1: Fetch the active tournament first
     const activeTournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
-      select: { id: true, startDate: true, name: true },
     });
 
     // Step 2: Use activeTournament in the league query
@@ -180,18 +179,6 @@ router.get('/leagues/:leagueId', async (req, res) => {
                         tournamentPlayers: activeTournament
                           ? {
                               where: { tournamentId: activeTournament.id },
-                              select: {
-                                leaderboardPosition: true,
-                                leaderboardTotal: true,
-                                r1: true,
-                                r2: true,
-                                r3: true,
-                                r4: true,
-                                cut: true,
-                                bonus: true,
-                                total: true,
-                                updatedAt: true,
-                              },
                             }
                           : true,
                       },
@@ -229,11 +216,12 @@ router.get('/leagues/:leagueId', async (req, res) => {
       );
     }
 
+    // Transform the response to match frontend expectations
     const transformedLeague = {
       ...league,
-      teams: league.leagueTeams.map((lt: any) => ({
+      teams: league.leagueTeams.map((lt) => ({
         ...lt.team,
-        players: lt.team.players.map((tp: any) => {
+        players: lt.team.players.map((tp) => {
           const tournamentPlayer = tp.player.tournamentPlayers?.[0];
           return {
             ...tp,
@@ -249,7 +237,7 @@ router.get('/leagues/:leagueId', async (req, res) => {
             updatedAt: tournamentPlayer?.updatedAt || tp.updatedAt,
             player: {
               ...tp.player,
-              tournamentPlayers: undefined,
+              tournamentPlayers: undefined, // Remove to avoid leaking backend structure
             },
           };
         }),

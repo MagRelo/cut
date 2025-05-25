@@ -5,11 +5,11 @@ import { Share } from '../components/common/Share';
 import { type PublicLeague } from '../types/league';
 import { type Team, type TeamPlayer } from '../types/team';
 import { TeamCard } from '../components/team/TeamCard';
-
+import { useTournament } from '../contexts/TournamentContext';
 import { Timeline } from '../components/Timeline';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
-interface LeagueResponse extends PublicLeague {
+interface LeagueResponse extends Omit<PublicLeague, 'tournament'> {
   commissionerId: string;
 }
 
@@ -23,6 +23,7 @@ export const PublicLeagueLobby: React.FC = () => {
   const userId = localStorage.getItem('publicUserGuid');
   const navigate = useNavigate();
   const leagueApi = useLeagueApi();
+  const { currentTournament } = useTournament();
 
   const fetchLeague = async () => {
     if (!leagueId) return;
@@ -48,7 +49,7 @@ export const PublicLeagueLobby: React.FC = () => {
           createdAt: new Date(data.createdAt),
           updatedAt: new Date(data.updatedAt),
         },
-        tournament: data.tournament,
+        tournament: currentTournament ?? undefined,
         timelineData: data.timelineData,
       };
       setLeague(leagueWithTeams);
@@ -251,7 +252,7 @@ export const PublicLeagueLobby: React.FC = () => {
                     <TeamCard
                       key={team.id}
                       team={team}
-                      roundDisplay={league.tournament?.roundDisplay}
+                      roundDisplay={currentTournament?.roundDisplay}
                     />
                   </div>
                 ))

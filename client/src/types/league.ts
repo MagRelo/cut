@@ -59,7 +59,7 @@ export interface PublicLeague extends League {
   teams: Team[];
   members: Member[];
   owner: Member;
-  tournament: Tournament;
+  tournament?: Tournament;
   timelineData?: TimelineData;
 }
 

@@ -1,36 +1,13 @@
 import { PrismaClient, Team } from '@prisma/client';
 import { calculateTeamScore } from '../utils/scoreCalculator.js';
-import { prisma } from '../lib/prisma.js';
 
-interface TimelineCreationStats {
-  totalTeams: number;
-  totalAttempted: number;
-  successfulCreations: number;
-  failedCreations: number;
-  errors: Array<{
-    teamId: string;
-    leagueId: string;
-    error: string;
-    type: 'SCORE_CALCULATION' | 'DB_ERROR';
-  }>;
-}
+const prisma = new PrismaClient();
 
 export class TimelineService {
   /**
    * Creates timeline entries for all teams in active leagues for a given tournament
    */
-  async createTimelineEntries(
-    tournamentId: string,
-    currentRound: number
-  ): Promise<TimelineCreationStats> {
-    const stats: TimelineCreationStats = {
-      totalTeams: 0,
-      totalAttempted: 0,
-      successfulCreations: 0,
-      failedCreations: 0,
-      errors: [],
-    };
-
+  async createTimelineEntries(tournamentId: string, currentRound: number) {
     try {
       // Get all active leagues with their teams for this tournament
       const activeLeagues = await prisma.league.findMany({
@@ -57,18 +34,7 @@ export class TimelineService {
                       active: true,
                     },
                     include: {
-                      player: {
-                        include: {
-                          tournamentPlayers: {
-                            where: {
-                              tournamentId,
-                            },
-                            select: {
-                              total: true,
-                            },
-                          },
-                        },
-                      },
+                      player: true,
                     },
                   },
                 },
@@ -78,71 +44,31 @@ export class TimelineService {
         },
       });
 
-      // Calculate total teams before processing
-      stats.totalTeams = activeLeagues.reduce(
-        (total, league) => total + league.leagueTeams.length,
-        0
-      );
-
       const timestamp = new Date();
 
       // Create timeline entries for each team in each league
       for (const league of activeLeagues) {
         for (const leagueTeam of league.leagueTeams) {
           const team = leagueTeam.team;
-          // Transform the team data to match TeamWithPlayers type
+          // Transform players to include 'total' property as required by TeamWithPlayers
           const teamWithPlayers = {
             ...team,
-            players: team.players.map((tp) => ({
-              ...tp,
-              total: tp.player.tournamentPlayers[0]?.total ?? null,
-            })),
+            players: team.players.map((tp) => ({ ...tp, total: null })),
           };
+          const totalScore = calculateTeamScore(teamWithPlayers);
 
-          stats.totalAttempted++;
-          try {
-            let totalScore: number;
-            try {
-              totalScore = calculateTeamScore(teamWithPlayers);
-            } catch (scoreError) {
-              stats.failedCreations++;
-              stats.errors.push({
-                teamId: team.id,
-                leagueId: league.id,
-                error:
-                  scoreError instanceof Error
-                    ? scoreError.message
-                    : 'Score calculation failed',
-                type: 'SCORE_CALCULATION',
-              });
-              continue; // Skip DB creation if score calculation fails
-            }
-
-            await prisma.timelineEntry.create({
-              data: {
-                leagueId: league.id,
-                teamId: team.id,
-                tournamentId,
-                timestamp,
-                totalScore,
-                roundNumber: currentRound,
-              },
-            });
-            stats.successfulCreations++;
-          } catch (dbError) {
-            stats.failedCreations++;
-            stats.errors.push({
-              teamId: team.id,
+          await prisma.timelineEntry.create({
+            data: {
               leagueId: league.id,
-              error:
-                dbError instanceof Error ? dbError.message : 'Database error',
-              type: 'DB_ERROR',
-            });
-          }
+              teamId: team.id,
+              tournamentId,
+              timestamp,
+              totalScore,
+              roundNumber: currentRound,
+            },
+          });
         }
       }
-
-      return stats;
     } catch (error) {
       console.error('Error creating timeline entries:', error);
       throw error;
@@ -161,100 +87,36 @@ export class TimelineService {
     teamIds?: string[]
   ) {
     try {
-      // Build where clause dynamically to avoid overly strict filtering
-      const where: any = {
-        leagueId,
-        tournamentId,
-      };
-
-      // Add team filter if teamIds are provided
-      if (teamIds && teamIds.length > 0) {
-        where.teamId = {
-          in: teamIds,
-        };
-      }
-
-      // Only add timestamp filters if both start and end are provided
-      if (startTime && endTime) {
-        where.timestamp = {
-          gte: startTime,
-          lte: endTime,
-        };
-      }
-      // If only start time is provided
-      else if (startTime) {
-        where.timestamp = {
-          gte: startTime,
-        };
-      }
-      // If only end time is provided
-      else if (endTime) {
-        where.timestamp = {
-          lte: endTime,
-        };
-      }
-
-      // Get tournament and timeline entries in parallel
-      const [tournament, timelineEntries] = await Promise.all([
-        prisma.tournament.findUnique({
-          where: { id: tournamentId },
-          select: {
-            id: true,
-            name: true,
-            currentRound: true,
-            status: true,
-            startDate: true,
+      // Get all timeline entries for the league within the time range
+      const timelineEntries = await prisma.timelineEntry.findMany({
+        where: {
+          leagueId,
+          tournamentId,
+          timestamp: {
+            gte: startTime,
+            lte: endTime,
           },
-        }),
-        prisma.timelineEntry.findMany({
-          where,
-          select: {
-            timestamp: true,
-            totalScore: true,
-            roundNumber: true,
-            teamId: true,
-            team: {
-              select: {
-                name: true,
-                color: true,
-              },
-            },
-          },
-          orderBy: {
-            timestamp: 'asc',
-          },
-        }),
-      ]);
+          ...(teamIds && teamIds.length > 0 ? { teamId: { in: teamIds } } : {}),
+        },
+        include: {
+          team: true,
+        },
+        orderBy: {
+          timestamp: 'asc',
+        },
+      });
+
+      // Get tournament details
+      const tournament = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+      });
 
       if (!tournament) {
         throw new Error('Tournament not found');
       }
 
-      interface TeamEntry {
-        id: string;
-        name: string;
-        color: string;
-        dataPoints: Array<{
-          timestamp: string;
-          score: number;
-          roundNumber: number | null;
-        }>;
-      }
-
-      // Pre-allocate the Map with teamIds if provided for better performance
-      const teamEntries = new Map<string, TeamEntry>(
-        teamIds?.map((id) => [
-          id,
-          {
-            id,
-            name: '',
-            color: '',
-            dataPoints: [],
-          },
-        ]) || []
-      );
-
-      // Process entries in a single pass
+      // Group entries by team
+      const teamEntries = new Map();
       timelineEntries.forEach((entry) => {
         if (!teamEntries.has(entry.teamId)) {
           teamEntries.set(entry.teamId, {
@@ -264,14 +126,11 @@ export class TimelineService {
             dataPoints: [],
           });
         }
-        const teamEntry = teamEntries.get(entry.teamId);
-        if (teamEntry) {
-          teamEntry.dataPoints.push({
-            timestamp: entry.timestamp.toISOString(),
-            score: entry.totalScore,
-            roundNumber: entry.roundNumber,
-          });
-        }
+        teamEntries.get(entry.teamId).dataPoints.push({
+          timestamp: entry.timestamp.toISOString(),
+          score: entry.totalScore,
+          roundNumber: entry.roundNumber,
+        });
       });
 
       return {
@@ -281,7 +140,6 @@ export class TimelineService {
           name: tournament.name,
           currentRound: tournament.currentRound,
           status: tournament.status,
-          startDate: tournament.startDate.toISOString(),
         },
       };
     } catch (error) {
