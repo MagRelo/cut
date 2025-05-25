@@ -1,3 +1,4 @@
+import InfoScorecard from '../components/common/InfoScorecard';
 import React from 'react';
 import { Link } from 'react-router-dom';
 // import InfoScorecard from '../components/common/InfoScorecard';
@@ -44,17 +45,27 @@ export const Home: React.FC = () => {
             set your lineup
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            Select any four players from the tournament field each week. Join a
-            league to compete with your friends.
+            Select any four players from the field each week. Points are earned
+            using Stableford scoring:
           </p>
+          <div className='mt-4 max-w-xs relative overflow-hidden'>
+            <div
+              className='absolute inset-0 pointer-events-none z-10'
+              style={{
+                background:
+                  'linear-gradient(to right, #f9fafb 0%, transparent 2%, transparent 98%, #f9fafb 100%)',
+              }}
+            />
+            <InfoScorecard />
+          </div>
         </div>
         <div>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
             throw it in the group chat
           </h3>
           <p className='text-gray-700 max-w-xs'>
-            It's a good excuse to stay in touch and talk about golf - each and
-            every week.
+            It's a easy excuse to stay in touch and talk about golf. Keep the
+            group chat alive.
           </p>
         </div>
       </div>

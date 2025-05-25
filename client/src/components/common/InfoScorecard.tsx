@@ -1,9 +1,9 @@
 import React from 'react';
 
 // Dummy data for 7 holes
-const dummyPars = [4, 5, 4, 4, 3, 5, 4];
-const dummyScores = [4, 3, 3, 4, 4, 7, 4];
-const dummyStableford = [0, 5, 3, 0, -1, -3, 0];
+const dummyPars = [5, 4, 4, 3, 5];
+const dummyScores = [3, 3, 4, 4, 7];
+const dummyStableford = [5, 3, 0, -1, -3];
 
 export const InfoScorecard: React.FC = () => {
   return (
@@ -15,7 +15,7 @@ export const InfoScorecard: React.FC = () => {
               <th className='px-3 py-2 text-left text-xs font-bold text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300'>
                 Hole
               </th>
-              {[...Array(7)].map((_, i) => (
+              {[...Array(5)].map((_, i) => (
                 <th
                   key={i}
                   className='px-2 py-2 text-center text-xs font-bold text-gray-500 min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300'>
@@ -81,7 +81,7 @@ export const InfoScorecard: React.FC = () => {
                 return (
                   <td
                     key={i}
-                    className={`px-2 py-2 text-center text-xs font-medium ${pointsClass} min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300`}>
+                    className={`px-2 py-2 text-center text-xs ${pointsClass} font-medium  min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300`}>
                     {points}
                   </td>
                 );
