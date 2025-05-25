@@ -67,7 +67,7 @@ export const Home: React.FC = () => {
           </h3>
           <p className='text-gray-700 max-w-xs'>
             <span className='text-lg font-display font-bold'>the Cut</span>{' '}
-            gives you the ingredients—now let the chat cook. Fresh action every
+            gives you the ingredients—now let the boys cook. Fresh action every
             week to keep the conversation popping.
           </p>
         </div>
