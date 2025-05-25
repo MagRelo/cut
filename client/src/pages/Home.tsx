@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+// import InfoScorecard from '../components/common/InfoScorecard';
 
 export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
@@ -79,6 +80,10 @@ export const Home: React.FC = () => {
           Leagues
         </Link>
       </div>
+      {/* 
+      <div className='mt-8'>
+        <InfoScorecard />
+      </div> */}
 
       {/* Keep this for later */}
       {/* 
