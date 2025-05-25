@@ -1,21 +1,25 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { ResetPassword } from './pages/ResetPassword';
-import { AdminPage } from './pages/AdminPage';
-import { Navigation } from './components/common/Navigation';
+
 import { AuthProvider } from './contexts/AuthContext';
 import { TournamentProvider } from './contexts/TournamentContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
+
+import { Login } from './pages/user/Login';
+import { Register } from './pages/user/Register';
+import { ForgotPassword } from './pages/user/ForgotPassword';
+import { ResetPassword } from './pages/user/ResetPassword';
+import { AdminPage } from './pages/user/AdminPage';
+import { UserSettings } from './pages/user/UserSettings';
+
+import { Home } from './pages/Home';
 import { PublicLeagueList } from './pages/PublicLeagueList';
 import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
 import { PublicCreateLeague } from './pages/PublicCreateLeague';
-import { UserSettings } from './pages/UserSettings';
 import { PublicSingleTeam } from './pages/PublicSingleTeam';
+
 import { PublicLeagueLayout } from './components/layouts/PublicLeagueLayout';
+import { Navigation } from './components/common/Navigation';
+import { ProtectedRoute } from './components/ProtectedRoute';
 // import { PublicTeamFormComponent } from 'components/team/PublicTeamFormComponent';
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 

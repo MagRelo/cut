@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { api } from '../../services/api';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 interface User {
   id: string;
