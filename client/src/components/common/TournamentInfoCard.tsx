@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
@@ -7,6 +7,16 @@ import { useTournament } from '../../contexts/TournamentContext';
 export const TournamentInfoCard: React.FC = () => {
   const { currentTournament, isLoading, error } = useTournament();
   const location = useLocation();
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (isLoading) {
     return (
@@ -34,7 +44,11 @@ export const TournamentInfoCard: React.FC = () => {
         <>
           <div
             className='absolute inset-0 bg-cover bg-center'
-            style={{ backgroundImage: `url(${currentTournament.beautyImage})` }}
+            style={{
+              backgroundImage: `url(${currentTournament.beautyImage})`,
+              transform: `translateY(${scrollY * 0.2}px)`,
+              transition: 'transform 0.1s linear',
+            }}
           />
           <div className='absolute inset-0 bg-black/50' />
         </>
