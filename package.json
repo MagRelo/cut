@@ -25,7 +25,7 @@
     "test:ui": "npm run test:ui --workspace=server",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "deploy": "npm run client:build && npm run server:build && npm run server:deploy",
-    "get-team-totals": "tsx scripts/getTeamTotals.ts"
+    "get-team-totals": "tsx server/scripts/getTeamTotals.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

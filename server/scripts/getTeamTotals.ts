@@ -1,4 +1,4 @@
-import { prisma } from '../server/src/lib/prisma';
+import { prisma } from '../src/lib/prisma';
 
 async function getTeamTotals(tournamentId: string, leagueId: string) {
   try {
@@ -37,11 +37,6 @@ async function getTeamTotals(tournamentId: string, leagueId: string) {
     const teamTotals = league.leagueTeams.map((lt) => {
       const team = lt.team;
       const total = team.players.reduce((sum, tp) => {
-        // Debug player info
-        console.log(
-          `\nPlayer: ${tp.player.pga_displayName || tp.player.pga_firstName}`
-        );
-
         const tournamentPlayer = tp.player.tournamentPlayers[0];
         if (!tournamentPlayer) {
           console.log('No tournament data found for player');
@@ -52,12 +47,6 @@ async function getTeamTotals(tournamentId: string, leagueId: string) {
           (tournamentPlayer.total || 0) +
           (tournamentPlayer.cut || 0) +
           (tournamentPlayer.bonus || 0);
-        console.log(`Tournament data:`, {
-          total: tournamentPlayer.total,
-          cut: tournamentPlayer.cut,
-          bonus: tournamentPlayer.bonus,
-          calculatedTotal: playerTotal,
-        });
 
         return sum + playerTotal;
       }, 0);
