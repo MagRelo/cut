@@ -253,6 +253,7 @@ export const PublicLeagueLobby: React.FC = () => {
                       key={team.id}
                       team={team}
                       roundDisplay={currentTournament?.roundDisplay}
+                      tournamentStatus={currentTournament?.status}
                     />
                   </div>
                 ))

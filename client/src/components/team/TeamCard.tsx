@@ -5,6 +5,7 @@ import { PlayerTable } from '../player/PlayerTable';
 interface TeamCardProps {
   team: Team;
   roundDisplay?: string;
+  tournamentStatus?: string;
 }
 
 interface LabelProps {
@@ -58,8 +59,15 @@ const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
   </span>
 );
 
-export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
+export const TeamCard: React.FC<TeamCardProps> = ({
+  team,
+  roundDisplay,
+  tournamentStatus,
+}) => {
   const [expanded, setExpanded] = React.useState(false);
+
+  // disable the team card expanded button if the tournament is not active
+  const isTournamentActive = tournamentStatus !== 'NOT_STARTED';
 
   // Calculate team total
   const teamTotal = team.players.reduce(
@@ -119,7 +127,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
   return (
     <div>
       <div
-        onClick={() => setExpanded((prev) => !prev)}
+        onClick={() => isTournamentActive && setExpanded((prev) => !prev)}
         className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer'
         role='button'
         tabIndex={0}
@@ -157,21 +165,25 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, roundDisplay }) => {
             <div className='flex items-center flex-shrink-0'>
               <div className='text-sm font-medium text-gray-500 min-w-[65px] flex items-center'>
                 <div className='flex items-center w-full p-1 rounded'>
-                  <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                      expanded ? 'rotate-180' : ''
-                    }`}
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'>
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M19 9l-7 7-7-7'
-                    />
-                  </svg>
-                  <Label className='ml-1'>TEAM</Label>
+                  {isTournamentActive && (
+                    <>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                          expanded ? 'rotate-180' : ''
+                        }`}
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'>
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M19 9l-7 7-7-7'
+                        />
+                      </svg>
+                      <Label className='ml-1'>TEAM</Label>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
