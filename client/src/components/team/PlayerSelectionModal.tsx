@@ -36,6 +36,11 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   const [sortField, setSortField] = useState<SortField>('fedex');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
+  const handleClose = () => {
+    setSearchQuery('');
+    onClose();
+  };
+
   const filteredPlayers = availablePlayers
     .filter((player) => {
       const fullName = `${player.pga_firstName || ''} ${
@@ -154,7 +159,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                 Leave Empty
               </button>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300'>
                 Close
               </button>
