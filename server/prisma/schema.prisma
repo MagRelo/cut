@@ -12,36 +12,34 @@ model User {
   email             String             @unique
   password          String
   name              String
-  userType          String             @default("USER") // Can be "USER" or "ADMIN"
+  userType          String             @default("USER")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   ownedLeagues      League[]           @relation("LeagueCommissioner")
   leagueMemberships LeagueMembership[]
-  teams             Team[]
+  teams             Team?
   orderLogs         UserOrderLog[]
 }
 
-
 model League {
-  id             String             @id @default(cuid())
-  name           String
-  description    String?
-  isPrivate      Boolean            @default(false)
-  inviteCode     String?            @unique
-  maxTeams       Int                @default(8)
-  commissioner   User               @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
-  commissionerId String
-  members        LeagueMembership[]
-  settings       LeagueSettings?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id              String             @id @default(cuid())
+  name            String
+  description     String?
+  isPrivate       Boolean            @default(false)
+  inviteCode      String?            @unique
+  maxTeams        Int                @default(8)
+  commissionerId  String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  commissioner    User               @relation("LeagueCommissioner", fields: [commissionerId], references: [id])
+  members         LeagueMembership[]
+  settings        LeagueSettings?
+  leagueTeams     LeagueTeam[]
   timelineEntries TimelineEntry[]
-  leagueTeams    LeagueTeam[]
 }
 
 model LeagueSettings {
   id             String    @id @default(cuid())
-  league         League    @relation(fields: [leagueId], references: [id])
   leagueId       String    @unique
   rosterSize     Int       @default(8)
   weeklyStarters Int       @default(4)
@@ -51,91 +49,65 @@ model LeagueSettings {
   seasonEnd      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  league         League    @relation(fields: [leagueId], references: [id])
 }
 
 model LeagueMembership {
   id       String   @id @default(cuid())
-  user     User     @relation(fields: [userId], references: [id])
   userId   String
-  league   League   @relation(fields: [leagueId], references: [id])
   leagueId String
   role     String   @default("MEMBER")
   joinedAt DateTime @default(now())
+  league   League   @relation(fields: [leagueId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, leagueId])
 }
 
 model Team {
-  id        String   @id @default(cuid())
-  name      String
-  color     String   @default("#059669")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  owner     User     @relation(fields: [userId], references: [id])
-  userId    String   @unique
-  players   TeamPlayer[]
+  id              String          @id @default(cuid())
+  name            String
+  color           String          @default("#059669")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  userId          String          @unique
+  leagueTeams     LeagueTeam[]
+  owner           User            @relation(fields: [userId], references: [id])
+  TeamPlayer      TeamPlayer[]
   timelineEntries TimelineEntry[]
-  leagueTeams LeagueTeam[]
 }
 
 model LeagueTeam {
   id        String   @id @default(cuid())
-  league    League   @relation(fields: [leagueId], references: [id])
   leagueId  String
-  team      Team     @relation(fields: [teamId], references: [id])
   teamId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  league    League   @relation(fields: [leagueId], references: [id])
+  team      Team     @relation(fields: [teamId], references: [id])
 
   @@unique([leagueId, teamId])
   @@index([leagueId])
   @@index([teamId])
 }
 
-model TeamPlayer {
-  id                  String   @id @default(cuid())
-  team                Team     @relation(fields: [teamId], references: [id])
-  teamId              String
-  player              Player   @relation(fields: [playerId], references: [id])
-  playerId            String
-  addedAt             DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  active              Boolean  @default(true)
-
-  @@unique([teamId, playerId])
-  @@index([teamId])
-  @@index([playerId])
-}
-
-
 model Player {
-  // Internal ID Management
-  id          String   @id @default(cuid())
-
-  // insert additional PGA data
-  
-  // Additional PGA Tour Data (Optional)
-  pga_pgaTourId     String?  @unique
-  pga_imageUrl      String?  
-  pga_displayName   String?  
+  id                String             @id @default(cuid())
+  pga_pgaTourId     String?            @unique
+  pga_imageUrl      String?
+  pga_displayName   String?
   pga_firstName     String?
   pga_lastName      String?
   pga_shortName     String?
   pga_country       String?
   pga_countryFlag   String?
   pga_age           Int?
-  
-  // Status Fields
-  isActive    Boolean   @default(false)
-  inField     Boolean   @default(false)
-
-  // Metadata
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastSyncedAt DateTime?
-
-  // Relationships (maintaining existing relationships)
-  teams       TeamPlayer[]
+  isActive          Boolean            @default(false)
+  inField           Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  lastSyncedAt      DateTime?
+  TeamPlayer        TeamPlayer[]
   tournamentPlayers TournamentPlayer[]
 
   @@index([pga_pgaTourId])
@@ -143,10 +115,9 @@ model Player {
   @@index([inField])
 }
 
-
 model Tournament {
   id                 String             @id @default(cuid())
-  pgaTourId          String             
+  pgaTourId          String
   name               String
   startDate          DateTime
   endDate            DateTime
@@ -156,11 +127,11 @@ model Tournament {
   timezone           String
   venue              Json?
   purse              Float?
-  status             String 
+  status             String
   roundStatusDisplay String?
   roundDisplay       String?
   currentRound       Int?
-  weather            Json? // Store weather data as JSON
+  weather            Json?
   beautyImage        String?
   cutLine            String?
   cutRound           String?
@@ -173,9 +144,9 @@ model Tournament {
 
 model SystemProcessRecord {
   id          String   @id @default(cuid())
-  processType String   // Type of process (e.g., "SCORE_UPDATE")
-  status      String   // SUCCESS or FAILURE
-  processData Json     // Process-specific data
+  processType String
+  status      String
+  processData Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -186,29 +157,28 @@ model SystemProcessRecord {
 
 model UserOrderLog {
   id                 String   @id @default(cuid())
-  user               User     @relation(fields: [userId], references: [id])
   userId             String
-  orderType          String // 'BUY' or 'SELL'
+  orderType          String
   asset              String
   amount             Float
   price              Float
-  status             String // 'PENDING', 'COMPLETED', 'FAILED'
-  orderAttemptLog    Json? // Raw response from order attempt
-  orderResultLog     Json? // Raw response from order result
+  status             String
+  orderAttemptLog    Json?
+  orderResultLog     Json?
   hyperliquidOrderId String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])
 }
 
-
 model OddsCache {
   id            String   @id @default(cuid())
   tournamentKey String
-  bookmakers    String? // Stored as comma-separated string
-  data          Json // Stored odds data
+  bookmakers    String?
+  data          Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -217,45 +187,55 @@ model OddsCache {
 }
 
 model TimelineEntry {
-  id          String   @id @default(cuid())
-  leagueId    String
-  teamId      String
+  id           String     @id @default(cuid())
+  leagueId     String
+  teamId       String
   tournamentId String
-  timestamp   DateTime
-  totalScore  Int
-  roundNumber Int?     // Current round when score was recorded
-
-  league      League     @relation(fields: [leagueId], references: [id])
-  team        Team       @relation(fields: [teamId], references: [id])
-  tournament  Tournament @relation(fields: [tournamentId], references: [id])
+  timestamp    DateTime
+  totalScore   Int
+  roundNumber  Int?
+  league       League     @relation(fields: [leagueId], references: [id])
+  team         Team       @relation(fields: [teamId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
 
   @@index([leagueId, tournamentId, timestamp])
   @@index([teamId, tournamentId, timestamp])
-  @@index([tournamentId, timestamp])
-  @@index([leagueId, teamId, tournamentId])
-  @@index([timestamp])
 }
 
 model TournamentPlayer {
-  id          String     @id @default(cuid())
-  tournament  Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentId String
-  player      Player     @relation(fields: [playerId], references: [id])
-  playerId    String
+  id                  String     @id @default(cuid())
+  tournamentId        String
+  playerId            String
   leaderboardPosition String?
-  leaderboardTotal String?
-  r1          Json? // { strokes: number }
-  r2          Json? // { strokes: number }
-  r3          Json? // { strokes: number }
-  r4          Json? // { strokes: number }
-  cut         Int?
-  bonus       Int?
-  total       Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  r1                  Json?
+  r2                  Json?
+  r3                  Json?
+  r4                  Json?
+  cut                 Int?
+  bonus               Int?
+  total               Int?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  leaderboardTotal    String?
+  player              Player     @relation(fields: [playerId], references: [id])
+  tournament          Tournament @relation(fields: [tournamentId], references: [id])
 
   @@unique([tournamentId, playerId])
   @@index([tournamentId])
   @@index([playerId])
 }
 
+model TeamPlayer {
+  id        String   @id
+  teamId    String
+  playerId  String
+  addedAt   DateTime @default(now())
+  updatedAt DateTime
+  active    Boolean  @default(true)
+  Player    Player   @relation(fields: [playerId], references: [id])
+  Team      Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+  @@index([teamId])
+}
