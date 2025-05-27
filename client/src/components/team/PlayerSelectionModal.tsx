@@ -3,6 +3,17 @@ import { Dialog } from '@headlessui/react';
 import type { Player } from '../../types/player';
 import { PlayerSelectionCard } from './PlayerSelectionCard';
 
+interface LabelProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
+  <span className={`text-sm font-medium text-gray-400 pr-1 ${className}`}>
+    {children}
+  </span>
+);
+
 interface PlayerSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,32 +77,23 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
       <div className='fixed inset-0 flex items-center justify-center p-4'>
         <Dialog.Panel className='mx-auto max-w-4xl w-full bg-white rounded-xl shadow-lg'>
           <div className='p-4 sm:p-6'>
-            <Dialog.Title className='text-xl font-semibold text-gray-900 mb-4'>
-              Select a Player
+            <Dialog.Title className='text-2xl font-semibold text-gray-900 mb-2'>
+              Select a Golfer
             </Dialog.Title>
 
             {/* Search and Sort Controls */}
-            <div className='mb-4 space-y-4'>
-              <div className='relative'>
-                <input
-                  type='text'
-                  placeholder='Search players...'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                />
-              </div>
-
-              <div className='flex gap-4'>
+            <div className='mb-3 space-y-4'>
+              <div className='flex justify-center items-center gap-4'>
+                <Label>SORT:</Label>
                 <button
-                  onClick={() => toggleSort('name')}
+                  onClick={() => toggleSort('fedex')}
                   className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    sortField === 'name'
+                    sortField === 'fedex'
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}>
-                  Name{' '}
-                  {sortField === 'name' &&
+                  FedEx{' '}
+                  {sortField === 'fedex' &&
                     (sortDirection === 'asc' ? '↑' : '↓')}
                 </button>
                 <button
@@ -106,21 +108,21 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     (sortDirection === 'asc' ? '↑' : '↓')}
                 </button>
                 <button
-                  onClick={() => toggleSort('fedex')}
+                  onClick={() => toggleSort('name')}
                   className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    sortField === 'fedex'
+                    sortField === 'name'
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}>
-                  FedEx{' '}
-                  {sortField === 'fedex' &&
+                  Name{' '}
+                  {sortField === 'name' &&
                     (sortDirection === 'asc' ? '↑' : '↓')}
                 </button>
               </div>
             </div>
 
             {/* Player Grid */}
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-2'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-50 border border-gray-300 rounded-lg p-2'>
               {filteredPlayers.map((player) => (
                 <PlayerSelectionCard
                   key={player.id}
@@ -131,16 +133,29 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               ))}
             </div>
 
+            {/* Search Input */}
+            <div className='mt-4'>
+              <div className='relative'>
+                <input
+                  type='text'
+                  placeholder='Search players...'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                />
+              </div>
+            </div>
+
             {/* Close Button */}
             <div className='mt-4 sm:mt-6 flex justify-end space-x-4'>
               <button
                 onClick={() => onSelect(null)}
-                className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200'>
+                className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300'>
                 Leave Empty
               </button>
               <button
                 onClick={onClose}
-                className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200'>
+                className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300'>
                 Close
               </button>
             </div>
