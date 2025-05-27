@@ -77,18 +77,6 @@ CREATE TABLE "LeagueTeam" (
 );
 
 -- CreateTable
-CREATE TABLE "TeamPlayer" (
-    "id" TEXT NOT NULL,
-    "teamId" TEXT NOT NULL,
-    "playerId" TEXT NOT NULL,
-    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "active" BOOLEAN NOT NULL DEFAULT true,
-
-    CONSTRAINT "TeamPlayer_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Player" (
     "id" TEXT NOT NULL,
     "pga_pgaTourId" TEXT,
@@ -100,6 +88,9 @@ CREATE TABLE "Player" (
     "pga_country" TEXT,
     "pga_countryFlag" TEXT,
     "pga_age" INTEGER,
+    "pga_owgr" TEXT,
+    "pga_fedex" TEXT,
+    "pga_performance" JSONB,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
     "inField" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -207,8 +198,21 @@ CREATE TABLE "TournamentPlayer" (
     "total" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "leaderboardTotal" TEXT,
 
     CONSTRAINT "TournamentPlayer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TeamPlayer" (
+    "id" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "playerId" TEXT NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "TeamPlayer_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -234,15 +238,6 @@ CREATE INDEX "LeagueTeam_teamId_idx" ON "LeagueTeam"("teamId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LeagueTeam_leagueId_teamId_key" ON "LeagueTeam"("leagueId", "teamId");
-
--- CreateIndex
-CREATE INDEX "TeamPlayer_teamId_idx" ON "TeamPlayer"("teamId");
-
--- CreateIndex
-CREATE INDEX "TeamPlayer_playerId_idx" ON "TeamPlayer"("playerId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TeamPlayer_teamId_playerId_key" ON "TeamPlayer"("teamId", "playerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Player_pga_pgaTourId_key" ON "Player"("pga_pgaTourId");
@@ -292,6 +287,15 @@ CREATE INDEX "TournamentPlayer_playerId_idx" ON "TournamentPlayer"("playerId");
 -- CreateIndex
 CREATE UNIQUE INDEX "TournamentPlayer_tournamentId_playerId_key" ON "TournamentPlayer"("tournamentId", "playerId");
 
+-- CreateIndex
+CREATE INDEX "TeamPlayer_playerId_idx" ON "TeamPlayer"("playerId");
+
+-- CreateIndex
+CREATE INDEX "TeamPlayer_teamId_idx" ON "TeamPlayer"("teamId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TeamPlayer_teamId_playerId_key" ON "TeamPlayer"("teamId", "playerId");
+
 -- AddForeignKey
 ALTER TABLE "League" ADD CONSTRAINT "League_commissionerId_fkey" FOREIGN KEY ("commissionerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -299,10 +303,10 @@ ALTER TABLE "League" ADD CONSTRAINT "League_commissionerId_fkey" FOREIGN KEY ("c
 ALTER TABLE "LeagueSettings" ADD CONSTRAINT "LeagueSettings_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LeagueMembership" ADD CONSTRAINT "LeagueMembership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LeagueMembership" ADD CONSTRAINT "LeagueMembership_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LeagueMembership" ADD CONSTRAINT "LeagueMembership_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LeagueMembership" ADD CONSTRAINT "LeagueMembership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Team" ADD CONSTRAINT "Team_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -312,12 +316,6 @@ ALTER TABLE "LeagueTeam" ADD CONSTRAINT "LeagueTeam_leagueId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "LeagueTeam" ADD CONSTRAINT "LeagueTeam_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "TeamPlayer" ADD CONSTRAINT "TeamPlayer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "TeamPlayer" ADD CONSTRAINT "TeamPlayer_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserOrderLog" ADD CONSTRAINT "UserOrderLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -332,7 +330,13 @@ ALTER TABLE "TimelineEntry" ADD CONSTRAINT "TimelineEntry_teamId_fkey" FOREIGN K
 ALTER TABLE "TimelineEntry" ADD CONSTRAINT "TimelineEntry_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TournamentPlayer" ADD CONSTRAINT "TournamentPlayer_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TournamentPlayer" ADD CONSTRAINT "TournamentPlayer_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TournamentPlayer" ADD CONSTRAINT "TournamentPlayer_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TeamPlayer" ADD CONSTRAINT "TeamPlayer_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TeamPlayer" ADD CONSTRAINT "TeamPlayer_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

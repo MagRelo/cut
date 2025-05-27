@@ -102,6 +102,9 @@ model Player {
   pga_country       String?
   pga_countryFlag   String?
   pga_age           Int?
+  pga_owgr          String?
+  pga_fedex         String?
+  pga_performance   Json?
   isActive          Boolean            @default(false)
   inField           Boolean            @default(false)
   createdAt         DateTime           @default(now())

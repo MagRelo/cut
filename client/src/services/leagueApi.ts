@@ -154,7 +154,7 @@ export const useLeagueApi = () => {
         {
           name: data.name,
           description: data.description,
-          userId: user.id,
+          userId: user.id.trim(),
         },
         true
       );

@@ -9,6 +9,19 @@ export interface Player {
   pga_country?: string | null;
   pga_countryFlag?: string | null;
   pga_age?: number | null;
+  pga_performance?: {
+    tour: string;
+    season: string;
+    displaySeason: string;
+    stats: Array<{
+      title: string;
+      value: string;
+      career: string;
+      wide: boolean;
+    }>;
+  } | null;
+  pga_fedex?: number;
+  pga_owgr?: number;
   isActive: boolean;
   inField: boolean;
   createdAt: Date;

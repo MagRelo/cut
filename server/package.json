@@ -25,7 +25,9 @@
     "deploy": "bash scripts/deploy.sh",
     "export:tournament-players": "tsx scripts/exportTournamentPlayersCSV.ts",
     "delete-team": "tsx scripts/deleteTeam.ts",
-    "delete-league": "tsx scripts/deleteLeague.ts"
+    "delete-league": "tsx scripts/deleteLeague.ts",
+    "update:profiles": "tsx scripts/updatePlayerProfiles.ts",
+    "update:scores": "tsx scripts/updateScores.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -6,6 +6,8 @@ import { useTournament } from '../../contexts/TournamentContext';
 
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
+import { PlayerSelectionModal } from '../team/PlayerSelectionModal';
+import { PlayerStats } from './PlayerStats';
 
 interface LabelProps {
   children: React.ReactNode;
@@ -67,6 +69,9 @@ export const TeamForm = ({
   const [teamName, setTeamName] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [teamColor, setTeamColor] = useState('#059669');
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(
+    null
+  );
 
   const teamApi = useTeamApi();
   const {
@@ -77,16 +82,9 @@ export const TeamForm = ({
   } = useTournament();
 
   const isEditingAllowed = (): boolean => {
-    if (!currentTournament) return false;
-    if (currentTournament.status === 'NOT_STARTED') return true;
-
-    // If the tournament has started, only allow editing if the team
-    // has not been updated since before the tournament starts, ie allow one edit
-    // if (!currentTournament.startDate) return false;
-    // if (!team?.updatedAt) return false;
-    // return new Date(currentTournament.startDate) > new Date(team.updatedAt);
-
-    return false;
+    const allowed =
+      !currentTournament || currentTournament.status === 'NOT_STARTED';
+    return allowed;
   };
 
   useEffect(() => {
@@ -130,17 +128,22 @@ export const TeamForm = ({
     setFormError(null);
 
     try {
+      // Filter out empty strings from players array
+      const filteredPlayers = selectedPlayers.filter(
+        (playerId) => playerId !== ''
+      );
+
       if (team) {
         const updatedTeam = await teamApi.updateTeam(team.id, {
           name: teamName,
-          players: selectedPlayers,
+          players: filteredPlayers,
           color: teamColor,
         });
         if (onSuccess) onSuccess(updatedTeam);
       } else {
         const newTeam = await teamApi.createTeam({
           name: teamName,
-          players: selectedPlayers,
+          players: filteredPlayers,
           color: teamColor,
           leagueId: leagueId || undefined,
         });
@@ -157,14 +160,13 @@ export const TeamForm = ({
     }
   };
 
-  const handlePlayerSelect = (
-    e: React.ChangeEvent<HTMLSelectElement>,
-    index: number
-  ) => {
-    const playerId = e.target.value;
-    const newPlayers = [...selectedPlayers];
-    newPlayers[index] = playerId;
-    setSelectedPlayers(newPlayers);
+  const handlePlayerSelect = (playerId: string | null) => {
+    if (selectedPlayerIndex !== null) {
+      const newSelectedPlayers = [...selectedPlayers];
+      newSelectedPlayers[selectedPlayerIndex] = playerId || '';
+      setSelectedPlayers(newSelectedPlayers);
+    }
+    setSelectedPlayerIndex(null);
   };
 
   if (loading || isTournamentLoading) {
@@ -188,9 +190,6 @@ export const TeamForm = ({
           {/* Team Setup */}
           {showTeamInfo && (
             <div className='space-y-4'>
-              {/* <h2 className='text-xl font-semibold text-gray-400 border-b border-gray-300'>
-                TEAM INFO
-              </h2> */}
               <div className='space-y-4'>
                 <div>
                   <Label htmlFor='team-name'>TEAM NAME</Label>
@@ -199,7 +198,6 @@ export const TeamForm = ({
                     id='team-name'
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
-                    // disabled={Boolean(team && !isEditingAllowed())} always allow editing
                     className='mt-1 block w-full rounded-lg border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed'
                     placeholder='Enter team name'
                   />
@@ -228,7 +226,6 @@ export const TeamForm = ({
                           value={color}
                           checked={teamColor === color}
                           onChange={() => setTeamColor(color)}
-                          // disabled={Boolean(team && !isEditingAllowed())} always allow editing
                           className='sr-only'
                         />
                         <span
@@ -250,12 +247,6 @@ export const TeamForm = ({
           {/* Select Your Golfers */}
           {showPlayerSelect && (
             <div className='space-y-4'>
-              {/* <h2 className='text-xl font-semibold text-gray-400 border-b border-gray-300'>
-                TEAM ROSTER
-              </h2> */}
-
-              {/* Info warning that editing is not allowed */}
-
               {!isEditingAllowed() && (
                 <>
                   <hr className='my-4' />
@@ -279,53 +270,47 @@ export const TeamForm = ({
                       GOLFER {index + 1}
                     </Label>
                     <div className='relative'>
-                      <select
-                        id={`player-${index}`}
-                        value={selectedPlayers[index] || ''}
-                        onChange={(e) => handlePlayerSelect(e, index)}
-                        disabled={!isEditingAllowed()}
-                        className='appearance-none block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-3 pr-10 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed'>
-                        <option value=''>Select a player...</option>
-                        {availablePlayers
-                          .filter(
-                            (p) =>
-                              !selectedPlayers.includes(p.id) ||
-                              selectedPlayers[index] === p.id
-                          )
-                          .sort(
-                            (a, b) =>
-                              (a.pga_lastName || '').localeCompare(
-                                b.pga_lastName || ''
-                              ) || 0
-                          )
-                          .map((player) => (
-                            <option key={player.id} value={player.id}>
-                              {`${player.pga_lastName || ''}, ${
-                                player.pga_firstName || ''
-                              }`}
-                            </option>
-                          ))}
-                      </select>
-                      <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3'>
-                        <svg
-                          className='h-5 w-5 text-gray-400'
-                          viewBox='0 0 20 20'
-                          fill='none'
-                          stroke='currentColor'>
-                          <path
-                            d='M7 7l3-3 3 3m0 6l-3 3-3-3'
-                            strokeWidth='1.5'
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
+                      {selectedPlayers[index] ? (
+                        <button
+                          type='button'
+                          onClick={() => {
+                            if (isEditingAllowed()) {
+                              setSelectedPlayerIndex(index);
+                            }
+                          }}
+                          disabled={!isEditingAllowed()}
+                          className='w-full px-3 py-2.5 text-left border border-gray-300 rounded-lg bg-white hover:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed'>
+                          <PlayerStats
+                            player={
+                              availablePlayers.find(
+                                (p) => p.id === selectedPlayers[index]
+                              ) || availablePlayers[0]
+                            }
                           />
-                        </svg>
-                      </div>
+                        </button>
+                      ) : (
+                        <button
+                          type='button'
+                          onClick={() => setSelectedPlayerIndex(index)}
+                          disabled={!isEditingAllowed()}
+                          className='w-full px-3 py-2.5 text-left border border-gray-300 rounded-lg bg-white hover:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed'>
+                          Select a player...
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          <PlayerSelectionModal
+            isOpen={selectedPlayerIndex !== null}
+            onClose={() => setSelectedPlayerIndex(null)}
+            onSelect={handlePlayerSelect}
+            availablePlayers={availablePlayers}
+            selectedPlayers={selectedPlayers}
+          />
 
           <div className='flex justify-end gap-3'>
             {onCancel && (

@@ -40,7 +40,7 @@ const createTeamInLeagueSchema = z.object({
 
 const updateTeamSchema = z.object({
   name: z.string().min(3).max(50).optional(),
-  players: z.array(z.string()).max(4).optional(),
+  players: z.array(z.string().nullable()).max(4).optional(),
   color: z.string().optional(),
 });
 
@@ -259,7 +259,7 @@ router.put('/:teamId', async (req, res) => {
       });
 
       // Filter out empty strings and create team players
-      const validPlayers = data.players.filter((playerId) => playerId !== '');
+      const validPlayers = data.players.filter((playerId) => playerId !== null);
       if (validPlayers.length > 0) {
         await prisma.teamPlayer.createMany({
           data: validPlayers.map((playerId) => ({

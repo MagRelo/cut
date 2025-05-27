@@ -1,6 +1,7 @@
 import { fetchScorecard } from '../lib/pgaScorecard.js';
 import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
 import { getActivePlayers } from '../lib/pgaField.js';
+import { getTournament } from '../lib/pgaTournament.js';
 import { prisma } from '../lib/prisma.js';
 
 interface TeamPlayerWithPlayer {
@@ -10,29 +11,6 @@ interface TeamPlayerWithPlayer {
     id: string;
     pga_pgaTourId: string | null;
   };
-}
-
-interface RoundData {
-  holes: {
-    pars: number[];
-    scores: number[];
-    stableford: number[];
-  };
-  total: number;
-  ratio: number;
-  icon: string;
-}
-
-interface ScorecardData {
-  playerId: string;
-  playerName: string;
-  tournamentId: string;
-  tournamentName: string;
-  R1: RoundData | null;
-  R2: RoundData | null;
-  R3: RoundData | null;
-  R4: RoundData | null;
-  stablefordTotal: number;
 }
 
 export class ScoreUpdateService {
@@ -143,8 +121,8 @@ export class ScoreUpdateService {
         return;
       }
 
-      const { players: leaderboardPlayers, ...tournamentData } =
-        await getPgaLeaderboard();
+      // use pgaTournament() to get tournemtn details
+      const tournamentData = await getTournament(tournament.pgaTourId); // this is the tournament id from the tournament table
 
       // Update tournament with latest leaderboard data
       await prisma.tournament.update({
@@ -154,11 +132,11 @@ export class ScoreUpdateService {
           roundStatusDisplay: tournamentData.roundStatusDisplay,
           roundDisplay: tournamentData.roundDisplay,
           currentRound: tournamentData.currentRound,
-          weather: tournamentData.weather,
+          weather: tournamentData.weather as any,
           beautyImage: tournamentData.beautyImage,
-          course: tournamentData.courseName,
-          city: tournamentData.location.split(',')[0].trim(),
-          state: tournamentData.location.split(',')[1].trim(),
+          course: tournamentData.courses[0].courseName,
+          city: tournamentData.city,
+          state: tournamentData.state,
           timezone: tournamentData.timezone,
         },
       });
@@ -182,6 +160,7 @@ export class ScoreUpdateService {
       console.log('Set inField to false for all other players.');
 
       // Update scores for active team players
+      const { players: leaderboardPlayers } = await getPgaLeaderboard();
       activePlayers = await this.getActiveTeamPlayers();
       console.log(`Found ${activePlayers.length} active team players`);
       const updatePromises = activePlayers.map((player) => {

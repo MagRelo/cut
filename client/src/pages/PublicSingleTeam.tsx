@@ -12,6 +12,7 @@ import { TeamForm } from '../components/team/TeamForm';
 import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
+import { PlayerStats } from '../components/team/PlayerStats';
 // import { UpgradeAnonymousUserForm } from '../components/UpgradeAnonymousUserForm';
 
 export const PublicSingleTeam: React.FC = () => {
@@ -184,22 +185,20 @@ export const PublicSingleTeam: React.FC = () => {
 
             {/* Player cards */}
             <div className='grid grid-cols-1 gap-3'>
-              {team.players
-                .slice()
-                .sort(
-                  (a, b) =>
-                    (b.total || 0) +
-                    (b.cut || 0) +
-                    (b.bonus || 0) -
-                    ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
-                )
-                .map((player) => (
-                  <PlayerCard
-                    key={player.id}
-                    player={player}
-                    roundDisplay={currentTournament?.roundDisplay || '1'}
-                  />
-                ))}
+              {team.players.map((player) => (
+                <div key={player.id}>
+                  {currentTournament?.status === 'NOT_STARTED' ? (
+                    <div className='bg-white rounded-lg shadow p-4'>
+                      <PlayerStats player={player.player} />
+                    </div>
+                  ) : (
+                    <PlayerCard
+                      player={player}
+                      roundDisplay={currentTournament?.roundDisplay || '1'}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
 
             {/* Last Update Time */}
