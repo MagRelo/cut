@@ -166,7 +166,10 @@ export const PublicLeagueLobby: React.FC = () => {
   }
 
   const teams: Team[] = league.teams ?? [];
-  const userHasTeam = teams.some((team) => team.userId === userId);
+  const userHasTeam =
+    league.leagueTeams?.some(
+      (leagueTeam) => leagueTeam.team.owner.id === userId
+    ) ?? false;
 
   return (
     <div className='px-4 py-4'>

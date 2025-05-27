@@ -65,7 +65,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
 
       <div className='fixed inset-0 flex items-center justify-center p-4'>
         <Dialog.Panel className='mx-auto max-w-4xl w-full bg-white rounded-xl shadow-lg'>
-          <div className='p-6'>
+          <div className='p-4 sm:p-6'>
             <Dialog.Title className='text-xl font-semibold text-gray-900 mb-4'>
               Select a Player
             </Dialog.Title>
@@ -120,7 +120,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             </div>
 
             {/* Player Grid */}
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-2'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-2'>
               {filteredPlayers.map((player) => (
                 <PlayerSelectionCard
                   key={player.id}
@@ -132,7 +132,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             </div>
 
             {/* Close Button */}
-            <div className='mt-6 flex justify-end space-x-4'>
+            <div className='mt-4 sm:mt-6 flex justify-end space-x-4'>
               <button
                 onClick={() => onSelect(null)}
                 className='px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200'>

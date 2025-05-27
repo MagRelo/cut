@@ -13,6 +13,7 @@ import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
 import { PlayerStats } from '../components/team/PlayerStats';
+import { PlayerSelectionModal } from '../components/team/PlayerSelectionModal';
 // import { UpgradeAnonymousUserForm } from '../components/UpgradeAnonymousUserForm';
 
 export const PublicSingleTeam: React.FC = () => {
@@ -22,12 +23,17 @@ export const PublicSingleTeam: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(
+    null
+  );
+  const [isSaving, setIsSaving] = useState(false);
 
   const teamApi = useTeamApi();
   const {
     currentTournament,
     isLoading: isTournamentLoading,
     error: tournamentError,
+    players: availablePlayers,
   } = useTournament();
   const { user } = useAuth();
 
@@ -98,6 +104,43 @@ export const PublicSingleTeam: React.FC = () => {
     await fetchTeam();
   };
 
+  const handlePlayerSelect = async (playerId: string | null) => {
+    if (selectedPlayerIndex === null || !team) return;
+
+    // Close modal immediately
+    setSelectedPlayerIndex(null);
+    setIsSaving(true);
+    try {
+      const updatedPlayers = [
+        ...(team?.players?.map((p) => p.player.id) || []),
+      ];
+      updatedPlayers[selectedPlayerIndex] = playerId || '';
+
+      // Filter out empty strings before sending to API
+      const validPlayers = updatedPlayers.filter((id) => id !== '');
+
+      await teamApi.updateTeam(team.id, {
+        name: team.name,
+        players: validPlayers,
+        color: team.color,
+      });
+
+      // Fetch the updated team to get the full TeamPlayer structure
+      const updatedTeam = await teamApi.getStandaloneTeam();
+      setTeam(updatedTeam);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'Failed to update player'
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isEditingAllowed = (): boolean => {
+    return !currentTournament || currentTournament.status === 'NOT_STARTED';
+  };
+
   if (isLoading || isTournamentLoading) {
     return (
       <div className='px-4 py-4'>
@@ -151,6 +194,8 @@ export const PublicSingleTeam: React.FC = () => {
             team={team}
             onSuccess={handleSuccess}
             onCancel={handleCancel}
+            showTeamInfo={true}
+            showPlayerSelect={false}
           />
         ) : (
           // Display Mode
@@ -185,20 +230,55 @@ export const PublicSingleTeam: React.FC = () => {
 
             {/* Player cards */}
             <div className='grid grid-cols-1 gap-3'>
-              {team.players.map((player) => (
-                <div key={player.id}>
-                  {currentTournament?.status === 'NOT_STARTED' ? (
-                    <div className='bg-white rounded-lg shadow p-4'>
-                      <PlayerStats player={player.player} />
+              {currentTournament?.status === 'NOT_STARTED'
+                ? // Show 4 slots in NOT_STARTED mode
+                  Array.from({ length: 4 }).map((_, index) => {
+                    const player = team?.players?.[index];
+                    return (
+                      <div key={index}>
+                        <div
+                          className='bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow relative'
+                          onClick={() => {
+                            if (isEditingAllowed()) {
+                              setSelectedPlayerIndex(index);
+                            }
+                          }}>
+                          {isEditingAllowed() && (
+                            <div className='absolute top-2 right-2 bg-emerald-100 text-emerald-600 p-1.5 rounded-md'>
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                className='h-5 w-5'
+                                fill='none'
+                                viewBox='0 0 24 24'
+                                stroke='currentColor'>
+                                <path
+                                  strokeLinecap='round'
+                                  strokeLinejoin='round'
+                                  strokeWidth={2}
+                                  d='M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z'
+                                />
+                              </svg>
+                            </div>
+                          )}
+                          <PlayerStats player={player?.player} />
+                          {isSaving && selectedPlayerIndex === index && (
+                            <div className='mt-2 text-sm text-gray-500'>
+                              Saving...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                : // Just map through existing players in other modes
+                  team?.players?.map((player) => (
+                    <div key={player.id}>
+                      <PlayerCard
+                        player={player}
+                        roundDisplay={currentTournament?.roundDisplay || '1'}
+                      />
                     </div>
-                  ) : (
-                    <PlayerCard
-                      player={player}
-                      roundDisplay={currentTournament?.roundDisplay || '1'}
-                    />
-                  )}
-                </div>
-              ))}
+                  ))}
             </div>
 
             {/* Last Update Time */}
@@ -274,7 +354,7 @@ export const PublicSingleTeam: React.FC = () => {
         </button>
       </div>
       <div className='space-y-2'>
-        {team?.leagues.map((league) => (
+        {team?.leagues?.map((league) => (
           <LeagueCard key={league.id} league={league} />
         ))}
       </div>
@@ -319,6 +399,14 @@ export const PublicSingleTeam: React.FC = () => {
       <div className='flex justify-center my-8'>
         <Share url={window.location.href} title='Share the Cut' subtitle='' />
       </div>
+
+      <PlayerSelectionModal
+        isOpen={selectedPlayerIndex !== null}
+        onClose={() => setSelectedPlayerIndex(null)}
+        onSelect={handlePlayerSelect}
+        availablePlayers={availablePlayers || []}
+        selectedPlayers={team?.players?.map((p) => p.player.id) || []}
+      />
     </div>
   );
 };
