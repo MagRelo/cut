@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth.js';
-import playersRoutes from './routes/player.js';
 import teamsRoutes from './routes/teams.js';
 import adminRoutes from './routes/admin.js';
 import tournamentRoutes from './routes/tournament.js';
@@ -77,7 +76,6 @@ app.use('/api/timeline', timelineRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teams', teamsRoutes);
-app.use('/api/players', playersRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/public', publicLeagueRoutes);
 

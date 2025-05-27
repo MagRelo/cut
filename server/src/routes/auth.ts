@@ -5,11 +5,13 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { Prisma, User, Team, League } from '@prisma/client';
+import { Prisma, User, Team, League, LeagueTeam } from '@prisma/client';
 import { AuthUser } from '../middleware/auth.js';
 
 type TeamWithLeague = Team & {
-  league: Pick<League, 'id' | 'name'>;
+  leagueTeams: (LeagueTeam & {
+    league: Pick<League, 'id' | 'name'>;
+  })[];
 };
 
 const router = express.Router();
@@ -79,20 +81,22 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    const teams = user.teams
+      ? (user.teams as unknown as TeamWithLeague).leagueTeams.map((lt) => ({
+          id: (user.teams as unknown as TeamWithLeague).id,
+          name: (user.teams as unknown as TeamWithLeague).name,
+          leagueId: lt.league.id,
+          leagueName: lt.league.name,
+        }))
+      : [];
+
     return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       userType: user.userType,
       token,
-      teams: user.teams.flatMap((team) =>
-        team.leagueTeams.map((lt) => ({
-          id: team.id,
-          name: team.name,
-          leagueId: lt.league.id,
-          leagueName: lt.league.name,
-        }))
-      ),
+      teams,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -154,7 +158,8 @@ router.post('/register', async (req, res) => {
         });
 
         // Transfer all teams and their league associations
-        for (const team of anonymousUser.teams) {
+        if (anonymousUser.teams) {
+          const team = anonymousUser.teams as unknown as TeamWithLeague;
           // Update the team's owner
           await tx.team.update({
             where: { id: team.id },
@@ -194,21 +199,24 @@ router.post('/register', async (req, res) => {
       });
 
       // Return user data and token
+      const teams = userWithTeams?.teams
+        ? (userWithTeams.teams as unknown as TeamWithLeague).leagueTeams.map(
+            (lt) => ({
+              id: (userWithTeams.teams as unknown as TeamWithLeague).id,
+              name: (userWithTeams.teams as unknown as TeamWithLeague).name,
+              leagueId: lt.league.id,
+              leagueName: lt.league.name,
+            })
+          )
+        : [];
+
       return res.status(201).json({
         id: result.id,
         email: result.email,
         name: result.name,
         userType: result.userType,
         token,
-        teams:
-          userWithTeams?.teams.flatMap((team) =>
-            team.leagueTeams.map((lt) => ({
-              id: team.id,
-              name: team.name,
-              leagueId: lt.league.id,
-              leagueName: lt.league.name,
-            }))
-          ) || [],
+        teams,
       });
     }
 
@@ -356,19 +364,25 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    let teams: any[] = [];
+    if (user.teams) {
+      const team = user.teams as unknown as TeamWithLeague;
+      teams = team.leagueTeams.map(
+        (lt: TeamWithLeague['leagueTeams'][number]) => ({
+          id: team.id,
+          name: team.name,
+          leagueId: lt.league.id,
+          leagueName: lt.league.name,
+        })
+      );
+    }
+
     return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       userType: user.userType,
-      teams: user.teams.flatMap((team) =>
-        team.leagueTeams.map((lt) => ({
-          id: team.id,
-          name: team.name,
-          leagueId: lt.league.id,
-          leagueName: lt.league.name,
-        }))
-      ),
+      teams,
     });
   } catch (error) {
     console.error('Get current user error:', error);

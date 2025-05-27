@@ -1,4 +1,4 @@
-import { PrismaClient, Team } from '@prisma/client';
+import { PrismaClient, Team, TeamPlayer } from '@prisma/client';
 import { calculateTeamScore } from '../utils/scoreCalculator.js';
 
 const prisma = new PrismaClient();
@@ -53,7 +53,10 @@ export class TimelineService {
           // Transform players to include 'total' property as required by TeamWithPlayers
           const teamWithPlayers = {
             ...team,
-            players: team.TeamPlayer.map((tp) => ({ ...tp, total: null })),
+            players: team.TeamPlayer.map((tp: TeamPlayer) => ({
+              ...tp,
+              total: null,
+            })),
           };
           const totalScore = calculateTeamScore(teamWithPlayers);
 
