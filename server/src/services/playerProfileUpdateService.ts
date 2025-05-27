@@ -47,6 +47,19 @@ export class PlayerProfileUpdateService {
             : Prisma.JsonNull,
       };
 
+      // Validate that all required performance data is present
+      if (performanceData.owgr === null) {
+        throw new Error(`Missing OWGR data for player ${pgaTourId}`);
+      }
+      if (performanceData.fedex === null) {
+        throw new Error(
+          `Missing FedEx Cup ranking data for player ${pgaTourId}`
+        );
+      }
+      if (performanceData.performance === Prisma.JsonNull) {
+        throw new Error(`Missing performance data for player ${pgaTourId}`);
+      }
+
       await prisma.player.update({
         where: { id: playerId },
         data: {
