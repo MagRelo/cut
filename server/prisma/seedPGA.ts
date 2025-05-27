@@ -101,15 +101,17 @@ async function main() {
     console.log('Players upserted.');
 
     // 3. For a selected tournament, update inField for players in the field
-    const selectedTournamentName = 'Truist Championship'; // Change as needed
-    const selectedTournament = await prisma.tournament.findFirst({
-      where: { name: selectedTournamentName },
-    });
+    const selectedTournament = await prisma.tournament.findFirst();
     if (!selectedTournament) {
-      throw new Error(
-        `Tournament '${selectedTournamentName}' not found in DB.`
-      );
+      throw new Error('No tournaments found in DB.');
     }
+
+    // update the tournament to "manualActive"
+    await prisma.tournament.update({
+      where: { id: selectedTournament.id },
+      data: { manualActive: true },
+    });
+
     const fieldData = await getActivePlayers(selectedTournament.pgaTourId);
     const fieldPlayerIds = fieldData.players.map((p) => p.id);
     await prisma.player.updateMany({
@@ -117,7 +119,7 @@ async function main() {
       data: { inField: true },
     });
     console.log(
-      `Updated inField status for ${fieldPlayerIds.length} players in '${selectedTournamentName}'.`
+      `Updated inField status for ${fieldPlayerIds.length} players in '${selectedTournament.name}'.`
     );
 
     // Optionally, set inField to false for all others

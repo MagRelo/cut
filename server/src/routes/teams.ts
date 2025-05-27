@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -64,9 +65,9 @@ router.get('/', async (req, res) => {
     const team = await prisma.team.findFirst({
       where: { userId },
       include: {
-        players: {
+        TeamPlayer: {
           include: {
-            player: {
+            Player: {
               include: {
                 tournamentPlayers: activeTournament
                   ? {
@@ -103,16 +104,16 @@ router.get('/', async (req, res) => {
       id: team.id,
       name: team.name,
       color: team.color,
-      players: team.players.map((tp) => {
+      players: team.TeamPlayer.map((tp) => {
         const tournamentPlayer =
-          tp.player.tournamentPlayers && tp.player.tournamentPlayers[0];
+          tp.Player.tournamentPlayers && tp.Player.tournamentPlayers[0];
         return {
           id: tp.id,
           teamId: tp.teamId,
           playerId: tp.playerId,
           active: tp.active,
           player: {
-            ...tp.player,
+            ...tp.Player,
             tournamentPlayers: undefined,
           },
           leaderboardPosition:
@@ -157,8 +158,30 @@ router.post('/', async (req, res) => {
     const team = await prisma.team.create({
       data: {
         name: data.name,
-        color: data.color || '#000000',
+        color: data.color,
         userId,
+        TeamPlayer: {
+          create: data.players.map((playerId) => ({
+            id: crypto.randomUUID(),
+            playerId,
+            active: true,
+            updatedAt: new Date(),
+          })),
+        },
+      },
+      include: {
+        TeamPlayer: {
+          include: {
+            Player: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -172,36 +195,27 @@ router.post('/', async (req, res) => {
       });
     }
 
-    await prisma.teamPlayer.createMany({
-      data: data.players.map((playerId) => ({
-        teamId: team.id,
-        playerId,
-        active: true,
-      })),
-    });
-
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: team.id },
       include: {
-        players: {
+        TeamPlayer: {
           include: {
-            player: true,
+            Player: true,
           },
         },
-        leagueTeams: data.leagueId
-          ? {
-              include: {
-                league: {
-                  include: {
-                    members: true,
-                    settings: true,
-                  },
-                },
-              },
-            }
-          : undefined,
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
       },
     });
+
+    if (!teamWithPlayers) {
+      throw new Error('Failed to create team');
+    }
 
     res.status(201).json(teamWithPlayers);
   } catch (error) {
@@ -249,9 +263,11 @@ router.put('/:teamId', async (req, res) => {
       if (validPlayers.length > 0) {
         await prisma.teamPlayer.createMany({
           data: validPlayers.map((playerId) => ({
+            id: crypto.randomUUID(),
             teamId,
             playerId,
             active: true,
+            updatedAt: new Date(),
           })),
         });
       }
@@ -260,9 +276,9 @@ router.put('/:teamId', async (req, res) => {
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
-        players: {
+        TeamPlayer: {
           include: {
-            player: true,
+            Player: true,
           },
         },
       },
@@ -302,8 +318,30 @@ router.post('/league/:leagueId/team', async (req, res) => {
     const team = await prisma.team.create({
       data: {
         name: data.name,
-        color: data.color || '#000000',
+        color: data.color,
         userId,
+        TeamPlayer: {
+          create: data.players.map((playerId) => ({
+            id: crypto.randomUUID(),
+            playerId,
+            active: true,
+            updatedAt: new Date(),
+          })),
+        },
+      },
+      include: {
+        TeamPlayer: {
+          include: {
+            Player: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -315,31 +353,19 @@ router.post('/league/:leagueId/team', async (req, res) => {
       },
     });
 
-    // Add players to team
-    await prisma.teamPlayer.createMany({
-      data: data.players.map((playerId) => ({
-        teamId: team.id,
-        playerId,
-        active: true,
-      })),
-    });
-
     const teamWithPlayers = await prisma.team.findUnique({
       where: { id: team.id },
       include: {
-        players: {
+        TeamPlayer: {
           include: {
-            player: true,
+            Player: true,
           },
         },
-        leagueTeams: {
-          include: {
-            league: {
-              include: {
-                members: true,
-                settings: true,
-              },
-            },
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
           },
         },
       },

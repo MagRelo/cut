@@ -15,7 +15,7 @@ export class TimelineService {
           leagueTeams: {
             some: {
               team: {
-                players: {
+                TeamPlayer: {
                   some: {
                     active: true,
                   },
@@ -29,12 +29,12 @@ export class TimelineService {
             include: {
               team: {
                 include: {
-                  players: {
+                  TeamPlayer: {
                     where: {
                       active: true,
                     },
                     include: {
-                      player: true,
+                      Player: true,
                     },
                   },
                 },
@@ -53,7 +53,7 @@ export class TimelineService {
           // Transform players to include 'total' property as required by TeamWithPlayers
           const teamWithPlayers = {
             ...team,
-            players: team.players.map((tp) => ({ ...tp, total: null })),
+            players: team.TeamPlayer.map((tp) => ({ ...tp, total: null })),
           };
           const totalScore = calculateTeamScore(teamWithPlayers);
 
