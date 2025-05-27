@@ -86,60 +86,62 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               Select a Golfer
             </Dialog.Title>
 
-            {/* Search and Sort Controls */}
-            <div className='mb-3 space-y-4'>
-              <div className='flex justify-center items-center gap-4'>
-                <Label>SORT:</Label>
-                <button
-                  onClick={() => toggleSort('fedex')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    sortField === 'fedex'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}>
-                  FedEx{' '}
-                  {sortField === 'fedex' &&
-                    (sortDirection === 'asc' ? '↑' : '↓')}
-                </button>
-                <button
-                  onClick={() => toggleSort('owgr')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    sortField === 'owgr'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}>
-                  OWGR{' '}
-                  {sortField === 'owgr' &&
-                    (sortDirection === 'asc' ? '↑' : '↓')}
-                </button>
-                <button
-                  onClick={() => toggleSort('name')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium ${
-                    sortField === 'name'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}>
-                  Name{' '}
-                  {sortField === 'name' &&
-                    (sortDirection === 'asc' ? '↑' : '↓')}
-                </button>
+            {/* Player Grid and Controls */}
+            <div className='border border-gray-300 rounded-lg overflow-hidden'>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-50 p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]'>
+                {filteredPlayers.map((player) => (
+                  <PlayerSelectionCard
+                    key={player.id}
+                    player={player}
+                    isSelected={selectedPlayers.includes(player.id)}
+                    onClick={() => onSelect(player.id)}
+                  />
+                ))}
+              </div>
+
+              {/* Search and Sort Controls */}
+              <div className='p-3 bg-white  border-t border-gray-300'>
+                <div className='flex justify-center items-center gap-4'>
+                  <Label>SORT:</Label>
+                  <button
+                    onClick={() => toggleSort('fedex')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      sortField === 'fedex'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}>
+                    FedEx{' '}
+                    {sortField === 'fedex' &&
+                      (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
+                  <button
+                    onClick={() => toggleSort('owgr')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      sortField === 'owgr'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}>
+                    OWGR{' '}
+                    {sortField === 'owgr' &&
+                      (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
+                  <button
+                    onClick={() => toggleSort('name')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      sortField === 'name'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}>
+                    Name{' '}
+                    {sortField === 'name' &&
+                      (sortDirection === 'asc' ? '↑' : '↓')}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Player Grid */}
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-50 border border-gray-300 rounded-lg p-2'>
-              {filteredPlayers.map((player) => (
-                <PlayerSelectionCard
-                  key={player.id}
-                  player={player}
-                  isSelected={selectedPlayers.includes(player.id)}
-                  onClick={() => onSelect(player.id)}
-                />
-              ))}
-            </div>
-
             {/* Search Input */}
-            <div className='mt-4'>
+            {/* <div className='mt-4'>
               <div className='relative'>
                 <input
                   type='text'
@@ -149,7 +151,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Close Button */}
             <div className='mt-4 sm:mt-6 flex justify-end space-x-4'>

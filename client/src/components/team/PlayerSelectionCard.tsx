@@ -23,8 +23,8 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
       disabled={isSelected}
       className={`w-full px-4 py-3 rounded-lg border transition-all ${
         isSelected
-          ? 'bg-gray-200 border-gray-200 cursor-not-allowed'
-          : 'bg-white border-gray-200 hover:border-emerald-500 hover:shadow-md'
+          ? 'bg-gray-200 border-gray-300 cursor-not-allowed'
+          : 'bg-white border-gray-300 hover:border-emerald-500 hover:shadow-md'
       }`}>
       <PlayerStats player={player} />
     </button>
