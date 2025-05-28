@@ -24,7 +24,7 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
       className={`w-full px-4 py-3 rounded-lg border transition-all ${
         isSelected
           ? 'bg-gray-200 border-gray-300 cursor-not-allowed'
-          : 'bg-white border-gray-300 hover:border-emerald-500 hover:shadow-md'
+          : 'bg-white border-emerald-500 shadow-md'
       }`}>
       <PlayerStats player={player} />
     </button>
