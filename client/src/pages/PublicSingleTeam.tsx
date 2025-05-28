@@ -14,6 +14,7 @@ import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
 import { PlayerStats } from '../components/team/PlayerStats';
 import { PlayerSelectionModal } from '../components/team/PlayerSelectionModal';
+// import { NotificationSignup } from '../components/NotificationSignup';
 // import { UpgradeAnonymousUserForm } from '../components/UpgradeAnonymousUserForm';
 
 export const PublicSingleTeam: React.FC = () => {
@@ -361,39 +362,15 @@ export const PublicSingleTeam: React.FC = () => {
 
       <hr className='my-4' />
 
-      {/* User Info */}
+      {/* notifications */}
       {/* <div className='flex items-center justify-between mb-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
-          My Account
+          Notifications
         </h2>
       </div>
-      <p className='text-gray-700 mb-2'>
-        <span className='font-semibold'>Status:</span>{' '}
-        {user && !user.isAnonymous ? (
-          <span className='text-emerald-600'>Verified ✓</span>
-        ) : (
-          <span className='text-amber-600'>Not Verified ⚠️</span>
-        )}
-      </p> */}
-
-      {/* User verified */}
-      {/* {user && !user.isAnonymous && (
-        <div className='bg-white rounded-lg shadow-sm p-4 border border-gray-200'>
-          <p className='text-gray-700'>
-            <span className='font-semibold'>Email:</span>{' '}
-            <span className='text-gray-700'>{user.email}</span>
-          </p>
-        </div>
-      )} */}
-
-      {/* User not verified or anonymous */}
-      {/* {(!user || user.isAnonymous) && (
-        <div className='bg-white rounded-lg shadow-sm px-6 pb-6 border border-gray-200'>
-          <UpgradeAnonymousUserForm />
-        </div>
-      )} */}
-
-      {/* <hr className='my-8' /> */}
+      <div className='space-y-2'>
+        <NotificationSignup />
+      </div> */}
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>

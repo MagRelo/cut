@@ -1,37 +1,49 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
-
-const upgradeUserSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-});
-
-type UpgradeUserFormData = z.infer<typeof upgradeUserSchema>;
+import {
+  contactVerificationSchema,
+  ContactVerificationFormData,
+} from '../validations/notificationSignup';
 
 export function UpgradeAnonymousUserForm() {
   const { upgradeAnonymousUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<UpgradeUserFormData>({
-    resolver: zodResolver(upgradeUserSchema),
+  } = useForm<ContactVerificationFormData>({
+    resolver: zodResolver(contactVerificationSchema),
   });
 
-  const onSubmit = async (data: UpgradeUserFormData) => {
+  const handleChangeContact = () => {
+    setIsVerifying(false);
+    setError(null);
+    setSuccess(false);
+    reset({ contact: '' });
+  };
+
+  const onSubmit = async (data: ContactVerificationFormData) => {
     try {
-      await upgradeAnonymousUser(data.email, data.password, data.name);
-      setSuccess(true);
-      setError(null);
-      reset();
+      if (!isVerifying) {
+        // Request verification code
+        await upgradeAnonymousUser(data.contact);
+        setIsVerifying(true);
+        setSuccess(true);
+        setError(null);
+      } else {
+        // Verify code and complete upgrade
+        await upgradeAnonymousUser(data.contact, data.verificationCode);
+        setSuccess(true);
+        setError(null);
+        reset();
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to upgrade account'
@@ -42,7 +54,7 @@ export function UpgradeAnonymousUserForm() {
 
   return (
     <div className='mt-4'>
-      {success && (
+      {success && !isVerifying && (
         <div className='mb-4 p-2 bg-emerald-50 text-emerald-700 rounded'>
           Account upgraded successfully!
         </div>
@@ -91,54 +103,63 @@ export function UpgradeAnonymousUserForm() {
 
         <div>
           <label className='block text-sm font-medium text-gray-700'>
-            Name
+            Email or Phone Number
           </label>
           <input
             type='text'
-            {...register('name')}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm'
+            {...register('contact')}
+            disabled={isVerifying}
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm ${
+              isVerifying ? 'bg-gray-100 cursor-not-allowed' : ''
+            }`}
+            placeholder='Enter your email or phone number'
           />
-          {errors.name && (
-            <p className='mt-1 text-sm text-red-600'>{errors.name.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className='block text-sm font-medium text-gray-700'>
-            Email
-          </label>
-          <input
-            type='email'
-            {...register('email')}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm'
-          />
-          {errors.email && (
-            <p className='mt-1 text-sm text-red-600'>{errors.email.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className='block text-sm font-medium text-gray-700'>
-            Password
-          </label>
-          <input
-            type='password'
-            {...register('password')}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm'
-          />
-          {errors.password && (
+          {errors.contact && (
             <p className='mt-1 text-sm text-red-600'>
-              {errors.password.message}
+              {errors.contact.message}
             </p>
           )}
         </div>
+
+        {isVerifying && (
+          <div>
+            <label className='block text-sm font-medium text-gray-700'>
+              Verification Code
+            </label>
+            <input
+              type='text'
+              {...register('verificationCode')}
+              className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm'
+              placeholder='Enter 6-digit code'
+              maxLength={6}
+            />
+            {errors.verificationCode && (
+              <p className='mt-1 text-sm text-red-600'>
+                {errors.verificationCode.message}
+              </p>
+            )}
+          </div>
+        )}
 
         <button
           type='submit'
           disabled={isSubmitting}
           className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
-          {isSubmitting ? 'Upgrading...' : 'Upgrade Account'}
+          {isSubmitting
+            ? 'Processing...'
+            : isVerifying
+            ? 'Verify Code'
+            : 'Request Code'}
         </button>
+
+        {isVerifying && (
+          <button
+            type='button'
+            onClick={handleChangeContact}
+            className='w-full text-sm text-gray-600 hover:text-gray-800 mt-2'>
+            Change contact information
+          </button>
+        )}
       </form>
     </div>
   );

@@ -39,8 +39,8 @@ interface AuthContextData {
   loading: boolean;
   streamToken: string | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  updateUser: (user: AuthenticatedUser) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (updatedUser: AuthenticatedUser) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -51,10 +51,9 @@ interface AuthContextData {
   isAdmin: () => boolean;
   getCurrentUser: () => User;
   upgradeAnonymousUser: (
-    email: string,
-    password: string,
-    name: string
-  ) => Promise<void>;
+    contact: string,
+    verificationCode?: string
+  ) => Promise<AuthenticatedUser | { success: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -216,32 +215,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [request]);
 
   const upgradeAnonymousUser = useCallback(
-    async (email: string, password: string, name: string) => {
+    async (contact: string, verificationCode?: string) => {
       const currentUser = getCurrentUser();
       if (!currentUser.isAnonymous) {
         throw new Error('User is already authenticated');
       }
 
-      const response = await request<AuthenticatedUser>(
-        'POST',
-        '/auth/register',
-        {
-          email,
-          password,
-          name,
-          anonymousGuid: currentUser.guid,
-        },
-        true
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
-      setStreamToken(response.streamToken);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.id);
-      localStorage.removeItem('publicUserGuid');
+      if (!verificationCode) {
+        // Request verification code
+        const response = await request<{ success: boolean }>(
+          'POST',
+          '/auth/request-verification',
+          {
+            contact,
+            anonymousGuid: currentUser.guid,
+          },
+          true
+        );
+        return response;
+      } else {
+        // Complete upgrade with verification code
+        const response = await request<AuthenticatedUser>(
+          'POST',
+          '/auth/verify-and-upgrade',
+          {
+            contact,
+            verificationCode,
+            anonymousGuid: currentUser.guid,
+          },
+          true
+        );
+        const authenticatedUser: AuthenticatedUser = {
+          ...response,
+          isAnonymous: false,
+        };
+        setUser(authenticatedUser);
+        setStreamToken(response.streamToken);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.id);
+        localStorage.removeItem('publicUserGuid');
+        return response;
+      }
     },
     [request, getCurrentUser]
   );
