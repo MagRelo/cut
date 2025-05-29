@@ -244,23 +244,22 @@ export const TeamForm = ({
             </div>
           )}
 
+          {!isEditingAllowed() && (
+            <>
+              <hr className='my-4' />
+              <div
+                className='bg-gray-50 text-gray-600 font-semibold px-3 py-2 rounded text-sm border border-orange-300'
+                role='alert'>
+                <span className='inline'>
+                  ⚠️ Rosters cannot be edited while a tournament is in progress.
+                </span>
+              </div>
+            </>
+          )}
+
           {/* Select Your Golfers */}
           {showPlayerSelect && (
             <div className='space-y-4'>
-              {!isEditingAllowed() && (
-                <>
-                  <hr className='my-4' />
-                  <div
-                    className='bg-gray-50 text-gray-600 font-semibold px-3 py-2 rounded text-sm border border-orange-300'
-                    role='alert'>
-                    <span className='inline'>
-                      ⚠️ Rosters cannot be edited while a tournament is in
-                      progress.
-                    </span>
-                  </div>
-                </>
-              )}
-
               <div className='space-y-4'>
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div key={index} className='space-y-2'>

@@ -3,23 +3,39 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [contact, setContact] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [codeSent, setCodeSent] = useState(false);
+  const { requestVerification, verifyAndLogin } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await login(email, password);
+      await requestVerification(contact);
+      setCodeSent(true);
+    } catch {
+      setError('Failed to send verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await verifyAndLogin(contact, code);
       navigate('/public/leagues', { replace: true });
     } catch {
-      setError('Failed to sign in. Please check your credentials.');
+      setError('Failed to verify code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -33,66 +49,86 @@ export function Login() {
             Sign in to your account
           </h2>
         </div>
-        <form className='mt-8 space-y-6' onSubmit={handleSubmit}>
-          {error && (
-            <div className='rounded-md bg-red-50 p-4'>
-              <div className='text-sm text-red-700'>{error}</div>
+        {!codeSent ? (
+          <form className='mt-8 space-y-6' onSubmit={handleRequestCode}>
+            {error && (
+              <div className='rounded-md bg-red-50 p-4'>
+                <div className='text-sm text-red-700'>{error}</div>
+              </div>
+            )}
+            <div className='rounded-md shadow-sm -space-y-px'>
+              <div>
+                <label htmlFor='contact' className='sr-only'>
+                  Email or Phone
+                </label>
+                <input
+                  id='contact'
+                  name='contact'
+                  type='text'
+                  autoComplete='email'
+                  required
+                  className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm'
+                  placeholder='Email or Phone Number'
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                />
+              </div>
             </div>
-          )}
-          <div className='rounded-md shadow-sm -space-y-px'>
-            <div>
-              <label htmlFor='email-address' className='sr-only'>
-                Email address
-              </label>
-              <input
-                id='email-address'
-                name='email'
-                type='email'
-                autoComplete='email'
-                required
-                className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm'
-                placeholder='Email address'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor='password' className='sr-only'>
-                Password
-              </label>
-              <input
-                id='password'
-                name='password'
-                type='password'
-                autoComplete='current-password'
-                required
-                className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm'
-                placeholder='Password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className='flex items-center justify-between'>
-            <div className='text-sm'>
-              <Link
-                to='/forgot-password'
-                className='font-medium text-emerald-600 hover:text-emerald-500'>
-                Forgot your password?
-              </Link>
+            <div>
+              <button
+                type='submit'
+                disabled={loading}
+                className='group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
+                {loading ? 'Sending Code...' : 'Send Verification Code'}
+              </button>
             </div>
-          </div>
+          </form>
+        ) : (
+          <form className='mt-8 space-y-6' onSubmit={handleVerify}>
+            {error && (
+              <div className='rounded-md bg-red-50 p-4'>
+                <div className='text-sm text-red-700'>{error}</div>
+              </div>
+            )}
+            <div className='rounded-md shadow-sm -space-y-px'>
+              <div>
+                <label htmlFor='code' className='sr-only'>
+                  Verification Code
+                </label>
+                <input
+                  id='code'
+                  name='code'
+                  type='text'
+                  required
+                  className='appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm'
+                  placeholder='Enter 6-digit code'
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+            </div>
 
-          <div>
-            <button
-              type='submit'
-              disabled={loading}
-              className='group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
+            <div>
+              <button
+                type='submit'
+                disabled={loading}
+                className='group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
+                {loading ? 'Verifying...' : 'Verify Code'}
+              </button>
+            </div>
+
+            <div className='text-center'>
+              <button
+                type='button'
+                onClick={() => setCodeSent(false)}
+                className='text-sm text-emerald-600 hover:text-emerald-500'>
+                Use different email/phone
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className='text-center'>
           <p className='text-sm text-gray-600'>

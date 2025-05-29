@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useMemo,
 } from 'react';
 import { type Tournament } from '../types/league';
 import { type TournamentPlayer } from '../types/player';
@@ -30,12 +31,15 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
     null
   );
   const [players, setPlayers] = useState<TournamentPlayer[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
   const tournamentApi = useTournamentApi();
 
   useEffect(() => {
-    const fetchInitialData = async () => {
+    let isMounted = true;
+
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -46,29 +50,42 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
           tournamentApi.getTournamentField(),
         ]);
 
-        setCurrentTournament(tournament);
-        setPlayers(tournamentPlayers);
+        if (isMounted) {
+          setCurrentTournament(tournament);
+          setPlayers(tournamentPlayers);
+        }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err
-            : new Error('Failed to fetch tournament data')
-        );
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error('Failed to fetch tournament data')
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchInitialData();
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [tournamentApi]);
 
-  const value = {
-    currentTournament,
-    setCurrentTournament,
-    players,
-    isLoading,
-    error,
-  };
+  const value = useMemo(
+    () => ({
+      currentTournament,
+      setCurrentTournament,
+      players,
+      isLoading,
+      error,
+    }),
+    [currentTournament, players, isLoading, error]
+  );
 
   return (
     <TournamentContext.Provider value={value}>

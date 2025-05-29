@@ -7,7 +7,6 @@ import { TournamentProvider } from './contexts/TournamentContext';
 import { Login } from './pages/user/Login';
 import { Register } from './pages/user/Register';
 import { ForgotPassword } from './pages/user/ForgotPassword';
-import { ResetPassword } from './pages/user/ResetPassword';
 import { AdminPage } from './pages/user/AdminPage';
 import { UserSettings } from './pages/user/UserSettings';
 
@@ -37,7 +36,6 @@ export const App: React.FC = () => {
                 <Route path='/login' element={<Login />} />
                 <Route path='/register' element={<Register />} />
                 <Route path='/forgot-password' element={<ForgotPassword />} />
-                <Route path='/reset-password' element={<ResetPassword />} />
 
                 {/* Public League Routes */}
                 <Route element={<PublicLeagueLayout />}>

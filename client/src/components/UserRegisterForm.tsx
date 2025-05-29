@@ -2,23 +2,25 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  notificationSignupSchema,
-  NotificationSignupFormData,
+  contactVerificationSchema,
+  ContactVerificationFormData,
 } from '../validations/notificationSignup';
-import { notificationService } from '../services/notificationService';
+import { useAuth } from '../contexts/AuthContext';
 
-export const NotificationSignup = () => {
+export const UserRegisterForm = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [contact, setContact] = useState('');
+  const { requestVerification, verifyAndRegister, getCurrentUser } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<NotificationSignupFormData>({
-    resolver: zodResolver(notificationSignupSchema),
+  } = useForm<ContactVerificationFormData>({
+    resolver: zodResolver(contactVerificationSchema),
   });
 
   const handleChangeContact = () => {
@@ -28,29 +30,35 @@ export const NotificationSignup = () => {
     reset({ contact: '' });
   };
 
-  const onSubmit = async (data: NotificationSignupFormData) => {
+  const onSubmit = async (data: ContactVerificationFormData) => {
     try {
       setError(null);
       setSuccess(null);
 
       if (!isVerifying) {
         // Request verification code
-        const response = await notificationService.requestVerification(
-          data.contact
-        );
-        if (response.success) {
-          setIsVerifying(true);
-          setSuccess(
-            'Verification code sent! Please check your email or phone.'
-          );
-        }
+        await requestVerification(data.contact);
+        setIsVerifying(true);
+        setContact(data.contact);
+        setSuccess('Verification code sent! Please check your email or phone.');
       } else {
-        // Verify code
-        const response = await notificationService.verifyCode(data);
-        if (response.success) {
-          setSuccess('Successfully signed up for notifications!');
-          setIsVerifying(false);
+        // Verify code and register
+        if (!data.verificationCode) {
+          setError('Verification code is required');
+          return;
         }
+        const currentUser = getCurrentUser();
+        const anonymousGuid = currentUser.isAnonymous
+          ? currentUser.guid
+          : undefined;
+        await verifyAndRegister(
+          contact,
+          data.verificationCode,
+          'User',
+          anonymousGuid
+        );
+        setSuccess('Successfully registered!');
+        setIsVerifying(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -71,7 +79,7 @@ export const NotificationSignup = () => {
             type='text'
             id='contact'
             disabled={isVerifying}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               isVerifying ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
             placeholder='Enter your email or phone number'
@@ -94,7 +102,7 @@ export const NotificationSignup = () => {
               {...register('verificationCode')}
               type='text'
               id='verificationCode'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500'
               placeholder='Enter 6-digit code'
               maxLength={6}
             />
@@ -113,7 +121,7 @@ export const NotificationSignup = () => {
         <button
           type='submit'
           disabled={isSubmitting}
-          className='w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'>
+          className='w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'>
           {isSubmitting
             ? 'Processing...'
             : isVerifying

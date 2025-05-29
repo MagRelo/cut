@@ -8,6 +8,7 @@ import { TeamCard } from '../components/team/TeamCard';
 import { useTournament } from '../contexts/TournamentContext';
 import { Timeline } from '../components/Timeline';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LeagueResponse extends Omit<PublicLeague, 'tournament'> {
   commissionerId: string;
@@ -20,10 +21,10 @@ export const PublicLeagueLobby: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const userId = localStorage.getItem('publicUserGuid');
   const navigate = useNavigate();
   const leagueApi = useLeagueApi();
   const { currentTournament } = useTournament();
+  const { user } = useAuth();
 
   const fetchLeague = async () => {
     if (!leagueId) return;
@@ -166,10 +167,8 @@ export const PublicLeagueLobby: React.FC = () => {
   }
 
   const teams: Team[] = league.teams ?? [];
-  const userHasTeam =
-    league.leagueTeams?.some(
-      (leagueTeam) => leagueTeam.team.owner.id === userId
-    ) ?? false;
+
+  const userHasTeam = teams.some((team) => team.userId === user?.id);
 
   return (
     <div className='px-4 py-4'>
@@ -212,12 +211,12 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
 
           {/* join button */}
-          {!userHasTeam && (
+          {user && !user.isAnonymous && !userHasTeam && (
             <button
               onClick={handleJoinLeague}
               disabled={isActionLoading}
               className='bg-emerald-600 text-white px-3 py-1 text-sm rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'>
-              Join
+              {isActionLoading ? 'Joining...' : 'Join'}
             </button>
           )}
         </div>
@@ -290,14 +289,14 @@ export const PublicLeagueLobby: React.FC = () => {
 
       {/* Leave League Buttons */}
       <div className='flex justify-center my-8'>
-        {userHasTeam ? (
+        {user && !user.isAnonymous && userHasTeam && (
           <button
             onClick={handleLeaveLeague}
             disabled={isActionLoading}
             className='bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 hover:text-red-600 transition-colors disabled:opacity-50 text-sm disabled:cursor-not-allowed border border-gray-200'>
             {isActionLoading ? 'Leaving...' : 'Leave League'}
           </button>
-        ) : null}
+        )}
 
         <hr className='border-t border-gray-200 ' />
       </div>

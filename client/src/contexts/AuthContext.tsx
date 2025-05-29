@@ -6,6 +6,42 @@ import {
   useMemo,
   useCallback,
 } from 'react';
+import { z } from 'zod';
+
+// Validation schemas matching server
+const contactSchema = z.object({
+  contact: z.string().refine(
+    (val) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      return emailRegex.test(val) || phoneRegex.test(val);
+    },
+    { message: 'Must be a valid email or phone number' }
+  ),
+});
+
+const verifySchema = z.object({
+  contact: z.string().refine(
+    (val) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      return emailRegex.test(val) || phoneRegex.test(val);
+    },
+    { message: 'Must be a valid email or phone number' }
+  ),
+  code: z.string().length(6),
+  name: z.string().min(2).optional(),
+  anonymousGuid: z.string().uuid().optional(),
+});
+
+const updateUserSchema = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  phone: z
+    .string()
+    .regex(/^\+?[1-9]\d{1,14}$/)
+    .optional(),
+});
 
 interface BaseUser {
   id: string;
@@ -14,7 +50,8 @@ interface BaseUser {
 
 interface AuthenticatedUser extends BaseUser {
   isAnonymous: false;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   userType: string;
   token: string;
@@ -38,22 +75,19 @@ interface AuthContextData {
   user: User | null;
   loading: boolean;
   streamToken: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  updateUser: (updatedUser: AuthenticatedUser) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, password: string) => Promise<void>;
-  changePassword: (
-    currentPassword: string,
-    newPassword: string
+  requestVerification: (contact: string) => Promise<void>;
+  verifyAndLogin: (contact: string, code: string) => Promise<void>;
+  verifyAndRegister: (
+    contact: string,
+    code: string,
+    name: string,
+    anonymousGuid?: string
   ) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (updatedUser: z.infer<typeof updateUserSchema>) => Promise<void>;
   isAdmin: () => boolean;
   getCurrentUser: () => User;
-  upgradeAnonymousUser: (
-    contact: string,
-    verificationCode?: string
-  ) => Promise<AuthenticatedUser | { success: boolean }>;
+  upgradeAnonymousUser: (contact: string, code: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -128,6 +162,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [config]
   );
 
+  const requestVerification = useCallback(
+    async (contact: string) => {
+      const validatedData = contactSchema.parse({ contact });
+      await request<{ success: boolean }>(
+        'POST',
+        '/auth/request-verification',
+        validatedData,
+        true
+      );
+    },
+    [request]
+  );
+
+  const verifyAndLogin = useCallback(
+    async (contact: string, code: string) => {
+      const validatedData = verifySchema.parse({ contact, code });
+      const response = await request<AuthenticatedUser>(
+        'POST',
+        '/auth/verify',
+        validatedData,
+        true
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      setStreamToken(response.streamToken);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.id);
+      localStorage.removeItem('publicUserGuid');
+    },
+    [request]
+  );
+
+  const verifyAndRegister = useCallback(
+    async (
+      contact: string,
+      code: string,
+      name: string,
+      anonymousGuid?: string
+    ) => {
+      const validatedData = verifySchema.parse({
+        contact,
+        code,
+        name,
+        anonymousGuid,
+      });
+      const response = await request<AuthenticatedUser>(
+        'POST',
+        '/auth/verify',
+        validatedData,
+        true
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      setStreamToken(response.streamToken);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.id);
+      localStorage.removeItem('publicUserGuid');
+    },
+    [request]
+  );
+
   const logout = useCallback(async () => {
     try {
       await request<void>('POST', '/auth/logout');
@@ -139,7 +240,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
     }
-  }, []);
+  }, [request]);
+
+  const updateUser = useCallback(
+    async (updatedUser: z.infer<typeof updateUserSchema>) => {
+      const validatedData = updateUserSchema.parse(updatedUser);
+      const response = await request<AuthenticatedUser>(
+        'PUT',
+        '/auth/update',
+        validatedData
+      );
+      const authenticatedUser: AuthenticatedUser = {
+        ...response,
+        isAnonymous: false,
+      };
+      setUser(authenticatedUser);
+      try {
+        const { streamToken: newStreamToken } = await request<{
+          streamToken: string;
+        }>('GET', '/auth/stream-token');
+        setStreamToken(newStreamToken);
+      } catch (error) {
+        console.error('Failed to refresh stream token:', error);
+      }
+    },
+    [request]
+  );
 
   const getCurrentUser = useCallback((): User => {
     if (user) {
@@ -155,16 +281,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(anonymousUser);
       return anonymousUser;
     }
-    const guid = crypto.randomUUID();
-    localStorage.setItem('publicUserGuid', guid);
-    const anonymousUser: AnonymousUser = {
-      id: guid,
+    return {
+      id: 'pending',
       isAnonymous: true,
-      guid,
+      guid: 'pending',
     };
-    setUser(anonymousUser);
-    return anonymousUser;
   }, [user]);
+
+  const isAdmin = useCallback(() => {
+    return Boolean(user && !user.isAnonymous && user.userType === 'ADMIN');
+  }, [user]);
+
+  const upgradeAnonymousUser = useCallback(
+    async (contact: string, code: string) => {
+      const guid = localStorage.getItem('publicUserGuid');
+      if (!guid) {
+        throw new Error('No anonymous user found');
+      }
+      await verifyAndRegister(contact, code, '', guid);
+    },
+    [verifyAndRegister]
+  );
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -176,15 +313,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (token) {
           console.log('Using token', token);
-          const response = await request<AuthenticatedUser>('GET', '/auth/me');
-          const authenticatedUser: AuthenticatedUser = {
-            ...response,
-            isAnonymous: false,
-          };
-          setUser(authenticatedUser);
-        } else if (guid) {
-          console.log('Using guid', guid);
+          try {
+            const response = await request<AuthenticatedUser>(
+              'GET',
+              '/auth/me'
+            );
+            const authenticatedUser: AuthenticatedUser = {
+              ...response,
+              isAnonymous: false,
+            };
+            setUser(authenticatedUser);
+            return; // Exit early if we successfully authenticated with token
+          } catch (error) {
+            console.error('Token authentication failed:', error);
+            // Only clear token if we get a 401 Unauthorized
+            if (error instanceof Error && error.message.includes('401')) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('userId');
+            } else {
+              // For other errors, keep the token and try again later
+              setLoading(false);
+              return;
+            }
+          }
+        }
 
+        // Only proceed with anonymous user if we don't have a valid token
+        if (guid) {
+          console.log('Using guid', guid);
           const anonymousUser: AnonymousUser = {
             id: guid,
             isAnonymous: true,
@@ -203,8 +359,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error: unknown) {
         console.error('Auth check failed:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('userId');
         setUser(null);
       } finally {
         setLoading(false);
@@ -214,159 +368,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, [request]);
 
-  const upgradeAnonymousUser = useCallback(
-    async (contact: string, verificationCode?: string) => {
-      const currentUser = getCurrentUser();
-      if (!currentUser.isAnonymous) {
-        throw new Error('User is already authenticated');
-      }
-
-      if (!verificationCode) {
-        // Request verification code
-        const response = await request<{ success: boolean }>(
-          'POST',
-          '/auth/request-verification',
-          {
-            contact,
-            anonymousGuid: currentUser.guid,
-          },
-          true
-        );
-        return response;
-      } else {
-        // Complete upgrade with verification code
-        const response = await request<AuthenticatedUser>(
-          'POST',
-          '/auth/verify-and-upgrade',
-          {
-            contact,
-            verificationCode,
-            anonymousGuid: currentUser.guid,
-          },
-          true
-        );
-        const authenticatedUser: AuthenticatedUser = {
-          ...response,
-          isAnonymous: false,
-        };
-        setUser(authenticatedUser);
-        setStreamToken(response.streamToken);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('userId', response.id);
-        localStorage.removeItem('publicUserGuid');
-        return response;
-      }
-    },
-    [request, getCurrentUser]
-  );
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const response = await request<AuthenticatedUser>(
-        'POST',
-        '/auth/login',
-        { email, password },
-        true
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
-      setStreamToken(response.streamToken);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.id);
-      localStorage.removeItem('publicUserGuid');
-    },
-    [request]
-  );
-
-  const updateUser = useCallback(
-    async (updatedUser: AuthenticatedUser) => {
-      setUser(updatedUser);
-      try {
-        const { streamToken: newStreamToken } = await request<{
-          streamToken: string;
-        }>('GET', '/auth/stream-token');
-        setStreamToken(newStreamToken);
-      } catch (error) {
-        console.error('Failed to refresh stream token:', error);
-      }
-    },
-    [request]
-  );
-
-  const register = useCallback(
-    async (email: string, password: string, name: string) => {
-      const response = await request<AuthenticatedUser>(
-        'POST',
-        '/auth/register',
-        { email, password, name },
-        true
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
-      setStreamToken(response.streamToken);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.id);
-      localStorage.removeItem('publicUserGuid');
-    },
-    [request]
-  );
-
-  const forgotPassword = useCallback(
-    async (email: string) => {
-      await request<{ message: string }>(
-        'POST',
-        '/auth/forgot-password',
-        { email },
-        true
-      );
-    },
-    [request]
-  );
-
-  const resetPassword = useCallback(
-    async (token: string, password: string) => {
-      await request<{ message: string }>(
-        'POST',
-        '/auth/reset-password',
-        { token, newPassword: password },
-        true
-      );
-    },
-    [request]
-  );
-
-  const changePassword = useCallback(
-    async (currentPassword: string, newPassword: string) => {
-      await request<{ message: string }>('POST', '/auth/change-password', {
-        currentPassword,
-        newPassword,
-      });
-    },
-    [request]
-  );
-
-  const isAdmin = useCallback(() => {
-    return Boolean(user && !user.isAnonymous && user.userType === 'ADMIN');
-  }, [user]);
-
   const contextValue = useMemo(
     () => ({
       user,
       loading,
       streamToken,
-      login,
+      requestVerification,
+      verifyAndLogin,
+      verifyAndRegister,
       logout,
       updateUser,
-      register,
-      forgotPassword,
-      resetPassword,
-      changePassword,
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,
@@ -375,13 +386,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       loading,
       streamToken,
-      login,
+      requestVerification,
+      verifyAndLogin,
+      verifyAndRegister,
       logout,
       updateUser,
-      register,
-      forgotPassword,
-      resetPassword,
-      changePassword,
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,

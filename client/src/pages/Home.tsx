@@ -1,7 +1,7 @@
-import InfoScorecard from '../components/common/InfoScorecard';
 import React from 'react';
 import { Link } from 'react-router-dom';
-// import InfoScorecard from '../components/common/InfoScorecard';
+
+import InfoScorecard from '../components/common/InfoScorecard';
 
 export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
@@ -102,36 +102,6 @@ export const Home: React.FC = () => {
           </Link>
         </div>
       </div>
-
-      {/* 
-      <div className='mt-8'>
-        <InfoScorecard />
-      </div> */}
-
-      {/* Keep this for later */}
-      {/* 
-      <div className='space-x-4'>
-        {user ? (
-          <Link
-            to='/leagues'
-            className='inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-            View Leagues
-          </Link>
-        ) : (
-          <div className='space-x-4 mb-8'>
-            <Link
-              to='/login'
-              className='inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-              Login
-            </Link>
-            <Link
-              to='/register'
-              className='inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'>
-              Register
-            </Link>
-          </div>
-        )}
-      </div> */}
     </div>
   );
 };

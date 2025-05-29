@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { type Tournament } from '../types/league';
 import { type TournamentPlayer } from '../types/player';
 
@@ -32,8 +31,6 @@ interface TournamentOddsResponse {
 }
 
 export const useTournamentApi = () => {
-  const { getCurrentUser } = useAuth();
-
   const config = useMemo(
     () => ({
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
@@ -51,14 +48,9 @@ export const useTournamentApi = () => {
       data?: unknown,
       isPublic: boolean = false
     ): Promise<T> => {
-      const user = getCurrentUser();
       const headers: Record<string, string> = {
         ...config.headers,
       };
-
-      if (user) {
-        headers['X-User-Guid'] = user.id;
-      }
 
       if (isPublic) {
         headers['X-Public-Api'] = 'true';
@@ -76,16 +68,14 @@ export const useTournamentApi = () => {
 
       return response.json();
     },
-    [config, getCurrentUser]
+    [config]
   );
 
-  // Player endpoints
   const getTournamentField = useCallback(
     () => request<TournamentPlayer[]>('GET', '/tournaments/field'),
     [request]
   );
 
-  // Tournament endpoints
   const getCurrentTournament = useCallback(
     () => request<Tournament>('GET', '/tournaments/active'),
     [request]

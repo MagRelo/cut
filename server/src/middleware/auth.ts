@@ -24,11 +24,16 @@ export type AuthUser = {
 };
 
 type TeamWithLeague = Team & {
-  league: Pick<League, 'id' | 'name'>;
+  leagueTeams: Array<{
+    league: {
+      id: string;
+      name: string;
+    };
+  }>;
 };
 
 type UserWithTeams = User & {
-  teams: TeamWithLeague[];
+  teams: TeamWithLeague | null;
 };
 
 // Helper type for routes that require authentication
@@ -58,7 +63,18 @@ export const authenticateToken = async (
 
     const userInclude = {
       teams: {
-        include: {},
+        include: {
+          leagueTeams: {
+            include: {
+              league: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
       },
     } satisfies Prisma.UserInclude;
 
@@ -73,15 +89,17 @@ export const authenticateToken = async (
 
     const authUser: AuthUser = {
       id: user.id,
-      email: user.email,
+      email: user.email || '',
       name: user.name,
       userType: user.userType,
-      teams: user.teams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        leagueId: team.league.id,
-        leagueName: team.league.name,
-      })),
+      teams: user.teams
+        ? (user.teams.leagueTeams || []).map((lt) => ({
+            id: user.teams!.id,
+            name: user.teams!.name,
+            leagueId: lt.league.id,
+            leagueName: lt.league.name,
+          }))
+        : [],
     };
 
     (req as any).user = authUser;

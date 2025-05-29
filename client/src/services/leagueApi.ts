@@ -45,18 +45,14 @@ export const useLeagueApi = () => {
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
       headers: {
         'Content-Type': 'application/json',
+        'X-Public-Api': 'true',
       },
     }),
     []
   );
 
   const request = useCallback(
-    async <T>(
-      method: string,
-      endpoint: string,
-      data?: unknown,
-      isPublic: boolean = false
-    ): Promise<T> => {
+    async <T>(method: string, endpoint: string, data?: unknown): Promise<T> => {
       const user = getCurrentUser();
       const headers: Record<string, string> = {
         ...config.headers,
@@ -64,10 +60,6 @@ export const useLeagueApi = () => {
 
       if (user) {
         headers['X-User-Guid'] = user.id;
-      }
-
-      if (isPublic) {
-        headers['X-Public-Api'] = 'true';
       }
 
       const response = await fetch(`${config.baseURL}${endpoint}`, {
@@ -91,76 +83,34 @@ export const useLeagueApi = () => {
   );
 
   const getLeagues = async (): Promise<League[]> => {
-    const user = getCurrentUser();
-
-    if (!user?.isAnonymous) {
-      // Get all leagues for authenticated user
-      return request<League[]>('GET', '/leagues');
-    }
-
-    // Get public leagues
     const response = await request<PublicLeaguesResponse>(
       'GET',
-      '/public/leagues',
-      undefined,
-      true
+      '/public/leagues'
     );
     return response.leagues;
   };
 
   const getLeague = async (leagueId: string): Promise<League> => {
-    const user = getCurrentUser();
-
-    if (!user?.isAnonymous) {
-      // Get league for authenticated user
-      const league = await request<League>('GET', `/leagues/${leagueId}`);
-      if (!league) throw new Error('League not found');
-      return league;
-    }
-
-    // Get public league
-    const league = await request<League>(
-      'GET',
-      `/public/leagues/${leagueId}`,
-      undefined,
-      true
-    );
+    const league = await request<League>('GET', `/public/leagues/${leagueId}`);
     if (!league) throw new Error('League not found');
     return league;
   };
 
   const createLeague = async (data: CreateLeaguePayload): Promise<League> => {
     const user = getCurrentUser();
-
     if (!user) {
       throw new Error('User must be authenticated to create a league');
     }
 
-    if (data.isPrivate) {
-      // Create private league
-      const league = await request<League>('POST', '/leagues', {
-        name: data.name,
-        description: data.description,
-        isPrivate: data.isPrivate,
-        maxTeams: data.maxTeams ?? 10,
-      });
-      if (!league) throw new Error('Failed to create league');
-      return league;
-    } else {
-      // Create public league
-      const league = await request<League>(
-        'POST',
-        '/public/leagues',
-        {
-          name: data.name,
-          description: data.description,
-          userId: user.id.trim(),
-        },
-        true
-      );
-      if (!league) throw new Error('Failed to create league');
-      return league;
-    }
+    const league = await request<League>('POST', '/public/leagues', {
+      name: data.name,
+      description: data.description,
+      userId: user.id.trim(),
+      isPrivate: data.isPrivate,
+      maxTeams: data.maxTeams ?? 10,
+    });
+    if (!league) throw new Error('Failed to create league');
+    return league;
   };
 
   const joinLeague = async (
@@ -168,27 +118,23 @@ export const useLeagueApi = () => {
     inviteCode?: string
   ): Promise<League | LeagueMember> => {
     const user = getCurrentUser();
-
     if (!user) {
       throw new Error('User must be authenticated to join a league');
     }
 
     if (inviteCode) {
-      // Join league with invite code
       const member = await request<LeagueMember>(
         'POST',
-        '/leagues/join-with-invite',
+        '/public/leagues/join-with-invite',
         { inviteCode }
       );
       if (!member) throw new Error('Failed to join league with invite code');
       return member;
     } else {
-      // Join public league
       const league = await request<League>(
         'POST',
         `/public/leagues/${leagueId}/members`,
-        { userId: user.id },
-        true
+        { userId: user.id }
       );
       if (!league) throw new Error('Failed to join league');
       return league;
@@ -197,17 +143,13 @@ export const useLeagueApi = () => {
 
   const leaveLeague = async (leagueId: string): Promise<void> => {
     const user = getCurrentUser();
-
     if (!user) {
       throw new Error('User must be authenticated to leave a league');
     }
 
-    await request<void>(
-      'DELETE',
-      `/public/leagues/${leagueId}/members`,
-      { userId: user.id },
-      true
-    );
+    await request<void>('DELETE', `/public/leagues/${leagueId}/members`, {
+      userId: user.id,
+    });
   };
 
   const getLeagueTimeline = async (
@@ -227,7 +169,7 @@ export const useLeagueApi = () => {
 
       return request<TimelineData>(
         'GET',
-        `/timeline/${leagueId}?${params.toString()}`
+        `/public/timeline/${leagueId}?${params.toString()}`
       );
     } catch (error) {
       console.error('Error in getLeagueTimeline:', error);

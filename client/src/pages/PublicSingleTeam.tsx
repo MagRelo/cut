@@ -14,8 +14,7 @@ import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
 import { PlayerStats } from '../components/team/PlayerStats';
 import { PlayerSelectionModal } from '../components/team/PlayerSelectionModal';
-// import { NotificationSignup } from '../components/NotificationSignup';
-// import { UpgradeAnonymousUserForm } from '../components/UpgradeAnonymousUserForm';
+import { UserRegisterForm } from '../components/UserRegisterForm';
 
 export const PublicSingleTeam: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +35,7 @@ export const PublicSingleTeam: React.FC = () => {
     error: tournamentError,
     players: availablePlayers,
   } = useTournament();
-  const { user } = useAuth();
+  const { user, loading: isAuthLoading } = useAuth();
 
   const findMostRecentPlayerUpdate = (): Date | null => {
     if (!team?.players?.length) return null;
@@ -69,17 +68,7 @@ export const PublicSingleTeam: React.FC = () => {
     setError(null);
     try {
       let result = null;
-      if (
-        user &&
-        !user.isAnonymous &&
-        'teams' in user &&
-        user.teams &&
-        user.teams.length > 0
-      ) {
-        result = await teamApi.getTeam(user.teams[0].id);
-      } else if (user) {
-        result = await teamApi.getStandaloneTeam();
-      }
+      result = await teamApi.getStandaloneTeam();
       setTeam(result || null);
     } catch {
       setError('Failed to load team');
@@ -89,8 +78,10 @@ export const PublicSingleTeam: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTeam();
-  }, [user]);
+    if (!isAuthLoading) {
+      fetchTeam();
+    }
+  }, [user, isAuthLoading]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -139,10 +130,21 @@ export const PublicSingleTeam: React.FC = () => {
   };
 
   const isEditingAllowed = (): boolean => {
+    // return true;
     return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
-  if (isLoading || isTournamentLoading) {
+  // Utility to format phone numbers as (123) 456-7890
+  const formatPhoneNumber = (phone: string) => {
+    const cleaned = ('' + phone).replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return `(${match[1]}) ${match[2]}-${match[3]}`;
+    }
+    return phone;
+  };
+
+  if (isLoading || isTournamentLoading || isAuthLoading) {
     return (
       <div className='px-4 py-4'>
         <LoadingSpinner />
@@ -166,23 +168,6 @@ export const PublicSingleTeam: React.FC = () => {
       <div className='flex items-center justify-between mb-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
       </div>
-      {/* 
-      <div className='mb-4'>
-        <TeamForm
-          onSuccess={handleSuccess}
-          showTeamInfo={true}
-          showPlayerSelect={false}
-        />
-      </div>
-
-      <div className='flex items-center justify-between mb-2'>
-        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Lineup</h2>
-      </div>
-      <TeamForm
-        onSuccess={handleSuccess}
-        showTeamInfo={false}
-        showPlayerSelect={true}
-      /> */}
 
       {/* Team Section */}
       <div className=''>
@@ -363,14 +348,44 @@ export const PublicSingleTeam: React.FC = () => {
       <hr className='my-4' />
 
       {/* notifications */}
-      {/* <div className='flex items-center justify-between mb-2'>
+      <div className='flex items-center justify-between mb-2'>
         <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
-          Notifications
+          My Account
         </h2>
       </div>
       <div className='space-y-2'>
-        <NotificationSignup />
-      </div> */}
+        {user?.isAnonymous ? (
+          <UserRegisterForm />
+        ) : (
+          <div className='bg-white rounded-lg shadow p-4'>
+            <div className='flex items-center gap-2 mb-2'>
+              {user?.email ? (
+                <p>Email: {user.email}</p>
+              ) : user?.phone ? (
+                <p>Phone: {formatPhoneNumber(user.phone)}</p>
+              ) : null}
+            </div>
+
+            <h3 className='text-lg font-semibold mb-1'>Notifications</h3>
+
+            {/* Notifications Checkboxes that trigger updates*/}
+            <div className='flex items-center gap-2'>
+              <input type='checkbox' id='newTournamentOpen' />
+              <label htmlFor='newTournamentOpen'>
+                Mon: New Tournament Preview
+              </label>
+            </div>
+            <div className='flex items-center gap-2'>
+              <input type='checkbox' id='lineupReminder' />
+              <label htmlFor='lineupReminder'>Wed: Lineup Reminder</label>
+            </div>
+            <div className='flex items-center gap-2'>
+              <input type='checkbox' id='lineupReminder' />
+              <label htmlFor='lineupReminder'>Sun: Tournament Results</label>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>

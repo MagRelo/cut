@@ -1,52 +1,38 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import {
+  useAdminApi,
+  type User,
+  type SystemProcessRecord,
+} from '../../services/adminApi';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  userType: string;
-  createdAt: string;
-}
-
-interface SystemProcessRecord {
-  id: string;
-  processType: string;
-  status: string;
-  processData: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export function AdminPage() {
+export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'processes'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [processes, setProcesses] = useState<SystemProcessRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const adminApi = useAdminApi();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (activeTab === 'users') {
-          const response = await api.get<User[]>('/admin/users');
-          setUsers(response);
-        } else {
-          const response = await api.getSystemProcesses();
-          setProcesses(response);
-        }
+        const [usersResponse, processesResponse] = await Promise.all([
+          adminApi.getUsers(),
+          adminApi.getSystemProcesses(),
+        ]);
+        setUsers(usersResponse);
+        setProcesses(processesResponse);
       } catch (err) {
-        setError(`Failed to fetch ${activeTab}`);
-        console.error(`Error fetching ${activeTab}:`, err);
+        setError('Failed to load admin data');
+        console.error('Error loading admin data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    setLoading(true);
     fetchData();
-  }, [activeTab]);
+  }, [adminApi]);
 
   if (loading)
     return (
@@ -192,4 +178,4 @@ export function AdminPage() {
       </div>
     </div>
   );
-}
+};
