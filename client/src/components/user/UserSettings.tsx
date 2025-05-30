@@ -46,7 +46,7 @@ export function UserSettings() {
   return (
     <>
       <div className='bg-white shadow rounded-lg p-4 mb-4'>
-        <h2 className='text-xl font-medium text-gray-900 mb-4'>
+        <h2 className='text-xl font-medium text-gray-900 mb-2'>
           Notification Settings
         </h2>
         <NotificationSettings />
@@ -54,7 +54,7 @@ export function UserSettings() {
 
       <div className='bg-white shadow rounded-lg p-4 mt-4'>
         <div>
-          <h2 className='text-lg font-medium text-gray-900'>
+          <h2 className='text-xl font-medium text-gray-900 mb-2'>
             Profile Information
           </h2>
         </div>

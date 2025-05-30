@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from 'react-router-dom';
 import {
   contactVerificationSchema,
   ContactVerificationFormData,
@@ -81,7 +82,7 @@ export const UserRegisterForm = () => {
     <div className='max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
         {/* title */}
-        <h2 className='text-xl font-medium text-gray-900'>
+        <h2 className='text-xl font-medium text-gray-900 mb-2'>
           Register or Sign In
         </h2>
         <p className=' text-gray-800'>We will send you a 6-digit code.</p>
@@ -128,11 +129,11 @@ export const UserRegisterForm = () => {
                 isVerifying ? 'text-gray-500' : ''
               }`}>
               I accept the{' '}
-              <a
-                href='/terms'
+              <Link
+                to='/terms'
                 className='text-emerald-600 hover:text-emerald-500'>
                 terms and conditions
-              </a>
+              </Link>
             </label>
             {errors.termsAccepted && (
               <p className='mt-1 text-sm text-red-600'>

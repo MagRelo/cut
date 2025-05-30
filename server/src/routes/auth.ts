@@ -239,7 +239,7 @@ router.post('/verify', async (req, res) => {
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { expiresIn: '180d' }
     );
 
     // Get user with teams

@@ -7,16 +7,19 @@ const NOTIFICATION_OPTIONS = [
     key: 'tournamentPreview',
     title: 'Tournament Preview',
     description: 'Get a preview of the upcoming tournament on Monday.',
+    comingSoon: true,
   },
   {
     key: 'lineupReminder',
     title: 'Lineup Reminder',
     description: 'Receive a reminder to set your lineup on Wednesday.',
+    comingSoon: false,
   },
   {
     key: 'tournamentResults',
     title: 'Tournament Results',
     description: 'Get the results of the tournament on Sunday.',
+    comingSoon: true,
   },
 ];
 
@@ -57,12 +60,25 @@ export const NotificationSettings: React.FC = () => {
                   id={option.key}
                   checked={!!notifications[option.key]}
                   onChange={(e) => handleChange(option.key, e.target.checked)}
-                  className='form-checkbox h-5 w-5 text-emerald-600'
+                  disabled={option.comingSoon}
+                  className={`form-checkbox h-5 w-5 text-emerald-600 ${
+                    option.comingSoon ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 />
               )}
             </div>
             <label htmlFor={option.key} className='text-gray-800 flex flex-col'>
-              <span className='font-semibold'>{option.title}</span>
+              <span
+                className={`font-semibold flex items-center gap-2 ${
+                  option.comingSoon ? 'text-gray-400' : ''
+                }`}>
+                {option.title}
+                {option.comingSoon && (
+                  <span className='text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full'>
+                    Coming Soon
+                  </span>
+                )}
+              </span>
               <span className='text-xs text-gray-500'>
                 {option.description}
               </span>
