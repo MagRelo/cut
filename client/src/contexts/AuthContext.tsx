@@ -364,14 +364,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('Initializing auth');
+      // console.log('Initializing auth');
 
       try {
         const token = localStorage.getItem('token');
         const guid = localStorage.getItem('publicUserGuid');
 
         if (token) {
-          console.log('Using token', token);
+          // console.log('Using token', token);
           try {
             const response = await request<AuthenticatedUser>(
               'GET',
@@ -399,7 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Only proceed with anonymous user if we don't have a valid token
         if (guid) {
-          console.log('Using guid', guid);
+          // console.log('Using guid', guid);
           const anonymousUser: AnonymousUser = {
             id: guid,
             isAnonymous: true,
