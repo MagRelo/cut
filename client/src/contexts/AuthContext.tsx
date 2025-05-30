@@ -7,6 +7,7 @@ import {
   useCallback,
 } from 'react';
 import { z } from 'zod';
+import { handleApiResponse, ApiError } from '../utils/apiError';
 
 // Validation schemas matching server
 const contactSchema = z.object({
@@ -62,6 +63,7 @@ interface AuthenticatedUser extends BaseUser {
     leagueId: string;
     leagueName: string;
   }>;
+  settings?: Record<string, unknown>;
 }
 
 interface AnonymousUser extends BaseUser {
@@ -85,6 +87,7 @@ interface AuthContextData {
   ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updatedUser: z.infer<typeof updateUserSchema>) => Promise<void>;
+  updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
   isAdmin: () => boolean;
   getCurrentUser: () => User;
   upgradeAnonymousUser: (contact: string, code: string) => Promise<void>;
@@ -145,54 +148,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: data ? JSON.stringify(data) : undefined,
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
+      try {
+        return await handleApiResponse<T>(response);
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 401) {
           localStorage.removeItem('token');
-          throw new Error('Authentication failed');
+          localStorage.removeItem('userId');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw error;
       }
-
-      if (response.status === 204) {
-        return undefined as T;
-      }
-
-      return response.json();
     },
     [config]
   );
 
   const requestVerification = useCallback(
     async (contact: string) => {
-      const validatedData = contactSchema.parse({ contact });
-      await request<{ success: boolean }>(
-        'POST',
-        '/auth/request-verification',
-        validatedData,
-        true
-      );
+      try {
+        const validatedData = contactSchema.parse({ contact });
+        await request<{ success: boolean }>(
+          'POST',
+          '/auth/request-verification',
+          validatedData,
+          true
+        );
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ApiError(400, error.errors[0].message);
+        }
+        throw error;
+      }
     },
     [request]
   );
 
   const verifyAndLogin = useCallback(
     async (contact: string, code: string) => {
-      const validatedData = verifySchema.parse({ contact, code });
-      const response = await request<AuthenticatedUser>(
-        'POST',
-        '/auth/verify',
-        validatedData,
-        true
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
-      setStreamToken(response.streamToken);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.id);
-      localStorage.removeItem('publicUserGuid');
+      try {
+        const validatedData = verifySchema.parse({ contact, code });
+        const response = await request<AuthenticatedUser>(
+          'POST',
+          '/auth/verify',
+          validatedData,
+          true
+        );
+        const authenticatedUser: AuthenticatedUser = {
+          ...response,
+          isAnonymous: false,
+        };
+        setUser(authenticatedUser);
+        setStreamToken(response.streamToken);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.id);
+        localStorage.removeItem('publicUserGuid');
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ApiError(400, error.errors[0].message);
+        }
+        throw error;
+      }
     },
     [request]
   );
@@ -204,27 +217,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: string,
       anonymousGuid?: string
     ) => {
-      const validatedData = verifySchema.parse({
-        contact,
-        code,
-        name,
-        anonymousGuid,
-      });
-      const response = await request<AuthenticatedUser>(
-        'POST',
-        '/auth/verify',
-        validatedData,
-        true
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
-      setStreamToken(response.streamToken);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.id);
-      localStorage.removeItem('publicUserGuid');
+      try {
+        const validatedData = verifySchema.parse({
+          contact,
+          code,
+          name,
+          anonymousGuid,
+        });
+        const response = await request<AuthenticatedUser>(
+          'POST',
+          '/auth/verify',
+          validatedData,
+          true
+        );
+        const authenticatedUser: AuthenticatedUser = {
+          ...response,
+          isAnonymous: false,
+        };
+        setUser(authenticatedUser);
+        setStreamToken(response.streamToken);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('userId', response.id);
+        localStorage.removeItem('publicUserGuid');
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          throw new ApiError(400, error.errors[0].message);
+        }
+        throw error;
+      }
     },
     [request]
   );
@@ -239,29 +259,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setStreamToken(null);
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
+      localStorage.removeItem('publicUserGuid');
+
+      // Create new anonymous user
+      const newGuid = crypto.randomUUID();
+      localStorage.setItem('publicUserGuid', newGuid);
+      const anonymousUser: AnonymousUser = {
+        id: newGuid,
+        isAnonymous: true,
+        guid: newGuid,
+      };
+      setUser(anonymousUser);
     }
   }, [request]);
 
   const updateUser = useCallback(
     async (updatedUser: z.infer<typeof updateUserSchema>) => {
-      const validatedData = updateUserSchema.parse(updatedUser);
-      const response = await request<AuthenticatedUser>(
-        'PUT',
-        '/auth/update',
-        validatedData
-      );
-      const authenticatedUser: AuthenticatedUser = {
-        ...response,
-        isAnonymous: false,
-      };
-      setUser(authenticatedUser);
       try {
-        const { streamToken: newStreamToken } = await request<{
-          streamToken: string;
-        }>('GET', '/auth/stream-token');
-        setStreamToken(newStreamToken);
+        const validatedData = updateUserSchema.parse(updatedUser);
+        const response = await request<AuthenticatedUser>(
+          'PUT',
+          '/auth/update',
+          validatedData
+        );
+        const authenticatedUser: AuthenticatedUser = {
+          ...response,
+          isAnonymous: false,
+        };
+        setUser(authenticatedUser);
+        try {
+          const { streamToken: newStreamToken } = await request<{
+            streamToken: string;
+          }>('GET', '/auth/stream-token');
+          setStreamToken(newStreamToken);
+        } catch (error) {
+          console.error('Failed to refresh stream token:', error);
+        }
       } catch (error) {
-        console.error('Failed to refresh stream token:', error);
+        if (error instanceof z.ZodError) {
+          throw new ApiError(400, error.errors[0].message);
+        }
+        throw error;
+      }
+    },
+    [request]
+  );
+
+  const updateUserSettings = useCallback(
+    async (settings: Record<string, unknown>) => {
+      try {
+        await request<{ settings: Record<string, unknown> }>(
+          'PUT',
+          '/auth/settings',
+          settings
+        );
+        setUser((prev) =>
+          prev && !prev.isAnonymous ? { ...prev, settings } : prev
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          throw error;
+        }
+        throw new ApiError(500, 'Failed to update user settings');
       }
     },
     [request]
@@ -378,6 +437,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verifyAndRegister,
       logout,
       updateUser,
+      updateUserSettings,
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,
@@ -391,6 +451,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verifyAndRegister,
       logout,
       updateUser,
+      updateUserSettings,
       isAdmin,
       getCurrentUser,
       upgradeAnonymousUser,

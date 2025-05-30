@@ -14,7 +14,8 @@ import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
 import { PlayerStats } from '../components/team/PlayerStats';
 import { PlayerSelectionModal } from '../components/team/PlayerSelectionModal';
-import { UserRegisterForm } from '../components/UserRegisterForm';
+import { PageHeader } from '../components/common/PageHeader';
+// import { UserRegisterForm } from '../components/UserRegisterForm';
 
 export const PublicSingleTeam: React.FC = () => {
   const navigate = useNavigate();
@@ -134,16 +135,6 @@ export const PublicSingleTeam: React.FC = () => {
     return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
-  // Utility to format phone numbers as (123) 456-7890
-  const formatPhoneNumber = (phone: string) => {
-    const cleaned = ('' + phone).replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-    if (match) {
-      return `(${match[1]}) ${match[2]}-${match[3]}`;
-    }
-    return phone;
-  };
-
   if (isLoading || isTournamentLoading || isAuthLoading) {
     return (
       <div className='px-4 py-4'>
@@ -165,9 +156,7 @@ export const PublicSingleTeam: React.FC = () => {
   return (
     <div className='p-4'>
       {/* Team Info */}
-      <div className='flex items-center justify-between mb-2'>
-        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>My Team</h2>
-      </div>
+      <PageHeader title='My Team' />
 
       {/* Team Section */}
       <div className=''>
@@ -346,46 +335,6 @@ export const PublicSingleTeam: React.FC = () => {
       </div>
 
       <hr className='my-4' />
-
-      {/* notifications */}
-      <div className='flex items-center justify-between mb-2'>
-        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
-          My Account
-        </h2>
-      </div>
-      <div className='space-y-2'>
-        {user?.isAnonymous ? (
-          <UserRegisterForm />
-        ) : (
-          <div className='bg-white rounded-lg shadow p-4'>
-            <div className='flex items-center gap-2 mb-2'>
-              {user?.email ? (
-                <p>Email: {user.email}</p>
-              ) : user?.phone ? (
-                <p>Phone: {formatPhoneNumber(user.phone)}</p>
-              ) : null}
-            </div>
-
-            <h3 className='text-lg font-semibold mb-1'>Notifications</h3>
-
-            {/* Notifications Checkboxes that trigger updates*/}
-            <div className='flex items-center gap-2'>
-              <input type='checkbox' id='newTournamentOpen' />
-              <label htmlFor='newTournamentOpen'>
-                Mon: New Tournament Preview
-              </label>
-            </div>
-            <div className='flex items-center gap-2'>
-              <input type='checkbox' id='lineupReminder' />
-              <label htmlFor='lineupReminder'>Wed: Lineup Reminder</label>
-            </div>
-            <div className='flex items-center gap-2'>
-              <input type='checkbox' id='lineupReminder' />
-              <label htmlFor='lineupReminder'>Sun: Tournament Results</label>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Share Section */}
       <div className='flex justify-center my-8'>

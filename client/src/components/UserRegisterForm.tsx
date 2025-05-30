@@ -6,6 +6,7 @@ import {
   ContactVerificationFormData,
 } from '../validations/notificationSignup';
 import { useAuth } from '../contexts/AuthContext';
+import { isApiError } from '../utils/apiError';
 
 export const UserRegisterForm = () => {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -47,6 +48,10 @@ export const UserRegisterForm = () => {
           setError('Verification code is required');
           return;
         }
+        if (!data.termsAccepted) {
+          setError('You must accept the terms and conditions');
+          return;
+        }
         const currentUser = getCurrentUser();
         const anonymousGuid = currentUser.isAnonymous
           ? currentUser.guid
@@ -61,13 +66,27 @@ export const UserRegisterForm = () => {
         setIsVerifying(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (isApiError(err)) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
   return (
     <div className='max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+        {/* title */}
+        <h2 className='text-xl font-medium text-gray-900'>
+          Register or Sign In
+        </h2>
+        <p className=' text-gray-800'>
+          We will send a 6-digit code to your email or phone number.
+        </p>
+
         <div>
           <label
             htmlFor='contact'
@@ -111,6 +130,36 @@ export const UserRegisterForm = () => {
                 {errors.verificationCode.message}
               </p>
             )}
+          </div>
+        )}
+
+        {isVerifying && (
+          <div className='flex items-start mt-4'>
+            <div className='flex items-center h-5'>
+              <input
+                {...register('termsAccepted')}
+                type='checkbox'
+                id='termsAccepted'
+                className='w-4 h-4 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500'
+              />
+            </div>
+            <div className='ml-3 text-sm'>
+              <label
+                htmlFor='termsAccepted'
+                className='font-medium text-gray-700'>
+                I accept the{' '}
+                <a
+                  href='/terms'
+                  className='text-emerald-600 hover:text-emerald-500'>
+                  terms and conditions
+                </a>
+              </label>
+              {errors.termsAccepted && (
+                <p className='mt-1 text-sm text-red-600'>
+                  {errors.termsAccepted.message}
+                </p>
+              )}
+            </div>
           </div>
         )}
 

@@ -1,13 +1,25 @@
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { NotificationSettings } from '../../components/common/NotificationSettings';
 
 export function UserSettings() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  // Utility to format phone numbers as (123) 456-7890
+  const formatPhoneNumber = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+    }
+    return phone;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
   };
 
   if (!user) {
@@ -32,65 +44,37 @@ export function UserSettings() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-3xl mx-auto'>
-        <div className='bg-white shadow rounded-lg p-6'>
-          <h1 className='text-2xl font-bold text-gray-900 mb-6'>
-            User Settings
-          </h1>
+    <>
+      <div className='bg-white shadow rounded-lg p-4 mb-4'>
+        <h2 className='text-xl font-medium text-gray-900 mb-4'>
+          Notification Settings
+        </h2>
+        <NotificationSettings />
+      </div>
 
-          <div className='space-y-8'>
-            <div>
-              <h2 className='text-lg font-medium text-gray-900'>
-                Profile Information
-              </h2>
-              <div className='mt-4 space-y-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Name
-                  </label>
-                  <div className='mt-1 text-gray-900'>{user.name}</div>
-                </div>
-
-                <div>
-                  <label className='block text-sm font-medium text-gray-700'>
-                    Email
-                  </label>
-                  <div className='mt-1 text-gray-900'>{user.email}</div>
-                </div>
-
-                {user.phone && (
-                  <div>
-                    <label className='block text-sm font-medium text-gray-700'>
-                      Phone
-                    </label>
-                    <div className='mt-1 text-gray-900'>{user.phone}</div>
-                  </div>
-                )}
-
-                {user.teams.length > 0 && (
-                  <div>
-                    <dt className='text-sm font-medium text-gray-500'>Teams</dt>
-                    {user.teams.map((team) => (
-                      <div key={team.id} className='mt-1 text-gray-900'>
-                        {team.name} ({team.leagueName})
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <div className='bg-white shadow rounded-lg p-4 mt-4'>
+        <div>
+          <h2 className='text-lg font-medium text-gray-900'>
+            Profile Information
+          </h2>
+        </div>
+        <div className='space-y-4'>
+          {user.email && <div className='mt-1 text-gray-900'>{user.email}</div>}
+          {user.phone && (
+            <div className='mt-1 text-gray-900'>
+              {formatPhoneNumber(user.phone)}
             </div>
+          )}
+        </div>
 
-            <div>
-              <button
-                onClick={handleLogout}
-                className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'>
-                Logout
-              </button>
-            </div>
-          </div>
+        <div className='mt-4'>
+          <button
+            onClick={handleLogout}
+            className='text-sm text-gray-500 hover:text-red-600 focus:outline-none border border-gray-300 rounded px-4 py-1 hover:border-red-600'>
+            Logout
+          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

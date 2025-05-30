@@ -311,6 +311,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       name: user.name,
       userType: user.userType,
       teams,
+      settings: user.settings,
     });
   } catch (error) {
     console.error('Get current user error:', error);
@@ -355,6 +356,29 @@ router.put('/update', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update user error:', error);
     res.status(400).json({ message: 'Failed to update user' });
+  }
+});
+
+// Update user settings route
+router.put('/settings', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    // Accept any JSON object for settings
+    const settings = req.body;
+    if (typeof settings !== 'object' || settings === null) {
+      return res.status(400).json({ error: 'Invalid settings object' });
+    }
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { settings },
+      select: { settings: true },
+    });
+    res.json({ settings: user.settings });
+  } catch (error) {
+    console.error('Update user settings error:', error);
+    res.status(500).json({ error: 'Failed to update user settings' });
   }
 });
 

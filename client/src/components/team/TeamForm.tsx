@@ -186,7 +186,7 @@ export const TeamForm = ({
   return (
     <div className='bg-white rounded shadow p-6'>
       <div className=''>
-        <form onSubmit={handleSubmit} className='space-y-8'>
+        <form onSubmit={handleSubmit} className='space-y-4'>
           {/* Team Setup */}
           {showTeamInfo && (
             <div className='space-y-4'>
@@ -204,7 +204,7 @@ export const TeamForm = ({
                 </div>
                 <div>
                   <Label htmlFor='team-color'>TEAM COLOR</Label>
-                  <div className='mt-2 grid grid-cols-5 gap-3'>
+                  <div className='mt-3 grid grid-cols-5 gap-3'>
                     {[
                       '#0a73eb',
                       '#A3A3A3',
@@ -229,9 +229,9 @@ export const TeamForm = ({
                           className='sr-only'
                         />
                         <span
-                          className={`h-8 w-8 rounded-full border-4 ring-2 ring-white ${
+                          className={`h-8 w-8 rounded-full border-4 ${
                             teamColor === color
-                              ? 'border-gray-900 border border-9'
+                              ? 'border-white ring-2 ring-gray-400'
                               : 'border-white'
                           }`}
                           style={{ backgroundColor: color }}
@@ -243,10 +243,10 @@ export const TeamForm = ({
               </div>
             </div>
           )}
+          <hr className='my-4' />
 
           {!isEditingAllowed() && (
             <>
-              <hr className='my-4' />
               <div
                 className='bg-gray-50 text-gray-600 font-semibold px-3 py-2 rounded text-sm border border-orange-300'
                 role='alert'>
