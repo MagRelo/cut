@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useLeagueApi } from '../services/leagueApi';
+import { PageHeader } from '../components/util/PageHeader';
 
 // Validation schema
 const createLeagueSchema = z.object({
@@ -50,9 +51,7 @@ export const PublicCreateLeague: React.FC = () => {
   return (
     <div className='container mx-auto px-4 py-4'>
       <div className='max-w-2xl mx-auto'>
-        <h1 className='text-3xl font-bold text-gray-900 mb-4'>
-          Create New Public League
-        </h1>
+        <PageHeader title='Create New League' />
 
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
           <div>

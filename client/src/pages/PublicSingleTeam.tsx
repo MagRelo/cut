@@ -156,7 +156,7 @@ export const PublicSingleTeam: React.FC = () => {
   return (
     <div className='p-4'>
       {/* Team Info */}
-      <PageHeader title='My Team' />
+      <PageHeader title='My Team' className='mb-4' />
 
       {/* Team Section */}
       <div className=''>
@@ -319,9 +319,9 @@ export const PublicSingleTeam: React.FC = () => {
 
       {/* Leagues */}
       <div className='flex items-center justify-between mb-2 mt-6'>
-        <h2 className='text-3xl font-extrabold text-gray-400 m-0'>
-          My Leagues
-        </h2>
+        <div className='flex items-center'>
+          <PageHeader title='My Leagues' />
+        </div>
         <button
           onClick={() => navigate('/public/leagues')}
           className='px-3 py-1 text-xs bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 transition-colors duration-150 font-semibold'>

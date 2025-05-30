@@ -7,13 +7,15 @@ export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
 
   return (
-    <div className='flex-1 w-full flex flex-col items-center  bg-gray-50 pt-16 md:py-12 pb-20'>
-      <img
-        src='/cut-logo2.jpeg'
-        alt='Cut Logo'
-        className='w-48 h-48 mb-6 rounded-full border-2 border-gray-400 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
-      />
-      <h1 className='text-6xl font-bold text-black mb-4'>the Cut</h1>
+    <div className='flex-1 w-full flex flex-col items-center  bg-gray-50 pt-10 pb-20'>
+      <div className='flex items-center gap-6 mb-4'>
+        <img
+          src='/cut-logo2.jpeg'
+          alt='Cut Logo'
+          className='w-20 h-20 rounded-full border-2 border-gray-400 shadow-[0_4px_5px_rgba(0,0,0,0.2)]'
+        />
+        <h1 className='text-6xl font-bold text-black'>the Cut</h1>
+      </div>
 
       <h4 className='text-2xl font-bold text-gray-800 mb-3'>
         keep the group chat alive

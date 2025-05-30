@@ -5,6 +5,7 @@ import { LeagueCard } from '../components/LeagueCard';
 import { type League } from '../types/league';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
+import { PageHeader } from '../components/util/PageHeader';
 
 export const PublicLeagueList: React.FC = () => {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -56,9 +57,7 @@ export const PublicLeagueList: React.FC = () => {
           {/* My Leagues */}
           {ownedLeagues.length > 0 && (
             <>
-              <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0'>
-                <h1 className='text-3xl font-bold text-gray-400'>My Leagues</h1>
-              </div>
+              <PageHeader title='My Leagues' className='mb-4' />
               {/* League List Section */}
               <div className='space-y-2 mb-10'>
                 <div className='space-y-2'>
@@ -72,7 +71,7 @@ export const PublicLeagueList: React.FC = () => {
 
           {/* Header Section */}
           <div className='flex justify-between items-center mb-4'>
-            <h1 className='text-3xl font-bold text-gray-400'>All Leagues</h1>
+            <PageHeader title='All Leagues' />
             <Link
               to='/public/leagues/new'
               className='text-white bg-emerald-600 hover:bg-emerald-700 px-2 py-1 rounded text-xs transition-colors duration-150 inline-flex items-center gap-1'>

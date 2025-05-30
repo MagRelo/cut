@@ -85,7 +85,9 @@ export const UserRegisterForm = () => {
         <h2 className='text-xl font-medium text-gray-900 mb-2'>
           Register or Sign In
         </h2>
-        <p className=' text-gray-800'>We will send you a 6-digit code.</p>
+        <p className=' text-gray-800'>
+          We will send a 6-digit code to verify your account.
+        </p>
 
         <div>
           <label
