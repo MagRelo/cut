@@ -3,8 +3,8 @@ import {
   useAdminApi,
   type User,
   type SystemProcessRecord,
-} from '../../services/adminApi';
-import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+} from '../services/adminApi';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'processes'>('users');

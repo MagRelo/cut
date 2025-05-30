@@ -1,8 +1,7 @@
-import React from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { UserRegisterForm } from '../../components/UserRegisterForm';
-import { UserSettings } from './UserSettings';
-import { PageHeader } from '../../components/common/PageHeader';
+import { useAuth } from '../contexts/AuthContext';
+import { UserRegisterForm } from '../components/user/UserRegisterForm';
+import { UserSettings } from '../components/user/UserSettings';
+import { PageHeader } from '../components/util/PageHeader';
 
 export function UserPage() {
   const { user } = useAuth();

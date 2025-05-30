@@ -7,14 +7,14 @@ import { useTournament } from '../contexts/TournamentContext';
 import type { Team } from '../types/team';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { ErrorMessage } from '../components/common/ErrorMessage';
+import { ErrorMessage } from '../components/util/ErrorMessage';
 import { TeamForm } from '../components/team/TeamForm';
 import { Share } from '../components/common/Share';
 import { LeagueCard } from '../components/LeagueCard';
 import { PlayerCard } from '../components/player/PlayerCard';
 import { PlayerStats } from '../components/team/PlayerStats';
 import { PlayerSelectionModal } from '../components/team/PlayerSelectionModal';
-import { PageHeader } from '../components/common/PageHeader';
+import { PageHeader } from '../components/util/PageHeader';
 // import { UserRegisterForm } from '../components/UserRegisterForm';
 
 export const PublicSingleTeam: React.FC = () => {

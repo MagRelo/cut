@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from './LoadingSpinner';
-import { ErrorMessage } from './ErrorMessage';
+import { ErrorMessage } from '../util/ErrorMessage';
 import { useTournament } from '../../contexts/TournamentContext';
 import { CountdownTimer } from './CountdownTimer';
 

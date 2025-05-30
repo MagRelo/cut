@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { NotificationSettings } from '../../components/common/NotificationSettings';
+import { NotificationSettings } from './NotificationSettings';
 
 export function UserSettings() {
   const { user, logout } = useAuth();

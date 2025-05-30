@@ -5,7 +5,7 @@ import { useTeamApi } from '../../services/teamApi';
 import { useTournament } from '../../contexts/TournamentContext';
 
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { ErrorMessage } from '../common/ErrorMessage';
+import { ErrorMessage } from '../util/ErrorMessage';
 import { PlayerSelectionModal } from '../team/PlayerSelectionModal';
 import { PlayerStats } from './PlayerStats';
 

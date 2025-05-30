@@ -167,7 +167,6 @@ export const PublicLeagueLobby: React.FC = () => {
   }
 
   const teams: Team[] = league.teams ?? [];
-
   const userHasTeam = teams.some((team) => team.userId === user?.id);
 
   return (
@@ -211,7 +210,7 @@ export const PublicLeagueLobby: React.FC = () => {
           </div>
 
           {/* join button */}
-          {user && !user.isAnonymous && !userHasTeam && (
+          {user && !userHasTeam && (
             <button
               onClick={handleJoinLeague}
               disabled={isActionLoading}
@@ -289,7 +288,7 @@ export const PublicLeagueLobby: React.FC = () => {
 
       {/* Leave League Buttons */}
       <div className='flex justify-center my-8'>
-        {user && !user.isAnonymous && userHasTeam && (
+        {user && userHasTeam && (
           <button
             onClick={handleLeaveLeague}
             disabled={isActionLoading}

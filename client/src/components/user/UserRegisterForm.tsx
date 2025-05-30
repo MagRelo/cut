@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   contactVerificationSchema,
   ContactVerificationFormData,
-} from '../validations/notificationSignup';
-import { useAuth } from '../contexts/AuthContext';
-import { isApiError } from '../utils/apiError';
+} from '../../validations/notificationSignup';
+import { useAuth } from '../../contexts/AuthContext';
+import { isApiError } from '../../utils/apiError';
 
 export const UserRegisterForm = () => {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -36,6 +36,11 @@ export const UserRegisterForm = () => {
       setError(null);
       setSuccess(null);
 
+      if (!data.termsAccepted) {
+        setError('You must accept the terms and conditions');
+        return;
+      }
+
       if (!isVerifying) {
         // Request verification code
         await requestVerification(data.contact);
@@ -46,10 +51,6 @@ export const UserRegisterForm = () => {
         // Verify code and register
         if (!data.verificationCode) {
           setError('Verification code is required');
-          return;
-        }
-        if (!data.termsAccepted) {
-          setError('You must accept the terms and conditions');
           return;
         }
         const currentUser = getCurrentUser();
@@ -83,9 +84,7 @@ export const UserRegisterForm = () => {
         <h2 className='text-xl font-medium text-gray-900'>
           Register or Sign In
         </h2>
-        <p className=' text-gray-800'>
-          We will send a 6-digit code to your email or phone number.
-        </p>
+        <p className=' text-gray-800'>We will send you a 6-digit code.</p>
 
         <div>
           <label
@@ -110,6 +109,39 @@ export const UserRegisterForm = () => {
           )}
         </div>
 
+        <div className='flex items-start'>
+          <div className='flex items-center h-5'>
+            <input
+              {...register('termsAccepted')}
+              type='checkbox'
+              id='termsAccepted'
+              disabled={isVerifying}
+              className={`w-4 h-4 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 ${
+                isVerifying ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
+            />
+          </div>
+          <div className='ml-3 text-sm'>
+            <label
+              htmlFor='termsAccepted'
+              className={`font-medium text-gray-700 ${
+                isVerifying ? 'text-gray-500' : ''
+              }`}>
+              I accept the{' '}
+              <a
+                href='/terms'
+                className='text-emerald-600 hover:text-emerald-500'>
+                terms and conditions
+              </a>
+            </label>
+            {errors.termsAccepted && (
+              <p className='mt-1 text-sm text-red-600'>
+                {errors.termsAccepted.message}
+              </p>
+            )}
+          </div>
+        </div>
+
         {isVerifying && (
           <div className='mt-4'>
             <label
@@ -130,36 +162,6 @@ export const UserRegisterForm = () => {
                 {errors.verificationCode.message}
               </p>
             )}
-          </div>
-        )}
-
-        {isVerifying && (
-          <div className='flex items-start mt-4'>
-            <div className='flex items-center h-5'>
-              <input
-                {...register('termsAccepted')}
-                type='checkbox'
-                id='termsAccepted'
-                className='w-4 h-4 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500'
-              />
-            </div>
-            <div className='ml-3 text-sm'>
-              <label
-                htmlFor='termsAccepted'
-                className='font-medium text-gray-700'>
-                I accept the{' '}
-                <a
-                  href='/terms'
-                  className='text-emerald-600 hover:text-emerald-500'>
-                  terms and conditions
-                </a>
-              </label>
-              {errors.termsAccepted && (
-                <p className='mt-1 text-sm text-red-600'>
-                  {errors.termsAccepted.message}
-                </p>
-              )}
-            </div>
           </div>
         )}
 

@@ -4,12 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { TournamentProvider } from './contexts/TournamentContext';
 
-import { Login } from './pages/user/Login';
-import { Register } from './pages/user/Register';
-import { ForgotPassword } from './pages/user/ForgotPassword';
-import { AdminPage } from './pages/user/AdminPage';
-import { UserSettings } from './pages/user/UserSettings';
-import { UserPage } from './pages/user/UserPage';
+import { AdminPage } from './pages/AdminPage';
+import { UserPage } from './pages/UserPage';
 import { TermsOfService } from './pages/TermsOfService';
 
 import { Home } from './pages/Home';
@@ -18,8 +14,8 @@ import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
 import { PublicCreateLeague } from './pages/PublicCreateLeague';
 import { PublicSingleTeam } from './pages/PublicSingleTeam';
 
-import { Navigation } from './components/common/Navigation';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { Navigation } from './components/Navigation';
+import { ProtectedRoute } from './components/util/ProtectedRoute';
 import { TournamentInfoCard } from './components/common/TournamentInfoCard';
 // import { PublicTeamFormComponent } from 'components/team/PublicTeamFormComponent';
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
@@ -40,12 +36,6 @@ export const App: React.FC = () => {
                   </div>
                   <Routes>
                     <Route path='/' element={<Home />} />
-                    <Route path='/login' element={<Login />} />
-                    <Route path='/register' element={<Register />} />
-                    <Route
-                      path='/forgot-password'
-                      element={<ForgotPassword />}
-                    />
                     <Route path='/terms' element={<TermsOfService />} />
                     <Route path='/user' element={<UserPage />} />
 
@@ -63,16 +53,8 @@ export const App: React.FC = () => {
                       element={<PublicLeagueLobby />}
                     />
                     <Route path='/public/team' element={<PublicSingleTeam />} />
-                    <Route
-                      path='/settings'
-                      element={
-                        <ProtectedRoute>
-                          <UserSettings />
-                        </ProtectedRoute>
-                      }
-                    />
 
-                    {/* Admin Routes */}
+                    {/* Protected Routes */}
                     <Route
                       path='/admin'
                       element={
