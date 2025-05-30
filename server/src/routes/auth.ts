@@ -75,29 +75,61 @@ router.post('/request-verification', async (req, res) => {
   try {
     const { contact } = contactSchema.parse(req.body);
 
-    // Check if user exists
-    const existingUser = await prisma.user.findFirst({
+    // Find user again without the expiration check
+    const user = await prisma.user.findFirst({
       where: {
         OR: [{ email: contact }, { phone: contact }],
       },
     });
 
+    // Check login attempts
+    if (user) {
+      const lastAttempt = user.lastLoginAt || new Date(0);
+      const hoursSinceLastAttempt =
+        (new Date().getTime() - lastAttempt.getTime()) / (1000 * 60 * 60);
+
+      // If within 24 hours and already at 3 attempts
+      if (hoursSinceLastAttempt < 24 && (user.loginAttempts ?? 0) >= 3) {
+        return res.status(429).json({
+          error:
+            'Maximum verification code requests reached. Please try again later.',
+        });
+      }
+
+      // If more than 24 hours have passed, reset the counter
+      if (hoursSinceLastAttempt >= 24) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            loginAttempts: 0,
+            lastLoginAt: new Date(),
+          },
+        });
+      }
+    }
+
     // Generate verification code
     const verificationCode = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
 
-    if (existingUser) {
+    if (user) {
+      console.log('updating user', user.loginAttempts);
       // Update existing user
       await prisma.user.update({
-        where: { id: existingUser.id },
+        where: { id: user.id },
         data: {
           verificationCode,
           verificationCodeExpiresAt: expiresAt,
+          loginAttempts: {
+            increment: 1,
+          },
+          lastLoginAt: new Date(),
         },
       });
     } else {
+      console.log('creating user');
       // Create new user
       await prisma.user.create({
         data: {
@@ -106,6 +138,8 @@ router.post('/request-verification', async (req, res) => {
           name: 'User', // Will be updated during registration
           verificationCode,
           verificationCodeExpiresAt: expiresAt,
+          loginAttempts: 1,
+          lastLoginAt: new Date(),
         },
       });
     }
@@ -122,7 +156,8 @@ router.post('/request-verification', async (req, res) => {
         html: `
           <h1>Your Verification Code</h1>
           <p>Your verification code is: <strong>${verificationCode}</strong></p>
-          <p>This code will expire in 15 minutes.</p>
+          <p>This code will expire in 60 minutes.</p>
+          <p>If you didn't request this code, you can safely ignore this email.</p>
         `,
       });
       console.log(
@@ -135,7 +170,7 @@ router.post('/request-verification', async (req, res) => {
       await sendSMS({
         // to: contact,
         to: testPhoneNumber,
-        body: `Your verification code is: ${verificationCode}`,
+        body: `Your verification code is: ${verificationCode}. This code will expire in 60 minutes.`,
       });
       console.log(`SMS verification code for ${contact}: ${verificationCode}`);
     }
@@ -176,6 +211,15 @@ router.post('/verify', async (req, res) => {
         .status(400)
         .json({ error: 'Invalid or expired verification code' });
     }
+
+    // Reset login attempts on successful verification
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        loginAttempts: 0,
+        lastLoginAt: null,
+      },
+    });
 
     // If this is a registration (has name), update user details
     if (name) {
