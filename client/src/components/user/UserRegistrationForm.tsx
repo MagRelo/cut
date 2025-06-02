@@ -8,6 +8,7 @@ import {
 } from '../../validations/notificationSignup';
 import { useAuth } from '../../contexts/AuthContext';
 import { isApiError } from '../../utils/apiError';
+import { Label } from '../common/Label';
 
 export const UserRegisterForm = () => {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -47,7 +48,7 @@ export const UserRegisterForm = () => {
         await requestVerification(data.contact);
         setIsVerifying(true);
         setContact(data.contact);
-        setSuccess('Verification code sent! Please check your email or phone.');
+        setSuccess('Verification code sent! Please check your email.');
       } else {
         // Verify code and register
         if (!data.verificationCode) {
@@ -90,20 +91,18 @@ export const UserRegisterForm = () => {
         </p>
 
         <div>
-          <label
-            htmlFor='contact'
-            className='block text-sm font-medium text-gray-700 mb-1'>
-            Email or Phone Number
-          </label>
+          <Label htmlFor='contact' disabled={isVerifying}>
+            EMAIL ADDRESS
+          </Label>
           <input
             {...register('contact')}
-            type='text'
+            type='email'
             id='contact'
             disabled={isVerifying}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+            className={`w-full px-3 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               isVerifying ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
-            placeholder='Enter your email or phone number'
+            placeholder='Enter your email address'
           />
           {errors.contact && (
             <p className='mt-1 text-sm text-red-600'>
@@ -125,18 +124,14 @@ export const UserRegisterForm = () => {
             />
           </div>
           <div className='ml-3 text-sm'>
-            <label
-              htmlFor='termsAccepted'
-              className={`font-medium text-gray-700 ${
-                isVerifying ? 'text-gray-500' : ''
-              }`}>
+            <Label htmlFor='termsAccepted' disabled={isVerifying}>
               I accept the{' '}
               <Link
                 to='/terms'
                 className='text-emerald-600 hover:text-emerald-500'>
                 terms and conditions
               </Link>
-            </label>
+            </Label>
             {errors.termsAccepted && (
               <p className='mt-1 text-sm text-red-600'>
                 {errors.termsAccepted.message}
@@ -147,16 +142,12 @@ export const UserRegisterForm = () => {
 
         {isVerifying && (
           <div className='mt-4'>
-            <label
-              htmlFor='verificationCode'
-              className='block text-sm font-medium text-gray-700 mb-1'>
-              Verification Code
-            </label>
+            <Label htmlFor='verificationCode'>VERIFICATION CODE</Label>
             <input
               {...register('verificationCode')}
               type='text'
               id='verificationCode'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500'
+              className='w-full px-3 py-2  mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500'
               placeholder='Enter 6-digit code'
               maxLength={6}
             />

@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { UserRegisterForm } from '../components/user/UserRegisterForm';
+import { UserRegisterForm } from '../components/user/UserRegistrationForm';
 import { UserSettings } from '../components/user/UserSettings';
 import { PageHeader } from '../components/util/PageHeader';
 

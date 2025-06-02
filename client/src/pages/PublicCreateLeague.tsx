@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useLeagueApi } from '../services/leagueApi';
 import { PageHeader } from '../components/util/PageHeader';
+import { Label } from '../components/common/Label';
 
 // Validation schema
 const createLeagueSchema = z.object({
@@ -51,17 +52,20 @@ export const PublicCreateLeague: React.FC = () => {
   return (
     <div className='container mx-auto px-4 py-4'>
       <div className='max-w-2xl mx-auto'>
-        <PageHeader title='Create New League' />
+        <div className='mb-4'>
+          <PageHeader title='Create New League' />
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className='space-y-6 bg-white p-4 rounded-lg shadow-md'>
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              League Name *
-            </label>
+            <Label htmlFor='name'>LEAGUE NAME *</Label>
             <input
               type='text'
+              id='name'
               {...register('name')}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+              className='w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
               placeholder='Enter league name'
             />
             {errors.name && (
@@ -70,13 +74,12 @@ export const PublicCreateLeague: React.FC = () => {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Description
-            </label>
+            <Label htmlFor='description'>DESCRIPTION</Label>
             <textarea
+              id='description'
               {...register('description')}
               rows={4}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+              className='w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
               placeholder='Enter league description'
             />
             {errors.description && (
@@ -97,7 +100,7 @@ export const PublicCreateLeague: React.FC = () => {
               type='submit'
               disabled={isSubmitting}
               className='px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50'>
-              {isSubmitting ? 'Creating...' : 'Create League'}
+              {isSubmitting ? 'Creating...' : 'Create'}
             </button>
           </div>
         </form>
