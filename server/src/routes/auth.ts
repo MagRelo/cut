@@ -5,12 +5,23 @@ import { prisma } from '../lib/prisma.js';
 import { sendEmail } from '../lib/email.js';
 import { sendSMS } from '../lib/sms.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { Prisma, User, Team, League, LeagueTeam } from '@prisma/client';
+import {
+  Prisma,
+  User,
+  Team,
+  League,
+  LeagueTeam,
+  TeamPlayer,
+  Player,
+} from '@prisma/client';
 import { AuthUser } from '../middleware/auth.js';
 
 type TeamWithLeague = Team & {
   leagueTeams: (LeagueTeam & {
     league: Pick<League, 'id' | 'name'>;
+  })[];
+  TeamPlayer: (TeamPlayer & {
+    Player: Player;
   })[];
 };
 
@@ -64,6 +75,11 @@ const userInclude = {
               name: true,
             },
           },
+        },
+      },
+      TeamPlayer: {
+        include: {
+          Player: true,
         },
       },
     },
@@ -146,12 +162,8 @@ router.post('/request-verification', async (req, res) => {
 
     // Send verification code
     if (contact.includes('@')) {
-      // test phone number
-      const testEmail = 'mattlovan@gmail.com';
-
       await sendEmail({
-        // to: contact,
-        to: testEmail,
+        to: contact,
         subject: 'Your Verification Code',
         html: `
           <h1>Your Verification Code</h1>
@@ -164,12 +176,8 @@ router.post('/request-verification', async (req, res) => {
         `Email verification code for ${contact}: ${verificationCode}`
       );
     } else {
-      // test phone number
-      const testPhoneNumber = '+12088712928';
-
       await sendSMS({
-        // to: contact,
-        to: testPhoneNumber,
+        to: contact,
         body: `Your verification code is: ${verificationCode}. This code will expire in 60 minutes.`,
       });
       console.log(`SMS verification code for ${contact}: ${verificationCode}`);
@@ -252,7 +260,38 @@ router.post('/verify', async (req, res) => {
           // If user already has a team, we need to merge the teams
           // First, transfer all players from anonymous teams to the existing team
           for (const anonymousTeam of anonymousTeams) {
-            await prisma.teamPlayer.updateMany({
+            // Get all players from the anonymous team
+            const anonymousTeamPlayers = await prisma.teamPlayer.findMany({
+              where: { teamId: anonymousTeam.id },
+              include: { Player: true },
+            });
+
+            // For each player, create a new TeamPlayer entry for the existing team
+            for (const teamPlayer of anonymousTeamPlayers) {
+              await prisma.teamPlayer.create({
+                data: {
+                  id: crypto.randomUUID(),
+                  teamId: existingTeam.id,
+                  playerId: teamPlayer.playerId,
+                  active: teamPlayer.active,
+                  updatedAt: new Date(),
+                },
+              });
+            }
+
+            // Delete the old TeamPlayer entries
+            await prisma.teamPlayer.deleteMany({
+              where: { teamId: anonymousTeam.id },
+            });
+
+            // Transfer league associations
+            await prisma.leagueTeam.updateMany({
+              where: { teamId: anonymousTeam.id },
+              data: { teamId: existingTeam.id },
+            });
+
+            // Transfer timeline entries
+            await prisma.timelineEntry.updateMany({
               where: { teamId: anonymousTeam.id },
               data: { teamId: existingTeam.id },
             });
@@ -298,8 +337,16 @@ router.post('/verify', async (req, res) => {
       teams = team.leagueTeams.map((lt) => ({
         id: team.id,
         name: team.name,
+        color: team.color,
         leagueId: lt.league.id,
         leagueName: lt.league.name,
+        players: team.TeamPlayer.map((tp) => ({
+          id: tp.id,
+          teamId: tp.teamId,
+          playerId: tp.playerId,
+          active: tp.active,
+          player: tp.Player,
+        })),
       }));
     }
 
@@ -343,8 +390,16 @@ router.get('/me', authenticateToken, async (req, res) => {
       teams = team.leagueTeams.map((lt) => ({
         id: team.id,
         name: team.name,
+        color: team.color,
         leagueId: lt.league.id,
         leagueName: lt.league.name,
+        players: team.TeamPlayer.map((tp) => ({
+          id: tp.id,
+          teamId: tp.teamId,
+          playerId: tp.playerId,
+          active: tp.active,
+          player: tp.Player,
+        })),
       }));
     }
 
@@ -384,8 +439,16 @@ router.put('/update', authenticateToken, async (req, res) => {
       teams = team.leagueTeams.map((lt) => ({
         id: team.id,
         name: team.name,
+        color: team.color,
         leagueId: lt.league.id,
         leagueName: lt.league.name,
+        players: team.TeamPlayer.map((tp) => ({
+          id: tp.id,
+          teamId: tp.teamId,
+          playerId: tp.playerId,
+          active: tp.active,
+          player: tp.Player,
+        })),
       }));
     }
 
