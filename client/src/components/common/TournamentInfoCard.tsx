@@ -56,7 +56,7 @@ export const TournamentInfoCard: React.FC = () => {
 
         {/* round display */}
         {currentTournament.status === 'NOT_STARTED' ? (
-          <div className='text-white font-semibold text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] mt-3'>
+          <div className='text-white font-semibold text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] mt-2'>
             Starting: <CountdownTimer targetDate={currentTournament.endDate} />
           </div>
         ) : (
@@ -74,8 +74,8 @@ export const TournamentInfoCard: React.FC = () => {
                 to='/public/team'
                 className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                   location.pathname === '/public/team'
-                    ? 'border-white'
-                    : 'border-white/30'
+                    ? 'border-white bg-white/20'
+                    : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
                 My Team
               </Link>
@@ -83,14 +83,14 @@ export const TournamentInfoCard: React.FC = () => {
                 to='/public/leagues'
                 className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                   location.pathname === '/public/leagues'
-                    ? 'border-white'
-                    : 'border-white/20'
+                    ? 'border-white bg-white/20'
+                    : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
                 Leagues
               </Link>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className='inline-block text-white/90 hover:text-white text-sm font-medium border-2 border-white/30 hover:border-white rounded-full transition-colors flex items-center justify-center'
+                className='inline-block text-white/90 hover:text-white text-sm font-medium border-2 border-white/50 hover:border-white rounded-full transition-colors flex items-center justify-center'
                 style={{ width: '31px', height: '31px' }}>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -111,8 +111,8 @@ export const TournamentInfoCard: React.FC = () => {
               to='/user'
               className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                 location.pathname === '/user'
-                  ? 'border-white'
-                  : 'border-white/30'
+                  ? 'border-white bg-white/20'
+                  : 'border-white/50'
               } rounded-full transition-colors flex items-center justify-center`}
               style={{ width: '31px', height: '31px' }}>
               <svg

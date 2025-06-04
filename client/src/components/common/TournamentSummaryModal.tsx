@@ -19,11 +19,11 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
       <div className='fixed inset-0 flex items-center justify-center p-4'>
         <Dialog.Panel className='mx-auto max-w-2xl w-full bg-white rounded-xl shadow-lg'>
           <div className='p-4 sm:p-6 border-b border-gray-200'>
-            <div className='space-y-0.5 pb-4 border-b border-gray-300'>
+            <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
                 2025 RBC Canadian Open
               </Dialog.Title>
-              <p className='text-md text-gray-600 font-medium'>
+              <p className='text-lg tracking-tight text-gray-600 font-medium'>
                 TPC Toronto at Osprey Valley
               </p>
               <p className='text-sm text-gray-500 font-medium'>
@@ -32,7 +32,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
             </div>
 
             {/* Scrollable content area */}
-            <div className='max-h-[60vh] overflow-y-auto pt-4 pr-2 -mr-2'>
+            <div className='max-h-[60vh] overflow-y-auto pt-4 px-2 bg-gray-50 pb-8'>
               <div className='prose prose-sm max-w-none'>
                 <h3 className='text-2xl font-semibold text-gray-800 mb-2'>
                   Best Players and Odds
@@ -111,11 +111,6 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                     Course), par 70, 7,389 yards.
                   </li>
                   <li>
-                    <strong>First Time:</strong> This is the first time the
-                    event is being held at this venue, making course history
-                    irrelevant for predictions.
-                  </li>
-                  <li>
                     <strong>Format:</strong> Standard 72-hole stroke play, with
                     a cut after 36 holes.
                   </li>
@@ -137,7 +132,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
               </div>
             </div>
 
-            <div className='mt-4 flex justify-end'>
+            <div className='pt-4 border-t border-gray-300 flex justify-end'>
               <button
                 onClick={onClose}
                 className='px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2'>
