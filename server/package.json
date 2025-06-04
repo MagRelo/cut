@@ -27,7 +27,8 @@
     "delete-team": "tsx scripts/deleteTeam.ts",
     "delete-league": "tsx scripts/deleteLeague.ts",
     "update:profiles": "tsx scripts/updatePlayerProfiles.ts",
-    "update:scores": "tsx scripts/updateScores.ts"
+    "update:scores": "tsx scripts/updateScores.ts",
+    "update:tournament": "tsx scripts/updateTournament.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

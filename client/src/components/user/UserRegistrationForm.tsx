@@ -48,7 +48,9 @@ export const UserRegisterForm = () => {
         await requestVerification(data.contact);
         setIsVerifying(true);
         setContact(data.contact);
-        setSuccess('Verification code sent! Please check your email.');
+        setSuccess(
+          'Verification code sent! Please check your email and spam folder.'
+        );
       } else {
         // Verify code and register
         if (!data.verificationCode) {

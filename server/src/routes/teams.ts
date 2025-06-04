@@ -50,6 +50,15 @@ function getUserIdFromHeaders(req: any): string {
   if (!userId || typeof userId !== 'string') {
     throw new Error('User ID is required in X-User-Guid header');
   }
+
+  // Validate the format
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const cuidRegex = /^c[a-z0-9]{24}$/i;
+  if (!uuidRegex.test(userId) && !cuidRegex.test(userId)) {
+    throw new Error('Invalid user ID format in X-User-Guid header');
+  }
+
   return userId;
 }
 

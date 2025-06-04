@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { fetchPgaSchedule } from '../src/lib/pgaSchedule.js';
 import { fetchPGATourPlayers } from '../src/lib/pgaPlayers.js';
 import { getActivePlayers } from '../src/lib/pgaField.js';
+import { getTournament } from '../src/lib/pgaTournament.js';
 
 const prisma = new PrismaClient();
 
@@ -111,6 +112,28 @@ async function main() {
       where: { id: selectedTournament.id },
       data: { manualActive: true },
     });
+
+    // Get tournament data from PGA API
+    const tournamentData = await getTournament(selectedTournament.pgaTourId);
+
+    // Update tournament with latest leaderboard data
+    await prisma.tournament.update({
+      where: { id: selectedTournament.id },
+      data: {
+        status: tournamentData.tournamentStatus,
+        roundStatusDisplay: tournamentData.roundStatusDisplay,
+        roundDisplay: tournamentData.roundDisplay,
+        currentRound: tournamentData.currentRound,
+        weather: tournamentData.weather as any,
+        beautyImage: tournamentData.beautyImage,
+        course: tournamentData.courses[0].courseName,
+        city: tournamentData.city,
+        state: tournamentData.state,
+        timezone: tournamentData.timezone,
+      },
+    });
+
+    // console.log('Tournament data updated successfully');
 
     const fieldData = await getActivePlayers(selectedTournament.pgaTourId);
     const fieldPlayerIds = fieldData.players.map((p) => p.id);

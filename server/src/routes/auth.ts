@@ -51,7 +51,19 @@ const verifySchema = z.object({
   ),
   code: z.string().length(6),
   name: z.string().min(2).optional(),
-  anonymousGuid: z.string().uuid().optional(),
+  anonymousGuid: z
+    .string()
+    .refine(
+      (val) => {
+        // Check if it's a valid UUID or CUID
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const cuidRegex = /^c[a-z0-9]{24}$/i;
+        return uuidRegex.test(val) || cuidRegex.test(val);
+      },
+      { message: 'Invalid user ID format' }
+    )
+    .optional(),
 });
 
 const updateUserSchema = z.object({
@@ -198,6 +210,10 @@ router.post('/verify', async (req, res) => {
   try {
     const { contact, code, name, anonymousGuid } = verifySchema.parse(req.body);
 
+    //
+    // 1) Validate Code
+    //
+
     // Find user by contact
     const user = await prisma.user.findFirst({
       where: {
@@ -226,97 +242,110 @@ router.post('/verify', async (req, res) => {
       data: {
         loginAttempts: 0,
         lastLoginAt: null,
+        name,
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
       },
     });
 
-    // If this is a registration (has name), update user details
-    if (name) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          name,
-          isVerified: true,
-          verificationCode: null,
-          verificationCodeExpiresAt: null,
+    //
+    // 2) Transfer All associated data to new user
+    //
+
+    // Transfer teams from anonymous user if anonymousGuid is provided
+    if (anonymousGuid) {
+      // Find all teams owned by the anonymous user
+      const anonymousTeams = await prisma.team.findMany({
+        where: { userId: anonymousGuid },
+        include: {
+          leagueTeams: true,
         },
       });
 
-      // Transfer teams from anonymous user if anonymousGuid is provided
-      if (anonymousGuid) {
-        // Find all teams owned by the anonymous user
-        const anonymousTeams = await prisma.team.findMany({
+      // Check if the new user already has a team
+      const existingTeam = await prisma.team.findUnique({
+        where: { userId: user.id },
+      });
+
+      // Only transfer teams if user has no existing team
+      if (!existingTeam && anonymousTeams.length > 0) {
+        // Transfer the first anonymous team
+        await prisma.team.update({
+          where: { id: anonymousTeams[0].id },
+          data: { userId: user.id },
+        });
+
+        // Delete any remaining anonymous teams
+        for (let i = 1; i < anonymousTeams.length; i++) {
+          await prisma.team.delete({
+            where: { id: anonymousTeams[i].id },
+          });
+        }
+
+        // Transfer league commissioner role if anonymous user is a commissioner
+        const leagues = await prisma.league.findMany({
+          where: { commissionerId: anonymousGuid },
+        });
+
+        // Update commissioner for each league
+        for (const league of leagues) {
+          await prisma.league.update({
+            where: { id: league.id },
+            data: { commissionerId: user.id },
+          });
+        }
+
+        // Transfer league memberships
+        const memberships = await prisma.leagueMembership.findMany({
           where: { userId: anonymousGuid },
-          include: {
-            leagueTeams: true,
-          },
         });
 
-        // Check if the new user already has a team
-        const existingTeam = await prisma.team.findUnique({
-          where: { userId: user.id },
-        });
-
-        if (existingTeam) {
-          // If user already has a team, we need to merge the teams
-          // First, transfer all players from anonymous teams to the existing team
-          for (const anonymousTeam of anonymousTeams) {
-            // Get all players from the anonymous team
-            const anonymousTeamPlayers = await prisma.teamPlayer.findMany({
-              where: { teamId: anonymousTeam.id },
-              include: { Player: true },
-            });
-
-            // For each player, create a new TeamPlayer entry for the existing team
-            for (const teamPlayer of anonymousTeamPlayers) {
-              await prisma.teamPlayer.create({
-                data: {
-                  id: crypto.randomUUID(),
-                  teamId: existingTeam.id,
-                  playerId: teamPlayer.playerId,
-                  active: teamPlayer.active,
-                  updatedAt: new Date(),
-                },
-              });
-            }
-
-            // Delete the old TeamPlayer entries
-            await prisma.teamPlayer.deleteMany({
-              where: { teamId: anonymousTeam.id },
-            });
-
-            // Transfer league associations
-            await prisma.leagueTeam.updateMany({
-              where: { teamId: anonymousTeam.id },
-              data: { teamId: existingTeam.id },
-            });
-
-            // Transfer timeline entries
-            await prisma.timelineEntry.updateMany({
-              where: { teamId: anonymousTeam.id },
-              data: { teamId: existingTeam.id },
-            });
-
-            // Then delete the anonymous team
-            await prisma.team.delete({
-              where: { id: anonymousTeam.id },
-            });
-          }
-        } else if (anonymousTeams.length > 0) {
-          // If user doesn't have a team, transfer the first anonymous team
-          await prisma.team.update({
-            where: { id: anonymousTeams[0].id },
+        // Update memberships to new user
+        for (const membership of memberships) {
+          await prisma.leagueMembership.update({
+            where: { id: membership.id },
             data: { userId: user.id },
           });
-
-          // Delete any remaining anonymous teams
-          for (let i = 1; i < anonymousTeams.length; i++) {
-            await prisma.team.delete({
-              where: { id: anonymousTeams[i].id },
-            });
-          }
         }
+
+        // Transfer order logs
+        const orderLogs = await prisma.userOrderLog.findMany({
+          where: { userId: anonymousGuid },
+        });
+
+        // Update order logs to new user
+        for (const orderLog of orderLogs) {
+          await prisma.userOrderLog.update({
+            where: { id: orderLog.id },
+            data: { userId: user.id },
+          });
+        }
+
+        // Transfer timeline entries to the new user's team
+        if (anonymousTeams.length > 0) {
+          await prisma.timelineEntry.updateMany({
+            where: {
+              teamId: {
+                in: anonymousTeams.map((team) => team.id),
+              },
+            },
+            data: {
+              teamId: anonymousTeams[0].id, // Use the first team that was transferred
+            },
+          });
+        }
+
+        // delete the anonymous user
+        await prisma.user.delete({
+          where: { id: anonymousGuid },
+        });
       }
     }
+
+    //
+    // 3) Generate JWT Token
+    //
 
     // Generate JWT token
     const token = jwt.sign(
@@ -486,6 +515,23 @@ router.put('/settings', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update user settings error:', error);
     res.status(500).json({ error: 'Failed to update user settings' });
+  }
+});
+
+// Logout route
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // In a JWT-based system, we don't need to do much server-side
+    // as the token is stored client-side. But we can add any cleanup here if needed.
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Failed to logout' });
   }
 });
 

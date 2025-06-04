@@ -31,14 +31,32 @@ async function ensureUserExists(userId: string): Promise<void> {
 const createLeagueSchema = z.object({
   name: z.string().min(3).max(50),
   description: z.string().max(500).optional(),
-  userId: z.string().uuid(),
+  userId: z.string().refine(
+    (val) => {
+      // Check if it's a valid UUID or CUID
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const cuidRegex = /^c[a-z0-9]{24}$/i;
+      return uuidRegex.test(val) || cuidRegex.test(val);
+    },
+    { message: 'Invalid user ID format' }
+  ),
 });
 
 const createTeamSchema = z.object({
   name: z.string().min(3).max(50),
   players: z.array(z.string()).max(4),
   color: z.string().optional(),
-  userId: z.string().uuid(),
+  userId: z.string().refine(
+    (val) => {
+      // Check if it's a valid UUID or CUID
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const cuidRegex = /^c[a-z0-9]{24}$/i;
+      return uuidRegex.test(val) || cuidRegex.test(val);
+    },
+    { message: 'Invalid user ID format' }
+  ),
   leagueId: z.string().cuid('Invalid league ID').optional(),
 });
 
@@ -46,7 +64,16 @@ const updateTeamSchema = z.object({
   name: z.string().min(3).max(50).optional(),
   players: z.array(z.string()).max(4).optional(),
   color: z.string().optional(),
-  userId: z.string().uuid(),
+  userId: z.string().refine(
+    (val) => {
+      // Check if it's a valid UUID or CUID
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const cuidRegex = /^c[a-z0-9]{24}$/i;
+      return uuidRegex.test(val) || cuidRegex.test(val);
+    },
+    { message: 'Invalid user ID format' }
+  ),
 });
 
 // 1. Tournament Routes
