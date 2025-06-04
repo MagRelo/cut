@@ -1,5 +1,6 @@
 run manual update on upcoming tourney
 
-- npm run update:tournament
+- npm run update:tournament (new tourney id)
 
-flip is manualActive, set tournament start time.
+- flip is manualActive,
+- set tournament end time.

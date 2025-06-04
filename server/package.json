@@ -28,7 +28,10 @@
     "delete-league": "tsx scripts/deleteLeague.ts",
     "update:profiles": "tsx scripts/updatePlayerProfiles.ts",
     "update:scores": "tsx scripts/updateScores.ts",
-    "update:tournament": "tsx scripts/updateTournament.ts"
+    "update:tournament": "tsx scripts/updateTournament.ts",
+    "update:field": "tsx scripts/update-tournament-field.ts",
+    "check:field": "tsx scripts/check-field-count.ts",
+    "clean:team-players": "tsx scripts/cleanTeamPlayers.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
