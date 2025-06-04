@@ -2,5 +2,8 @@ run manual update on upcoming tourney
 
 - npm run update:tournament (new tourney id)
 
-- flip is manualActive,
-- set tournament end time.
+- set tournament:
+  -- start time: cutoff for league list
+  -- end time: countdown
+
+- flip is manualActive
