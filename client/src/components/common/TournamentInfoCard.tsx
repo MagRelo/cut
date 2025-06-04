@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from '../util/ErrorMessage';
 import { useTournament } from '../../contexts/TournamentContext';
 import { CountdownTimer } from './CountdownTimer';
+import { TournamentSummaryModal } from './TournamentSummaryModal';
 
 export const TournamentInfoCard: React.FC = () => {
   const { currentTournament, isLoading, error } = useTournament();
   const location = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -86,6 +88,24 @@ export const TournamentInfoCard: React.FC = () => {
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
                 Leagues
               </Link>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className='inline-block text-white/90 hover:text-white text-sm font-medium border-2 border-white/30 hover:border-white rounded-full transition-colors flex items-center justify-center'
+                style={{ width: '31px', height: '31px' }}>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-4 w-4'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+              </button>
             </div>
             <Link
               to='/user'
@@ -112,6 +132,11 @@ export const TournamentInfoCard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <TournamentSummaryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

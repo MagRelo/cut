@@ -143,7 +143,7 @@ router.post('/request-verification', async (req, res) => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
 
     if (user) {
-      console.log('updating user', user.loginAttempts);
+      // console.log('updating user', user.loginAttempts);
       // Update existing user
       await prisma.user.update({
         where: { id: user.id },
