@@ -48,26 +48,29 @@ export const TournamentInfoCard: React.FC = () => {
       )}
       <div className='relative p-4 text-white'>
         {/* tournament name */}
-        <div className='flex justify-between items-center'>
+        <div className='flex justify-between items-center mt-1'>
           <p className='text-3xl font-bold tracking-tight pt-1 [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]'>
             {currentTournament.name}
           </p>
         </div>
 
         {/* round display */}
-        {currentTournament.status === 'NOT_STARTED' ? (
-          <div className='text-white font-semibold text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] mt-2'>
-            Starting: <CountdownTimer targetDate={currentTournament.endDate} />
-          </div>
-        ) : (
-          <p className='text-white font-semibold text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] mt-3'>
-            {currentTournament.roundDisplay} &#183;{' '}
-            {currentTournament.roundStatusDisplay}
-          </p>
-        )}
+        <div className='text-white font-semibold text-xl [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] '>
+          {currentTournament.status === 'NOT_STARTED' ? (
+            <p>
+              Starting:{' '}
+              <CountdownTimer targetDate={currentTournament.endDate} />
+            </p>
+          ) : (
+            <p>
+              {currentTournament.roundDisplay} &#183;{' '}
+              {currentTournament.roundStatusDisplay}
+            </p>
+          )}
+        </div>
 
         {/* links to team and leagues */}
-        <div className='mt-3'>
+        <div className='mt-5'>
           <div className='flex flex-row items-center justify-between'>
             <div className='flex items-center gap-4'>
               <Link

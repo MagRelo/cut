@@ -82,8 +82,8 @@ export const Home: React.FC = () => {
         <h2 className='text-4xl font-bold text-gray-400 mb-6'>get started</h2>
       </div>
 
-      <div className='flex flex-col items-center text-center gap-8 mt-4'>
-        <div>
+      <div className='flex flex-row items-center justify-center gap-12 mt-4'>
+        <div className='flex flex-col items-center'>
           <h3 className='text-2xl font-bold text-gray-800 mb-4'>
             create a team
           </h3>
@@ -93,7 +93,7 @@ export const Home: React.FC = () => {
             My Team
           </Link>
         </div>
-        <div>
+        <div className='flex flex-col items-center'>
           <h3 className='text-2xl font-bold text-gray-800 mb-4'>
             view leagues
           </h3>
