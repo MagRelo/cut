@@ -82,7 +82,7 @@ export const UserRegisterForm = () => {
   };
 
   return (
-    <div className='max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
+    <div className='max-w-md mx-auto p-6 pt-4 bg-white rounded-lg shadow-md'>
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
         {/* title */}
         <h2 className='text-xl font-medium text-gray-900 mb-2'>

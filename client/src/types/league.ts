@@ -78,6 +78,7 @@ export interface Tournament {
   course?: string;
   roundStatusDisplay?: string;
   roundDisplay?: string;
+  updatedAt?: Date;
 }
 
 export interface TournamentVenue {

@@ -371,7 +371,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const guid = localStorage.getItem('publicUserGuid');
 
         if (token) {
-          // console.log('Using token', token);
           try {
             const response = await request<AuthenticatedUser>(
               'GET',
