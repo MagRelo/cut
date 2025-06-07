@@ -27,6 +27,15 @@ export const Navigation: React.FC = () => {
             </Link>
           </div>
           <div className='flex items-center gap-4'>
+            <Link
+              to='/porto'
+              className={`text-lg font-medium ${
+                isActive('/porto')
+                  ? 'text-emerald-500'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              Porto
+            </Link>
             {user && isAdmin() && (
               <Link
                 to='/admin'
