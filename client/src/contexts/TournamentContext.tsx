@@ -45,14 +45,12 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
         setError(null);
 
         // Fetch current tournament and players in parallel
-        const [tournament, tournamentPlayers] = await Promise.all([
-          tournamentApi.getCurrentTournament(),
-          tournamentApi.getTournamentField(),
-        ]);
+        const { tournament, players } =
+          await tournamentApi.getCurrentTournament();
 
         if (isMounted) {
           setCurrentTournament(tournament);
-          setPlayers(tournamentPlayers);
+          setPlayers(players);
         }
       } catch (err) {
         if (isMounted) {

@@ -77,13 +77,22 @@ export const useTournamentApi = () => {
   );
 
   const getCurrentTournament = useCallback(
-    () => request<Tournament>('GET', '/tournaments/active'),
+    () =>
+      request<{ tournament: Tournament; players: TournamentPlayer[] }>(
+        'GET',
+        '/tournaments/active'
+      ),
     [request]
   );
 
   const getPublicCurrentTournament = useCallback(
     () =>
-      request<Tournament>('GET', '/public/tournaments/active', undefined, true),
+      request<{ tournament: Tournament; players: TournamentPlayer[] }>(
+        'GET',
+        '/public/tournaments/active',
+        undefined,
+        true
+      ),
     [request]
   );
 

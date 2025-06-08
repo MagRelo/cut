@@ -1,5 +1,5 @@
 import { getActivePlayers } from '../lib/pgaField.js';
-import { getPlayerProfileOverview } from '../lib/playerProfileOverview.js';
+import { getPlayerProfileOverview } from '../lib/pgaPlayerProfile.js';
 import { prisma } from '../lib/prisma.js';
 import { Prisma } from '@prisma/client';
 

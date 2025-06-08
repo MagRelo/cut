@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: betthecut-db-porto
+    environment:
+      POSTGRES_USER: betthecut
+      POSTGRES_PASSWORD: betthecut
+      POSTGRES_DB: betthecut
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U betthecut']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String?            @unique
+  phone             String?            @unique
+  password          String?
+  name              String
+  userType          String             @default("USER")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  settings          Json?
+  isVerified        Boolean            @default(false)
+  lastLoginAt       DateTime?
+  loginAttempts     Int                @default(0)
+  lockedUntil       DateTime?
+  verificationCode  String?
+  verificationCodeExpiresAt DateTime?
+  
+  // Relations
+  userGroups        UserGroupMember[]
+  tournamentLineups TournamentLineup[]
+  contestLineups    ContestLineup[]
+  wallets           UserWallet[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([verificationCode])
+}
+
+model UserWallet {
+  id              String    @id @default(cuid())
+  userId          String
+  chainId         Int       // Chain ID (1 for Ethereum mainnet, 137 for Polygon, etc.)
+  publicKey       String    // The wallet address/public key
+  isPrimary       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@unique([chainId, publicKey])
+  @@index([userId])
+  @@index([chainId])
+  @@index([publicKey])
+}
+
+model UserGroup {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Relations
+  members     UserGroupMember[]
+  contests    Contest[]
+
+  @@index([name])
+}
+
+model UserGroupMember {
+  id          String    @id @default(cuid())
+  userId      String
+  userGroupId String
+  role        String    @default("MEMBER")
+  joinedAt    DateTime  @default(now())
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+  userGroup   UserGroup @relation(fields: [userGroupId], references: [id])
+
+  @@unique([userId, userGroupId])
+}
+
+model Player {
+  id                String             @id @default(cuid())
+  pga_pgaTourId     String?            @unique
+  pga_imageUrl      String?
+  pga_displayName   String?
+  pga_firstName     String?
+  pga_lastName      String?
+  pga_shortName     String?
+  pga_country       String?
+  pga_countryFlag   String?
+  pga_age           Int?
+  pga_owgr          String?
+  pga_fedex         String?
+  pga_performance   Json?
+  isActive          Boolean            @default(false)
+  inField           Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  lastSyncedAt      DateTime?
+  
+  // Relations
+  tournamentPlayers TournamentPlayer[]
+  tournamentTimelines TournamentPlayerTimeline[]
+
+  @@index([pga_pgaTourId])
+  @@index([isActive])
+  @@index([inField])
+}
+
+model Tournament {
+  id                 String             @id @default(cuid())
+  pgaTourId          String
+  name               String
+  startDate          DateTime
+  endDate            DateTime
+  course             String
+  city               String
+  state              String
+  timezone           String
+  venue              Json?
+  purse              Float?
+  status             String
+  roundStatusDisplay String?
+  roundDisplay       String?
+  currentRound       Int?
+  weather            Json?
+  beautyImage        String?
+  cutLine            String?
+  cutRound           String?
+  manualActive       Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  
+  // Relations
+  tournamentPlayers  TournamentPlayer[]
+  tournamentLineups  TournamentLineup[]
+  contests          Contest[]
+  playerTimelines   TournamentPlayerTimeline[]
+
+  @@index([pgaTourId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model TournamentPlayer {
+  id                  String     @id @default(cuid())
+  tournamentId        String
+  playerId            String
+  leaderboardPosition String?
+  r1                  Json?
+  r2                  Json?
+  r3                  Json?
+  r4                  Json?
+  cut                 Int?
+  bonus               Int?
+  total               Int?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  leaderboardTotal    String?
+  
+  // Relations
+  player              Player     @relation(fields: [playerId], references: [id])
+  tournament          Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentLineups   TournamentLineupPlayer[]
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
+}
+
+model TournamentPlayerTimeline {
+  id                String           @id @default(cuid())
+  tournamentId      String
+  playerId          String
+  timestamp         DateTime
+  roundNumber       Int
+  score             Int
+  position          Int?
+  createdAt         DateTime         @default(now())
+  
+  // Relations
+  tournament        Tournament       @relation(fields: [tournamentId], references: [id])
+  player            Player           @relation(fields: [playerId], references: [id])
+
+  @@index([tournamentId, playerId, timestamp])
+}
+
+model TournamentLineup {
+  id            String     @id @default(cuid())
+  userId        String
+  tournamentId  String
+  name          String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  user          User       @relation(fields: [userId], references: [id])
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  players       TournamentLineupPlayer[]
+  contestLineups ContestLineup[]
+
+  @@index([userId, tournamentId])
+}
+
+model TournamentLineupPlayer {
+  id                  String           @id @default(cuid())
+  tournamentLineupId  String
+  tournamentPlayerId  String
+  createdAt           DateTime         @default(now())
+  
+  // Relations
+  tournamentLineup    TournamentLineup @relation(fields: [tournamentLineupId], references: [id])
+  tournamentPlayer    TournamentPlayer @relation(fields: [tournamentPlayerId], references: [id])
+
+  @@unique([tournamentLineupId, tournamentPlayerId])
+}
+
+model Contest {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  tournamentId    String
+  userGroupId     String
+  startDate       DateTime
+  endDate         DateTime
+  status          String
+  settings        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  // Relations
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id])
+  userGroup       UserGroup        @relation(fields: [userGroupId], references: [id])
+  contestLineups  ContestLineup[]
+
+  @@index([tournamentId])
+  @@index([userGroupId])
+  @@index([status])
+}
+
+model ContestLineup {
+  id                String           @id @default(cuid())
+  contestId         String
+  tournamentLineupId String
+  userId            String
+  status            String
+  score             Int?
+  position          Int?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  // Relations
+  contest           Contest          @relation(fields: [contestId], references: [id])
+  tournamentLineup  TournamentLineup @relation(fields: [tournamentLineupId], references: [id])
+  user              User             @relation(fields: [userId], references: [id])
+
+  @@unique([contestId, tournamentLineupId])
+  @@index([contestId])
+  @@index([userId])
+  @@index([status])
+} 
