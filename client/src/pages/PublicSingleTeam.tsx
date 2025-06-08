@@ -38,32 +38,6 @@ export const PublicSingleTeam: React.FC = () => {
   } = useTournament();
   const { user, loading: isAuthLoading } = usePortoAuth();
 
-  const findMostRecentPlayerUpdate = (): Date | null => {
-    if (!team?.players?.length) return null;
-
-    let mostRecent: Date | null = null;
-    team.players.forEach((player) => {
-      const playerDate = new Date(player.updatedAt);
-      if (!mostRecent || playerDate > mostRecent) {
-        mostRecent = playerDate;
-      }
-    });
-    return mostRecent;
-  };
-
-  const formatUpdateTime = (date: Date | null): string => {
-    if (!date) return 'No updates yet';
-
-    const hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours % 12 || 12;
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-
-    return `${month}/${day} ${displayHours}:${minutes} ${ampm}`;
-  };
-
   const fetchTeam = async () => {
     setIsLoading(true);
     setError(null);
@@ -83,6 +57,14 @@ export const PublicSingleTeam: React.FC = () => {
       fetchTeam();
     }
   }, [user, isAuthLoading]);
+
+  //
+  // Form Controls
+  //
+  const isEditingAllowed = (): boolean => {
+    // return true;
+    return !currentTournament || currentTournament.status === 'NOT_STARTED';
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -130,10 +112,11 @@ export const PublicSingleTeam: React.FC = () => {
     }
   };
 
-  const isEditingAllowed = (): boolean => {
-    // return true;
-    return !currentTournament || currentTournament.status === 'NOT_STARTED';
-  };
+  //
+  // Render
+  //
+
+  console.log('tournamentLineups', user?.tournamentLineups);
 
   if (isLoading || isTournamentLoading || isAuthLoading) {
     return (
@@ -254,62 +237,6 @@ export const PublicSingleTeam: React.FC = () => {
                       />
                     </div>
                   ))}
-            </div>
-
-            {/* Last Update Time */}
-            <div className='text-xs text-gray-400 text-center py-3 border-t border-gray-100 flex items-center justify-center gap-2'>
-              <span>
-                Last update: {formatUpdateTime(findMostRecentPlayerUpdate())}
-              </span>
-              <button
-                onClick={() => {
-                  setIsLoading(true);
-                  setError(null);
-                  if (
-                    user &&
-                    !user.isAnonymous &&
-                    'teams' in user &&
-                    user.teams &&
-                    user.teams.length > 0
-                  ) {
-                    teamApi
-                      .getTeam(user.teams[0].id)
-                      .then((result) => {
-                        setTeam(result || null);
-                        setIsLoading(false);
-                      })
-                      .catch(() => {
-                        setError('Failed to refresh team');
-                        setIsLoading(false);
-                      });
-                  } else if (user) {
-                    teamApi
-                      .getStandaloneTeam()
-                      .then((result) => {
-                        setTeam(result || null);
-                        setIsLoading(false);
-                      })
-                      .catch(() => {
-                        setError('Failed to refresh team');
-                        setIsLoading(false);
-                      });
-                  }
-                }}
-                className='p-1 hover:bg-gray-100 rounded-full transition-colors'
-                title='Refresh data'>
-                <svg
-                  className='w-4 h-4'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                  />
-                </svg>
-              </button>
             </div>
           </div>
         )}

@@ -10,16 +10,7 @@ async function main() {
   try {
     console.log('Starting PGA Tour database seeding...');
 
-    // 1. Create a default user group for testing
-    const defaultUserGroup = await prisma.userGroup.create({
-      data: {
-        name: 'PGA Tour Default',
-        description: 'Default user group for PGA Tour data',
-      },
-    });
-    console.log('Created default user group');
-
-    // 2. Fetch and upsert tournaments
+    // 1. Fetch and upsert tournaments
     const tournaments = await fetchPgaSchedule();
     console.log(`Fetched ${tournaments.length} tournaments from PGA Tour API.`);
 
@@ -64,7 +55,7 @@ async function main() {
     }
     console.log('Tournaments upserted.');
 
-    // 3. Fetch and upsert players
+    // 2. Fetch and upsert players
     const players = await fetchPGATourPlayers();
     console.log(`Fetched ${players.length} players from PGA Tour API.`);
 
@@ -108,7 +99,7 @@ async function main() {
     }
     console.log('Players upserted.');
 
-    // 4. For a selected tournament, update inField for players in the field
+    // 3. For a selected tournament, update inField for players in the field
     const selectedTournament = await prisma.tournament.findFirst();
     if (!selectedTournament) {
       throw new Error('No tournaments found in DB.');
@@ -160,7 +151,40 @@ async function main() {
     });
     console.log('Set inField to false for all other players.');
 
-    // 5. Create a test contest for the selected tournament
+    // 4. Create TournamentPlayer records for all players in the field
+    const playersInField = await prisma.player.findMany({
+      where: { inField: true },
+    });
+
+    for (const player of playersInField) {
+      await prisma.tournamentPlayer.upsert({
+        where: {
+          tournamentId_playerId: {
+            tournamentId: selectedTournament.id,
+            playerId: player.id,
+          },
+        },
+        create: {
+          tournamentId: selectedTournament.id,
+          playerId: player.id,
+        },
+        update: {}, // No updates needed if record exists
+      });
+    }
+    console.log(
+      `Created TournamentPlayer records for ${playersInField.length} players in the field.`
+    );
+
+    // 5. Create a default user group for testing
+    const defaultUserGroup = await prisma.userGroup.create({
+      data: {
+        name: 'PGA Tour Default',
+        description: 'Default user group for PGA Tour data',
+      },
+    });
+    console.log('Created default user group');
+
+    // 6. Create a test contest for the selected tournament
     const testContest = await prisma.contest.create({
       data: {
         name: 'Test Contest',

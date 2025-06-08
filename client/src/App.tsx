@@ -12,6 +12,7 @@ import { AdminPage } from './pages/AdminPage';
 import { UserPage } from './pages/UserPage';
 import { TermsOfService } from './pages/TermsOfService';
 import { PortoPage } from './pages/PortoPage';
+import { MyTeam } from './pages/MyTeam';
 
 import { Home } from './pages/Home';
 import { PublicLeagueList } from './pages/PublicLeagueList';
@@ -73,6 +74,14 @@ export const App: React.FC = () => {
                           element={
                             <ProtectedRoute>
                               <AdminPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path='/team'
+                          element={
+                            <ProtectedRoute>
+                              <MyTeam />
                             </ProtectedRoute>
                           }
                         />

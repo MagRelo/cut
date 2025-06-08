@@ -59,17 +59,10 @@ export async function fetchPGATourPlayers(): Promise<PGAPlayer[]> {
       throw new Error('Failed to fetch PGA Tour players');
     }
 
-    // im getting duplicate players in the array, ie duplicate player.id
-    console.log(
-      'allPlayers',
-      validatedData.data.playerDirectory.players.length
-    );
     const uniquePlayers = validatedData.data.playerDirectory.players.filter(
       (player, index, self) =>
         index === self.findIndex((t) => t.id === player.id)
     );
-
-    console.log('uniquePlayers', uniquePlayers.length);
 
     return uniquePlayers;
   } catch (error) {

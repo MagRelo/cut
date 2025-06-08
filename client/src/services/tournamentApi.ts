@@ -20,16 +20,6 @@ interface LeaderboardResponse {
   };
 }
 
-interface TournamentOddsResponse {
-  data: {
-    [bookmaker: string]: Array<{
-      name: string;
-      price: number;
-    }>;
-  };
-  updatedAt: string;
-}
-
 export const useTournamentApi = () => {
   const config = useMemo(
     () => ({
@@ -71,11 +61,6 @@ export const useTournamentApi = () => {
     [config]
   );
 
-  const getTournamentField = useCallback(
-    () => request<TournamentPlayer[]>('GET', '/tournaments/field'),
-    [request]
-  );
-
   const getCurrentTournament = useCallback(
     () =>
       request<{ tournament: Tournament; players: TournamentPlayer[] }>(
@@ -84,61 +69,13 @@ export const useTournamentApi = () => {
       ),
     [request]
   );
-
-  const getPublicCurrentTournament = useCallback(
-    () =>
-      request<{ tournament: Tournament; players: TournamentPlayer[] }>(
-        'GET',
-        '/public/tournaments/active',
-        undefined,
-        true
-      ),
-    [request]
-  );
-
-  const getTournament = useCallback(
-    (tournamentId: string) =>
-      request<Tournament>('GET', `/tournaments/${tournamentId}`),
-    [request]
-  );
-
-  const getLeaderboard = useCallback(
-    () => request<LeaderboardResponse>('GET', '/pga/leaderboard'),
-    [request]
-  );
-
-  const getTournamentOdds = useCallback(
-    (tournamentKey: string, bookmakers?: string[]) => {
-      const bookmakerQuery = bookmakers
-        ? `?bookmakers=${bookmakers.join(',')}`
-        : '';
-      return request<TournamentOddsResponse>(
-        'GET',
-        `/pga/odds/${tournamentKey}${bookmakerQuery}`
-      );
-    },
-    [request]
-  );
-
   return useMemo(
     () => ({
-      getTournamentField,
       getCurrentTournament,
-      getPublicCurrentTournament,
-      getTournament,
-      getLeaderboard,
-      getTournamentOdds,
     }),
-    [
-      getTournamentField,
-      getCurrentTournament,
-      getPublicCurrentTournament,
-      getTournament,
-      getLeaderboard,
-      getTournamentOdds,
-    ]
+    [getCurrentTournament]
   );
 };
 
 // Export type definitions
-export type { LeaderboardPlayer, LeaderboardResponse, TournamentOddsResponse };
+export type { LeaderboardPlayer, LeaderboardResponse };

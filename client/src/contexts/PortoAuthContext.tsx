@@ -10,26 +10,20 @@ import { useAccount } from 'wagmi';
 import { handleApiResponse, ApiError } from '../utils/apiError';
 
 interface PortoUser {
-  id: string;
-  address: string;
-  name?: string;
-  token: string;
-  streamToken: string;
+  name: string;
   userType: string;
-  isAnonymous: boolean;
-  teams: Array<{
-    id: string;
-    name: string;
-    leagueId: string;
-    leagueName: string;
-  }>;
-  settings?: Record<string, unknown>;
+  settings: Record<string, unknown> | null;
+  phone: string | null;
+  email: string | null;
+  isVerified: boolean;
+  tournamentLineups: Array<unknown>;
+  userGroups: Array<unknown>;
+  token: string;
 }
 
 interface PortoAuthContextData {
   user: PortoUser | null;
   loading: boolean;
-  streamToken: string | null;
   logout: () => Promise<void>;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
@@ -53,7 +47,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address } = useAccount();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [streamToken, setStreamToken] = useState<string | null>(null);
 
   const config = useMemo(
     () => ({
@@ -106,7 +99,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error on logout:', error);
     } finally {
       setUser(null);
-      setStreamToken(null);
       localStorage.removeItem('portoToken');
     }
   }, [request]);
@@ -120,14 +112,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           updatedUser
         );
         setUser(response);
-        try {
-          const { streamToken: newStreamToken } = await request<{
-            streamToken: string;
-          }>('GET', '/auth/stream-token');
-          setStreamToken(newStreamToken);
-        } catch (error) {
-          console.error('Failed to refresh stream token:', error);
-        }
       } catch (error) {
         if (error instanceof ApiError) {
           throw error;
@@ -180,12 +164,15 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const response = await request<PortoUser>('GET', '/auth/me');
             setUser(response);
-            setStreamToken(response.streamToken);
             return;
           } catch (error) {
             console.error('Token authentication failed:', error);
-            if (error instanceof Error && error.message.includes('401')) {
+            if (
+              error instanceof Error &&
+              (error.message.includes('401') || error.message.includes('404'))
+            ) {
               localStorage.removeItem('portoToken');
+              setUser(null);
             } else {
               setLoading(false);
               return;
@@ -199,7 +186,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
             address,
           });
           setUser(response);
-          setStreamToken(response.streamToken);
           localStorage.setItem('portoToken', response.token);
         } catch (error) {
           console.error('Web3 authentication failed:', error);
@@ -220,7 +206,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       loading,
-      streamToken,
       logout,
       updateUser,
       updateUserSettings,
@@ -230,7 +215,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     [
       user,
       loading,
-      streamToken,
       logout,
       updateUser,
       updateUserSettings,

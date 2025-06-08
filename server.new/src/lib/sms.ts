@@ -26,16 +26,12 @@ interface SendSMSOptions {
  * @throws Error if the message fails to send
  */
 export async function sendSMS({ to, body }: SendSMSOptions): Promise<string> {
-  console.log('Sending SMS to:', to);
-
   try {
     const message = await twilioClient.messages.create({
       body,
       to,
       from: twilioPhoneNumber,
     });
-
-    console.log('SMS sent:', message.sid, message.status);
 
     return message.sid;
   } catch (error) {

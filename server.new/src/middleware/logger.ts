@@ -5,21 +5,26 @@ export const requestLogger = (
   res: Response,
   next: NextFunction
 ) => {
-  const start = Date.now();
+  // Skip logging OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
 
-  // Log request details
-  console.log(
-    `[${new Date().toISOString()}] ${req.method} ${req.url} - ${req.ip}`
-  );
+  const start = Date.now();
 
   // Log response details when the response is finished
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.url} - ${
-        res.statusCode
-      } - ${duration}ms`
-    );
+    const statusCode = res.statusCode;
+    const isError = statusCode >= 400;
+
+    // In development, log everything
+    // In production, only log errors
+    if (process.env.NODE_ENV === 'development' || isError) {
+      console.log(
+        `${req.method} ${req.originalUrl} - ${statusCode} (${duration}ms)`
+      );
+    }
   });
 
   next();

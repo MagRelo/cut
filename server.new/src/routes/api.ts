@@ -2,14 +2,9 @@ import { Router } from 'express';
 import authRoutes from './auth.js';
 import tournamentRoutes from './tournament.js';
 import userRoutes from './user.js';
+import lineupRoutes from './lineup.js';
 
 const router = Router();
-
-// Debug middleware
-router.use((req, res, next) => {
-  console.log('API Router:', req.method, req.url);
-  next();
-});
 
 // Tournament routes
 router.use('/tournaments', tournamentRoutes);
@@ -21,10 +16,9 @@ router.use('/tournaments', tournamentRoutes);
 // router.use('/groups', userGroupRoutes);
 
 // Lineup routes
-// router.use('/lineups', lineupRoutes);
+router.use('/lineup', lineupRoutes);
 
 // Auth routes
-console.log('Registering auth routes...');
 router.use('/auth', authRoutes);
 
 // User routes

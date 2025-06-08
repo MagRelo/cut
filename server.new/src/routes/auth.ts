@@ -120,7 +120,20 @@ router.get('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ user });
+    // filter out user info that is not needed
+    const { tournamentLineups, userGroups, ...userData } = user;
+    const response = {
+      name: userData.name,
+      userType: userData.userType,
+      settings: userData.settings,
+      phone: userData.phone,
+      email: userData.email,
+      isVerified: userData.isVerified,
+      tournamentLineups,
+      userGroups,
+    };
+
+    res.json({ response });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user information' });
