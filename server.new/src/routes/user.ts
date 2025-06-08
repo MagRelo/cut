@@ -3,17 +3,20 @@ import { prisma } from '../lib/prisma.js';
 
 const router = Router();
 
-// Get current user information
-router.get('/me', async (req, res) => {
-  try {
-    
-    // this will be a  
-
-
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user information' });
-  }
-});
+// Helper function to find user by wallet address
+async function findUserByWallet(address: string, chainId: number) {
+  const wallet = await prisma.userWallet.findUnique({
+    where: {
+      chainId_publicKey: {
+        chainId,
+        publicKey: address.toLowerCase(),
+      },
+    },
+    include: {
+      user: true,
+    },
+  });
+  return wallet?.user;
+}
 
 export default router;

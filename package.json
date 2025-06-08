@@ -9,30 +9,30 @@
     "client:build": "npm run build --workspace=client",
     "client:lint": "npm run lint --workspace=client",
     "client:preview": "npm run preview --workspace=client",
-    "server:dev": "npm run dev --workspace=server",
-    "server:build": "npm run build --workspace=server",
-    "server:deploy": "npm run deploy --workspace=server",
-    "prisma:generate": "npm run prisma:generate --workspace=server",
-    "prisma:migrate": "npm run prisma:migrate --workspace=server",
-    "prisma:studio": "npm run prisma:studio --workspace=server",
-    "prisma:seed": "npm run prisma:seed --workspace=server",
-    "db:start": "npm run db:start --workspace=server",
-    "db:stop": "npm run db:stop --workspace=server",
-    "db:logs": "npm run db:logs --workspace=server",
-    "db:reset": "npm run db:reset --workspace=server",
-    "test": "npm run test --workspace=server",
-    "test:coverage": "npm run test:coverage --workspace=server",
-    "test:ui": "npm run test:ui --workspace=server",
+    "server:dev": "npm run dev --workspace=server.new",
+    "server:build": "npm run build --workspace=server.new",
+    "server:deploy": "npm run deploy --workspace=server.new",
+    "prisma:generate": "npm run prisma:generate --workspace=server.new",
+    "prisma:migrate": "npm run prisma:migrate --workspace=server.new",
+    "prisma:studio": "npm run prisma:studio --workspace=server.new",
+    "prisma:seed": "npm run prisma:seed --workspace=server.new",
+    "db:start": "npm run db:start --workspace=server.new",
+    "db:stop": "npm run db:stop --workspace=server.new",
+    "db:logs": "npm run db:logs --workspace=server.new",
+    "db:reset": "npm run db:reset --workspace=server.new",
+    "test": "npm run test --workspace=server.new",
+    "test:coverage": "npm run test:coverage --workspace=server.new",
+    "test:ui": "npm run test:ui --workspace=server.new",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "deploy": "npm run client:build && npm run server:build && npm run server:deploy",
-    "get-team-totals": "tsx server/scripts/getTeamTotals.ts"
+    "get-team-totals": "tsx server.new/scripts/getTeamTotals.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "workspaces": [
     "client",
-    "server"
+    "server.new"
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"

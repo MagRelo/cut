@@ -1,6 +1,5 @@
 import { type Team } from '../types/team';
-import { useAuth } from '../contexts/AuthContext';
-import { useCallback, useMemo } from 'react';
+import { handleApiResponse } from '../utils/apiError';
 
 interface CreateTeamPayload {
   name: string;
@@ -15,120 +14,87 @@ interface UpdateTeamPayload {
   color?: string;
 }
 
+const config = {
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
 export const useTeamApi = () => {
-  const { getCurrentUser } = useAuth();
+  const request = async <T>(
+    method: string,
+    endpoint: string,
+    data?: unknown
+  ): Promise<T> => {
+    const headers: Record<string, string> = {
+      ...config.headers,
+    };
 
-  const config = useMemo(
-    () => ({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }),
-    []
-  );
+    const token = localStorage.getItem('portoToken');
 
-  const request = useCallback(
-    async <T>(
-      method: string,
-      endpoint: string,
-      data?: unknown,
-      isPublic: boolean = false
-    ): Promise<T> => {
-      const user = getCurrentUser();
-      const headers: Record<string, string> = {
-        ...config.headers,
-      };
-
-      if (user) {
-        headers['X-User-Guid'] = user.id;
-      }
-
-      if (isPublic) {
-        headers['X-Public-Api'] = 'true';
-      }
-
-      const response = await fetch(`${config.baseURL}${endpoint}`, {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : undefined,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response.json();
-    },
-    [config, getCurrentUser]
-  );
-
-  const createTeam = async (data: CreateTeamPayload): Promise<Team> => {
-    const user = getCurrentUser();
-
-    if (!user) {
-      throw new Error('User must be authenticated to create a team');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    if (data.leagueId) {
-      // Create team in league
-      const team = await request<Team>(
-        'POST',
-        `/teams/league/${data.leagueId}/team`,
-        {
-          name: data.name,
-          players: data.players,
-          color: data.color,
-        }
-      );
-      if (!team) throw new Error('Failed to create team');
-      return team;
-    } else {
-      // Create standalone team
-      const team = await request<Team>(
-        'POST',
-        '/teams',
-        {
-          name: data.name,
-          players: data.players,
-          color: data.color,
-        },
-        true
-      );
-      if (!team) throw new Error('Failed to create team');
-      return team;
-    }
+    const response = await fetch(`${config.baseURL}${endpoint}`, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    return handleApiResponse<T>(response);
   };
 
-  const getTeam = useCallback(
-    (teamId: string, leagueId?: string) =>
-      request<Team>(
-        'GET',
-        `/teams/${teamId}${leagueId ? `?leagueId=${leagueId}` : ''}`
-      ),
-    [request]
-  );
+  const createTeam = async (data: CreateTeamPayload): Promise<Team> => {
+    const team = await request<Team>(
+      'POST',
+      `/teams/league/${data.leagueId}/team`,
+      {
+        name: data.name,
+        players: data.players,
+        color: data.color,
+      }
+    );
+    if (!team) throw new Error('Failed to create team');
+    return team;
+  };
 
-  const getStandaloneTeam = useCallback(() => {
-    const user = getCurrentUser();
-    return request<Team>('GET', `/teams?userId=${user.id}`, undefined, true);
-  }, [request, getCurrentUser]);
+  const getTeam = async (teamId: string, leagueId?: string): Promise<Team> => {
+    const team = await request<Team>(
+      'GET',
+      `/teams/${teamId}${leagueId ? `?leagueId=${leagueId}` : ''}`
+    );
+    if (!team) throw new Error('Failed to get team');
+    return team;
+  };
 
-  const updateTeam = useCallback(
-    (teamId: string, data: UpdateTeamPayload, leagueId?: string) =>
-      request<Team>(
-        'PUT',
-        `/teams/${teamId}${leagueId ? `?leagueId=${leagueId}` : ''}`,
-        data
-      ),
-    [request]
-  );
+  const getStandaloneTeam = async (): Promise<Team> => {
+    const team = await request<Team>('GET', '/teams');
+    if (!team) throw new Error('Failed to get standalone team');
+    return team;
+  };
+
+  const updateTeam = async (
+    teamId: string,
+    data: UpdateTeamPayload,
+    leagueId?: string
+  ): Promise<Team> => {
+    const team = await request<Team>(
+      'PUT',
+      `/teams/${teamId}${leagueId ? `?leagueId=${leagueId}` : ''}`,
+      data
+    );
+    if (!team) throw new Error('Failed to update team');
+    return team;
+  };
 
   return {
     createTeam,
     getTeam,
     getStandaloneTeam,
     updateTeam,
+    request,
   };
 };
 

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 // Routes
 import tournamentRoutes from './routes/tournament.js';
 import userRoutes from './routes/user.js';
+import apiRoutes from './routes/api.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -32,6 +33,12 @@ for (const envVar of requiredEnvVars) {
 const app = express();
 const port = process.env.PORT || 4000;
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:5173',
@@ -49,9 +56,13 @@ app.use(express.json());
 // Request logging
 app.use(requestLogger);
 
-// Register routes
-app.use('/api/tournaments', tournamentRoutes);
-app.use('/api/users', userRoutes);
+// API routes
+console.log('Registering API routes...');
+app.use('/api', apiRoutes);
+
+// Error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Serve static files from the public directory
 app.use(
@@ -64,18 +75,17 @@ app.use(
 
 // Serve index.html for all other routes to support client-side routing
 app.get('*', (req, res) => {
+  console.log('Catch-all route hit:', req.url);
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.sendFile('index.html', { root: 'dist/public/dist' });
 });
 
-// Error handling
-app.use(notFoundHandler);
-app.use(errorHandler);
-
 try {
   console.log('Starting server initialization...');
+  console.log('Available routes:');
+  console.log('- POST /api/auth/web3');
 
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);

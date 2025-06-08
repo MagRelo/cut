@@ -5,7 +5,7 @@ import { WagmiProvider } from 'wagmi';
 import { config } from './wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { AuthProvider } from './contexts/AuthContext';
+import { PortoAuthProvider } from './contexts/PortoAuthContext';
 import { TournamentProvider } from './contexts/TournamentContext';
 
 import { AdminPage } from './pages/AdminPage';
@@ -31,7 +31,7 @@ export const App: React.FC = () => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <PortoAuthProvider>
           <TournamentProvider>
             <Router>
               <div className='min-h-screen bg-gray-100 flex flex-col'>
@@ -84,7 +84,7 @@ export const App: React.FC = () => {
               </div>
             </Router>
           </TournamentProvider>
-        </AuthProvider>
+        </PortoAuthProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

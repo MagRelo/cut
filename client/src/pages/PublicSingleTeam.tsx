@@ -5,7 +5,7 @@ import { useTeamApi } from '../services/teamApi';
 import { useTournament } from '../contexts/TournamentContext';
 
 import type { Team } from '../types/team';
-import { useAuth } from '../contexts/AuthContext';
+import { usePortoAuth } from '../contexts/PortoAuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/util/ErrorMessage';
 import { TeamForm } from '../components/team/TeamForm';
@@ -36,7 +36,7 @@ export const PublicSingleTeam: React.FC = () => {
     error: tournamentError,
     players: availablePlayers,
   } = useTournament();
-  const { user, loading: isAuthLoading } = useAuth();
+  const { user, loading: isAuthLoading } = usePortoAuth();
 
   const findMostRecentPlayerUpdate = (): Date | null => {
     if (!team?.players?.length) return null;

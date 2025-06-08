@@ -3,8 +3,7 @@ import {
   type LeagueMember,
   type Tournament,
 } from '../types/league';
-import { useAuth } from '../contexts/AuthContext';
-import { useCallback, useMemo } from 'react';
+import { handleApiResponse } from '../utils/apiError';
 
 interface CreateLeaguePayload {
   name: string;
@@ -37,75 +36,50 @@ interface TimelineData {
   };
 }
 
+const config = {
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
 export const useLeagueApi = () => {
-  const { getCurrentUser } = useAuth();
+  const request = async <T>(
+    method: string,
+    endpoint: string,
+    data?: unknown
+  ): Promise<T> => {
+    const headers: Record<string, string> = {
+      ...config.headers,
+    };
 
-  const config = useMemo(
-    () => ({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Public-Api': 'true',
-      },
-    }),
-    []
-  );
+    const token = localStorage.getItem('portoToken');
 
-  const request = useCallback(
-    async <T>(method: string, endpoint: string, data?: unknown): Promise<T> => {
-      const user = getCurrentUser();
-      const headers: Record<string, string> = {
-        ...config.headers,
-      };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-      if (user) {
-        headers['X-User-Guid'] = user.id;
-      }
+    const response = await fetch(`${config.baseURL}${endpoint}`, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+    });
 
-      const response = await fetch(`${config.baseURL}${endpoint}`, {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : undefined,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Return undefined for 204 responses
-      if (response.status === 204) {
-        return undefined as T;
-      }
-
-      return response.json();
-    },
-    [config, getCurrentUser]
-  );
+    return handleApiResponse<T>(response);
+  };
 
   const getLeagues = async (): Promise<League[]> => {
-    const response = await request<PublicLeaguesResponse>(
-      'GET',
-      '/public/leagues'
-    );
-    return response.leagues;
+    return request<League[]>('GET', '/public/leagues');
   };
 
   const getLeague = async (leagueId: string): Promise<League> => {
-    const league = await request<League>('GET', `/public/leagues/${leagueId}`);
-    if (!league) throw new Error('League not found');
-    return league;
+    return request<League>('GET', `/public/leagues/${leagueId}`);
   };
 
   const createLeague = async (data: CreateLeaguePayload): Promise<League> => {
-    const user = getCurrentUser();
-    if (!user) {
-      throw new Error('User must be authenticated to create a league');
-    }
-
     const league = await request<League>('POST', '/public/leagues', {
       name: data.name,
       description: data.description,
-      userId: user.id.trim(),
       isPrivate: data.isPrivate,
       maxTeams: data.maxTeams ?? 10,
     });
@@ -117,64 +91,21 @@ export const useLeagueApi = () => {
     leagueId: string,
     inviteCode?: string
   ): Promise<League | LeagueMember> => {
-    const user = getCurrentUser();
-    if (!user) {
-      throw new Error('User must be authenticated to join a league');
-    }
-
-    if (inviteCode) {
-      const member = await request<LeagueMember>(
-        'POST',
-        '/public/leagues/join-with-invite',
-        { inviteCode }
-      );
-      if (!member) throw new Error('Failed to join league with invite code');
-      return member;
-    } else {
-      const league = await request<League>(
-        'POST',
-        `/public/leagues/${leagueId}/members`,
-        { userId: user.id }
-      );
-      if (!league) throw new Error('Failed to join league');
-      return league;
-    }
+    const member = await request<LeagueMember>(
+      'POST',
+      '/public/leagues/join-with-invite',
+      { inviteCode }
+    );
+    if (!member) throw new Error('Failed to join league with invite code');
+    return member;
   };
 
   const leaveLeague = async (leagueId: string): Promise<void> => {
-    const user = getCurrentUser();
-    if (!user) {
-      throw new Error('User must be authenticated to leave a league');
-    }
-
-    await request<void>('DELETE', `/public/leagues/${leagueId}/members`, {
-      userId: user.id,
-    });
+    await request<void>('DELETE', `/public/leagues/${leagueId}/members`);
   };
 
-  const getLeagueTimeline = async (
-    leagueId: string,
-    tournamentId: string,
-    startTime?: string,
-    endTime?: string,
-    interval?: number
-  ): Promise<TimelineData> => {
-    try {
-      const params = new URLSearchParams({
-        tournamentId,
-        ...(startTime && { startTime }),
-        ...(endTime && { endTime }),
-        ...(interval && { interval: interval.toString() }),
-      });
-
-      return request<TimelineData>(
-        'GET',
-        `/public/timeline/${leagueId}?${params.toString()}`
-      );
-    } catch (error) {
-      console.error('Error in getLeagueTimeline:', error);
-      throw error;
-    }
+  const getLeagueTimeline = async (leagueId: string): Promise<Tournament[]> => {
+    return request<Tournament[]>('GET', `/public/leagues/${leagueId}/timeline`);
   };
 
   return {
@@ -184,6 +115,7 @@ export const useLeagueApi = () => {
     joinLeague,
     leaveLeague,
     getLeagueTimeline,
+    request,
   };
 };
 
