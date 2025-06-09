@@ -78,16 +78,16 @@ export const TournamentInfoCard: React.FC = () => {
                     ? 'border-white bg-white/20'
                     : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
-                My Team
+                Lineup
               </Link>
               <Link
-                to='/public/leagues'
+                to='/contests'
                 className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                   location.pathname === '/public/leagues'
                     ? 'border-white bg-white/20'
                     : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
-                TODO
+                Contests
               </Link>
             </div>
             <Link

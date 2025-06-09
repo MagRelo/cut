@@ -12,6 +12,7 @@ import { Home } from './pages/Home';
 import { MyTeam } from './pages/MyTeam';
 import { PortoPage } from './pages/PortoPage'; //user
 import { AdminPage } from './pages/AdminPage';
+import { Contests } from './pages/Contests';
 
 import { TournamentInfoCard } from './components/common/TournamentInfoCard';
 import { ProtectedRoute } from './components/util/ProtectedRoute';
@@ -40,7 +41,7 @@ export const App: React.FC = () => {
                       <Routes>
                         <Route path='/' element={<Home />} />
                         <Route path='/terms' element={<TermsOfService />} />
-
+                        <Route path='/contests' element={<Contests />} />
                         <Route path='/user' element={<PortoPage />} />
 
                         {/* Protected Routes */}

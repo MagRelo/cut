@@ -6,6 +6,8 @@ import { ErrorMessage } from '../components/util/ErrorMessage';
 import { Share } from '../components/common/Share';
 import { TournamentLineupForm } from '../components/team/TournamentLineupForm';
 
+import { PageHeader } from '../components/util/PageHeader';
+
 export const MyTeam: React.FC = () => {
   const { loading: isAuthLoading } = usePortoAuth();
   const { isLoading: isTournamentLoading, error: tournamentError } =
@@ -31,6 +33,8 @@ export const MyTeam: React.FC = () => {
 
   return (
     <div className='p-4'>
+      <PageHeader title='Lineup' className='mb-3' />
+
       <TournamentLineupForm />
 
       {/* Share Section */}
