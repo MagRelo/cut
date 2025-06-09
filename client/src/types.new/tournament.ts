@@ -45,8 +45,8 @@ export interface Tournament {
   id: string;
   pgaTourId: string;
   name: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   course: string;
   city: string;
   state: string;

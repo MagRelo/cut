@@ -8,18 +8,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PortoAuthProvider } from './contexts/PortoAuthContext';
 import { TournamentProvider } from './contexts/TournamentContext';
 
-import { AdminPage } from './pages/AdminPage';
-import { UserPage } from './pages/UserPage';
-import { TermsOfService } from './pages/TermsOfService';
-
 import { Home } from './pages/Home';
 import { MyTeam } from './pages/MyTeam';
-import { PortoPage } from './pages/PortoPage';
+import { PortoPage } from './pages/PortoPage'; //user
+import { AdminPage } from './pages/AdminPage';
 
-import { Navigation } from './components/Navigation';
-import { ProtectedRoute } from './components/util/ProtectedRoute';
 import { TournamentInfoCard } from './components/common/TournamentInfoCard';
-// import { PublicTeamFormComponent } from 'components/team/PublicTeamFormComponent';
+import { ProtectedRoute } from './components/util/ProtectedRoute';
+import { Navigation } from './components/Navigation';
+import { TermsOfService } from './pages/TermsOfService';
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 const queryClient = new QueryClient();
@@ -43,8 +40,8 @@ export const App: React.FC = () => {
                       <Routes>
                         <Route path='/' element={<Home />} />
                         <Route path='/terms' element={<TermsOfService />} />
-                        <Route path='/user' element={<UserPage />} />
-                        <Route path='/porto' element={<PortoPage />} />
+
+                        <Route path='/user' element={<PortoPage />} />
 
                         {/* Protected Routes */}
                         <Route

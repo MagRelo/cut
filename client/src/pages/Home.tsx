@@ -88,19 +88,9 @@ export const Home: React.FC = () => {
             create a team
           </h3>
           <Link
-            to='/public/team'
+            to='/team'
             className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
             My Team
-          </Link>
-        </div>
-        <div className='flex flex-col items-center'>
-          <h3 className='text-2xl font-bold text-gray-800 mb-4'>
-            view leagues
-          </h3>
-          <Link
-            to='public/leagues'
-            className='inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2'>
-            Leagues
           </Link>
         </div>
       </div>
