@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useAccount } from 'wagmi';
 import { handleApiResponse, ApiError } from '../utils/apiError';
+import { type TournamentLineup } from '../types.new/player';
 
 interface PortoUser {
   name: string;
@@ -16,7 +17,7 @@ interface PortoUser {
   phone: string | null;
   email: string | null;
   isVerified: boolean;
-  tournamentLineups: Array<unknown>;
+  tournamentLineups: Array<TournamentLineup>;
   userGroups: Array<unknown>;
   token: string;
 }

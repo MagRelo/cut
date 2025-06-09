@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { PlayerScorecard } from './PlayerScorecard';
-import type { TeamPlayer } from '../../types/team';
+import type {
+  PlayerWithTournamentData,
+  TournamentPlayerData,
+  RoundData,
+} from '../../types.new/player';
 
 interface PlayerTableProps {
-  players: TeamPlayer[];
+  players: PlayerWithTournamentData[];
   roundDisplay: string;
 }
 
@@ -28,34 +32,11 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
   };
 
   // Get round data for a player
-  const getRoundData = (player: TeamPlayer) => {
+  const getRoundData = (player: PlayerWithTournamentData) => {
     const roundNumber = parseInt(roundDisplay.replace('R', ''));
-    const roundKey = `r${roundNumber}` as keyof Pick<
-      TeamPlayer,
-      'r1' | 'r2' | 'r3' | 'r4'
-    >;
-    return player[roundKey];
+    const roundKey = `r${roundNumber}` as keyof TournamentPlayerData;
+    return player.tournamentData[roundKey] as RoundData | undefined;
   };
-
-  // const calculateScoreToPar = (roundData: RoundData): string => {
-  //   if (roundData.ratio === 0) return '-';
-
-  //   const totalScore = roundData?.holes?.scores.reduce(
-  //     (sum: number, score: number | null) => sum + (score || 0),
-  //     0
-  //   );
-
-  //   const totalPar = roundData?.holes?.scores.reduce(
-  //     (sum: number, score: number | null, index: number) =>
-  //       score !== null ? sum + (roundData.holes?.par[index] || 0) : sum,
-  //     0
-  //   );
-
-  //   const scoreToPar = totalScore && totalPar ? totalScore - totalPar : 0;
-
-  //   if (scoreToPar === 0) return 'E';
-  //   return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
-  // };
 
   return (
     <div className='w-full overflow-x-auto'>
@@ -103,20 +84,22 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
 
               // If both players are CUT, sort by total points
               if (
-                a.leaderboardPosition === 'CUT' &&
-                b.leaderboardPosition === 'CUT'
+                a.tournamentData.leaderboardPosition === 'CUT' &&
+                b.tournamentData.leaderboardPosition === 'CUT'
               ) {
                 return (
-                  (b.total || 0) +
-                  (b.cut || 0) +
-                  (b.bonus || 0) -
-                  ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+                  (b.tournamentData.total || 0) +
+                  (b.tournamentData.cut || 0) +
+                  (b.tournamentData.bonus || 0) -
+                  ((a.tournamentData.total || 0) +
+                    (a.tournamentData.cut || 0) +
+                    (a.tournamentData.bonus || 0))
                 );
               }
 
               return (
-                getPosition(a.leaderboardPosition) -
-                getPosition(b.leaderboardPosition)
+                getPosition(a.tournamentData.leaderboardPosition) -
+                getPosition(b.tournamentData.leaderboardPosition)
               );
             })
             .map((player) => {
@@ -143,7 +126,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                         <div>
                           <div className='text-sm font-medium text-gray-900 flex items-center gap-2'>
                             <span>
-                              {player.player.pga_displayName || ''}
+                              {player.pga_displayName || ''}
                               {roundData?.icon && (
                                 <span className='text-lg pl-2'>
                                   {roundData.icon}
@@ -173,19 +156,21 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
 
                     {/* POSITION */}
                     <td className='w-10 py-2 pl-1  text-center text-sm font-semibold text-gray-600'>
-                      {player.leaderboardPosition || '-'}
+                      {player.tournamentData.leaderboardPosition || '-'}
                     </td>
 
                     {/* TOTAL */}
                     <td className='w-12 py-2 text-center text-sm font-bold text-gray-600'>
                       <span
                         className={`${
-                          player.leaderboardTotal === 'E' ||
-                          !player.leaderboardTotal?.startsWith('-')
+                          player.tournamentData.leaderboardTotal === 'E' ||
+                          !player.tournamentData.leaderboardTotal?.startsWith(
+                            '-'
+                          )
                             ? 'text-gray-600'
                             : 'text-red-600'
                         }`}>
-                        {player.leaderboardTotal || '-'}
+                        {player.tournamentData.leaderboardTotal || '-'}
                       </span>
                     </td>
 
@@ -193,7 +178,7 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                     <td className='w-12 py-2 pr-1 text-center text-sm text-gray-700'>
                       {roundData?.holes?.scores
                         ? roundData.holes.scores.filter(
-                            (score) => score !== null
+                            (score: number | null) => score !== null
                           ).length || '-'
                         : '-'}
                     </td>
@@ -205,7 +190,6 @@ export const PlayerTable: React.FC<PlayerTableProps> = ({
                           <div className='w-full overflow-x-auto shadow-sm'>
                             <PlayerScorecard
                               player={player}
-                              className='rounded-none shadow-none'
                               roundDisplay={roundDisplay}
                             />
                           </div>

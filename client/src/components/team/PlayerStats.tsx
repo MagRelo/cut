@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Player } from '../../types/player';
+import type { PlayerWithTournamentData } from '../../types.new/player';
 
 interface LabelProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
 );
 
 interface PlayerStatsProps {
-  player?: Player;
+  player?: PlayerWithTournamentData;
   showImage?: boolean;
   className?: string;
 }
@@ -125,32 +125,37 @@ export const PlayerStats: React.FC<PlayerStatsProps> = ({
         <div className='text-sm text-gray-500'>
           <Label>Wins</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find((s) => s.title === 'Wins')
-              ?.value || '0'}
+            {player.pga_performance?.stats.find(
+              (s: { title: string }) => s.title === 'Wins'
+            )?.value || '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>T10</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find((s) => s.title === 'Top 10')
-              ?.value || '0'}
+            {player.pga_performance?.stats.find(
+              (s: { title: string }) => s.title === 'Top 10'
+            )?.value || '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>T25</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find((s) => s.title === 'Top 25')
-              ?.value || '0'}
+            {player.pga_performance?.stats.find(
+              (s: { title: string }) => s.title === 'Top 25'
+            )?.value || '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>Cuts</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find((s) => s.title === 'Cuts Made')
-              ?.value || '0'}
+            {player.pga_performance?.stats.find(
+              (s: { title: string }) => s.title === 'Cuts Made'
+            )?.value || '0'}
             <span className='text-gray-400'>/</span>
-            {player.pga_performance?.stats.find((s) => s.title === 'Events')
-              ?.value || '0'}
+            {player.pga_performance?.stats.find(
+              (s: { title: string }) => s.title === 'Events'
+            )?.value || '0'}
           </span>
         </div>
       </div>

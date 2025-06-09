@@ -1,33 +1,30 @@
 // import React, { useState } from 'react';
-import type { TeamPlayer as BaseTeamPlayer, RoundData } from '../../types/team';
-import { ScoreDisplay, StablefordDisplay } from './ScoreDisplays';
+// import type { TeamPlayer as BaseTeamPlayer, RoundData } from '../../types/team';
 
-type TeamPlayer = Omit<BaseTeamPlayer, 'r1' | 'r2' | 'r3' | 'r4'> & {
-  r1?: RoundData;
-  r2?: RoundData;
-  r3?: RoundData;
-  r4?: RoundData;
-};
+import { ScoreDisplay, StablefordDisplay } from './ScoreDisplays';
+import type {
+  PlayerWithTournamentData,
+  RoundData,
+  TournamentPlayerData,
+} from '../../types.new/player';
 
 interface PlayerScorecardProps {
-  player: TeamPlayer;
+  player: PlayerWithTournamentData;
   roundDisplay: string;
-  className?: string;
 }
 
 export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   player,
   roundDisplay,
-  className = '',
 }) => {
   // Get the round data for the selected round
   const getRoundData = (roundDisplay: string) => {
     const roundNumber = parseInt(roundDisplay.replace('R', ''));
     const roundKey = `r${roundNumber}` as keyof Pick<
-      TeamPlayer,
+      TournamentPlayerData,
       'r1' | 'r2' | 'r3' | 'r4'
     >;
-    return player[roundKey];
+    return player.tournamentData[roundKey] as RoundData | undefined;
   };
 
   const roundData = getRoundData(roundDisplay);
@@ -160,7 +157,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({
   };
 
   return (
-    <div className={`bg-gray-100 ${className}`}>
+    <div className={`bg-gray-100`}>
       {/* Round selector */}
       {/* <div className='px-1 py-1 border-b border-gray-200'>
         <div className='flex items-center justify-between'>

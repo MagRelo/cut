@@ -1,23 +1,16 @@
 import React from 'react';
-import type { Team } from '../../types/team';
+import type {
+  PlayerWithTournamentData,
+  RoundData,
+  TournamentLineup,
+  TournamentPlayerData,
+} from '../../types.new/player';
 import { PlayerTable } from '../player/PlayerTable';
 
-interface TeamCardProps {
-  team: Team;
-  roundDisplay?: string;
-  tournamentStatus?: string;
-}
-
-interface LabelProps {
-  children: React.ReactNode;
-  className?: string;
-}
-
 interface RoundIconProps {
-  currentRound: { round: string; data: { icon?: string } } | null;
+  currentRound: { round: string; data: RoundData } | null;
   leaderboardPosition?: string;
 }
-
 const RoundIcon: React.FC<RoundIconProps> = ({
   currentRound,
   leaderboardPosition,
@@ -53,34 +46,47 @@ const RoundIcon: React.FC<RoundIconProps> = ({
   );
 };
 
+interface LabelProps {
+  children: React.ReactNode;
+  className?: string;
+}
 const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
   <span className={`text-sm font-medium text-gray-400 pr-1 ${className}`}>
     {children}
   </span>
 );
 
-export const TeamCard: React.FC<TeamCardProps> = ({
-  team,
+interface LineupCardProps {
+  lineup: TournamentLineup;
+  roundDisplay?: string;
+  tournamentStatus?: string;
+}
+export const LineupCard: React.FC<LineupCardProps> = ({
+  lineup,
   roundDisplay,
   tournamentStatus,
 }) => {
   const [expanded, setExpanded] = React.useState(false);
 
-  // disable the team card expanded button if the tournament is not active
+  // disable the lineup card expanded button if the tournament is not active
   const isTournamentActive = tournamentStatus !== 'NOT_STARTED';
 
-  // Calculate team total
-  const teamTotal = team.players.reduce(
+  // Calculate lineup total
+  const lineupTotal = lineup.players.reduce(
     (sum, player) =>
-      sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0),
+      sum +
+      (player.tournamentData.total || 0) +
+      (player.tournamentData.cut || 0) +
+      (player.tournamentData.bonus || 0),
     0
   );
 
   // Get current round data for each player
-  const getCurrentRound = (player: Team['players'][0]) => {
+  const getCurrentRound = (player: PlayerWithTournamentData) => {
     if (roundDisplay !== undefined) {
       const roundNumber = roundDisplay.replace('R', '');
-      const roundData = player[`r${roundNumber}` as keyof typeof player];
+      const roundData =
+        player.tournamentData[`r${roundNumber}` as keyof TournamentPlayerData];
       if (
         roundData &&
         typeof roundData === 'object' &&
@@ -105,19 +111,20 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     return null;
   };
 
-  // Calculate team's average ratio for the current round
-  const getTeamRatio = () => {
-    const ratios = team.players.map((player) => {
+  // Calculate lineup's average ratio for the current round
+  const getLineupRatio = () => {
+    const ratios = lineup.players.map((player) => {
       // if the player postition is "CUT" or "DQ" or then return 1
       if (
-        player.leaderboardPosition === 'CUT' ||
-        player.leaderboardPosition === 'DQ'
+        player.tournamentData.leaderboardPosition === 'CUT' ||
+        player.tournamentData.leaderboardPosition === 'DQ'
       ) {
         return 1;
       }
 
       const round = getCurrentRound(player);
-      return round?.data.ratio || 0;
+      // Only access ratio if data is RoundData
+      return round?.data && 'ratio' in round.data ? round.data.ratio || 0 : 0;
     });
 
     if (ratios.length === 0) return 0;
@@ -143,16 +150,18 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             <div className='flex items-center'>
               <span
                 className='inline-block w-4 h-4 rounded-full mr-2'
-                style={{ backgroundColor: team.color }}
-                aria-label='Team color'
+                // style={{ backgroundColor: user.color }}
+                style={{ backgroundColor: '#00FF00' }}
+                aria-label='Lineup color'
               />
               <span className='text-xl font-bold text-gray-900'>
-                {team.name}
+                {/* {user.name} */}
+                [TODO: user.name & color]
               </span>
             </div>
             <div className='flex items-center'>
               <span className='text-xl text-gray-600 font-bold'>
-                {teamTotal}
+                {lineupTotal}
               </span>
             </div>
           </div>
@@ -181,7 +190,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                           d='M19 9l-7 7-7-7'
                         />
                       </svg>
-                      <Label className='ml-1'>TEAM</Label>
+                      <Label className='ml-1'>LINEUP</Label>
                     </>
                   )}
                 </div>
@@ -191,7 +200,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             {/* Player Round Icons */}
             <div className='flex items-center space-x-2 h-8'>
               {[...Array(4)].map((_, index) => {
-                const player = team.players.sort((a, b) => {
+                const player = lineup.players.sort((a, b) => {
                   // Handle cases where position might be "-" or undefined
                   const getPosition = (pos: string | undefined) => {
                     if (!pos || pos === '-') return Infinity;
@@ -202,20 +211,22 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
                   // If both players are CUT, sort by total points
                   if (
-                    a.leaderboardPosition === 'CUT' &&
-                    b.leaderboardPosition === 'CUT'
+                    a.tournamentData.leaderboardPosition === 'CUT' &&
+                    b.tournamentData.leaderboardPosition === 'CUT'
                   ) {
                     return (
-                      (b.total || 0) +
-                      (b.cut || 0) +
-                      (b.bonus || 0) -
-                      ((a.total || 0) + (a.cut || 0) + (a.bonus || 0))
+                      (b.tournamentData.total || 0) +
+                      (b.tournamentData.cut || 0) +
+                      (b.tournamentData.bonus || 0) -
+                      ((a.tournamentData.total || 0) +
+                        (a.tournamentData.cut || 0) +
+                        (a.tournamentData.bonus || 0))
                     );
                   }
 
                   return (
-                    getPosition(a.leaderboardPosition) -
-                    getPosition(b.leaderboardPosition)
+                    getPosition(a.tournamentData.leaderboardPosition) -
+                    getPosition(b.tournamentData.leaderboardPosition)
                   );
                 })[index];
 
@@ -228,7 +239,9 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   <RoundIcon
                     key={index}
                     currentRound={currentRound}
-                    leaderboardPosition={player.leaderboardPosition}
+                    leaderboardPosition={
+                      player.tournamentData.leaderboardPosition
+                    }
                   />
                 );
               })}
@@ -236,36 +249,32 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
             {/* Progress Bar */}
             <div className='flex-1 min-w-0 text-center flex items-center h-8'>
-              <div className='flex items-center w-full'>
-                <Label className='text-sm text-gray-400 mr-1 -mt-px'>
-                  {roundDisplay}
-                </Label>
-                <div className='w-full h-2 bg-gray-200 rounded-full relative'>
-                  <div
-                    className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
-                    style={{
-                      width: `${Math.round(getTeamRatio() * 100)}%`,
-                    }}
-                    aria-label='Team round completion'
-                  />
-                  <span className='sr-only'>
-                    {Math.round(getTeamRatio() * 100)}% complete
-                  </span>
-                </div>
+              <div className='w-full h-2 bg-gray-200 rounded-full relative'>
+                <div
+                  className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
+                  style={{
+                    width: `${Math.round(getLineupRatio() * 100)}%`,
+                  }}
+                  aria-label='Round completion'
+                />
+                <span className='sr-only'>
+                  {Math.round(getLineupRatio() * 100)}% complete
+                </span>
               </div>
             </div>
           </div>
+
+          {/* Expanded Players Section */}
+          {expanded && (
+            <div className='mt-2' onClick={(e) => e.stopPropagation()}>
+              <PlayerTable
+                players={lineup.players}
+                roundDisplay={roundDisplay || ''}
+              />
+            </div>
+          )}
         </div>
       </div>
-      {/* Expanded Player Table */}
-      {expanded && (
-        <div className='width-full border border-gray-200 bg-white rounded-b-lg'>
-          <PlayerTable
-            players={team.players}
-            roundDisplay={roundDisplay || ''}
-          />
-        </div>
-      )}
     </div>
   );
 };

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import type { TeamPlayer, RoundData } from '../../types/team';
+import type {
+  PlayerWithTournamentData,
+  RoundData,
+  TournamentPlayerData,
+} from '../../types.new/player';
 import { PlayerScorecard } from './PlayerScorecard';
 
 interface PlayerCardsProps {
-  player: TeamPlayer;
+  player: PlayerWithTournamentData;
   roundDisplay: string;
 }
 
@@ -24,9 +28,10 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
 }) => {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
 
-  const getCurrentRound = (player: TeamPlayer) => {
+  const getCurrentRound = (player: PlayerWithTournamentData) => {
     const roundNumber = roundDisplay.replace('R', '');
-    const roundData = player[`r${roundNumber}` as keyof TeamPlayer];
+    const roundData =
+      player.tournamentData[`r${roundNumber}` as keyof TournamentPlayerData];
 
     if (
       roundData &&
@@ -82,19 +87,19 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
       {/* Top Row */}
       <div className='px-4 py-3 border-b border-gray-200'>
         <div className='flex items-center space-x-4'>
-          {player.player.pga_imageUrl && (
+          {player.pga_imageUrl && (
             <div className='flex-shrink-0'>
               <img
                 className='h-14 w-14 rounded-full object-cover ring-2 ring-white'
-                src={player.player.pga_imageUrl}
-                alt={player.player.pga_displayName || ''}
+                src={player.pga_imageUrl}
+                alt={player.pga_displayName || ''}
               />
             </div>
           )}
           <div className='flex-1 min-w-0'>
             <div className='flex items-center justify-between'>
               <div className='text-lg font-semibold text-gray-600 truncate'>
-                {player.player.pga_displayName || ''}
+                {player.pga_displayName || ''}
                 {/* optionally add the round icon of the current round */}
                 {currentRound?.round && currentRound.data.icon !== '' && (
                   <span className='text-xl text-gray-600 font-bold ml-2'>
@@ -104,9 +109,9 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
               </div>
               <div className='flex items-center'>
                 <span className='text-xl text-gray-600 font-bold ml-1'>
-                  {(player.total || 0) +
-                    (player.cut || 0) +
-                    (player.bonus || 0)}
+                  {(player.tournamentData.total || 0) +
+                    (player.tournamentData.cut || 0) +
+                    (player.tournamentData.bonus || 0)}
                 </span>
               </div>
             </div>
@@ -116,7 +121,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
               <div className='text-sm text-gray-500'>
                 <Label>POS</Label>
                 <span className='font-bold text-gray-600 ml-1'>
-                  {player.leaderboardPosition || '–'}
+                  {player.tournamentData.leaderboardPosition || '–'}
                 </span>
               </div>
 
@@ -125,12 +130,12 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
                 <Label>TOT</Label>
                 <span
                   className={`font-bold ml-1 ${
-                    player.leaderboardTotal === 'E' ||
-                    !player.leaderboardTotal?.startsWith('-')
+                    player.tournamentData.leaderboardTotal === 'E' ||
+                    !player.tournamentData.leaderboardTotal?.startsWith('-')
                       ? 'text-gray-600'
                       : 'text-red-600'
                   }`}>
-                  {player.leaderboardTotal || '–'}
+                  {player.tournamentData.leaderboardTotal || '–'}
                 </span>
               </div>
             </div>
@@ -189,8 +194,8 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
                   className='h-2 bg-emerald-600/70 rounded-full transition-all duration-300'
                   style={{
                     width: `${
-                      player.leaderboardPosition === 'CUT' ||
-                      player.leaderboardPosition === 'DQ'
+                      player.tournamentData.leaderboardPosition === 'CUT' ||
+                      player.tournamentData.leaderboardPosition === 'DQ'
                         ? 100
                         : Math.round((currentRound.data.ratio || 0) * 100)
                     }%`,
@@ -198,8 +203,8 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
                   aria-label='Round completion'
                 />
                 <span className='sr-only'>
-                  {player.leaderboardPosition === 'CUT' ||
-                  player.leaderboardPosition === 'DQ'
+                  {player.tournamentData.leaderboardPosition === 'CUT' ||
+                  player.tournamentData.leaderboardPosition === 'DQ'
                     ? 100
                     : Math.round((currentRound.data.ratio || 0) * 100)}
                   % complete

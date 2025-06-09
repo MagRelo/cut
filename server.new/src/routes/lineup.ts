@@ -57,6 +57,9 @@ router.put('/:tournamentId', requireAuth, async (req, res) => {
               playerId,
             },
           },
+          include: {
+            player: true,
+          },
         });
 
         if (!tournamentPlayer) {
@@ -68,11 +71,38 @@ router.put('/:tournamentId', requireAuth, async (req, res) => {
             tournamentLineupId: tournamentLineup.id,
             tournamentPlayerId: tournamentPlayer.id,
           },
+          include: {
+            tournamentPlayer: {
+              include: {
+                player: true,
+              },
+            },
+          },
         });
       })
     );
 
-    res.json({ lineup: tournamentLineup, players: lineupEntries });
+    // Transform the data into TournamentLineup type
+    const formattedLineup = {
+      players: lineupEntries.map((lineupPlayer) => ({
+        ...lineupPlayer.tournamentPlayer.player,
+        tournamentId,
+        tournamentData: {
+          leaderboardPosition:
+            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          r1: lineupPlayer.tournamentPlayer.r1,
+          r2: lineupPlayer.tournamentPlayer.r2,
+          r3: lineupPlayer.tournamentPlayer.r3,
+          r4: lineupPlayer.tournamentPlayer.r4,
+          cut: lineupPlayer.tournamentPlayer.cut,
+          bonus: lineupPlayer.tournamentPlayer.bonus,
+          total: lineupPlayer.tournamentPlayer.total,
+          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
+        },
+      })),
+    };
+
+    res.json({ lineup: formattedLineup });
   } catch (error) {
     console.error('Error updating lineup:', error);
     res.status(500).json({ error: 'Failed to update lineup' });
@@ -90,12 +120,41 @@ router.get('/:tournamentId', requireAuth, async (req, res) => {
       include: {
         players: {
           include: {
-            tournamentPlayer: true,
+            tournamentPlayer: {
+              include: {
+                player: true,
+              },
+            },
           },
         },
       },
     });
-    res.json({ lineup });
+
+    if (!lineup) {
+      return res.json({ lineup: { players: [] } });
+    }
+
+    // Transform the data into TournamentLineup type
+    const formattedLineup = {
+      players: lineup.players.map((lineupPlayer) => ({
+        ...lineupPlayer.tournamentPlayer.player,
+        tournamentId,
+        tournamentData: {
+          leaderboardPosition:
+            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          r1: lineupPlayer.tournamentPlayer.r1,
+          r2: lineupPlayer.tournamentPlayer.r2,
+          r3: lineupPlayer.tournamentPlayer.r3,
+          r4: lineupPlayer.tournamentPlayer.r4,
+          cut: lineupPlayer.tournamentPlayer.cut,
+          bonus: lineupPlayer.tournamentPlayer.bonus,
+          total: lineupPlayer.tournamentPlayer.total,
+          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
+        },
+      })),
+    };
+
+    res.json({ lineup: formattedLineup });
   } catch (error) {
     console.error('Error getting lineup:', error);
     res.status(500).json({ error: 'Failed to get lineup' });

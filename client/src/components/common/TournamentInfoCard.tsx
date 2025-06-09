@@ -74,9 +74,9 @@ export const TournamentInfoCard: React.FC = () => {
           <div className='flex flex-row items-center justify-between'>
             <div className='flex items-center gap-4'>
               <Link
-                to='/public/team'
+                to='/team'
                 className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                  location.pathname === '/public/team'
+                  location.pathname === '/team'
                     ? 'border-white bg-white/20'
                     : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
@@ -89,7 +89,7 @@ export const TournamentInfoCard: React.FC = () => {
                     ? 'border-white bg-white/20'
                     : 'border-white/50'
                 } rounded px-3 py-1 transition-colors flex items-center justify-center`}>
-                Leagues
+                TODO
               </Link>
               <button
                 onClick={() => setIsModalOpen(true)}

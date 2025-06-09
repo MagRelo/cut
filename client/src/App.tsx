@@ -11,14 +11,10 @@ import { TournamentProvider } from './contexts/TournamentContext';
 import { AdminPage } from './pages/AdminPage';
 import { UserPage } from './pages/UserPage';
 import { TermsOfService } from './pages/TermsOfService';
-import { PortoPage } from './pages/PortoPage';
-import { MyTeam } from './pages/MyTeam';
 
 import { Home } from './pages/Home';
-import { PublicLeagueList } from './pages/PublicLeagueList';
-import { PublicLeagueLobby } from './pages/PublicLeagueLobby';
-import { PublicCreateLeague } from './pages/PublicCreateLeague';
-import { PublicSingleTeam } from './pages/PublicSingleTeam';
+import { MyTeam } from './pages/MyTeam';
+import { PortoPage } from './pages/PortoPage';
 
 import { Navigation } from './components/Navigation';
 import { ProtectedRoute } from './components/util/ProtectedRoute';
@@ -49,24 +45,6 @@ export const App: React.FC = () => {
                         <Route path='/terms' element={<TermsOfService />} />
                         <Route path='/user' element={<UserPage />} />
                         <Route path='/porto' element={<PortoPage />} />
-
-                        {/* Public League Routes */}
-                        <Route
-                          path='/public/leagues'
-                          element={<PublicLeagueList />}
-                        />
-                        <Route
-                          path='/public/leagues/new'
-                          element={<PublicCreateLeague />}
-                        />
-                        <Route
-                          path='/public/league/:leagueId'
-                          element={<PublicLeagueLobby />}
-                        />
-                        <Route
-                          path='/public/team'
-                          element={<PublicSingleTeam />}
-                        />
 
                         {/* Protected Routes */}
                         <Route

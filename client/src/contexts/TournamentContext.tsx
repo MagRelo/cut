@@ -6,14 +6,14 @@ import {
   ReactNode,
   useMemo,
 } from 'react';
-import { type Tournament } from '../types/league';
-import { type TournamentPlayer } from '../types/player';
+import { type Tournament } from '../types.new/tournament';
+import { type PlayerWithTournamentData } from '../types.new/player';
 import { useTournamentApi } from '../services/tournamentApi';
 
 interface TournamentContextType {
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament | null) => void;
-  players: TournamentPlayer[];
+  players: PlayerWithTournamentData[];
   isLoading: boolean;
   error: Error | null;
 }
@@ -30,7 +30,7 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(
     null
   );
-  const [players, setPlayers] = useState<TournamentPlayer[]>([]);
+  const [players, setPlayers] = useState<PlayerWithTournamentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import type { Player } from '../../types/player';
+import type { PlayerWithTournamentData } from '../../types.new/player';
 import { PlayerSelectionCard } from './PlayerSelectionCard';
 
 interface PlayerSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (playerId: string | null) => void;
-  availablePlayers: Player[];
+  availablePlayers: PlayerWithTournamentData[];
   selectedPlayers: string[];
 }
 
@@ -46,10 +46,10 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           );
           break;
         case 'owgr':
-          comparison = (a.pga_owgr || Infinity) - (b.pga_owgr || Infinity);
+          comparison = (a.pga_owgr || 0) - (b.pga_owgr || 0) || 0;
           break;
         case 'fedex':
-          comparison = (a.pga_fedex || Infinity) - (b.pga_fedex || Infinity);
+          comparison = (a.pga_fedex || 0) - (b.pga_fedex || 0) || 0;
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
