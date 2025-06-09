@@ -4,9 +4,13 @@ import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { useTournament } from '../../contexts/TournamentContext';
 import { usePortoAuth } from '../../contexts/PortoAuthContext';
 import { useLineupApi } from '../../services/lineupApi';
-import { type TournamentLineup } from '../../types.new/player';
+import {
+  PlayerWithTournamentData,
+  type TournamentLineup,
+} from '../../types.new/player';
 import { ErrorMessage } from '../util/ErrorMessage';
 import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
+import { PlayerCard } from '../player/PlayerCard';
 
 interface TournamentLineupFormProps {
   onUpdateLineup?: (playerIds: string[]) => Promise<void>;
@@ -48,8 +52,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   }, [currentTournament?.id, isAuthLoading, lineupApi]);
 
   const isEditingAllowed = (): boolean => {
-    return true;
-    // return !currentTournament || currentTournament.status === 'NOT_STARTED';
+    // return true;
+    return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
   const handlePlayerSelect = async (playerId: string | null) => {
@@ -109,7 +113,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   }
 
   return (
-    <div className='bg-white p-4 rounded-lg shadow-md'>
+    <div className='bg-white p-4 rounded-lg shadow-md pb-6'>
       {/* tournament Summary */}
       <div className='text-2xl font-bold mb-2 flex flex-col gap-1'>
         <div className='flex items-center gap-2'>
@@ -140,26 +144,45 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
         </div>
       </div>
 
-      {/* lineup */}
       <div className='flex flex-col gap-4'>
-        {Array.from({ length: 4 }).map((_, index) => (
-          <PlayerSelectionCard
-            key={`slot-${index}`}
-            player={lineup?.players[index] || null}
-            isSelected={false}
-            onClick={() => handleCardClick(index)}
-          />
-        ))}
+        {/* lineup open */}
+        {isEditingAllowed() && (
+          <div className='flex flex-col gap-4'>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <PlayerSelectionCard
+                key={`slot-${index}`}
+                player={lineup?.players[index] || null}
+                isSelected={false}
+                onClick={() => handleCardClick(index)}
+              />
+            ))}
+          </div>
+        )}
 
-        <PlayerSelectionModal
-          isOpen={selectedPlayerIndex !== null}
-          onClose={() => setSelectedPlayerIndex(null)}
-          onSelect={handlePlayerSelect}
-          availablePlayers={fieldPlayers || []}
-          selectedPlayers={lineup?.players?.map((p) => p.id) || []}
-        />
+        {/* lineup closed */}
+        {!isEditingAllowed() && (
+          <div className='flex flex-col gap-4'>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <PlayerCard
+                key={`slot-${index}`}
+                player={lineup?.players[index] as PlayerWithTournamentData}
+                roundDisplay={currentTournament?.roundDisplay || ''}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* player selection modal */}
+      <PlayerSelectionModal
+        isOpen={selectedPlayerIndex !== null}
+        onClose={() => setSelectedPlayerIndex(null)}
+        onSelect={handlePlayerSelect}
+        availablePlayers={fieldPlayers || []}
+        selectedPlayers={lineup?.players?.map((p) => p.id) || []}
+      />
+
+      {/* tournament summary modal */}
       <TournamentSummaryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

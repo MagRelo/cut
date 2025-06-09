@@ -29,6 +29,8 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
 
   const getCurrentRound = (player: PlayerWithTournamentData) => {
+    if (!player?.tournamentData) return null;
+
     const roundNumber = roundDisplay.replace('R', '');
     const roundData =
       player.tournamentData[`r${roundNumber}` as keyof TournamentPlayerData];
@@ -71,7 +73,7 @@ export const PlayerCard: React.FC<PlayerCardsProps> = ({
       onClick={() =>
         setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id)
       }
-      className='bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer'
+      className='bg-white shadow-md overflow-hidden'
       role='button'
       tabIndex={0}
       onKeyDown={(e) => {
