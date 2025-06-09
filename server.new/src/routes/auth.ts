@@ -122,6 +122,25 @@ router.get('/me', requireAuth, async (req, res) => {
 
     // filter out user info that is not needed
     const { tournamentLineups, userGroups, ...userData } = user;
+    // Format tournamentLineups to match TournamentLineup type
+    const formattedLineups = tournamentLineups.map((lineup) => ({
+      players: lineup.players.map((lineupPlayer) => ({
+        ...lineupPlayer.tournamentPlayer.player,
+        tournamentId: lineup.tournamentId,
+        tournamentData: {
+          leaderboardPosition:
+            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          r1: lineupPlayer.tournamentPlayer.r1,
+          r2: lineupPlayer.tournamentPlayer.r2,
+          r3: lineupPlayer.tournamentPlayer.r3,
+          r4: lineupPlayer.tournamentPlayer.r4,
+          cut: lineupPlayer.tournamentPlayer.cut,
+          bonus: lineupPlayer.tournamentPlayer.bonus,
+          total: lineupPlayer.tournamentPlayer.total,
+          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
+        },
+      })),
+    }));
     const response = {
       name: userData.name,
       userType: userData.userType,
@@ -129,11 +148,11 @@ router.get('/me', requireAuth, async (req, res) => {
       phone: userData.phone,
       email: userData.email,
       isVerified: userData.isVerified,
-      tournamentLineups,
+      tournamentLineups: formattedLineups,
       userGroups,
     };
 
-    res.json({ response });
+    res.json(response);
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user information' });

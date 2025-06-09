@@ -1,22 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlayerSelectionCard } from './PlayerSelectionCard';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { useTournament } from '../../contexts/TournamentContext';
+import { usePortoAuth } from '../../contexts/PortoAuthContext';
+import { useLineupApi } from '../../services/lineupApi';
 import { type TournamentLineup } from '../../types.new/player';
+import { ErrorMessage } from '../util/ErrorMessage';
+import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
 
 interface TournamentLineupFormProps {
-  lineup: TournamentLineup | null;
-  onUpdateLineup: (playerIds: string[]) => Promise<void>;
+  onUpdateLineup?: (playerIds: string[]) => Promise<void>;
 }
 
 export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
-  lineup,
   onUpdateLineup,
 }) => {
+  const lineupApi = useLineupApi();
+  const { loading: isAuthLoading } = usePortoAuth();
+  const {
+    players: fieldPlayers,
+    currentTournament,
+    isLoading: isTournamentLoading,
+  } = useTournament();
+
+  // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(
     null
   );
-  const { players: fieldPlayers, currentTournament } = useTournament();
+  const [error, setError] = useState<string | null>(null);
+  const [lineup, setLineup] = useState<TournamentLineup | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchLineup = async () => {
+      if (!isAuthLoading && currentTournament?.id) {
+        try {
+          const response = await lineupApi.getLineup(currentTournament.id);
+          setLineup(response.lineup);
+        } catch (error) {
+          console.error('Failed to fetch lineup:', error);
+          setError('Failed to fetch lineup');
+        }
+      }
+    };
+
+    fetchLineup();
+  }, [currentTournament?.id, isAuthLoading, lineupApi]);
 
   const isEditingAllowed = (): boolean => {
     return true;
@@ -40,7 +69,24 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
 
     // Map remaining players to IDs
     const playerIds = newPlayers.map((p) => p.id);
-    await onUpdateLineup(playerIds);
+
+    try {
+      if (onUpdateLineup) {
+        await onUpdateLineup(playerIds);
+      } else {
+        const response = await lineupApi.updateLineup(
+          currentTournament?.id || '',
+          {
+            players: playerIds,
+          }
+        );
+        setLineup(response.lineup);
+      }
+    } catch (error) {
+      console.error('Failed to update lineup:', error);
+      setError('Failed to update lineup');
+    }
+
     setSelectedPlayerIndex(null);
   };
 
@@ -50,11 +96,44 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     }
   };
 
+  if (isAuthLoading || isTournamentLoading) {
+    return <div className='p-4'>Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className='p-4'>
+        <ErrorMessage message={error} />
+      </div>
+    );
+  }
+
   return (
     <div className='bg-white p-4 rounded-lg shadow-md'>
       {/* tournament Summary */}
-      <div className='text-2xl font-bold mb-2'>
-        {currentTournament?.name}
+      <div className='text-2xl font-bold mb-2 flex flex-col gap-1'>
+        <div className='flex items-center gap-2'>
+          {currentTournament?.name}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className='inline-block text-gray-600 hover:text-gray-800 text-sm font-medium rounded-full transition-colors flex items-center justify-center'
+            style={{ width: '31px', height: '31px' }}>
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              className='h-4 w-4'
+              fill='none'
+              viewBox='0 0 24 24'
+              stroke='currentColor'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
+            </svg>
+          </button>
+        </div>
+
         <div className='text-sm text-gray-500'>
           {currentTournament?.roundDisplay} -{' '}
           {currentTournament?.roundStatusDisplay}
@@ -80,6 +159,11 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
           selectedPlayers={lineup?.players?.map((p) => p.id) || []}
         />
       </div>
+
+      <TournamentSummaryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
