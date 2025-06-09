@@ -45,7 +45,7 @@ export function usePortoAuth() {
 }
 
 export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -185,6 +185,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const response = await request<PortoUser>('POST', '/auth/web3', {
             address,
+            chainId,
           });
           setUser(response);
           localStorage.setItem('portoToken', response.token);
