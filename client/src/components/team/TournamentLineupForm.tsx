@@ -4,10 +4,7 @@ import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { useTournament } from '../../contexts/TournamentContext';
 import { usePortoAuth } from '../../contexts/PortoAuthContext';
 import { useLineupApi } from '../../services/lineupApi';
-import {
-  PlayerWithTournamentData,
-  type TournamentLineup,
-} from '../../types.new/player';
+import { type TournamentLineup } from '../../types.new/player';
 import { ErrorMessage } from '../util/ErrorMessage';
 import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
 import { PlayerCard } from '../player/PlayerCard';
@@ -162,13 +159,22 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
         {/* lineup closed */}
         {!isEditingAllowed() && (
           <div className='flex flex-col gap-4'>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <PlayerCard
-                key={`slot-${index}`}
-                player={lineup?.players[index] as PlayerWithTournamentData}
-                roundDisplay={currentTournament?.roundDisplay || ''}
-              />
-            ))}
+            {Array.from({ length: 4 }).map((_, index) => {
+              const player = lineup?.players[index];
+              return player ? (
+                <PlayerCard
+                  key={`slot-${index}`}
+                  player={player}
+                  roundDisplay={currentTournament?.roundDisplay || ''}
+                />
+              ) : (
+                <div
+                  key={`slot-${index}`}
+                  className='h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400'>
+                  Empty Slot
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
