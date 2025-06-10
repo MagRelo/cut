@@ -21,13 +21,13 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className='p-4 sm:p-6 border-b border-gray-200'>
             <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
-                2025 RBC Canadian Open
+                2025 U.S. Open Championship
               </Dialog.Title>
               <p className='text-lg tracking-tight text-gray-600 font-medium'>
-                TPC Toronto at Osprey Valley
+                Oakmont Country Club
               </p>
               <p className='text-sm text-gray-500 font-medium'>
-                Caledon, Ontario
+                Oakmont, Pennsylvania
               </p>
             </div>
 
@@ -35,28 +35,41 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
             <div className='max-h-[60vh] overflow-y-auto pt-4 px-2 bg-gray-50 pb-8'>
               <div className='prose prose-sm max-w-none'>
                 <h3 className='text-2xl font-semibold text-gray-800 mb-2'>
-                  Best Players and Odds
+                  Top Players and Odds
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Rory McIlroy:</strong> World No. 2 and two-time
-                    Canadian Open champion, enters as the favorite (+450 odds).
+                    <strong>Scottie Scheffler:</strong> World No. 1, three-time
+                    major champion, enters as the heavy favorite (11/4 odds).
+                    Scheffler has won three of his last four starts, including
+                    the PGA Championship and the Memorial, and is seeking his
+                    fourth career major and the third leg of the career grand
+                    slam.
                   </li>
                   <li>
-                    <strong>Ludvig Aberg:</strong> Rising star, strong recent
-                    form, +1400 odds.
+                    <strong>Bryson DeChambeau:</strong> Defending champion,
+                    two-time U.S. Open winner, and second favorite at 15/2 odds.
+                    He's been in excellent form and has prepared specifically
+                    for Oakmont's challenges.
                   </li>
                   <li>
-                    <strong>Corey Conners:</strong> Canadian fan favorite, +1800
-                    odds.
+                    <strong>Rory McIlroy:</strong> World No. 2, Masters champion
+                    this year, and third favorite at 11-1 odds. A win would give
+                    him his sixth major and further cement his legacy.
                   </li>
                   <li>
-                    <strong>Shane Lowry:</strong> Major champion, +1800 odds.
+                    <strong>Jon Rahm:</strong> 2021 U.S. Open champion, 12-1
+                    odds, showing a resurgence in form and always a threat at
+                    majors.
                   </li>
                   <li>
-                    <strong>Sam Burns, Robert MacIntyre, Nick Taylor:</strong>{' '}
-                    Also among the favorites with odds ranging from +2500 to
-                    +4000.
+                    <strong>Xander Schauffele:</strong> 2024 PGA Championship
+                    winner, 18-1 odds, consistently contending in majors.
+                  </li>
+                  <li>
+                    <strong>Other Notable Contenders:</strong> Collin Morikawa,
+                    Ludvig Åberg, Joaquin Niemann, Tommy Fleetwood, Justin
+                    Thomas, Shane Lowry, and Patrick Cantlay.
                   </li>
                 </ul>
 
@@ -65,54 +78,88 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Rory McIlroy:</strong> Chasing a third Canadian Open
-                    title, which would put him alongside golf legends Tommy
-                    Armour, Sam Snead, and Lee Trevino as three-time winners.
+                    <strong>Scheffler's Dominance:</strong> Can Scheffler
+                    continue his incredible run and win back-to-back majors,
+                    joining an elite group of golfers to achieve this feat?
                   </li>
                   <li>
-                    <strong>Canadian Hopes:</strong> Corey Conners and Nick
-                    Taylor are among the top Canadian players aiming for a home
-                    victory.
+                    <strong>DeChambeau's Defense:</strong> Will the defending
+                    champion's power and preparation help him conquer Oakmont's
+                    brutal setup again?
                   </li>
                   <li>
-                    <strong>Preparation for the U.S. Open:</strong> Many players
-                    are using this event as a tune-up for the upcoming major
-                    championship at Oakmont.
-                  </li>
-                </ul>
-
-                <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  Tournament History
-                </h3>
-                <ul className='list-disc pl-5 space-y-1.5'>
-                  <li>
-                    <strong>Tradition:</strong> The RBC Canadian Open is one of
-                    the oldest national open golf championships in the world,
-                    dating back to 1904.
+                    <strong>McIlroy's Quest:</strong> McIlroy seeks his sixth
+                    major and another step toward golf immortality.
                   </li>
                   <li>
-                    <strong>Recent Champion:</strong> In 2024, Robert MacIntyre
-                    won his first PGA Tour title at Hamilton Golf and Country
-                    Club, finishing one stroke ahead of Ben Griffin.
+                    <strong>Phil Mickelson's Last Chance?:</strong> Mickelson,
+                    possibly playing his final U.S. Open, still seeks the
+                    elusive career Grand Slam.
                   </li>
                   <li>
-                    <strong>Notable Past Winners:</strong> Rory McIlroy (2022,
-                    2019), Dustin Johnson, Nick Taylor, and many other major
-                    champions.
+                    <strong>Oakmont's Challenge:</strong> The course itself is a
+                    central figure—its greens, rough, and history promise drama
+                    and potential heartbreak.
                   </li>
                 </ul>
 
                 <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  Course and Format
+                  History and Significance
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Course:</strong> TPC Toronto at Osprey Valley (North
-                    Course), par 70, 7,389 yards.
+                    <strong>Tradition:</strong> The U.S. Open is one of golf's
+                    four major championships, staged annually by the United
+                    States Golf Association (USGA).
                   </li>
                   <li>
-                    <strong>Format:</strong> Standard 72-hole stroke play, with
-                    a cut after 36 holes.
+                    <strong>Heritage:</strong> First played in 1895, it is
+                    renowned for its challenging setups, tough scoring, and the
+                    prestige attached to winning America's national
+                    championship.
+                  </li>
+                  <li>
+                    <strong>Milestone:</strong> This year marks the 125th
+                    edition, hosted at Oakmont Country Club in Pennsylvania—a
+                    venue famous for its lightning-fast, undulating greens and
+                    penal rough. Oakmont is hosting the U.S. Open for a record
+                    10th time, underscoring its status as one of the sternest
+                    tests in golf.
+                  </li>
+                </ul>
+
+                <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
+                  Venue: Oakmont Country Club
+                </h3>
+                <ul className='list-disc pl-5 space-y-1.5'>
+                  <li>
+                    <strong>Course Challenge:</strong> Oakmont is legendary for
+                    its difficulty, featuring the "scariest" greens in golf,
+                    thick rough, and the longest par-three in major history.
+                  </li>
+                  <li>
+                    <strong>Design Philosophy:</strong> The course is designed
+                    to expose any weakness in a player's game, demanding
+                    precision, patience, and mental toughness.
+                  </li>
+                </ul>
+
+                <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
+                  Field and Format
+                </h3>
+                <ul className='list-disc pl-5 space-y-1.5'>
+                  <li>
+                    <strong>Competition:</strong> 156 players are set to compete
+                    over 72 holes of stroke play.
+                  </li>
+                  <li>
+                    <strong>Cut:</strong> The cut comes after 36 holes, with the
+                    top 60 and ties advancing to the weekend.
+                  </li>
+                  <li>
+                    <strong>Prize:</strong> The winner receives a significant
+                    share of the prize fund and a major boost in world ranking
+                    and career legacy.
                   </li>
                 </ul>
 
@@ -121,12 +168,16 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>TV:</strong> Golf Channel and CBS, with coverage in
-                    the afternoons and evenings (EDT).
+                    <strong>Dates:</strong> June 12–15, 2025
                   </li>
                   <li>
-                    <strong>Streaming:</strong> PGA Tour Live on ESPN+,
-                    Paramount+, NBC Sports App.
+                    <strong>TV:</strong> NBC and USA Network provide extensive
+                    coverage, with NBC offering the most broadcast hours ever
+                    for a major.
+                  </li>
+                  <li>
+                    <strong>Streaming:</strong> Coverage available via NBC
+                    Sports digital platforms and Peacock.
                   </li>
                 </ul>
               </div>
