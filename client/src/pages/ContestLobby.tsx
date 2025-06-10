@@ -45,8 +45,14 @@ export const ContestLobby: React.FC = () => {
     fetchContest();
   }, [contestId]);
 
+  const tournamentLineupId = user?.tournamentLineups?.[0]?.id;
+  const userHasLineup = !!tournamentLineupId;
+
   const handleJoinContest = async () => {
-    const tournamentLineupId = user?.tournamentLineups?.[0]?.id || '';
+    if (!tournamentLineupId) {
+      setError('No tournament lineup found');
+      return;
+    }
     try {
       await addLineupToContest(contestId!, { tournamentLineupId });
       await fetchContest();
@@ -156,7 +162,7 @@ export const ContestLobby: React.FC = () => {
                   <button
                     className='mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
                     onClick={handleJoinContest}
-                    disabled={userInContest}>
+                    disabled={userInContest || !userHasLineup}>
                     Join Contest - $100
                   </button>
                 </div>
