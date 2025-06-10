@@ -46,10 +46,14 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           );
           break;
         case 'owgr':
-          comparison = (a.pga_owgr || Infinity) - (b.pga_owgr || Infinity);
+          comparison =
+            (parseInt(String(a.pga_owgr || '999999')) || 999999) -
+            (parseInt(String(b.pga_owgr || '999999')) || 999999);
           break;
         case 'fedex':
-          comparison = (a.pga_fedex || Infinity) - (b.pga_fedex || Infinity);
+          comparison =
+            (parseInt(String(a.pga_fedex || '999999')) || 999999) -
+            (parseInt(String(b.pga_fedex || '999999')) || 999999);
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
