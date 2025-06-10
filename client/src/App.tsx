@@ -14,6 +14,7 @@ import { UserPage } from './pages/User'; //user
 import { AdminPage } from './pages/AdminPage';
 import { Contests } from './pages/ContestListPage';
 import { ContestLobby } from './pages/ContestLobby';
+import CreateContestPage from './pages/CreateContestPage';
 
 import { TournamentInfoCard } from './components/common/TournamentInfoCard';
 import { ProtectedRoute } from './components/util/ProtectedRoute';
@@ -43,6 +44,10 @@ export const App: React.FC = () => {
                         <Route path='/' element={<Home />} />
                         <Route path='/terms' element={<TermsOfService />} />
                         <Route path='/contests' element={<Contests />} />
+                        <Route
+                          path='/contests/create'
+                          element={<CreateContestPage />}
+                        />
                         <Route path='/contest/:id' element={<ContestLobby />} />
                         <Route path='/user' element={<UserPage />} />
 

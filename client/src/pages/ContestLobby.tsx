@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Contest } from 'src/types.new/contest';
+import { Tab, TabPanel, TabList, TabGroup } from '@headlessui/react';
 
+import { Contest } from 'src/types.new/contest';
 import { useContestApi } from '../services/contestApi';
 import { usePortoAuth } from '../contexts/PortoAuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-
-import { Tab, TabPanel, TabList, TabGroup } from '@headlessui/react';
+import { Breadcrumbs } from '../components/util/Breadcrumbs';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -97,10 +97,16 @@ export const ContestLobby: React.FC = () => {
   }
 
   return (
-    <div className='space-y-4 p-4'>
+    <div className='space-y-2 p-4'>
+      <Breadcrumbs
+        items={[
+          { label: 'Contests', path: '/contests' },
+          { label: contest?.name ?? '', path: `/contests/${contestId}` },
+        ]}
+      />
+
       <div className='bg-white rounded-lg shadow'>
         {/* header */}
-
         <div className='px-4 py-2'>
           <h3 className='text-2xl font-semibold text-gray-800'>
             {contest?.name}

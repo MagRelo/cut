@@ -33,7 +33,7 @@ export const MyTeam: React.FC = () => {
 
   return (
     <div className='p-4'>
-      <PageHeader title='Lineup' className='mb-3' />
+      <PageHeader title='Manage Lineup' className='mb-3' />
 
       <TournamentLineupForm />
 
