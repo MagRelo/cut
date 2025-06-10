@@ -49,8 +49,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   }, [currentTournament?.id, isAuthLoading, lineupApi]);
 
   const isEditingAllowed = (): boolean => {
-    // return true;
-    return !currentTournament || currentTournament.status === 'NOT_STARTED';
+    return true;
+    // return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
   const handlePlayerSelect = async (playerId: string | null) => {

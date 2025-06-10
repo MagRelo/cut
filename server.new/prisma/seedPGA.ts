@@ -184,11 +184,11 @@ async function main() {
     });
     console.log('Created default user group');
 
-    // 6. Create a test contest for the selected tournament
-    const testContest = await prisma.contest.create({
+    // 6. Create two test contests - one with user group and one without
+    const contestWithGroup = await prisma.contest.create({
       data: {
-        name: 'Test Contest',
-        description: 'A test contest for the selected tournament',
+        name: 'Group Contest',
+        description: 'A contest with a user group',
         tournamentId: selectedTournament.id,
         userGroupId: defaultUserGroup.id,
         startDate: new Date(),
@@ -200,7 +200,23 @@ async function main() {
         },
       },
     });
-    console.log('Created test contest');
+    console.log('Created contest with user group');
+
+    const contestWithoutGroup = await prisma.contest.create({
+      data: {
+        name: 'Open Contest',
+        description: 'A contest without a user group',
+        tournamentId: selectedTournament.id,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        status: 'ACTIVE',
+        settings: {
+          maxPlayers: 4,
+          scoringType: 'STABLEFORD',
+        },
+      },
+    });
+    console.log('Created contest without user group');
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;

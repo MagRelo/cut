@@ -223,7 +223,7 @@ model Contest {
   name            String
   description     String?
   tournamentId    String
-  userGroupId     String
+  userGroupId     String?
   startDate       DateTime
   endDate         DateTime
   status          String
@@ -233,7 +233,7 @@ model Contest {
   
   // Relations
   tournament      Tournament       @relation(fields: [tournamentId], references: [id])
-  userGroup       UserGroup        @relation(fields: [userGroupId], references: [id])
+  userGroup       UserGroup?       @relation(fields: [userGroupId], references: [id])
   contestLineups  ContestLineup[]
 
   @@index([tournamentId])

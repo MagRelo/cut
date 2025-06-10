@@ -52,6 +52,10 @@ DELETE
 
 ### Lineups
 
+GET
+
+- /lineup
+
 PUT
 
 - /lineup

@@ -1,7 +1,7 @@
 import { useAccount, useDisconnect, useConnect } from 'wagmi';
 import { PageHeader } from '../components/util/PageHeader';
 
-export function PortoPage() {
+export function UserPage() {
   const { address, chainId, chain } = useAccount();
   const { connectors, connect, error } = useConnect();
   const { disconnect } = useDisconnect();

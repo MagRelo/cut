@@ -124,6 +124,7 @@ router.get('/me', requireAuth, async (req, res) => {
     const { tournamentLineups, userGroups, ...userData } = user;
     // Format tournamentLineups to match TournamentLineup type
     const formattedLineups = tournamentLineups.map((lineup) => ({
+      id: lineup.id,
       players: lineup.players.map((lineupPlayer) => ({
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId: lineup.tournamentId,
@@ -142,6 +143,7 @@ router.get('/me', requireAuth, async (req, res) => {
       })),
     }));
     const response = {
+      id: userData.id,
       name: userData.name,
       userType: userData.userType,
       settings: userData.settings,

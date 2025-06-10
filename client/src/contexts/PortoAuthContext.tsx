@@ -11,6 +11,7 @@ import { handleApiResponse, ApiError } from '../utils/apiError';
 import { type TournamentLineup } from '../types.new/player';
 
 interface PortoUser {
+  id: string;
   name: string;
   userType: string;
   settings: Record<string, unknown> | null;

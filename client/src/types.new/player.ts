@@ -62,6 +62,7 @@ export interface PlayerWithTournamentData extends Player {
 
 // Tournament Lineup Type
 export interface TournamentLineup {
+  id: string;
   players: PlayerWithTournamentData[];
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { type TournamentLineup } from '../types/lineup';
+import { type TournamentLineup } from '../types.new/player';
+import { handleApiResponse } from '../utils/apiError';
 
 interface LineupResponse {
   lineup: TournamentLineup;
@@ -50,15 +51,7 @@ export const useLineupApi = () => {
         body: data ? JSON.stringify(data) : undefined,
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Handle unauthorized - maybe redirect to login
-          throw new Error('Unauthorized - Please log in');
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response.json();
+      return handleApiResponse<T>(response);
     },
     [config]
   );
