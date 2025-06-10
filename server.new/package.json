@@ -20,9 +20,6 @@
     "db:logs": "docker compose logs -f",
     "db:reset": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seedPGA"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "^5.10.0",
     "@sendgrid/mail": "^8.1.5",

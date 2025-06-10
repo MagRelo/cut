@@ -1,23 +1,17 @@
-import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-
-// Routes
-import apiRoutes from './routes/api.js';
-
-// Middleware
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { requestLogger } from './middleware/logger.js';
 
 // Load environment variables based on NODE_ENV
 const envFile =
   process.env.NODE_ENV === 'test'
     ? '.env.test'
     : process.env.NODE_ENV === 'production'
-    ? '.env.production'
+    ? '.env'
     : '.env.development';
 
 dotenv.config({ path: envFile });
+console.log('NODE_ENV', process.env.NODE_ENV);
+console.log('envFile', envFile);
+console.log('DATABASE_URL', process.env.DATABASE_URL);
 
 // Validate required environment variables
 const requiredEnvVars = ['DATABASE_URL', 'PGA_API_KEY'];
@@ -27,6 +21,16 @@ for (const envVar of requiredEnvVars) {
     throw new Error(`Missing required environment variable: ${envVar}`);
   }
 }
+
+import express from 'express';
+import cors from 'cors';
+
+// Routes
+import apiRoutes from './routes/api.js';
+
+// Middleware
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/logger.js';
 
 const app = express();
 const port = process.env.PORT || 4000;

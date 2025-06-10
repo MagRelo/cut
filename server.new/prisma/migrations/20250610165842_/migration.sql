@@ -20,6 +20,19 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "UserWallet" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "chainId" INTEGER NOT NULL,
+    "publicKey" TEXT NOT NULL,
+    "isPrimary" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserWallet_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "UserGroup" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -155,7 +168,7 @@ CREATE TABLE "Contest" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "tournamentId" TEXT NOT NULL,
-    "userGroupId" TEXT NOT NULL,
+    "userGroupId" TEXT,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
     "status" TEXT NOT NULL,
@@ -195,6 +208,18 @@ CREATE INDEX "User_phone_idx" ON "User"("phone");
 
 -- CreateIndex
 CREATE INDEX "User_verificationCode_idx" ON "User"("verificationCode");
+
+-- CreateIndex
+CREATE INDEX "UserWallet_userId_idx" ON "UserWallet"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserWallet_chainId_idx" ON "UserWallet"("chainId");
+
+-- CreateIndex
+CREATE INDEX "UserWallet_publicKey_idx" ON "UserWallet"("publicKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserWallet_chainId_publicKey_key" ON "UserWallet"("chainId", "publicKey");
 
 -- CreateIndex
 CREATE INDEX "UserGroup_name_idx" ON "UserGroup"("name");
@@ -263,6 +288,9 @@ CREATE INDEX "ContestLineup_status_idx" ON "ContestLineup"("status");
 CREATE UNIQUE INDEX "ContestLineup_contestId_tournamentLineupId_key" ON "ContestLineup"("contestId", "tournamentLineupId");
 
 -- AddForeignKey
+ALTER TABLE "UserWallet" ADD CONSTRAINT "UserWallet_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "UserGroupMember" ADD CONSTRAINT "UserGroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -296,7 +324,7 @@ ALTER TABLE "TournamentLineupPlayer" ADD CONSTRAINT "TournamentLineupPlayer_tour
 ALTER TABLE "Contest" ADD CONSTRAINT "Contest_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Contest" ADD CONSTRAINT "Contest_userGroupId_fkey" FOREIGN KEY ("userGroupId") REFERENCES "UserGroup"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Contest" ADD CONSTRAINT "Contest_userGroupId_fkey" FOREIGN KEY ("userGroupId") REFERENCES "UserGroup"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ContestLineup" ADD CONSTRAINT "ContestLineup_contestId_fkey" FOREIGN KEY ("contestId") REFERENCES "Contest"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

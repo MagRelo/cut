@@ -11,21 +11,36 @@ function appendConnectionParams(url: string): string {
   return `${url}${separator}connection_limit=6&pool_timeout=30`;
 }
 
-const prisma =
-  global.prisma ||
-  new PrismaClient({
-    log: ['error', 'warn'],
-    // Configure connection limits through environment variables
-    datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ''),
-  });
+let prismaInstance: PrismaClient | undefined;
 
-if (process.env.NODE_ENV === 'development') {
-  global.prisma = prisma;
+export function getPrisma() {
+  if (!prismaInstance) {
+    console.log('Initializing Prisma client');
+    prismaInstance =
+      global.prisma ||
+      new PrismaClient({
+        log: ['error', 'warn'],
+        datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ''),
+      });
+
+    if (process.env.NODE_ENV === 'development') {
+      global.prisma = prismaInstance;
+    }
+  }
+  return prismaInstance;
 }
-
-export { prisma };
 
 // Handle cleanup on app termination
 process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+  if (prismaInstance) {
+    await prismaInstance.$disconnect();
+  }
+});
+
+// Export a proxy that will lazy initialize the client
+export const prisma = new Proxy({} as PrismaClient, {
+  get: (target, prop) => {
+    const client = getPrisma();
+    return client[prop as keyof PrismaClient];
+  },
 });
