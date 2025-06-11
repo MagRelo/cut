@@ -15,6 +15,7 @@ import { AdminPage } from './pages/AdminPage';
 import { Contests } from './pages/ContestListPage';
 import { ContestLobby } from './pages/ContestLobby';
 import CreateContestPage from './pages/CreateContestPage';
+import { Web3Test } from './pages/Web3Test';
 
 import { TournamentInfoCard } from './components/common/TournamentInfoCard';
 import { ProtectedRoute } from './components/util/ProtectedRoute';
@@ -50,6 +51,7 @@ export const App: React.FC = () => {
                         />
                         <Route path='/contest/:id' element={<ContestLobby />} />
                         <Route path='/user' element={<UserPage />} />
+                        <Route path='/web3-test' element={<Web3Test />} />
 
                         {/* Protected Routes */}
                         <Route

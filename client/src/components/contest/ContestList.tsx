@@ -32,35 +32,35 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
           <Link to={`/contest/${contest.id}`} key={contest.id}>
             <div
               key={contest.id}
-              className='p-4 border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center gap-8'>
-              <h3 className='text-lg font-extrabold flex-1 leading-tight'>
+              className='p-4 border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3'>
+              <h3 className='text-lg font-extrabold leading-tight'>
                 {contest.name}
               </h3>
 
-              <div className='flex items-end gap-4'>
-                <div className='flex flex-col items-center min-w-[40px]'>
-                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider'>
-                    Entries
+              <div className='flex items-center justify-center gap-4'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none'>
+                    Entries:
                   </span>
-                  <span className='text-base text-gray-700 font-medium mt-1'>
+                  <span className='text-base text-gray-700 font-medium leading-none'>
                     {contest?.contestLineups?.length ?? 0}/
                     {String(contest?.settings?.maxPlayers ?? 0)}
                   </span>
                 </div>
-                <div className='flex flex-col items-center min-w-[40px]'>
-                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider'>
-                    Entry
+                <div className='flex items-center gap-2'>
+                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none'>
+                    Max:
                   </span>
-                  <span className='text-base text-gray-700 font-medium mt-1'>
-                    $10
+                  <span className='text-base text-gray-700 font-medium leading-none'>
+                    $40
                   </span>
                 </div>
-                <div className='flex flex-col items-center min-w-[40px]'>
-                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider'>
-                    Max
+                <div className='flex items-center gap-2'>
+                  <span className='text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none'>
+                    Entry:
                   </span>
-                  <span className='text-base text-gray-700 font-medium mt-1'>
-                    $1000
+                  <span className='text-base text-gray-700 font-medium leading-none'>
+                    $10
                   </span>
                 </div>
               </div>

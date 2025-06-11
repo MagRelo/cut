@@ -167,6 +167,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
                       player={lineup?.players[index] || null}
                       isSelected={false}
                       onClick={() => handleCardClick(index)}
+                      iconType='pencil'
                     />
                   ))}
                 </div>
