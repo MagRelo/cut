@@ -39,6 +39,8 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     })
     .sort((a, b) => {
       let comparison = 0;
+      let aOwgr: number, bOwgr: number, aFedex: number, bFedex: number;
+
       switch (sortField) {
         case 'name':
           comparison = (a.pga_lastName || '').localeCompare(
@@ -46,10 +48,20 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           );
           break;
         case 'owgr':
-          comparison = (a.pga_owgr || 0) - (b.pga_owgr || 0) || 0;
+          aOwgr = Number(a.pga_performance?.standings?.owgr);
+          bOwgr = Number(b.pga_performance?.standings?.owgr);
+          if (!aOwgr && !bOwgr) comparison = 0;
+          else if (!aOwgr) comparison = 1; // Put missing data at bottom
+          else if (!bOwgr) comparison = -1; // Put missing data at bottom
+          else comparison = aOwgr - bOwgr;
           break;
         case 'fedex':
-          comparison = (a.pga_fedex || 0) - (b.pga_fedex || 0) || 0;
+          aFedex = Number(a.pga_performance?.standings?.rank);
+          bFedex = Number(b.pga_performance?.standings?.rank);
+          if (!aFedex && !bFedex) comparison = 0;
+          else if (!aFedex) comparison = 1; // Put missing data at bottom
+          else if (!bFedex) comparison = -1; // Put missing data at bottom
+          else comparison = aFedex - bFedex;
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;

@@ -86,6 +86,12 @@ export const PlayerStats: React.FC<PlayerStatsProps> = ({
     );
   }
 
+  // Find the 2025 season performance data
+  const currentSeason = player.pga_performance?.performance?.find(
+    (p) => p.season === '2025'
+  );
+  const currentStandings = player.pga_performance?.standings;
+
   return (
     <div className={className}>
       {/* Top Row - Image and Name */}
@@ -107,13 +113,13 @@ export const PlayerStats: React.FC<PlayerStatsProps> = ({
             <div className='text-sm text-gray-500'>
               <Label>FedEx</Label>
               <span className='font-bold text-gray-600 ml-1'>
-                {player.pga_fedex}
+                {currentStandings?.rank}
               </span>
             </div>
             <div className='text-sm text-gray-500'>
               <Label>OWGR</Label>
               <span className='font-bold text-gray-600 ml-1'>
-                {player.pga_owgr}
+                {currentStandings?.owgr}
               </span>
             </div>
           </div>
@@ -125,37 +131,31 @@ export const PlayerStats: React.FC<PlayerStatsProps> = ({
         <div className='text-sm text-gray-500'>
           <Label>Wins</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find(
-              (s: { title: string }) => s.title === 'Wins'
-            )?.value || '0'}
+            {currentSeason?.stats.find((s) => s.title === 'Wins')?.value || '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>T10</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find(
-              (s: { title: string }) => s.title === 'Top 10'
-            )?.value || '0'}
+            {currentSeason?.stats.find((s) => s.title === 'Top 10')?.value ||
+              '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>T25</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find(
-              (s: { title: string }) => s.title === 'Top 25'
-            )?.value || '0'}
+            {currentSeason?.stats.find((s) => s.title === 'Top 25')?.value ||
+              '0'}
           </span>
         </div>
         <div className='text-sm text-gray-500'>
           <Label>Cuts</Label>
           <span className='font-bold text-gray-600 ml-1'>
-            {player.pga_performance?.stats.find(
-              (s: { title: string }) => s.title === 'Cuts Made'
-            )?.value || '0'}
+            {currentSeason?.stats.find((s) => s.title === 'Cuts Made')?.value ||
+              '0'}
             <span className='text-gray-400'>/</span>
-            {player.pga_performance?.stats.find(
-              (s: { title: string }) => s.title === 'Events'
-            )?.value || '0'}
+            {currentSeason?.stats.find((s) => s.title === 'Events')?.value ||
+              '0'}
           </span>
         </div>
       </div>

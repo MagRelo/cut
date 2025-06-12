@@ -15,9 +15,32 @@ export interface Player {
   pga_owgr?: number;
   pga_fedex?: number;
   pga_performance?: {
-    stats: Array<{
+    standings: {
+      id: string;
+      logo: string;
+      logoDark: string;
       title: string;
-      value: string;
+      description: string;
+      total: string;
+      totalLabel: string;
+      rank: string;
+      rankLogo: string | null;
+      rankLogoDark: string | null;
+      owgr: string;
+      webview: string | null;
+      webviewBrowserControls: boolean | null;
+      detailCopy: string | null;
+    };
+    performance: Array<{
+      tour: string;
+      season: string;
+      displaySeason: string;
+      stats: Array<{
+        title: string;
+        value: string;
+        career: string;
+        wide: boolean;
+      }>;
     }>;
   };
   isActive: boolean;
@@ -82,10 +105,35 @@ export const playerSchema = z.object({
   pga_fedex: z.number().optional(),
   pga_performance: z
     .object({
-      stats: z.array(
+      standings: z.object({
+        id: z.string(),
+        logo: z.string(),
+        logoDark: z.string(),
+        title: z.string(),
+        description: z.string(),
+        total: z.string(),
+        totalLabel: z.string(),
+        rank: z.string(),
+        rankLogo: z.string().nullable(),
+        rankLogoDark: z.string().nullable(),
+        owgr: z.string(),
+        webview: z.string().nullable(),
+        webviewBrowserControls: z.boolean().nullable(),
+        detailCopy: z.string().nullable(),
+      }),
+      performance: z.array(
         z.object({
-          title: z.string(),
-          value: z.string(),
+          tour: z.string(),
+          season: z.string(),
+          displaySeason: z.string(),
+          stats: z.array(
+            z.object({
+              title: z.string(),
+              value: z.string(),
+              career: z.string(),
+              wide: z.boolean(),
+            })
+          ),
         })
       ),
     })

@@ -3,6 +3,7 @@ import { fetchPgaSchedule } from '../src/lib/pgaSchedule.js';
 import { fetchPGATourPlayers } from '../src/lib/pgaPlayers.js';
 import { getActivePlayers } from '../src/lib/pgaField.js';
 import { getTournament } from '../src/lib/pgaTournament.js';
+import { getPlayerProfileOverview } from '../src/lib/pgaPlayerProfile.js';
 
 const prisma = new PrismaClient();
 
@@ -100,7 +101,9 @@ async function main() {
     console.log('Players upserted.');
 
     // 3. For a selected tournament, update inField for players in the field
-    const selectedTournament = await prisma.tournament.findFirst();
+    const selectedTournament = await prisma.tournament.findFirst({
+      where: { pgaTourId: 'R2025026' },
+    });
     if (!selectedTournament) {
       throw new Error('No tournaments found in DB.');
     }
@@ -151,11 +154,29 @@ async function main() {
     });
     console.log('Set inField to false for all other players.');
 
-    // 4. Create TournamentPlayer records for all players in the field
+    // Update players in the field with player profiles
     const playersInField = await prisma.player.findMany({
       where: { inField: true },
     });
+    for (const player of playersInField) {
+      const playerProfile = await getPlayerProfileOverview(
+        player.pga_pgaTourId || ''
+      );
+      if (playerProfile) {
+        await prisma.player.update({
+          where: { id: player.id },
+          data: {
+            pga_performance: {
+              performance: playerProfile.performance,
+              standings: playerProfile.standings,
+            },
+          },
+        });
+      }
+    }
+    console.log('Updated players in the field with player profiles.');
 
+    // 4. Create TournamentPlayer records for all players in the field
     for (const player of playersInField) {
       await prisma.tournamentPlayer.upsert({
         where: {
