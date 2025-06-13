@@ -158,23 +158,26 @@ async function main() {
     const playersInField = await prisma.player.findMany({
       where: { inField: true },
     });
-    for (const player of playersInField) {
-      const playerProfile = await getPlayerProfileOverview(
-        player.pga_pgaTourId || ''
-      );
-      if (playerProfile) {
-        await prisma.player.update({
-          where: { id: player.id },
-          data: {
-            pga_performance: {
-              performance: playerProfile.performance,
-              standings: playerProfile.standings,
+
+    await Promise.all(
+      playersInField.map(async (player) => {
+        const playerProfile = await getPlayerProfileOverview(
+          player.pga_pgaTourId || ''
+        );
+        if (playerProfile) {
+          await prisma.player.update({
+            where: { id: player.id },
+            data: {
+              pga_performance: {
+                performance: playerProfile.performance,
+                standings: playerProfile.standings,
+              },
             },
-          },
-        });
-      }
-    }
-    console.log('Updated players in the field with player profiles.');
+          });
+        }
+      })
+    );
+    console.log('initTournament: Updated player profiles.');
 
     // 4. Create TournamentPlayer records for all players in the field
     for (const player of playersInField) {
