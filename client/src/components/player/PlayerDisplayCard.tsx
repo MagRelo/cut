@@ -73,7 +73,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
       onClick={() =>
         setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id)
       }
-      className='bg-white shadow-md overflow-hidden'
+      className='bg-white shadow-md overflow-hidden border border-gray-200 rounded-lg'
       role='button'
       tabIndex={0}
       onKeyDown={(e) => {

@@ -108,12 +108,14 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = useCallback(
     async (updatedUser: { name?: string }) => {
       try {
-        const response = await request<PortoUser>(
+        const response = await request<{ user: PortoUser }>(
           'PUT',
           '/auth/update',
           updatedUser
         );
-        setUser(response);
+        setUser((prev) =>
+          prev ? { ...prev, name: response.user.name } : null
+        );
       } catch (error) {
         if (error instanceof ApiError) {
           throw error;

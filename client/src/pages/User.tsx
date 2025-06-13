@@ -1,6 +1,7 @@
 import { useAccount, useDisconnect, useConnect, useBalance } from 'wagmi';
 import { PageHeader } from '../components/util/PageHeader';
 import { formatEther } from 'viem';
+import { UserSettings } from '../components/user/UserSettings';
 
 export function UserPage() {
   const { address, chainId, chain } = useAccount();
@@ -17,6 +18,7 @@ export function UserPage() {
     <div className='p-4'>
       <PageHeader title='Account' className='mb-3' />
 
+      {/* Credits */}
       <div className='bg-white rounded-lg shadow p-4 mb-4'>
         <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
           Credits
@@ -37,6 +39,7 @@ export function UserPage() {
         </div>
       </div>
 
+      {/* Rewards Earned */}
       <div className='bg-white rounded-lg shadow p-4 mb-4'>
         <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
           Rewards Earned
@@ -51,6 +54,10 @@ export function UserPage() {
         </div>
       </div>
 
+      {/* User Settings */}
+      <UserSettings />
+
+      {/* Account Settings */}
       <div className='bg-white rounded-lg shadow p-4 mb-4'>
         <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
           Account
