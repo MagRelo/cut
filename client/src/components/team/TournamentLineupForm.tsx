@@ -6,8 +6,8 @@ import { usePortoAuth } from '../../contexts/PortoAuthContext';
 import { useLineupApi } from '../../services/lineupApi';
 import { type TournamentLineup } from '../../types.new/player';
 import { ErrorMessage } from '../util/ErrorMessage';
-import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
-import { PlayerCard } from '../player/PlayerCard';
+// import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
+import { PlayerDisplayCard } from '../player/PlayerDisplayCard';
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/react';
 import { TournamentPreview } from './TournamentPreview';
 
@@ -32,7 +32,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   );
   const [error, setError] = useState<string | null>(null);
   const [lineup, setLineup] = useState<TournamentLineup | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -51,8 +51,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   }, [currentTournament?.id, isAuthLoading, lineupApi]);
 
   const isEditingAllowed = (): boolean => {
-    return true;
-    // return !currentTournament || currentTournament.status === 'NOT_STARTED';
+    // return true;
+    return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
   const handlePlayerSelect = async (playerId: string | null) => {
@@ -179,7 +179,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
                   {Array.from({ length: 4 }).map((_, index) => {
                     const player = lineup?.players[index];
                     return player ? (
-                      <PlayerCard
+                      <PlayerDisplayCard
                         key={`slot-${index}`}
                         player={player}
                         roundDisplay={currentTournament?.roundDisplay || ''}
@@ -216,10 +216,10 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
       />
 
       {/* tournament summary modal */}
-      <TournamentSummaryModal
+      {/* <TournamentSummaryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-      />
+      /> */}
     </div>
   );
 };

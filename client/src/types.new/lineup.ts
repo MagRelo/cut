@@ -4,11 +4,13 @@ import { type TournamentLineup } from './player';
 export interface ContestLineup {
   id: string;
   contestId: string;
-  tournamentLineupId: string;
-  userId: string;
   status: 'ACTIVE' | 'INACTIVE';
+  position: number;
+  score: number;
+  tournamentLineup?: TournamentLineup;
+  tournamentLineupId: string;
   createdAt: Date;
   updatedAt: Date;
   user?: User;
-  tournamentLineup?: TournamentLineup;
+  userId: string;
 }

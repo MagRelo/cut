@@ -38,13 +38,13 @@ export const useContestApi = () => {
 
   const addLineupToContest = useCallback(
     (contestId: string, data: { tournamentLineupId: string }) =>
-      apiClient.post<ContestLineup>(`/contests/${contestId}/lineups`, data),
+      apiClient.post<Contest>(`/contests/${contestId}/lineups`, data),
     []
   );
 
   const removeLineupFromContest = useCallback(
     (contestId: string, lineupId: string) =>
-      apiClient.delete<void>(`/contests/${contestId}/lineups/${lineupId}`),
+      apiClient.delete<Contest>(`/contests/${contestId}/lineups/${lineupId}`),
     []
   );
 

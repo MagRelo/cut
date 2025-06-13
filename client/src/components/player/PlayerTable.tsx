@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { PlayerScorecard } from './PlayerScorecard';
 import type {
   PlayerWithTournamentData,
   TournamentPlayerData,
   RoundData,
 } from '../../types.new/player';
+
+import { PlayerScorecard } from './PlayerScorecard';
 
 interface PlayerTableProps {
   players: PlayerWithTournamentData[];

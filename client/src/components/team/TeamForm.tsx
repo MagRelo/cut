@@ -7,7 +7,7 @@ import { useTournament } from '../../contexts/TournamentContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../util/ErrorMessage';
 import { PlayerSelectionModal } from '../team/PlayerSelectionModal';
-import { PlayerStats } from './PlayerStats';
+import { PlayerStats } from './PlayerSelectionStats';
 import { Label } from '../common/Label';
 
 interface PublicTeamFormProps {

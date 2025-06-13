@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { Tab, TabPanel, TabList, TabGroup } from '@headlessui/react';
 
 import { Contest } from 'src/types.new/contest';
+
 import { useContestApi } from '../services/contestApi';
 import { usePortoAuth } from '../contexts/PortoAuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Breadcrumbs } from '../components/util/Breadcrumbs';
+// import { PlayerTable } from '../components/player/PlayerTable';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -17,6 +19,7 @@ export const ContestLobby: React.FC = () => {
   const { getContestById, addLineupToContest, removeLineupFromContest } =
     useContestApi();
   const { user } = usePortoAuth();
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [contest, setContest] = useState<Contest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,8 +57,10 @@ export const ContestLobby: React.FC = () => {
       return;
     }
     try {
-      await addLineupToContest(contestId!, { tournamentLineupId });
-      await fetchContest();
+      const contest = await addLineupToContest(contestId!, {
+        tournamentLineupId,
+      });
+      setContest(contest);
     } catch (err) {
       setError(
         `Failed to join contest: ${
@@ -67,8 +72,14 @@ export const ContestLobby: React.FC = () => {
 
   const handleLeaveContest = async () => {
     try {
-      await removeLineupFromContest(contestId!, userContestLineup?.id ?? '');
-      await fetchContest();
+      const contest = await removeLineupFromContest(
+        contestId!,
+        userContestLineup?.id ?? ''
+      );
+      setContest(contest);
+
+      // set tab to teams
+      setSelectedIndex(0);
     } catch (err) {
       setError(
         `Failed to leave contest: ${
@@ -128,7 +139,7 @@ export const ContestLobby: React.FC = () => {
           </p>
         </div>
 
-        <TabGroup>
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className='flex space-x-1 border-b border-gray-200 px-4'>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -159,8 +170,17 @@ export const ContestLobby: React.FC = () => {
             <TabPanel>
               {userInContest ? (
                 <div>
-                  {contest?.contestLineups?.map((lineup) => (
-                    <div key={lineup.id}>{lineup?.user?.name}</div>
+                  {contest?.contestLineups?.map((contestLineup) => (
+                    <div key={contestLineup.id}>
+                      <div className='flex justify-between items-center w-full'>
+                        <span className='font-medium'>
+                          {contestLineup.user?.name}
+                        </span>
+                        <span className='font-semibold'>
+                          {contestLineup.score || 40}
+                        </span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (

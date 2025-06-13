@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PlayerWithTournamentData } from '../../types.new/player';
-import { PlayerStats } from './PlayerStats';
+import { PlayerStats } from './PlayerSelectionStats';
 
 interface PlayerSelectionCardProps {
   player: PlayerWithTournamentData | null;

@@ -82,7 +82,34 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contest not found' });
     }
 
-    res.json(contest);
+    // format the contest.contestLineups.tournamentLineup.players
+    const formattedContest = {
+      ...contest,
+      contestLineups: contest.contestLineups.map((lineup) => ({
+        ...lineup,
+        tournamentLineup: {
+          ...lineup.tournamentLineup,
+          players: lineup.tournamentLineup.players.map((playerData) => ({
+            ...playerData.tournamentPlayer.player,
+            tournamentId: contest.tournamentId,
+            tournamentData: {
+              leaderboardPosition:
+                playerData.tournamentPlayer.leaderboardPosition,
+              r1: playerData.tournamentPlayer.r1,
+              r2: playerData.tournamentPlayer.r2,
+              r3: playerData.tournamentPlayer.r3,
+              r4: playerData.tournamentPlayer.r4,
+              cut: playerData.tournamentPlayer.cut,
+              bonus: playerData.tournamentPlayer.bonus,
+              total: playerData.tournamentPlayer.total,
+              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
+            },
+          })),
+        },
+      })),
+    };
+
+    res.json(formattedContest);
   } catch (error) {
     console.error('Error fetching contest:', error);
     res.status(500).json({ error: 'Failed to fetch contest' });
@@ -210,22 +237,44 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const lineup = await prisma.contestLineup.create({
+    await prisma.contestLineup.create({
       data: {
         contestId: req.params.id,
         tournamentLineupId,
         userId,
         status: 'ACTIVE',
       },
-      include: {
-        user: true,
-        tournamentLineup: {
+    });
+
+    // Fetch the updated contest with all related data
+    const contest = await prisma.contest.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        tournamentId: true,
+        userGroupId: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        settings: true,
+        createdAt: true,
+        updatedAt: true,
+        tournament: true,
+        userGroup: true,
+        contestLineups: {
           include: {
-            players: {
+            user: true,
+            tournamentLineup: {
               include: {
-                tournamentPlayer: {
+                players: {
                   include: {
-                    player: true,
+                    tournamentPlayer: {
+                      include: {
+                        player: true,
+                      },
+                    },
                   },
                 },
               },
@@ -235,7 +284,38 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
       },
     });
 
-    res.status(201).json(lineup);
+    if (!contest) {
+      return res.status(404).json({ error: 'Contest not found' });
+    }
+
+    // Format the contest data
+    const formattedContest = {
+      ...contest,
+      contestLineups: contest.contestLineups.map((lineup) => ({
+        ...lineup,
+        tournamentLineup: {
+          ...lineup.tournamentLineup,
+          players: lineup.tournamentLineup.players.map((playerData) => ({
+            ...playerData.tournamentPlayer.player,
+            tournamentId: contest.tournamentId,
+            tournamentData: {
+              leaderboardPosition:
+                playerData.tournamentPlayer.leaderboardPosition,
+              r1: playerData.tournamentPlayer.r1,
+              r2: playerData.tournamentPlayer.r2,
+              r3: playerData.tournamentPlayer.r3,
+              r4: playerData.tournamentPlayer.r4,
+              cut: playerData.tournamentPlayer.cut,
+              bonus: playerData.tournamentPlayer.bonus,
+              total: playerData.tournamentPlayer.total,
+              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
+            },
+          })),
+        },
+      })),
+    };
+
+    res.status(201).json(formattedContest);
   } catch (error) {
     console.error('Error adding lineup to contest:', error);
     res.status(500).json({ error: 'Failed to add lineup to contest' });
@@ -247,9 +327,6 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
   try {
     const userId = req.user?.userId;
     const { id: contestId, lineupId: contestLineupId } = req.params;
-
-    console.log('lineupId', contestLineupId);
-    console.log('contestId', contestId);
 
     // First verify the lineup belongs to this contest
     const lineup = await prisma.contestLineup.findFirst({
@@ -271,14 +348,83 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
         .json({ error: 'Lineup does not belong to this user' });
     }
 
-    // then delete the lineup
+    // Delete the lineup
     await prisma.contestLineup.delete({
       where: {
         id: contestLineupId,
       },
     });
 
-    res.status(204).send();
+    // Fetch the updated contest with all related data
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        tournamentId: true,
+        userGroupId: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        settings: true,
+        createdAt: true,
+        updatedAt: true,
+        tournament: true,
+        userGroup: true,
+        contestLineups: {
+          include: {
+            user: true,
+            tournamentLineup: {
+              include: {
+                players: {
+                  include: {
+                    tournamentPlayer: {
+                      include: {
+                        player: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!contest) {
+      return res.status(404).json({ error: 'Contest not found' });
+    }
+
+    // Format the contest data
+    const formattedContest = {
+      ...contest,
+      contestLineups: contest.contestLineups.map((lineup) => ({
+        ...lineup,
+        tournamentLineup: {
+          ...lineup.tournamentLineup,
+          players: lineup.tournamentLineup.players.map((playerData) => ({
+            ...playerData.tournamentPlayer.player,
+            tournamentId: contest.tournamentId,
+            tournamentData: {
+              leaderboardPosition:
+                playerData.tournamentPlayer.leaderboardPosition,
+              r1: playerData.tournamentPlayer.r1,
+              r2: playerData.tournamentPlayer.r2,
+              r3: playerData.tournamentPlayer.r3,
+              r4: playerData.tournamentPlayer.r4,
+              cut: playerData.tournamentPlayer.cut,
+              bonus: playerData.tournamentPlayer.bonus,
+              total: playerData.tournamentPlayer.total,
+              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
+            },
+          })),
+        },
+      })),
+    };
+
+    res.json(formattedContest);
   } catch (error) {
     console.error('Error removing lineup from contest:', error);
     res.status(500).json({ error: 'Failed to remove lineup from contest' });

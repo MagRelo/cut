@@ -22,7 +22,7 @@ const Label: React.FC<LabelProps> = ({ children, className = '' }) => (
   </span>
 );
 
-export const PlayerCard: React.FC<PlayerCardsProps> = ({
+export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   player,
   roundDisplay,
 }) => {
