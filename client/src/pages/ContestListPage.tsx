@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useContestApi } from '../services/contestApi';
+import { Link } from 'react-router-dom';
+import { Tab, TabPanel, TabList, TabGroup } from '@headlessui/react';
+
 import { type Contest } from '../types.new/contest';
+
+import { useContestApi } from '../services/contestApi';
 import { PageHeader } from '../components/util/PageHeader';
 import { ContestList } from '../components/contest/ContestList';
-import { Tab, TabPanel, TabList, TabGroup } from '@headlessui/react';
-import { Link } from 'react-router-dom';
+import { usePortoAuth } from '../contexts/PortoAuthContext';
+import { useTournament } from '../contexts/TournamentContext';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -15,6 +19,9 @@ export const Contests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const contestApi = useContestApi();
+  const { user } = usePortoAuth();
+  const { currentTournament } = useTournament();
+  const preTournament = currentTournament?.status === 'NOT_STARTED';
 
   useEffect(() => {
     const fetchContests = async () => {
@@ -32,6 +39,23 @@ export const Contests: React.FC = () => {
     };
     fetchContests();
   }, [contestApi]);
+
+  // we need to seperate contests into active, contests, groups, and closed
+  const userActiveContests = contests.filter((contest) => {
+    if (contest.contestLineups) {
+      return contest.contestLineups.some(
+        (lineup) => lineup.userId === user?.id && contest.status === 'ACTIVE'
+      );
+    }
+  });
+  // closed contests
+  const userClosedContests = contests.filter((contest) => {
+    if (contest.contestLineups) {
+      return contest.contestLineups.some(
+        (lineup) => lineup.userId === user?.id && contest.status === 'COMPLETED'
+      );
+    }
+  });
 
   return (
     <div className='space-y-4 p-4'>
@@ -57,7 +81,7 @@ export const Contests: React.FC = () => {
                     : 'text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 )
               }>
-              Active
+              Live
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -69,9 +93,9 @@ export const Contests: React.FC = () => {
                     : 'text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 )
               }>
-              Contests
+              All Contests
             </Tab>
-            <Tab
+            {/* <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
                   'w-full py-2 text-sm font-medium leading-5',
@@ -82,7 +106,7 @@ export const Contests: React.FC = () => {
                 )
               }>
               Groups
-            </Tab>
+            </Tab> */}
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
@@ -99,7 +123,11 @@ export const Contests: React.FC = () => {
           <div className='p-4'>
             <TabPanel>
               <div className='text-gray-600'>
-                Active contests will be shown here.
+                <ContestList
+                  contests={userActiveContests}
+                  loading={loading}
+                  error={error}
+                />
               </div>
             </TabPanel>
             <TabPanel>
@@ -107,6 +135,7 @@ export const Contests: React.FC = () => {
                 contests={contests}
                 loading={loading}
                 error={error}
+                preTournament={!preTournament}
               />
             </TabPanel>
             <TabPanel>
@@ -114,7 +143,12 @@ export const Contests: React.FC = () => {
             </TabPanel>
             <TabPanel>
               <div className='text-gray-600'>
-                Closed contests will be shown here.
+                <ContestList
+                  contests={userClosedContests}
+                  loading={loading}
+                  error={error}
+                  preTournament={preTournament}
+                />
               </div>
             </TabPanel>
           </div>

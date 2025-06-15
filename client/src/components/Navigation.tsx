@@ -21,7 +21,7 @@ export const Navigation: React.FC = () => {
                 alt='logo'
                 className='w-10 h-10 rounded-full border border-gray-400'
               />
-              <span className='text-2xl font-semibold text-gray-700 font-display'>
+              <span className='text-2xl font-semibold text-gray-700 font-display ml-1'>
                 the Cut
               </span>
             </Link>

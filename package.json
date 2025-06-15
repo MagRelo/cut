@@ -25,7 +25,8 @@
     "test:ui": "npm run test:ui --workspace=server.new",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "deploy": "npm run client:build && npm run server:build && npm run server:deploy",
-    "get-team-totals": "tsx server.new/scripts/getTeamTotals.ts"
+    "get-team-totals": "tsx server.new/scripts/getTeamTotals.ts",
+    "mint-tokens": "node contracts/scripts/mint-tokens.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -35,6 +36,8 @@
     "server.new"
   ],
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "ethers": "^6.11.1",
+    "dotenv": "^16.4.5"
   }
 }

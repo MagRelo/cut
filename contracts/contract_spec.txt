@@ -1,0 +1,97 @@
+Contracts 
+
+Purpose: This system will provide accounting for a fantasy sports platform. Users can 
+  create new contests, enter contests. Contest contracts will hold the funds for the contest 
+  while the contest is in progress. The Oracle will close contests to new entry and 
+  set the split for the contest contracts.
+
+Actors:
+- Oracle: this actor is responsible for closing contests to new entry, and setting the results of the contests
+  - Must be whitelisted by platform admin
+  - Can be revoked if malicious behavior is detected
+- Participant: this actor enters contests
+  - Must have sufficient funds
+
+Contracts: 
+- Contest Factory
+  - createContest(
+    string name,
+    uint256 entryFee,
+    uint256 maxParticipants,
+    uint256 endTime,
+    address oracle
+  )
+  - setPlatformFee(uint256 newFee) (Owner only)
+  - addOracle(address oracle) (Owner only)
+  - removeOracle(address oracle) (Owner only)
+  - getContests() returns (Contest[])
+  - collectPlatformFees() (Owner only)
+
+- Contest
+  - enter() 
+  - leave()
+  - emergencyWithdraw()
+  - closeEntry() (Oracle only)
+  - distribute(uint256[] payouts) (Oracle only)
+  - cancel() (Oracle only)
+  - refundParticipants() (Oracle only)
+
+- Platform Token (ERC20)
+  - name() returns (string)
+  - symbol() returns (string)
+  - decimals() returns (uint8)
+  - totalSupply() returns (uint256)
+  - balanceOf(address account) returns (uint256)
+  - transfer(address to, uint256 amount) returns (bool)
+  - transferFrom(address from, address to, uint256 amount) returns (bool)
+  - approve(address spender, uint256 amount) returns (bool)
+  - allowance(address owner, address spender) returns (uint256)
+  - mint(address to, uint256 amount) (Owner only)
+  - burn(address from, uint256 amount) (Owner only)
+
+Token Distribution Rules:
+- Minting:
+  - Platform can mint tokens for ecosystem growth
+- Burning:
+  - Platform can burn tokens for deflationary pressure
+
+States:
+- OPEN: Contest is accepting entries
+- CLOSED: Contest is no longer accepting entries
+- SETTLED: Contest has been settled and funds distributed
+- CANCELLED: Contest was cancelled (e.g., due to insufficient participants)
+
+Events:
+- ContestCreated(address indexed contest, address indexed host, uint256 entryFee)
+- ContestEntered(address indexed participant)
+- ContestLeft(address indexed participant)
+- EntryClosed()
+- PayoutsDistributed(uint256[] payouts)
+- ContestCancelled()
+- ParticipantRefunded(address indexed participant, uint256 amount)
+- OracleAdded(address indexed oracle)
+- OracleRemoved(address indexed oracle)
+- PlatformFeeUpdated(uint256 newFee)
+
+Financial Considerations:
+- Platform fee: Percentage taken from total prize pool (max 10%)
+- Minimum contest size: 2 participants
+- Maximum contest size: Configurable per contest
+- Entry fees: Must be in platform token
+- Emergency withdrawal: Available after contest end time
+
+Security Considerations:
+- Reentrancy protection (using OpenZeppelin's ReentrancyGuard)
+- Access control for all privileged functions (using OpenZeppelin's Ownable)
+- Oracle whitelist system
+- Funds safety checks
+- Token minting/burning restrictions (Owner only)
+
+Constants to Set/Decide:
+- Platform Token Name: "BetTheCut"
+- Platform Token Symbol: "BTCUT"
+- Platform Token Decimals: 18
+- Platform Fee: 100 (1% in basis points, max 10%)
+- Contest Max Participants: Configurable per contest
+- Contest End Time: Must be in future
+

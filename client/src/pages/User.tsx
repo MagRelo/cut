@@ -2,16 +2,28 @@ import { useAccount, useDisconnect, useConnect, useBalance } from 'wagmi';
 import { PageHeader } from '../components/util/PageHeader';
 import { formatEther } from 'viem';
 import { UserSettings } from '../components/user/UserSettings';
+import { paymentTokenAddress } from '../utils/contracts/sepolia.json';
 
 export function UserPage() {
   const { address, chainId, chain } = useAccount();
   const { connectors, connect, error } = useConnect();
   const { disconnect } = useDisconnect();
 
+  // get USDC balance
+  const { data: balance_USDC } = useBalance({
+    address: address,
+    token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`,
+  });
+
   // get eth balance
   const { data: balance } = useBalance({
     address: address,
-    chainId: chainId ? (chainId as 84532) : undefined,
+  });
+
+  // get BTCUT balance
+  const { data: balance_BTCUT } = useBalance({
+    address: address,
+    token: paymentTokenAddress as `0x${string}`,
   });
 
   return (
@@ -21,21 +33,38 @@ export function UserPage() {
       {/* Credits */}
       <div className='bg-white rounded-lg shadow p-4 mb-4'>
         <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
-          Credits
+          Balance
         </div>
 
         <div className='grid grid-cols-[85px_1fr] gap-2'>
           <div className='font-medium'>Available:</div>
-          <div>892 CUT</div>
+
+          <div>
+            {balance_USDC?.formatted} {balance_USDC?.symbol}
+          </div>
         </div>
 
-        <div className='mt-4 flex flex-col gap-2 mb-4'>
-          <button
-            className='bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
-            disabled={true}
-            onClick={() => {}}>
-            Get Credits
-          </button>
+        <div className='mt-4'>
+          <a
+            href={`https://stg.id.porto.sh/`}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 w-full justify-center'>
+            Add Funds
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              className='h-4 w-4'
+              fill='none'
+              viewBox='0 0 24 24'
+              stroke='currentColor'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+              />
+            </svg>
+          </a>
         </div>
       </div>
 
@@ -47,10 +76,19 @@ export function UserPage() {
 
         <div className='grid grid-cols-[85px_1fr] gap-2'>
           <div className='font-medium'>Refunds:</div>
-          <div>224 CUT</div>
+          <div>0 CUT</div>
 
           <div className='font-medium'>Referrals:</div>
-          <div>1116 CUT</div>
+          <div>0 CUT</div>
+        </div>
+
+        <hr className='my-2' />
+
+        <div className='grid grid-cols-[85px_1fr] gap-2'>
+          <div className='font-medium'>Available:</div>
+          <div>
+            {balance_BTCUT?.formatted} {balance_BTCUT?.symbol}
+          </div>
         </div>
       </div>
 

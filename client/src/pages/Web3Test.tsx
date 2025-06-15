@@ -1,15 +1,50 @@
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
+import {
+  useSendCalls,
+  useWaitForCallsStatus,
+  useAccount,
+  useBalance,
+  useConnect,
+  useDisconnect,
+} from 'wagmi';
+
 import { parseEther } from 'viem';
 
-import { exp1Config, expNftConfig } from '../utils/contracts';
+// import { exp1Config, expNftConfig } from '../utils/contracts';
+
+import {
+  contestFactoryAddress,
+  paymentTokenAddress,
+} from '../utils/contracts/sepolia.json';
+
+import ContestFactory from '../utils/contracts/ContestFactory.json';
+import PlatformToken from '../utils/contracts/PlatformToken.json';
+import Contest from '../utils/contracts/Contest.json';
+
+// approve entry fee from PlatformToken, joinContest
+const createContenst = [];
+
+// approve entry fee from PlatformToken, joinContest
+const joinContest = (contestAddress: `0x${string}`, entryFee: string) => [
+  {
+    abi: PlatformToken.abi,
+    args: [paymentTokenAddress, parseEther(entryFee)],
+    functionName: 'approve',
+    to: paymentTokenAddress as `0x${string}`,
+  },
+  {
+    abi: Contest.abi,
+    args: [],
+    functionName: 'enter',
+    to: contestAddress,
+  },
+];
 
 export const Web3Test = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const { data, isPending, sendCalls } = useSendCalls();
+  const { data, isPending, sendCalls, error } = useSendCalls();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForCallsStatus({
@@ -22,29 +57,23 @@ export const Web3Test = () => {
       return;
     }
 
+    const newCalls = joinContest('0x...' as `0x${string}`, '10');
+
     try {
       sendCalls({
-        calls: [
-          {
-            abi: exp1Config.abi,
-            args: [expNftConfig.address, parseEther('10')],
-            functionName: 'approve',
-            to: exp1Config.address,
-          },
-          {
-            abi: expNftConfig.abi,
-            functionName: 'mint',
-            to: expNftConfig.address,
-          },
-        ],
+        calls: newCalls,
       });
     } catch (error) {
       console.error('Error sending calls:', error);
     }
-
-    // This is where you can add your test web3 calls
-    console.log('Connected address:', address);
   };
+
+  const paymentTokenBalance = useBalance({
+    address,
+    token: paymentTokenAddress as `0x${string}`,
+  });
+
+  console.log(address);
 
   return (
     <div className='p-6 bg-white rounded-lg shadow-md'>
@@ -60,6 +89,25 @@ export const Web3Test = () => {
               Address: {address.slice(0, 8)}...{address.slice(-4)}
             </p>
           )}
+
+          <p className='mb-2'>
+            Payment Token: {paymentTokenAddress.slice(0, 8)}...
+            {paymentTokenAddress.slice(-4)}
+          </p>
+
+          <p className='mb-2'>
+            Payment Balance:{' '}
+            {paymentTokenBalance.isLoading
+              ? 'Loading...'
+              : paymentTokenBalance.data
+              ? `${paymentTokenBalance.data.formatted} ${paymentTokenBalance.data.symbol}`
+              : 'No balance data'}
+          </p>
+
+          <p className='mb-2'>
+            Contest Factory: {contestFactoryAddress.slice(0, 8)}...
+            {contestFactoryAddress.slice(-4)}
+          </p>
         </div>
 
         <div className='space-x-4'>
@@ -91,7 +139,8 @@ export const Web3Test = () => {
       </div>
 
       <div className='text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4'>
-        Status: {isConfirmed ? 'Confirmed' : 'Not Confirmed'}
+        Status: {isConfirmed ? 'Confirmed' : 'Not Confirmed'}{' '}
+        {error && error.message}
       </div>
     </div>
   );

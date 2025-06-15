@@ -219,8 +219,9 @@ async function main() {
         endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         status: 'ACTIVE',
         settings: {
-          maxPlayers: 4,
-          scoringType: 'STABLEFORD',
+          fee: 10,
+          maxEntry: 20,
+          contestType: 'STABLEFORD-WEEKLY',
         },
       },
     });
@@ -235,8 +236,9 @@ async function main() {
         endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         status: 'ACTIVE',
         settings: {
-          maxPlayers: 4,
-          scoringType: 'STABLEFORD',
+          fee: 10,
+          maxEntry: 20,
+          contestType: 'STABLEFORD-WEEKLY',
         },
       },
     });
