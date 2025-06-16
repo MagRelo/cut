@@ -101,11 +101,12 @@ async function main() {
     console.log('Players upserted.');
 
     // 3. For a selected tournament, update inField for players in the field
+    const manualTournament = 'R2025034';
     const selectedTournament = await prisma.tournament.findFirst({
-      where: { pgaTourId: 'R2025026' },
+      where: { pgaTourId: manualTournament },
     });
     if (!selectedTournament) {
-      throw new Error('No tournaments found in DB.');
+      throw new Error(`Tournament not found in DB: ${manualTournament}`);
     }
 
     // update the tournament to "manualActive"
@@ -207,42 +208,6 @@ async function main() {
       },
     });
     console.log('Created default user group');
-
-    // 6. Create two test contests - one with user group and one without
-    const contestWithGroup = await prisma.contest.create({
-      data: {
-        name: 'Group Contest',
-        description: 'A contest with a user group',
-        tournamentId: selectedTournament.id,
-        userGroupId: defaultUserGroup.id,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        status: 'ACTIVE',
-        settings: {
-          fee: 10,
-          maxEntry: 20,
-          contestType: 'STABLEFORD-WEEKLY',
-        },
-      },
-    });
-    console.log('Created contest with user group');
-
-    const contestWithoutGroup = await prisma.contest.create({
-      data: {
-        name: 'Open Contest',
-        description: 'A contest without a user group',
-        tournamentId: selectedTournament.id,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        status: 'ACTIVE',
-        settings: {
-          fee: 10,
-          maxEntry: 20,
-          contestType: 'STABLEFORD-WEEKLY',
-        },
-      },
-    });
-    console.log('Created contest without user group');
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;

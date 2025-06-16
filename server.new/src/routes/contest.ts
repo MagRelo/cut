@@ -49,8 +49,8 @@ router.get('/:id', async (req, res) => {
         description: true,
         tournamentId: true,
         userGroupId: true,
-        startDate: true,
-        endDate: true,
+        endTime: true,
+        address: true,
         status: true,
         settings: true,
         createdAt: true,
@@ -124,9 +124,8 @@ router.post('/', async (req, res) => {
       description,
       tournamentId,
       userGroupId,
-      startDate,
-      endDate,
-      status,
+      endTime,
+      address,
       settings,
     } = req.body;
 
@@ -136,9 +135,9 @@ router.post('/', async (req, res) => {
         description,
         tournamentId,
         userGroupId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        status,
+        endTime: new Date(endTime),
+        address,
+        status: 'OPEN',
         settings,
       },
       include: {
@@ -154,78 +153,77 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update contest
-router.put('/:id', async (req, res) => {
-  try {
-    const { name, description, startDate, endDate, status, settings } =
-      req.body;
+// // Update contest
+// router.put('/:id', async (req, res) => {
+//   try {
+//     const { name, description, endTime, address, status, settings } = req.body;
 
-    const contest = await prisma.contest.update({
-      where: { id: req.params.id },
-      data: {
-        name,
-        description,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
-        status,
-        settings,
-      },
-      include: {
-        tournament: true,
-        userGroup: true,
-      },
-    });
+//     const contest = await prisma.contest.update({
+//       where: { id: req.params.id },
+//       data: {
+//         name,
+//         description,
+//         endTime: new Date(endTime),
+//         address,
+//         status,
+//         settings,
+//       },
+//       include: {
+//         tournament: true,
+//         userGroup: true,
+//       },
+//     });
 
-    res.json(contest);
-  } catch (error) {
-    console.error('Error updating contest:', error);
-    res.status(500).json({ error: 'Failed to update contest' });
-  }
-});
+//     res.json(contest);
+//   } catch (error) {
+//     console.error('Error updating contest:', error);
+//     res.status(500).json({ error: 'Failed to update contest' });
+//   }
+// });
 
-// Delete contest
-router.delete('/:id', async (req, res) => {
-  try {
-    await prisma.contest.delete({
-      where: { id: req.params.id },
-    });
+// // Delete contest
+// router.delete('/:id', async (req, res) => {
+//   try {
+//     await prisma.contest.delete({
+//       where: { id: req.params.id },
+//     });
 
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting contest:', error);
-    res.status(500).json({ error: 'Failed to delete contest' });
-  }
-});
+//     res.status(204).send();
+//   } catch (error) {
+//     console.error('Error deleting contest:', error);
+//     res.status(500).json({ error: 'Failed to delete contest' });
+//   }
+// });
 
-// Get contest lineups
-router.get('/:id/lineups', async (req, res) => {
-  try {
-    const lineups = await prisma.contestLineup.findMany({
-      where: { contestId: req.params.id },
-      include: {
-        user: true,
-        tournamentLineup: {
-          include: {
-            players: {
-              include: {
-                tournamentPlayer: {
-                  include: {
-                    player: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+// // Get contest lineups
+// router.get('/:id/lineups', async (req, res) => {
+//   try {
+//     const lineups = await prisma.contestLineup.findMany({
+//       where: { contestId: req.params.id },
+//       include: {
+//         user: true,
+//         tournamentLineup: {
+//           include: {
+//             players: {
+//               include: {
+//                 tournamentPlayer: {
+//                   include: {
+//                     player: true,
+//                   },
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
 
-    res.json(lineups);
-  } catch (error) {
-    console.error('Error fetching contest lineups:', error);
-    res.status(500).json({ error: 'Failed to fetch contest lineups' });
-  }
-});
+//     res.json(lineups);
+//   } catch (error) {
+//     console.error('Error fetching contest lineups:', error);
+//     res.status(500).json({ error: 'Failed to fetch contest lineups' });
+//   }
+// });
 
 // Add lineup to contest
 router.post('/:id/lineups', requireAuth, async (req, res) => {
@@ -255,8 +253,8 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
         description: true,
         tournamentId: true,
         userGroupId: true,
-        startDate: true,
-        endDate: true,
+        endTime: true,
+        address: true,
         status: true,
         settings: true,
         createdAt: true,
@@ -364,8 +362,8 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
         description: true,
         tournamentId: true,
         userGroupId: true,
-        startDate: true,
-        endDate: true,
+        endTime: true,
+        address: true,
         status: true,
         settings: true,
         createdAt: true,

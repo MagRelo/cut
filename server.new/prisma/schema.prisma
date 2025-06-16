@@ -221,12 +221,12 @@ model TournamentLineupPlayer {
 model Contest {
   id              String           @id @default(cuid())
   name            String
-  description     String?
+  endTime         DateTime
+  address         String
   tournamentId    String
-  userGroupId     String?
-  startDate       DateTime
-  endDate         DateTime
   status          String
+  userGroupId     String?
+  description     String?
   settings        Json?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt

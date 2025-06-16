@@ -8,6 +8,7 @@ import { useContestApi } from '../services/contestApi';
 import { usePortoAuth } from '../contexts/PortoAuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Breadcrumbs } from '../components/util/Breadcrumbs';
+import { ContestActions } from '../components/contest/ContestActions';
 // import { PlayerTable } from '../components/player/PlayerTable';
 
 function classNames(...classes: string[]) {
@@ -16,9 +17,12 @@ function classNames(...classes: string[]) {
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
-  const { getContestById, addLineupToContest, removeLineupFromContest } =
-    useContestApi();
+  const { getContestById } = useContestApi();
+
+  // user
   const { user } = usePortoAuth();
+
+  // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [contest, setContest] = useState<Contest | null>(null);
@@ -48,47 +52,6 @@ export const ContestLobby: React.FC = () => {
     fetchContest();
   }, [contestId]);
 
-  const tournamentLineupId = user?.tournamentLineups?.[0]?.id;
-  const userHasLineup = !!tournamentLineupId;
-
-  const handleJoinContest = async () => {
-    if (!tournamentLineupId) {
-      setError('No tournament lineup found');
-      return;
-    }
-    try {
-      const contest = await addLineupToContest(contestId!, {
-        tournamentLineupId,
-      });
-      setContest(contest);
-    } catch (err) {
-      setError(
-        `Failed to join contest: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
-      );
-    }
-  };
-
-  const handleLeaveContest = async () => {
-    try {
-      const contest = await removeLineupFromContest(
-        contestId!,
-        userContestLineup?.id ?? ''
-      );
-      setContest(contest);
-
-      // set tab to teams
-      setSelectedIndex(0);
-    } catch (err) {
-      setError(
-        `Failed to leave contest: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
-      );
-    }
-  };
-
   // find user lineup in contest
   const userContestLineup = contest?.contestLineups?.find(
     (lineup) => lineup.userId === user?.id
@@ -105,6 +68,10 @@ export const ContestLobby: React.FC = () => {
 
   if (error) {
     return <div>Error: {error}</div>;
+  }
+
+  if (!contest) {
+    return <div>Contest not found</div>;
   }
 
   return (
@@ -124,18 +91,29 @@ export const ContestLobby: React.FC = () => {
           </h3>
 
           <p className='text-gray-600 font-medium text-sm'>
-            {contest?.tournament?.name ?? ''} - {'Full Tournament'}
+            Tournament: {contest?.tournament?.name ?? ''}
           </p>
 
-          {/* <p className='text-gray-600 font-medium text-sm'>
-            Status: {contest?.status ?? ''}
-          </p> */}
           <p className='text-gray-600 font-medium text-sm'>
-            Max Payout: {'$1220'}
+            Status: {contest?.status ?? ''}
           </p>
+
+          <p className='text-gray-600 font-medium text-sm'>
+            Fee: {contest?.settings?.fee}{' '}
+            {contest?.settings?.paymentTokenSymbol}
+          </p>
+
+          <p className='text-gray-600 font-medium text-sm'>
+            Max Payout:{' '}
+            {contest?.settings?.maxEntry
+              ? contest?.settings?.maxEntry * contest?.settings?.fee
+              : 0}{' '}
+            {contest?.settings?.paymentTokenSymbol}
+          </p>
+
           <p className='text-gray-600 font-medium text-sm'>
             Entries: {contest?.contestLineups?.length ?? 0}/
-            {String(contest?.settings?.maxPlayers ?? 0)}
+            {String(contest?.settings?.maxEntry ?? 0)}
           </p>
         </div>
 
@@ -184,14 +162,7 @@ export const ContestLobby: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className='flex flex-col gap-2'>
-                  <button
-                    className='mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
-                    onClick={handleJoinContest}
-                    disabled={userInContest || !userHasLineup}>
-                    Join Contest - $100
-                  </button>
-                </div>
+                <ContestActions contest={contest} onSuccess={setContest} />
               )}
             </TabPanel>
             <TabPanel>
@@ -200,15 +171,12 @@ export const ContestLobby: React.FC = () => {
                   <div className='font-medium'>Status:</div>
                   <div>{contest?.status}</div>
                   <div className='font-medium'>Scoring:</div>
-                  <div>{String(contest?.settings?.scoringType ?? '')}</div>
+                  <div>{String(contest?.settings?.contestType ?? '')}</div>
                 </div>
 
-                <button
-                  className='mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
-                  onClick={handleLeaveContest}
-                  disabled={!userInContest}>
-                  Leave Contest
-                </button>
+                {userInContest && (
+                  <ContestActions contest={contest} onSuccess={setContest} />
+                )}
               </div>
             </TabPanel>
           </div>

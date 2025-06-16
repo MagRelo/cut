@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { parseEther } from 'viem';
+import { decodeEventLog, parseUnits } from 'viem';
 import {
   useBalance,
   useAccount,
   useSendCalls,
   useWaitForCallsStatus,
-  useReadContract,
-  usePublicClient,
+  useChainId,
 } from 'wagmi';
 
 import { useTournament } from '../../contexts/TournamentContext';
@@ -14,13 +13,20 @@ import { type CreateContestInput } from '../../types.new/contest';
 import { useContestApi } from '../../services/contestApi';
 
 // contracts
-import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
 // import PlatformToken from '../../utils/contracts/PlatformToken.json';
+import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
 import { contestFactoryAddress } from '../../utils/contracts/sepolia.json';
 import ContestFactory from '../../utils/contracts/ContestFactory.json';
 
 export const CreateContestForm = () => {
   const { address: userAddress } = useAccount();
+  const chainId = useChainId();
+  const { data: paymentTokenBalance } = useBalance({
+    address: userAddress as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}`,
+    chainId: chainId ?? 0,
+  });
+
   const {
     sendCalls,
     data: sendCallsData,
@@ -32,112 +38,87 @@ export const CreateContestForm = () => {
     isSuccess: isConfirmed,
     error: confirmationError,
     status: confirmationStatus,
+    data: confirmationData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
 
-  // Add logging for status changes - TEMP
-  useEffect(() => {
-    console.log('Transaction Status:', {
-      isSending,
-      isConfirming,
-      isConfirmed,
-      sendCallsData,
-      sendCallsError,
-      confirmationError,
-      confirmationStatus,
-    });
-  }, [
-    isSending,
-    isConfirming,
-    isConfirmed,
-    sendCallsData,
-    sendCallsError,
-    confirmationError,
-    confirmationStatus,
-  ]);
-
   const { currentTournament } = useTournament();
   const contestApi = useContestApi();
 
-  const paymentTokenBalance = useBalance({
-    address: userAddress as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}`,
-  });
-
-  const [formData, setFormData] = useState<CreateContestInput>({
+  const defaultFormData: CreateContestInput = {
     name: '',
-    description: '',
-    tournamentId: '',
-    userGroupId: '',
-    address: '',
+    endTime: 0,
     transactionId: '',
+    address: '',
+    chainId: chainId ?? 0,
+    tournamentId: currentTournament?.id ?? '',
     settings: {
       fee: 10,
       maxEntry: 50,
       contestType: 'PUBLIC',
+      chainId: chainId ?? 0,
+      paymentTokenAddress: paymentTokenAddress as `0x${string}`,
+      paymentTokenSymbol: paymentTokenBalance?.symbol ?? '',
     },
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    description: undefined,
+    userGroupId: undefined,
+  };
+  const [formData, setFormData] = useState<CreateContestInput>(defaultFormData);
   const [pendingContestData, setPendingContestData] =
     useState<CreateContestInput | null>(null);
-
-  const publicClient = usePublicClient();
-
-  const getAddressFromTransactionId = async (
-    transactionId: string
-  ): Promise<string> => {
-    try {
-      const receipt = await publicClient.getTransactionReceipt({
-        hash: transactionId as `0x${string}`,
-      });
-      if (!receipt?.contractAddress) {
-        throw new Error('No contract address found in transaction receipt');
-      }
-      return receipt.contractAddress;
-    } catch (error) {
-      console.error('Error getting contract address from transaction:', error);
-      throw error;
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Effect to handle API call after blockchain confirmation
   useEffect(() => {
     const createContestInBackend = async () => {
       if (isConfirmed && pendingContestData && sendCallsData?.id) {
         try {
-          console.log('Creating contest in backend with data:', {
-            ...pendingContestData,
-            transactionId: sendCallsData.id,
-            sendCallsData,
-          });
+          // Parse logs from the ContestFactory address
+          const contestFactoryLogs =
+            confirmationData?.receipts?.[0]?.logs?.filter(
+              (log) =>
+                log.address.toLowerCase() ===
+                contestFactoryAddress.toLowerCase()
+            );
+          if (!contestFactoryLogs?.length) {
+            console.log('Confirmation data:', confirmationData);
+            throw new Error('No logs found from ContestFactory');
+          }
 
-          // get address using txn id from sendCallsData
-          const contestAddress = await getAddressFromTransactionId(
-            sendCallsData.id
-          );
+          // Decode the logs using the ABI
+          const decodedLogs = contestFactoryLogs
+            .map((log) => {
+              try {
+                const decoded = decodeEventLog({
+                  abi: ContestFactory.abi,
+                  data: log.data,
+                  topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
+                });
+                return decoded;
+              } catch (error) {
+                console.error('Error decoding log:', error);
+                return null;
+              }
+            })
+            .filter(Boolean);
 
+          // Get the contest address from the logs
+          const contestAddress = (decodedLogs[0]?.args as any)?.contest;
+          if (!contestAddress) {
+            throw new Error('No contest address found in logs');
+          }
+
+          // create contest in backend
           await contestApi.createContest({
             ...pendingContestData,
-            transactionId: sendCallsData.id,
+            transactionId: sendCallsData?.id,
             address: contestAddress,
           });
 
           // Reset form after successful submission
-          setFormData({
-            name: '',
-            description: '',
-            tournamentId: '',
-            transactionId: '',
-            address: '',
-            settings: {
-              fee: 10,
-              maxEntry: 50,
-              contestType: 'PUBLIC',
-            },
-            userGroupId: '',
-          });
+          setFormData(defaultFormData);
           setPendingContestData(null);
         } catch (err) {
           console.error('Error creating contest in backend:', err);
@@ -163,11 +144,14 @@ export const CreateContestForm = () => {
         7 * 24 * 60 * 60 * 1000;
 
       // Store the form data for later use in the API call
-      setPendingContestData(formData);
+      setPendingContestData({
+        ...formData,
+        endTime,
+      });
 
       console.log('Initiating blockchain transaction with data:', {
         name: formData.name,
-        fee: formData.settings?.fee,
+        fee: parseUnits(formData.settings?.fee?.toString() ?? '0', 18),
         maxEntry: formData.settings?.maxEntry,
         endTime,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
@@ -181,7 +165,7 @@ export const CreateContestForm = () => {
             abi: ContestFactory.abi,
             args: [
               formData.name,
-              formData.settings?.fee?.toString() ?? '0',
+              parseUnits(formData.settings?.fee?.toString() ?? '0', 18) ?? '0',
               formData.settings?.maxEntry?.toString() ?? '0',
               endTime.toString(),
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
@@ -247,6 +231,9 @@ export const CreateContestForm = () => {
                   maxEntry: Number(e.target.value),
                   fee: prev.settings?.fee ?? 0,
                   contestType: prev.settings?.contestType ?? 'PUBLIC',
+                  paymentTokenAddress: prev.settings?.paymentTokenAddress ?? '',
+                  paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? '',
+                  chainId: prev.settings?.chainId ?? 0,
                 },
               }));
             }}
@@ -273,6 +260,10 @@ export const CreateContestForm = () => {
                     fee: Number(e.target.value),
                     maxEntry: prev.settings?.maxEntry ?? 0,
                     contestType: prev.settings?.contestType ?? 'PUBLIC',
+                    paymentTokenAddress:
+                      prev.settings?.paymentTokenAddress ?? '',
+                    paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? '',
+                    chainId: prev.settings?.chainId ?? 0,
                   },
                 }));
               }}
@@ -282,7 +273,7 @@ export const CreateContestForm = () => {
               className='w-full p-2 border rounded-md pr-12'
             />
             <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500'>
-              {paymentTokenBalance?.data?.symbol}
+              {paymentTokenBalance?.symbol}
             </div>
           </div>
         </div>
@@ -299,19 +290,20 @@ export const CreateContestForm = () => {
         </button>
       </div>
 
-      {error && (
-        <div className='text-red-500 mb-4'>
-          <hr className='my-2' />
-          <div className='text-red-500'>{error}</div>
-        </div>
-      )}
-
       {/* Add status display */}
       <div className='mt-4 text-sm text-gray-600'>
         <div>Transaction Status: {confirmationStatus || 'idle'}</div>
+
+        {error && (
+          <div className='text-red-500 mb-4'>
+            <hr className='my-2' />
+            <div className='text-red-500'>{error}</div>
+          </div>
+        )}
+
         {sendCallsError && (
           <div className='text-red-500'>
-            Transaction Error: {sendCallsError.message}
+            Send Calls Error: {sendCallsError.message}
           </div>
         )}
         {confirmationError && (

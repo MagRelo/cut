@@ -19,22 +19,22 @@ export const useContestApi = () => {
     []
   );
 
-  const updateContest = useCallback(
-    (id: string, data: Partial<Contest>) =>
-      apiClient.put<Contest>(`/contests/${id}`, data),
-    []
-  );
+  // const updateContest = useCallback(
+  //   (id: string, data: Partial<Contest>) =>
+  //     apiClient.put<Contest>(`/contests/${id}`, data),
+  //   []
+  // );
 
-  const deleteContest = useCallback(
-    (id: string) => apiClient.delete<void>(`/contests/${id}`),
-    []
-  );
+  // const deleteContest = useCallback(
+  //   (id: string) => apiClient.delete<void>(`/contests/${id}`),
+  //   []
+  // );
 
-  const getContestLineups = useCallback(
-    (contestId: string) =>
-      apiClient.get<ContestLineup[]>(`/contests/${contestId}/lineups`),
-    []
-  );
+  // const getContestLineups = useCallback(
+  //   (contestId: string) =>
+  //     apiClient.get<ContestLineup[]>(`/contests/${contestId}/lineups`),
+  //   []
+  // );
 
   const addLineupToContest = useCallback(
     (contestId: string, data: { tournamentLineupId: string }) =>
@@ -53,9 +53,9 @@ export const useContestApi = () => {
       getAllContests,
       getContestById,
       createContest,
-      updateContest,
-      deleteContest,
-      getContestLineups,
+      // updateContest,
+      // deleteContest,
+      // getContestLineups,
       addLineupToContest,
       removeLineupFromContest,
     }),
@@ -63,9 +63,9 @@ export const useContestApi = () => {
       getAllContests,
       getContestById,
       createContest,
-      updateContest,
-      deleteContest,
-      getContestLineups,
+      // updateContest,
+      // deleteContest,
+      // getContestLineups,
       addLineupToContest,
       removeLineupFromContest,
     ]

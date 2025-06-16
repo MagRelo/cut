@@ -84,6 +84,7 @@ router.put('/:tournamentId', requireAuth, async (req, res) => {
 
     // Transform the data into TournamentLineup type
     const formattedLineup = {
+      id: tournamentLineup.id,
       players: lineupEntries.map((lineupPlayer) => ({
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId,
@@ -136,6 +137,7 @@ router.get('/:tournamentId', requireAuth, async (req, res) => {
 
     // Transform the data into TournamentLineup type
     const formattedLineup = {
+      id: lineup.id,
       players: lineup.players.map((lineupPlayer) => ({
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId,

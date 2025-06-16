@@ -3,7 +3,6 @@ import { PlayerSelectionCard } from './PlayerSelectionCard';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { useTournament } from '../../contexts/TournamentContext';
 import { usePortoAuth } from '../../contexts/PortoAuthContext';
-import { useLineupApi } from '../../services/lineupApi';
 import { type TournamentLineup } from '../../types.new/player';
 import { ErrorMessage } from '../util/ErrorMessage';
 // import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
@@ -18,7 +17,6 @@ interface TournamentLineupFormProps {
 export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   onUpdateLineup,
 }) => {
-  const lineupApi = useLineupApi();
   const { loading: isAuthLoading } = usePortoAuth();
   const {
     players: fieldPlayers,
@@ -26,39 +24,32 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     isLoading: isTournamentLoading,
   } = useTournament();
 
+  const { getLineup, updateLineup, currentLineup, lineupError } =
+    usePortoAuth();
+
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(
     null
   );
-  const [error, setError] = useState<string | null>(null);
-  const [lineup, setLineup] = useState<TournamentLineup | null>(null);
-  // const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchLineup = async () => {
       if (!isAuthLoading && currentTournament?.id) {
         try {
-          const response = await lineupApi.getLineup(currentTournament.id);
-          setLineup(response.lineup);
+          await getLineup(currentTournament.id);
         } catch (error) {
           console.error('Failed to fetch lineup:', error);
-          setError('Failed to fetch lineup');
         }
       }
     };
 
     fetchLineup();
-  }, [currentTournament?.id, isAuthLoading, lineupApi]);
-
-  const isEditingAllowed = (): boolean => {
-    // return true;
-    return !currentTournament || currentTournament.status === 'NOT_STARTED';
-  };
+  }, [currentTournament?.id, isAuthLoading, getLineup]);
 
   const handlePlayerSelect = async (playerId: string | null) => {
     if (selectedPlayerIndex === null) return;
 
-    const newPlayers = [...(lineup?.players || [])];
+    const newPlayers = [...(currentLineup?.players || [])];
 
     if (playerId) {
       const selectedPlayer = fieldPlayers?.find((p) => p.id === playerId);
@@ -74,23 +65,17 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     const playerIds = newPlayers.map((p) => p.id);
 
     try {
-      if (onUpdateLineup) {
-        await onUpdateLineup(playerIds);
-      } else {
-        const response = await lineupApi.updateLineup(
-          currentTournament?.id || '',
-          {
-            players: playerIds,
-          }
-        );
-        setLineup(response.lineup);
-      }
+      await updateLineup(currentTournament?.id || '', playerIds);
     } catch (error) {
       console.error('Failed to update lineup:', error);
-      setError('Failed to update lineup');
     }
 
     setSelectedPlayerIndex(null);
+  };
+
+  const isEditingAllowed = (): boolean => {
+    // return true;
+    return !currentTournament || currentTournament.status === 'NOT_STARTED';
   };
 
   const handleCardClick = (index: number) => {
@@ -103,10 +88,10 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     return <div className='p-4'>Loading...</div>;
   }
 
-  if (error) {
+  if (lineupError) {
     return (
       <div className='p-4'>
-        <ErrorMessage message={error} />
+        <ErrorMessage message={lineupError} />
       </div>
     );
   }
@@ -164,7 +149,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
                   {Array.from({ length: 4 }).map((_, index) => (
                     <PlayerSelectionCard
                       key={`slot-${index}`}
-                      player={lineup?.players[index] || null}
+                      player={currentLineup?.players[index] || null}
                       isSelected={false}
                       onClick={() => handleCardClick(index)}
                       iconType='pencil'
@@ -177,7 +162,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
               {!isEditingAllowed() && (
                 <div className='flex flex-col gap-4'>
                   {Array.from({ length: 4 }).map((_, index) => {
-                    const player = lineup?.players[index];
+                    const player = currentLineup?.players[index];
                     return player ? (
                       <PlayerDisplayCard
                         key={`slot-${index}`}
@@ -212,7 +197,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
         onClose={() => setSelectedPlayerIndex(null)}
         onSelect={handlePlayerSelect}
         availablePlayers={fieldPlayers || []}
-        selectedPlayers={lineup?.players?.map((p) => p.id) || []}
+        selectedPlayers={currentLineup?.players?.map((p) => p.id) || []}
       />
 
       {/* tournament summary modal */}

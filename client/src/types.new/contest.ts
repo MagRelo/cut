@@ -8,6 +8,9 @@ export interface ContestSettings {
   fee: number;
   maxEntry: number;
   contestType: ContestType;
+  paymentTokenAddress: string;
+  paymentTokenSymbol: string;
+  chainId: number;
 }
 
 export interface Contest {
@@ -32,9 +35,11 @@ export interface Contest {
 // Optional: Create a type for creating a new contest
 export interface CreateContestInput {
   name: string;
+  endTime: number;
   tournamentId: string;
   transactionId: string;
   address: string;
+  chainId: number;
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;
