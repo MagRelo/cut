@@ -1,20 +1,77 @@
-import { useState } from 'react';
-import { useContestApi } from '../../services/contestApi';
+import { useState, useEffect } from 'react';
+import { parseEther } from 'viem';
+import {
+  useBalance,
+  useAccount,
+  useSendCalls,
+  useWaitForCallsStatus,
+  useReadContract,
+  usePublicClient,
+} from 'wagmi';
+
+import { useTournament } from '../../contexts/TournamentContext';
 import { type CreateContestInput } from '../../types.new/contest';
-import { useBalance } from 'wagmi';
+import { useContestApi } from '../../services/contestApi';
+
+// contracts
 import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
-import { useAccount } from 'wagmi';
+// import PlatformToken from '../../utils/contracts/PlatformToken.json';
+import { contestFactoryAddress } from '../../utils/contracts/sepolia.json';
+import ContestFactory from '../../utils/contracts/ContestFactory.json';
 
 export const CreateContestForm = () => {
-  const { address } = useAccount();
+  const { address: userAddress } = useAccount();
+  const {
+    sendCalls,
+    data: sendCallsData,
+    isPending: isSending,
+    error: sendCallsError,
+  } = useSendCalls();
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    error: confirmationError,
+    status: confirmationStatus,
+  } = useWaitForCallsStatus({
+    id: sendCallsData?.id,
+  });
+
+  // Add logging for status changes - TEMP
+  useEffect(() => {
+    console.log('Transaction Status:', {
+      isSending,
+      isConfirming,
+      isConfirmed,
+      sendCallsData,
+      sendCallsError,
+      confirmationError,
+      confirmationStatus,
+    });
+  }, [
+    isSending,
+    isConfirming,
+    isConfirmed,
+    sendCallsData,
+    sendCallsError,
+    confirmationError,
+    confirmationStatus,
+  ]);
+
+  const { currentTournament } = useTournament();
+  const contestApi = useContestApi();
+
+  const paymentTokenBalance = useBalance({
+    address: userAddress as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}`,
+  });
 
   const [formData, setFormData] = useState<CreateContestInput>({
     name: '',
     description: '',
     tournamentId: '',
     userGroupId: '',
-    startDate: new Date(),
-    endDate: new Date(),
+    address: '',
+    transactionId: '',
     settings: {
       fee: 10,
       maxEntry: 50,
@@ -23,38 +80,124 @@ export const CreateContestForm = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const contestApi = useContestApi();
+  const [pendingContestData, setPendingContestData] =
+    useState<CreateContestInput | null>(null);
 
-  const paymentTokenBalance = useBalance({
-    address,
-    token: paymentTokenAddress as `0x${string}`,
-  });
+  const publicClient = usePublicClient();
+
+  const getAddressFromTransactionId = async (
+    transactionId: string
+  ): Promise<string> => {
+    try {
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: transactionId as `0x${string}`,
+      });
+      if (!receipt?.contractAddress) {
+        throw new Error('No contract address found in transaction receipt');
+      }
+      return receipt.contractAddress;
+    } catch (error) {
+      console.error('Error getting contract address from transaction:', error);
+      throw error;
+    }
+  };
+
+  // Effect to handle API call after blockchain confirmation
+  useEffect(() => {
+    const createContestInBackend = async () => {
+      if (isConfirmed && pendingContestData && sendCallsData?.id) {
+        try {
+          console.log('Creating contest in backend with data:', {
+            ...pendingContestData,
+            transactionId: sendCallsData.id,
+            sendCallsData,
+          });
+
+          // get address using txn id from sendCallsData
+          const contestAddress = await getAddressFromTransactionId(
+            sendCallsData.id
+          );
+
+          await contestApi.createContest({
+            ...pendingContestData,
+            transactionId: sendCallsData.id,
+            address: contestAddress,
+          });
+
+          // Reset form after successful submission
+          setFormData({
+            name: '',
+            description: '',
+            tournamentId: '',
+            transactionId: '',
+            address: '',
+            settings: {
+              fee: 10,
+              maxEntry: 50,
+              contestType: 'PUBLIC',
+            },
+            userGroupId: '',
+          });
+          setPendingContestData(null);
+        } catch (err) {
+          console.error('Error creating contest in backend:', err);
+          setError('Failed to create contest in backend');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    createContestInBackend();
+  }, [isConfirmed, pendingContestData, sendCallsData?.id, contestApi]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
       setError(null);
-      await contestApi.createContest(formData);
-      // Reset form after successful submission
-      setFormData({
-        name: '',
-        description: '',
-        tournamentId: '',
-        userGroupId: '',
-        startDate: new Date(),
-        endDate: new Date(),
-        settings: {
-          fee: 10,
-          maxEntry: 50,
-          contestType: 'PUBLIC',
-        },
+
+      // get tournament endTIme, add 7 days
+      const endTime =
+        new Date(currentTournament?.endDate ?? '').getTime() +
+        7 * 24 * 60 * 60 * 1000;
+
+      // Store the form data for later use in the API call
+      setPendingContestData(formData);
+
+      console.log('Initiating blockchain transaction with data:', {
+        name: formData.name,
+        fee: formData.settings?.fee,
+        maxEntry: formData.settings?.maxEntry,
+        endTime,
+        oracle: import.meta.env.VITE_ORACLE_ADDRESS,
+        hasABI: !!ContestFactory.abi,
       });
+
+      // Execute blockchain transaction
+      const result = sendCalls({
+        calls: [
+          {
+            abi: ContestFactory.abi,
+            args: [
+              formData.name,
+              formData.settings?.fee?.toString() ?? '0',
+              formData.settings?.maxEntry?.toString() ?? '0',
+              endTime.toString(),
+              import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
+            ],
+            functionName: 'createContest',
+            to: contestFactoryAddress as `0x${string}`,
+          },
+        ],
+      });
+
+      console.log('Send calls result:', result);
     } catch (err) {
-      console.error('Error creating contest:', err);
-      setError('Failed to create contest');
-    } finally {
+      console.error('Error initiating blockchain transaction:', err);
+      setError('Failed to initiate blockchain transaction');
       setLoading(false);
+      setPendingContestData(null);
     }
   };
 
@@ -87,54 +230,7 @@ export const CreateContestForm = () => {
         />
       </div>
 
-      {/* <div className='space-y-2'>
-        <label htmlFor='userGroupId' className='block font-medium'>
-          User Group ID
-        </label>
-        <input
-          type='text'
-          id='userGroupId'
-          name='userGroupId'
-          value={formData.userGroupId}
-          onChange={handleChange}
-          required
-          className='w-full p-2 border rounded-md'
-        />
-      </div> */}
-      {/* 
       <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-2'>
-          <label htmlFor='startDate' className='block font-medium'>
-            Start Date
-          </label>
-          <input
-            type='datetime-local'
-            id='startDate'
-            name='startDate'
-            value={formData.startDate.toISOString().slice(0, 16)}
-            onChange={handleChange}
-            required
-            className='w-full p-2 border rounded-md'
-          />
-        </div>
-
-        <div className='space-y-2'>
-          <label htmlFor='endDate' className='block font-medium'>
-            End Date
-          </label>
-          <input
-            type='datetime-local'
-            id='endDate'
-            name='endDate'
-            value={formData.endDate.toISOString().slice(0, 16)}
-            onChange={handleChange}
-            required
-            className='w-full p-2 border rounded-md'
-          />
-        </div>
-      </div> */}
-
-      <div className='grid grid-cols-2 gap-2'>
         <div className='space-y-2'>
           <label htmlFor='settings.maxEntry' className='block font-medium'>
             Maximum Entries
@@ -195,9 +291,11 @@ export const CreateContestForm = () => {
       <div>
         <button
           type='submit'
-          disabled={loading}
+          disabled={loading || isSending || isConfirming}
           className='w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed mt-2'>
-          {loading ? 'Creating...' : 'Create Contest'}
+          {loading || isSending || isConfirming
+            ? 'Creating...'
+            : 'Create Contest'}
         </button>
       </div>
 
@@ -207,6 +305,21 @@ export const CreateContestForm = () => {
           <div className='text-red-500'>{error}</div>
         </div>
       )}
+
+      {/* Add status display */}
+      <div className='mt-4 text-sm text-gray-600'>
+        <div>Transaction Status: {confirmationStatus || 'idle'}</div>
+        {sendCallsError && (
+          <div className='text-red-500'>
+            Transaction Error: {sendCallsError.message}
+          </div>
+        )}
+        {confirmationError && (
+          <div className='text-red-500'>
+            Confirmation Error: {confirmationError.message}
+          </div>
+        )}
+      </div>
     </form>
   );
 };

@@ -2,8 +2,8 @@ import { type Tournament } from './tournament';
 import { type UserGroup } from './userGroup';
 import { type ContestLineup } from './lineup';
 
+export type ContestStatus = 'OPEN' | 'CLOSED' | 'SETTLED' | 'CANCELLED';
 export type ContestType = 'PUBLIC' | 'PRIVATE' | 'INVITE_ONLY';
-
 export interface ContestSettings {
   fee: number;
   maxEntry: number;
@@ -18,8 +18,10 @@ export interface Contest {
   userGroupId: string;
   startDate: Date;
   endDate: Date;
-  status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: ContestStatus;
   settings: ContestSettings;
+  transactionId?: string;
+  address?: string;
   createdAt: Date;
   updatedAt: Date;
   tournament?: Tournament;
@@ -27,25 +29,13 @@ export interface Contest {
   contestLineups?: ContestLineup[];
 }
 
-export type ContestStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-
 // Optional: Create a type for creating a new contest
 export interface CreateContestInput {
   name: string;
-  description?: string;
   tournamentId: string;
-  userGroupId: string;
-  startDate: Date;
-  endDate: Date;
-  settings?: ContestSettings;
-}
-
-// Optional: Create a type for updating a contest
-export interface UpdateContestInput {
-  name?: string;
+  transactionId: string;
+  address: string;
+  settings: ContestSettings;
   description?: string;
-  startDate?: Date;
-  endDate?: Date;
-  status?: ContestStatus;
-  settings?: ContestSettings;
+  userGroupId?: string;
 }
