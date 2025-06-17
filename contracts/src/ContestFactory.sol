@@ -12,16 +12,22 @@ contract ContestFactory is Ownable {
     Contest[] public contests;
     address public immutable paymentToken;
     uint8 public immutable paymentTokenDecimals;
+    address public immutable aavePoolAddressesProvider;
 
     event ContestCreated(address indexed contest, address indexed host, uint256 entryFee);
     event OracleAdded(address indexed oracle);
     event OracleRemoved(address indexed oracle);
     event PlatformFeeUpdated(uint256 newFee);
 
-    constructor(uint256 _platformFee, address _paymentToken) Ownable(msg.sender) {
+    constructor(
+        uint256 _platformFee, 
+        address _paymentToken,
+        address _aavePoolAddressesProvider
+    ) Ownable(msg.sender) {
         platformFee = _platformFee;
         paymentToken = _paymentToken;
         paymentTokenDecimals = IERC20Metadata(_paymentToken).decimals();
+        aavePoolAddressesProvider = _aavePoolAddressesProvider;
     }
 
     function createContest(
@@ -43,7 +49,8 @@ contract ContestFactory is Ownable {
             endTime,
             paymentToken,
             oracle,
-            platformFee
+            platformFee,
+            aavePoolAddressesProvider
         );
 
         contests.push(contest);

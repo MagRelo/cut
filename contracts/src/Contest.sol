@@ -4,12 +4,19 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@aave/core-v3/contracts/interfaces/IPool.sol";
+import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 contract Contest is ReentrancyGuard {
     IERC20 public immutable paymentToken;
     uint8 public immutable paymentTokenDecimals;
     address public immutable oracle;
     uint256 public immutable platformFee; // in basis points
+
+    // Aave integration
+    IPool public immutable aavePool;
+    IERC20 public immutable aUSDC;
+    uint256 public totalInitialDeposits;
 
     enum ContestState { OPEN, CLOSED, SETTLED, CANCELLED }
     ContestState public state;
@@ -49,7 +56,8 @@ contract Contest is ReentrancyGuard {
         uint256 _endTime,
         address _paymentToken,
         address _oracle,
-        uint256 _platformFee
+        uint256 _platformFee,
+        address _aavePoolAddressesProvider
     ) {
         details = ContestDetails({
             name: _name,
@@ -62,6 +70,11 @@ contract Contest is ReentrancyGuard {
         oracle = _oracle;
         platformFee = _platformFee;
         state = ContestState.OPEN;
+
+        // Initialize Aave
+        IPoolAddressesProvider provider = IPoolAddressesProvider(_aavePoolAddressesProvider);
+        aavePool = IPool(provider.getPool());
+        aUSDC = IERC20(aavePool.getReserveData(_paymentToken).aTokenAddress);
     }
 
     function enter() external whenOpen {
@@ -69,6 +82,14 @@ contract Contest is ReentrancyGuard {
         require(participants.length < details.maxParticipants, "Contest full");
 
         paymentToken.transferFrom(msg.sender, address(this), details.entryFee);
+        
+        // Track initial deposit
+        totalInitialDeposits += details.entryFee;
+        
+        // Deposit to Aave
+        paymentToken.approve(address(aavePool), details.entryFee);
+        aavePool.supply(address(paymentToken), details.entryFee, address(this), 0);
+        
         participants.push(msg.sender);
         hasEntered[msg.sender] = true;
 
@@ -78,7 +99,14 @@ contract Contest is ReentrancyGuard {
     function leave() external whenOpen {
         require(hasEntered[msg.sender], "Not entered");
 
+        // Withdraw from Aave
+        aavePool.withdraw(address(paymentToken), details.entryFee, address(this));
+        
+        // Return only the initial deposit
         paymentToken.transfer(msg.sender, details.entryFee);
+        
+        // Update tracking
+        totalInitialDeposits -= details.entryFee;
         hasEntered[msg.sender] = false;
 
         // Remove participant from the participants array (swap and pop)
@@ -109,10 +137,18 @@ contract Contest is ReentrancyGuard {
         }
         require(totalBasisPoints == 10000, "Total must be 10000 basis points");
 
+        // Withdraw all funds from Aave
+        uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
+        aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
+
         // Calculate payouts based on basis points
         uint256 totalPot = paymentToken.balanceOf(address(this));
+        
+        // Calculate platform fee from total pot (including yield)
         uint256 platformFeeAmount = (totalPot * platformFee) / 10000;
-        uint256 netPayout = totalPot - platformFeeAmount;
+        
+        // Calculate net payout from initial deposits only
+        uint256 netPayout = totalInitialDeposits - platformFeeAmount;
 
         uint256[] memory calculatedPayouts = new uint256[](_payoutBasisPoints.length);
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
@@ -128,12 +164,21 @@ contract Contest is ReentrancyGuard {
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
             paymentToken.transfer(participants[i], calculatedPayouts[i]);
         }
+
+        // Transfer any remaining yield to oracle
+        uint256 remainingBalance = paymentToken.balanceOf(address(this));
+        if (remainingBalance > 0) {
+            paymentToken.transfer(oracle, remainingBalance);
+        }
     }
 
     function emergencyWithdraw() external {
         require(hasEntered[msg.sender], "Not entered");
         require(block.timestamp > details.endTime, "Contest not ended");
 
+        // Withdraw from Aave
+        aavePool.withdraw(address(paymentToken), details.entryFee, address(this));
+        
         paymentToken.transfer(msg.sender, details.entryFee);
         hasEntered[msg.sender] = false;
     }
@@ -146,6 +191,11 @@ contract Contest is ReentrancyGuard {
 
     function refundParticipants() external onlyOracle {
         require(state == ContestState.CANCELLED, "Contest not cancelled");
+        
+        // Withdraw all funds from Aave
+        uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
+        aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
+        
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             if (hasEntered[participant]) {
