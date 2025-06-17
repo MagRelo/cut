@@ -21,13 +21,13 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className='p-4 sm:p-6 border-b border-gray-200'>
             <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
-                2025 U.S. Open Championship
+                2025 Travelers Championship
               </Dialog.Title>
               <p className='text-lg tracking-tight text-gray-600 font-medium'>
-                Oakmont Country Club
+                TPC River Highlands
               </p>
               <p className='text-sm text-gray-500 font-medium'>
-                Oakmont, Pennsylvania
+                Cromwell, Connecticut
               </p>
             </div>
 
@@ -39,37 +39,27 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Scottie Scheffler:</strong> World No. 1, three-time
-                    major champion, enters as the heavy favorite (11/4 odds).
-                    Scheffler has won three of his last four starts, including
-                    the PGA Championship and the Memorial, and is seeking his
-                    fourth career major and the third leg of the career grand
-                    slam.
+                    <strong>Scottie Scheffler:</strong> Defending champion,
+                    World No. 1, enters as the +280 favorite after winning last
+                    year in a playoff over Tom Kim.
                   </li>
                   <li>
-                    <strong>Bryson DeChambeau:</strong> Defending champion,
-                    two-time U.S. Open winner, and second favorite at 15/2 odds.
-                    He's been in excellent form and has prepared specifically
-                    for Oakmont's challenges.
+                    <strong>Rory McIlroy:</strong> World No. 2, +1100 odds,
+                    seeking his first Travelers title.
                   </li>
                   <li>
-                    <strong>Rory McIlroy:</strong> World No. 2, Masters champion
-                    this year, and third favorite at 11-1 odds. A win would give
-                    him his sixth major and further cement his legacy.
+                    <strong>Xander Schauffele:</strong> +1200 odds, always a
+                    contender at TPC River Highlands.
                   </li>
                   <li>
-                    <strong>Jon Rahm:</strong> 2021 U.S. Open champion, 12-1
-                    odds, showing a resurgence in form and always a threat at
-                    majors.
+                    <strong>Collin Morikawa & Ludvig Åberg:</strong> Both at
+                    +2000 odds.
                   </li>
                   <li>
-                    <strong>Xander Schauffele:</strong> 2024 PGA Championship
-                    winner, 18-1 odds, consistently contending in majors.
-                  </li>
-                  <li>
-                    <strong>Other Notable Contenders:</strong> Collin Morikawa,
-                    Ludvig Åberg, Joaquin Niemann, Tommy Fleetwood, Justin
-                    Thomas, Shane Lowry, and Patrick Cantlay.
+                    <strong>Other Notables:</strong> Justin Thomas (+2200),
+                    Patrick Cantlay (+2200), Viktor Hovland (+3500), Corey
+                    Conners (+4000), J.J. Spaun (+5000, fresh off a U.S. Open
+                    win), Tom Kim (+9000, last year's runner-up).
                   </li>
                 </ul>
 
@@ -78,106 +68,95 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Scheffler's Dominance:</strong> Can Scheffler
-                    continue his incredible run and win back-to-back majors,
-                    joining an elite group of golfers to achieve this feat?
+                    <strong>Scheffler's Dominance:</strong> Can Scottie
+                    Scheffler defend his title and add to his already historic
+                    season after winning six times last year, including this
+                    event in a playoff?
                   </li>
                   <li>
-                    <strong>DeChambeau's Defense:</strong> Will the defending
-                    champion's power and preparation help him conquer Oakmont's
-                    brutal setup again?
+                    <strong>McIlroy's Pursuit:</strong> Rory McIlroy looks to
+                    bounce back after the U.S. Open and capture his first
+                    Travelers title.
                   </li>
                   <li>
-                    <strong>McIlroy's Quest:</strong> McIlroy seeks his sixth
-                    major and another step toward golf immortality.
+                    <strong>U.S. Open Fallout:</strong> Several stars, including
+                    new major champion J.J. Spaun, are in the field just days
+                    after a grueling U.S. Open at Oakmont.
                   </li>
                   <li>
-                    <strong>Phil Mickelson's Last Chance?:</strong> Mickelson,
-                    possibly playing his final U.S. Open, still seeks the
-                    elusive career Grand Slam.
+                    <strong>Drama at TPC River Highlands:</strong> The course is
+                    famous for wild finishes—Jordan Spieth's walk-off bunker
+                    shot in 2017 and Jim Furyk's record 58 in 2016.
                   </li>
                   <li>
-                    <strong>Oakmont's Challenge:</strong> The course itself is a
-                    central figure—its greens, rough, and history promise drama
-                    and potential heartbreak.
-                  </li>
-                </ul>
-
-                <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  History and Significance
-                </h3>
-                <ul className='list-disc pl-5 space-y-1.5'>
-                  <li>
-                    <strong>Tradition:</strong> The U.S. Open is one of golf's
-                    four major championships, staged annually by the United
-                    States Golf Association (USGA).
-                  </li>
-                  <li>
-                    <strong>Heritage:</strong> First played in 1895, it is
-                    renowned for its challenging setups, tough scoring, and the
-                    prestige attached to winning America's national
-                    championship.
-                  </li>
-                  <li>
-                    <strong>Milestone:</strong> This year marks the 125th
-                    edition, hosted at Oakmont Country Club in Pennsylvania—a
-                    venue famous for its lightning-fast, undulating greens and
-                    penal rough. Oakmont is hosting the U.S. Open for a record
-                    10th time, underscoring its status as one of the sternest
-                    tests in golf.
+                    <strong>Fan Experience:</strong> The Travelers is one of the
+                    most attended and fan-friendly events on Tour, second only
+                    to the Phoenix Open.
                   </li>
                 </ul>
 
                 <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  Venue: Oakmont Country Club
+                  Course and Format
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Course Challenge:</strong> Oakmont is legendary for
-                    its difficulty, featuring the "scariest" greens in golf,
-                    thick rough, and the longest par-three in major history.
+                    <strong>Course:</strong> TPC River Highlands
+                    <ul className='list-disc pl-5 mt-1'>
+                      <li>
+                        Par 70, 6,844 yards—short by Tour standards but demands
+                        precision and rewards aggressive play.
+                      </li>
+                      <li>
+                        Known for dramatic risk-reward holes, especially on the
+                        closing stretch.
+                      </li>
+                      <li>
+                        No cut due to Signature Event status; all 72 players
+                        compete through Sunday.
+                      </li>
+                    </ul>
                   </li>
                   <li>
-                    <strong>Design Philosophy:</strong> The course is designed
-                    to expose any weakness in a player's game, demanding
-                    precision, patience, and mental toughness.
+                    <strong>Signature Event:</strong> Elevated purse and
+                    FedExCup points (700 to the winner).
                   </li>
                 </ul>
 
                 <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  Field and Format
+                  Tournament History
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Competition:</strong> 156 players are set to compete
-                    over 72 holes of stroke play.
+                    <strong>Origins:</strong> Established in 1952 as the
+                    Insurance City Open, renamed the Greater Hartford Open in
+                    1967, and has been the Travelers Championship since 2007.
                   </li>
                   <li>
-                    <strong>Cut:</strong> The cut comes after 36 holes, with the
-                    top 60 and ties advancing to the weekend.
+                    <strong>Venue:</strong> TPC River Highlands has hosted since
+                    1984 and is known for fan engagement and dramatic finishes.
+                    The course record is 58, set by Jim Furyk in 2016—the lowest
+                    round in PGA Tour history.
                   </li>
                   <li>
-                    <strong>Prize:</strong> The winner receives a significant
-                    share of the prize fund and a major boost in world ranking
-                    and career legacy.
+                    <strong>Notable Past Winners:</strong> Billy Casper (4
+                    wins), Bubba Watson (3), Phil Mickelson, Arnold Palmer, Paul
+                    Azinger, Stewart Cink, and more.
                   </li>
                 </ul>
 
                 <h3 className='text-2xl font-semibold text-gray-800 mt-4 mb-2'>
-                  Broadcast Information
+                  Broadcast and Streaming
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Dates:</strong> June 12–15, 2025
+                    <strong>TV:</strong> Golf Channel (Thursday/Friday: 3–6 p.m.
+                    ET; Saturday/Sunday: 1–3 p.m. ET), CBS (Saturday: 3–6:30
+                    p.m. ET, Sunday: 3–6 p.m. ET).
                   </li>
                   <li>
-                    <strong>TV:</strong> NBC and USA Network provide extensive
-                    coverage, with NBC offering the most broadcast hours ever
-                    for a major.
-                  </li>
-                  <li>
-                    <strong>Streaming:</strong> Coverage available via NBC
-                    Sports digital platforms and Peacock.
+                    <strong>Streaming:</strong> PGA Tour Live on ESPN+ (early
+                    coverage), Paramount+ (CBS simulcast), NBC Sports App (Golf
+                    Channel simulcast).
                   </li>
                 </ul>
               </div>
