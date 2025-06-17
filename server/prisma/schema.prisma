@@ -8,25 +8,25 @@ datasource db {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  email             String?            @unique
-  phone             String?            @unique
-  password          String?
-  name              String
-  userType          String             @default("USER")
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  ownedLeagues      League[]           @relation("LeagueCommissioner")
-  leagueMemberships LeagueMembership[]
-  teams             Team?
-  orderLogs         UserOrderLog[]
-  verificationCode  String?
+  id                        String             @id @default(cuid())
+  email                     String?            @unique
+  password                  String?
+  name                      String
+  userType                  String             @default("USER")
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  phone                     String?            @unique
+  verificationCode          String?
   verificationCodeExpiresAt DateTime?
-  isVerified        Boolean            @default(false)
-  lastLoginAt       DateTime?
-  loginAttempts     Int                @default(0)
-  lockedUntil       DateTime?
-  settings          Json?
+  isVerified                Boolean            @default(false)
+  lastLoginAt               DateTime?
+  loginAttempts             Int                @default(0)
+  lockedUntil               DateTime?
+  settings                  Json?
+  ownedLeagues              League[]           @relation("LeagueCommissioner")
+  leagueMemberships         LeagueMembership[]
+  teams                     Team?
+  orderLogs                 UserOrderLog[]
 
   @@index([email])
   @@index([phone])
@@ -114,14 +114,14 @@ model Player {
   pga_country       String?
   pga_countryFlag   String?
   pga_age           Int?
-  pga_owgr          String?
-  pga_fedex         String?
-  pga_performance   Json?
   isActive          Boolean            @default(false)
   inField           Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   lastSyncedAt      DateTime?
+  pga_owgr          String?
+  pga_fedex         String?
+  pga_performance   Json?
   TeamPlayer        TeamPlayer[]
   tournamentPlayers TournamentPlayer[]
 

@@ -10,9 +10,9 @@ async function getTeamTotals(tournamentId: string, leagueId: string) {
           include: {
             team: {
               include: {
-                players: {
+                TeamPlayer: {
                   include: {
-                    player: {
+                    Player: {
                       include: {
                         tournamentPlayers: {
                           where: { tournamentId },
@@ -36,8 +36,8 @@ async function getTeamTotals(tournamentId: string, leagueId: string) {
     // Calculate and display team totals
     const teamTotals = league.leagueTeams.map((lt) => {
       const team = lt.team;
-      const total = team.players.reduce((sum, tp) => {
-        const tournamentPlayer = tp.player.tournamentPlayers[0];
+      const total = team.TeamPlayer.reduce((sum, tp) => {
+        const tournamentPlayer = tp.Player.tournamentPlayers[0];
         if (!tournamentPlayer) {
           console.log('No tournament data found for player');
           return sum;
