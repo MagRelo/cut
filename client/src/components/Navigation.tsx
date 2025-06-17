@@ -27,6 +27,15 @@ export const Navigation: React.FC = () => {
             </Link>
           </div>
           <div className='flex items-center gap-4'>
+            <Link
+              to='/transfer'
+              className={`text-lg font-medium ${
+                isActive('/transfer')
+                  ? 'text-emerald-500'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              Transfer
+            </Link>
             {user && isAdmin() && (
               <Link
                 to='/admin'

@@ -1,0 +1,112 @@
+// this service will run periodically to close contests
+// closing a contest requires an blockchain account with funds for gas; check that first
+// get pk & RPC from env
+// init account and check balance
+
+// get all contests that are OPEN
+// for each contest, check the tournament status
+// if the tournament status is COMPLETED, close the contest
+// closing the contest will:
+// - distribute the prizes: contract calls to distribute the prizes
+// - update the contest's status to CLOSED
+
+import { prisma } from '../lib/prisma.js';
+import { ethers } from 'ethers';
+import Contest from '../../../client/src/utils/contracts/Contest.json' assert { type: 'json' };
+
+// Initialize blockchain connection
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+const wallet = new ethers.Wallet(process.env.ORACLE_PRIVATE_KEY!, provider);
+
+export async function distributeContest() {
+  try {
+    // Get all open contests
+    const contests = await prisma.contest.findMany({
+      where: {
+        status: 'OPEN',
+      },
+      include: {
+        tournament: true,
+        contestLineups: {
+          include: {
+            user: true,
+          },
+          orderBy: {
+            score: 'desc',
+          },
+        },
+      },
+    });
+
+    for (const contest of contests) {
+      // Check if tournament is completed
+      if (contest.tournament.status !== 'COMPLETED') {
+        continue;
+      }
+
+      // Initialize contest contract
+      const contestContract = new ethers.Contract(
+        contest.address,
+        Contest.abi,
+        wallet
+      );
+
+      // Get contest state from blockchain
+      const contestState = await contestContract.state();
+      if (contestState !== 0) {
+        // 0 = OPEN
+        continue;
+      }
+
+      // Get the participants from the contestContract
+      const participants = await contestContract.participants();
+
+      // Calculate payouts based on scores
+      const payouts = await calculatePayouts(
+        contest.contestLineups,
+        participants
+      );
+
+      // Distribute prizes on blockchain
+      const distributeTx = await contestContract.distribute(payouts);
+      await distributeTx.wait();
+
+      // Update contest status in database
+      await prisma.contest.update({
+        where: { id: contest.id },
+        data: { status: 'SETTLED' },
+      });
+    }
+  } catch (error) {
+    console.error('Error closing contests:', error);
+    throw error;
+  }
+}
+
+async function calculatePayouts(
+  lineups: any[],
+  participants: string[]
+): Promise<number[]> {
+  // Create a map of wallet addresses to their lineup scores
+  const walletToScore = new Map<string, number>();
+  lineups.forEach((lineup) => {
+    walletToScore.set(lineup.user.walletAddress.toLowerCase(), lineup.score);
+  });
+
+  // Initialize payouts array with zeros
+  const payouts = new Array(participants.length).fill(0);
+
+  // Find the winner (position "1") and set their payout
+  const winner = lineups.find((lineup) => lineup.position === '1');
+  if (winner) {
+    const winnerIndex = participants.findIndex(
+      (participant: string) =>
+        participant.toLowerCase() === winner.user.walletAddress.toLowerCase()
+    );
+    if (winnerIndex !== -1) {
+      payouts[winnerIndex] = 10000; // 100% in basis points
+    }
+  }
+
+  return payouts;
+}

@@ -1,8 +1,9 @@
 import { useAccount, useDisconnect, useConnect, useBalance } from 'wagmi';
 import { PageHeader } from '../components/util/PageHeader';
-import { formatEther } from 'viem';
+import { formatEther, formatUnits } from 'viem';
 import { UserSettings } from '../components/user/UserSettings';
 import { paymentTokenAddress } from '../utils/contracts/sepolia.json';
+import { Transfer } from '../components/user/Transfer';
 
 export function UserPage() {
   const { address, chainId, chain } = useAccount();
@@ -10,66 +11,36 @@ export function UserPage() {
   const { disconnect } = useDisconnect();
 
   // get USDC balance
-  const { data: balance_USDC } = useBalance({
-    address: address,
-    token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`,
-  });
+  // const { data: balance_USDC } = useBalance({
+  //   address: address,
+  //   token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`,
+  // });
 
   // get eth balance
   const { data: balance } = useBalance({
     address: address,
   });
 
-  // get BTCUT balance
-  const { data: balance_BTCUT } = useBalance({
+  // paymentTokenAddress balance
+  const { data: paymentTokenBalance } = useBalance({
     address: address,
     token: paymentTokenAddress as `0x${string}`,
   });
+
+  // round balance to 2 decimal points
+  const formattedBalance = (balance: bigint) => {
+    return Number(formatUnits(balance, 18)).toFixed(2);
+  };
 
   return (
     <div className='p-4'>
       <PageHeader title='Account' className='mb-3' />
 
-      {/* Credits */}
-      <div className='bg-white rounded-lg shadow p-4 mb-4'>
-        <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
-          Balance
-        </div>
-
-        <div className='grid grid-cols-[85px_1fr] gap-2'>
-          <div className='font-medium'>Available:</div>
-
-          <div>
-            {balance_USDC?.formatted} {balance_USDC?.symbol}
-          </div>
-        </div>
-
-        <div className='mt-4'>
-          <a
-            href={`https://stg.id.porto.sh/`}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 w-full justify-center'>
-            Add Funds
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              className='h-4 w-4'
-              fill='none'
-              viewBox='0 0 24 24'
-              stroke='currentColor'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
-              />
-            </svg>
-          </a>
-        </div>
-      </div>
+      {/* User Settings */}
+      <UserSettings />
 
       {/* Rewards Earned */}
-      <div className='bg-white rounded-lg shadow p-4 mb-4'>
+      {/* <div className='bg-white rounded-lg shadow p-4 mb-4'>
         <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
           Rewards Earned
         </div>
@@ -81,19 +52,7 @@ export function UserPage() {
           <div className='font-medium'>Referrals:</div>
           <div>0 CUT</div>
         </div>
-
-        <hr className='my-2' />
-
-        <div className='grid grid-cols-[85px_1fr] gap-2'>
-          <div className='font-medium'>Available:</div>
-          <div>
-            {balance_BTCUT?.formatted} {balance_BTCUT?.symbol}
-          </div>
-        </div>
-      </div>
-
-      {/* User Settings */}
-      <UserSettings />
+      </div> */}
 
       {/* Account Settings */}
       <div className='bg-white rounded-lg shadow p-4 mb-4'>
@@ -101,10 +60,20 @@ export function UserPage() {
           Account
         </div>
 
-        <div className='grid grid-cols-[85px_1fr] gap-2'>
-          <div className='font-medium'>Balance:</div>
-          <div>{formatEther(balance?.value || 0n)} ETH</div>
+        <div className='grid grid-cols-[100px_1fr] gap-2'>
+          <div className='font-medium'>Credits:</div>
 
+          {/* CUT Balance */}
+          <div>
+            {formattedBalance(paymentTokenBalance?.value ?? 0n)}{' '}
+            {paymentTokenBalance?.symbol}
+          </div>
+
+          {/* ETH Balance */}
+          {/* <div className='font-medium'>Balance:</div>
+          <div>{formatEther(balance?.value || 0n)} ETH</div> */}
+
+          {/* Porto Wallet */}
           <div className='font-medium'>Wallet:</div>
           <div>
             <a
@@ -131,14 +100,17 @@ export function UserPage() {
             </a>
           </div>
 
+          {/* Address */}
           <div className='font-medium'>Address:</div>
           <div>
             {address?.slice(0, 6)}...{address?.slice(-4)}
           </div>
 
+          {/* Chain */}
           <div className='font-medium'>Chain:</div>
           <div>{chain?.name}</div>
 
+          {/* Chain ID */}
           <div className='font-medium'>Chain ID:</div>
           <div>{chainId}</div>
         </div>
@@ -158,6 +130,30 @@ export function UserPage() {
               ))}
             </>
           )}
+          <div className='mt-4'>
+            <a
+              href={`https://stg.id.porto.sh/`}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 w-full justify-center'>
+              Add Funds
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                className='h-4 w-4'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+                />
+              </svg>
+            </a>
+          </div>
+
+          <hr className='my-4' />
 
           {!!address && (
             <button
@@ -171,6 +167,15 @@ export function UserPage() {
           {/* <div> status: {status}</div> */}
           <div>{error?.message}</div>
         </div>
+      </div>
+
+      {/* Transfer */}
+      <div className='bg-white rounded-lg shadow p-4 mb-4'>
+        <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
+          User-to-User Transfer
+        </div>
+
+        <Transfer />
       </div>
     </div>
   );

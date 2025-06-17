@@ -12,6 +12,9 @@ export const ContestCard = ({
   preTournament = false,
 }: ContestCardProps) => {
   const { user } = usePortoAuth();
+
+  // console.log('preTournament', preTournament);
+
   const renderPreTournamentCard = () => (
     <div className='p-4 border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3'>
       <h3 className='text-lg font-extrabold leading-tight'>{contest.name}</h3>

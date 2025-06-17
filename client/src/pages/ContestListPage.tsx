@@ -44,7 +44,7 @@ export const Contests: React.FC = () => {
   const userActiveContests = contests.filter((contest) => {
     if (contest.contestLineups) {
       return contest.contestLineups.some(
-        (lineup) => lineup.userId === user?.id && contest.status === 'ACTIVE'
+        (lineup) => lineup.userId === user?.id && contest.status === 'OPEN'
       );
     }
   });
@@ -52,7 +52,7 @@ export const Contests: React.FC = () => {
   const userClosedContests = contests.filter((contest) => {
     if (contest.contestLineups) {
       return contest.contestLineups.some(
-        (lineup) => lineup.userId === user?.id && contest.status === 'COMPLETED'
+        (lineup) => lineup.userId === user?.id && contest.status === 'CLOSED'
       );
     }
   });

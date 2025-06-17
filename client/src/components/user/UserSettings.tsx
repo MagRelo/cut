@@ -42,7 +42,7 @@ export function UserSettings() {
   return (
     <div className='bg-white rounded-lg shadow p-4 mb-4'>
       <div className='text-lg font-semibold text-gray-700 mb-2 font-display'>
-        User Settings
+        Team Display
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-4'>
