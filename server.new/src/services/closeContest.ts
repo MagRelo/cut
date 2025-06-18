@@ -33,11 +33,15 @@ export async function closeContest() {
       },
     });
 
+    console.log(`Found ${contests.length} open contests`);
+
     for (const contest of contests) {
-      // Check if tournament is completed
+      // Only proceed if tournament is still in progress
       if (contest.tournament.status !== 'IN_PROGRESS') {
         continue;
       }
+
+      console.log(`Closing contest: ${contest.id} - ${contest.name}`);
 
       // Initialize contest contract
       const contestContract = new ethers.Contract(
@@ -48,13 +52,25 @@ export async function closeContest() {
 
       // Get contest state from blockchain
       const contestState = await contestContract.state();
-      if (contestState !== 0) {
+      if (Number(contestState) !== 0) {
         // 0 = OPEN
+        console.log(
+          `Contest state not open: ${contest.id}: ${Number(contestState)}`
+        );
+        continue;
+      }
+
+      const oracle = await contestContract.oracle();
+      if (oracle !== process.env.ORACLE_ADDRESS) {
+        console.log(
+          `Oracle mismatch: ${oracle} !== ${process.env.ORACLE_ADDRESS}`
+        );
         continue;
       }
 
       // Close entry on blockchain
       const closeTx = await contestContract.closeEntry();
+      console.log(`Close tx: ${closeTx.hash}`);
       await closeTx.wait();
 
       // Update contest status in database
@@ -62,9 +78,24 @@ export async function closeContest() {
         where: { id: contest.id },
         data: { status: 'CLOSED' },
       });
+
+      console.log(`Closed contest: ${contest.id} - ${contest.name}`);
     }
   } catch (error) {
     console.error('Error closing contests:', error);
     throw error;
   }
+}
+
+// Main execution block
+if (import.meta.url === `file://${process.argv[1]}`) {
+  closeContest()
+    .then(() => {
+      console.log('Contest close completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('ContestLineups update failed:', error);
+      process.exit(1);
+    });
 }

@@ -13,6 +13,15 @@
 import { prisma } from '../lib/prisma.js';
 import { ethers } from 'ethers';
 import Contest from '../../../client/src/utils/contracts/Contest.json' assert { type: 'json' };
+import PlatformToken from '../../../client/src/utils/contracts/PlatformToken.json' assert { type: 'json' };
+
+export interface ContestSettings {
+  fee: number;
+  maxEntry: number;
+  paymentTokenAddress: string;
+  paymentTokenSymbol: string;
+  chainId: number;
+}
 
 // Initialize blockchain connection
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
@@ -71,11 +80,31 @@ export async function distributeContest() {
       const distributeTx = await contestContract.distribute(payouts);
       await distributeTx.wait();
 
+      // Mint rewards on blockchain equal to the entry fee to each participant
+      const platformTokenContract = new ethers.Contract(
+        process.env.PLATFORM_TOKEN_ADDRESS!,
+        PlatformToken.abi,
+        wallet
+      );
+      const mintTx = await platformTokenContract.mintRewards(
+        participants,
+        participants.map((participant: string) => {
+          const settings = contest.settings as unknown as ContestSettings;
+          return settings?.fee || 0;
+        })
+      );
+      await mintTx.wait();
+
       // Update contest status in database
       await prisma.contest.update({
         where: { id: contest.id },
-        data: { status: 'SETTLED' },
+        data: {
+          status: 'SETTLED',
+          results: { payouts, participants },
+        },
       });
+
+      console.log(`Distributed contest: ${contest.id} - ${contest.name}`);
     }
   } catch (error) {
     console.error('Error closing contests:', error);
@@ -109,4 +138,17 @@ async function calculatePayouts(
   }
 
   return payouts;
+}
+
+// Main execution block
+if (import.meta.url === `file://${process.argv[1]}`) {
+  distributeContest()
+    .then(() => {
+      console.log('Contest distribute completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Contest distribute failed:', error);
+      process.exit(1);
+    });
 }

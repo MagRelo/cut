@@ -130,7 +130,9 @@ export function UserPage() {
               ))}
             </>
           )}
-          <div className='mt-4'>
+
+          {/* TODO: Add funding */}
+          {/* <div className='mt-4'>
             <a
               href={`https://stg.id.porto.sh/`}
               target='_blank'
@@ -151,7 +153,7 @@ export function UserPage() {
                 />
               </svg>
             </a>
-          </div>
+          </div> */}
 
           <hr className='my-4' />
 

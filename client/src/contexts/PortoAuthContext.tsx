@@ -24,6 +24,11 @@ interface PortoUser {
   token: string;
 }
 
+interface Web3User {
+  user: PortoUser;
+  token: string;
+}
+
 interface PortoAuthContextData {
   user: PortoUser | null;
   loading: boolean;
@@ -235,12 +240,14 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
         // If no token or token invalid, try to authenticate with address
         try {
-          const response = await request<PortoUser>('POST', '/auth/web3', {
+          const response = await request<Web3User>('POST', '/auth/web3', {
             address,
             chainId,
           });
-          setUser(response);
-          setCurrentLineup(response.tournamentLineups[0]);
+
+          console.log('Web3 authentication successful:', response);
+          setUser(response.user);
+          // setCurrentLineup(response.tournamentLineups[0]);
           localStorage.setItem('portoToken', response.token);
         } catch (error) {
           console.error('Web3 authentication failed:', error);

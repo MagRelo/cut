@@ -17,4 +17,21 @@ contract PlatformToken is ERC20, Ownable {
     function burn(address from, uint256 amount) external onlyOwner {
         _burn(from, amount);
     }
+
+    /**
+     * @dev Batch mint tokens for multiple rewards
+     * @param recipients Array of addresses to receive tokens
+     * @param amounts Array of amounts to mint for each recipient
+     * @notice Arrays must be of equal length
+     */
+    function mintRewards(
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external onlyOwner {
+        require(recipients.length == amounts.length, "Arrays length mismatch");
+        
+        for (uint256 i = 0; i < recipients.length; i++) {
+            _mint(recipients[i], amounts[i]);
+        }
+    }
 } 

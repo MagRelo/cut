@@ -21,7 +21,10 @@
     "db:reset": "docker compose down -v && docker compose up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seedPGA",
     "service:init-tournament": "tsx src/services/initTournament.ts",
     "service:update-tournament": "tsx src/services/updateTournament.ts",
-    "service:update-players": "tsx src/services/updateTournamentPlayers.ts"
+    "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
+    "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
+    "service:close-contest": "tsx src/services/closeContest.ts",
+    "service:distribute-contest": "tsx src/services/distributeContest.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

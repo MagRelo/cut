@@ -1,10 +1,8 @@
 // this service will run periodcally to keep the tournament up to date
 
 import { prisma } from '../lib/prisma.js';
-import { getTournament } from '../lib/pgaTournament.js';
-import { getActivePlayers } from '../lib/pgaField.js';
 
-export async function updateTournament() {
+export async function updateContestLineups() {
   try {
     const currentTournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
@@ -109,13 +107,13 @@ export async function updateTournament() {
 
 // Main execution block
 if (import.meta.url === `file://${process.argv[1]}`) {
-  updateTournament()
+  updateContestLineups()
     .then(() => {
-      console.log('Tournament update completed');
+      console.log('ContestLineups update completed');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Tournament update failed:', error);
+      console.error('ContestLineups update failed:', error);
       process.exit(1);
     });
 }

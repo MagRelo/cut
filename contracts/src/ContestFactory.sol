@@ -11,7 +11,6 @@ contract ContestFactory is Ownable {
     mapping(address => bool) public oracles;
     Contest[] public contests;
     address public immutable paymentToken;
-    uint8 public immutable paymentTokenDecimals;
     address public immutable aavePoolAddressesProvider;
 
     event ContestCreated(address indexed contest, address indexed host, uint256 entryFee);
@@ -26,7 +25,6 @@ contract ContestFactory is Ownable {
     ) Ownable(msg.sender) {
         platformFee = _platformFee;
         paymentToken = _paymentToken;
-        paymentTokenDecimals = IERC20Metadata(_paymentToken).decimals();
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
     }
 

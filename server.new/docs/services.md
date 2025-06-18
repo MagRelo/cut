@@ -2,38 +2,37 @@
 
 ## MANUAL:
 
-initTournament(pgaTourId):
+### initTournament(pgaTourId):
 
-- update Tournament meta
-- Update players: inField
-- update player profiles
+- update **Tournament** meta
+- update **Player** records to inField
+- update **Player** profiles for players inField
+- create **TournamentPlayer** records for players inField
 
 ## SCHEDULED:
 
-updateTournament():
+### updateTournament():
 
-- update Tournament meta-data from PGA
-- update status, rounds, weather, course info
+- update **Tournament** meta-data from PGA (status, rounds, weather)
 
-updateTournamentPlayers():
+### updateTournamentPlayers():
 
-- update player scores and stats
-- update contest lineup scores and positions
+- update **TournamentPlayer** scores
 
-updateContestLineups():
+### updateContestLineups():
 
-- update contest lineup score
-- update contest lineup positions
+- update **ContestLineup** score & position
 
-closeContest():
+### closeContest():
 
-- find "OPEN" Contests where tournament is "IN_PROGRESS"
-- call Contract.closeEntry()
-- update contest status to "CLOSED"
+- find "OPEN" **Contests** where **Tournament** status is "IN_PROGRESS"
+- call **Contract.closeEntry()**
+- update **Contest** status to "CLOSED"
 
-distributeContest():
+### distributeContest():
 
-- find "CLOSED" Contests where tournament is "COMPLETED"
-- calculate payouts based on scores
-- Contract.distribute()
-- update contest status to "SETTLED"
+- find **Contests** in status "CLOSED" where **Tournament** status is "COMPLETED"
+- calculate payouts based on **ContestLineup** position
+- Call **Contract.distribute()**
+- Call **PlatformTokens.mintRewards()** equal to entry fee for all participants
+- update **Contest** status to "SETTLED"

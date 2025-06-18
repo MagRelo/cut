@@ -44,14 +44,40 @@ export const App: React.FC = () => {
                       <Routes>
                         <Route path='/' element={<Home />} />
                         <Route path='/terms' element={<TermsOfService />} />
-                        <Route path='/contests' element={<Contests />} />
+
+                        <Route
+                          path='/contests'
+                          element={
+                            <ProtectedRoute>
+                              <Contests />
+                            </ProtectedRoute>
+                          }
+                        />
                         <Route
                           path='/contests/create'
-                          element={<CreateContestPage />}
+                          element={
+                            <ProtectedRoute>
+                              <CreateContestPage />
+                            </ProtectedRoute>
+                          }
                         />
-                        <Route path='/contest/:id' element={<ContestLobby />} />
+                        <Route
+                          path='/contest/:id'
+                          element={
+                            <ProtectedRoute>
+                              <ContestLobby />
+                            </ProtectedRoute>
+                          }
+                        />
                         <Route path='/user' element={<UserPage />} />
-                        <Route path='/web3-test' element={<Web3Test />} />
+                        <Route
+                          path='/web3-test'
+                          element={
+                            <ProtectedRoute>
+                              <Web3Test />
+                            </ProtectedRoute>
+                          }
+                        />
 
                         {/* Protected Routes */}
                         <Route

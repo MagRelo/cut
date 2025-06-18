@@ -78,6 +78,26 @@ export async function initTournament(pgaTourId: string) {
       `- initTournament: Updated ${playersInField.length} player profiles.`
     );
 
+    // 4. Create TournamentPlayer records for all players in the field
+    for (const player of playersInField) {
+      await prisma.tournamentPlayer.upsert({
+        where: {
+          tournamentId_playerId: {
+            tournamentId: tournament.id,
+            playerId: player.id,
+          },
+        },
+        create: {
+          tournamentId: tournament.id,
+          playerId: player.id,
+        },
+        update: {}, // No updates needed if record exists
+      });
+    }
+    console.log(
+      `Created TournamentPlayer records for ${playersInField.length} players in the field.`
+    );
+
     console.log(`initTournament: Completed '${tournament.name}'`);
   } catch (error) {
     console.error('Error in updateTournamentPlayerScores:', error);

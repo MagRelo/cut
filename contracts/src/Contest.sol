@@ -9,7 +9,6 @@ import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 contract Contest is ReentrancyGuard {
     IERC20 public immutable paymentToken;
-    uint8 public immutable paymentTokenDecimals;
     address public immutable oracle;
     uint256 public immutable platformFee; // in basis points
 
@@ -66,7 +65,6 @@ contract Contest is ReentrancyGuard {
             endTime: _endTime
         });
         paymentToken = IERC20(_paymentToken);
-        paymentTokenDecimals = IERC20Metadata(_paymentToken).decimals();
         oracle = _oracle;
         platformFee = _platformFee;
         state = ContestState.OPEN;
