@@ -1,24 +1,38 @@
-import { useState, useEffect } from 'react';
-import { decodeEventLog, parseUnits } from 'viem';
-import {
-  useBalance,
-  useAccount,
-  useSendCalls,
-  useWaitForCallsStatus,
-  useChainId,
-} from 'wagmi';
+import { useState, useEffect } from "react";
+import { decodeEventLog, parseUnits } from "viem";
+import { useNavigate } from "react-router-dom";
+import { useBalance, useAccount, useSendCalls, useWaitForCallsStatus, useChainId } from "wagmi";
 
-import { useTournament } from '../../contexts/TournamentContext';
-import { type CreateContestInput } from '../../types.new/contest';
-import { useContestApi } from '../../services/contestApi';
+import { useTournament } from "../../contexts/TournamentContext";
+import { type CreateContestInput } from "../../types.new/contest";
+import { useContestApi } from "../../services/contestApi";
+import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // contracts
 // import PlatformToken from '../../utils/contracts/PlatformToken.json';
-import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
-import { contestFactoryAddress } from '../../utils/contracts/sepolia.json';
-import ContestFactory from '../../utils/contracts/ContestFactory.json';
+import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import { contestFactoryAddress } from "../../utils/contracts/sepolia.json";
+import ContestFactory from "../../utils/contracts/ContestFactory.json";
+
+// Helper function to get status messages
+const getStatusMessages = (
+  defaultMessage: string = "idle",
+  isUserWaiting: boolean = false,
+  isBlockchainWaiting: boolean = false
+): string => {
+  if (isUserWaiting) {
+    return "Waiting for User...";
+  }
+
+  if (isBlockchainWaiting) {
+    return "Waiting for Blockchain...";
+  }
+
+  return defaultMessage;
+};
 
 export const CreateContestForm = () => {
+  const navigate = useNavigate();
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
   const { data: paymentTokenBalance } = useBalance({
@@ -37,7 +51,7 @@ export const CreateContestForm = () => {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
-    status: confirmationStatus,
+    // status: confirmationStatus,
     data: confirmationData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
@@ -47,26 +61,25 @@ export const CreateContestForm = () => {
   const contestApi = useContestApi();
 
   const defaultFormData: CreateContestInput = {
-    name: '',
+    name: "",
     endTime: 0,
-    transactionId: '',
-    address: '',
+    transactionId: "",
+    address: "",
     chainId: chainId ?? 0,
-    tournamentId: currentTournament?.id ?? '',
+    tournamentId: currentTournament?.id ?? "",
     settings: {
       fee: 10,
       maxEntry: 50,
-      contestType: 'PUBLIC',
+      contestType: "PUBLIC",
       chainId: chainId ?? 0,
       paymentTokenAddress: paymentTokenAddress as `0x${string}`,
-      paymentTokenSymbol: paymentTokenBalance?.symbol ?? '',
+      paymentTokenSymbol: paymentTokenBalance?.symbol ?? "",
     },
     description: undefined,
     userGroupId: undefined,
   };
   const [formData, setFormData] = useState<CreateContestInput>(defaultFormData);
-  const [pendingContestData, setPendingContestData] =
-    useState<CreateContestInput | null>(null);
+  const [pendingContestData, setPendingContestData] = useState<CreateContestInput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,17 +87,15 @@ export const CreateContestForm = () => {
   useEffect(() => {
     const createContestInBackend = async () => {
       if (isConfirmed && pendingContestData && sendCallsData?.id) {
+        setLoading(true);
         try {
           // Parse logs from the ContestFactory address
-          const contestFactoryLogs =
-            confirmationData?.receipts?.[0]?.logs?.filter(
-              (log) =>
-                log.address.toLowerCase() ===
-                contestFactoryAddress.toLowerCase()
-            );
+          const contestFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
+            (log) => log.address.toLowerCase() === contestFactoryAddress.toLowerCase()
+          );
           if (!contestFactoryLogs?.length) {
-            console.log('Confirmation data:', confirmationData);
-            throw new Error('No logs found from ContestFactory');
+            console.log("Confirmation data:", confirmationData);
+            throw new Error("No logs found from ContestFactory");
           }
 
           // Decode the logs using the ABI
@@ -98,20 +109,20 @@ export const CreateContestForm = () => {
                 });
                 return decoded;
               } catch (error) {
-                console.error('Error decoding log:', error);
+                console.error("Error decoding log:", error);
                 return null;
               }
             })
             .filter(Boolean);
 
           // Get the contest address from the logs
-          const contestAddress = (decodedLogs[0]?.args as any)?.contest;
+          const contestAddress = (decodedLogs[0]?.args as unknown as { contest: string })?.contest;
           if (!contestAddress) {
-            throw new Error('No contest address found in logs');
+            throw new Error("No contest address found in logs");
           }
 
           // create contest in backend
-          await contestApi.createContest({
+          const contest = await contestApi.createContest({
             ...pendingContestData,
             transactionId: sendCallsData?.id,
             address: contestAddress,
@@ -120,9 +131,12 @@ export const CreateContestForm = () => {
           // Reset form after successful submission
           setFormData(defaultFormData);
           setPendingContestData(null);
+
+          // redirect to contest page
+          navigate(`/contest/${contest.id}`);
         } catch (err) {
-          console.error('Error creating contest in backend:', err);
-          setError('Failed to create contest in backend');
+          console.error("Error creating contest in backend:", err);
+          setError("Failed to create contest in backend");
         } finally {
           setLoading(false);
         }
@@ -135,13 +149,11 @@ export const CreateContestForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setLoading(true);
       setError(null);
 
       // get tournament endTIme, add 7 days
       const endTime =
-        new Date(currentTournament?.endDate ?? '').getTime() +
-        7 * 24 * 60 * 60 * 1000;
+        new Date(currentTournament?.endDate ?? "").getTime() + 7 * 24 * 60 * 60 * 1000;
 
       // Store the form data for later use in the API call
       setPendingContestData({
@@ -149,9 +161,9 @@ export const CreateContestForm = () => {
         endTime,
       });
 
-      console.log('Initiating blockchain transaction with data:', {
+      console.log("Initiating blockchain transaction with data:", {
         name: formData.name,
-        fee: parseUnits(formData.settings?.fee?.toString() ?? '0', 18),
+        fee: parseUnits(formData.settings?.fee?.toString() ?? "0", 18),
         maxEntry: formData.settings?.maxEntry,
         endTime,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
@@ -159,36 +171,34 @@ export const CreateContestForm = () => {
       });
 
       // Execute blockchain transaction
-      const result = sendCalls({
+      sendCalls({
         calls: [
           {
             abi: ContestFactory.abi,
             args: [
               formData.name,
-              parseUnits(formData.settings?.fee?.toString() ?? '0', 18) ?? '0',
-              formData.settings?.maxEntry?.toString() ?? '0',
+              parseUnits(formData.settings?.fee?.toString() ?? "0", 18) ?? "0",
+              formData.settings?.maxEntry?.toString() ?? "0",
               endTime.toString(),
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
             ],
-            functionName: 'createContest',
+            functionName: "createContest",
             to: contestFactoryAddress as `0x${string}`,
           },
         ],
       });
 
-      console.log('Send calls result:', result);
+      // console.log("Send calls result:", result);
     } catch (err) {
-      console.error('Error initiating blockchain transaction:', err);
-      setError('Failed to initiate blockchain transaction');
+      console.error("Error initiating blockchain transaction:", err);
+      setError("Failed to initiate blockchain transaction");
       setLoading(false);
       setPendingContestData(null);
     }
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -197,32 +207,34 @@ export const CreateContestForm = () => {
     }));
   };
 
+  console.log({ loading, isSending, isConfirming });
+
   return (
-    <form onSubmit={handleSubmit} className='space-y-2 max-w-2xl mx-auto p-4'>
-      <div className='space-y-2'>
-        <label htmlFor='name' className='block font-medium'>
+    <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto p-4">
+      <div className="space-y-2">
+        <label htmlFor="name" className="block font-medium">
           Contest Name
         </label>
         <input
-          type='text'
-          id='name'
-          name='name'
+          type="text"
+          id="name"
+          name="name"
           value={formData.name}
           onChange={handleChange}
           required
-          className='w-full p-2 border rounded-md'
+          className="w-full p-2 border rounded-md"
         />
       </div>
 
-      <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-2'>
-          <label htmlFor='settings.maxEntry' className='block font-medium'>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label htmlFor="settings.maxEntry" className="block font-medium">
             Maximum Entries
           </label>
           <input
-            type='number'
-            id='settings.maxEntry'
-            name='settings.maxEntry'
+            type="number"
+            id="settings.maxEntry"
+            name="settings.maxEntry"
             value={formData.settings?.maxEntry ?? 0}
             onChange={(e) => {
               setFormData((prev) => ({
@@ -230,28 +242,28 @@ export const CreateContestForm = () => {
                 settings: {
                   maxEntry: Number(e.target.value),
                   fee: prev.settings?.fee ?? 0,
-                  contestType: prev.settings?.contestType ?? 'PUBLIC',
-                  paymentTokenAddress: prev.settings?.paymentTokenAddress ?? '',
-                  paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? '',
+                  contestType: prev.settings?.contestType ?? "PUBLIC",
+                  paymentTokenAddress: prev.settings?.paymentTokenAddress ?? "",
+                  paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? "",
                   chainId: prev.settings?.chainId ?? 0,
                 },
               }));
             }}
-            min='0'
+            min="0"
             required
-            className='w-full p-2 border rounded-md'
+            className="w-full p-2 border rounded-md"
           />
         </div>
 
-        <div className='space-y-2'>
-          <label htmlFor='settings.fee' className='block font-medium'>
+        <div className="space-y-2">
+          <label htmlFor="settings.fee" className="block font-medium">
             Entry Fee
           </label>
-          <div className='relative'>
+          <div className="relative">
             <input
-              type='number'
-              id='settings.fee'
-              name='settings.fee'
+              type="number"
+              id="settings.fee"
+              name="settings.fee"
               value={formData.settings?.fee ?? 0}
               onChange={(e) => {
                 setFormData((prev) => ({
@@ -259,20 +271,19 @@ export const CreateContestForm = () => {
                   settings: {
                     fee: Number(e.target.value),
                     maxEntry: prev.settings?.maxEntry ?? 0,
-                    contestType: prev.settings?.contestType ?? 'PUBLIC',
-                    paymentTokenAddress:
-                      prev.settings?.paymentTokenAddress ?? '',
-                    paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? '',
+                    contestType: prev.settings?.contestType ?? "PUBLIC",
+                    paymentTokenAddress: prev.settings?.paymentTokenAddress ?? "",
+                    paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? "",
                     chainId: prev.settings?.chainId ?? 0,
                   },
                 }));
               }}
-              min='0'
-              step='0.01'
+              min="0"
+              step="0.01"
               required
-              className='w-full p-2 border rounded-md pr-12'
+              className="w-full p-2 border rounded-md pr-12"
             />
-            <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500'>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
               {paymentTokenBalance?.symbol}
             </div>
           </div>
@@ -281,36 +292,43 @@ export const CreateContestForm = () => {
 
       <div>
         <button
-          type='submit'
+          type="submit"
           disabled={loading || isSending || isConfirming}
-          className='w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed mt-2'>
-          {loading || isSending || isConfirming
-            ? 'Creating...'
-            : 'Create Contest'}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed mt-2"
+        >
+          {loading || isSending || isConfirming ? (
+            <div className="flex items-center gap-2 w-full justify-center">
+              <LoadingSpinnerSmall />
+              {getStatusMessages("idle", isSending, isConfirming)}
+            </div>
+          ) : (
+            "Create Contest"
+          )}
         </button>
       </div>
 
       {/* Add status display */}
-      <div className='mt-4 text-sm text-gray-600'>
-        <div>Transaction Status: {confirmationStatus || 'idle'}</div>
-
-        {error && (
-          <div className='text-red-500 mb-4'>
-            <hr className='my-2' />
-            <div className='text-red-500'>{error}</div>
-          </div>
-        )}
-
-        {sendCallsError && (
-          <div className='text-red-500'>
-            Send Calls Error: {sendCallsError.message}
-          </div>
-        )}
+      <div className="mt-2 text-sm text-center text-red-500">
+        {/* Confirmation error */}
         {confirmationError && (
-          <div className='text-red-500'>
-            Confirmation Error: {confirmationError.message}
+          <div>
+            {(confirmationError as { shortMessage?: string; message: string }).shortMessage ||
+              confirmationError.message}
           </div>
         )}
+
+        {/* Send calls error */}
+        {sendCallsError && (
+          <div>
+            {(sendCallsError as { shortMessage?: string; message: string }).shortMessage ||
+              sendCallsError.message}
+          </div>
+        )}
+
+        {/* Server error */}
+        {error && <div>Server Error: {error}</div>}
+
+        {currentTournament?.id.toString()}
       </div>
     </form>
   );

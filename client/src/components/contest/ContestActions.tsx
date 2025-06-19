@@ -1,9 +1,7 @@
-import React, { useEffect } from 'react';
-import { Contest } from 'src/types.new/contest';
-import { useContestApi } from '../../services/contestApi';
-import { usePortoAuth } from '../../contexts/PortoAuthContext';
+import React, { useEffect } from "react";
+import { Dialog } from "@headlessui/react";
 
-import { decodeEventLog, formatUnits, parseUnits } from 'viem';
+import { formatUnits, parseUnits } from "viem";
 import {
   useBalance,
   useAccount,
@@ -11,29 +9,43 @@ import {
   useWaitForCallsStatus,
   useChainId,
   useReadContract,
-} from 'wagmi';
+} from "wagmi";
+
+import { Contest } from "src/types.new/contest";
+import { useContestApi } from "../../services/contestApi";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // Import contract addresses and ABIs
-import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
-import PlatformTokenContract from '../../utils/contracts/PlatformToken.json';
-import ContestContract from '../../utils/contracts/Contest.json';
+import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
+import ContestContract from "../../utils/contracts/Contest.json";
 
 interface ContestActionsProps {
   contest: Contest;
   onSuccess: (contest: Contest) => void;
 }
 
-export const ContestActions: React.FC<ContestActionsProps> = ({
-  contest,
-  onSuccess,
-}) => {
+// Helper function to get status messages
+const getStatusMessages = (
+  defaultMessage: string = "idle",
+  isUserWaiting: boolean = false,
+  isBlockchainWaiting: boolean = false
+): string => {
+  if (isUserWaiting) {
+    return "Waiting for User...";
+  }
+
+  if (isBlockchainWaiting) {
+    return "Waiting for Blockchain...";
+  }
+
+  return defaultMessage;
+};
+
+export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
   const { currentLineup, user } = usePortoAuth();
   const { addLineupToContest, removeLineupFromContest } = useContestApi();
-  const [error, setError] = React.useState<string | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<
-    'join' | 'leave' | null
-  >(null);
-
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
   const { data: paymentTokenBalance } = useBalance({
@@ -42,6 +54,14 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
     chainId: chainId ?? 0,
   });
 
+  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [submissionError, setSubmissionError] = React.useState<string | null>(null);
+  const [pendingAction, setPendingAction] = React.useState<"join" | "leave" | null>(null);
+  const [warningModal, setWarningModal] = React.useState<{
+    open: boolean;
+    message: string;
+  }>({ open: false, message: "" });
+
   // Define the expected tuple type for details
   type ContestDetailsTuple = [string, bigint, bigint, bigint];
 
@@ -49,10 +69,13 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
   const contestDetailsRaw = useReadContract({
     address: contest.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: 'details',
+    functionName: "details",
     args: [],
   }).data as ContestDetailsTuple | undefined;
-  const displayFee = formatUnits((contestDetailsRaw as any)?.[1] ?? 0n, 18);
+  const displayFee = formatUnits(
+    (contestDetailsRaw as unknown as ContestDetailsTuple)?.[1] ?? 0n,
+    18
+  );
 
   const {
     sendCalls,
@@ -64,17 +87,26 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
-    status: confirmationStatus,
-    data: confirmationData,
+    // status: confirmationStatus,
+    // data: confirmationData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
 
   // find user lineup in contest
-  const userContestLineup = contest?.contestLineups?.find(
-    (lineup) => lineup.userId === user?.id
-  );
+  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
   const userInContest = userContestLineup?.userId === user?.id;
+
+  // Helper: check if user has enough balance
+  const hasEnoughBalance = React.useMemo(() => {
+    if (!paymentTokenBalance || !contest.settings?.fee) return false;
+    try {
+      // paymentTokenBalance.value is a BigInt
+      return paymentTokenBalance.value >= parseUnits(contest.settings.fee.toString(), 18);
+    } catch {
+      return false;
+    }
+  }, [paymentTokenBalance, contest.settings?.fee]);
 
   // Effect to handle API call after blockchain confirmation
   useEffect(() => {
@@ -82,24 +114,21 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
       if (isConfirmed && pendingAction && sendCallsData?.id) {
         try {
           let updatedContest;
-          if (pendingAction === 'join') {
+          if (pendingAction === "join") {
             updatedContest = await addLineupToContest(contest.id, {
-              tournamentLineupId: currentLineup?.id ?? '',
+              tournamentLineupId: currentLineup?.id ?? "",
             });
-          } else if (pendingAction === 'leave') {
-            updatedContest = await removeLineupFromContest(
-              contest.id,
-              userContestLineup?.id ?? ''
-            );
+          } else if (pendingAction === "leave") {
+            updatedContest = await removeLineupFromContest(contest.id, userContestLineup?.id ?? "");
           }
 
           if (updatedContest) {
             onSuccess(updatedContest);
           }
         } catch (err) {
-          setError(
+          setServerError(
             `Failed to ${pendingAction} contest: ${
-              err instanceof Error ? err.message : 'Unknown error'
+              err instanceof Error ? err.message : "Unknown error"
             }`
           );
         } finally {
@@ -123,46 +152,51 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
 
   const handleJoinContest = async () => {
     if (!currentLineup) {
-      setError('No tournament lineup found');
+      setWarningModal({
+        open: true,
+        message:
+          'You must create a lineup before joining the contest. Navigate to "Lineup" page and select 0-4 golfers',
+      });
+      return;
+    }
+    if (!hasEnoughBalance) {
+      setWarningModal({
+        open: true,
+        message: `You do not have enough ${
+          contest?.settings?.paymentTokenSymbol || "tokens"
+        } to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
+      });
       return;
     }
     try {
-      setError(null);
-      setPendingAction('join');
-
-      console.log('Approving token transfer:', {
-        fee: contest.settings?.fee?.toString(),
-        amount: parseUnits(contest.settings?.fee?.toString() ?? '0', 18),
-      });
+      setPendingAction("join");
 
       // Execute blockchain transaction with both approval and transfer
-      const result = await sendCalls({
+      await sendCalls({
         calls: [
           {
             abi: PlatformTokenContract.abi,
             args: [
               contest.address as `0x${string}`,
-              parseUnits(contest.settings?.fee?.toString() ?? '0', 18),
+              parseUnits(contest.settings?.fee?.toString() ?? "0", 18),
             ],
-            functionName: 'approve',
+            functionName: "approve",
             to: paymentTokenAddress as `0x${string}`,
           },
           {
             abi: ContestContract.abi,
             args: [],
-            functionName: 'enter',
+            functionName: "enter",
             to: contest.address as `0x${string}`,
           },
         ],
       });
 
-      console.log('Join contest transaction:', result);
+      // console.log("Join contest transaction:", result);
     } catch (err) {
-      console.error('Error joining contest:', err);
-      setError(
-        `Failed to join contest: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
+      console.error("Error joining contest:", err);
+      setSubmissionError(
+        `Failed to join contest: ${err instanceof Error ? err.message : "Unknown error"}`
       );
       setPendingAction(null);
     }
@@ -170,72 +204,113 @@ export const ContestActions: React.FC<ContestActionsProps> = ({
 
   const handleLeaveContest = async () => {
     try {
-      setError(null);
-      setPendingAction('leave');
+      setPendingAction("leave");
 
       // Execute blockchain transaction
-      const result = await sendCalls({
+      await sendCalls({
         calls: [
           {
             abi: ContestContract.abi,
             args: [],
-            functionName: 'leave',
+            functionName: "leave",
             to: contest.address as `0x${string}`,
           },
         ],
       });
 
-      console.log('Leave contest transaction:', result);
+      // console.log("Leave contest transaction:", result);
     } catch (err) {
-      console.error('Error leaving contest:', err);
-      setError(
-        `Failed to leave contest: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
+      console.error("Error leaving contest:", err);
+      setSubmissionError(
+        `Failed to leave contest: ${err instanceof Error ? err.message : "Unknown error"}`
       );
       setPendingAction(null);
     }
   };
 
-  if (error) {
-    return <div className='text-red-500'>{error}</div>;
-  }
-
   return (
-    <div className='flex flex-col gap-2'>
+    <div className="flex flex-col gap-2">
+      {/* Warning Modal */}
+      <Dialog
+        open={warningModal.open}
+        onClose={() => setWarningModal({ open: false, message: "" })}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-md w-full bg-white rounded-xl shadow-lg">
+            <div className="p-6">
+              <Dialog.Title className="text-lg font-semibold text-red-600 mb-2">
+                Warning
+              </Dialog.Title>
+              <div className="text-gray-800 mb-4">{warningModal.message}</div>
+              <button
+                onClick={() => setWarningModal({ open: false, message: "" })}
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+              >
+                Close
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Buttons */}
       {userInContest ? (
         <button
-          className='mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
+          className="mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
           onClick={handleLeaveContest}
-          disabled={!userInContest || isSending || isConfirming}>
-          {isSending || isConfirming ? 'Leaving...' : 'Leave Contest'}
+          disabled={!userInContest || isSending || isConfirming}
+        >
+          {isSending || isConfirming ? (
+            <div className="flex items-center gap-2 w-full justify-center">
+              <LoadingSpinnerSmall />
+              {getStatusMessages("idle", isSending, isConfirming)}
+            </div>
+          ) : (
+            "Leave Contest"
+          )}
         </button>
       ) : (
         <button
-          className='mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50'
+          className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
           onClick={handleJoinContest}
-          disabled={
-            userInContest || !currentLineup || isSending || isConfirming
-          }>
-          {isSending || isConfirming
-            ? 'Joining...'
-            : `Join Contest - ${displayFee} ${contest?.settings?.paymentTokenSymbol}`}
+          disabled={userInContest || !currentLineup || isSending || isConfirming}
+        >
+          {isSending || isConfirming ? (
+            <div className="flex items-center gap-2 w-full justify-center">
+              <LoadingSpinnerSmall />
+              {getStatusMessages("idle", isSending, isConfirming)}
+            </div>
+          ) : (
+            `Join Contest - ${displayFee} ${paymentTokenBalance?.symbol}`
+          )}
         </button>
       )}
 
       {/* Add status display */}
-      <div className='mt-2 text-sm text-gray-600'>
-        <div>Transaction Status: {confirmationStatus || 'idle'}</div>
-        {sendCallsError && (
-          <div className='text-red-500'>
-            Send Calls Error: {sendCallsError.message}
-          </div>
-        )}
+      <div className="mt-2 text-sm text-center text-red-500">
+        {/* Submission error */}
+        {submissionError && <div>Submission Error: {submissionError}</div>}
+
+        {/* Confirmation error */}
         {confirmationError && (
-          <div className='text-red-500'>
-            Confirmation Error: {confirmationError.message}
+          <div>
+            {(confirmationError as { shortMessage?: string; message: string }).shortMessage ||
+              confirmationError.message}
           </div>
         )}
+
+        {/* Send calls error */}
+        {sendCallsError && (
+          <div>
+            {(sendCallsError as { shortMessage?: string; message: string }).shortMessage ||
+              sendCallsError.message}
+          </div>
+        )}
+
+        {/* Server error */}
+        {serverError && <div>Server Error: {serverError}</div>}
       </div>
     </div>
   );
