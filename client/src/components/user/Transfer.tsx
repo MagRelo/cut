@@ -1,26 +1,19 @@
-import { useState } from 'react';
-import {
-  useSendCalls,
-  useWaitForCallsStatus,
-  useAccount,
-  useBalance,
-} from 'wagmi';
-import { formatUnits, parseEther } from 'viem';
-import { paymentTokenAddress } from '../../utils/contracts/sepolia.json';
-import PlatformToken from '../../utils/contracts/PlatformToken.json';
-import { PageHeader } from '../util/PageHeader';
+import { useState } from "react";
+import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
+import { formatUnits, parseEther } from "viem";
+import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import PlatformToken from "../../utils/contracts/PlatformToken.json";
 
 export const Transfer = () => {
   const { address, isConnected } = useAccount();
 
-  const [recipientAddress, setRecipientAddress] = useState('');
-  const [amount, setAmount] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [amount, setAmount] = useState("");
 
   const { data, isPending, sendCalls, error } = useSendCalls();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForCallsStatus({
-      id: data?.id,
-    });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
+    id: data?.id,
+  });
 
   const paymentTokenBalance = useBalance({
     address,
@@ -37,7 +30,7 @@ export const Transfer = () => {
         {
           abi: PlatformToken.abi,
           args: [recipientAddress, parseEther(amount)],
-          functionName: 'transfer',
+          functionName: "transfer",
           to: paymentTokenAddress as `0x${string}`,
         },
       ];
@@ -46,7 +39,7 @@ export const Transfer = () => {
         calls,
       });
     } catch (error) {
-      console.error('Error sending transfer:', error);
+      console.error("Error sending transfer:", error);
     }
   };
 
@@ -56,75 +49,70 @@ export const Transfer = () => {
   };
 
   return (
-    <div className=''>
-      <p className='text-sm text-gray-500 mb-2'>
-        Use this form to transfer credits directly to another user. This cannot
-        be undone.
+    <div className="">
+      <p className="text-sm text-gray-500 mb-2">
+        Use this form to transfer credits directly to another user. This cannot be undone.
       </p>
 
-      <hr className='my-4' />
+      <hr className="my-4" />
 
-      <div className='space-y-4'>
+      <div className="space-y-4">
         <div>
-          <div className='grid grid-cols-[100px_1fr] gap-2'>
-            <div className='font-medium'>Available:</div>
+          <div className="grid grid-cols-[100px_1fr] gap-2">
+            <div className="font-medium">Available:</div>
 
             <div>
-              {formattedBalance(paymentTokenBalance.data?.value ?? 0n)}{' '}
+              {formattedBalance(paymentTokenBalance.data?.value ?? 0n)}{" "}
               {paymentTokenBalance.data?.symbol}
             </div>
           </div>
         </div>
 
-        <div className='space-y-4'>
+        <div className="space-y-4">
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Recipient Address
             </label>
             <input
-              type='text'
+              type="text"
               value={recipientAddress}
               onChange={(e) => setRecipientAddress(e.target.value)}
-              placeholder='0x...'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder="0x..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Amount
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
             <input
-              type='number'
+              type="number"
               value={amount}
-              step='0.01'
+              step="0.01"
               max={formattedBalance(paymentTokenBalance.data?.value ?? 0n)}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder='0.0'
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder="0.0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <div className='flex space-x-4'>
+          <div className="flex space-x-4">
             <button
               onClick={handleTransfer}
-              disabled={
-                !recipientAddress || !amount || isPending || isConfirming
-              }
-              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'>
+              disabled={!recipientAddress || !amount || isPending || isConfirming}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
               {isPending
-                ? 'Check prompt'
+                ? "Check prompt"
                 : isConfirming
-                ? 'Completing transfer'
-                : 'Transfer Tokens'}
+                ? "Completing transfer"
+                : "Transfer Tokens"}
             </button>
           </div>
         </div>
       </div>
 
-      <div className='text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4'>
-        Status: {isConfirmed ? 'Transfer Confirmed' : 'Not Confirmed'}{' '}
-        {error && error.message}
+      <div className="text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4">
+        Status: {isConfirmed ? "Transfer Confirmed" : "Not Confirmed"} {error && error.message}
       </div>
     </div>
   );

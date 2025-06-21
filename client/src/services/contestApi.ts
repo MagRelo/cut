@@ -1,21 +1,15 @@
-import { useCallback, useMemo } from 'react';
-import { type Contest } from '../types.new/contest';
-import { type ContestLineup } from '../types.new/lineup';
-import apiClient from '../utils/apiClient';
+import { useCallback, useMemo } from "react";
+import { type Contest } from "../types.new/contest";
+// import { type ContestLineup } from '../types.new/lineup';
+import apiClient from "../utils/apiClient";
 
 export const useContestApi = () => {
-  const getAllContests = useCallback(
-    () => apiClient.get<Contest[]>('/contests'),
-    []
-  );
+  const getAllContests = useCallback(() => apiClient.get<Contest[]>("/contests"), []);
 
-  const getContestById = useCallback(
-    (id: string) => apiClient.get<Contest>(`/contests/${id}`),
-    []
-  );
+  const getContestById = useCallback((id: string) => apiClient.get<Contest>(`/contests/${id}`), []);
 
   const createContest = useCallback(
-    (data: Partial<Contest>) => apiClient.post<Contest>('/contests', data),
+    (data: Partial<Contest>) => apiClient.post<Contest>("/contests", data),
     []
   );
 

@@ -1,14 +1,7 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useMemo,
-} from 'react';
-import { type Tournament } from '../types.new/tournament';
-import { type PlayerWithTournamentData } from '../types.new/player';
-import { useTournamentApi } from '../services/tournamentApi';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { type Tournament } from "../types.new/tournament";
+import { type PlayerWithTournamentData } from "../types.new/player";
+import { useTournamentApi } from "../services/tournamentApi";
 
 interface TournamentContextType {
   currentTournament: Tournament | null;
@@ -18,18 +11,14 @@ interface TournamentContextType {
   error: Error | null;
 }
 
-const TournamentContext = createContext<TournamentContextType | undefined>(
-  undefined
-);
+const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 interface TournamentProviderProps {
   children: ReactNode;
 }
 
 export function TournamentProvider({ children }: TournamentProviderProps) {
-  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(
-    null
-  );
+  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
   const [players, setPlayers] = useState<PlayerWithTournamentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -45,8 +34,7 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
         setError(null);
 
         // Fetch current tournament and players in parallel
-        const { tournament, players } =
-          await tournamentApi.getCurrentTournament();
+        const { tournament, players } = await tournamentApi.getCurrentTournament();
 
         if (isMounted) {
           setCurrentTournament(tournament);
@@ -54,11 +42,7 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
         }
       } catch (err) {
         if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err
-              : new Error('Failed to fetch tournament data')
-          );
+          setError(err instanceof Error ? err : new Error("Failed to fetch tournament data"));
         }
       } finally {
         if (isMounted) {
@@ -85,17 +69,13 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
     [currentTournament, players, isLoading, error]
   );
 
-  return (
-    <TournamentContext.Provider value={value}>
-      {children}
-    </TournamentContext.Provider>
-  );
+  return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
 }
 
 export function useTournament() {
   const context = useContext(TournamentContext);
   if (context === undefined) {
-    throw new Error('useTournament must be used within a TournamentProvider');
+    throw new Error("useTournament must be used within a TournamentProvider");
   }
   return context;
 }

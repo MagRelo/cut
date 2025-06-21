@@ -1,22 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { PlayerSelectionCard } from './PlayerSelectionCard';
-import { PlayerSelectionModal } from './PlayerSelectionModal';
-import { useTournament } from '../../contexts/TournamentContext';
-import { usePortoAuth } from '../../contexts/PortoAuthContext';
-import { type TournamentLineup } from '../../types.new/player';
-import { ErrorMessage } from '../util/ErrorMessage';
+import React, { useState, useEffect } from "react";
+import { PlayerSelectionCard } from "./PlayerSelectionCard";
+import { PlayerSelectionModal } from "./PlayerSelectionModal";
+import { useTournament } from "../../contexts/TournamentContext";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { ErrorMessage } from "../util/ErrorMessage";
 // import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
-import { PlayerDisplayCard } from '../player/PlayerDisplayCard';
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/react';
-import { TournamentPreview } from './TournamentPreview';
+import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
+import { TournamentPreview } from "./TournamentPreview";
 
 interface TournamentLineupFormProps {
   onUpdateLineup?: (playerIds: string[]) => Promise<void>;
 }
 
-export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
-  onUpdateLineup,
-}) => {
+export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
   const { loading: isAuthLoading } = usePortoAuth();
   const {
     players: fieldPlayers,
@@ -24,13 +21,10 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     isLoading: isTournamentLoading,
   } = useTournament();
 
-  const { getLineup, updateLineup, currentLineup, lineupError } =
-    usePortoAuth();
+  const { getLineup, updateLineup, currentLineup, lineupError } = usePortoAuth();
 
   // Local State
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(
-    null
-  );
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchLineup = async () => {
@@ -38,7 +32,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
         try {
           await getLineup(currentTournament.id);
         } catch (error) {
-          console.error('Failed to fetch lineup:', error);
+          console.error("Failed to fetch lineup:", error);
         }
       }
     };
@@ -65,9 +59,9 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
     const playerIds = newPlayers.map((p) => p.id);
 
     try {
-      await updateLineup(currentTournament?.id || '', playerIds);
+      await updateLineup(currentTournament?.id || "", playerIds);
     } catch (error) {
-      console.error('Failed to update lineup:', error);
+      console.error("Failed to update lineup:", error);
     }
 
     setSelectedPlayerIndex(null);
@@ -75,7 +69,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
 
   const isEditingAllowed = (): boolean => {
     // return true;
-    return !currentTournament || currentTournament.status === 'NOT_STARTED';
+    return !currentTournament || currentTournament.status === "NOT_STARTED";
   };
 
   const handleCardClick = (index: number) => {
@@ -85,46 +79,44 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
   };
 
   if (isAuthLoading || isTournamentLoading) {
-    return <div className='p-4'>Loading...</div>;
+    return <div className="p-4">Loading...</div>;
   }
 
   if (lineupError) {
     return (
-      <div className='p-4'>
+      <div className="p-4">
         <ErrorMessage message={lineupError} />
       </div>
     );
   }
 
   return (
-    <div className='bg-white p-4 rounded-lg shadow-md pb-6'>
+    <div className="bg-white p-4 rounded-lg shadow-md pb-6">
       {/* tournament Summary */}
-      <div className='mb-4 flex flex-col '>
-        <h1 className='mt-1 text-3xl font-bold tracking-tight text-gray-700'>
+      <div className="mb-4 flex flex-col ">
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-700">
           {currentTournament?.name}
         </h1>
 
-        <h2 className='text-lg font-medium text-gray-700'>
-          {currentTournament?.course}
-        </h2>
+        <h2 className="text-lg font-medium text-gray-700">{currentTournament?.course}</h2>
 
-        <p className='text-sm font-medium text-gray-500 tracking-wide'>
-          {currentTournament?.roundDisplay} -{' '}
-          {currentTournament?.roundStatusDisplay}
+        <p className="text-sm font-medium text-gray-500 tracking-wide">
+          {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
         </p>
       </div>
 
       <TabGroup defaultIndex={0}>
-        <TabList className='flex space-x-1 rounded-xl bg-gray-100 p-1 mb-4'>
+        <TabList className="flex space-x-1 rounded-xl bg-gray-100 p-1 mb-4">
           <Tab
             className={({ selected }) =>
               `w-full rounded-lg py-2.5 text-sm font-medium leading-5
               ${
                 selected
-                  ? 'bg-white text-emerald-600 shadow'
-                  : 'text-gray-600 hover:bg-white/[0.12] hover:text-emerald-500'
+                  ? "bg-white text-emerald-600 shadow"
+                  : "text-gray-600 hover:bg-white/[0.12] hover:text-emerald-500"
               }`
-            }>
+            }
+          >
             Lineup
           </Tab>
           <Tab
@@ -132,27 +124,28 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
               `w-full rounded-lg py-2.5 text-sm font-medium leading-5
               ${
                 selected
-                  ? 'bg-white text-emerald-600 shadow'
-                  : 'text-gray-600 hover:bg-white/[0.12] hover:text-emerald-500'
+                  ? "bg-white text-emerald-600 shadow"
+                  : "text-gray-600 hover:bg-white/[0.12] hover:text-emerald-500"
               }`
-            }>
+            }
+          >
             Preview
           </Tab>
         </TabList>
 
         <TabPanels>
           <TabPanel>
-            <div className='flex flex-col gap-4'>
+            <div className="flex flex-col gap-4">
               {/* lineup open */}
               {isEditingAllowed() && (
-                <div className='flex flex-col gap-4'>
+                <div className="flex flex-col gap-4">
                   {Array.from({ length: 4 }).map((_, index) => (
                     <PlayerSelectionCard
                       key={`slot-${index}`}
                       player={currentLineup?.players[index] || null}
                       isSelected={false}
                       onClick={() => handleCardClick(index)}
-                      iconType='pencil'
+                      iconType="pencil"
                     />
                   ))}
                 </div>
@@ -160,19 +153,20 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
 
               {/* lineup closed */}
               {!isEditingAllowed() && (
-                <div className='flex flex-col gap-4'>
+                <div className="flex flex-col gap-4">
                   {Array.from({ length: 4 }).map((_, index) => {
                     const player = currentLineup?.players[index];
                     return player ? (
                       <PlayerDisplayCard
                         key={`slot-${index}`}
                         player={player}
-                        roundDisplay={currentTournament?.roundDisplay || ''}
+                        roundDisplay={currentTournament?.roundDisplay || ""}
                       />
                     ) : (
                       <div
                         key={`slot-${index}`}
-                        className='h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400'>
+                        className="h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400"
+                      >
                         Empty Slot
                       </div>
                     );
@@ -182,8 +176,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({
             </div>
           </TabPanel>
           <TabPanel>
-            <div className='flex flex-col gap-4'>
-              <div className='max-h-[62vh] overflow-y-auto pt-4 px-2 pb-8 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.06)] border border-gray-100 rounded-lg'>
+            <div className="flex flex-col gap-4">
+              <div className="max-h-[62vh] overflow-y-auto pt-4 px-2 pb-8 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.06)] border border-gray-100 rounded-lg">
                 <TournamentPreview />
               </div>
             </div>

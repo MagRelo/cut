@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,37 +8,40 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import type { TimelineData } from '../services/leagueApi';
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+// import type { TimelineData } from "../types.new/team";
+
+// Temporary type definition until the proper type is restored
+interface TimelineData {
+  teams: Array<{
+    name: string;
+    color: string;
+    dataPoints: Array<{
+      timestamp: string;
+      score: number;
+      roundNumber?: number;
+    }>;
+  }>;
+}
 
 // Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface TimelineProps {
   className?: string;
   timelineData: TimelineData;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({
-  className = '',
-  timelineData,
-}) => {
+export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData }) => {
   if (!timelineData) {
     return (
       <div className={className}>
         <div
-          className='bg-white rounded-lg shadow-sm p-4 flex items-center justify-center'
-          style={{ height: '200px' }}>
-          <div className='text-red-500'>No timeline data provided</div>
+          className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-center"
+          style={{ height: "200px" }}
+        >
+          <div className="text-red-500">No timeline data provided</div>
         </div>
       </div>
     );
@@ -55,39 +58,29 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Generate labels: only the first occurrence of each round gets a label
   const seenRounds = new Set<string>();
-  const labels = [
-    ...new Set(
-      topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp))
-    ),
-  ]
+  const labels = [...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp)))]
     .sort()
     .map((timestamp) => {
       const dataPoint = topTeams
         .flatMap((team) => team.dataPoints)
         .find((dp) => dp.timestamp === timestamp);
-      const roundLabel = dataPoint?.roundNumber
-        ? `Round ${dataPoint.roundNumber}`
-        : '';
+      const roundLabel = dataPoint?.roundNumber ? `Round ${dataPoint.roundNumber}` : "";
       if (roundLabel && !seenRounds.has(roundLabel)) {
         seenRounds.add(roundLabel);
         return roundLabel;
       }
-      return '';
+      return "";
     });
 
   const data = {
     labels,
     datasets: topTeams.map((team) => {
       // Create a map of timestamps to scores for this team
-      const scoreMap = new Map(
-        team.dataPoints.map((dp) => [dp.timestamp, dp.score])
-      );
+      const scoreMap = new Map(team.dataPoints.map((dp) => [dp.timestamp, dp.score]));
 
       // Get all unique timestamps
       const allTimestamps = [
-        ...new Set(
-          topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))
-        ),
+        ...new Set(topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))),
       ].sort();
 
       return {
@@ -117,11 +110,11 @@ export const Timeline: React.FC<TimelineProps> = ({
     },
     scales: {
       x: {
-        type: 'category' as const,
+        type: "category" as const,
         display: true,
         title: {
           display: false,
-          text: 'Round',
+          text: "Round",
         },
         grid: {
           display: false,
@@ -129,7 +122,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         ticks: {
           display: true,
           font: {
-            family: 'Inter, system-ui, -apple-system, sans-serif',
+            family: "Inter, system-ui, -apple-system, sans-serif",
             size: 9,
           },
           maxRotation: 0,
@@ -141,14 +134,14 @@ export const Timeline: React.FC<TimelineProps> = ({
         display: true,
         title: {
           display: false,
-          text: 'Score',
+          text: "Score",
         },
         grid: {
-          color: '#e5e7eb',
+          color: "#e5e7eb",
         },
         ticks: {
           font: {
-            family: 'Inter, system-ui, -apple-system, sans-serif',
+            family: "Inter, system-ui, -apple-system, sans-serif",
             size: 9,
           },
         },
@@ -159,8 +152,9 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className={className}>
       <div
-        className='bg-white border border-gray-100 p-4 pb-3 timeline-chart'
-        style={{ height: '250px' }}>
+        className="bg-white border border-gray-100 p-4 pb-3 timeline-chart"
+        style={{ height: "250px" }}
+      >
         <Line data={data} options={options} />
       </div>
     </div>

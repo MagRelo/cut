@@ -134,7 +134,9 @@ export const ContestLineupCard: React.FC<ContestLineupCardProps> = ({
 
               <span
                 className="inline-block w-4 h-4 rounded-full mr-2"
-                style={{ backgroundColor: contestLineup.user?.settings?.color || "#00FF00" }}
+                style={{
+                  backgroundColor: (contestLineup.user?.settings?.color as string) || "#00FF00",
+                }}
                 aria-label="Lineup color"
               />
               <span className="text-xl font-bold text-gray-900">{contestLineup.user?.name}</span>

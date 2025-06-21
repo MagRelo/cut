@@ -5,36 +5,30 @@ import {
   useBalance,
   useConnect,
   useDisconnect,
-} from 'wagmi';
+} from "wagmi";
 
-import { parseEther } from 'viem';
+import { parseEther } from "viem";
 
 // import { exp1Config, expNftConfig } from '../utils/contracts';
 
-import {
-  contestFactoryAddress,
-  paymentTokenAddress,
-} from '../utils/contracts/sepolia.json';
+import { contestFactoryAddress, paymentTokenAddress } from "../utils/contracts/sepolia.json";
 
-import ContestFactory from '../utils/contracts/ContestFactory.json';
-import PlatformToken from '../utils/contracts/PlatformToken.json';
-import Contest from '../utils/contracts/Contest.json';
-
-// approve entry fee from PlatformToken, joinContest
-const createContenst = [];
+// import ContestFactory from '../utils/contracts/ContestFactory.json';
+import PlatformToken from "../utils/contracts/PlatformToken.json";
+import Contest from "../utils/contracts/Contest.json";
 
 // approve entry fee from PlatformToken, joinContest
 const joinContest = (contestAddress: `0x${string}`, entryFee: string) => [
   {
     abi: PlatformToken.abi,
     args: [paymentTokenAddress, parseEther(entryFee)],
-    functionName: 'approve',
+    functionName: "approve",
     to: paymentTokenAddress as `0x${string}`,
   },
   {
     abi: Contest.abi,
     args: [],
-    functionName: 'enter',
+    functionName: "enter",
     to: contestAddress,
   },
 ];
@@ -46,25 +40,24 @@ export const Web3Test = () => {
 
   const { data, isPending, sendCalls, error } = useSendCalls();
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForCallsStatus({
-      id: data?.id,
-    });
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
+    id: data?.id,
+  });
 
   const handleTestCall = async () => {
     if (!isConnected) {
-      console.log('Please connect your wallet first');
+      console.log("Please connect your wallet first");
       return;
     }
 
-    const newCalls = joinContest('0x...' as `0x${string}`, '10');
+    const newCalls = joinContest("0x..." as `0x${string}`, "10");
 
     try {
       sendCalls({
         calls: newCalls,
       });
     } catch (error) {
-      console.error('Error sending calls:', error);
+      console.error("Error sending calls:", error);
     }
   };
 
@@ -76,71 +69,71 @@ export const Web3Test = () => {
   console.log(address);
 
   return (
-    <div className='p-6 bg-white rounded-lg shadow-md'>
-      <h1 className='text-2xl font-bold mb-4'>Web3 Test Page</h1>
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Web3 Test Page</h1>
 
-      <div className='space-y-4'>
+      <div className="space-y-4">
         <div>
-          <p className='mb-2'>
-            Connection Status: {isConnected ? 'Connected' : 'Disconnected'}
-          </p>
+          <p className="mb-2">Connection Status: {isConnected ? "Connected" : "Disconnected"}</p>
           {address && (
-            <p className='mb-2'>
+            <p className="mb-2">
               Address: {address.slice(0, 8)}...{address.slice(-4)}
             </p>
           )}
 
-          <p className='mb-2'>
+          <p className="mb-2">
             Payment Token: {paymentTokenAddress.slice(0, 8)}...
             {paymentTokenAddress.slice(-4)}
           </p>
 
-          <p className='mb-2'>
-            Payment Balance:{' '}
+          <p className="mb-2">
+            Payment Balance:{" "}
             {paymentTokenBalance.isLoading
-              ? 'Loading...'
+              ? "Loading..."
               : paymentTokenBalance.data
               ? `${paymentTokenBalance.data.formatted} ${paymentTokenBalance.data.symbol}`
-              : 'No balance data'}
+              : "No balance data"}
           </p>
 
-          <p className='mb-2'>
+          <p className="mb-2">
             Contest Factory: {contestFactoryAddress.slice(0, 8)}...
             {contestFactoryAddress.slice(-4)}
           </p>
         </div>
 
-        <div className='space-x-4'>
+        <div className="space-x-4">
           {!isConnected ? (
             <button
               onClick={() => connect({ connector: connectors[0] })}
-              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'>
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
               Connect Wallet
             </button>
           ) : (
             <>
               <button
                 onClick={() => disconnect()}
-                className='px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors'>
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              >
                 Disconnect
               </button>
               <button
                 onClick={handleTestCall}
-                className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'>
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
                 {isPending
-                  ? 'Check prompt'
+                  ? "Check prompt"
                   : isConfirming
-                  ? 'Completing purchase'
-                  : 'Make Test Call'}
+                  ? "Completing purchase"
+                  : "Make Test Call"}
               </button>
             </>
           )}
         </div>
       </div>
 
-      <div className='text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4'>
-        Status: {isConfirmed ? 'Confirmed' : 'Not Confirmed'}{' '}
-        {error && error.message}
+      <div className="text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4">
+        Status: {isConfirmed ? "Confirmed" : "Not Confirmed"} {error && error.message}
       </div>
     </div>
   );
