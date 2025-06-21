@@ -327,8 +327,6 @@ export const CreateContestForm = () => {
 
         {/* Server error */}
         {error && <div>Server Error: {error}</div>}
-
-        {currentTournament?.id.toString()}
       </div>
     </form>
   );

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import { formatOrdinal } from "../utils/formatting";
 
 import { Contest } from "src/types.new/contest";
 
@@ -9,7 +10,7 @@ import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { ContestActions } from "../components/contest/ContestActions";
-// import { PlayerTable } from '../components/player/PlayerTable';
+import { ContestLineupCard } from "../components/team/ContestLineupCard";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -70,6 +71,7 @@ export const ContestLobby: React.FC = () => {
 
   return (
     <div className="space-y-2 p-4">
+      {/* breadcrumbs */}
       <Breadcrumbs
         items={[
           { label: "Contests", path: "/contests" },
@@ -77,13 +79,25 @@ export const ContestLobby: React.FC = () => {
         ]}
       />
 
+      {/* contest lobby */}
       <div className="bg-white rounded-lg shadow">
         {/* header */}
         <div className="px-4 py-2">
-          <h3 className="text-2xl font-semibold text-gray-800">{contest?.name}</h3>
-          <p className="text-gray-600 font-medium text-sm">{contest?.tournament?.name ?? ""}</p>
+          <h3 className="text-2xl font-semibold text-gray-800">
+            {contest?.settings?.fee} {contest?.settings?.paymentTokenSymbol} -{" "}
+            {contest?.tournament?.name}
+          </h3>
+          <p className="text-gray-600 font-medium text-sm">{contest?.tournament?.status ?? ""}</p>
+          <p className="text-gray-600 font-medium text-sm">
+            Pot:{" "}
+            {contest?.settings?.maxEntry
+              ? Number(contest?.contestLineups?.length) * Number(contest?.settings?.fee)
+              : 0}{" "}
+            {contest?.settings?.paymentTokenSymbol}
+          </p>
         </div>
 
+        {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
@@ -113,15 +127,23 @@ export const ContestLobby: React.FC = () => {
               Details
             </Tab>
           </TabList>
-          <div className="p-6">
+          <div className="p-4">
             <TabPanel>
               {userInContest ? (
                 <div>
                   {contest?.contestLineups?.map((contestLineup) => (
-                    <div key={contestLineup.id}>
-                      <div className="flex justify-between items-center w-full">
-                        <span className="font-medium">{contestLineup.user?.name}</span>
-                        <span className="font-semibold">{contestLineup.score || 40}</span>
+                    <div className="flex items-center gap-4 mb-2">
+                      <span className="text-xl text-gray-400 font-bold flex-shrink-0">
+                        {formatOrdinal(contestLineup.position)}
+                      </span>
+
+                      <div className="flex-1">
+                        <ContestLineupCard
+                          key={contestLineup.id}
+                          contestLineup={contestLineup}
+                          roundDisplay={contest?.tournament?.roundDisplay}
+                          tournamentStatus={contest?.tournament?.status}
+                        />
                       </div>
                     </div>
                   ))}
