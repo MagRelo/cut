@@ -8,7 +8,6 @@ import { useContestApi } from "../services/contestApi";
 import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useTournament } from "../contexts/TournamentContext";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -20,8 +19,6 @@ export const Contests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const contestApi = useContestApi();
   const { user } = usePortoAuth();
-  const { currentTournament } = useTournament();
-  const preTournament = currentTournament?.status === "NOT_STARTED";
 
   useEffect(() => {
     const fetchContests = async () => {
@@ -126,32 +123,17 @@ export const Contests: React.FC = () => {
           </TabList>
           <div className="p-4">
             <TabPanel>
-              <ContestList
-                contests={userActiveContests}
-                loading={loading}
-                error={error}
-                preTournament={preTournament}
-              />
+              <ContestList contests={userActiveContests} loading={loading} error={error} />
             </TabPanel>
             <TabPanel>
-              <ContestList
-                contests={contests}
-                loading={loading}
-                error={error}
-                preTournament={true}
-              />
+              <ContestList contests={contests} loading={loading} error={error} />
             </TabPanel>
             <TabPanel>
               <div className="text-gray-600">Groups will be listed here.</div>
             </TabPanel>
             <TabPanel>
               <div className="text-gray-600">
-                <ContestList
-                  contests={userClosedContests}
-                  loading={loading}
-                  error={error}
-                  preTournament={preTournament}
-                />
+                <ContestList contests={userClosedContests} loading={loading} error={error} />
               </div>
             </TabPanel>
           </div>

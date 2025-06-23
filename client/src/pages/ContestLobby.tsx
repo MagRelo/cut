@@ -11,6 +11,7 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
+import { ContestCard } from "../components/contest/ContestCard";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -82,20 +83,7 @@ export const ContestLobby: React.FC = () => {
       {/* contest lobby */}
       <div className="bg-white rounded-lg shadow">
         {/* header */}
-        <div className="px-4 py-2">
-          <h3 className="text-2xl font-semibold text-gray-800">
-            {contest?.settings?.fee} {contest?.settings?.paymentTokenSymbol} -{" "}
-            {contest?.tournament?.name}
-          </h3>
-          <p className="text-gray-600 font-medium text-sm">{contest?.tournament?.status ?? ""}</p>
-          <p className="text-gray-600 font-medium text-sm">
-            Pot:{" "}
-            {contest?.settings?.maxEntry
-              ? Number(contest?.contestLineups?.length) * Number(contest?.settings?.fee)
-              : 0}{" "}
-            {contest?.settings?.paymentTokenSymbol}
-          </p>
-        </div>
+        <ContestCard contest={contest} />
 
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
@@ -149,7 +137,11 @@ export const ContestLobby: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <ContestActions contest={contest} onSuccess={setContest} />
+                <>
+                  {contest && contest?.tournament?.status !== "IN_PROGRESS" && (
+                    <ContestActions contest={contest} onSuccess={setContest} />
+                  )}
+                </>
               )}
             </TabPanel>
             <TabPanel>

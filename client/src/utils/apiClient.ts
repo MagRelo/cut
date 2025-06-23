@@ -1,4 +1,4 @@
-import { handleApiResponse, ApiError } from './apiError';
+import { handleApiResponse, ApiError } from "./apiError";
 
 interface ApiConfig {
   baseURL: string;
@@ -16,9 +16,9 @@ export class ApiClient {
 
   constructor(config: ApiConfig) {
     this.config = {
-      baseURL: config.baseURL || 'http://localhost:4000/api',
+      baseURL: config.baseURL || "http://localhost:3000/api",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...config.headers,
       },
     };
@@ -31,15 +31,15 @@ export class ApiClient {
 
     // Add auth token if required and available
     if (options.requiresAuth !== false) {
-      const token = localStorage.getItem('portoToken');
+      const token = localStorage.getItem("portoToken");
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
     }
 
     // Add public API flag if specified
     if (options.isPublic) {
-      headers['X-Public-Api'] = 'true';
+      headers["X-Public-Api"] = "true";
     }
 
     return headers;
@@ -62,7 +62,7 @@ export class ApiClient {
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
         // Handle unauthorized error
-        localStorage.removeItem('portoToken');
+        localStorage.removeItem("portoToken");
       }
       throw error;
     }
@@ -70,33 +70,25 @@ export class ApiClient {
 
   // Convenience methods
   async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>('GET', endpoint, undefined, options);
+    return this.request<T>("GET", endpoint, undefined, options);
   }
 
-  async post<T>(
-    endpoint: string,
-    data?: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
-    return this.request<T>('POST', endpoint, data, options);
+  async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>("POST", endpoint, data, options);
   }
 
-  async put<T>(
-    endpoint: string,
-    data?: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
-    return this.request<T>('PUT', endpoint, data, options);
+  async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>("PUT", endpoint, data, options);
   }
 
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>('DELETE', endpoint, options?.data, options);
+    return this.request<T>("DELETE", endpoint, options?.data, options);
   }
 }
 
 // Create a singleton instance
 const apiClient = new ApiClient({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
 });
 
 export default apiClient;

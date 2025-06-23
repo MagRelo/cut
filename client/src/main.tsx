@@ -1,9 +1,9 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { App } from './App';
-import './index.css';
-import { PostHogProvider } from 'posthog-js/react';
-import { unregisterServiceWorker } from './utils/unregisterServiceWorker';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { App } from "./App";
+import "./index.css";
+import { PostHogProvider } from "posthog-js/react";
+import { unregisterServiceWorker } from "./utils/unregisterServiceWorker";
 
 // Unregister any existing service workers
 unregisterServiceWorker();
@@ -14,14 +14,15 @@ const app = (
       <PostHogProvider
         apiKey={import.meta.env.VITE_POSTHOG_KEY}
         options={{
-          api_host: 'https://analytics.mattlovan.dev',
+          api_host: "https://analytics.mattlovan.dev",
           loaded: (posthog) => {
             if (import.meta.env.DEV) posthog.debug();
           },
           capture_pageview: true,
           capture_pageleave: true,
           autocapture: true,
-        }}>
+        }}
+      >
         <App />
       </PostHogProvider>
     ) : (
@@ -30,4 +31,4 @@ const app = (
   </React.StrictMode>
 );
 
-ReactDOM.createRoot(document.getElementById('root')!).render(app);
+ReactDOM.createRoot(document.getElementById("root")!).render(app);

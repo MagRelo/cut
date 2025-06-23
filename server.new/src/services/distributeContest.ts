@@ -1,19 +1,7 @@
-// this service will run periodically to close contests
-// closing a contest requires an blockchain account with funds for gas; check that first
-// get pk & RPC from env
-// init account and check balance
-
-// get all contests that are OPEN
-// for each contest, check the tournament status
-// if the tournament status is COMPLETED, close the contest
-// closing the contest will:
-// - distribute the prizes: contract calls to distribute the prizes
-// - update the contest's status to CLOSED
-
 import { prisma } from '../lib/prisma.js';
 import { ethers } from 'ethers';
-import Contest from '../../../client/src/utils/contracts/Contest.json' assert { type: 'json' };
-import PlatformToken from '../../../client/src/utils/contracts/PlatformToken.json' assert { type: 'json' };
+import Contest from '../../../client/src/utils/contracts/Contest.json' with { type: 'json' };
+import PlatformToken from '../../../client/src/utils/contracts/PlatformToken.json' with { type: 'json' };
 
 export interface ContestSettings {
   fee: number;

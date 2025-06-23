@@ -1,10 +1,10 @@
-version: '3.8'
+version: "3.8"
 services:
   app:
     build:
-      context: ./server
+      context: ./server.new
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://user:password@db:5432/betthecut
@@ -22,7 +22,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "5432:5432"
 
 volumes:
   postgres_data:

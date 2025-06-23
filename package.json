@@ -9,6 +9,7 @@
     "client:build": "npm run build --workspace=client",
     "client:lint": "npm run lint --workspace=client",
     "client:preview": "npm run preview --workspace=client",
+    "copy-static": "cp -r client/dist server.new/dist/public",
     "server:dev": "npm run dev --workspace=server.new",
     "server:build": "npm run build --workspace=server.new",
     "server:deploy": "npm run deploy --workspace=server.new",
@@ -24,9 +25,8 @@
     "test:coverage": "npm run test:coverage --workspace=server.new",
     "test:ui": "npm run test:ui --workspace=server.new",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "deploy": "npm run client:build && npm run server:build && npm run server:deploy",
-    "get-team-totals": "tsx server.new/scripts/getTeamTotals.ts",
-    "mint-tokens": "node contracts/scripts/mint-tokens.js"
+    "mint-tokens": "node contracts/scripts/mint-tokens.js",
+    "deploy": "npm run client:build && npm run copy-static && npm run server:build && npm run server:deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

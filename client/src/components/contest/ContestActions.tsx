@@ -275,7 +275,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         <button
           className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
           onClick={handleJoinContest}
-          disabled={userInContest || !currentLineup || isSending || isConfirming}
+          disabled={userInContest || isSending || isConfirming}
         >
           {isSending || isConfirming ? (
             <div className="flex items-center gap-2 w-full justify-center">
@@ -283,9 +283,10 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
               {getStatusMessages("idle", isSending, isConfirming)}
             </div>
           ) : (
-            `Join Contest - ${displayFee} ${paymentTokenBalance?.symbol}`
+            `Join Contest - $${displayFee} `
           )}
         </button>
+        // ${paymentTokenBalance?.symbol}
       )}
 
       {/* Add status display */}
