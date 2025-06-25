@@ -73,7 +73,6 @@ export const Contests: React.FC = () => {
               className={({ selected }: { selected: boolean }) =>
                 classNames(
                   "w-full py-2 text-sm font-medium leading-5",
-                  "ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2",
                   selected
                     ? "border-b-2 border-emerald-500 text-emerald-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -86,7 +85,6 @@ export const Contests: React.FC = () => {
               className={({ selected }: { selected: boolean }) =>
                 classNames(
                   "w-full py-2 text-sm font-medium leading-5",
-                  "ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2",
                   selected
                     ? "border-b-2 border-emerald-500 text-emerald-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -99,7 +97,6 @@ export const Contests: React.FC = () => {
               className={({ selected }: { selected: boolean }) =>
                 classNames(
                   'w-full py-2 text-sm font-medium leading-5',
-                  'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
                   selected
                     ? 'border-b-2 border-emerald-500 text-emerald-600'
                     : 'text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -111,7 +108,6 @@ export const Contests: React.FC = () => {
               className={({ selected }: { selected: boolean }) =>
                 classNames(
                   "w-full py-2 text-sm font-medium leading-5",
-                  "ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2",
                   selected
                     ? "border-b-2 border-emerald-500 text-emerald-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"

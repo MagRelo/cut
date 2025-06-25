@@ -54,6 +54,8 @@ export function UserPage() {
               </button>
             ))}
           </div>
+
+          <div>{error?.message}</div>
         </div>
       </div>
     );
