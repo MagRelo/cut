@@ -20,8 +20,9 @@ contract DeployScript is Script {
 
         // Deploy ContestFactory with platform fee from constants
         ContestFactory factory = new ContestFactory(
-            250, // platformFee in basis points (2.5%)
-            address(paymentToken)
+            100, // platform fee
+            address(paymentToken),
+            0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e
         );
 
         // Add initial oracle (you can modify this address)

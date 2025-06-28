@@ -3,14 +3,20 @@ Contracts
 Purpose: This system will provide accounting for a fantasy sports platform. Users can 
   create new contests, enter contests. Contest contracts will hold the funds for the contest 
   while the contest is in progress. The Oracle will close contests to new entry and 
-  set the split for the contest contracts.
+  set the split for the contest contracts. Funds are deposited into Aave to earn yield during the contest period.
 
 Actors:
 - Oracle: this actor is responsible for closing contests to new entry, and setting the results of the contests
   - Must be whitelisted by platform admin
   - Can be revoked if malicious behavior is detected
+  - Receives platform fees and any remaining yield from contests
+- Contest Owner: this actor is the creator of the contest contract
+  - Can cancel and refund participants when contest is in OPEN state
+  - Has full control over contest cancellation
 - Participant: this actor enters contests
-  - Must have sufficient funds
+  - Must have sufficient funds in the payment token
+  - Can leave contests before they are closed
+  - Can emergency withdraw after contest end time
 
 Contracts: 
 - Contest Factory
@@ -20,26 +26,28 @@ Contracts:
     uint256 maxParticipants,
     uint256 endTime,
     address oracle
-  )
-  - setPlatformFee(uint256 newFee) (Owner only)
+  ) returns (address)
+  - setPlatformFee(uint256 newFee) (Owner only, max 10%)
   - addOracle(address oracle) (Owner only)
   - removeOracle(address oracle) (Owner only)
   - getContests() returns (Contest[])
   - collectPlatformFees() (Owner only)
+  - Constructor requires: platformFee, paymentToken, aavePoolAddressesProvider
 
-- Contest
-  - enter() 
-  - leave()
-  - emergencyWithdraw()
+- Contest (Ownable)
+  - enter() - Requires approval of entryFee tokens
+  - leave() - Withdraws initial deposit only (no yield)
+  - emergencyWithdraw() - Available after contest end time
   - closeEntry() (Oracle only)
-  - distribute(uint256[] payouts) (Oracle only)
-  - cancel() (Oracle only)
-  - refundParticipants() (Oracle only)
+  - distribute(uint256[] payouts) (Oracle only) - Takes basis points array
+  - cancelAndRefund() (Owner only) - Cancels contest and refunds all participants
+  - Constructor requires: name, entryFee, maxParticipants, endTime, paymentToken, oracle, platformFee, aavePoolAddressesProvider
+  - Owner is set to msg.sender in constructor (contest creator)
 
-- Platform Token (ERC20)
-  - name() returns (string)
-  - symbol() returns (string)
-  - decimals() returns (uint8)
+- Payment Token (ERC20 - USDC simulation)
+  - name() returns (string) - "USD Coin(x)"
+  - symbol() returns (string) - "USDC(x)"
+  - decimals() returns (uint8) - 6 (USDC standard)
   - totalSupply() returns (uint256)
   - balanceOf(address account) returns (uint256)
   - transfer(address to, uint256 amount) returns (bool)
@@ -54,6 +62,14 @@ Token Distribution Rules:
   - Platform can mint tokens for ecosystem growth
 - Burning:
   - Platform can burn tokens for deflationary pressure
+- Note: This is a USDC simulation for development. Production should use actual USDC.
+
+Aave Integration:
+- All contest funds are automatically deposited into Aave to earn yield
+- Yield is tracked separately from initial deposits
+- Platform fee is calculated on total pot (including yield)
+- Payouts are calculated from initial deposits only (net of platform fee)
+- Remaining yield is sent to oracle
 
 States:
 - OPEN: Contest is accepting entries
@@ -77,8 +93,10 @@ Financial Considerations:
 - Platform fee: Percentage taken from total prize pool (max 10%)
 - Minimum contest size: 2 participants
 - Maximum contest size: Configurable per contest
-- Entry fees: Must be in platform token
+- Entry fees: Must be in payment token (USDC simulation)
 - Emergency withdrawal: Available after contest end time
+- Yield distribution: Oracle receives platform fee + remaining yield
+- Participant payouts: Based on initial deposits only (net of platform fee)
 
 Security Considerations:
 - Reentrancy protection (using OpenZeppelin's ReentrancyGuard)
@@ -86,12 +104,24 @@ Security Considerations:
 - Oracle whitelist system
 - Funds safety checks
 - Token minting/burning restrictions (Owner only)
+- Aave integration for yield generation
+- External calls made last in distribute function
 
 Constants to Set/Decide:
-- Platform Token Name: "BetTheCut"
-- Platform Token Symbol: "BTCUT"
-- Platform Token Decimals: 18
-- Platform Fee: 100 (1% in basis points, max 10%)
+- Payment Token Name: "USD Coin(x)" (simulation)
+- Payment Token Symbol: "USDC(x)" (simulation)
+- Payment Token Decimals: 6 (USDC standard)
+- Platform Fee: Configurable, max 1000 basis points (10%)
 - Contest Max Participants: Configurable per contest
 - Contest End Time: Must be in future
+- Aave Pool Addresses Provider: Required for yield generation
+
+Key Differences from Original Spec:
+- Uses Aave integration for yield generation
+- Payment token is USDC simulation (6 decimals) not custom platform token
+- Platform fees and yield go to oracle, not platform owner
+- Participants can leave contests before closing
+- Emergency withdrawal available after end time
+- Payouts calculated from initial deposits only, not total pot
+- Oracle receives remaining yield after payouts
 

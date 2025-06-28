@@ -4,10 +4,11 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@aave/core-v3/contracts/interfaces/IPool.sol";
-import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@aave/interfaces/IPool.sol";
+import "@aave/interfaces/IPoolAddressesProvider.sol";
 
-contract Contest is ReentrancyGuard {
+contract Contest is ReentrancyGuard, Ownable {
     IERC20 public immutable paymentToken;
     address public immutable oracle;
     uint256 public immutable platformFee; // in basis points
@@ -57,7 +58,7 @@ contract Contest is ReentrancyGuard {
         address _oracle,
         uint256 _platformFee,
         address _aavePoolAddressesProvider
-    ) {
+    ) Ownable(msg.sender) {
         details = ContestDetails({
             name: _name,
             entryFee: _entryFee,
@@ -181,19 +182,20 @@ contract Contest is ReentrancyGuard {
         hasEntered[msg.sender] = false;
     }
 
-    function cancel() external onlyOracle {
+    function cancelAndRefund() external onlyOwner {
         require(state == ContestState.OPEN, "Contest not open");
+        
+        // Set state to cancelled
         state = ContestState.CANCELLED;
         emit ContestCancelled();
-    }
-
-    function refundParticipants() external onlyOracle {
-        require(state == ContestState.CANCELLED, "Contest not cancelled");
         
         // Withdraw all funds from Aave
         uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
-        aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
+        if (aUSDCBalance > 0) {
+            aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
+        }
         
+        // Refund all participants
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             if (hasEntered[participant]) {
@@ -203,5 +205,11 @@ contract Contest is ReentrancyGuard {
             }
         }
         delete participants;
+        
+        // Transfer any remaining funds to oracle
+        uint256 remainingBalance = paymentToken.balanceOf(address(this));
+        if (remainingBalance > 0) {
+            paymentToken.transfer(oracle, remainingBalance);
+        }
     }
 } 
