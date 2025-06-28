@@ -1,9 +1,18 @@
 // this service will run periodcally to keep the tournament up to date
 
-import { prisma } from '../lib/prisma.js';
-import { getTournament } from '../lib/pgaTournament.js';
-import { getActivePlayers } from '../lib/pgaField.js';
-import { getPlayerProfileOverview } from '../lib/pgaPlayerProfile.js';
+import { prisma } from "../lib/prisma.js";
+import { getTournament } from "../lib/pgaTournament.js";
+import { getActivePlayers } from "../lib/pgaField.js";
+import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
+
+// Helper function to chunk arrays for processing large datasets
+function chunk<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
 
 export async function initTournament(pgaTourId: string) {
   try {
@@ -13,7 +22,7 @@ export async function initTournament(pgaTourId: string) {
     });
 
     if (!tournament) {
-      console.error('Tournament not found');
+      console.error("Tournament not found");
       return;
     }
 
@@ -39,68 +48,82 @@ export async function initTournament(pgaTourId: string) {
     // Update inField status for players in the field
     const fieldData = await getActivePlayers(pgaTourId);
     const fieldPlayerIds = fieldData.players.map((p) => p.id);
+
+    // Batch update: set inField to true for players in the field
     await prisma.player.updateMany({
       where: { pga_pgaTourId: { in: fieldPlayerIds } },
       data: { inField: true },
     });
-    // set inField to false for all others
+
+    // Batch update: set inField to false for all others
     await prisma.player.updateMany({
       where: { pga_pgaTourId: { notIn: fieldPlayerIds } },
       data: { inField: false },
     });
-    console.log(
-      `- initTournament: Updated inField status for ${fieldPlayerIds.length} players.`
-    );
+    console.log(`- initTournament: Updated inField status for ${fieldPlayerIds.length} players.`);
 
-    // Update players in the field with player profiles
+    // Get players in the field
     const playersInField = await prisma.player.findMany({
       where: { inField: true },
     });
-    await Promise.all(
-      playersInField.map(async (player) => {
-        const playerProfile = await getPlayerProfileOverview(
-          player.pga_pgaTourId || ''
-        );
-        if (playerProfile) {
-          await prisma.player.update({
-            where: { id: player.id },
-            data: {
-              pga_performance: {
-                performance: playerProfile.performance,
-                standings: playerProfile.standings,
-              },
-            },
-          });
-        }
-      })
-    );
-    console.log(
-      `- initTournament: Updated ${playersInField.length} player profiles.`
-    );
 
-    // 4. Create TournamentPlayer records for all players in the field
-    for (const player of playersInField) {
-      await prisma.tournamentPlayer.upsert({
-        where: {
-          tournamentId_playerId: {
-            tournamentId: tournament.id,
-            playerId: player.id,
+    // Batch update player profiles - process in chunks to avoid overwhelming the API
+    const CHUNK_SIZE = 20; // Process 20 players at a time
+    const playerChunks = chunk(playersInField, CHUNK_SIZE);
+
+    let totalProfilesUpdated = 0;
+
+    for (const playerChunk of playerChunks) {
+      // Get player profiles for this chunk
+      const playerProfiles = await Promise.all(
+        playerChunk.map(async (player) => {
+          const profile = await getPlayerProfileOverview(player.pga_pgaTourId || "");
+          return { playerId: player.id, profile };
+        })
+      );
+
+      // Filter players that have profiles and batch update them
+      const playersWithProfiles = playerProfiles.filter((p) => p.profile);
+
+      if (playersWithProfiles.length > 0) {
+        // Use batch update for players with profiles
+        await prisma.player.updateMany({
+          where: {
+            id: { in: playersWithProfiles.map((p) => p.playerId) },
           },
-        },
-        create: {
-          tournamentId: tournament.id,
-          playerId: player.id,
-        },
-        update: {}, // No updates needed if record exists
-      });
+          data: {
+            pga_performance: {
+              performance: playersWithProfiles[0].profile?.performance,
+              standings: playersWithProfiles[0].profile?.standings,
+            },
+          },
+        });
+
+        totalProfilesUpdated += playersWithProfiles.length;
+      }
     }
+
+    console.log(`- initTournament: Updated ${totalProfilesUpdated} player profiles.`);
+
+    // Batch create TournamentPlayer records for all players in the field
+    const tournamentPlayerData = playersInField.map((player) => ({
+      tournamentId: tournament.id,
+      playerId: player.id,
+    }));
+
+    // Use createMany with skipDuplicates to handle existing records
+    await prisma.tournamentPlayer.createMany({
+      data: tournamentPlayerData,
+      skipDuplicates: true, // Skip if tournamentId_playerId combination already exists
+    });
+
     console.log(
       `Created TournamentPlayer records for ${playersInField.length} players in the field.`
     );
 
     console.log(`initTournament: Completed '${tournament.name}'`);
   } catch (error) {
-    console.error('Error in updateTournamentPlayerScores:', error);
+    console.error("Error in initTournament:", error);
     throw error;
   }
 }
@@ -109,17 +132,17 @@ export async function initTournament(pgaTourId: string) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const pgaTourId = process.argv[2];
   if (!pgaTourId) {
-    console.error('Please provide a PGA Tour ID as an argument');
+    console.error("Please provide a PGA Tour ID as an argument");
     process.exit(1);
   }
 
   initTournament(pgaTourId)
     .then(() => {
-      console.log('Tournament initialization completed');
+      console.log("Tournament initialization completed");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Tournament initialization failed:', error);
+      console.error("Tournament initialization failed:", error);
       process.exit(1);
     });
 }
