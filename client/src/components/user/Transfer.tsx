@@ -95,25 +95,23 @@ export const Transfer = () => {
             />
           </div>
 
-          <div className="flex space-x-4">
+          <div className="mt-4 flex justify-center">
             <button
               onClick={handleTransfer}
               disabled={!recipientAddress || !amount || isPending || isConfirming}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
             >
-              {isPending
-                ? "Check prompt"
-                : isConfirming
-                ? "Completing transfer"
-                : "Transfer Tokens"}
+              {isPending ? "Check prompt" : isConfirming ? "Completing transfer" : "Transfer"}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4">
-        Status: {isConfirmed ? "Transfer Confirmed" : "Not Confirmed"} {error && error.message}
-      </div>
+      {error && (
+        <div className="text-sm text-gray-500 p-4 bg-white rounded-md border border-gray-200 mt-4">
+          Status: {isConfirmed ? "Transfer Confirmed" : "Not Confirmed"} {error.message}
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@ import { type Contest } from "../../types.new/contest";
 import { Link } from "react-router-dom";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { formatOrdinal } from "../../utils/formatting";
+import { CutAmountDisplay } from "../common/CutAmountDisplay";
 
 import { useTournament } from "../../contexts/TournamentContext";
 
@@ -18,35 +19,6 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     (lineup) => lineup.userId === user?.id
   )?.position;
 
-  // const renderPreTournamentCard = () => (
-  //   <div className="p-4 border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3">
-  //     <h3 className="text-lg font-extrabold leading-tight">{contest.name}</h3>
-
-  //     <div className="grid grid-cols-[80px_80px_1fr] items-center gap-4">
-  //       <div className="flex items-center gap-2">
-  //         <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
-  //           Entries:
-  //         </span>
-  //         <span className="text-base text-gray-700 font-medium leading-none">
-  //           {contest?.contestLineups?.length ?? 0}/{String(contest?.settings?.maxEntry ?? 0)}
-  //         </span>
-  //       </div>
-  //       <div className="flex items-center gap-2">
-  //         <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
-  //           Max:
-  //         </span>
-  //         <span className="text-base text-gray-700 font-medium leading-none">$40</span>
-  //       </div>
-  //       <div className="flex items-center gap-2">
-  //         <span className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
-  //           Entry:
-  //         </span>
-  //         <span className="text-base text-gray-700 font-medium leading-none">$10</span>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
-
   const renderPreTournamentCard = () => (
     <div className="p-4">
       <div className="flex items-center justify-between">
@@ -55,20 +27,10 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           <h3 className="text-lg text-gray-500">{contest.tournament?.name}</h3>
         </div>
 
-        <div className="text-lg text-gray-700 font-semibold text-center">
-          <div className="flex items-center">
-            <img src="/logo-transparent.png" alt="cut-logo" className="h-10 " />
-
-            <div className="flex flex-col items-center">
-              <div className="text-lg font-semibold leading-tight">
-                {contest.settings?.fee * (contest.settings.maxEntry ?? 0)}
-              </div>
-              <div className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
-                Max
-              </div>
-            </div>
-          </div>
-        </div>
+        <CutAmountDisplay
+          amount={contest.settings?.fee * (contest.settings.maxEntry ?? 0)}
+          label="Max"
+        />
       </div>
 
       <div className="flex items-center gap-2 mt-2">
@@ -90,20 +52,10 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           <h3 className="text-lg text-gray-500">{contest.tournament?.name}</h3>
         </div>
 
-        <div className="text-lg text-gray-700 font-semibold text-center">
-          <div className="flex items-center">
-            <img src="/logo-transparent.png" alt="cut-logo" className="h-10 " />
-
-            <div className="flex flex-col items-center">
-              <div className="text-lg font-semibold leading-tight">
-                {contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
-              </div>
-              <div className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
-                Pot
-              </div>
-            </div>
-          </div>
-        </div>
+        <CutAmountDisplay
+          amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
+          label="Pot"
+        />
       </div>
 
       <div className="flex items-center gap-2 mt-2">

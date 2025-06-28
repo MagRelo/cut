@@ -5,6 +5,7 @@ import { formatUnits } from "viem";
 import { UserSettings } from "../components/user/UserSettings";
 import { paymentTokenAddress } from "../utils/contracts/sepolia.json";
 import { Transfer } from "../components/user/Transfer";
+import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 export function UserPage() {
   const { address, chainId, chain } = useAccount();
@@ -67,24 +68,26 @@ export function UserPage() {
 
       {/* Account Settings */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Account</div>
-
-        <div className="grid grid-cols-[100px_1fr] gap-2">
-          {/* CUT Balance */}
-          <div className="font-medium">Credits:</div>
-          <div>
-            {formattedBalance(paymentTokenBalance?.value ?? 0n)} {paymentTokenBalance?.symbol}
+        <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+          <div className="text-lg font-semibold text-gray-700 mb-2 font-display">
+            Available Balance
           </div>
+
+          <CutAmountDisplay
+            amount={Number(formattedBalance(paymentTokenBalance?.value ?? 0n))}
+            label="BTCUT"
+            logoPosition="right"
+          />
         </div>
 
         <div className="">
           {/* TODO: Add funding */}
-          <div className="mt-4">
+          <div className="mt-4 flex justify-center">
             <a
               href={`https://stg.id.porto.sh/`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 w-full justify-center"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
             >
               Add Funds
               <svg
@@ -104,10 +107,12 @@ export function UserPage() {
             </a>
           </div>
 
-          <hr className="my-2" />
-
-          {/* <div> status: {status}</div> */}
-          <div>{error?.message}</div>
+          {error && (
+            <>
+              <hr className="my-2" />
+              <div>{error?.message}</div>
+            </>
+          )}
         </div>
       </div>
 
