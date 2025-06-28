@@ -142,8 +142,22 @@ describe("distributeContest", () => {
 
       await distributeContest();
 
-      expect(mockContestContract.distribute).toHaveBeenCalledWith([]);
-      expect(mockPlatformTokenContract.mintRewards).toHaveBeenCalledWith([], []);
+      // Should not call distribute since this will now throw an error
+      expect(mockContestContract.distribute).not.toHaveBeenCalled();
+      expect(mockPlatformTokenContract.mintRewards).not.toHaveBeenCalled();
+
+      // Should update contest to ERROR status
+      expect(prisma.contest.update).toHaveBeenCalledWith({
+        where: { id: "contest1" },
+        data: {
+          status: "ERROR",
+          results: {
+            error:
+              'Processing error: Data integrity error: No lineup found with position "1" (winner)',
+            timestamp: expect.any(String),
+          },
+        },
+      });
     });
 
     it("should handle contests with no lineups", async () => {
@@ -422,9 +436,9 @@ describe("calculatePayouts", () => {
       const lineups: any[] = [];
       const participants = ["0x123", "0x456"];
 
-      const payouts = await calculatePayouts(lineups, participants);
-
-      expect(payouts).toEqual([0, 0]);
+      await expect(calculatePayouts(lineups, participants)).rejects.toThrow(
+        'Data integrity error: No lineup found with position "1" (winner)'
+      );
     });
 
     it("should handle empty participants array", async () => {
@@ -452,9 +466,9 @@ describe("calculatePayouts", () => {
       ];
       const participants = ["0x123", "0x456"];
 
-      const payouts = await calculatePayouts(lineups, participants);
-
-      expect(payouts).toEqual([0, 0]);
+      await expect(calculatePayouts(lineups, participants)).rejects.toThrow(
+        "Data integrity error: Lineup missing position field"
+      );
     });
 
     it("should handle lineups without user field", async () => {
@@ -467,9 +481,9 @@ describe("calculatePayouts", () => {
       ];
       const participants = ["0x123", "0x456"];
 
-      const payouts = await calculatePayouts(lineups, participants);
-
-      expect(payouts).toEqual([0, 0]);
+      await expect(calculatePayouts(lineups, participants)).rejects.toThrow(
+        "Data integrity error: Lineup missing user field"
+      );
     });
 
     it("should handle lineups without walletAddress", async () => {
@@ -484,9 +498,9 @@ describe("calculatePayouts", () => {
       ];
       const participants = ["0x123", "0x456"];
 
-      const payouts = await calculatePayouts(lineups, participants);
-
-      expect(payouts).toEqual([0, 0]);
+      await expect(calculatePayouts(lineups, participants)).rejects.toThrow(
+        "Data integrity error: Lineup missing walletAddress"
+      );
     });
 
     it("should handle multiple winners (tie for first place) in small contests", async () => {
@@ -741,9 +755,9 @@ describe("calculatePayouts", () => {
       ];
       const participants = ["0x123", "0x456"];
 
-      const payouts = await calculatePayouts(lineups, participants);
-
-      expect(payouts).toEqual([0, 0]);
+      await expect(calculatePayouts(lineups, participants)).rejects.toThrow(
+        'Data integrity error: No lineup found with position "1" (winner)'
+      );
     });
 
     it("should throw error when winner is not in participants list", async () => {

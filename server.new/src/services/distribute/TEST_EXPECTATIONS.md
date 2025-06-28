@@ -4,20 +4,20 @@ This document outlines all test cases in `distributeContest.test.ts` and their e
 
 ## DistributeContest Function Tests
 
-| Test Title                                                            | Expected Behavior                                                                             |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| should handle no open contests                                        | Returns early, no blockchain calls made                                                       |
-| should skip contests that are not in OPEN state on blockchain         | Skips contest, no blockchain calls made                                                       |
-| should handle contests with no participants                           | Calls distribute with empty array, calls mintRewards with empty arrays                        |
-| should handle contests with no lineups                                | Marks contest as ERROR with "Data integrity error: Contest has participants but no lineups"   |
-| should handle blockchain transaction failures                         | Marks contest as ERROR with "Processing error: Transaction failed"                            |
-| should handle missing contest settings                                | Calls mintRewards with participants and [0] fees                                              |
-| should handle case where winner is not in participants list           | Marks contest as ERROR with "Winner with wallet address X is not found in participants list"  |
-| should calculate payouts correctly for single winner                  | Calls distribute with [10000, 0] (100% to winner)                                             |
-| should handle case-insensitive wallet address matching                | Calls distribute with [10000] (case-insensitive matching works)                               |
-| should update contest status to SETTLED after successful distribution | Updates contest to SETTLED with results including payouts, participants, distributeTx, mintTx |
-| should handle database errors gracefully                              | Throws database error                                                                         |
-| should handle missing environment variables                           | Returns early with "No contests found" message                                                |
+| Test Title                                                            | Expected Behavior                                                                              |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| should handle no open contests                                        | Returns early, no blockchain calls made                                                        |
+| should skip contests that are not in OPEN state on blockchain         | Skips contest, no blockchain calls made                                                        |
+| should handle contests with no participants                           | Marks contest as ERROR with "Data integrity error: No lineup found with position '1' (winner)" |
+| should handle contests with no lineups                                | Marks contest as ERROR with "Data integrity error: Contest has participants but no lineups"    |
+| should handle blockchain transaction failures                         | Marks contest as ERROR with "Processing error: Transaction failed"                             |
+| should handle missing contest settings                                | Calls mintRewards with participants and [0] fees                                               |
+| should handle case where winner is not in participants list           | Marks contest as ERROR with "Winner with wallet address X is not found in participants list"   |
+| should calculate payouts correctly for single winner                  | Calls distribute with [10000, 0] (100% to winner)                                              |
+| should handle case-insensitive wallet address matching                | Calls distribute with [10000] (case-insensitive matching works)                                |
+| should update contest status to SETTLED after successful distribution | Updates contest to SETTLED with results including payouts, participants, distributeTx, mintTx  |
+| should handle database errors gracefully                              | Throws database error                                                                          |
+| should handle missing environment variables                           | Returns early with "No contests found" message                                                 |
 
 ## CalculatePayouts Function Tests
 
@@ -25,11 +25,11 @@ This document outlines all test cases in `distributeContest.test.ts` and their e
 
 | Test Title                                                                          | Expected Behavior                                                                    |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| should handle empty lineups array                                                   | Returns array of zeros matching participants length                                  |
+| should handle empty lineups array                                                   | Throws error "Data integrity error: No lineup found with position '1' (winner)"      |
 | should handle empty participants array                                              | Throws error "Winner with wallet address X is not found in participants list"        |
-| should handle lineups without position field                                        | Returns array of zeros (no winner found)                                             |
-| should handle lineups without user field                                            | Returns array of zeros (no winner found)                                             |
-| should handle lineups without walletAddress                                         | Returns array of zeros (no winner found)                                             |
+| should handle lineups without position field                                        | Throws error "Data integrity error: Lineup missing position field"                   |
+| should handle lineups without user field                                            | Throws error "Data integrity error: Lineup missing user field"                       |
+| should handle lineups without walletAddress                                         | Throws error "Data integrity error: Lineup missing walletAddress"                    |
 | should handle multiple winners (tie for first place) in small contests              | Returns [5000, 5000, 0] (50% each for 2-way tie in small contests)                   |
 | should handle multiple winners (tie for first place) in large contests              | Returns [3500, 3500, 0, ...] (50% each of 70% for 2-way tie in large contests)       |
 | should handle tie for second place in large contests                                | Returns [7000, 1000, 1000, 0, ...] (50% each of 20% for 2-way tie)                   |
@@ -37,7 +37,7 @@ This document outlines all test cases in `distributeContest.test.ts` and their e
 | should handle three-way tie for first place in small contests                       | Returns [3333, 3333, 3333] (33.33% each for 3-way tie, with rounding)                |
 | should handle three-way tie for first place in large contests                       | Returns [2333, 2333, 2333, 0, ...] (33.33% each of 70% for 3-way tie, with rounding) |
 | should handle ties for multiple positions simultaneously                            | Returns [3500, 3500, 1000, 1000, 0, ...] (ties for both 1st and 2nd place)           |
-| should handle case where no lineup has position "1"                                 | Returns array of zeros (no winner found)                                             |
+| should handle case where no lineup has position "1"                                 | Throws error "Data integrity error: No lineup found with position '1' (winner)"      |
 | should throw error when winner is not in participants list                          | Throws error "Winner with wallet address X is not found in participants list"        |
 | should throw error when first place is not in participants list for large contests  | Throws error "Winner with wallet address X is not found in participants list"        |
 | should throw error when second place is not in participants list for large contests | Throws error "Second place with wallet address X is not found in participants list"  |

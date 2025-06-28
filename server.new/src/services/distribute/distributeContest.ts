@@ -168,14 +168,32 @@ export async function calculatePayouts(
   // Group lineups by position to handle ties
   const positionGroups = new Map<string, any[]>();
   
-  lineups.forEach((lineup) => {
-    if (lineup?.position && lineup?.user?.walletAddress) {
-      const position = lineup.position;
-      if (!positionGroups.has(position)) {
-        positionGroups.set(position, []);
-      }
-      positionGroups.get(position)!.push(lineup);
+  // Validate lineups data integrity
+  const validLineups = lineups.filter((lineup) => {
+    if (!lineup?.position) {
+      throw new Error('Data integrity error: Lineup missing position field');
     }
+    if (!lineup?.user) {
+      throw new Error('Data integrity error: Lineup missing user field');
+    }
+    if (!lineup?.user?.walletAddress) {
+      throw new Error('Data integrity error: Lineup missing walletAddress');
+    }
+    return true;
+  });
+
+  // Check if there are any valid lineups with position "1"
+  const hasWinner = validLineups.some(lineup => lineup.position === "1");
+  if (!hasWinner) {
+    throw new Error('Data integrity error: No lineup found with position "1" (winner)');
+  }
+  
+  validLineups.forEach((lineup) => {
+    const position = lineup.position;
+    if (!positionGroups.has(position)) {
+      positionGroups.set(position, []);
+    }
+    positionGroups.get(position)!.push(lineup);
   });
 
   // Define payout structure based on participant count
