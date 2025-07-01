@@ -4,9 +4,10 @@ services:
     build:
       context: ./server
     ports:
-      - '3000:3000'
+      - '4000:4000'
     environment:
       - NODE_ENV=production
+      - PORT=4000
       - DATABASE_URL=postgresql://user:password@db:5432/betthecut
       - JWT_SECRET=your-secret-here
       - HYPERLIQUID_API_KEY=your-api-key
