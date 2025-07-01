@@ -6,11 +6,51 @@ import { UserSettings } from "../components/user/UserSettings";
 import { paymentTokenAddress } from "../utils/contracts/sepolia.json";
 import { Transfer } from "../components/user/Transfer";
 import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
+
+import { Porto } from "porto";
 
 export function UserPage() {
+  const { authenticateWithWeb3, user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
   const { connectors, connect, error } = useConnect();
   const { disconnect } = useDisconnect();
+
+  const connector = connectors.find((connector) => connector.id === "xyz.ithaca.porto")!;
+  const handleConnect = async () => {
+    try {
+      const provider = (await connector.getProvider({ chainId })) as Porto.Porto["provider"];
+      const capabilities = await provider.request({
+        method: "wallet_connect",
+        params: [
+          {
+            capabilities: {
+              signInWithEthereum: {
+                chainId: chainId ?? 84532,
+                nonce: await (await fetch(`${process.env.VITE_API_URL}/auth/nonce`)).text(),
+              },
+            },
+          },
+        ],
+      });
+
+      console.log({ capabilities });
+
+      const address = capabilities.accounts.at(0)?.address;
+      const siwe = capabilities.accounts.at(0)?.capabilities?.signInWithEthereum;
+      console.log({ address, siwe });
+
+      authenticateWithWeb3(
+        address ?? "",
+        chainId ?? 84532,
+        siwe?.message ?? "",
+        siwe?.signature ?? ""
+      );
+    } catch (error) {
+      console.error("Error connecting to wallet:", error);
+      // setError("Error connecting to wallet:", error);
+    }
+  };
 
   // get USDC balance
   // const { data: balance_USDC } = useBalance({
@@ -34,7 +74,7 @@ export function UserPage() {
     return Number(formatUnits(balance, 18)).toFixed(2);
   };
 
-  if (!address) {
+  if (!user) {
     return (
       <div className="p-4">
         <PageHeader title="Account" className="mb-3" />
@@ -46,9 +86,9 @@ export function UserPage() {
             {connectors.map((connector) => (
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-                disabled={!!address}
+                // disabled={!!user}
                 key={connector.uid}
-                onClick={() => connect({ connector })}
+                onClick={handleConnect}
                 type="button"
               >
                 Connect

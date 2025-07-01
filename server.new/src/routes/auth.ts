@@ -1,25 +1,75 @@
-import { Router } from 'express';
-import { prisma } from '../lib/prisma.js';
-import jwt from 'jsonwebtoken';
-import { requireAuth } from '../middleware/auth.js';
+import { Router } from "express";
+import { prisma } from "../lib/prisma.js";
+import jwt from "jsonwebtoken";
+import { requireAuth } from "../middleware/auth.js";
+
+import { createClient, http, hashMessage } from "viem";
+import { Chains } from "porto";
+import { Key, ServerActions } from "porto/viem";
+// Instantiate a Viem Client with Porto-compatible Chain.
+const client = createClient({
+  chain: Chains.baseSepolia,
+  transport: http(),
+});
 
 const router = Router();
 
+// Get nonce
+router.get("/nonce", async (req, res) => {
+  try {
+    // Generate a random nonce for wallet authentication
+    // nonce must be at least 8 characters.
+    // nonce must be alphanumeric.
+    const nonce = Math.random().toString(36).substring(2, 15);
+    console.log({ nonce });
+    res.send(nonce);
+  } catch (error) {
+    console.error("Error generating nonce:", error);
+    res.status(500).json({ error: "Failed to generate nonce" });
+  }
+});
+
 // Web3 authentication endpoint
-router.post('/web3', async (req, res) => {
+router.post("/web3", async (req, res) => {
   try {
     const { address, signature, message, chainId = 1 } = req.body;
 
     // if (!address || !signature || !message) {
-    if (!address) {
-      return res.status(400).json({ error: 'Address is required' });
+    if (!address || !signature || !message) {
+      return res.status(400).json({ error: "Address, signature, and message are required" });
     }
+    const digest = hashMessage(message);
 
-    // TEMPORARY: Simulate successful web3 authentication
-    // In production, we would:
-    // 1. Verify the signature matches the message and address
-    // 2. Check if user exists, if not create them
-    // 3. Generate a proper JWT token
+    // Extract address from SIWE message
+    const addressMatch = message.match(/0x[a-fA-F0-9]{40}/);
+    const messageAddress = addressMatch ? addressMatch[0] : address;
+
+    console.log("=== SIWE Authentication Debug ===");
+    console.log("Sent address:", address);
+    console.log("Message address:", messageAddress);
+    console.log("Addresses match:", messageAddress.toLowerCase() === address.toLowerCase());
+    console.log("ChainId:", chainId);
+    console.log("Message length:", message.length);
+    console.log("Full message:", message); // Log the entire message
+    console.log("Signature length:", signature.length);
+    console.log("Signature:", signature);
+    console.log("Digest:", digest);
+    console.log("Signature type check:");
+    console.log("- Length:", signature.length);
+    console.log("- Length in bytes:", Math.floor(signature.length / 2));
+    console.log("- Is hex:", /^0x[a-fA-F0-9]+$/.test(signature));
+    console.log("- Standard ETH sig length (65 bytes):", signature.length === 130); // 65 bytes = 130 hex chars
+
+    const isValid = await ServerActions.verifySignature(client, {
+      address: messageAddress,
+      digest: digest,
+      signature: signature,
+    });
+
+    if (!isValid.valid) {
+      console.log({ isValid });
+      return res.status(400).json({ error: "Invalid signature" });
+    }
 
     // Check if wallet exists
     const existingWallet = await prisma.userWallet.findFirst({
@@ -38,7 +88,7 @@ router.post('/web3', async (req, res) => {
       user = await prisma.user.create({
         data: {
           name: `User ${address.slice(0, 6)}`,
-          userType: 'PUBLIC',
+          userType: "PUBLIC",
           wallets: {
             create: {
               chainId: Number(chainId),
@@ -58,8 +108,8 @@ router.post('/web3', async (req, res) => {
         chainId: Number(chainId),
         userType: user.userType,
       },
-      process.env.JWT_SECRET || 'temporary-secret-key',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET || "temporary-secret-key",
+      { expiresIn: "7d" }
     );
 
     // Return success response with user data and token
@@ -75,13 +125,13 @@ router.post('/web3', async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Error in web3 authentication:', error);
-    res.status(500).json({ error: 'Failed to authenticate with web3' });
+    console.error("Error in web3 authentication:", error);
+    res.status(500).json({ error: "Failed to authenticate with web3" });
   }
 });
 
 // Get current user information
-router.get('/me', requireAuth, async (req, res) => {
+router.get("/me", requireAuth, async (req, res) => {
   try {
     // get active tournament
     const activeTournament = await prisma.tournament.findFirst({
@@ -117,7 +167,7 @@ router.get('/me', requireAuth, async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // filter out user info that is not needed
@@ -129,8 +179,7 @@ router.get('/me', requireAuth, async (req, res) => {
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId: lineup.tournamentId,
         tournamentData: {
-          leaderboardPosition:
-            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
           r1: lineupPlayer.tournamentPlayer.r1,
           r2: lineupPlayer.tournamentPlayer.r2,
           r3: lineupPlayer.tournamentPlayer.r3,
@@ -156,19 +205,19 @@ router.get('/me', requireAuth, async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user information' });
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Failed to fetch user information" });
   }
 });
 
 // Update user route
-router.put('/update', requireAuth, async (req, res) => {
+router.put("/update", requireAuth, async (req, res) => {
   try {
     const { name } = req.body;
     const userId = req.user!.userId;
 
     if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+      return res.status(400).json({ error: "Name is required" });
     }
 
     const updatedUser = await prisma.user.update({
@@ -185,13 +234,13 @@ router.put('/update', requireAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user information' });
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Failed to update user information" });
   }
 });
 
 // Update settings route
-router.put('/settings', requireAuth, async (req, res) => {
+router.put("/settings", requireAuth, async (req, res) => {
   try {
     const userId = req.user!.userId;
     const settings = req.body;
@@ -208,8 +257,8 @@ router.put('/settings', requireAuth, async (req, res) => {
       settings: updatedUser.settings,
     });
   } catch (error) {
-    console.error('Error updating settings:', error);
-    res.status(500).json({ error: 'Failed to update user settings' });
+    console.error("Error updating settings:", error);
+    res.status(500).json({ error: "Failed to update user settings" });
   }
 });
 

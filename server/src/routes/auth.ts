@@ -1,24 +1,16 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { prisma } from '../lib/prisma.js';
-import { sendEmail } from '../lib/email.js';
-import { sendSMS } from '../lib/sms.js';
-import { authenticateToken } from '../middleware/auth.js';
-import {
-  Prisma,
-  User,
-  Team,
-  League,
-  LeagueTeam,
-  TeamPlayer,
-  Player,
-} from '@prisma/client';
-import { AuthUser } from '../middleware/auth.js';
+import express from "express";
+import jwt from "jsonwebtoken";
+import { z } from "zod";
+import { prisma } from "../lib/prisma.js";
+import { sendEmail } from "../lib/email.js";
+import { sendSMS } from "../lib/sms.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { Prisma, User, Team, League, LeagueTeam, TeamPlayer, Player } from "@prisma/client";
+import { AuthUser } from "../middleware/auth.js";
 
 type TeamWithLeague = Team & {
   leagueTeams: (LeagueTeam & {
-    league: Pick<League, 'id' | 'name'>;
+    league: Pick<League, "id" | "name">;
   })[];
   TeamPlayer: (TeamPlayer & {
     Player: Player;
@@ -36,7 +28,7 @@ const contactSchema = z.object({
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
       return emailRegex.test(val) || phoneRegex.test(val);
     },
-    { message: 'Must be a valid email or phone number' }
+    { message: "Must be a valid email or phone number" }
   ),
 });
 
@@ -47,7 +39,7 @@ const verifySchema = z.object({
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
       return emailRegex.test(val) || phoneRegex.test(val);
     },
-    { message: 'Must be a valid email or phone number' }
+    { message: "Must be a valid email or phone number" }
   ),
   code: z.string().length(6),
   name: z.string().min(2).optional(),
@@ -56,12 +48,11 @@ const verifySchema = z.object({
     .refine(
       (val) => {
         // Check if it's a valid UUID or CUID
-        const uuidRegex =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const cuidRegex = /^c[a-z0-9]{24}$/i;
         return uuidRegex.test(val) || cuidRegex.test(val);
       },
-      { message: 'Invalid user ID format' }
+      { message: "Invalid user ID format" }
     )
     .optional(),
 });
@@ -99,7 +90,7 @@ const userInclude = {
 } satisfies Prisma.UserInclude;
 
 // Request verification code
-router.post('/request-verification', async (req, res) => {
+router.post("/request-verification", async (req, res) => {
   try {
     const { contact } = contactSchema.parse(req.body);
 
@@ -119,8 +110,7 @@ router.post('/request-verification', async (req, res) => {
       // If within 24 hours and already at 3 attempts
       if (hoursSinceLastAttempt < 24 && (user.loginAttempts ?? 0) >= 3) {
         return res.status(429).json({
-          error:
-            'Maximum verification code requests reached. Please try again later.',
+          error: "Maximum verification code requests reached. Please try again later.",
         });
       }
 
@@ -137,9 +127,7 @@ router.post('/request-verification', async (req, res) => {
     }
 
     // Generate verification code
-    const verificationCode = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
 
     if (user) {
@@ -157,13 +145,13 @@ router.post('/request-verification', async (req, res) => {
         },
       });
     } else {
-      console.log('creating user');
+      console.log("creating user");
       // Create new user
       await prisma.user.create({
         data: {
-          email: contact.includes('@') ? contact : null,
-          phone: !contact.includes('@') ? contact : null,
-          name: 'User', // Will be updated during registration
+          email: contact.includes("@") ? contact : null,
+          phone: !contact.includes("@") ? contact : null,
+          name: "User", // Will be updated during registration
           verificationCode,
           verificationCodeExpiresAt: expiresAt,
           loginAttempts: 1,
@@ -173,10 +161,10 @@ router.post('/request-verification', async (req, res) => {
     }
 
     // Send verification code
-    if (contact.includes('@')) {
+    if (contact.includes("@")) {
       await sendEmail({
         to: contact,
-        subject: 'Your Verification Code',
+        subject: "Your Verification Code",
         html: `
           <h1>Your Verification Code</h1>
           <p>Your verification code is: <strong>${verificationCode}</strong></p>
@@ -184,9 +172,7 @@ router.post('/request-verification', async (req, res) => {
           <p>If you didn't request this code, you can safely ignore this email.</p>
         `,
       });
-      console.log(
-        `Email verification code for ${contact}: ${verificationCode}`
-      );
+      console.log(`Email verification code for ${contact}: ${verificationCode}`);
     } else {
       await sendSMS({
         to: contact,
@@ -200,13 +186,13 @@ router.post('/request-verification', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Request verification error:', error);
-    res.status(500).json({ error: 'Failed to request verification' });
+    console.error("Request verification error:", error);
+    res.status(500).json({ error: "Failed to request verification" });
   }
 });
 
 // Verify and login/register
-router.post('/verify', async (req, res) => {
+router.post("/verify", async (req, res) => {
   try {
     const { contact, code, name, anonymousGuid } = verifySchema.parse(req.body);
 
@@ -222,7 +208,7 @@ router.post('/verify', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Check if code is valid and not expired
@@ -231,9 +217,7 @@ router.post('/verify', async (req, res) => {
       !user.verificationCodeExpiresAt ||
       user.verificationCodeExpiresAt < new Date()
     ) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid or expired verification code' });
+      return res.status(400).json({ error: "Invalid or expired verification code" });
     }
 
     // Reset login attempts on successful verification
@@ -348,11 +332,9 @@ router.post('/verify', async (req, res) => {
     //
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '180d' }
-    );
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "your-secret-key", {
+      expiresIn: "180d",
+    });
 
     // Get user with teams
     const userWithTeams = await prisma.user.findUnique({
@@ -392,16 +374,16 @@ router.post('/verify', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
-    console.error('Verification error:', error);
-    res.status(500).json({ error: 'Failed to verify code' });
+    console.error("Verification error:", error);
+    res.status(500).json({ error: "Failed to verify code" });
   }
 });
 
 // Get current user route
-router.get('/me', authenticateToken, async (req, res) => {
+router.get("/me", authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
     const user = await prisma.user.findUnique({
@@ -410,7 +392,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     let teams: any[] = [];
@@ -442,16 +424,16 @@ router.get('/me', authenticateToken, async (req, res) => {
       settings: user.settings,
     });
   } catch (error) {
-    console.error('Get current user error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Get current user error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Update user route
-router.put('/update', authenticateToken, async (req, res) => {
+router.put("/update", authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
+      return res.status(401).json({ message: "User not authenticated" });
     }
 
     const validatedData = updateUserSchema.parse(req.body);
@@ -490,21 +472,21 @@ router.put('/update', authenticateToken, async (req, res) => {
       teams,
     });
   } catch (error) {
-    console.error('Update user error:', error);
-    res.status(400).json({ message: 'Failed to update user' });
+    console.error("Update user error:", error);
+    res.status(400).json({ message: "Failed to update user" });
   }
 });
 
 // Update user settings route
-router.put('/settings', authenticateToken, async (req, res) => {
+router.put("/settings", authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ error: "Not authenticated" });
     }
     // Accept any JSON object for settings
     const settings = req.body;
-    if (typeof settings !== 'object' || settings === null) {
-      return res.status(400).json({ error: 'Invalid settings object' });
+    if (typeof settings !== "object" || settings === null) {
+      return res.status(400).json({ error: "Invalid settings object" });
     }
     const user = await prisma.user.update({
       where: { id: req.user.id },
@@ -513,16 +495,16 @@ router.put('/settings', authenticateToken, async (req, res) => {
     });
     res.json({ settings: user.settings });
   } catch (error) {
-    console.error('Update user settings error:', error);
-    res.status(500).json({ error: 'Failed to update user settings' });
+    console.error("Update user settings error:", error);
+    res.status(500).json({ error: "Failed to update user settings" });
   }
 });
 
 // Logout route
-router.post('/logout', authenticateToken, async (req, res) => {
+router.post("/logout", authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
     // In a JWT-based system, we don't need to do much server-side
@@ -530,8 +512,8 @@ router.post('/logout', authenticateToken, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: 'Failed to logout' });
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Failed to logout" });
   }
 });
 
