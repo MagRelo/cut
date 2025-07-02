@@ -95,7 +95,7 @@ contract ContestFactoryTest is Test {
         mockAToken = address(mockATokenContract);
         mockPool = new TestMockPool(mockAToken);
         mockProvider = new TestMockProvider(address(mockPool));
-        factory = new ContestFactory(100, address(platformToken), address(mockProvider));
+        factory = new ContestFactory(address(platformToken), address(mockProvider));
     }
 
     function testCreateContest() public {
@@ -119,11 +119,6 @@ contract ContestFactoryTest is Test {
         assertFalse(factory.oracles(oracle));
     }
 
-    function testSetPlatformFee() public {
-        factory.setPlatformFee(200);
-        assertEq(factory.platformFee(), 200);
-    }
-
     function testCreateContestWithInvalidEntryFee() public {
         factory.addOracle(oracle);
         vm.expectRevert("Entry fee must be greater than 0");
@@ -145,10 +140,5 @@ contract ContestFactoryTest is Test {
         factory.addOracle(oracle);
         vm.expectRevert("Need at least 2 participants");
         factory.createContest("Test Contest", ENTRY_FEE, 1, block.timestamp + 2 hours, oracle);
-    }
-
-    function testSetPlatformFeeTooHigh() public {
-        vm.expectRevert("Fee too high");
-        factory.setPlatformFee(1001); // Max is 1000 (10%)
     }
 } 

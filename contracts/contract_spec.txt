@@ -9,7 +9,7 @@ Actors:
 - Oracle: this actor is responsible for closing contests to new entry, and setting the results of the contests
   - Must be whitelisted by platform admin
   - Can be revoked if malicious behavior is detected
-  - Receives platform fees and any remaining yield from contests
+  - Receives all yield from contests
 - Contest Owner: this actor is the creator of the contest contract
   - Can cancel and refund participants when contest is in OPEN state
   - Has full control over contest cancellation
@@ -27,12 +27,10 @@ Contracts:
     uint256 endTime,
     address oracle
   ) returns (address)
-  - setPlatformFee(uint256 newFee) (Owner only, max 10%)
   - addOracle(address oracle) (Owner only)
   - removeOracle(address oracle) (Owner only)
   - getContests() returns (Contest[])
-  - collectPlatformFees() (Owner only)
-  - Constructor requires: platformFee, paymentToken, aavePoolAddressesProvider
+  - Constructor requires: paymentToken, aavePoolAddressesProvider
 
 - Contest (Ownable)
   - enter() - Requires approval of entryFee tokens
@@ -41,7 +39,7 @@ Contracts:
   - closeEntry() (Oracle only)
   - distribute(uint256[] payouts) (Oracle only) - Takes basis points array
   - cancelAndRefund() (Owner only) - Cancels contest and refunds all participants
-  - Constructor requires: name, entryFee, maxParticipants, endTime, paymentToken, oracle, platformFee, aavePoolAddressesProvider
+  - Constructor requires: name, entryFee, maxParticipants, endTime, paymentToken, oracle, aavePoolAddressesProvider
   - Owner is set to msg.sender in constructor (contest creator)
 
 - Payment Token (ERC20 - USDC simulation)
@@ -67,9 +65,8 @@ Token Distribution Rules:
 Aave Integration:
 - All contest funds are automatically deposited into Aave to earn yield
 - Yield is tracked separately from initial deposits
-- Platform fee is calculated on total pot (including yield)
-- Payouts are calculated from initial deposits only (net of platform fee)
-- Remaining yield is sent to oracle
+- Payouts are calculated from initial deposits only
+- All yield is sent to oracle
 
 States:
 - OPEN: Contest is accepting entries
@@ -87,16 +84,14 @@ Events:
 - ParticipantRefunded(address indexed participant, uint256 amount)
 - OracleAdded(address indexed oracle)
 - OracleRemoved(address indexed oracle)
-- PlatformFeeUpdated(uint256 newFee)
 
 Financial Considerations:
-- Platform fee: Percentage taken from total prize pool (max 10%)
 - Minimum contest size: 2 participants
 - Maximum contest size: Configurable per contest
 - Entry fees: Must be in payment token (USDC simulation)
 - Emergency withdrawal: Available after contest end time
-- Yield distribution: Oracle receives platform fee + remaining yield
-- Participant payouts: Based on initial deposits only (net of platform fee)
+- Yield distribution: Oracle receives all yield
+- Participant payouts: Based on initial deposits only
 
 Security Considerations:
 - Reentrancy protection (using OpenZeppelin's ReentrancyGuard)
@@ -111,7 +106,6 @@ Constants to Set/Decide:
 - Payment Token Name: "USD Coin(x)" (simulation)
 - Payment Token Symbol: "USDC(x)" (simulation)
 - Payment Token Decimals: 6 (USDC standard)
-- Platform Fee: Configurable, max 1000 basis points (10%)
 - Contest Max Participants: Configurable per contest
 - Contest End Time: Must be in future
 - Aave Pool Addresses Provider: Required for yield generation
@@ -119,9 +113,9 @@ Constants to Set/Decide:
 Key Differences from Original Spec:
 - Uses Aave integration for yield generation
 - Payment token is USDC simulation (6 decimals) not custom platform token
-- Platform fees and yield go to oracle, not platform owner
+- All yield goes to oracle
 - Participants can leave contests before closing
 - Emergency withdrawal available after end time
 - Payouts calculated from initial deposits only, not total pot
-- Oracle receives remaining yield after payouts
+- Oracle receives all yield after payouts
 

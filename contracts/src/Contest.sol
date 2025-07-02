@@ -11,7 +11,6 @@ import "@aave/interfaces/IPoolAddressesProvider.sol";
 contract Contest is ReentrancyGuard, Ownable {
     IERC20 public immutable paymentToken;
     address public immutable oracle;
-    uint256 public immutable platformFee; // in basis points
 
     // Aave integration
     IPool public immutable aavePool;
@@ -56,7 +55,6 @@ contract Contest is ReentrancyGuard, Ownable {
         uint256 _endTime,
         address _paymentToken,
         address _oracle,
-        uint256 _platformFee,
         address _aavePoolAddressesProvider
     ) Ownable(msg.sender) {
         details = ContestDetails({
@@ -67,7 +65,6 @@ contract Contest is ReentrancyGuard, Ownable {
         });
         paymentToken = IERC20(_paymentToken);
         oracle = _oracle;
-        platformFee = _platformFee;
         state = ContestState.OPEN;
 
         // Initialize Aave
@@ -140,18 +137,10 @@ contract Contest is ReentrancyGuard, Ownable {
         uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
         aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
 
-        // Calculate payouts based on basis points
-        uint256 totalPot = paymentToken.balanceOf(address(this));
-        
-        // Calculate platform fee from total pot (including yield)
-        uint256 platformFeeAmount = (totalPot * platformFee) / 10000;
-        
-        // Calculate net payout from initial deposits only
-        uint256 netPayout = totalInitialDeposits - platformFeeAmount;
-
+        // Calculate payouts based on basis points from initial deposits only
         uint256[] memory calculatedPayouts = new uint256[](_payoutBasisPoints.length);
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
-            calculatedPayouts[i] = (netPayout * _payoutBasisPoints[i]) / 10000;
+            calculatedPayouts[i] = (totalInitialDeposits * _payoutBasisPoints[i]) / 10000;
         }
 
         // Update state 
@@ -159,12 +148,11 @@ contract Contest is ReentrancyGuard, Ownable {
         emit PayoutsDistributed(calculatedPayouts);
 
         // External calls last
-        paymentToken.transfer(oracle, platformFeeAmount);        
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
             paymentToken.transfer(participants[i], calculatedPayouts[i]);
         }
 
-        // Transfer any remaining yield to oracle
+        // Transfer all remaining yield to oracle
         uint256 remainingBalance = paymentToken.balanceOf(address(this));
         if (remainingBalance > 0) {
             paymentToken.transfer(oracle, remainingBalance);

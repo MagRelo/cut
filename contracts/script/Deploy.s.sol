@@ -18,9 +18,8 @@ contract DeployScript is Script {
         );
         console2.log("PlatformToken deployed to:", address(paymentToken));
 
-        // Deploy ContestFactory with platform fee from constants
+        // Deploy ContestFactory
         ContestFactory factory = new ContestFactory(
-            100, // platform fee
             address(paymentToken),
             0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e
         );

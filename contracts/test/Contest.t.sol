@@ -83,7 +83,6 @@ contract ContestTest is Test {
     address public owner;
     address public oracle;
     address public participant;
-    uint256 public constant PLATFORM_FEE = 250; // 2.5% in basis points
     uint256 public constant ENTRY_FEE = 1e18; // 1 token with 18 decimals
     address public mockAToken;
     TestMockPool public mockPool;
@@ -106,7 +105,6 @@ contract ContestTest is Test {
             block.timestamp + 2 hours,
             address(platformToken),
             oracle,
-            PLATFORM_FEE,
             address(mockProvider)
         );
         platformToken.mint(participant, ENTRY_FEE);
@@ -155,25 +153,6 @@ contract ContestTest is Test {
         contest.distribute(payouts);
         assertEq(uint256(contest.state()), uint256(Contest.ContestState.SETTLED));
         vm.stopPrank();
-    }
-
-    // Tests platform fee calculation and distribution
-    function testPlatformFee() public {
-        vm.startPrank(participant);
-        platformToken.approve(address(contest), ENTRY_FEE);
-        contest.enter();
-        vm.stopPrank();
-
-        vm.startPrank(oracle);
-        contest.closeEntry();
-        uint256[] memory payouts = new uint256[](1);
-        payouts[0] = 10000; // 100% in basis points
-        contest.distribute(payouts);
-        vm.stopPrank();
-
-        // Check platform fee was sent to oracle
-        uint256 expectedFee = (ENTRY_FEE * PLATFORM_FEE) / 10000;
-        assertEq(platformToken.balanceOf(oracle), expectedFee);
     }
 
     // Tests that a participant can perform an emergency withdrawal after the contest has ended
@@ -323,10 +302,8 @@ contract ContestTest is Test {
         contest.distribute(payouts);
         vm.stopPrank();
 
-        // Calculate expected payouts after platform fee
+        // Calculate expected payouts from initial deposits only
         uint256 totalPot = 3 * ENTRY_FEE; // 3 participants * ENTRY_FEE
-        uint256 platformFeeAmount = (totalPot * PLATFORM_FEE) / 10000;
-        uint256 netPayout = totalPot - platformFeeAmount;
 
         // Check balances for the actual participants
         assertEq(platformToken.balanceOf(participant2), ENTRY_FEE, "participant2 left and should have full balance");
@@ -334,12 +311,9 @@ contract ContestTest is Test {
         // Find which address got which payout
         for (uint256 i = 0; i < 3; i++) {
             address p = contest.participants(i);
-            uint256 expected = (netPayout * payouts[i]) / 10000;
+            uint256 expected = (totalPot * payouts[i]) / 10000;
             assertEq(platformToken.balanceOf(p), expected, "participant payout");
         }
-
-        // Check platform fee was sent to oracle
-        assertEq(platformToken.balanceOf(oracle), platformFeeAmount, "platform fee");
     }
 
     // Tests that distribute reverts if total basis points is not 10000
