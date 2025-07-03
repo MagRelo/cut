@@ -2,9 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/ContestFactory.sol";
+import "../src/EscrowFactory.sol";
+import "../src/Escrow.sol";
 import "../src/PlatformToken.sol";
 import "./MockAave.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TestMockPool is MockPool {
     constructor(address _aToken) MockPool(_aToken) {}
@@ -77,12 +79,12 @@ contract TestMockProvider is MockPoolAddressesProvider {
     function setPriceOracleSentinel(address) external pure override { revert(); }
 }
 
-contract ContestFactoryTest is Test {
-    ContestFactory public factory;
+contract EscrowFactoryTest is Test {
+    EscrowFactory public factory;
     PlatformToken public platformToken;
     address public owner;
     address public oracle;
-    uint256 public constant ENTRY_FEE = 1e18; // 1 token with 18 decimals
+    uint256 public constant DEPOSIT_AMOUNT = 1e18; // 1 token with 18 decimals
     address public mockAToken;
     TestMockPool public mockPool;
     TestMockProvider public mockProvider;
@@ -95,50 +97,190 @@ contract ContestFactoryTest is Test {
         mockAToken = address(mockATokenContract);
         mockPool = new TestMockPool(mockAToken);
         mockProvider = new TestMockProvider(address(mockPool));
-        factory = new ContestFactory(address(platformToken), address(mockProvider));
+        factory = new EscrowFactory(
+            address(platformToken),
+            address(mockProvider)
+        );
     }
 
-    function testCreateContest() public {
-        // Add oracle first
+    // Tests that the factory can create an escrow
+    function testCreateEscrow() public {
+        factory.addOracle(oracle);
+        address escrow = factory.createEscrow(
+            "Test Escrow",
+            DEPOSIT_AMOUNT,
+            10, // max participants
+            block.timestamp + 2 hours,
+            oracle
+        );
+        assertTrue(escrow != address(0));
+        assertEq(factory.getEscrows().length, 1);
+        assertEq(address(factory.getEscrows()[0]), escrow);
+    }
+
+    // Tests that only approved oracles can be used to create escrows
+    function testOnlyApprovedOracles() public {
+        address unapprovedOracle = address(0x3);
+        vm.expectRevert("Not an approved oracle");
+        factory.createEscrow(
+            "Test Escrow",
+            DEPOSIT_AMOUNT,
+            10,
+            block.timestamp + 2 hours,
+            unapprovedOracle
+        );
+    }
+
+    // Tests that end time must be in the future
+    function testEndTimeMustBeInFuture() public {
+        factory.addOracle(oracle);
+        vm.expectRevert("End time must be in future");
+        factory.createEscrow(
+            "Test Escrow",
+            DEPOSIT_AMOUNT,
+            10,
+            block.timestamp - 1, // past time
+            oracle
+        );
+    }
+
+    // Tests that max participants must be greater than 1
+    function testMaxParticipantsMustBeGreaterThanOne() public {
+        factory.addOracle(oracle);
+        vm.expectRevert("Need at least 2 participants");
+        factory.createEscrow(
+            "Test Escrow",
+            DEPOSIT_AMOUNT,
+            1, // only 1 participant
+            block.timestamp + 2 hours,
+            oracle
+        );
+    }
+
+    // Tests that deposit amount must be greater than 0
+    function testDepositAmountMustBeGreaterThanZero() public {
+        factory.addOracle(oracle);
+        vm.expectRevert("Deposit amount must be greater than 0");
+        factory.createEscrow(
+            "Test Escrow",
+            0, // zero deposit amount
+            10,
+            block.timestamp + 2 hours,
+            oracle
+        );
+    }
+
+    // Tests that only the owner can add oracles
+    function testOnlyOwnerCanAddOracle() public {
+        vm.startPrank(address(0x3));
+        vm.expectRevert(abi.encodePacked(Ownable.OwnableUnauthorizedAccount.selector, abi.encode(address(0x3))));
+        factory.addOracle(oracle);
+        vm.stopPrank();
+    }
+
+    // Tests that only the owner can remove oracles
+    function testOnlyOwnerCanRemoveOracle() public {
+        factory.addOracle(oracle);
+        vm.startPrank(address(0x3));
+        vm.expectRevert(abi.encodePacked(Ownable.OwnableUnauthorizedAccount.selector, abi.encode(address(0x3))));
+        factory.removeOracle(oracle);
+        vm.stopPrank();
+    }
+
+    // Tests that an oracle cannot be added twice
+    function testCannotAddOracleTwice() public {
+        factory.addOracle(oracle);
+        vm.expectRevert("Already oracle");
+        factory.addOracle(oracle);
+    }
+
+    // Tests that an oracle cannot be removed if not already added
+    function testCannotRemoveOracleIfNotAdded() public {
+        vm.expectRevert("Not oracle");
+        factory.removeOracle(oracle);
+    }
+
+    // Tests that an oracle can be removed after being added
+    function testCanRemoveOracle() public {
         factory.addOracle(oracle);
         assertTrue(factory.oracles(oracle));
-
-        // Now create the contest
-        address contest = factory.createContest("Test Contest", ENTRY_FEE, 10, block.timestamp + 2 hours, oracle);
-        assertTrue(contest != address(0));
-    }
-
-    function testAddOracle() public {
-        factory.addOracle(oracle);
-        assertTrue(factory.oracles(oracle));
-    }
-
-    function testRemoveOracle() public {
-        factory.addOracle(oracle);
         factory.removeOracle(oracle);
         assertFalse(factory.oracles(oracle));
     }
 
-    function testCreateContestWithInvalidEntryFee() public {
+    // Tests that multiple escrows can be created
+    function testMultipleEscrows() public {
         factory.addOracle(oracle);
-        vm.expectRevert("Entry fee must be greater than 0");
-        factory.createContest("Test Contest", 0, 10, block.timestamp + 2 hours, oracle);
+        address escrow1 = factory.createEscrow(
+            "Test Escrow 1",
+            DEPOSIT_AMOUNT,
+            10,
+            block.timestamp + 2 hours,
+            oracle
+        );
+        address escrow2 = factory.createEscrow(
+            "Test Escrow 2",
+            DEPOSIT_AMOUNT * 2,
+            5,
+            block.timestamp + 4 hours,
+            oracle
+        );
+        assertEq(factory.getEscrows().length, 2);
+        assertEq(address(factory.getEscrows()[0]), escrow1);
+        assertEq(address(factory.getEscrows()[1]), escrow2);
     }
 
-    function testCreateContestWithInvalidOracle() public {
-        vm.expectRevert("Not an approved oracle");
-        factory.createContest("Test Contest", ENTRY_FEE, 10, block.timestamp + 2 hours, oracle);
+    // Tests that the factory correctly stores the payment token address
+    function testPaymentTokenAddress() public {
+        assertEq(factory.paymentToken(), address(platformToken));
     }
 
-    function testCreateContestWithInvalidEndTime() public {
-        factory.addOracle(oracle);
-        vm.expectRevert("End time must be in future");
-        factory.createContest("Test Contest", ENTRY_FEE, 10, block.timestamp - 1, oracle);
+    // Tests that the factory correctly stores the Aave pool addresses provider
+    function testAavePoolAddressesProvider() public {
+        assertEq(factory.aavePoolAddressesProvider(), address(mockProvider));
     }
 
-    function testCreateContestWithInvalidMaxParticipants() public {
+    // Tests that the created escrow has the correct parameters
+    function testCreatedEscrowParameters() public {
         factory.addOracle(oracle);
-        vm.expectRevert("Need at least 2 participants");
-        factory.createContest("Test Contest", ENTRY_FEE, 1, block.timestamp + 2 hours, oracle);
+        address escrowAddress = factory.createEscrow(
+            "Test Escrow",
+            DEPOSIT_AMOUNT,
+            10,
+            block.timestamp + 2 hours,
+            oracle
+        );
+        
+        Escrow escrow = Escrow(escrowAddress);
+        (string memory name, uint256 depositAmount, uint256 maxParticipants, uint256 endTime) = escrow.details();
+        assertEq(name, "Test Escrow");
+        assertEq(depositAmount, DEPOSIT_AMOUNT);
+        assertEq(maxParticipants, 10);
+        assertEq(endTime, block.timestamp + 2 hours);
+        assertEq(address(escrow.paymentToken()), address(platformToken));
+        assertEq(address(escrow.oracle()), oracle);
+        assertEq(uint256(escrow.state()), uint256(Escrow.EscrowState.OPEN));
+    }
+
+    // Tests that the factory emits the correct event when adding an oracle
+    function testOracleAddedEvent() public {
+        vm.expectEmit(true, false, false, false);
+        // Define the event signature to match EscrowFactory.OracleAdded
+        emit EscrowFactory.OracleAdded(oracle);
+        factory.addOracle(oracle);
+    }
+
+    // Tests that the factory emits the correct event when removing an oracle
+    function testOracleRemovedEvent() public {
+        factory.addOracle(oracle);
+        vm.expectEmit(true, false, false, false);
+        // Define the event signature to match EscrowFactory.OracleRemoved
+        emit EscrowFactory.OracleRemoved(oracle);
+        factory.removeOracle(oracle);
+    }
+
+    // Tests that the factory owner is set correctly
+    function testFactoryOwner() public {
+        assertEq(factory.owner(), address(this));
     }
 } 

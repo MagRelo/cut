@@ -4,15 +4,15 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./Contest.sol";
+import "./Escrow.sol";
 
-contract ContestFactory is Ownable {
+contract EscrowFactory is Ownable {
     mapping(address => bool) public oracles;
-    Contest[] public contests;
+    Escrow[] public escrows;
     address public immutable paymentToken;
     address public immutable aavePoolAddressesProvider;
 
-    event ContestCreated(address indexed contest, address indexed host, uint256 entryFee);
+    event EscrowCreated(address indexed escrow, address indexed host, uint256 depositAmount);
     event OracleAdded(address indexed oracle);
     event OracleRemoved(address indexed oracle);
 
@@ -24,9 +24,9 @@ contract ContestFactory is Ownable {
         aavePoolAddressesProvider = _aavePoolAddressesProvider;
     }
 
-    function createContest(
+    function createEscrow(
         string memory name,
-        uint256 entryFee,
+        uint256 depositAmount,
         uint256 maxParticipants,
         uint256 endTime,
         address oracle
@@ -34,11 +34,11 @@ contract ContestFactory is Ownable {
         require(endTime > block.timestamp, "End time must be in future");
         require(maxParticipants > 1, "Need at least 2 participants");
         require(oracles[oracle], "Not an approved oracle");
-        require(entryFee > 0, "Entry fee must be greater than 0");
+        require(depositAmount > 0, "Deposit amount must be greater than 0");
 
-        Contest contest = new Contest(
+        Escrow escrow = new Escrow(
             name,
-            entryFee,
+            depositAmount,
             maxParticipants,
             endTime,
             paymentToken,
@@ -46,9 +46,9 @@ contract ContestFactory is Ownable {
             aavePoolAddressesProvider
         );
 
-        contests.push(contest);
-        emit ContestCreated(address(contest), msg.sender, entryFee);
-        return address(contest);
+        escrows.push(escrow);
+        emit EscrowCreated(address(escrow), msg.sender, depositAmount);
+        return address(escrow);
     }
 
     function addOracle(address oracle) external onlyOwner {
@@ -63,7 +63,7 @@ contract ContestFactory is Ownable {
         emit OracleRemoved(oracle);
     }
 
-    function getContests() external view returns (Contest[] memory) {
-        return contests;
+    function getEscrows() external view returns (Escrow[] memory) {
+        return escrows;
     }
 } 

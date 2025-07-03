@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@aave/interfaces/IPool.sol";
 import "@aave/interfaces/IPoolAddressesProvider.sol";
 
-contract Contest is ReentrancyGuard, Ownable {
+contract Escrow is ReentrancyGuard, Ownable {
     IERC20 public immutable paymentToken;
     address public immutable oracle;
 
@@ -17,29 +17,29 @@ contract Contest is ReentrancyGuard, Ownable {
     IERC20 public immutable aUSDC;
     uint256 public totalInitialDeposits;
 
-    enum ContestState { OPEN, CLOSED, SETTLED, CANCELLED }
-    ContestState public state;
+    enum EscrowState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
+    EscrowState public state;
 
-    struct ContestDetails {
+    struct EscrowDetails {
         string name;
-        uint256 entryFee;
+        uint256 depositAmount;
         uint256 maxParticipants;
         uint256 endTime;
     }
-    ContestDetails public details;
+    EscrowDetails public details;
 
-    mapping(address => bool) public hasEntered;
+    mapping(address => bool) public hasDeposited;
     address[] public participants;
 
-    event ContestEntered(address indexed participant);
-    event ContestLeft(address indexed participant);
-    event EntryClosed();
+    event EscrowDeposited(address indexed participant);
+    event EscrowWithdrawn(address indexed participant);
+    event DepositsClosed();
     event PayoutsDistributed(uint256[] payouts);
-    event ContestCancelled();
+    event EscrowCancelled();
     event ParticipantRefunded(address indexed participant, uint256 amount);
 
     modifier whenOpen() {
-        require(state == ContestState.OPEN, "Contest not open");
+        require(state == EscrowState.OPEN, "Escrow not open");
         _;
     }
 
@@ -50,22 +50,22 @@ contract Contest is ReentrancyGuard, Ownable {
 
     constructor(
         string memory _name,
-        uint256 _entryFee,
+        uint256 _depositAmount,
         uint256 _maxParticipants,
         uint256 _endTime,
         address _paymentToken,
         address _oracle,
         address _aavePoolAddressesProvider
     ) Ownable(msg.sender) {
-        details = ContestDetails({
+        details = EscrowDetails({
             name: _name,
-            entryFee: _entryFee,
+            depositAmount: _depositAmount,
             maxParticipants: _maxParticipants,
             endTime: _endTime
         });
         paymentToken = IERC20(_paymentToken);
         oracle = _oracle;
-        state = ContestState.OPEN;
+        state = EscrowState.OPEN;
 
         // Initialize Aave
         IPoolAddressesProvider provider = IPoolAddressesProvider(_aavePoolAddressesProvider);
@@ -73,37 +73,37 @@ contract Contest is ReentrancyGuard, Ownable {
         aUSDC = IERC20(aavePool.getReserveData(_paymentToken).aTokenAddress);
     }
 
-    function enter() external whenOpen {
-        require(!hasEntered[msg.sender], "Already entered");
-        require(participants.length < details.maxParticipants, "Contest full");
+    function deposit() external whenOpen {
+        require(!hasDeposited[msg.sender], "Already deposited");
+        require(participants.length < details.maxParticipants, "Escrow full");
 
-        paymentToken.transferFrom(msg.sender, address(this), details.entryFee);
+        paymentToken.transferFrom(msg.sender, address(this), details.depositAmount);
         
         // Track initial deposit
-        totalInitialDeposits += details.entryFee;
+        totalInitialDeposits += details.depositAmount;
         
         // Deposit to Aave
-        paymentToken.approve(address(aavePool), details.entryFee);
-        aavePool.supply(address(paymentToken), details.entryFee, address(this), 0);
+        paymentToken.approve(address(aavePool), details.depositAmount);
+        aavePool.supply(address(paymentToken), details.depositAmount, address(this), 0);
         
         participants.push(msg.sender);
-        hasEntered[msg.sender] = true;
+        hasDeposited[msg.sender] = true;
 
-        emit ContestEntered(msg.sender);
+        emit EscrowDeposited(msg.sender);
     }
 
-    function leave() external whenOpen {
-        require(hasEntered[msg.sender], "Not entered");
+    function withdraw() external whenOpen {
+        require(hasDeposited[msg.sender], "Not deposited");
 
         // Withdraw from Aave
-        aavePool.withdraw(address(paymentToken), details.entryFee, address(this));
+        aavePool.withdraw(address(paymentToken), details.depositAmount, address(this));
         
         // Return only the initial deposit
-        paymentToken.transfer(msg.sender, details.entryFee);
+        paymentToken.transfer(msg.sender, details.depositAmount);
         
         // Update tracking
-        totalInitialDeposits -= details.entryFee;
-        hasEntered[msg.sender] = false;
+        totalInitialDeposits -= details.depositAmount;
+        hasDeposited[msg.sender] = false;
 
         // Remove participant from the participants array (swap and pop)
         for (uint256 i = 0; i < participants.length; i++) {
@@ -114,17 +114,17 @@ contract Contest is ReentrancyGuard, Ownable {
             }
         }
 
-        emit ContestLeft(msg.sender);
+        emit EscrowWithdrawn(msg.sender);
     }
 
-    function closeEntry() external onlyOracle {
-        require(state == ContestState.OPEN, "Contest not open");
-        state = ContestState.CLOSED;
-        emit EntryClosed();
+    function closeDeposits() external onlyOracle {
+        require(state == EscrowState.OPEN, "Escrow not open");
+        state = EscrowState.IN_PROGRESS;
+        emit DepositsClosed();
     }
 
     function distribute(uint256[] calldata _payoutBasisPoints) external onlyOracle {
-        require(state == ContestState.CLOSED, "Contest not closed");
+        require(state == EscrowState.IN_PROGRESS, "Escrow not in progress");
         require(_payoutBasisPoints.length == participants.length, "Invalid payouts length");
 
         uint256 totalBasisPoints;
@@ -144,7 +144,7 @@ contract Contest is ReentrancyGuard, Ownable {
         }
 
         // Update state 
-        state = ContestState.SETTLED;
+        state = EscrowState.SETTLED;
         emit PayoutsDistributed(calculatedPayouts);
 
         // External calls last
@@ -160,22 +160,26 @@ contract Contest is ReentrancyGuard, Ownable {
     }
 
     function emergencyWithdraw() external {
-        require(hasEntered[msg.sender], "Not entered");
-        require(block.timestamp > details.endTime, "Contest not ended");
+        require(hasDeposited[msg.sender], "Not deposited");
+        require(block.timestamp > details.endTime, "Escrow not ended");
 
         // Withdraw from Aave
-        aavePool.withdraw(address(paymentToken), details.entryFee, address(this));
+        aavePool.withdraw(address(paymentToken), details.depositAmount, address(this));
         
-        paymentToken.transfer(msg.sender, details.entryFee);
-        hasEntered[msg.sender] = false;
+        paymentToken.transfer(msg.sender, details.depositAmount);
+        hasDeposited[msg.sender] = false;
+    }
+
+    function getParticipantsCount() external view returns (uint256) {
+        return participants.length;
     }
 
     function cancelAndRefund() external onlyOwner {
-        require(state == ContestState.OPEN, "Contest not open");
+        require(state == EscrowState.OPEN, "Escrow not open");
         
         // Set state to cancelled
-        state = ContestState.CANCELLED;
-        emit ContestCancelled();
+        state = EscrowState.CANCELLED;
+        emit EscrowCancelled();
         
         // Withdraw all funds from Aave
         uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
@@ -186,10 +190,10 @@ contract Contest is ReentrancyGuard, Ownable {
         // Refund all participants
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
-            if (hasEntered[participant]) {
-                paymentToken.transfer(participant, details.entryFee);
-                hasEntered[participant] = false;
-                emit ParticipantRefunded(participant, details.entryFee);
+            if (hasDeposited[participant]) {
+                paymentToken.transfer(participant, details.depositAmount);
+                hasDeposited[participant] = false;
+                emit ParticipantRefunded(participant, details.depositAmount);
             }
         }
         delete participants;

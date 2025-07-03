@@ -1,46 +1,46 @@
 Contracts 
 
 Purpose: This system will provide accounting for a fantasy sports platform. Users can 
-  create new contests, enter contests. Contest contracts will hold the funds for the contest 
-  while the contest is in progress. The Oracle will close contests to new entry and 
-  set the split for the contest contracts. Funds are deposited into Aave to earn yield during the contest period.
+  create new escrows, deposit into escrows. Escrow contracts will hold the funds for the escrow 
+  while the escrow is in progress. The Oracle will close escrows to new deposits and 
+  set the split for the escrow contracts. Funds are deposited into Aave to earn yield during the escrow period.
 
 Actors:
-- Oracle: this actor is responsible for closing contests to new entry, and setting the results of the contests
+- Oracle: this actor is responsible for closing escrows to new deposits, and setting the results of the escrows
   - Must be whitelisted by platform admin
   - Can be revoked if malicious behavior is detected
-  - Receives all yield from contests
-- Contest Owner: this actor is the creator of the contest contract
-  - Can cancel and refund participants when contest is in OPEN state
-  - Has full control over contest cancellation
-- Participant: this actor enters contests
+  - Receives all yield from escrows
+- Escrow Owner: this actor is the creator of the escrow contract
+  - Can cancel and refund participants when escrow is in OPEN state
+  - Has full control over escrow cancellation
+- Participant: this actor deposits into escrows
   - Must have sufficient funds in the payment token
-  - Can leave contests before they are closed
-  - Can emergency withdraw after contest end time
+  - Can withdraw from escrows before they are in progress
+  - Can emergency withdraw after escrow end time
 
 Contracts: 
-- Contest Factory
-  - createContest(
+- Escrow Factory
+  - createEscrow(
     string name,
-    uint256 entryFee,
+    uint256 depositAmount,
     uint256 maxParticipants,
     uint256 endTime,
     address oracle
   ) returns (address)
   - addOracle(address oracle) (Owner only)
   - removeOracle(address oracle) (Owner only)
-  - getContests() returns (Contest[])
+  - getEscrows() returns (Escrow[])
   - Constructor requires: paymentToken, aavePoolAddressesProvider
 
-- Contest (Ownable)
-  - enter() - Requires approval of entryFee tokens
-  - leave() - Withdraws initial deposit only (no yield)
-  - emergencyWithdraw() - Available after contest end time
-  - closeEntry() (Oracle only)
+- Escrow (Ownable)
+  - deposit() - Requires approval of depositAmount tokens
+  - withdraw() - Withdraws initial deposit only (no yield)
+  - emergencyWithdraw() - Available after escrow end time
+  - closeDeposits() (Oracle only)
   - distribute(uint256[] payouts) (Oracle only) - Takes basis points array
-  - cancelAndRefund() (Owner only) - Cancels contest and refunds all participants
-  - Constructor requires: name, entryFee, maxParticipants, endTime, paymentToken, oracle, aavePoolAddressesProvider
-  - Owner is set to msg.sender in constructor (contest creator)
+  - cancelAndRefund() (Owner only) - Cancels escrow and refunds all participants
+  - Constructor requires: name, depositAmount, maxParticipants, endTime, paymentToken, oracle, aavePoolAddressesProvider
+  - Owner is set to msg.sender in constructor (escrow creator)
 
 - Payment Token (ERC20 - USDC simulation)
   - name() returns (string) - "USD Coin(x)"
@@ -63,33 +63,33 @@ Token Distribution Rules:
 - Note: This is a USDC simulation for development. Production should use actual USDC.
 
 Aave Integration:
-- All contest funds are automatically deposited into Aave to earn yield
+- All escrow funds are automatically deposited into Aave to earn yield
 - Yield is tracked separately from initial deposits
 - Payouts are calculated from initial deposits only
 - All yield is sent to oracle
 
 States:
-- OPEN: Contest is accepting entries
-- CLOSED: Contest is no longer accepting entries
-- SETTLED: Contest has been settled and funds distributed
-- CANCELLED: Contest was cancelled (e.g., due to insufficient participants)
+- OPEN: Escrow is accepting deposits
+- IN_PROGRESS: Escrow is no longer accepting deposits
+- SETTLED: Escrow has been settled and funds distributed
+- CANCELLED: Escrow was cancelled (e.g., due to insufficient participants)
 
 Events:
-- ContestCreated(address indexed contest, address indexed host, uint256 entryFee)
-- ContestEntered(address indexed participant)
-- ContestLeft(address indexed participant)
-- EntryClosed()
+- EscrowCreated(address indexed escrow, address indexed host, uint256 depositAmount)
+- EscrowDeposited(address indexed participant)
+- EscrowWithdrawn(address indexed participant)
+- DepositsClosed()
 - PayoutsDistributed(uint256[] payouts)
-- ContestCancelled()
+- EscrowCancelled()
 - ParticipantRefunded(address indexed participant, uint256 amount)
 - OracleAdded(address indexed oracle)
 - OracleRemoved(address indexed oracle)
 
 Financial Considerations:
-- Minimum contest size: 2 participants
-- Maximum contest size: Configurable per contest
-- Entry fees: Must be in payment token (USDC simulation)
-- Emergency withdrawal: Available after contest end time
+- Minimum escrow size: 2 participants
+- Maximum escrow size: Configurable per escrow
+- Deposit amounts: Must be in payment token (USDC simulation)
+- Emergency withdrawal: Available after escrow end time
 - Yield distribution: Oracle receives all yield
 - Participant payouts: Based on initial deposits only
 
@@ -106,15 +106,15 @@ Constants to Set/Decide:
 - Payment Token Name: "USD Coin(x)" (simulation)
 - Payment Token Symbol: "USDC(x)" (simulation)
 - Payment Token Decimals: 6 (USDC standard)
-- Contest Max Participants: Configurable per contest
-- Contest End Time: Must be in future
+- Escrow Max Participants: Configurable per escrow
+- Escrow End Time: Must be in future
 - Aave Pool Addresses Provider: Required for yield generation
 
 Key Differences from Original Spec:
 - Uses Aave integration for yield generation
 - Payment token is USDC simulation (6 decimals) not custom platform token
 - All yield goes to oracle
-- Participants can leave contests before closing
+- Participants can withdraw from escrows before closing
 - Emergency withdrawal available after end time
 - Payouts calculated from initial deposits only, not total pot
 - Oracle receives all yield after payouts
