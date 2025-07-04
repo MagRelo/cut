@@ -8,6 +8,7 @@ import { useContestApi } from "../services/contestApi";
 import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useTournament } from "../contexts/TournamentContext";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -19,12 +20,18 @@ export const Contests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const contestApi = useContestApi();
   const { user } = usePortoAuth();
+  const { currentTournament } = useTournament();
 
   useEffect(() => {
     const fetchContests = async () => {
+      if (!currentTournament) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const data = await contestApi.getAllContests();
+        const data = await contestApi.getAllContests(currentTournament.id);
         setContests(data);
         setError(null);
       } catch (err) {
@@ -35,24 +42,18 @@ export const Contests: React.FC = () => {
       }
     };
     fetchContests();
-  }, [contestApi]);
+  }, [contestApi, currentTournament]);
 
-  // we need to seperate contests into active, contests, groups, and closed
-  const userActiveContests = contests.filter((contest) => {
+  // Separate contests into user's contests and all contests
+  const userContests = contests.filter((contest) => {
     if (contest.contestLineups) {
-      return contest.contestLineups.some(
-        (lineup) => lineup.userId === user?.id && contest.status === "OPEN"
-      );
+      return contest.contestLineups.some((lineup) => lineup.userId === user?.id);
     }
+    return false;
   });
-  // closed contests
-  const userClosedContests = contests.filter((contest) => {
-    if (contest.contestLineups) {
-      return contest.contestLineups.some(
-        (lineup) => lineup.userId === user?.id && contest.status === "CLOSED"
-      );
-    }
-  });
+
+  // Determine default tab based on whether user has entered any contests
+  const defaultTabIndex = userContests.length > 0 ? 0 : 1;
 
   return (
     <div className="space-y-4 p-4">
@@ -67,7 +68,7 @@ export const Contests: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow">
-        <TabGroup>
+        <TabGroup defaultIndex={defaultTabIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -79,7 +80,7 @@ export const Contests: React.FC = () => {
                 )
               }
             >
-              Live
+              My Contests
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -93,44 +94,13 @@ export const Contests: React.FC = () => {
             >
               All Contests
             </Tab>
-            {/* <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  'w-full py-2 text-sm font-medium leading-5',
-                  selected
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
-                    : 'text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                )
-              }>
-              Groups
-            </Tab> */}
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
-                  selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Closed
-            </Tab>
           </TabList>
           <div className="p-4">
             <TabPanel>
-              <ContestList contests={userActiveContests} loading={loading} error={error} />
+              <ContestList contests={userContests} loading={loading} error={error} />
             </TabPanel>
             <TabPanel>
               <ContestList contests={contests} loading={loading} error={error} />
-            </TabPanel>
-            <TabPanel>
-              <div className="text-gray-600">Groups will be listed here.</div>
-            </TabPanel>
-            <TabPanel>
-              <div className="text-gray-600">
-                <ContestList contests={userClosedContests} loading={loading} error={error} />
-              </div>
             </TabPanel>
           </div>
         </TabGroup>

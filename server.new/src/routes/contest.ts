@@ -1,13 +1,22 @@
-import { Router } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { requireAuth } from '../middleware/auth.js';
+import { Router } from "express";
+import { prisma } from "../lib/prisma.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-// Get all contests
-router.get('/', async (req, res) => {
+// Get contests by tournament ID
+router.get("/", async (req, res) => {
   try {
+    const { tournamentId } = req.query;
+
+    if (!tournamentId) {
+      return res.status(400).json({ error: "tournamentId is required" });
+    }
+
     const contests = await prisma.contest.findMany({
+      where: {
+        tournamentId: tournamentId as string,
+      },
       include: {
         tournament: true,
         userGroup: true,
@@ -33,13 +42,13 @@ router.get('/', async (req, res) => {
     });
     res.json(contests);
   } catch (error) {
-    console.error('Error fetching contests:', error);
-    res.status(500).json({ error: 'Failed to fetch contests' });
+    console.error("Error fetching contests:", error);
+    res.status(500).json({ error: "Failed to fetch contests" });
   }
 });
 
 // Get contest by ID
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const contest = await prisma.contest.findUnique({
       where: { id: req.params.id },
@@ -79,7 +88,7 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!contest) {
-      return res.status(404).json({ error: 'Contest not found' });
+      return res.status(404).json({ error: "Contest not found" });
     }
 
     // format the contest.contestLineups.tournamentLineup.players
@@ -93,8 +102,7 @@ router.get('/:id', async (req, res) => {
             ...playerData.tournamentPlayer.player,
             tournamentId: contest.tournamentId,
             tournamentData: {
-              leaderboardPosition:
-                playerData.tournamentPlayer.leaderboardPosition,
+              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
               r1: playerData.tournamentPlayer.r1,
               r2: playerData.tournamentPlayer.r2,
               r3: playerData.tournamentPlayer.r3,
@@ -111,23 +119,15 @@ router.get('/:id', async (req, res) => {
 
     res.json(formattedContest);
   } catch (error) {
-    console.error('Error fetching contest:', error);
-    res.status(500).json({ error: 'Failed to fetch contest' });
+    console.error("Error fetching contest:", error);
+    res.status(500).json({ error: "Failed to fetch contest" });
   }
 });
 
 // Create new contest
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const {
-      name,
-      description,
-      tournamentId,
-      userGroupId,
-      endTime,
-      address,
-      settings,
-    } = req.body;
+    const { name, description, tournamentId, userGroupId, endTime, address, settings } = req.body;
 
     const contest = await prisma.contest.create({
       data: {
@@ -137,7 +137,7 @@ router.post('/', async (req, res) => {
         userGroupId,
         endTime: new Date(endTime),
         address,
-        status: 'OPEN',
+        status: "OPEN",
         settings,
       },
       include: {
@@ -148,91 +148,19 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(contest);
   } catch (error) {
-    console.error('Error creating contest:', error);
-    res.status(500).json({ error: 'Failed to create contest' });
+    console.error("Error creating contest:", error);
+    res.status(500).json({ error: "Failed to create contest" });
   }
 });
 
-// // Update contest
-// router.put('/:id', async (req, res) => {
-//   try {
-//     const { name, description, endTime, address, status, settings } = req.body;
-
-//     const contest = await prisma.contest.update({
-//       where: { id: req.params.id },
-//       data: {
-//         name,
-//         description,
-//         endTime: new Date(endTime),
-//         address,
-//         status,
-//         settings,
-//       },
-//       include: {
-//         tournament: true,
-//         userGroup: true,
-//       },
-//     });
-
-//     res.json(contest);
-//   } catch (error) {
-//     console.error('Error updating contest:', error);
-//     res.status(500).json({ error: 'Failed to update contest' });
-//   }
-// });
-
-// // Delete contest
-// router.delete('/:id', async (req, res) => {
-//   try {
-//     await prisma.contest.delete({
-//       where: { id: req.params.id },
-//     });
-
-//     res.status(204).send();
-//   } catch (error) {
-//     console.error('Error deleting contest:', error);
-//     res.status(500).json({ error: 'Failed to delete contest' });
-//   }
-// });
-
-// // Get contest lineups
-// router.get('/:id/lineups', async (req, res) => {
-//   try {
-//     const lineups = await prisma.contestLineup.findMany({
-//       where: { contestId: req.params.id },
-//       include: {
-//         user: true,
-//         tournamentLineup: {
-//           include: {
-//             players: {
-//               include: {
-//                 tournamentPlayer: {
-//                   include: {
-//                     player: true,
-//                   },
-//                 },
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     res.json(lineups);
-//   } catch (error) {
-//     console.error('Error fetching contest lineups:', error);
-//     res.status(500).json({ error: 'Failed to fetch contest lineups' });
-//   }
-// });
-
 // Add lineup to contest
-router.post('/:id/lineups', requireAuth, async (req, res) => {
+router.post("/:id/lineups", requireAuth, async (req, res) => {
   try {
     const { tournamentLineupId } = req.body;
     const userId = req.user?.userId;
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(401).json({ error: "User not authenticated" });
     }
 
     await prisma.contestLineup.create({
@@ -240,7 +168,7 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
         contestId: req.params.id,
         tournamentLineupId,
         userId,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
@@ -283,7 +211,7 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
     });
 
     if (!contest) {
-      return res.status(404).json({ error: 'Contest not found' });
+      return res.status(404).json({ error: "Contest not found" });
     }
 
     // Format the contest data
@@ -297,8 +225,7 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
             ...playerData.tournamentPlayer.player,
             tournamentId: contest.tournamentId,
             tournamentData: {
-              leaderboardPosition:
-                playerData.tournamentPlayer.leaderboardPosition,
+              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
               r1: playerData.tournamentPlayer.r1,
               r2: playerData.tournamentPlayer.r2,
               r3: playerData.tournamentPlayer.r3,
@@ -315,13 +242,13 @@ router.post('/:id/lineups', requireAuth, async (req, res) => {
 
     res.status(201).json(formattedContest);
   } catch (error) {
-    console.error('Error adding lineup to contest:', error);
-    res.status(500).json({ error: 'Failed to add lineup to contest' });
+    console.error("Error adding lineup to contest:", error);
+    res.status(500).json({ error: "Failed to add lineup to contest" });
   }
 });
 
 // Remove lineup from contest
-router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
+router.delete("/:id/lineups/:lineupId", requireAuth, async (req, res) => {
   try {
     const userId = req.user?.userId;
     const { id: contestId, lineupId: contestLineupId } = req.params;
@@ -334,16 +261,12 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
       },
     });
     if (!lineup) {
-      return res
-        .status(404)
-        .json({ error: 'Lineup not found in this contest' });
+      return res.status(404).json({ error: "Lineup not found in this contest" });
     }
 
     // then verify the lineup belongs to this user
     if (lineup?.userId !== userId) {
-      return res
-        .status(401)
-        .json({ error: 'Lineup does not belong to this user' });
+      return res.status(401).json({ error: "Lineup does not belong to this user" });
     }
 
     // Delete the lineup
@@ -392,7 +315,7 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
     });
 
     if (!contest) {
-      return res.status(404).json({ error: 'Contest not found' });
+      return res.status(404).json({ error: "Contest not found" });
     }
 
     // Format the contest data
@@ -406,8 +329,7 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
             ...playerData.tournamentPlayer.player,
             tournamentId: contest.tournamentId,
             tournamentData: {
-              leaderboardPosition:
-                playerData.tournamentPlayer.leaderboardPosition,
+              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
               r1: playerData.tournamentPlayer.r1,
               r2: playerData.tournamentPlayer.r2,
               r3: playerData.tournamentPlayer.r3,
@@ -424,8 +346,8 @@ router.delete('/:id/lineups/:lineupId', requireAuth, async (req, res) => {
 
     res.json(formattedContest);
   } catch (error) {
-    console.error('Error removing lineup from contest:', error);
-    res.status(500).json({ error: 'Failed to remove lineup from contest' });
+    console.error("Error removing lineup from contest:", error);
+    res.status(500).json({ error: "Failed to remove lineup from contest" });
   }
 });
 

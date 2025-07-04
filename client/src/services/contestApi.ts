@@ -4,7 +4,10 @@ import { type Contest } from "../types.new/contest";
 import apiClient from "../utils/apiClient";
 
 export const useContestApi = () => {
-  const getAllContests = useCallback(() => apiClient.get<Contest[]>("/contests"), []);
+  const getAllContests = useCallback(
+    (tournamentId: string) => apiClient.get<Contest[]>(`/contests?tournamentId=${tournamentId}`),
+    []
+  );
 
   const getContestById = useCallback((id: string) => apiClient.get<Contest>(`/contests/${id}`), []);
 
