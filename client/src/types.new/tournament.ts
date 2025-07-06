@@ -1,14 +1,14 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Enums
 export const TournamentStatus = {
-  UPCOMING: 'UPCOMING',
-  IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETED: 'COMPLETED',
+  NOT_STARTED: "NOT_STARTED",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
 } as const;
 
-export type TournamentStatus =
-  (typeof TournamentStatus)[keyof typeof TournamentStatus];
+export type TournamentStatus = (typeof TournamentStatus)[keyof typeof TournamentStatus];
 
 // Base Types
 export interface TournamentVenue {
@@ -53,7 +53,7 @@ export interface Tournament {
   timezone: string;
   venue?: Record<string, unknown>; // Json type in Prisma
   purse?: number;
-  status: string;
+  status: TournamentStatus;
   roundStatusDisplay?: string;
   roundDisplay?: string;
   currentRound?: number;

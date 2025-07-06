@@ -9,6 +9,7 @@ import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useTournament } from "../contexts/TournamentContext";
+import { TournamentStatus } from "../types.new/tournament";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -61,7 +62,21 @@ export const Contests: React.FC = () => {
         <PageHeader title="Contests" className="" />
         <Link
           to="/contests/create"
-          className="inline-block bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-4 py-2 rounded shadow transition-colors ml-4 whitespace-nowrap"
+          className={`inline-block text-xs font-semibold px-4 py-2 rounded shadow transition-colors ml-4 whitespace-nowrap ${
+            currentTournament?.status === TournamentStatus.NOT_STARTED
+              ? "bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+              : "bg-gray-300 text-gray-400 cursor-not-allowed"
+          }`}
+          onClick={(e) => {
+            if (currentTournament?.status !== TournamentStatus.NOT_STARTED) {
+              e.preventDefault();
+            }
+          }}
+          title={
+            currentTournament?.status !== TournamentStatus.NOT_STARTED
+              ? "Contests can only be created for upcoming tournaments"
+              : ""
+          }
         >
           New
         </Link>
