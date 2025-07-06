@@ -44,21 +44,21 @@ router.post("/web3", async (req, res) => {
     const addressMatch = message.match(/0x[a-fA-F0-9]{40}/);
     const messageAddress = addressMatch ? addressMatch[0] : address;
 
-    console.log("=== SIWE Authentication Debug ===");
-    console.log("Sent address:", address);
-    console.log("Message address:", messageAddress);
-    console.log("Addresses match:", messageAddress.toLowerCase() === address.toLowerCase());
-    console.log("ChainId:", chainId);
-    console.log("Message length:", message.length);
-    console.log("Full message:", message); // Log the entire message
-    console.log("Signature length:", signature.length);
-    console.log("Signature:", signature);
-    console.log("Digest:", digest);
-    console.log("Signature type check:");
-    console.log("- Length:", signature.length);
-    console.log("- Length in bytes:", Math.floor(signature.length / 2));
-    console.log("- Is hex:", /^0x[a-fA-F0-9]+$/.test(signature));
-    console.log("- Standard ETH sig length (65 bytes):", signature.length === 130); // 65 bytes = 130 hex chars
+    // console.log("=== SIWE Authentication Debug ===");
+    // console.log("Sent address:", address);
+    // console.log("Message address:", messageAddress);
+    // console.log("Addresses match:", messageAddress.toLowerCase() === address.toLowerCase());
+    // console.log("ChainId:", chainId);
+    // console.log("Message length:", message.length);
+    // console.log("Full message:", message); // Log the entire message
+    // console.log("Signature length:", signature.length);
+    // console.log("Signature:", signature);
+    // console.log("Digest:", digest);
+    // console.log("Signature type check:");
+    // console.log("- Length:", signature.length);
+    // console.log("- Length in bytes:", Math.floor(signature.length / 2));
+    // console.log("- Is hex:", /^0x[a-fA-F0-9]+$/.test(signature));
+    // console.log("- Standard ETH sig length (65 bytes):", signature.length === 130); // 65 bytes = 130 hex chars
 
     const isValid = await ServerActions.verifySignature(client, {
       address: messageAddress,

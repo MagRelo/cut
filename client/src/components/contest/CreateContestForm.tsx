@@ -207,7 +207,7 @@ export const CreateContestForm = () => {
     }));
   };
 
-  console.log({ loading, isSending, isConfirming });
+  // console.log({ loading, isSending, isConfirming });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto p-4">
