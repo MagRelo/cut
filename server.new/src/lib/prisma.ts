@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 // Prevent multiple instances of Prisma Client in development
 declare global {
@@ -7,23 +7,23 @@ declare global {
 
 // Helper to safely append connection parameters
 function appendConnectionParams(url: string): string {
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}connection_limit=6&pool_timeout=30`;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}connection_limit=10&pool_timeout=30`;
 }
 
 let prismaInstance: PrismaClient | undefined;
 
 export function getPrisma() {
   if (!prismaInstance) {
-    console.log('Initializing Prisma client');
+    console.log("Initializing Prisma client");
     prismaInstance =
       global.prisma ||
       new PrismaClient({
-        log: ['error', 'warn'],
-        datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ''),
+        log: ["error", "warn"],
+        datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ""),
       });
 
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       global.prisma = prismaInstance;
     }
   }
@@ -31,7 +31,7 @@ export function getPrisma() {
 }
 
 // Handle cleanup on app termination
-process.on('beforeExit', async () => {
+process.on("beforeExit", async () => {
   if (prismaInstance) {
     await prismaInstance.$disconnect();
   }
