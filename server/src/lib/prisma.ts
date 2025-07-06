@@ -8,7 +8,8 @@ declare global {
 // Helper to safely append connection parameters
 function appendConnectionParams(url: string): string {
   const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}connection_limit=6&pool_timeout=30`;
+  // More conservative settings for remote databases
+  return `${url}${separator}connection_limit=3&pool_timeout=20&connect_timeout=10`;
 }
 
 const prisma =
@@ -28,4 +29,15 @@ export { prisma };
 // Handle cleanup on app termination
 process.on('beforeExit', async () => {
   await prisma.$disconnect();
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
