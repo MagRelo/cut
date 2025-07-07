@@ -76,7 +76,7 @@ router.all(
       // console.log("Testing Base Sepolia RPC connection...");
       const client = createClient({
         chain: baseSepolia,
-        transport: http(),
+        transport: http("https://base-sepolia.rpc.ithaca.xyz"),
       });
 
       // console.log("Created viem client, testing block number request...");
@@ -94,9 +94,13 @@ router.all(
   MerchantRpc.requestListener({
     address: process.env.MERCHANT_ADDRESS as `0x${string}`,
     key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+    // key: {
+    //   type: "secp256k1",
+    //   privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+    // },
     chains: [baseSepolia],
     transports: {
-      [baseSepolia.id]: http(),
+      [baseSepolia.id]: http("https://base-sepolia.rpc.ithaca.xyz"),
     },
     sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
       console.log("Porto sponsor function called");
