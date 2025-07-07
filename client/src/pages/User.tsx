@@ -1,24 +1,40 @@
+import { useState } from "react";
 import { useAccount, useDisconnect, useConnect, useBalance } from "wagmi";
+import { Porto } from "porto";
+import { formatUnits } from "viem";
+
+import { usePortoAuth } from "../contexts/PortoAuthContext";
+
 import { PageHeader } from "../components/util/PageHeader";
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
-import { formatUnits } from "viem";
 import { UserSettings } from "../components/user/UserSettings";
 import { paymentTokenAddress } from "../utils/contracts/sepolia.json";
 import { Transfer } from "../components/user/Transfer";
 import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { LoadingSpinnerSmall } from "../components/common/LoadingSpinnerSmall";
 
-import { Porto } from "porto";
+enum ConnectionStatus {
+  IDLE = "idle",
+  CONNECTING_WALLET = "connecting_wallet",
+  CONNECTING_TO_CUT = "connecting_to_cut",
+  SUCCESS = "success",
+  ERROR = "error",
+}
 
 export function UserPage() {
   const { authenticateWithWeb3, user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
-  const { connectors, connect, error } = useConnect();
+  const { connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
 
   const connector = connectors.find((connector) => connector.id === "xyz.ithaca.porto")!;
   const handleConnect = async () => {
     try {
+      setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
+
+      // Porto Connection
+      // https://docs.porto.sh/docs/wallet-connect/sign-in-with-ethereum
       const provider = (await connector.getProvider({ chainId })) as Porto.Porto["provider"];
       const capabilities = await provider.request({
         method: "wallet_connect",
@@ -34,23 +50,48 @@ export function UserPage() {
         ],
       });
 
-      console.log({ capabilities });
-
       const address = capabilities.accounts.at(0)?.address;
       const siwe = capabilities.accounts.at(0)?.capabilities?.signInWithEthereum;
-      console.log({ address, siwe });
+      // console.log({ address, siwe });
 
+      setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+
+      // Server Connection
       authenticateWithWeb3(
         address ?? "",
         chainId ?? 84532,
         siwe?.message ?? "",
         siwe?.signature ?? ""
       );
+
+      setConnectionStatus(ConnectionStatus.SUCCESS);
     } catch (error) {
       console.error("Error connecting to wallet:", error);
+      setConnectionStatus(ConnectionStatus.ERROR);
       // setError("Error connecting to wallet:", error);
     }
   };
+
+  // Helper function to get status display text
+  const getStatusText = () => {
+    switch (connectionStatus) {
+      case ConnectionStatus.CONNECTING_WALLET:
+        return "Connecting wallet...";
+      case ConnectionStatus.CONNECTING_TO_CUT:
+        return "Connecting to the Cut...";
+      case ConnectionStatus.SUCCESS:
+        return "Connected successfully!";
+      case ConnectionStatus.ERROR:
+        return "Connection failed";
+      default:
+        return "";
+    }
+  };
+
+  // Helper function to check if connecting
+  const isConnecting =
+    connectionStatus === ConnectionStatus.CONNECTING_WALLET ||
+    connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
   // get USDC balance
   // const { data: balance_USDC } = useBalance({
@@ -86,17 +127,28 @@ export function UserPage() {
             {connectors.map((connector) => (
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-                // disabled={!!user}
+                disabled={isConnecting}
                 key={connector.uid}
                 onClick={handleConnect}
                 type="button"
               >
-                Connect
+                {isConnecting ? (
+                  <div className="flex items-center gap-2 w-full justify-center">
+                    <LoadingSpinnerSmall />
+                    {getStatusText()}
+                  </div>
+                ) : (
+                  "Connect"
+                )}
               </button>
             ))}
           </div>
 
-          <div>{error?.message}</div>
+          {/* Add status display */}
+          <div className="mt-2 text-sm text-center text-red-500">
+            {connectionStatus === ConnectionStatus.ERROR && <div>Connection failed</div>}
+            {error?.message && <div>{error?.message}</div>}
+          </div>
         </div>
       </div>
     );
@@ -246,12 +298,19 @@ export function UserPage() {
               {connectors.map((connector) => (
                 <button
                   className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-                  disabled={!!address}
+                  disabled={!!address || isConnecting}
                   key={connector.uid}
-                  onClick={() => connect({ connector })}
+                  onClick={handleConnect}
                   type="button"
                 >
-                  Connect
+                  {isConnecting ? (
+                    <div className="flex items-center gap-2 w-full justify-center">
+                      <LoadingSpinnerSmall />
+                      {getStatusText()}
+                    </div>
+                  ) : (
+                    "Connect"
+                  )}
                 </button>
               ))}
             </>
@@ -263,7 +322,10 @@ export function UserPage() {
             <button
               className="bg-gray-50 py-1 px-4 mt-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
               disabled={!address}
-              onClick={() => disconnect()}
+              onClick={() => {
+                disconnect();
+                setConnectionStatus(ConnectionStatus.IDLE);
+              }}
             >
               Sign out
             </button>

@@ -92,7 +92,7 @@ PGA_API_KEY=your_pga_api_key
 
 # CORS Configuration
 
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,https://stg.id.porto.sh
 \`\`\`
 
 #### Client Environment Variables
