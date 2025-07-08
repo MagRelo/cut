@@ -66,20 +66,17 @@ router.all(
   async (req, res, next) => {
     console.log("Porto RPC route hit");
     console.log("Address:", process.env.MERCHANT_ADDRESS);
-    console.log("Private key:", process.env.MERCHANT_PRIVATE_KEY);
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
-    console.log("Request method:", req.method);
-    console.log("Request headers:", req.headers);
+    // console.log("Private key:", process.env.MERCHANT_PRIVATE_KEY);
 
     // Test RPC connection using the same setup as Porto
     try {
-      // console.log("Testing Base Sepolia RPC connection...");
+      console.log("Testing Base Sepolia RPC connection...");
       const client = createClient({
         chain: baseSepolia,
         transport: http("https://base-sepolia.rpc.ithaca.xyz"),
       });
 
-      // console.log("Created viem client, testing block number request...");
+      console.log("Created viem client, testing block number request...");
       const blockNumber = await client.request({
         method: "eth_blockNumber",
       });
@@ -89,43 +86,50 @@ router.all(
       console.error("RPC connection failed:", error);
     }
 
+    console.log("About to call Porto requestListener...");
     next();
   },
-  MerchantRpc.requestListener({
-    address: process.env.MERCHANT_ADDRESS as `0x${string}`,
-    key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-    // key: {
-    //   type: "secp256k1",
-    //   privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-    // },
-    chains: [baseSepolia],
-    transports: {
-      [baseSepolia.id]: http("https://base-sepolia.rpc.ithaca.xyz"),
-    },
-    sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-      console.log("Porto sponsor function called");
-      return true;
-    },
+  (req, res, next) => {
+    console.log("Inside Porto requestListener middleware...");
 
-    // sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-    //   console.log("Porto sponsor function called");
-    //   return true;
-    //   // return await isSponsoredContract(request);
-    // },
-    // sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-    //   console.log("Porto sponsor function called:", {
-    //     request: request,
-    //     timestamp: new Date().toISOString(),
-    //   });
+    // Create requestListener with detailed error handling
+    const requestListener = MerchantRpc.requestListener({
+      address: process.env.MERCHANT_ADDRESS as `0x${string}`,
+      key: {
+        type: "secp256k1",
+        privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+      },
+      chains: [baseSepolia],
+      transports: {
+        [baseSepolia.id]: http("https://base-sepolia.rpc.ithaca.xyz"),
+      },
+      // sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
+      //   console.log("Porto sponsor function called");
+      //   return true;
+      //   // return await isSponsoredContract(request);
+      // },
+    });
 
-    //   if (process.env.MERCHANT_CHECK_SPONSORED === "true") {
-    //     return await isSponsoredContract(request);
-    //   } else {
-    //     console.log("Merchant check sponsored is disabled, returning true");
-    //     return true;
-    //   }
-    // },
-  })
+    console.log("Porto requestListener created, calling it...");
+
+    // Call requestListener with timeout
+    const timeout = setTimeout(() => {
+      console.error("Porto requestListener timed out after 30 seconds");
+      res.status(500).json({ error: "Porto request timeout" });
+    }, 30000);
+
+    try {
+      requestListener(req, res);
+      console.log("Porto requestListener called successfully");
+    } catch (error) {
+      clearTimeout(timeout);
+      console.error("Porto requestListener setup error:", error);
+      res.status(500).json({
+        error: "Porto setup failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
 );
 
 // Get Porto configuration
