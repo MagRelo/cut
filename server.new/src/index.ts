@@ -71,7 +71,12 @@ app.use(
 app.use("/api", apiRoutes);
 
 // Serve index.html for all other routes to support client-side routing
-app.get("*", (req, res) => {
+app.use((req, res, next) => {
+  // Skip if it's an API route or static file
+  if (req.path.startsWith("/api") || req.path.includes(".")) {
+    return next();
+  }
+
   console.log("Catch-all route hit:", req.url);
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");

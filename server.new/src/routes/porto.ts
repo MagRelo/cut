@@ -63,89 +63,19 @@ async function isSponsoredContract(
 // Porto RPC endpoint for handling merchant RPC requests
 router.all(
   "/rpc",
-  async (req, res, next) => {
-    console.log("Porto RPC route hit");
-    console.log("Address:", process.env.MERCHANT_ADDRESS);
-    // console.log("Private key:", process.env.MERCHANT_PRIVATE_KEY);
-
-    // Test RPC connection using the same setup as Porto
-    try {
-      console.log("Testing Base Sepolia RPC connection...");
-      const client = createClient({
-        chain: baseSepolia,
-        transport: http("https://base-sepolia.rpc.ithaca.xyz"),
-      });
-
-      console.log("Created viem client, testing block number request...");
-      const blockNumber = await client.request({
-        method: "eth_blockNumber",
-      });
-
-      console.log("RPC connection successful! Block number:", blockNumber);
-    } catch (error) {
-      console.error("RPC connection failed:", error);
-    }
-
-    console.log("About to call Porto requestListener...");
+  (req, res, next) => {
+    console.log("Porto RPC request received");
     next();
   },
-  (req, res, next) => {
-    console.log("Inside Porto requestListener middleware...");
-
-    // Create requestListener with detailed error handling
-    const requestListener = MerchantRpc.requestListener({
-      address: process.env.MERCHANT_ADDRESS as `0x${string}`,
-      key: {
-        type: "secp256k1",
-        privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-      },
-      chains: [baseSepolia],
-      transports: {
-        [baseSepolia.id]: http("https://base-sepolia.rpc.ithaca.xyz"),
-      },
-      // sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-      //   console.log("Porto sponsor function called");
-      //   return true;
-      //   // return await isSponsoredContract(request);
-      // },
-    });
-
-    console.log("Porto requestListener created, calling it...");
-
-    // Call requestListener with timeout
-    const timeout = setTimeout(() => {
-      console.error("Porto requestListener timed out after 30 seconds");
-      res.status(500).json({ error: "Porto request timeout" });
-    }, 30000);
-
-    try {
-      requestListener(req, res);
-      console.log("Porto requestListener called successfully");
-    } catch (error) {
-      clearTimeout(timeout);
-      console.error("Porto requestListener setup error:", error);
-      res.status(500).json({
-        error: "Porto setup failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
+  MerchantRpc.requestListener({
+    address: process.env.MERCHANT_ADDRESS as `0x${string}`,
+    key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+    sponsor: (request: RpcSchema.wallet_prepareCalls.Parameters) => {
+      console.log("Porto sponsor function called");
+      // Temporarily return false to test basic functionality
+      return false;
+    },
+  })
 );
-
-// Get Porto configuration
-router.get("/config", async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      config: {
-        merchantAddress: process.env.MERCHANT_ADDRESS,
-        supportedMethods: ["porto_merchant_request", "porto_merchant_status"],
-      },
-    });
-  } catch (error) {
-    console.error("Error getting Porto config:", error);
-    res.status(500).json({ error: "Failed to get Porto configuration" });
-  }
-});
 
 export default router;
