@@ -21,13 +21,13 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className='p-4 sm:p-6 border-b border-gray-200'>
             <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
-                2025 Genesis Scottish Open
+                2025 Open Championship
               </Dialog.Title>
               <p className='text-lg tracking-tight text-gray-600 font-medium'>
-                The Renaissance Club
+                Royal Portrush Golf Club
               </p>
               <p className='text-sm text-gray-500 font-medium'>
-                East Lothian, Scotland
+                Northern Ireland
               </p>
             </div>
 
@@ -39,24 +39,28 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Rory McIlroy:</strong> World No. 2, multiple
-                    Scottish Open winner, and this week's favorite (+450).
+                    <strong>Scottie Scheffler:</strong> World No. 1, seeking his
+                    first Open title and fourth career major. The pre-tournament
+                    favorite (+450 to +500 odds).
                   </li>
                   <li>
-                    <strong>Ludvig Åberg:</strong> Rising star, already a winner
-                    on both sides of the Atlantic (+1200).
+                    <strong>Rory McIlroy:</strong> Northern Ireland native,
+                    homecoming hero, and 2014 Open champion. Second favorite
+                    (+700), looking to win on home soil, already a Masters
+                    winner in 2025.
                   </li>
                   <li>
-                    <strong>Tommy Fleetwood:</strong> Consistent performer and
-                    links specialist (+1500).
+                    <strong>Jon Rahm:</strong> 2021 U.S. Open champion.
+                    Consistent major contender (+1200).
                   </li>
                   <li>
-                    <strong>Viktor Hovland:</strong> Major contender, known for
-                    his aggressive play (+1800).
+                    <strong>Bryson DeChambeau:</strong> Known for his power,
+                    two-time U.S. Open winner, odds around +1400 to +2000.
                   </li>
                   <li>
-                    <strong>Collin Morikawa:</strong> Top-ranked American, Open
-                    champion, and a threat on any links course (+2000).
+                    <strong>Xander Schauffele:</strong> Defending champion
+                    (+2000/+2500), seeking to go back-to-back after last year's
+                    breakthrough.
                   </li>
                 </ul>
 
@@ -65,24 +69,23 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Established:</strong> 1972, the Scottish Open is a
-                    premier event on the DP World Tour and a key part of the PGA
-                    Tour's summer schedule.
+                    <strong>Established:</strong> 1860, The Open Championship
+                    ("The Open") is the world's oldest golf major.
                   </li>
                   <li>
-                    <strong>Venue:</strong> The Renaissance Club has hosted
-                    since 2019, offering a modern links challenge on Scotland's
-                    east coast.
+                    <strong>Venue:</strong> This is only the third time Royal
+                    Portrush has hosted The Open (previously 1951 and 2019).
                   </li>
                   <li>
-                    <strong>Significance:</strong> Traditionally serves as the
-                    final tune-up for The Open Championship, attracting a
-                    world-class field and providing a true links golf test.
+                    <strong>Legacy:</strong> Renowned for its links challenge,
+                    unpredictable weather, and status as golf's "original
+                    major." Shane Lowry won the last Open held at Portrush
+                    (2019).
                   </li>
                   <li>
-                    <strong>Legacy:</strong> The event has seen champions from
-                    both sides of the Atlantic, with many using it as a
-                    springboard to Open success.
+                    <strong>Recent Champions:</strong> 2024: Xander Schauffele
+                    (Royal Troon), 2023: Brian Harman (Royal Liverpool), 2022:
+                    Cameron Smith (St Andrews).
                   </li>
                 </ul>
 
@@ -91,23 +94,23 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Rory McIlroy's Pursuit:</strong> Can McIlroy add
-                    another Scottish Open title to his illustrious resume?
+                    <strong>McIlroy's Homecoming:</strong> The pressure and
+                    opportunity for a popular home win, especially after missing
+                    the cut here in 2019.
                   </li>
                   <li>
-                    <strong>Open Championship Prep:</strong> Many players use
-                    this week as their final tune-up before The Open, testing
-                    their games in true links conditions.
+                    <strong>Scheffler's Spectacular Season:</strong> Can he cap
+                    a dominant year with another major?
                   </li>
                   <li>
-                    <strong>Course Challenge:</strong> The Renaissance Club's
-                    layout rewards shot-making and strategic play, with weather
-                    often playing a decisive role.
+                    <strong>Schauffele's Defense:</strong> Looking to win
+                    consecutive majors and further cement his status as one of
+                    golf's elite.
                   </li>
                   <li>
-                    <strong>Scottish Hopes:</strong> Local players have extra
-                    motivation to perform in front of home crowds, aiming for a
-                    breakthrough victory.
+                    <strong>Open Specialists:</strong> Will links experts and
+                    Europeans thrive, or can an American grab the Claret Jug
+                    again?
                   </li>
                 </ul>
 
@@ -116,14 +119,15 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Course:</strong> The Renaissance Club: Par 71,
-                    approximately 7,200 yards. The course demands creativity,
-                    precision, and adaptability to changing coastal conditions.
+                    <strong>Course:</strong> Royal Portrush (Dunluce Links): Par
+                    71, 7,381 yards. Classic links: undulating fairways, deep
+                    bunkers, thick rough, coastal winds, and demanding greens.
                   </li>
                   <li>
-                    <strong>Format:</strong> 72-hole stroke play with a cut
-                    after 36 holes. The field features 156 players, including
-                    many of the world's best.
+                    <strong>Format:</strong> 72 holes of stroke play, starting
+                    field of 156. Cut after 36 holes (top 70 and ties). The
+                    venue has been lengthened and enhanced since 2019, promising
+                    a tougher test.
                   </li>
                 </ul>
 
@@ -132,12 +136,11 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>TV:</strong> Golf Channel and European Tour live
-                    coverage.
+                    <strong>TV:</strong> USA Network (early rounds), NBC
+                    (weekend).
                   </li>
                   <li>
-                    <strong>Streaming:</strong> Official platforms offer
-                    comprehensive streaming options for fans worldwide.
+                    <strong>Streaming:</strong> Peacock, Fubo.
                   </li>
                 </ul>
               </div>
