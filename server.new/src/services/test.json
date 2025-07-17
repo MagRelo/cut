@@ -1,0 +1,485 @@
+{
+  "standings": {
+    "id": "R-02671-2025",
+    "logo": "https://res.cloudinary.com/pgatour-prod/temp/standings/FedExCup-Light.png",
+    "owgr": "467",
+    "rank": "-",
+    "title": "FedExCup Standings",
+    "total": "-",
+    "webview": null,
+    "logoDark": "https://res.cloudinary.com/pgatour-prod/temp/standings/FedExCup-Dark.png",
+    "rankLogo": "",
+    "detailCopy": null,
+    "totalLabel": "Points",
+    "description": "",
+    "rankLogoDark": "",
+    "webviewBrowserControls": null
+  },
+  "performance": [
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "0", "career": "202" },
+        { "wide": false, "title": "Events", "value": "2", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "1", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$24,927", "career": "$55,010,895" }
+      ],
+      "season": "2025",
+      "displaySeason": "2025"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "1", "career": "202" },
+        { "wide": false, "title": "Events", "value": "2", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "1", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$409,279", "career": "$55,010,895" }
+      ],
+      "season": "2024",
+      "displaySeason": "2024"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "0", "career": "202" },
+        { "wide": false, "title": "Events", "value": "2", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "1", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$143,295", "career": "$55,010,895" }
+      ],
+      "season": "2023",
+      "displaySeason": "2022-23"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "1", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "4", "career": "202" },
+        { "wide": false, "title": "Events", "value": "13", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "9", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$799,231", "career": "$55,010,895" }
+      ],
+      "season": "2022",
+      "displaySeason": "2021-22"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "4", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "11", "career": "202" },
+        { "wide": false, "title": "Events", "value": "24", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "15", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,998,555", "career": "$55,010,895" }
+      ],
+      "season": "2021",
+      "displaySeason": "2020-21"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "1", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "1", "career": "202" },
+        { "wide": false, "title": "Events", "value": "12", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "10", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$658,935", "career": "$55,010,895" }
+      ],
+      "season": "2020",
+      "displaySeason": "2019-20"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "1", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "5", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "6", "career": "202" },
+        { "wide": false, "title": "Events", "value": "15", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "11", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$1,793,027", "career": "$55,010,895" }
+      ],
+      "season": "2019",
+      "displaySeason": "2018-19"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "3", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "4", "career": "202" },
+        { "wide": false, "title": "Events", "value": "15", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "7", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$878,354", "career": "$55,010,895" }
+      ],
+      "season": "2018",
+      "displaySeason": "2017-18"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "3", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "10", "career": "202" },
+        { "wide": false, "title": "Events", "value": "17", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "16", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$3,522,476", "career": "$55,010,895" }
+      ],
+      "season": "2017",
+      "displaySeason": "2016-17"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "1", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "4", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "9", "career": "202" },
+        { "wide": false, "title": "Events", "value": "15", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "13", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$3,242,156", "career": "$55,010,895" }
+      ],
+      "season": "2016",
+      "displaySeason": "2015-16"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "2", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "4", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "7", "career": "202" },
+        { "wide": false, "title": "Events", "value": "15", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "15", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,670,229", "career": "$55,010,895" }
+      ],
+      "season": "2015",
+      "displaySeason": "2014-15"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "3", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "2", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "10", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "12", "career": "202" },
+        { "wide": false, "title": "Events", "value": "16", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "15", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$4,939,606", "career": "$55,010,895" }
+      ],
+      "season": "2014",
+      "displaySeason": "2013-14"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "6", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "11", "career": "202" },
+        { "wide": false, "title": "Events", "value": "17", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "17", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,251,139", "career": "$55,010,895" }
+      ],
+      "season": "2013",
+      "displaySeason": "2013"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "3", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "8", "career": "202" },
+        { "wide": false, "title": "Events", "value": "16", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "14", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,510,116", "career": "$55,010,895" }
+      ],
+      "season": "2012",
+      "displaySeason": "2012"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "3", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "9", "career": "202" },
+        { "wide": false, "title": "Events", "value": "16", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "15", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$1,524,091", "career": "$55,010,895" }
+      ],
+      "season": "2011",
+      "displaySeason": "2011"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "1", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "4", "career": "202" },
+        { "wide": false, "title": "Events", "value": "15", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "13", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$936,845", "career": "$55,010,895" }
+      ],
+      "season": "2010",
+      "displaySeason": "2010"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "3", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "6", "career": "202" },
+        { "wide": false, "title": "Events", "value": "17", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "14", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$1,212,522", "career": "$55,010,895" }
+      ],
+      "season": "2009",
+      "displaySeason": "2009"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "3", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "6", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "11", "career": "202" },
+        { "wide": false, "title": "Events", "value": "19", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "18", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$4,858,224", "career": "$55,010,895" }
+      ],
+      "season": "2008",
+      "displaySeason": "2008"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "2", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "7", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "13", "career": "202" },
+        { "wide": false, "title": "Events", "value": "19", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "17", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$3,721,185", "career": "$55,010,895" }
+      ],
+      "season": "2007",
+      "displaySeason": "2007"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "5", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "8", "career": "202" },
+        { "wide": false, "title": "Events", "value": "17", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "13", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$1,560,733", "career": "$55,010,895" }
+      ],
+      "season": "2006",
+      "displaySeason": "2006"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "1", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "2", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "8", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "13", "career": "202" },
+        { "wide": false, "title": "Events", "value": "20", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "17", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$3,213,375", "career": "$55,010,895" }
+      ],
+      "season": "2005",
+      "displaySeason": "2005"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "2", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "5", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "10", "career": "202" },
+        { "wide": false, "title": "Events", "value": "18", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "16", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$3,239,215", "career": "$55,010,895" }
+      ],
+      "season": "2004",
+      "displaySeason": "2004"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "2", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "4", "career": "202" },
+        { "wide": false, "title": "Events", "value": "20", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "12", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$666,386", "career": "$55,010,895" }
+      ],
+      "season": "2003",
+      "displaySeason": "2003"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "1", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "9", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "14", "career": "202" },
+        { "wide": false, "title": "Events", "value": "21", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "19", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,401,993", "career": "$55,010,895" }
+      ],
+      "season": "2002",
+      "displaySeason": "2002"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "2", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "2", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "8", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "12", "career": "202" },
+        { "wide": false, "title": "Events", "value": "18", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "14", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$2,898,635", "career": "$55,010,895" }
+      ],
+      "season": "2001",
+      "displaySeason": "2001"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "2", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "5", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "8", "career": "202" },
+        { "wide": false, "title": "Events", "value": "16", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "14", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$1,054,338", "career": "$55,010,895" }
+      ],
+      "season": "2000",
+      "displaySeason": "2000"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "1", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "4", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "6", "career": "202" },
+        { "wide": false, "title": "Events", "value": "8", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "6", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$784,917", "career": "$55,010,895" }
+      ],
+      "season": "1999",
+      "displaySeason": "1999"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "0", "career": "202" },
+        { "wide": false, "title": "Events", "value": "1", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "1", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "$784,917", "career": "$55,010,895" }
+      ],
+      "season": "1999",
+      "displaySeason": "1999"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "0", "career": "202" },
+        { "wide": false, "title": "Events", "value": "1", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "1", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "-", "career": "$55,010,895" }
+      ],
+      "season": "1998",
+      "displaySeason": "1998"
+    },
+    {
+      "tour": "H",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "0" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "0" },
+        { "wide": false, "title": "Thirds", "value": "1", "career": "1" },
+        { "wide": false, "title": "Top 10", "value": "1", "career": "1" },
+        { "wide": false, "title": "Top 25", "value": "2", "career": "2" },
+        { "wide": false, "title": "Events", "value": "3", "career": "3" },
+        { "wide": false, "title": "Cuts Made", "value": "2", "career": "2" },
+        { "wide": true, "title": "Earnings", "value": "-", "career": "-" }
+      ],
+      "season": "1998",
+      "displaySeason": "1998"
+    },
+    {
+      "tour": "R",
+      "stats": [
+        { "wide": false, "title": "Wins", "value": "0", "career": "11" },
+        { "wide": false, "title": "Seconds", "value": "0", "career": "16" },
+        { "wide": false, "title": "Thirds", "value": "0", "career": "11" },
+        { "wide": false, "title": "Top 10", "value": "0", "career": "110" },
+        { "wide": false, "title": "Top 25", "value": "0", "career": "202" },
+        { "wide": false, "title": "Events", "value": "1", "career": "408" },
+        { "wide": false, "title": "Cuts Made", "value": "0", "career": "335" },
+        { "wide": true, "title": "Earnings", "value": "-", "career": "$55,010,895" }
+      ],
+      "season": "1996",
+      "displaySeason": "1996"
+    }
+  ]
+}

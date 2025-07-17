@@ -5,6 +5,7 @@ import { baseSepolia } from "viem/chains";
 import { http, createClient } from "viem";
 
 import { prisma } from "../lib/prisma.js";
+import { createPortoMiddleware } from "../middleware/portoHandler.js";
 
 const router = Router();
 
@@ -60,6 +61,17 @@ async function isSponsoredContract(
   }
 }
 
+// Create Porto RequestHandler
+const portoHandler = MerchantRpc.requestHandler({
+  address: process.env.MERCHANT_ADDRESS as `0x${string}`,
+  key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+  sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
+    const isSponsored = await isSponsoredContract(request);
+    console.log("Porto sponsor function called; isSponsored:", isSponsored);
+    return isSponsored;
+  },
+});
+
 // Porto RPC endpoint for handling merchant RPC requests
 router.all(
   "/rpc",
@@ -67,15 +79,7 @@ router.all(
     console.log("Porto RPC request received");
     next();
   },
-  MerchantRpc.requestListener({
-    address: process.env.MERCHANT_ADDRESS as `0x${string}`,
-    key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-    sponsor: (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-      console.log("Porto sponsor function called");
-      // Temporarily return false to test basic functionality
-      return false;
-    },
-  })
+  createPortoMiddleware(portoHandler)
 );
 
 export default router;
