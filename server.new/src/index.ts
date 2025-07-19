@@ -30,6 +30,7 @@ for (const envVar of requiredEnvVars) {
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 // Routes
 import apiRoutes from "./routes/api.js";
@@ -56,7 +57,13 @@ app.use(
 // Request logging
 app.use(requestLogger);
 
+// Body parsing middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // add for porto
+app.use(express.text({ type: "text/plain" })); // add for porto
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Serve static files from the public directory
 app.use(

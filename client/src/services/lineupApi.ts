@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
-import { type TournamentLineup } from '../types.new/player';
-import { handleApiResponse } from '../utils/apiError';
+import { useCallback, useMemo } from "react";
+import { type TournamentLineup } from "../types.new/player";
+import { handleApiResponse } from "../utils/apiError";
 
 interface LineupResponse {
   lineup: TournamentLineup;
@@ -16,9 +16,9 @@ interface LineupResponse {
 export const useLineupApi = () => {
   const config = useMemo(
     () => ({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     }),
     []
@@ -35,20 +35,15 @@ export const useLineupApi = () => {
         ...config.headers,
       };
 
-      // Add auth token if available
-      const token = localStorage.getItem('portoToken');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       if (isPublic) {
-        headers['X-Public-Api'] = 'true';
+        headers["X-Public-Api"] = "true";
       }
 
       const response = await fetch(`${config.baseURL}${endpoint}`, {
         method,
         headers,
         body: data ? JSON.stringify(data) : undefined,
+        credentials: "include", // Include cookies in the request
       });
 
       return handleApiResponse<T>(response);
@@ -57,14 +52,13 @@ export const useLineupApi = () => {
   );
 
   const getLineup = useCallback(
-    (tournamentId: string) =>
-      request<LineupResponse>('GET', `/lineup/${tournamentId}`),
+    (tournamentId: string) => request<LineupResponse>("GET", `/lineup/${tournamentId}`),
     [request]
   );
 
   const updateLineup = useCallback(
     (tournamentId: string, data: { players: string[]; name?: string }) =>
-      request<LineupResponse>('PUT', `/lineup/${tournamentId}`, data),
+      request<LineupResponse>("PUT", `/lineup/${tournamentId}`, data),
     [request]
   );
 

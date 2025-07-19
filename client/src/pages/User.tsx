@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAccount, useDisconnect, useConnect, useBalance } from "wagmi";
-import { Porto } from "porto";
+import { useAccount, useDisconnect, useConnectors, useBalance } from "wagmi";
+import { Hooks } from "porto/wagmi";
 import { formatUnits } from "viem";
 
 import { usePortoAuth } from "../contexts/PortoAuthContext";
@@ -22,55 +22,14 @@ enum ConnectionStatus {
 }
 
 export function UserPage() {
-  const { authenticateWithWeb3, user } = usePortoAuth();
+  // const { authenticateWithWeb3, user } = usePortoAuth();
+  const { user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
-  const { connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
 
-  const connector = connectors.find((connector) => connector.id === "xyz.ithaca.porto")!;
-  const handleConnect = async () => {
-    try {
-      setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
-
-      // Porto Connection
-      // https://docs.porto.sh/docs/wallet-connect/sign-in-with-ethereum
-      const provider = (await connector.getProvider({ chainId })) as Porto.Porto["provider"];
-      const capabilities = await provider.request({
-        method: "wallet_connect",
-        params: [
-          {
-            capabilities: {
-              signInWithEthereum: {
-                chainId: chainId ?? 84532,
-                nonce: await (await fetch(`${process.env.VITE_API_URL}/auth/nonce`)).text(),
-              },
-            },
-          },
-        ],
-      });
-
-      const address = capabilities.accounts.at(0)?.address;
-      const siwe = capabilities.accounts.at(0)?.capabilities?.signInWithEthereum;
-      // console.log({ address, siwe });
-
-      setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
-
-      // Server Connection
-      authenticateWithWeb3(
-        address ?? "",
-        chainId ?? 84532,
-        siwe?.message ?? "",
-        siwe?.signature ?? ""
-      );
-
-      setConnectionStatus(ConnectionStatus.SUCCESS);
-    } catch (error) {
-      console.error("Error connecting to wallet:", error);
-      setConnectionStatus(ConnectionStatus.ERROR);
-      // setError("Error connecting to wallet:", error);
-    }
-  };
+  const [connector] = useConnectors();
+  const { mutate: connect, error } = Hooks.useConnect();
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -93,17 +52,6 @@ export function UserPage() {
     connectionStatus === ConnectionStatus.CONNECTING_WALLET ||
     connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
-  // get USDC balance
-  // const { data: balance_USDC } = useBalance({
-  //   address: address,
-  //   token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`,
-  // });
-
-  // get eth balance
-  // const { data: balance } = useBalance({
-  //   address: address,
-  // });
-
   // paymentTokenAddress balance
   const { data: paymentTokenBalance } = useBalance({
     address: address,
@@ -124,30 +72,50 @@ export function UserPage() {
           <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Account</div>
 
           <div className="flex flex-col gap-2">
-            {connectors.map((connector) => (
-              <button
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-                disabled={isConnecting}
-                key={connector.uid}
-                onClick={handleConnect}
-                type="button"
-              >
-                {isConnecting ? (
-                  <div className="flex items-center gap-2 w-full justify-center">
-                    <LoadingSpinnerSmall />
-                    {getStatusText()}
-                  </div>
-                ) : (
-                  "Connect"
-                )}
-              </button>
-            ))}
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+              disabled={isConnecting}
+              key={connector.uid}
+              onClick={async () => {
+                setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
+                await connect(
+                  {
+                    connector,
+                    signInWithEthereum: {
+                      authUrl: import.meta.env.VITE_API_URL + "/auth/siwe",
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+                    },
+                    onError: (error) => {
+                      console.log(error);
+                      setConnectionStatus(ConnectionStatus.ERROR);
+                    },
+                  }
+                );
+              }}
+              type="button"
+            >
+              {isConnecting ? "Connecting..." : "Connect"}
+            </button>
           </div>
 
           {/* Add status display */}
-          <div className="mt-2 text-sm text-center text-red-500">
-            {connectionStatus === ConnectionStatus.ERROR && <div>Connection failed</div>}
-            {error?.message && <div>{error?.message}</div>}
+          <div className="mt-2 text-sm text-center">
+            {/* Connecting display */}
+            {isConnecting && (
+              <div className="flex items-center gap-2 w-full justify-center text-gray-600">
+                <LoadingSpinnerSmall color={"green"} />
+                {getStatusText()}
+              </div>
+            )}
+
+            {/* Error display */}
+            {connectionStatus === ConnectionStatus.ERROR && (
+              <div className="text-red-500">Connection failed</div>
+            )}
           </div>
         </div>
       </div>
@@ -293,29 +261,6 @@ export function UserPage() {
         </div>
 
         <div className="">
-          {!address && (
-            <>
-              {connectors.map((connector) => (
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-                  disabled={!!address || isConnecting}
-                  key={connector.uid}
-                  onClick={handleConnect}
-                  type="button"
-                >
-                  {isConnecting ? (
-                    <div className="flex items-center gap-2 w-full justify-center">
-                      <LoadingSpinnerSmall />
-                      {getStatusText()}
-                    </div>
-                  ) : (
-                    "Connect"
-                  )}
-                </button>
-              ))}
-            </>
-          )}
-
           <hr className="my-2" />
 
           {!!address && (

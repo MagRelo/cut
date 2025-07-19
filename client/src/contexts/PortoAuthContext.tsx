@@ -17,15 +17,9 @@ interface PortoUser {
   token: string;
 }
 
-interface Web3User {
-  user: PortoUser;
-  token: string;
-}
-
 interface PortoAuthContextData {
   user: PortoUser | null;
   loading: boolean;
-  logout: () => Promise<void>;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
   isAdmin: () => boolean;
@@ -34,12 +28,6 @@ interface PortoAuthContextData {
   updateLineup: (tournamentId: string, playerIds: string[]) => Promise<TournamentLineup>;
   currentLineup: TournamentLineup | null;
   lineupError: string | null;
-  authenticateWithWeb3: (
-    address: string,
-    chainId: number | undefined,
-    message: string,
-    signature: string
-  ) => Promise<void>;
 }
 
 const PortoAuthContext = createContext<PortoAuthContextData | undefined>(undefined);
@@ -56,9 +44,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address } = useAccount();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // lineups
   const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
   const [lineupError, setLineupError] = useState<string | null>(null);
-
   const lineupApi = useLineupApi();
 
   const config = useMemo(
@@ -77,40 +66,25 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         ...config.headers,
       };
 
-      const token = localStorage.getItem("portoToken");
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`${config.baseURL}${endpoint}`, {
         method,
         headers,
         body: data ? JSON.stringify(data) : undefined,
+        credentials: "include", // Include cookies in the request
       });
 
       try {
         return await handleApiResponse<T>(response);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          localStorage.removeItem("portoToken");
+          // Clear any stored auth data on 401
+          setUser(null);
         }
         throw error;
       }
     },
     [config]
   );
-
-  const logout = useCallback(async () => {
-    try {
-      await request<void>("POST", "/auth/logout");
-    } catch (error) {
-      console.error("Error on logout:", error);
-    } finally {
-      setUser(null);
-      localStorage.removeItem("portoToken");
-    }
-  }, [request]);
 
   const updateUser = useCallback(
     async (updatedUser: { name?: string }) => {
@@ -184,32 +158,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     [lineupApi]
   );
 
-  const authenticateWithWeb3 = useCallback(
-    async (address: string, chainId: number | undefined, message: string, signature: string) => {
-      if (!chainId) {
-        console.error("Chain ID is required for web3 authentication");
-        return;
-      }
-
-      try {
-        const response = await request<Web3User>("POST", "/auth/web3", {
-          address,
-          chainId,
-          message,
-          signature,
-        });
-
-        console.log("Web3 authentication successful:", response);
-        setUser(response.user);
-        localStorage.setItem("portoToken", response.token);
-      } catch (error) {
-        console.error("Web3 authentication failed:", error);
-        setUser(null);
-      }
-    },
-    [request]
-  );
-
   useEffect(() => {
     const initializeAuth = async () => {
       if (!address) {
@@ -219,39 +167,18 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const token = localStorage.getItem("portoToken");
-
-        if (token) {
-          try {
-            const response = await request<PortoUser>("GET", "/auth/me");
-            setUser(response);
-            setCurrentLineup(response.tournamentLineups[0]);
-            return;
-          } catch (error) {
-            console.error("Token authentication failed:", error);
-            if (
-              error instanceof Error &&
-              (error.message.includes("401") || error.message.includes("404"))
-            ) {
-              localStorage.removeItem("portoToken");
-              setUser(null);
-            } else {
-              setLoading(false);
-              return;
-            }
-          }
-        }
-
-        // If no token or token invalid, try to authenticate with address
-        // try {
-        //   await authenticateWithWeb3(address, chainId);
-        // } catch (error) {
-        //   console.error("Web3 authentication failed:", error);
-        //   setUser(null);
-        // }
+        // Check if auth cookie exists by making a request to /me
+        const response = await request<PortoUser>("GET", "/auth/me");
+        setUser(response);
+        setCurrentLineup(response.tournamentLineups[0]);
       } catch (error) {
         console.error("Auth check failed:", error);
-        setUser(null);
+        if (
+          error instanceof Error &&
+          (error.message.includes("401") || error.message.includes("404"))
+        ) {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -264,7 +191,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       loading,
-      logout,
       updateUser,
       updateUserSettings,
       isAdmin,
@@ -273,12 +199,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       updateLineup,
       currentLineup,
       lineupError,
-      authenticateWithWeb3,
     }),
     [
       user,
       loading,
-      logout,
       updateUser,
       updateUserSettings,
       isAdmin,
@@ -287,7 +211,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       updateLineup,
       currentLineup,
       lineupError,
-      authenticateWithWeb3,
     ]
   );
 

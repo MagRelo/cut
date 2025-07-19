@@ -29,14 +29,6 @@ export class ApiClient {
       ...this.config.headers,
     };
 
-    // Add auth token if required and available
-    if (options.requiresAuth !== false) {
-      const token = localStorage.getItem("portoToken");
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-    }
-
     // Add public API flag if specified
     if (options.isPublic) {
       headers["X-Public-Api"] = "true";
@@ -56,13 +48,14 @@ export class ApiClient {
         method,
         headers: this.getHeaders(options),
         body: data ? JSON.stringify(data) : undefined,
+        credentials: "include", // Include cookies in the request
       });
 
       return await handleApiResponse<T>(response);
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
-        // Handle unauthorized error
-        localStorage.removeItem("portoToken");
+        // Handle unauthorized error - cookies will be handled by the server
+        console.error("Unauthorized request");
       }
       throw error;
     }

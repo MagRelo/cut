@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 
 // Extend Express Request type to include user
 declare global {
@@ -15,25 +15,27 @@ declare global {
   }
 }
 
-export const requireAuth = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Check for token in Authorization header first
+    let token: string | undefined;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
 
-    const token = authHeader.split(' ')[1];
+    // If no token in header, check for cookie
+    if (!token) {
+      token = req.cookies?.auth;
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
 
     try {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'temporary-secret-key'
-      ) as {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "temporary-secret-key") as {
         userId: string;
         address: string;
         chainId: number;
@@ -43,10 +45,10 @@ export const requireAuth = async (
       req.user = decoded;
       next();
     } catch (error) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: "Invalid token" });
     }
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
+    console.error("Auth middleware error:", error);
+    res.status(500).json({ error: "Authentication failed" });
   }
 };
