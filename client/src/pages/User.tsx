@@ -1,55 +1,21 @@
-import { useState } from "react";
-import { useAccount, useDisconnect, useConnectors, useBalance } from "wagmi";
-import { Hooks } from "porto/wagmi";
+import { useAccount, useBalance, useDisconnect } from "wagmi";
 import { formatUnits } from "viem";
 
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 import { PageHeader } from "../components/util/PageHeader";
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
-import { UserSettings } from "../components/user/UserSettings";
 import { paymentTokenAddress } from "../utils/contracts/sepolia.json";
-import { Transfer } from "../components/user/Transfer";
 import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
-import { LoadingSpinnerSmall } from "../components/common/LoadingSpinnerSmall";
 
-enum ConnectionStatus {
-  IDLE = "idle",
-  CONNECTING_WALLET = "connecting_wallet",
-  CONNECTING_TO_CUT = "connecting_to_cut",
-  SUCCESS = "success",
-  ERROR = "error",
-}
+import { Connect } from "../components/user/Connect";
+import { UserSettings } from "../components/user/UserSettings";
+import { Transfer } from "../components/user/Transfer";
 
 export function UserPage() {
   const { user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
-
-  const [connector] = useConnectors();
-  const { mutate: connect, error } = Hooks.useConnect();
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const { disconnect } = useDisconnect();
-
-  // Helper function to get status display text
-  const getStatusText = () => {
-    switch (connectionStatus) {
-      case ConnectionStatus.CONNECTING_WALLET:
-        return "Connecting wallet...";
-      case ConnectionStatus.CONNECTING_TO_CUT:
-        return "Connecting to the Cut...";
-      case ConnectionStatus.SUCCESS:
-        return "Connected successfully!";
-      case ConnectionStatus.ERROR:
-        return "Connection failed";
-      default:
-        return "";
-    }
-  };
-
-  // Helper function to check if connecting
-  const isConnecting =
-    connectionStatus === ConnectionStatus.CONNECTING_WALLET ||
-    connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
   // paymentTokenAddress balance
   const { data: paymentTokenBalance } = useBalance({
@@ -61,65 +27,17 @@ export function UserPage() {
     return Number(formatUnits(balance, 18)).toFixed(2);
   };
 
+  // if user is not connected, show the connect component
   if (!user) {
     return (
       <div className="p-4">
         <PageHeader title="Account" className="mb-3" />
-
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Account</div>
-
-          <div className="flex flex-col gap-2">
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-              disabled={isConnecting}
-              key={connector.uid}
-              onClick={async () => {
-                setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
-                await connect(
-                  {
-                    connector,
-                    signInWithEthereum: {
-                      authUrl: import.meta.env.VITE_API_URL + "/auth/siwe",
-                    },
-                  },
-                  {
-                    onSuccess: () => {
-                      setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
-                    },
-                    onError: (error) => {
-                      console.log(error);
-                      setConnectionStatus(ConnectionStatus.ERROR);
-                    },
-                  }
-                );
-              }}
-              type="button"
-            >
-              {isConnecting ? "Connecting..." : "Connect"}
-            </button>
-          </div>
-
-          {/* Add status display */}
-          <div className="mt-2 text-sm text-center">
-            {/* Connecting display */}
-            {isConnecting && (
-              <div className="flex items-center gap-2 w-full justify-center text-gray-600">
-                <LoadingSpinnerSmall color={"green"} />
-                {getStatusText()}
-              </div>
-            )}
-
-            {/* Error display */}
-            {connectionStatus === ConnectionStatus.ERROR && (
-              <div className="text-red-500">Connection failed</div>
-            )}
-          </div>
-        </div>
+        <Connect />
       </div>
     );
   }
 
+  // if user is connected, show the account settings
   return (
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
@@ -127,50 +45,39 @@ export function UserPage() {
       {/* Account Settings */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-          <div className="text-lg font-semibold text-gray-700 mb-2 font-display">
-            Available Balance
-          </div>
+          <div className="text-lg font-semibold text-gray-700 font-display">Available Balance</div>
 
           <CutAmountDisplay
             amount={Number(formattedBalance(paymentTokenBalance?.value ?? 0n))}
-            label="BTCUT"
+            label={paymentTokenBalance?.symbol}
             logoPosition="right"
           />
         </div>
 
-        <div className="">
-          {/* TODO: Add funding */}
-          <div className="mt-4 flex justify-center">
-            <a
-              href={`https://stg.id.porto.sh/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
+        {/* TODO: Add funding */}
+        <div className="mt-4 flex justify-center">
+          <a
+            href={`https://stg.id.porto.sh/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
+          >
+            Add Funds
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              Add Funds
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            </a>
-          </div>
-
-          {error && (
-            <>
-              <hr className="my-2" />
-              <div>{error?.message}</div>
-            </>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
         </div>
       </div>
 
@@ -201,7 +108,7 @@ export function UserPage() {
         <Transfer />
       </div>
 
-      {/* Account Settings */}
+      {/* Wallet */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Wallet</div>
 
@@ -267,7 +174,6 @@ export function UserPage() {
               disabled={!address}
               onClick={() => {
                 disconnect();
-                setConnectionStatus(ConnectionStatus.IDLE);
               }}
             >
               Sign out
@@ -275,7 +181,6 @@ export function UserPage() {
           )}
 
           {/* <div> status: {status}</div> */}
-          <div>{error?.message}</div>
         </div>
       </div>
     </div>
