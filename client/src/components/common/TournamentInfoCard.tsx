@@ -50,7 +50,10 @@ export const TournamentInfoCard: React.FC = () => {
         <div className="relative p-4 text-white">
           {/* tournament name */}
           <div className="flex justify-between items-center mt-1">
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
+            <h1
+              onClick={() => setIsSummaryModalOpen(true)}
+              className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+            >
               {currentTournament.name}
             </h1>
           </div>
@@ -80,9 +83,11 @@ export const TournamentInfoCard: React.FC = () => {
             <div className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link
-                  to="/team"
+                  to="/lineups"
                   className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/team" ? "border-white bg-white/20" : "border-white/50"
+                    location.pathname === "/lineups"
+                      ? "border-white bg-white/20"
+                      : "border-white/50"
                   } rounded px-3 py-1 transition-colors flex items-center justify-center`}
                 >
                   Lineup
@@ -90,19 +95,13 @@ export const TournamentInfoCard: React.FC = () => {
                 <Link
                   to="/contests"
                   className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/public/leagues"
+                    location.pathname === "/contests"
                       ? "border-white bg-white/20"
                       : "border-white/50"
                   } rounded px-3 py-1 transition-colors flex items-center justify-center`}
                 >
                   Contests
                 </Link>
-                <button
-                  onClick={() => setIsSummaryModalOpen(true)}
-                  className="inline-block text-white/90 hover:text-white text-sm font-medium border-2 border-white/50 hover:border-white rounded px-3 py-1 transition-colors flex items-center justify-center"
-                >
-                  Summary
-                </button>
               </div>
               <Link
                 to="/user"

@@ -9,7 +9,7 @@ import { PortoAuthProvider } from "./contexts/PortoAuthContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
 
 import { Home } from "./pages/Home";
-import { MyTeam } from "./pages/MyTeam";
+import { LineupList } from "./pages/LineupList";
 import { UserPage } from "./pages/User"; //use
 import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobby";
@@ -80,10 +80,10 @@ export const App: React.FC = () => {
 
                         {/* Protected Routes */}
                         <Route
-                          path="/team"
+                          path="/lineups"
                           element={
                             <ProtectedRoute>
-                              <MyTeam />
+                              <LineupList />
                             </ProtectedRoute>
                           }
                         />

@@ -3,14 +3,7 @@ import { type TournamentLineup } from "../types.new/player";
 import { handleApiResponse } from "../utils/apiError";
 
 interface LineupResponse {
-  lineup: TournamentLineup;
-  players?: Array<{
-    tournamentPlayer: {
-      id: string;
-      playerId: string;
-      tournamentId: string;
-    };
-  }>;
+  lineups: TournamentLineup[];
 }
 
 export const useLineupApi = () => {

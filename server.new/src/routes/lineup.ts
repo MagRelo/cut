@@ -1,24 +1,22 @@
-import { Router } from 'express';
-import { prisma } from '../lib/prisma.js';
-import { requireAuth } from '../middleware/auth.js';
+import { Router } from "express";
+import { prisma } from "../lib/prisma.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 // Update lineup for a tournament
-router.put('/:tournamentId', requireAuth, async (req, res) => {
+router.put("/:tournamentId", requireAuth, async (req, res) => {
   try {
     const { tournamentId } = req.params;
-    const { players, name = 'My Lineup' } = req.body;
+    const { players, name = "My Lineup" } = req.body;
     const userId = req.user?.userId;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     if (!Array.isArray(players) || players.length > 4) {
-      return res
-        .status(400)
-        .json({ error: 'Players must be an array of 0-4 players' });
+      return res.status(400).json({ error: "Players must be an array of 0-4 players" });
     }
 
     // Get or create the tournament lineup
@@ -89,8 +87,7 @@ router.put('/:tournamentId', requireAuth, async (req, res) => {
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId,
         tournamentData: {
-          leaderboardPosition:
-            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
           r1: lineupPlayer.tournamentPlayer.r1,
           r2: lineupPlayer.tournamentPlayer.r2,
           r3: lineupPlayer.tournamentPlayer.r3,
@@ -105,18 +102,18 @@ router.put('/:tournamentId', requireAuth, async (req, res) => {
 
     res.json({ lineup: formattedLineup });
   } catch (error) {
-    console.error('Error updating lineup:', error);
-    res.status(500).json({ error: 'Failed to update lineup' });
+    console.error("Error updating lineup:", error);
+    res.status(500).json({ error: "Failed to update lineup" });
   }
 });
 
-// get a lineup for a tournament
-router.get('/:tournamentId', requireAuth, async (req, res) => {
+// get all lineups for a tournament
+router.get("/:tournamentId", requireAuth, async (req, res) => {
   const { tournamentId } = req.params;
   const userId = req.user?.userId;
 
   try {
-    const lineup = await prisma.tournamentLineup.findFirst({
+    const lineups = await prisma.tournamentLineup.findMany({
       where: { tournamentId, userId },
       include: {
         players: {
@@ -131,19 +128,15 @@ router.get('/:tournamentId', requireAuth, async (req, res) => {
       },
     });
 
-    if (!lineup) {
-      return res.json({ lineup: { players: [] } });
-    }
-
     // Transform the data into TournamentLineup type
-    const formattedLineup = {
+    const formattedLineups = lineups.map((lineup) => ({
       id: lineup.id,
+      name: lineup.name,
       players: lineup.players.map((lineupPlayer) => ({
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId,
         tournamentData: {
-          leaderboardPosition:
-            lineupPlayer.tournamentPlayer.leaderboardPosition,
+          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
           r1: lineupPlayer.tournamentPlayer.r1,
           r2: lineupPlayer.tournamentPlayer.r2,
           r3: lineupPlayer.tournamentPlayer.r3,
@@ -154,12 +147,13 @@ router.get('/:tournamentId', requireAuth, async (req, res) => {
           leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
         },
       })),
-    };
+    }));
 
-    res.json({ lineup: formattedLineup });
+    res.json({ lineups: formattedLineups });
   } catch (error) {
-    console.error('Error getting lineup:', error);
-    res.status(500).json({ error: 'Failed to get lineup' });
+    console.error("Error getting lineups:", error);
+    res.status(500).json({ error: "Failed to get lineups" });
   }
 });
+
 export default router;
