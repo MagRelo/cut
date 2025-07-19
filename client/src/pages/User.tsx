@@ -22,14 +22,13 @@ enum ConnectionStatus {
 }
 
 export function UserPage() {
-  // const { authenticateWithWeb3, user } = usePortoAuth();
   const { user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
-  const { disconnect } = useDisconnect();
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
 
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
+  const { disconnect } = useDisconnect();
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -57,7 +56,6 @@ export function UserPage() {
     address: address,
     token: paymentTokenAddress as `0x${string}`,
   });
-
   // round balance to 2 decimal points
   const formattedBalance = (balance: bigint) => {
     return Number(formatUnits(balance, 18)).toFixed(2);
