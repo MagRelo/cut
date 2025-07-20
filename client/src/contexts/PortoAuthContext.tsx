@@ -25,7 +25,13 @@ interface PortoAuthContextData {
   isAdmin: () => boolean;
   getCurrentUser: () => PortoUser | null;
   getLineup: (tournamentId: string) => Promise<TournamentLineup>;
-  updateLineup: (tournamentId: string, playerIds: string[]) => Promise<TournamentLineup>;
+  getLineupById: (lineupId: string) => Promise<TournamentLineup>;
+  createLineup: (
+    tournamentId: string,
+    playerIds: string[],
+    name?: string
+  ) => Promise<TournamentLineup>;
+  updateLineup: (lineupId: string, playerIds: string[], name?: string) => Promise<TournamentLineup>;
   currentLineup: TournamentLineup | null;
   lineupError: string | null;
 }
@@ -128,9 +134,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     async (tournamentId: string) => {
       try {
         const response = await lineupApi.getLineup(tournamentId);
-        setCurrentLineup(response.lineup);
+        setCurrentLineup(response.lineups[0] || null);
         setLineupError(null);
-        return response.lineup;
+        return response.lineups[0] || null;
       } catch (error) {
         console.error("Failed to fetch lineup:", error);
         setLineupError("Failed to fetch lineup");
@@ -140,15 +146,51 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     [lineupApi]
   );
 
-  const updateLineup = useCallback(
-    async (tournamentId: string, playerIds: string[]) => {
+  const getLineupById = useCallback(
+    async (lineupId: string) => {
       try {
-        const response = await lineupApi.updateLineup(tournamentId, {
-          players: playerIds,
-        });
-        setCurrentLineup(response.lineup);
+        const response = await lineupApi.getLineupById(lineupId);
+        setCurrentLineup(response.lineups[0] || null);
         setLineupError(null);
-        return response.lineup;
+        return response.lineups[0] || null;
+      } catch (error) {
+        console.error("Failed to fetch lineup:", error);
+        setLineupError("Failed to fetch lineup");
+        throw error;
+      }
+    },
+    [lineupApi]
+  );
+
+  const createLineup = useCallback(
+    async (tournamentId: string, playerIds: string[], name?: string) => {
+      try {
+        const response = await lineupApi.createLineup(tournamentId, {
+          players: playerIds,
+          name,
+        });
+        setCurrentLineup(response.lineups[0] || null);
+        setLineupError(null);
+        return response.lineups[0] || null;
+      } catch (error) {
+        console.error("Failed to create lineup:", error);
+        setLineupError("Failed to create lineup");
+        throw error;
+      }
+    },
+    [lineupApi]
+  );
+
+  const updateLineup = useCallback(
+    async (lineupId: string, playerIds: string[], name?: string) => {
+      try {
+        const response = await lineupApi.updateLineup(lineupId, {
+          players: playerIds,
+          name,
+        });
+        setCurrentLineup(response.lineups[0] || null);
+        setLineupError(null);
+        return response.lineups[0] || null;
       } catch (error) {
         console.error("Failed to update lineup:", error);
         setLineupError("Failed to update lineup");
@@ -196,6 +238,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       getCurrentUser,
       getLineup,
+      getLineupById,
+      createLineup,
       updateLineup,
       currentLineup,
       lineupError,
@@ -208,6 +252,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       getCurrentUser,
       getLineup,
+      getLineupById,
+      createLineup,
       updateLineup,
       currentLineup,
       lineupError,

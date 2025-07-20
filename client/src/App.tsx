@@ -9,12 +9,14 @@ import { PortoAuthProvider } from "./contexts/PortoAuthContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
 
 import { Home } from "./pages/Home";
+import { UserPage } from "./pages/User";
+
 import { LineupList } from "./pages/LineupList";
-import { UserPage } from "./pages/User"; //use
+import LineupCreatePage from "./pages/LineupCreatePage";
+
 import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobby";
-import CreateContestPage from "./pages/CreateContestPage";
-import { Web3Test } from "./pages/Web3Test";
+import CreateContestPage from "./pages/ContestCreatePage";
 
 import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
 import { ProtectedRoute } from "./components/util/ProtectedRoute";
@@ -43,7 +45,9 @@ export const App: React.FC = () => {
                       <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/user" element={<UserPage />} />
 
+                        {/* Contests */}
                         <Route
                           path="/contests"
                           element={
@@ -68,17 +72,17 @@ export const App: React.FC = () => {
                             </ProtectedRoute>
                           }
                         />
-                        <Route path="/user" element={<UserPage />} />
+
+                        {/* Lineups */}
+                        <Route path="/lineups/create" element={<LineupCreatePage />} />
                         <Route
-                          path="/web3-test"
+                          path="/lineups/edit/:lineupId"
                           element={
                             <ProtectedRoute>
-                              <Web3Test />
+                              <LineupCreatePage />
                             </ProtectedRoute>
                           }
                         />
-
-                        {/* Protected Routes */}
                         <Route
                           path="/lineups"
                           element={

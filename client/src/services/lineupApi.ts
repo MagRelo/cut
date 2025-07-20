@@ -6,6 +6,16 @@ interface LineupResponse {
   lineups: TournamentLineup[];
 }
 
+interface CreateLineupRequest {
+  players: string[];
+  name?: string;
+}
+
+interface UpdateLineupRequest {
+  players: string[];
+  name?: string;
+}
+
 export const useLineupApi = () => {
   const config = useMemo(
     () => ({
@@ -49,18 +59,31 @@ export const useLineupApi = () => {
     [request]
   );
 
+  const getLineupById = useCallback(
+    (lineupId: string) => request<LineupResponse>("GET", `/lineup/lineup/${lineupId}`),
+    [request]
+  );
+
+  const createLineup = useCallback(
+    (tournamentId: string, data: CreateLineupRequest) =>
+      request<LineupResponse>("POST", `/lineup/${tournamentId}`, data),
+    [request]
+  );
+
   const updateLineup = useCallback(
-    (tournamentId: string, data: { players: string[]; name?: string }) =>
-      request<LineupResponse>("PUT", `/lineup/${tournamentId}`, data),
+    (lineupId: string, data: UpdateLineupRequest) =>
+      request<LineupResponse>("PUT", `/lineup/${lineupId}`, data),
     [request]
   );
 
   return useMemo(
     () => ({
       getLineup,
+      getLineupById,
+      createLineup,
       updateLineup,
     }),
-    [getLineup, updateLineup]
+    [getLineup, getLineupById, createLineup, updateLineup]
   );
 };
 

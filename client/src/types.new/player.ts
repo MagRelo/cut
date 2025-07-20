@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Base Player Type (from Player table)
 export interface Player {
@@ -86,6 +86,7 @@ export interface PlayerWithTournamentData extends Player {
 // Tournament Lineup Type
 export interface TournamentLineup {
   id: string;
+  name?: string;
   players: PlayerWithTournamentData[];
 }
 

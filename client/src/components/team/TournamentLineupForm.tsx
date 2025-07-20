@@ -7,11 +7,25 @@ import { ErrorMessage } from "../util/ErrorMessage";
 // import { TournamentSummaryModal } from '../common/TournamentSummaryModal';
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 
+/**
+ * TournamentLineupForm Component
+ *
+ * Usage:
+ * - Create mode: <TournamentLineupForm /> (no lineupId prop)
+ * - Update mode: <TournamentLineupForm lineupId="existing-lineup-id" />
+ *
+ * The component automatically handles:
+ * - Creating new lineups when no lineupId is provided
+ * - Updating existing lineups when lineupId is provided
+ * - Fetching the appropriate lineup data
+ * - Managing player selection and lineup updates
+ */
 interface TournamentLineupFormProps {
+  lineupId?: string; // If provided, we're in update mode. If not, we're in create mode
   onUpdateLineup?: (playerIds: string[]) => Promise<void>;
 }
 
-export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
+export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ lineupId }) => {
   const { loading: isAuthLoading } = usePortoAuth();
   const {
     players: fieldPlayers,
@@ -19,7 +33,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
     isLoading: isTournamentLoading,
   } = useTournament();
 
-  const { getLineup, updateLineup, currentLineup, lineupError } = usePortoAuth();
+  const { getLineup, getLineupById, createLineup, updateLineup, currentLineup, lineupError } =
+    usePortoAuth();
 
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
@@ -28,7 +43,13 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
     const fetchLineup = async () => {
       if (!isAuthLoading && currentTournament?.id) {
         try {
-          await getLineup(currentTournament.id);
+          if (lineupId) {
+            // Fetch specific lineup by ID
+            await getLineupById(lineupId);
+          } else {
+            // Fetch first lineup for tournament
+            await getLineup(currentTournament.id);
+          }
         } catch (error) {
           console.error("Failed to fetch lineup:", error);
         }
@@ -36,7 +57,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
     };
 
     fetchLineup();
-  }, [currentTournament?.id, isAuthLoading, getLineup]);
+  }, [currentTournament?.id, isAuthLoading, getLineup, getLineupById, lineupId]);
 
   const handlePlayerSelect = async (playerId: string | null) => {
     if (selectedPlayerIndex === null) return;
@@ -57,7 +78,13 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
     const playerIds = newPlayers.map((p) => p.id);
 
     try {
-      await updateLineup(currentTournament?.id || "", playerIds);
+      if (lineupId) {
+        // Update existing lineup
+        await updateLineup(lineupId, playerIds);
+      } else {
+        // Create new lineup
+        await createLineup(currentTournament?.id || "", playerIds);
+      }
     } catch (error) {
       console.error("Failed to update lineup:", error);
     }
@@ -66,8 +93,8 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = () => {
   };
 
   const isEditingAllowed = (): boolean => {
-    // return true;
-    return !currentTournament || currentTournament.status === "NOT_STARTED";
+    return true;
+    // return !currentTournament || currentTournament.status === "NOT_STARTED";
   };
 
   const handleCardClick = (index: number) => {
