@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useConnectors } from "wagmi";
+import { useConnectors, useDisconnect } from "wagmi";
 import { Hooks } from "porto/wagmi";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -16,6 +16,7 @@ export function Connect() {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
+  const { disconnect } = useDisconnect();
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -52,7 +53,9 @@ export function Connect() {
           setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
         },
         onError: (error) => {
+          console.log("discconect>", error);
           console.log(error);
+          disconnect();
           setConnectionStatus(ConnectionStatus.ERROR);
         },
       }

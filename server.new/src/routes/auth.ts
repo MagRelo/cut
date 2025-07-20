@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
+import { mintUserTokens } from "../services/mintUserTokens.js";
 
 import { createClient, http, hashMessage } from "viem";
 import { Chains } from "porto";
@@ -91,6 +92,15 @@ router.post("/siwe", async (req, res) => {
           },
         },
       });
+
+      // Mint 25 BTCUT tokens to the new user
+      try {
+        await mintUserTokens(address!.toLowerCase(), 25);
+        console.log(`Minted 25 BTCUT tokens to new user: ${address!.toLowerCase()}`);
+      } catch (mintError) {
+        console.error("Failed to mint tokens to new user:", mintError);
+        // Don't fail the user creation if token minting fails
+      }
     }
 
     // Generate a JWT token
@@ -146,122 +156,6 @@ router.post("/siwe/logout", async (req, res) => {
   } catch (error) {
     console.error("Error during SIWE logout:", error);
     res.status(500).json({ error: "Failed to logout" });
-  }
-});
-
-// Get nonce
-router.get("/nonce", async (req, res) => {
-  try {
-    // Generate a random nonce for wallet authentication
-    // nonce must be at least 8 characters.
-    // nonce must be alphanumeric.
-    const nonce = Math.random().toString(36).substring(2, 15);
-    console.log({ nonce });
-    res.send(nonce);
-  } catch (error) {
-    console.error("Error generating nonce:", error);
-    res.status(500).json({ error: "Failed to generate nonce" });
-  }
-});
-
-// Web3 authentication endpoint
-router.post("/web3", async (req, res) => {
-  try {
-    const { address, signature, message, chainId = 1 } = req.body;
-
-    // if (!address || !signature || !message) {
-    if (!address || !signature || !message) {
-      return res.status(400).json({ error: "Address, signature, and message are required" });
-    }
-    const digest = hashMessage(message);
-
-    // Extract address from SIWE message
-    const addressMatch = message.match(/0x[a-fA-F0-9]{40}/);
-    const messageAddress = addressMatch ? addressMatch[0] : address;
-
-    // console.log("=== SIWE Authentication Debug ===");
-    // console.log("Sent address:", address);
-    // console.log("Message address:", messageAddress);
-    // console.log("Addresses match:", messageAddress.toLowerCase() === address.toLowerCase());
-    // console.log("ChainId:", chainId);
-    // console.log("Message length:", message.length);
-    // console.log("Full message:", message); // Log the entire message
-    // console.log("Signature length:", signature.length);
-    // console.log("Signature:", signature);
-    // console.log("Digest:", digest);
-    // console.log("Signature type check:");
-    // console.log("- Length:", signature.length);
-    // console.log("- Length in bytes:", Math.floor(signature.length / 2));
-    // console.log("- Is hex:", /^0x[a-fA-F0-9]+$/.test(signature));
-    // console.log("- Standard ETH sig length (65 bytes):", signature.length === 130); // 65 bytes = 130 hex chars
-
-    const isValid = await ServerActions.verifySignature(client, {
-      address: messageAddress,
-      digest: digest,
-      signature: signature,
-    });
-
-    if (!isValid.valid) {
-      console.log({ isValid });
-      return res.status(400).json({ error: "Invalid signature" });
-    }
-
-    // Check if wallet exists
-    const existingWallet = await prisma.userWallet.findFirst({
-      where: {
-        publicKey: address.toLowerCase(),
-        chainId: Number(chainId),
-      },
-      include: { user: true },
-    });
-
-    let user;
-    if (existingWallet) {
-      user = existingWallet.user;
-    } else {
-      // Create new user and wallet
-      user = await prisma.user.create({
-        data: {
-          name: `User ${address.slice(0, 6)}`,
-          userType: "PUBLIC",
-          wallets: {
-            create: {
-              chainId: Number(chainId),
-              publicKey: address.toLowerCase(),
-              isPrimary: true,
-            },
-          },
-        },
-      });
-    }
-
-    // Generate a temporary JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        address: address.toLowerCase(),
-        chainId: Number(chainId),
-        userType: user.userType,
-      },
-      process.env.JWT_SECRET || "temporary-secret-key",
-      { expiresIn: "7d" }
-    );
-
-    // Return success response with user data and token
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        userType: user.userType,
-        address: address.toLowerCase(),
-        chainId: Number(chainId),
-      },
-      token,
-    });
-  } catch (error) {
-    console.error("Error in web3 authentication:", error);
-    res.status(500).json({ error: "Failed to authenticate with web3" });
   }
 });
 
@@ -394,24 +288,6 @@ router.put("/settings", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Error updating settings:", error);
     res.status(500).json({ error: "Failed to update user settings" });
-  }
-});
-
-// Logout route
-router.post("/logout", async (req, res) => {
-  try {
-    // For JWT-based auth, we don't need to do anything server-side
-    // The client should remove the token from localStorage
-    // But we can log the logout for audit purposes
-    console.log(`User ${req.user!.userId} logged out`);
-
-    res.json({
-      success: true,
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    console.error("Error during logout:", error);
-    res.status(500).json({ error: "Failed to logout" });
   }
 });
 
