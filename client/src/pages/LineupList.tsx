@@ -1,48 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useLineup } from "../contexts/LineupContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/util/ErrorMessage";
 // import { Share } from "../components/common/Share";
 
 import { PageHeader } from "../components/util/PageHeader";
 import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
-import { useLineupApi } from "../services/lineupApi";
-import type { LineupResponse } from "../services/lineupApi";
-import { TournamentLineup } from "src/types.new/player";
 
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading } = usePortoAuth();
   const { isLoading: isTournamentLoading, currentTournament } = useTournament();
-
-  // get all lineups for the user using the lineupApi
-  const { getLineup } = useLineupApi();
-  const [lineupData, setLineupData] = useState<LineupResponse | null>(null);
-  const [isLineupLoading, setIsLineupLoading] = useState(false);
-  const [lineupError, setLineupError] = useState<string | null>(null);
+  const { lineups, lineupError, getLineups } = useLineup();
 
   useEffect(() => {
     const fetchLineups = async () => {
       if (!currentTournament?.id) return;
 
-      setIsLineupLoading(true);
-      setLineupError(null);
-
       try {
-        const response = await getLineup(currentTournament.id);
-        setLineupData(response);
+        await getLineups(currentTournament.id);
       } catch (error) {
-        setLineupError(error instanceof Error ? error.message : "Failed to fetch lineups");
-      } finally {
-        setIsLineupLoading(false);
+        console.error("Failed to fetch lineups:", error);
       }
     };
 
     fetchLineups();
-  }, [currentTournament?.id, getLineup]);
+  }, [currentTournament?.id, getLineups]);
 
-  if (isAuthLoading || isTournamentLoading || isLineupLoading) {
+  if (isAuthLoading || isTournamentLoading) {
     return (
       <div className="px-4 py-4">
         <LoadingSpinner />
@@ -63,9 +50,9 @@ export const LineupList: React.FC = () => {
       <PageHeader title="Lineups" className="mb-3" />
 
       {/* list of user lineups */}
-      {lineupData && lineupData.lineups.length > 0 ? (
+      {lineups && lineups.length > 0 ? (
         <div className="space-y-4 mb-6">
-          {lineupData.lineups.map((lineup: TournamentLineup) => (
+          {lineups.map((lineup) => (
             <div key={lineup.id} className="bg-white rounded-lg shadow-md p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -132,7 +119,7 @@ export const LineupList: React.FC = () => {
       )}
 
       {/* Add Lineup Button - shown below the list */}
-      {lineupData && lineupData.lineups.length > 0 && (
+      {lineups && lineups.length > 0 && (
         <div className="text-center">
           <Link
             to="/lineups/create"

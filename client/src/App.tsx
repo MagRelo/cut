@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
+import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
@@ -32,72 +33,74 @@ export const App: React.FC = () => {
       <QueryClientProvider client={queryClient}>
         <PortoAuthProvider>
           <TournamentProvider>
-            <Router>
-              <div className="min-h-screen bg-gray-100 flex flex-col">
-                {/* TODO: Remove this when we're ready to go live */}
-                {/* <MaintenanceOverlay /> */}
-                <div className="flex flex-col flex-grow">
-                  <div className="container mx-auto md:py-8">
-                    <div className="max-w-2xl mx-auto">
-                      <div className="md:mb-6">
-                        <TournamentInfoCard />
+            <LineupProvider>
+              <Router>
+                <div className="min-h-screen bg-gray-100 flex flex-col">
+                  {/* TODO: Remove this when we're ready to go live */}
+                  {/* <MaintenanceOverlay /> */}
+                  <div className="flex flex-col flex-grow">
+                    <div className="container mx-auto md:py-8">
+                      <div className="max-w-2xl mx-auto">
+                        <div className="md:mb-6">
+                          <TournamentInfoCard />
+                        </div>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/terms" element={<TermsOfService />} />
+                          <Route path="/user" element={<UserPage />} />
+
+                          {/* Contests */}
+                          <Route
+                            path="/contests"
+                            element={
+                              <ProtectedRoute>
+                                <Contests />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/contests/create"
+                            element={
+                              <ProtectedRoute>
+                                <CreateContestPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/contest/:id"
+                            element={
+                              <ProtectedRoute>
+                                <ContestLobby />
+                              </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Lineups */}
+                          <Route path="/lineups/create" element={<LineupCreatePage />} />
+                          <Route
+                            path="/lineups/edit/:lineupId"
+                            element={
+                              <ProtectedRoute>
+                                <LineupCreatePage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/lineups"
+                            element={
+                              <ProtectedRoute>
+                                <LineupList />
+                              </ProtectedRoute>
+                            }
+                          />
+                        </Routes>
                       </div>
-                      <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/terms" element={<TermsOfService />} />
-                        <Route path="/user" element={<UserPage />} />
-
-                        {/* Contests */}
-                        <Route
-                          path="/contests"
-                          element={
-                            <ProtectedRoute>
-                              <Contests />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/contests/create"
-                          element={
-                            <ProtectedRoute>
-                              <CreateContestPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/contest/:id"
-                          element={
-                            <ProtectedRoute>
-                              <ContestLobby />
-                            </ProtectedRoute>
-                          }
-                        />
-
-                        {/* Lineups */}
-                        <Route path="/lineups/create" element={<LineupCreatePage />} />
-                        <Route
-                          path="/lineups/edit/:lineupId"
-                          element={
-                            <ProtectedRoute>
-                              <LineupCreatePage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/lineups"
-                          element={
-                            <ProtectedRoute>
-                              <LineupList />
-                            </ProtectedRoute>
-                          }
-                        />
-                      </Routes>
                     </div>
                   </div>
+                  <Navigation />
                 </div>
-                <Navigation />
-              </div>
-            </Router>
+              </Router>
+            </LineupProvider>
           </TournamentProvider>
         </PortoAuthProvider>
       </QueryClientProvider>

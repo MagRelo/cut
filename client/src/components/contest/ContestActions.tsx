@@ -14,7 +14,9 @@ import {
 import { Contest } from "src/types.new/contest";
 import { useContestApi } from "../../services/contestApi";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useLineup } from "../../contexts/LineupContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { LineupSelectionModal } from "./LineupSelectionModal";
 
 // Import contract addresses and ABIs
 import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
@@ -44,7 +46,8 @@ const getStatusMessages = (
 };
 
 export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
-  const { currentLineup, user } = usePortoAuth();
+  const { user } = usePortoAuth();
+  const { lineups, selectedLineup, selectLineup, getLineups } = useLineup();
   const { addLineupToContest, removeLineupFromContest } = useContestApi();
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
@@ -61,6 +64,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     open: boolean;
     message: string;
   }>({ open: false, message: "" });
+  const [lineupSelectionModal, setLineupSelectionModal] = React.useState(false);
 
   // Define the expected tuple type for details
   type ContestDetailsTuple = [string, bigint, bigint, bigint];
@@ -116,7 +120,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
           let updatedContest;
           if (pendingAction === "join") {
             updatedContest = await addLineupToContest(contest.id, {
-              tournamentLineupId: currentLineup?.id ?? "",
+              tournamentLineupId: selectedLineup?.id ?? "",
             });
           } else if (pendingAction === "leave") {
             updatedContest = await removeLineupFromContest(contest.id, userContestLineup?.id ?? "");
@@ -143,7 +147,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     pendingAction,
     sendCallsData?.id,
     contest.id,
-    currentLineup?.id,
+    selectedLineup?.id,
     userContestLineup?.id,
     addLineupToContest,
     removeLineupFromContest,
@@ -151,12 +155,16 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   ]);
 
   const handleJoinContest = async () => {
-    if (!currentLineup) {
-      setWarningModal({
-        open: true,
-        message:
-          'You must create a lineup before joining the contest. Navigate to "Lineup" page and select 0-4 golfers',
-      });
+    if (!selectedLineup) {
+      // Load lineups if not already loaded
+      if (lineups.length === 0) {
+        try {
+          await getLineups(contest.tournamentId);
+        } catch (error) {
+          console.error("Failed to load lineups:", error);
+        }
+      }
+      setLineupSelectionModal(true);
       return;
     }
     if (!hasEnoughBalance) {
@@ -228,8 +236,31 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     }
   };
 
+  const handleLineupSelect = (lineupId: string) => {
+    selectLineup(lineupId);
+    setLineupSelectionModal(false);
+    // Now proceed with joining the contest
+    handleJoinContest();
+  };
+
+  const handleCreateNewLineup = () => {
+    setLineupSelectionModal(false);
+    // Navigate to lineup creation page
+    window.location.href = "/lineups/create";
+  };
+
   return (
     <div className="flex flex-col gap-2">
+      {/* Lineup Selection Modal */}
+      <LineupSelectionModal
+        isOpen={lineupSelectionModal}
+        onClose={() => setLineupSelectionModal(false)}
+        lineups={lineups}
+        selectedLineupId={selectedLineup?.id || null}
+        onSelectLineup={handleLineupSelect}
+        onCreateNew={handleCreateNewLineup}
+      />
+
       {/* Warning Modal */}
       <Dialog
         open={warningModal.open}

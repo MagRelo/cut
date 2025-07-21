@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { handleApiResponse, ApiError } from "../utils/apiError";
-import { type TournamentLineup } from "../types.new/player";
-import { useLineupApi } from "../services/lineupApi";
 
 interface PortoUser {
   id: string;
@@ -12,7 +10,6 @@ interface PortoUser {
   phone: string | null;
   email: string | null;
   isVerified: boolean;
-  tournamentLineups: Array<TournamentLineup>;
   userGroups: Array<unknown>;
   token: string;
 }
@@ -24,16 +21,6 @@ interface PortoAuthContextData {
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
   isAdmin: () => boolean;
   getCurrentUser: () => PortoUser | null;
-  getLineup: (tournamentId: string) => Promise<TournamentLineup>;
-  getLineupById: (lineupId: string) => Promise<TournamentLineup>;
-  createLineup: (
-    tournamentId: string,
-    playerIds: string[],
-    name?: string
-  ) => Promise<TournamentLineup>;
-  updateLineup: (lineupId: string, playerIds: string[], name?: string) => Promise<TournamentLineup>;
-  currentLineup: TournamentLineup | null;
-  lineupError: string | null;
 }
 
 const PortoAuthContext = createContext<PortoAuthContextData | undefined>(undefined);
@@ -50,11 +37,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address } = useAccount();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // lineups
-  const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
-  const [lineupError, setLineupError] = useState<string | null>(null);
-  const lineupApi = useLineupApi();
 
   const config = useMemo(
     () => ({
@@ -130,76 +112,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user?.userType === "ADMIN");
   }, [user]);
 
-  const getLineup = useCallback(
-    async (tournamentId: string) => {
-      try {
-        const response = await lineupApi.getLineup(tournamentId);
-        setCurrentLineup(response.lineups[0] || null);
-        setLineupError(null);
-        return response.lineups[0] || null;
-      } catch (error) {
-        console.error("Failed to fetch lineup:", error);
-        setLineupError("Failed to fetch lineup");
-        throw error;
-      }
-    },
-    [lineupApi]
-  );
-
-  const getLineupById = useCallback(
-    async (lineupId: string) => {
-      try {
-        const response = await lineupApi.getLineupById(lineupId);
-        setCurrentLineup(response.lineups[0] || null);
-        setLineupError(null);
-        return response.lineups[0] || null;
-      } catch (error) {
-        console.error("Failed to fetch lineup:", error);
-        setLineupError("Failed to fetch lineup");
-        throw error;
-      }
-    },
-    [lineupApi]
-  );
-
-  const createLineup = useCallback(
-    async (tournamentId: string, playerIds: string[], name?: string) => {
-      try {
-        const response = await lineupApi.createLineup(tournamentId, {
-          players: playerIds,
-          name,
-        });
-        setCurrentLineup(response.lineups[0] || null);
-        setLineupError(null);
-        return response.lineups[0] || null;
-      } catch (error) {
-        console.error("Failed to create lineup:", error);
-        setLineupError("Failed to create lineup");
-        throw error;
-      }
-    },
-    [lineupApi]
-  );
-
-  const updateLineup = useCallback(
-    async (lineupId: string, playerIds: string[], name?: string) => {
-      try {
-        const response = await lineupApi.updateLineup(lineupId, {
-          players: playerIds,
-          name,
-        });
-        setCurrentLineup(response.lineups[0] || null);
-        setLineupError(null);
-        return response.lineups[0] || null;
-      } catch (error) {
-        console.error("Failed to update lineup:", error);
-        setLineupError("Failed to update lineup");
-        throw error;
-      }
-    },
-    [lineupApi]
-  );
-
   useEffect(() => {
     const initializeAuth = async () => {
       if (!address) {
@@ -212,7 +124,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
         setUser(response);
-        setCurrentLineup(response.tournamentLineups[0]);
       } catch (error) {
         console.error("Auth check failed:", error);
         if (
@@ -237,27 +148,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       updateUserSettings,
       isAdmin,
       getCurrentUser,
-      getLineup,
-      getLineupById,
-      createLineup,
-      updateLineup,
-      currentLineup,
-      lineupError,
     }),
-    [
-      user,
-      loading,
-      updateUser,
-      updateUserSettings,
-      isAdmin,
-      getCurrentUser,
-      getLineup,
-      getLineupById,
-      createLineup,
-      updateLineup,
-      currentLineup,
-      lineupError,
-    ]
+    [user, loading, updateUser, updateUserSettings, isAdmin, getCurrentUser]
   );
 
   return <PortoAuthContext.Provider value={contextValue}>{children}</PortoAuthContext.Provider>;
