@@ -19,6 +19,7 @@ interface PortoAuthContextData {
   loading: boolean;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
+  logout: () => void;
   isAdmin: () => boolean;
   getCurrentUser: () => PortoUser | null;
 }
@@ -112,6 +113,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user?.userType === "ADMIN");
   }, [user]);
 
+  const logout = useCallback(() => {
+    setUser(null);
+  }, []);
+
   useEffect(() => {
     const initializeAuth = async () => {
       if (!address) {
@@ -140,16 +145,24 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, [address, request]);
 
+  // Clear user data when wallet disconnects
+  useEffect(() => {
+    if (!address) {
+      setUser(null);
+    }
+  }, [address]);
+
   const contextValue = useMemo(
     () => ({
       user,
       loading,
       updateUser,
       updateUserSettings,
+      logout,
       isAdmin,
       getCurrentUser,
     }),
-    [user, loading, updateUser, updateUserSettings, isAdmin, getCurrentUser]
+    [user, loading, updateUser, updateUserSettings, logout, isAdmin, getCurrentUser]
   );
 
   return <PortoAuthContext.Provider value={contextValue}>{children}</PortoAuthContext.Provider>;

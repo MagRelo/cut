@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
 import { type TournamentLineup } from "../types.new/player";
 import { useLineupApi } from "../services/lineupApi";
+import { usePortoAuth } from "./PortoAuthContext";
 
 interface LineupContextData {
   lineups: TournamentLineup[];
@@ -14,6 +15,7 @@ interface LineupContextData {
     name?: string
   ) => Promise<TournamentLineup>;
   updateLineup: (lineupId: string, playerIds: string[], name?: string) => Promise<TournamentLineup>;
+  clearLineups: () => void;
 }
 
 const LineupContext = createContext<LineupContextData | undefined>(undefined);
@@ -30,6 +32,15 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
   const [lineups, setLineups] = useState<TournamentLineup[]>([]);
   const [lineupError, setLineupError] = useState<string | null>(null);
   const lineupApi = useLineupApi();
+  const { user } = usePortoAuth();
+
+  // Clear lineups when user logs out
+  useEffect(() => {
+    if (!user) {
+      setLineups([]);
+      setLineupError(null);
+    }
+  }, [user]);
 
   const getLineups = useCallback(
     async (tournamentId: string) => {
@@ -113,6 +124,11 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
     [lineups]
   );
 
+  const clearLineups = useCallback(() => {
+    setLineups([]);
+    setLineupError(null);
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       lineups,
@@ -122,6 +138,7 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
       getLineupFromCache,
       createLineup,
       updateLineup,
+      clearLineups,
     }),
     [
       lineups,
@@ -131,6 +148,7 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
       getLineupFromCache,
       createLineup,
       updateLineup,
+      clearLineups,
     ]
   );
 
