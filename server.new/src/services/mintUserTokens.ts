@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import PlatformToken from '../../../client/src/utils/contracts/PlatformToken.json' with { type: 'json' };
+import PlatformToken from '../../contracts/PlatformToken.json' with { type: 'json' };
 
 // Initialize blockchain connection
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);

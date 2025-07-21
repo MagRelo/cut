@@ -16,6 +16,8 @@ The core functionality is implemented in `src/services/mintUserTokens.ts`:
 - **Purpose**: Mints BTCUT tokens to a specified wallet address
 - **Default Amount**: 25 BTCUT tokens
 - **Token Contract**: Uses the PlatformToken contract deployed at `PLATFORM_TOKEN_ADDRESS`
+- **Blockchain Library**: Uses ethers.js for blockchain interactions
+- **Contract ABI**: Imported from `contracts/PlatformToken.json` (copied to server.new/contracts/)
 
 ### Integration Points
 

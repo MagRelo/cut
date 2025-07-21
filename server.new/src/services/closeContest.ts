@@ -7,7 +7,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { ethers } from 'ethers';
-import Contest from '../../../client/src/utils/contracts/Contest.json' with { type: 'json' };
+import Contest from '../../contracts/Contest.json' with { type: 'json' };
 
 // Initialize blockchain connection
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);

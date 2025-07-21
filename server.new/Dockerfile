@@ -25,6 +25,9 @@ COPY server.new/dist/ ./dist/
 # Copy built frontend
 COPY client/dist/ ./public/dist/
 
+# Copy contract files
+COPY client/src/utils/contracts/ ./contracts/
+
 # Expose port
 EXPOSE 3000
 

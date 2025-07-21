@@ -18,7 +18,7 @@ const router = Router();
 
 // SIWE Nonce endpoint
 router.get("/siwe/nonce", (req, res) => {
-  console.log("Generating SIWE nonce");
+  // console.log("Generating SIWE nonce");
   const response = {
     nonce: generateSiweNonce(),
   };

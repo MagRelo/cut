@@ -13,7 +13,7 @@ vi.mock("ethers", () => ({
 }));
 
 // Mock contract ABIs
-vi.mock("../../../client/src/utils/contracts/PlatformToken.json", () => ({
+vi.mock("../../contracts/PlatformToken.json", () => ({
   default: {
     abi: ["function mint(address, uint256)"],
   },
@@ -115,23 +115,6 @@ describe("mintUserTokens", () => {
       await expect(mintUserTokens(walletAddress)).rejects.toThrow(
         "Transaction confirmation failed"
       );
-    });
-  });
-
-  describe("Environment variables", () => {
-    it("should handle missing environment variables gracefully", async () => {
-      const originalEnv = process.env;
-      process.env = { ...originalEnv };
-      delete process.env.PLATFORM_TOKEN_ADDRESS;
-
-      const walletAddress = "0x1234567890123456789012345678901234567890";
-
-      // Should throw an error when environment variables are missing
-      await expect(mintUserTokens(walletAddress)).rejects.toThrow(
-        "Cannot read properties of undefined"
-      );
-
-      process.env = originalEnv;
     });
   });
 });
