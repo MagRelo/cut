@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { PlayerSelectionCard } from "./PlayerSelectionCard";
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";
-import { TournamentLineup } from "../../types.new/player";
+import { TournamentLineup, PlayerWithTournamentData } from "../../types.new/player";
 import { ErrorMessage } from "../util/ErrorMessage";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 
@@ -27,6 +28,7 @@ interface TournamentLineupFormProps {
 }
 
 export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ lineupId }) => {
+  const navigate = useNavigate();
   const { loading: isAuthLoading } = usePortoAuth();
   const {
     players: fieldPlayers,
@@ -47,14 +49,20 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
   const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
+  const [draftPlayers, setDraftPlayers] = useState<Array<PlayerWithTournamentData | null>>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize draft players with current lineup when in edit mode
+  useEffect(() => {
+    if (lineupId && currentLineup) {
+      setDraftPlayers(currentLineup.players || []);
+    }
+  }, [lineupId, currentLineup]);
 
   // Helper function to get the next lineup number
   const getNextLineupNumber = useCallback(() => {
-    console.log("Calculating next lineup number. Current lineups:", lineups);
-
     // Simply use the array length + 1 for the next number
     const nextNumber = lineups.length + 1;
-    console.log("Next number based on array length:", nextNumber);
     return nextNumber;
   }, [lineups]);
 
@@ -102,37 +110,54 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
     loadLineups();
   }, [currentTournament?.id, isAuthLoading, lineupId, lineups.length, getLineups]);
 
-  const handlePlayerSelect = async (playerId: string | null) => {
+  const handlePlayerSelect = (playerId: string | null) => {
     if (selectedPlayerIndex === null) return;
 
-    const newPlayers = [...(currentLineup?.players || [])];
+    const newDraftPlayers = [...draftPlayers];
 
     if (playerId) {
       const selectedPlayer = fieldPlayers?.find((p) => p.id === playerId);
       if (selectedPlayer) {
-        newPlayers[selectedPlayerIndex] = selectedPlayer;
+        newDraftPlayers[selectedPlayerIndex] = selectedPlayer;
       }
     } else {
       // Remove player from this slot by splicing
-      newPlayers.splice(selectedPlayerIndex, 1);
+      newDraftPlayers.splice(selectedPlayerIndex, 1);
     }
 
-    // Map remaining players to IDs
-    const playerIds = newPlayers.map((p) => p.id);
+    setDraftPlayers(newDraftPlayers);
+    setSelectedPlayerIndex(null);
+  };
 
+  const handleSubmit = async () => {
+    if (!currentTournament?.id) return;
+
+    const playerIds = draftPlayers
+      .filter((p): p is PlayerWithTournamentData => p !== null)
+      .map((p) => p.id);
+
+    if (playerIds.length === 0) {
+      console.error("No players selected");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       if (lineupId) {
         // Update existing lineup
         await updateLineup(lineupId, playerIds);
       } else {
         // Create new lineup
-        await createLineup(currentTournament?.id || "", playerIds, nextLineupName);
+        await createLineup(currentTournament.id, playerIds, nextLineupName);
       }
-    } catch (error) {
-      console.error("Failed to update lineup:", error);
-    }
 
-    setSelectedPlayerIndex(null);
+      // Navigate to lineup list after successful save
+      navigate("/lineups");
+    } catch (error) {
+      console.error("Failed to save lineup:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isEditingAllowed = (): boolean => {
@@ -160,16 +185,6 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md pb-6">
-      {/* Display lineup name for new lineups */}
-      {!lineupId && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm font-medium text-blue-900">Creating New Lineup</h3>
-          <p className="text-sm text-blue-700">
-            This lineup will be named: <span className="font-semibold">{nextLineupName}</span>
-          </p>
-        </div>
-      )}
-
       <div className="flex flex-col gap-4">
         {/* lineup open */}
         {isEditingAllowed() && (
@@ -177,7 +192,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
             {Array.from({ length: 4 }).map((_, index) => (
               <PlayerSelectionCard
                 key={`slot-${index}`}
-                player={currentLineup?.players[index] || null}
+                player={draftPlayers[index] || null}
                 isSelected={false}
                 onClick={() => handleCardClick(index)}
                 iconType="pencil"
@@ -210,13 +225,41 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
         )}
       </div>
 
+      {/* Submit button for all lineups */}
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-6 rounded-lg flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              {lineupId ? "Update Lineup" : "Save Lineup"}
+            </>
+          )}
+        </button>
+      </div>
+
       {/* player selection modal */}
       <PlayerSelectionModal
         isOpen={selectedPlayerIndex !== null}
         onClose={() => setSelectedPlayerIndex(null)}
         onSelect={handlePlayerSelect}
         availablePlayers={fieldPlayers || []}
-        selectedPlayers={currentLineup?.players?.map((p) => p.id) || []}
+        selectedPlayers={draftPlayers.filter((p) => p !== null).map((p) => p!.id)}
       />
     </div>
   );

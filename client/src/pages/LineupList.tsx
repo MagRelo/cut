@@ -62,9 +62,6 @@ export const LineupList: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
                   </h3>
-                  <p className="text-sm text-gray-500">
-                    {lineup.players?.length || 0} players selected
-                  </p>
                 </div>
                 <Link
                   to={`/lineups/edit/${lineup.id}`}
