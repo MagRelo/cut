@@ -40,6 +40,7 @@ export function Connect() {
     connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
   const handleConnect = async () => {
+    disconnect();
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
     await connect(
       {
