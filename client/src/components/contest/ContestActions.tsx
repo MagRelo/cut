@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { Dialog } from "@headlessui/react";
+import { useNavigate } from "react-router-dom";
 
 import { formatUnits, parseUnits } from "viem";
 import {
@@ -48,6 +49,7 @@ const getStatusMessages = (
 export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
   const { user } = usePortoAuth();
   const { lineups, getLineups } = useLineup();
+  const navigate = useNavigate();
   const { addLineupToContest, removeLineupFromContest } = useContestApi();
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
@@ -242,7 +244,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   const handleCreateNewLineup = () => {
     setLineupSelectionModal(false);
     // Navigate to lineup creation page
-    window.location.href = "/lineups/create";
+    navigate("/lineups/create");
   };
 
   return (

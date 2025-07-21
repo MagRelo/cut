@@ -49,7 +49,18 @@ export const LineupSelectionModal: React.FC<LineupSelectionModalProps> = ({
                       {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {lineup.players?.length || 0} players selected
+                      {lineup.players && lineup.players.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          <ul className="list-disc list-inside space-y-0.5">
+                            {lineup.players.map((player, index) => (
+                              <li key={index}>
+                                {player.pga_displayName ||
+                                  `${player.pga_firstName} ${player.pga_lastName}`}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </button>
                 ))

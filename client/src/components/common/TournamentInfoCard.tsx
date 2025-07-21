@@ -90,7 +90,7 @@ export const TournamentInfoCard: React.FC = () => {
                       : "border-white/50"
                   } rounded px-3 py-1 transition-colors flex items-center justify-center`}
                 >
-                  Lineup
+                  Lineups
                 </Link>
                 <Link
                   to="/contests"
