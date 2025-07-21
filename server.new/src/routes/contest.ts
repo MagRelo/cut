@@ -5,7 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 // Get contests by tournament ID
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const { tournamentId } = req.query;
 
@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get contest by ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireAuth, async (req, res) => {
   try {
     const contest = await prisma.contest.findUnique({
       where: { id: req.params.id },
@@ -125,7 +125,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create new contest
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { name, description, tournamentId, userGroupId, endTime, address, settings } = req.body;
 

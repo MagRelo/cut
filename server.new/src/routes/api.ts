@@ -1,10 +1,10 @@
 import { Router } from "express";
 import authRoutes from "./auth.js";
 import tournamentRoutes from "./tournament.js";
-import userRoutes from "./user.js";
 import lineupRoutes from "./lineup.js";
 import contestRoutes from "./contest.js";
 import portoRoutes from "./porto.js";
+// import userRoutes from "./user.js";
 
 const router = Router();
 
@@ -23,8 +23,8 @@ router.use("/lineup", lineupRoutes);
 // Auth routes
 router.use("/auth", authRoutes);
 
-// User routes
-router.use("/users", userRoutes);
+// User Group routes
+// router.use("/users", userRoutes);
 
 // Porto routes
 router.use("/porto", portoRoutes);
