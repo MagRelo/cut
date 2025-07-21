@@ -19,15 +19,18 @@ export const LineupList: React.FC = () => {
     const fetchLineups = async () => {
       if (!currentTournament?.id) return;
 
-      try {
-        await getLineups(currentTournament.id);
-      } catch (error) {
-        console.error("Failed to fetch lineups:", error);
+      // Only fetch if we don't have lineups for this tournament
+      if (lineups.length === 0) {
+        try {
+          await getLineups(currentTournament.id);
+        } catch (error) {
+          console.error("Failed to fetch lineups:", error);
+        }
       }
     };
 
     fetchLineups();
-  }, [currentTournament?.id, getLineups]);
+  }, [currentTournament?.id, getLineups, lineups.length]);
 
   if (isAuthLoading || isTournamentLoading) {
     return (

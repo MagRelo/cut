@@ -4,17 +4,16 @@ import { useLineupApi } from "../services/lineupApi";
 
 interface LineupContextData {
   lineups: TournamentLineup[];
-  selectedLineup: TournamentLineup | null;
   lineupError: string | null;
   getLineups: (tournamentId: string) => Promise<TournamentLineup[]>;
   getLineupById: (lineupId: string) => Promise<TournamentLineup>;
+  getLineupFromCache: (lineupId: string) => TournamentLineup | null;
   createLineup: (
     tournamentId: string,
     playerIds: string[],
     name?: string
   ) => Promise<TournamentLineup>;
   updateLineup: (lineupId: string, playerIds: string[], name?: string) => Promise<TournamentLineup>;
-  selectLineup: (lineupId: string | null) => void;
 }
 
 const LineupContext = createContext<LineupContextData | undefined>(undefined);
@@ -29,7 +28,6 @@ export function useLineup() {
 
 export function LineupProvider({ children }: { children: React.ReactNode }) {
   const [lineups, setLineups] = useState<TournamentLineup[]>([]);
-  const [selectedLineup, setSelectedLineup] = useState<TournamentLineup | null>(null);
   const [lineupError, setLineupError] = useState<string | null>(null);
   const lineupApi = useLineupApi();
 
@@ -74,7 +72,6 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
         const newLineup = response.lineups[0] || null;
         if (newLineup) {
           setLineups((prev) => [...prev, newLineup]);
-          setSelectedLineup(newLineup);
         }
         setLineupError(null);
         return newLineup;
@@ -97,7 +94,6 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
         const updatedLineup = response.lineups[0] || null;
         if (updatedLineup) {
           setLineups((prev) => prev.map((l) => (l.id === lineupId ? updatedLineup : l)));
-          setSelectedLineup(updatedLineup);
         }
         setLineupError(null);
         return updatedLineup;
@@ -110,14 +106,9 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
     [lineupApi]
   );
 
-  const selectLineup = useCallback(
-    (lineupId: string | null) => {
-      if (lineupId === null) {
-        setSelectedLineup(null);
-      } else {
-        const lineup = lineups.find((l) => l.id === lineupId);
-        setSelectedLineup(lineup || null);
-      }
+  const getLineupFromCache = useCallback(
+    (lineupId: string) => {
+      return lineups.find((lineup) => lineup.id === lineupId) || null;
     },
     [lineups]
   );
@@ -125,23 +116,21 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
   const contextValue = useMemo(
     () => ({
       lineups,
-      selectedLineup,
       lineupError,
       getLineups,
       getLineupById,
+      getLineupFromCache,
       createLineup,
       updateLineup,
-      selectLineup,
     }),
     [
       lineups,
-      selectedLineup,
       lineupError,
       getLineups,
       getLineupById,
+      getLineupFromCache,
       createLineup,
       updateLineup,
-      selectLineup,
     ]
   );
 

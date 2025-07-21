@@ -47,7 +47,7 @@ const getStatusMessages = (
 
 export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
   const { user } = usePortoAuth();
-  const { lineups, selectedLineup, selectLineup, getLineups } = useLineup();
+  const { lineups, getLineups } = useLineup();
   const { addLineupToContest, removeLineupFromContest } = useContestApi();
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
@@ -65,6 +65,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     message: string;
   }>({ open: false, message: "" });
   const [lineupSelectionModal, setLineupSelectionModal] = React.useState(false);
+  const [selectedLineupId, setSelectedLineupId] = React.useState<string | null>(null);
 
   // Define the expected tuple type for details
   type ContestDetailsTuple = [string, bigint, bigint, bigint];
@@ -120,7 +121,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
           let updatedContest;
           if (pendingAction === "join") {
             updatedContest = await addLineupToContest(contest.id, {
-              tournamentLineupId: selectedLineup?.id ?? "",
+              tournamentLineupId: selectedLineupId ?? "",
             });
           } else if (pendingAction === "leave") {
             updatedContest = await removeLineupFromContest(contest.id, userContestLineup?.id ?? "");
@@ -147,7 +148,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     pendingAction,
     sendCallsData?.id,
     contest.id,
-    selectedLineup?.id,
+    selectedLineupId,
     userContestLineup?.id,
     addLineupToContest,
     removeLineupFromContest,
@@ -155,59 +156,15 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   ]);
 
   const handleJoinContest = async () => {
-    if (!selectedLineup) {
-      // Load lineups if not already loaded
-      if (lineups.length === 0) {
-        try {
-          await getLineups(contest.tournamentId);
-        } catch (error) {
-          console.error("Failed to load lineups:", error);
-        }
+    // Always load lineups and show selection modal
+    if (lineups.length === 0) {
+      try {
+        await getLineups(contest.tournamentId);
+      } catch (error) {
+        console.error("Failed to load lineups:", error);
       }
-      setLineupSelectionModal(true);
-      return;
     }
-    if (!hasEnoughBalance) {
-      setWarningModal({
-        open: true,
-        message: `You do not have enough ${
-          contest?.settings?.paymentTokenSymbol || "tokens"
-        } to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
-      });
-      return;
-    }
-    try {
-      setPendingAction("join");
-
-      // Execute blockchain transaction with both approval and transfer
-      await sendCalls({
-        calls: [
-          {
-            abi: PlatformTokenContract.abi,
-            args: [
-              contest.address as `0x${string}`,
-              parseUnits(contest.settings?.fee?.toString() ?? "0", 18),
-            ],
-            functionName: "approve",
-            to: paymentTokenAddress as `0x${string}`,
-          },
-          {
-            abi: ContestContract.abi,
-            args: [],
-            functionName: "enter",
-            to: contest.address as `0x${string}`,
-          },
-        ],
-      });
-
-      // console.log("Join contest transaction:", result);
-    } catch (err) {
-      console.error("Error joining contest:", err);
-      setSubmissionError(
-        `Failed to join contest: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
-      setPendingAction(null);
-    }
+    setLineupSelectionModal(true);
   };
 
   const handleLeaveContest = async () => {
@@ -236,11 +193,50 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     }
   };
 
-  const handleLineupSelect = (lineupId: string) => {
-    selectLineup(lineupId);
+  const handleLineupSelect = async (lineupId: string) => {
+    setSelectedLineupId(lineupId);
     setLineupSelectionModal(false);
-    // Now proceed with joining the contest
-    handleJoinContest();
+
+    if (!hasEnoughBalance) {
+      setWarningModal({
+        open: true,
+        message: `You do not have enough ${
+          contest?.settings?.paymentTokenSymbol || "tokens"
+        } to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
+      });
+      return;
+    }
+
+    try {
+      setPendingAction("join");
+
+      // Execute blockchain transaction with both approval and transfer
+      await sendCalls({
+        calls: [
+          {
+            abi: PlatformTokenContract.abi,
+            args: [
+              contest.address as `0x${string}`,
+              parseUnits(contest.settings?.fee?.toString() ?? "0", 18),
+            ],
+            functionName: "approve",
+            to: paymentTokenAddress as `0x${string}`,
+          },
+          {
+            abi: ContestContract.abi,
+            args: [],
+            functionName: "enter",
+            to: contest.address as `0x${string}`,
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Error joining contest:", err);
+      setSubmissionError(
+        `Failed to join contest: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+      setPendingAction(null);
+    }
   };
 
   const handleCreateNewLineup = () => {
@@ -256,7 +252,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         isOpen={lineupSelectionModal}
         onClose={() => setLineupSelectionModal(false)}
         lineups={lineups}
-        selectedLineupId={selectedLineup?.id || null}
+        selectedLineupId={selectedLineupId}
         onSelectLineup={handleLineupSelect}
         onCreateNew={handleCreateNewLineup}
       />
