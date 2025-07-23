@@ -45,7 +45,8 @@ export function UserPage() {
       {/* Account Settings */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-          <div className="text-lg font-semibold text-gray-700 font-display">Available Balance</div>
+          {/* Available Balance */}
+          <div className="text-lg font-semibold text-gray-700 font-display">Balance</div>
 
           <CutAmountDisplay
             amount={Number(formattedBalance(paymentTokenBalance?.value ?? 0n))}
@@ -54,7 +55,6 @@ export function UserPage() {
           />
         </div>
 
-        {/* TODO: Add funding */}
         <div className="mt-4 flex justify-center">
           <a
             href={`https://stg.id.porto.sh/`}
@@ -62,21 +62,36 @@ export function UserPage() {
             rel="noopener noreferrer"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
           >
-            Add Funds
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
+            Add BTCUT
+          </a>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-gray-700 font-display mb-2">Treasury</div>
+
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          {/* Address */}
+          <div className="font-medium">Treasury Balance</div>
+          <div>$11,350.00</div>
+
+          {/*  */}
+          <div className="font-medium">APY</div>
+          <div>4%</div>
+
+          {/* Cashout Value */}
+          <div className="font-medium">Cashout Value</div>
+          <div>$1350.01</div>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <a
+            href={`https://stg.id.porto.sh/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
+          >
+            Convert to USDC
           </a>
         </div>
       </div>
@@ -118,6 +133,11 @@ export function UserPage() {
           <div>{formatEther(balance?.value || 0n)} ETH</div> */}
 
           {/* Porto Wallet */}
+          <div className="font-medium">Balance</div>
+          <div className="text-lg  text-gray-700 font-display">$2000</div>
+        </div>
+
+        <div className="grid grid-cols-[100px_1fr] gap-2">
           <div className="font-medium">Wallet:</div>
           <div>
             <a
@@ -163,6 +183,32 @@ export function UserPage() {
           {/* Chain ID */}
           <div className="font-medium">Chain ID:</div>
           <div>{chainId}</div>
+        </div>
+
+        {/* TODO: Add funding */}
+        <div className="mt-4 flex justify-center">
+          <a
+            href={`https://stg.id.porto.sh/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
+          >
+            Add Funds
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
         </div>
 
         <div className="">
