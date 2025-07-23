@@ -10,7 +10,7 @@ contract EscrowFactory is Ownable {
     mapping(address => bool) public oracles;
     Escrow[] public escrows;
     address public immutable paymentToken;
-    address public immutable aavePoolAddressesProvider;
+    address public immutable treasury;
 
     event EscrowCreated(address indexed escrow, address indexed host, uint256 depositAmount);
     event OracleAdded(address indexed oracle);
@@ -18,10 +18,10 @@ contract EscrowFactory is Ownable {
 
     constructor(
         address _paymentToken,
-        address _aavePoolAddressesProvider
+        address _treasury
     ) Ownable(msg.sender) {
         paymentToken = _paymentToken;
-        aavePoolAddressesProvider = _aavePoolAddressesProvider;
+        treasury = _treasury;
     }
 
     function createEscrow(
@@ -43,7 +43,7 @@ contract EscrowFactory is Ownable {
             endTime,
             paymentToken,
             oracle,
-            aavePoolAddressesProvider
+            treasury
         );
 
         escrows.push(escrow);

@@ -5,16 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@aave/interfaces/IPool.sol";
-import "@aave/interfaces/IPoolAddressesProvider.sol";
 
 contract Escrow is ReentrancyGuard, Ownable {
     IERC20 public immutable paymentToken;
     address public immutable oracle;
+    address public immutable treasury;
 
-    // Aave integration
-    IPool public immutable aavePool;
-    IERC20 public immutable aUSDC;
     uint256 public totalInitialDeposits;
 
     enum EscrowState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
@@ -55,7 +51,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         uint256 _endTime,
         address _paymentToken,
         address _oracle,
-        address _aavePoolAddressesProvider
+        address _treasury
     ) Ownable(msg.sender) {
         details = EscrowDetails({
             name: _name,
@@ -65,12 +61,8 @@ contract Escrow is ReentrancyGuard, Ownable {
         });
         paymentToken = IERC20(_paymentToken);
         oracle = _oracle;
+        treasury = _treasury;
         state = EscrowState.OPEN;
-
-        // Initialize Aave
-        IPoolAddressesProvider provider = IPoolAddressesProvider(_aavePoolAddressesProvider);
-        aavePool = IPool(provider.getPool());
-        aUSDC = IERC20(aavePool.getReserveData(_paymentToken).aTokenAddress);
     }
 
     function deposit() external whenOpen {
@@ -82,10 +74,6 @@ contract Escrow is ReentrancyGuard, Ownable {
         // Track initial deposit
         totalInitialDeposits += details.depositAmount;
         
-        // Deposit to Aave
-        paymentToken.approve(address(aavePool), details.depositAmount);
-        aavePool.supply(address(paymentToken), details.depositAmount, address(this), 0);
-        
         participants.push(msg.sender);
         hasDeposited[msg.sender] = true;
 
@@ -95,9 +83,6 @@ contract Escrow is ReentrancyGuard, Ownable {
     function withdraw() external whenOpen {
         require(hasDeposited[msg.sender], "Not deposited");
 
-        // Withdraw from Aave
-        aavePool.withdraw(address(paymentToken), details.depositAmount, address(this));
-        
         // Return only the initial deposit
         paymentToken.transfer(msg.sender, details.depositAmount);
         
@@ -133,10 +118,6 @@ contract Escrow is ReentrancyGuard, Ownable {
         }
         require(totalBasisPoints == 10000, "Total must be 10000 basis points");
 
-        // Withdraw all funds from Aave
-        uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
-        aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
-
         // Calculate payouts based on basis points from initial deposits only
         uint256[] memory calculatedPayouts = new uint256[](_payoutBasisPoints.length);
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
@@ -152,10 +133,10 @@ contract Escrow is ReentrancyGuard, Ownable {
             paymentToken.transfer(participants[i], calculatedPayouts[i]);
         }
 
-        // Transfer all remaining yield to oracle
+        // Transfer all remaining funds to treasury
         uint256 remainingBalance = paymentToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            paymentToken.transfer(oracle, remainingBalance);
+            paymentToken.transfer(treasury, remainingBalance);
         }
     }
 
@@ -163,9 +144,6 @@ contract Escrow is ReentrancyGuard, Ownable {
         require(hasDeposited[msg.sender], "Not deposited");
         require(block.timestamp > details.endTime, "Escrow not ended");
 
-        // Withdraw from Aave
-        aavePool.withdraw(address(paymentToken), details.depositAmount, address(this));
-        
         paymentToken.transfer(msg.sender, details.depositAmount);
         hasDeposited[msg.sender] = false;
     }
@@ -181,12 +159,6 @@ contract Escrow is ReentrancyGuard, Ownable {
         state = EscrowState.CANCELLED;
         emit EscrowCancelled();
         
-        // Withdraw all funds from Aave
-        uint256 aUSDCBalance = aUSDC.balanceOf(address(this));
-        if (aUSDCBalance > 0) {
-            aavePool.withdraw(address(paymentToken), aUSDCBalance, address(this));
-        }
-        
         // Refund all participants
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
@@ -198,10 +170,10 @@ contract Escrow is ReentrancyGuard, Ownable {
         }
         delete participants;
         
-        // Transfer any remaining funds to oracle
+        // Transfer any remaining funds to treasury
         uint256 remainingBalance = paymentToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            paymentToken.transfer(oracle, remainingBalance);
+            paymentToken.transfer(treasury, remainingBalance);
         }
     }
 } 

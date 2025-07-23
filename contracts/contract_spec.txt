@@ -3,13 +3,13 @@ Contracts
 Purpose: This system will provide accounting for a fantasy sports platform. Users can 
   create new escrows, deposit into escrows. Escrow contracts will hold the funds for the escrow 
   while the escrow is in progress. The Oracle will close escrows to new deposits and 
-  set the split for the escrow contracts. Funds are deposited into Aave to earn yield during the escrow period.
+  set the split for the escrow contracts. The Treasury/Exchange contract handles USDC to platform token conversion and yield generation.
 
 Actors:
 - Oracle: this actor is responsible for closing escrows to new deposits, and setting the results of the escrows
   - Must be whitelisted by platform admin
   - Can be revoked if malicious behavior is detected
-  - Receives all yield from escrows
+  - Receives all yield from treasury operations
 - Escrow Owner: this actor is the creator of the escrow contract
   - Can cancel and refund participants when escrow is in OPEN state
   - Has full control over escrow cancellation
@@ -17,8 +17,21 @@ Actors:
   - Must have sufficient funds in the payment token
   - Can withdraw from escrows before they are in progress
   - Can emergency withdraw after escrow end time
+- Treasury Manager: this actor manages the treasury/exchange operations
+  - Can mint platform tokens for USDC deposits
+  - Can burn platform tokens for USDC withdrawals
+  - Manages Aave integration for yield generation
 
 Contracts: 
+- Treasury/Exchange (Ownable)
+  - depositUSDC(uint256 amount) - Converts USDC to platform tokens
+  - withdrawUSDC(uint256 platformTokenAmount) - Converts platform tokens back to USDC
+  - getExchangeRate() returns (uint256) - Current USDC to platform token exchange rate
+  - getTreasuryBalance() returns (uint256) - Total USDC held in treasury
+  - getPlatformTokenSupply() returns (uint256) - Total platform tokens minted
+  - emergencyWithdrawUSDC(address to, uint256 amount) (Owner only) - Emergency USDC withdrawal
+  - Constructor requires: usdcToken, platformToken, aavePoolAddressesProvider
+
 - Escrow Factory
   - createEscrow(
     string name,
@@ -30,7 +43,7 @@ Contracts:
   - addOracle(address oracle) (Owner only)
   - removeOracle(address oracle) (Owner only)
   - getEscrows() returns (Escrow[])
-  - Constructor requires: paymentToken, aavePoolAddressesProvider
+  - Constructor requires: paymentToken, treasuryAddress
 
 - Escrow (Ownable)
   - deposit() - Requires approval of depositAmount tokens
@@ -39,7 +52,7 @@ Contracts:
   - closeDeposits() (Oracle only)
   - distribute(uint256[] payouts) (Oracle only) - Takes basis points array
   - cancelAndRefund() (Owner only) - Cancels escrow and refunds all participants
-  - Constructor requires: name, depositAmount, maxParticipants, endTime, paymentToken, oracle, aavePoolAddressesProvider
+  - Constructor requires: name, depositAmount, maxParticipants, endTime, paymentToken, oracle, treasuryAddress
   - Owner is set to msg.sender in constructor (escrow creator)
 
 - Payment Token (ERC20 - USDC simulation)
@@ -55,18 +68,36 @@ Contracts:
   - mint(address to, uint256 amount) (Owner only)
   - burn(address from, uint256 amount) (Owner only)
 
-Token Distribution Rules:
-- Minting:
-  - Platform can mint tokens for ecosystem growth
-- Burning:
-  - Platform can burn tokens for deflationary pressure
-- Note: This is a USDC simulation for development. Production should use actual USDC.
+- Platform Token (ERC20)
+  - name() returns (string) - "Cut Platform Token"
+  - symbol() returns (string) - "CUT"
+  - decimals() returns (uint8) - 18
+  - totalSupply() returns (uint256)
+  - balanceOf(address account) returns (uint256)
+  - transfer(address to, uint256 amount) returns (bool)
+  - transferFrom(address from, address to, uint256 amount) returns (bool)
+  - approve(address spender, uint256 amount) returns (bool)
+  - allowance(address owner, address spender) returns (uint256)
+  - mint(address to, uint256 amount) (Treasury only)
+  - burn(address from, uint256 amount) (Treasury only)
 
-Aave Integration:
-- All escrow funds are automatically deposited into Aave to earn yield
+Token Distribution Rules:
+- Platform Token Minting:
+  - Treasury can mint platform tokens for USDC deposits
+  - Exchange rate determined by treasury balance and platform token supply
+- Platform Token Burning:
+  - Treasury can burn platform tokens for USDC withdrawals
+- USDC Simulation:
+  - Platform can mint tokens for ecosystem growth
+  - Platform can burn tokens for deflationary pressure
+  - Note: This is a USDC simulation for development. Production should use actual USDC.
+
+Treasury/Exchange Integration:
+- All USDC deposits are automatically deposited into Aave to earn yield
+- Exchange rate calculated as: (Treasury USDC Balance + Aave Yield) / Platform Token Supply
 - Yield is tracked separately from initial deposits
-- Payouts are calculated from initial deposits only
-- All yield is sent to oracle
+- Treasury receives all yield from Aave deposits
+- Platform tokens are minted/burned based on current exchange rate
 
 States:
 - OPEN: Escrow is accepting deposits
@@ -84,38 +115,46 @@ Events:
 - ParticipantRefunded(address indexed participant, uint256 amount)
 - OracleAdded(address indexed oracle)
 - OracleRemoved(address indexed oracle)
+- USDCDeposited(address indexed user, uint256 usdcAmount, uint256 platformTokensMinted)
+- USDCWithdrawn(address indexed user, uint256 platformTokensBurned, uint256 usdcAmount)
+- ExchangeRateUpdated(uint256 newRate)
 
 Financial Considerations:
 - Minimum escrow size: 2 participants
 - Maximum escrow size: Configurable per escrow
 - Deposit amounts: Must be in payment token (USDC simulation)
 - Emergency withdrawal: Available after escrow end time
-- Yield distribution: Oracle receives all yield
+- Yield distribution: Treasury receives all yield from Aave
 - Participant payouts: Based on initial deposits only
+- Exchange rate: Dynamic based on treasury balance and platform token supply
 
 Security Considerations:
 - Reentrancy protection (using OpenZeppelin's ReentrancyGuard)
 - Access control for all privileged functions (using OpenZeppelin's Ownable)
 - Oracle whitelist system
 - Funds safety checks
-- Token minting/burning restrictions (Owner only)
-- Aave integration for yield generation
+- Token minting/burning restrictions (Treasury only for platform tokens)
+- Aave integration for yield generation in Treasury only
 - External calls made last in distribute function
+- Treasury emergency withdrawal capability
 
 Constants to Set/Decide:
 - Payment Token Name: "USD Coin(x)" (simulation)
 - Payment Token Symbol: "USDC(x)" (simulation)
 - Payment Token Decimals: 6 (USDC standard)
+- Platform Token Name: "Cut Platform Token"
+- Platform Token Symbol: "CUT"
+- Platform Token Decimals: 18
 - Escrow Max Participants: Configurable per escrow
 - Escrow End Time: Must be in future
-- Aave Pool Addresses Provider: Required for yield generation
+- Aave Pool Addresses Provider: Required for treasury yield generation
 
-Key Differences from Original Spec:
-- Uses Aave integration for yield generation
-- Payment token is USDC simulation (6 decimals) not custom platform token
-- All yield goes to oracle
-- Participants can withdraw from escrows before closing
-- Emergency withdrawal available after end time
-- Payouts calculated from initial deposits only, not total pot
-- Oracle receives all yield after payouts
+Key Differences from Previous Spec:
+- Treasury/Exchange contract handles USDC to platform token conversion
+- Aave integration moved from Escrow contracts to Treasury contract
+- Platform token introduced for ecosystem
+- Dynamic exchange rate based on treasury balance and platform token supply
+- All yield goes to treasury instead of oracle
+- Oracle no longer receives yield directly
+- Treasury manages all Aave deposits and yield generation
 
