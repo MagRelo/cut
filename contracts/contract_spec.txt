@@ -93,10 +93,10 @@ Token Distribution Rules:
   - Note: This is a USDC simulation for development. Production should use actual USDC.
 
 Treasury/Exchange Integration:
-- All USDC deposits are automatically deposited into Aave to earn yield
-- Exchange rate calculated as: (Treasury USDC Balance + Aave Yield) / Platform Token Supply
+- All USDC deposits are automatically deposited into Compound to earn yield
+- Exchange rate calculated as: (Treasury USDC Balance + Compound Yield) / Platform Token Supply
 - Yield is tracked separately from initial deposits
-- Treasury receives all yield from Aave deposits
+- Treasury receives all yield from Compound deposits
 - Platform tokens are minted/burned based on current exchange rate
 
 States:
@@ -134,7 +134,7 @@ Security Considerations:
 - Oracle whitelist system
 - Funds safety checks
 - Token minting/burning restrictions (Treasury only for platform tokens)
-- Aave integration for yield generation in Treasury only
+- Compound integration for yield generation in Treasury only
 - External calls made last in distribute function
 - Treasury emergency withdrawal capability
 
@@ -147,14 +147,24 @@ Constants to Set/Decide:
 - Platform Token Decimals: 18
 - Escrow Max Participants: Configurable per escrow
 - Escrow End Time: Must be in future
-- Aave Pool Addresses Provider: Required for treasury yield generation
+- Compound cUSDC and Comptroller: Required for treasury yield generation
 
 Key Differences from Previous Spec:
 - Treasury/Exchange contract handles USDC to platform token conversion
-- Aave integration moved from Escrow contracts to Treasury contract
+- Compound integration moved from Escrow contracts to Treasury contract
 - Platform token introduced for ecosystem
 - Dynamic exchange rate based on treasury balance and platform token supply
 - All yield goes to treasury instead of oracle
 - Oracle no longer receives yield directly
-- Treasury manages all Aave deposits and yield generation
+- Treasury manages all Compound deposits and yield generation
 
+
+
+
+Deployed Contracts on Base Sepolia (7/23/2025):
+Contract	Address	Purpose
+PaymentToken	0x069d435bCb929d54A8A4C7973Fe7f66733726599	USDC simulation token
+PlatformToken	0x1A213BD5CB7ABa03D21e385E38a1BAd36B0C8b65	CUT platform token
+MockCToken	0x326DC41e6E1eE524D515940a2d655Fe0D5103A0a	Compound v3 simulation
+Treasury	0x49b10152Ef893D405189b274E2064C63B2EF8C23	Main treasury contract
+EscrowFactory	0x98A926Dc63982A21030ff84d8c67F1DC865D8c1a	Escrow factory
