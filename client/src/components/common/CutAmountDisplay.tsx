@@ -25,7 +25,7 @@ export const CutAmountDisplay = ({
 
   return (
     <div className={`text-lg text-gray-700 font-semibold text-center ${className}`}>
-      <div className="flex items-center">
+      <div className="flex items-center gap-1">
         {logoPosition === "left" ? (
           <>
             {logo}

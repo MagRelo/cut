@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
 import { formatUnits, parseEther } from "viem";
-import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import { platformTokenAddress } from "../../utils/contracts/sepolia.json";
 import PlatformToken from "../../utils/contracts/PlatformToken.json";
 
 export const Transfer = () => {
@@ -15,9 +15,9 @@ export const Transfer = () => {
     id: data?.id,
   });
 
-  const paymentTokenBalance = useBalance({
+  const platformTokenBalance = useBalance({
     address,
-    token: paymentTokenAddress as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
   });
 
   const handleTransfer = async () => {
@@ -31,7 +31,7 @@ export const Transfer = () => {
           abi: PlatformToken.abi,
           args: [recipientAddress, parseEther(amount)],
           functionName: "transfer",
-          to: paymentTokenAddress as `0x${string}`,
+          to: platformTokenAddress as `0x${string}`,
         },
       ];
 
@@ -51,7 +51,7 @@ export const Transfer = () => {
   return (
     <div className="">
       <p className="text-sm text-gray-500 mb-2">
-        Use this form to transfer credits directly to another user. This cannot be undone.
+        Use this form to transfer CUT directly to another user. This cannot be undone.
       </p>
 
       <hr className="my-4" />
@@ -62,8 +62,8 @@ export const Transfer = () => {
             <div className="font-medium">Available:</div>
 
             <div>
-              {formattedBalance(paymentTokenBalance.data?.value ?? 0n)}{" "}
-              {paymentTokenBalance.data?.symbol}
+              {formattedBalance(platformTokenBalance.data?.value ?? 0n)}{" "}
+              {platformTokenBalance.data?.symbol}
             </div>
           </div>
         </div>
@@ -88,7 +88,7 @@ export const Transfer = () => {
               type="number"
               value={amount}
               step="0.01"
-              max={formattedBalance(paymentTokenBalance.data?.value ?? 0n)}
+              max={formattedBalance(platformTokenBalance.data?.value ?? 0n)}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -10,9 +10,8 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // contracts
 // import PlatformToken from '../../utils/contracts/PlatformToken.json';
-import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
-import { contestFactoryAddress } from "../../utils/contracts/sepolia.json";
-import ContestFactory from "../../utils/contracts/ContestFactory.json";
+import { platformTokenAddress, escrowFactoryAddress } from "../../utils/contracts/sepolia.json";
+import EscrowFactory from "../../utils/contracts/EscrowFactory.json";
 
 // Helper function to get status messages
 const getStatusMessages = (
@@ -35,9 +34,9 @@ export const CreateContestForm = () => {
   const navigate = useNavigate();
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
-  const { data: paymentTokenBalance } = useBalance({
+  const { data: platformTokenBalance } = useBalance({
     address: userAddress as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
     chainId: chainId ?? 0,
   });
 
@@ -72,8 +71,8 @@ export const CreateContestForm = () => {
       maxEntry: 50,
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
-      paymentTokenAddress: paymentTokenAddress as `0x${string}`,
-      paymentTokenSymbol: paymentTokenBalance?.symbol ?? "",
+      paymentTokenAddress: platformTokenAddress as `0x${string}`,
+      paymentTokenSymbol: platformTokenBalance?.symbol ?? "",
     },
     description: undefined,
     userGroupId: undefined,
@@ -89,21 +88,21 @@ export const CreateContestForm = () => {
       if (isConfirmed && pendingContestData && sendCallsData?.id) {
         setLoading(true);
         try {
-          // Parse logs from the ContestFactory address
-          const contestFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
-            (log) => log.address.toLowerCase() === contestFactoryAddress.toLowerCase()
+          // Parse logs from the EscrowFactory address
+          const escrowFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
+            (log) => log.address.toLowerCase() === escrowFactoryAddress.toLowerCase()
           );
-          if (!contestFactoryLogs?.length) {
+          if (!escrowFactoryLogs?.length) {
             console.log("Confirmation data:", confirmationData);
-            throw new Error("No logs found from ContestFactory");
+            throw new Error("No logs found from EscrowFactory");
           }
 
           // Decode the logs using the ABI
-          const decodedLogs = contestFactoryLogs
+          const decodedLogs = escrowFactoryLogs
             .map((log) => {
               try {
                 const decoded = decodeEventLog({
-                  abi: ContestFactory.abi,
+                  abi: EscrowFactory.abi,
                   data: log.data,
                   topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
                 });
@@ -115,17 +114,17 @@ export const CreateContestForm = () => {
             })
             .filter(Boolean);
 
-          // Get the contest address from the logs
-          const contestAddress = (decodedLogs[0]?.args as unknown as { contest: string })?.contest;
-          if (!contestAddress) {
-            throw new Error("No contest address found in logs");
+          // Get the escrow address from the logs
+          const escrowAddress = (decodedLogs[0]?.args as unknown as { escrow: string })?.escrow;
+          if (!escrowAddress) {
+            throw new Error("No escrow address found in logs");
           }
 
           // create contest in backend
           const contest = await contestApi.createContest({
             ...pendingContestData,
             transactionId: sendCallsData?.id,
-            address: contestAddress,
+            address: escrowAddress,
           });
 
           // Reset form after successful submission
@@ -163,18 +162,18 @@ export const CreateContestForm = () => {
 
       console.log("Initiating blockchain transaction with data:", {
         name: formData.name,
-        fee: parseUnits(formData.settings?.fee?.toString() ?? "0", 18),
-        maxEntry: formData.settings?.maxEntry,
+        depositAmount: parseUnits(formData.settings?.fee?.toString() ?? "0", 18),
+        maxParticipants: formData.settings?.maxEntry,
         endTime,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-        hasABI: !!ContestFactory.abi,
+        hasABI: !!EscrowFactory.abi,
       });
 
       // Execute blockchain transaction
       sendCalls({
         calls: [
           {
-            abi: ContestFactory.abi,
+            abi: EscrowFactory.abi,
             args: [
               formData.name,
               parseUnits(formData.settings?.fee?.toString() ?? "0", 18) ?? "0",
@@ -182,8 +181,8 @@ export const CreateContestForm = () => {
               endTime.toString(),
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
             ],
-            functionName: "createContest",
-            to: contestFactoryAddress as `0x${string}`,
+            functionName: "createEscrow",
+            to: escrowFactoryAddress as `0x${string}`,
           },
         ],
       });
@@ -284,7 +283,7 @@ export const CreateContestForm = () => {
               className="w-full p-2 border rounded-md pr-12"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {paymentTokenBalance?.symbol}
+              {platformTokenBalance?.symbol}
             </div>
           </div>
         </div>

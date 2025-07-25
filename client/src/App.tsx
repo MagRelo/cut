@@ -11,6 +11,10 @@ import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
+import { TreasuryPage } from "./pages/Treasury";
+import { DepositPage } from "./pages/DepositPage";
+import { WithdrawPage } from "./pages/WithdrawPage";
+import { TransferPage } from "./pages/TransferPage";
 
 import { LineupList } from "./pages/LineupList";
 import LineupCreatePage from "./pages/LineupCreatePage";
@@ -48,6 +52,40 @@ export const App: React.FC = () => {
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
                           <Route path="/user" element={<UserPage />} />
+                          <Route
+                            path="/treasury"
+                            element={
+                              <ProtectedRoute>
+                                <TreasuryPage />
+                              </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Treasury Operations */}
+                          <Route
+                            path="/deposit"
+                            element={
+                              <ProtectedRoute>
+                                <DepositPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/withdraw"
+                            element={
+                              <ProtectedRoute>
+                                <WithdrawPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/transfer"
+                            element={
+                              <ProtectedRoute>
+                                <TransferPage />
+                              </ProtectedRoute>
+                            }
+                          />
 
                           {/* Contests */}
                           <Route

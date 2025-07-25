@@ -7,7 +7,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { ethers } from 'ethers';
-import Contest from '../../contracts/Contest.json' with { type: 'json' };
+import Escrow from '../../contracts/Escrow.json' with { type: 'json' };
 
 // Initialize blockchain connection
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
@@ -43,24 +43,24 @@ export async function closeContest() {
 
       console.log(`Closing contest: ${contest.id} - ${contest.name}`);
 
-      // Initialize contest contract
-      const contestContract = new ethers.Contract(
+      // Initialize escrow contract
+      const escrowContract = new ethers.Contract(
         contest.address,
-        Contest.abi,
+        Escrow.abi,
         wallet
       );
 
-      // Get contest state from blockchain
-      const contestState = await contestContract.state();
-      if (Number(contestState) !== 0) {
-        // 0 = OPEN
+      // Get escrow state from blockchain
+      const escrowState = await escrowContract.state();
+      if (Number(escrowState) !== 0) {
+        // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
         console.log(
-          `Contest state not open: ${contest.id}: ${Number(contestState)}`
+          `Escrow state not open: ${contest.id}: ${Number(escrowState)}`
         );
         continue;
       }
 
-      const oracle = await contestContract.oracle();
+      const oracle = await escrowContract.oracle();
       if (oracle !== process.env.ORACLE_ADDRESS) {
         console.log(
           `Oracle mismatch: ${oracle} !== ${process.env.ORACLE_ADDRESS}`
@@ -68,8 +68,8 @@ export async function closeContest() {
         continue;
       }
 
-      // Close entry on blockchain
-      const closeTx = await contestContract.closeEntry();
+      // Close deposits on blockchain (equivalent to closeEntry in old Contest)
+      const closeTx = await escrowContract.closeDeposits();
       console.log(`Close tx: ${closeTx.hash}`);
       await closeTx.wait();
 

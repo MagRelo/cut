@@ -22,7 +22,7 @@ import { LineupSelectionModal } from "./LineupSelectionModal";
 // Import contract addresses and ABIs
 import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
-import ContestContract from "../../utils/contracts/Contest.json";
+import EscrowContract from "../../utils/contracts/Escrow.json";
 
 interface ContestActionsProps {
   contest: Contest;
@@ -75,7 +75,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   // Use type assertion when reading the value
   const contestDetailsRaw = useReadContract({
     address: contest.address as `0x${string}`,
-    abi: ContestContract.abi,
+    abi: EscrowContract.abi,
     functionName: "details",
     args: [],
   }).data as ContestDetailsTuple | undefined;
@@ -177,9 +177,9 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       await sendCalls({
         calls: [
           {
-            abi: ContestContract.abi,
+            abi: EscrowContract.abi,
             args: [],
-            functionName: "leave",
+            functionName: "withdraw",
             to: contest.address as `0x${string}`,
           },
         ],
@@ -225,9 +225,9 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
             to: paymentTokenAddress as `0x${string}`,
           },
           {
-            abi: ContestContract.abi,
+            abi: EscrowContract.abi,
             args: [],
-            functionName: "enter",
+            functionName: "deposit",
             to: contest.address as `0x${string}`,
           },
         ],

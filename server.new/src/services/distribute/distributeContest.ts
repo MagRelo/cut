@@ -1,7 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { ethers } from 'ethers';
-import Contest from '../../../../client/src/utils/contracts/Contest.json' with { type: 'json' };
-import PlatformToken from '../../../../client/src/utils/contracts/PlatformToken.json' with { type: 'json' };
+import Escrow from '../../../contracts/Escrow.json' with { type: 'json' };
 
 export interface ContestSettings {
   fee: number;
@@ -55,23 +54,35 @@ export async function distributeContest() {
           continue;
         }
 
-        // Initialize contest contract
-        const contestContract = new ethers.Contract(
+        // Initialize escrow contract
+        const escrowContract = new ethers.Contract(
           contest.address,
-          Contest.abi,
+          Escrow.abi,
           wallet
         );
 
-        // Get contest state from blockchain
-        const contestState = await contestContract.state();
-        if (contestState !== 0) {
-          // 0 = OPEN
+        // Get escrow state from blockchain
+        const escrowState = await escrowContract.state();
+        if (escrowState !== 0) {
+          // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
           await updateContestToError(contest.id, 'Open Contest in DB is not open in blockchain');
           continue;
         }
 
-        // Get the participants from the contestContract        
-        const participants = await contestContract.participants();        
+        // Get the participants count from the escrowContract        
+        const participantsCount = await escrowContract.getParticipantsCount();        
+        if (!participantsCount || Number(participantsCount) === 0) {
+          await updateContestToError(contest.id, 'No participants found in escrow');
+          continue;
+        }
+
+        // Get participants array by iterating through the count
+        const participants: string[] = [];
+        for (let i = 0; i < Number(participantsCount); i++) {
+          const participant = await escrowContract.participants(i);
+          participants.push(participant);
+        }
+
         if (!participants || !Array.isArray(participants)) {
           await updateContestToError(contest.id, 'Invalid participants data from blockchain');
           continue;
@@ -96,31 +107,34 @@ export async function distributeContest() {
         }
 
         // Distribute prizes on blockchain
-        const distributeTx = await contestContract.distribute(payouts);
+        const distributeTx = await escrowContract.distribute(payouts);
         await distributeTx.wait();
 
-        // Mint rewards on blockchain equal to the entry fee to each participant
-        const platformTokenContract = new ethers.Contract(
-          process.env.PLATFORM_TOKEN_ADDRESS!,
-          PlatformToken.abi,
-          wallet
-        );
+        // Minting is now handled by the treasury
+        // const platformTokenContract = new ethers.Contract(
+        //   process.env.PLATFORM_TOKEN_ADDRESS!,
+        //   PlatformToken.abi,
+        //   wallet
+        // );
         
-        // Calculate fees for each participant
-        const settings = contest.settings as unknown as ContestSettings;
-        const fees = participants.map((participant: string) => {
-          return settings?.fee || 0;
-        });
+        // // Calculate fees for each participant
+        // const settings = contest.settings as unknown as ContestSettings;
+        // const fees = participants.map((participant: string) => {
+        //   return settings?.fee || 0;
+        // });
         
-        const mintTx = await platformTokenContract.mintRewards(participants, fees);
-        await mintTx.wait();
+        // // Mint tokens to each participant
+        // for (let i = 0; i < participants.length; i++) {
+        //   const mintTx = await platformTokenContract.mint(participants[i], fees[i]);
+        //   await mintTx.wait();
+        // }
 
         // Update contest status in database
         await prisma.contest.update({
           where: { id: contest.id },
           data: {
             status: 'SETTLED',
-            results: { payouts, participants, distributeTx, mintTx },
+            results: { payouts, participants, distributeTx },
           },
         });
 

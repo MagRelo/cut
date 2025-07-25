@@ -28,9 +28,13 @@ async function isSponsoredContract(
       return false;
     }
 
-    // Check if any address matches the merchant contract factory
-    const merchantFactoryAddress = process.env.MERCHANT_CONTRACT_FACTORY?.toLowerCase();
-    const merchantPaymentToken = process.env.MERCHANT_PAYMENT_TOKEN?.toLowerCase();
+    // Check if any address matches our contracts
+    const merchantFactoryAddress = process.env.TREASURY?.toLowerCase();
+    const merchantPaymentToken = process.env.ESCROW_FACTORY?.toLowerCase();
+
+    console.log(merchantFactoryAddress);
+    console.log(merchantPaymentToken);
+    console.log(addresses);
 
     // Make a single database query to find all contests that match the addresses
     const contests = await prisma.contest.findMany({
