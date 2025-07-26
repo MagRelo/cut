@@ -37,7 +37,6 @@ export function TreasuryPage() {
           Platform Treasury
         </div>
 
-        <TreasuryBalanceChart className="mb-4" />
         <div className="grid grid-cols-[100px_1fr] gap-2">
           {/* Treasury Balance */}
           <div className="font-medium">Balance</div>
@@ -50,8 +49,8 @@ export function TreasuryPage() {
           </div>
 
           {/* Treasury Interest Rate */}
-          <div className="font-medium">Interest Rate</div>
-          <div className="text-right">6.08% APY</div>
+          <div className="font-medium">APY</div>
+          <div className="text-right">6.08% </div>
 
           {/* Earnings */}
           <div className="font-medium">Est. Earnings</div>
@@ -63,6 +62,13 @@ export function TreasuryPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-gray-700 font-display mb-2">
+          Historical Balance
+        </div>
+        <TreasuryBalanceChart className="mb-4" />
       </div>
     </div>
   );

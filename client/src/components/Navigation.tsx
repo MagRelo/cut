@@ -21,16 +21,6 @@ export const Navigation: React.FC = () => {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            {user && (
-              <Link
-                to="/treasury"
-                className={`text-lg font-medium ${
-                  isActive("/treasury") ? "text-emerald-500" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Treasury
-              </Link>
-            )}
             {user && isAdmin() && (
               <Link
                 to="/admin"

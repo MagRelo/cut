@@ -70,16 +70,16 @@ export function UserPage() {
         {/* Treasury Operations */}
         <div className="flex justify-center gap-2 mb-4">
           <Link
-            to="/deposit"
+            to="/add"
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Deposit
+            Add CUT
           </Link>
           <Link
-            to="/withdraw"
+            to="/sell"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Withdraw
+            Sell CUT
           </Link>
           <Link
             to="/transfer"
@@ -91,7 +91,7 @@ export function UserPage() {
 
         {/* Link to treasury */}
         <div className="flex justify-center">
-          <Link to="/treasury" className="text-blue-500 hover:text-blue-600">
+          <Link to="/treasury" className="text-gray-500 hover:text-gray-700">
             View Treasury
           </Link>
         </div>

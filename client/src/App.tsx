@@ -12,8 +12,8 @@ import { LineupProvider } from "./contexts/LineupContext";
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
 import { TreasuryPage } from "./pages/Treasury";
-import { DepositPage } from "./pages/DepositPage";
-import { WithdrawPage } from "./pages/WithdrawPage";
+import { AddPage } from "./pages/AddPage";
+import { SellPage } from "./pages/SellPage";
 import { TransferPage } from "./pages/TransferPage";
 
 import { LineupList } from "./pages/LineupList";
@@ -63,18 +63,18 @@ export const App: React.FC = () => {
 
                           {/* Treasury Operations */}
                           <Route
-                            path="/deposit"
+                            path="/add"
                             element={
                               <ProtectedRoute>
-                                <DepositPage />
+                                <AddPage />
                               </ProtectedRoute>
                             }
                           />
                           <Route
-                            path="/withdraw"
+                            path="/sell"
                             element={
                               <ProtectedRoute>
-                                <WithdrawPage />
+                                <SellPage />
                               </ProtectedRoute>
                             }
                           />
