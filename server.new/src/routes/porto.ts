@@ -29,12 +29,12 @@ async function isSponsoredContract(
     }
 
     // Check if any address matches our contracts
-    const merchantFactoryAddress = process.env.TREASURY?.toLowerCase();
-    const merchantPaymentToken = process.env.ESCROW_FACTORY?.toLowerCase();
+    const TreasuryAddress = process.env.TREASURY?.toLowerCase();
+    const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
 
-    console.log(merchantFactoryAddress);
-    console.log(merchantPaymentToken);
-    console.log(addresses);
+    console.log({ TreasuryAddress });
+    console.log({ EscrowFactoryAddress });
+    console.log({ to: addresses });
 
     // Make a single database query to find all contests that match the addresses
     const contests = await prisma.contest.findMany({
@@ -52,12 +52,12 @@ async function isSponsoredContract(
     // Check if all addresses are either merchant factory, payment token, or sponsored contests
     const allSponsored = addresses.every(
       (address) =>
-        address === merchantFactoryAddress ||
-        address === merchantPaymentToken ||
+        address === TreasuryAddress ||
+        address === EscrowFactoryAddress ||
         contestAddresses.includes(address)
     );
 
-    // console.log("All calls sponsored:", allSponsored);
+    console.log("All calls sponsored:", allSponsored);
     return allSponsored;
   } catch (error) {
     console.error("Error checking sponsored contract:", error);
@@ -70,9 +70,10 @@ const portoHandler = MerchantRpc.requestHandler({
   address: process.env.MERCHANT_ADDRESS as `0x${string}`,
   key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
   sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-    const isSponsored = await isSponsoredContract(request);
-    console.log("Porto sponsor function called; isSponsored:", isSponsored);
-    return isSponsored;
+    // const isSponsored = await isSponsoredContract(request);
+    // console.log("Porto sponsor function called; isSponsored:", isSponsored);
+    // return isSponsored;
+    return true;
   },
 });
 

@@ -9,8 +9,7 @@ import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // contracts
-// import PlatformToken from '../../utils/contracts/PlatformToken.json';
-import { platformTokenAddress, escrowFactoryAddress } from "../../utils/contracts/sepolia.json";
+import { escrowFactoryAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import EscrowFactory from "../../utils/contracts/EscrowFactory.json";
 
 // Helper function to get status messages
@@ -32,14 +31,12 @@ const getStatusMessages = (
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
+  const { currentTournament } = useTournament();
+  const contestApi = useContestApi();
+
+  // wagmi functions
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
-  const { data: platformTokenBalance } = useBalance({
-    address: userAddress as `0x${string}`,
-    token: platformTokenAddress as `0x${string}`,
-    chainId: chainId ?? 0,
-  });
-
   const {
     sendCalls,
     data: sendCallsData,
@@ -50,15 +47,19 @@ export const CreateContestForm = () => {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
-    // status: confirmationStatus,
     data: confirmationData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
 
-  const { currentTournament } = useTournament();
-  const contestApi = useContestApi();
+  // get & set payment token
+  const { data: paymentTokenBalance } = useBalance({
+    address: userAddress as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}`,
+    chainId: chainId ?? 0,
+  });
 
+  // Form management
   const defaultFormData: CreateContestInput = {
     name: "",
     endTime: 0,
@@ -71,8 +72,8 @@ export const CreateContestForm = () => {
       maxEntry: 50,
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
-      paymentTokenAddress: platformTokenAddress as `0x${string}`,
-      paymentTokenSymbol: platformTokenBalance?.symbol ?? "",
+      paymentTokenAddress: paymentTokenAddress as `0x${string}`,
+      paymentTokenSymbol: paymentTokenBalance?.symbol ?? "",
     },
     description: undefined,
     userGroupId: undefined,
@@ -158,11 +159,16 @@ export const CreateContestForm = () => {
       setPendingContestData({
         ...formData,
         endTime,
+        tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
+        chainId: chainId ?? 0, // Ensure chainId is preserved
       });
 
       console.log("Initiating blockchain transaction with data:", {
         name: formData.name,
-        depositAmount: parseUnits(formData.settings?.fee?.toString() ?? "0", 18),
+        depositAmount: parseUnits(
+          formData.settings?.fee?.toString() ?? "0",
+          paymentTokenBalance?.decimals ?? 6
+        ),
         maxParticipants: formData.settings?.maxEntry,
         endTime,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
@@ -176,7 +182,10 @@ export const CreateContestForm = () => {
             abi: EscrowFactory.abi,
             args: [
               formData.name,
-              parseUnits(formData.settings?.fee?.toString() ?? "0", 18) ?? "0",
+              parseUnits(
+                formData.settings?.fee?.toString() ?? "0",
+                paymentTokenBalance?.decimals ?? 6
+              ),
               formData.settings?.maxEntry?.toString() ?? "0",
               endTime.toString(),
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
@@ -205,8 +214,6 @@ export const CreateContestForm = () => {
       [name]: value,
     }));
   };
-
-  // console.log({ loading, isSending, isConfirming });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto p-4">
@@ -283,7 +290,7 @@ export const CreateContestForm = () => {
               className="w-full p-2 border rounded-md pr-12"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {platformTokenBalance?.symbol}
+              {paymentTokenBalance?.symbol}
             </div>
           </div>
         </div>

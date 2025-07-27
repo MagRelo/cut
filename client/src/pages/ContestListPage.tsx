@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+// import { Link } from "react-router-dom";
 
 import { type Contest } from "../types.new/contest";
+// import { TournamentStatus } from "../types.new/tournament";
 
 import { useContestApi } from "../services/contestApi";
 import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useTournament } from "../contexts/TournamentContext";
-import { TournamentStatus } from "../types.new/tournament";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -60,7 +60,7 @@ export const Contests: React.FC = () => {
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between mb-3">
         <PageHeader title="Contests" className="" />
-        <Link
+        {/* <Link
           to="/contests/create"
           className={`inline-block text-xs font-semibold px-4 py-2 rounded shadow transition-colors ml-4 whitespace-nowrap ${
             currentTournament?.status === TournamentStatus.NOT_STARTED
@@ -79,7 +79,7 @@ export const Contests: React.FC = () => {
           }
         >
           New
-        </Link>
+        </Link> */}
       </div>
 
       <div className="bg-white rounded-lg shadow">

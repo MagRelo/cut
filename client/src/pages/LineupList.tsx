@@ -91,7 +91,7 @@ export const LineupList: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-8">
+        <div className="text-center py-2">
           <div className="bg-white rounded-lg shadow-md p-6">
             <p className="text-gray-500 mb-4">No lineups found for this tournament.</p>
             <Link

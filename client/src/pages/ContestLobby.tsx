@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { formatOrdinal } from "../utils/formatting";
+import { useChainId, useReadContract } from "wagmi";
+import EscrowContract from "../utils/contracts/Escrow.json";
 
 import { Contest } from "src/types.new/contest";
 
@@ -12,6 +14,7 @@ import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
+import { createExplorerLinkJSX } from "../utils/blockchain";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -20,17 +23,30 @@ function classNames(...classes: string[]) {
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
   const { getContestById } = useContestApi();
-
-  // user
-  const { user } = usePortoAuth();
-
-  // tabs
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
   const [contest, setContest] = useState<Contest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // user
+  const { user } = usePortoAuth();
+  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
+  const userInContest = userContestLineup?.userId === user?.id;
+
+  // tabs
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // blockchain data
+  const chainId = useChainId();
+
+  // Get the payment token address from the escrow contract
+  const escrowPaymentToken = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: EscrowContract.abi,
+    functionName: "paymentToken",
+    args: [],
+  }).data as `0x${string}` | undefined;
+
+  // fetch contest
   const fetchContest = async () => {
     if (!contestId) return;
 
@@ -45,14 +61,9 @@ export const ContestLobby: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     fetchContest();
   }, [contestId]);
-
-  // find user lineup in contest
-  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
-  const userInContest = userContestLineup?.userId === user?.id;
 
   if (isLoading) {
     return (
@@ -164,6 +175,35 @@ export const ContestLobby: React.FC = () => {
                   Entries: {contest?.contestLineups?.length ?? 0}/
                   {String(contest?.settings?.maxEntry ?? 0)}
                 </p>
+
+                {/* Blockchain Explorer Links */}
+                {contest?.address && chainId && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Blockchain Details</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Contest Contract:</span>
+                        {createExplorerLinkJSX(
+                          contest.address,
+                          chainId,
+                          "View on Explorer",
+                          "text-emerald-600 hover:text-emerald-800 underline"
+                        )}
+                      </div>
+                      {escrowPaymentToken && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Payment Token:</span>
+                          {createExplorerLinkJSX(
+                            escrowPaymentToken,
+                            chainId,
+                            "View on Explorer",
+                            "text-emerald-600 hover:text-emerald-800 underline"
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {userInContest && <ContestActions contest={contest} onSuccess={setContest} />}
               </div>

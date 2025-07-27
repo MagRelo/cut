@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
 
-import { formatUnits, parseUnits } from "viem";
 import {
   useBalance,
   useAccount,
@@ -20,8 +19,7 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { LineupSelectionModal } from "./LineupSelectionModal";
 
 // Import contract addresses and ABIs
-import { paymentTokenAddress } from "../../utils/contracts/sepolia.json";
-import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
+import PaymentTokenContract from "../../utils/contracts/PaymentToken.json";
 import EscrowContract from "../../utils/contracts/Escrow.json";
 
 interface ContestActionsProps {
@@ -47,43 +45,19 @@ const getStatusMessages = (
 };
 
 export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
+  const navigate = useNavigate();
   const { user } = usePortoAuth();
   const { lineups, getLineups } = useLineup();
-  const navigate = useNavigate();
   const { addLineupToContest, removeLineupFromContest } = useContestApi();
-  const { address: userAddress } = useAccount();
-  const chainId = useChainId();
-  const { data: paymentTokenBalance } = useBalance({
-    address: userAddress as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}`,
-    chainId: chainId ?? 0,
-  });
-
+  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
+  const userInContest = userContestLineup?.userId === user?.id;
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [submissionError, setSubmissionError] = React.useState<string | null>(null);
   const [pendingAction, setPendingAction] = React.useState<"join" | "leave" | null>(null);
-  const [warningModal, setWarningModal] = React.useState<{
-    open: boolean;
-    message: string;
-  }>({ open: false, message: "" });
-  const [lineupSelectionModal, setLineupSelectionModal] = React.useState(false);
-  const [selectedLineupId, setSelectedLineupId] = React.useState<string | null>(null);
 
-  // Define the expected tuple type for details
-  type ContestDetailsTuple = [string, bigint, bigint, bigint];
-
-  // Use type assertion when reading the value
-  const contestDetailsRaw = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "details",
-    args: [],
-  }).data as ContestDetailsTuple | undefined;
-  const displayFee = formatUnits(
-    (contestDetailsRaw as unknown as ContestDetailsTuple)?.[1] ?? 0n,
-    18
-  );
-
+  // Wagmi functions
+  const { address: userAddress } = useAccount();
+  const chainId = useChainId();
   const {
     sendCalls,
     data: sendCallsData,
@@ -94,51 +68,85 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
-    // status: confirmationStatus,
-    // data: confirmationData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
 
-  // find user lineup in contest
-  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
-  const userInContest = userContestLineup?.userId === user?.id;
+  // Get the payment token address from the escrow contract
+  const escrowPaymentToken = useReadContract({
+    address: contest.address as `0x${string}`,
+    abi: EscrowContract.abi,
+    functionName: "paymentToken",
+    args: [],
+  }).data as `0x${string}` | undefined;
+
+  // Get the deposit amount from the escrow contract
+  const escrowDetails = useReadContract({
+    address: contest.address as `0x${string}`,
+    abi: EscrowContract.abi,
+    functionName: "details",
+    args: [],
+  }).data as [string, bigint, bigint, bigint] | undefined;
+
+  // Payment Token balance - use the payment token from the escrow contract
+  const { data: escrowTokenBalance } = useBalance({
+    address: userAddress as `0x${string}`,
+    token: escrowPaymentToken as `0x${string}`,
+    chainId: chainId ?? 0,
+  });
+
+  // Modals
+  const [warningModal, setWarningModal] = React.useState<{
+    open: boolean;
+    message: string;
+  }>({ open: false, message: "" });
+  const [lineupSelectionModal, setLineupSelectionModal] = React.useState(false);
+  const [selectedLineupId, setSelectedLineupId] = React.useState<string | null>(null);
 
   // Helper: check if user has enough balance
   const hasEnoughBalance = React.useMemo(() => {
-    if (!paymentTokenBalance || !contest.settings?.fee) return false;
-    try {
-      // paymentTokenBalance.value is a BigInt
-      return paymentTokenBalance.value >= parseUnits(contest.settings.fee.toString(), 18);
-    } catch {
-      return false;
-    }
-  }, [paymentTokenBalance, contest.settings?.fee]);
+    if (!escrowTokenBalance || !escrowDetails) return false;
 
-  // Effect to handle API call after blockchain confirmation
+    // Use the deposit amount from the escrow contract
+    const depositAmount = escrowDetails[1]; // depositAmount is the second element
+    const hasEnough = escrowTokenBalance.value >= depositAmount;
+
+    if (!hasEnough) {
+      console.log({
+        depositAmount: depositAmount.toString(),
+        balanceValue: escrowTokenBalance.value.toString(),
+        hasEnoughBalance: hasEnough,
+      });
+    }
+
+    return hasEnough;
+  }, [escrowTokenBalance, escrowDetails]);
+
+  // Effect to handle blockchain confirmation
   useEffect(() => {
     const handleBlockchainConfirmation = async () => {
-      if (isConfirmed && pendingAction && sendCallsData?.id) {
+      if (isConfirmed && pendingAction) {
         try {
-          let updatedContest;
-          if (pendingAction === "join") {
-            updatedContest = await addLineupToContest(contest.id, {
-              tournamentLineupId: selectedLineupId ?? "",
-            });
+          // Add lineup to contest in backend
+          if (pendingAction === "join" && selectedLineupId) {
+            await addLineupToContest(contest.id, { tournamentLineupId: selectedLineupId });
+            await getLineups(contest.tournamentId); // Refresh lineups
           } else if (pendingAction === "leave") {
-            updatedContest = await removeLineupFromContest(contest.id, userContestLineup?.id ?? "");
+            if (userContestLineup) {
+              await removeLineupFromContest(contest.id, userContestLineup.id);
+              await getLineups(contest.tournamentId); // Refresh lineups
+            }
           }
 
-          if (updatedContest) {
-            onSuccess(updatedContest);
-          }
-        } catch (err) {
+          // Refresh contest data
+          onSuccess(contest);
+          setPendingAction(null);
+          setSelectedLineupId(null);
+        } catch (error) {
+          console.error("Error updating contest:", error);
           setServerError(
-            `Failed to ${pendingAction} contest: ${
-              err instanceof Error ? err.message : "Unknown error"
-            }`
+            `Failed to update contest: ${error instanceof Error ? error.message : "Unknown error"}`
           );
-        } finally {
           setPendingAction(null);
         }
       }
@@ -148,57 +156,17 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   }, [
     isConfirmed,
     pendingAction,
-    sendCallsData?.id,
-    contest.id,
     selectedLineupId,
-    userContestLineup?.id,
+    contest.id,
+    userContestLineup,
     addLineupToContest,
     removeLineupFromContest,
+    getLineups,
     onSuccess,
+    contest,
   ]);
 
   const handleJoinContest = async () => {
-    // Always load lineups and show selection modal
-    if (lineups.length === 0) {
-      try {
-        await getLineups(contest.tournamentId);
-      } catch (error) {
-        console.error("Failed to load lineups:", error);
-      }
-    }
-    setLineupSelectionModal(true);
-  };
-
-  const handleLeaveContest = async () => {
-    try {
-      setPendingAction("leave");
-
-      // Execute blockchain transaction
-      await sendCalls({
-        calls: [
-          {
-            abi: EscrowContract.abi,
-            args: [],
-            functionName: "withdraw",
-            to: contest.address as `0x${string}`,
-          },
-        ],
-      });
-
-      // console.log("Leave contest transaction:", result);
-    } catch (err) {
-      console.error("Error leaving contest:", err);
-      setSubmissionError(
-        `Failed to leave contest: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
-      setPendingAction(null);
-    }
-  };
-
-  const handleLineupSelect = async (lineupId: string) => {
-    setSelectedLineupId(lineupId);
-    setLineupSelectionModal(false);
-
     if (!hasEnoughBalance) {
       setWarningModal({
         open: true,
@@ -209,20 +177,28 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       return;
     }
 
+    if (!escrowDetails) {
+      setSubmissionError("Unable to read contest details from blockchain");
+      return;
+    }
+
     try {
       setPendingAction("join");
+
+      // Get the deposit amount from escrow details
+      const depositAmount = escrowDetails[1]; // depositAmount is the second element
 
       // Execute blockchain transaction with both approval and transfer
       await sendCalls({
         calls: [
           {
-            abi: PlatformTokenContract.abi,
+            abi: PaymentTokenContract.abi,
             args: [
               contest.address as `0x${string}`,
-              parseUnits(contest.settings?.fee?.toString() ?? "0", 18),
+              depositAmount, // Use the actual deposit amount from escrow
             ],
             functionName: "approve",
-            to: paymentTokenAddress as `0x${string}`,
+            to: escrowPaymentToken as `0x${string}`,
           },
           {
             abi: EscrowContract.abi,
@@ -239,6 +215,36 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       );
       setPendingAction(null);
     }
+  };
+
+  const handleLeaveContest = async () => {
+    try {
+      setPendingAction("leave");
+
+      // Execute blockchain transaction to withdraw from escrow
+      await sendCalls({
+        calls: [
+          {
+            abi: EscrowContract.abi,
+            args: [],
+            functionName: "withdraw",
+            to: contest.address as `0x${string}`,
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("Error leaving contest:", err);
+      setSubmissionError(
+        `Failed to leave contest: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+      setPendingAction(null);
+    }
+  };
+
+  const handleLineupSelect = async (lineupId: string) => {
+    setSelectedLineupId(lineupId);
+    setLineupSelectionModal(false);
+    await handleJoinContest();
   };
 
   const handleCreateNewLineup = () => {
@@ -303,7 +309,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       ) : (
         <button
           className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-          onClick={handleJoinContest}
+          onClick={() => setLineupSelectionModal(true)}
           disabled={userInContest || isSending || isConfirming}
         >
           {isSending || isConfirming ? (
@@ -312,36 +318,21 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
               {getStatusMessages("idle", isSending, isConfirming)}
             </div>
           ) : (
-            `Join Contest - $${displayFee} `
+            "Join Contest"
           )}
         </button>
-        // ${paymentTokenBalance?.symbol}
       )}
 
-      {/* Add status display */}
-      <div className="mt-2 text-sm text-center text-red-500">
-        {/* Submission error */}
-        {submissionError && <div>Submission Error: {submissionError}</div>}
-
-        {/* Confirmation error */}
-        {confirmationError && (
-          <div>
-            {(confirmationError as { shortMessage?: string; message: string }).shortMessage ||
-              confirmationError.message}
-          </div>
-        )}
-
-        {/* Send calls error */}
-        {sendCallsError && (
-          <div>
-            {(sendCallsError as { shortMessage?: string; message: string }).shortMessage ||
-              sendCallsError.message}
-          </div>
-        )}
-
-        {/* Server error */}
-        {serverError && <div>Server Error: {serverError}</div>}
-      </div>
+      {/* Error Display */}
+      {(submissionError || serverError || sendCallsError || confirmationError) && (
+        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {submissionError ||
+            serverError ||
+            (sendCallsError as Error)?.message ||
+            (confirmationError as Error)?.message ||
+            "An error occurred"}
+        </div>
+      )}
     </div>
   );
 };
