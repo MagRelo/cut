@@ -8,3 +8,5 @@ run manual update on upcoming tourney
    -- "startTime": cutoff for league list
    -- "endTime": countdown
    -- flip "manualActive"
+
+4. Update description

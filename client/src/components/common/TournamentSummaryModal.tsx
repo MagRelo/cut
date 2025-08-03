@@ -21,13 +21,13 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className='p-4 sm:p-6 border-b border-gray-200'>
             <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
-                2025 3M Open
+                2025 Wyndham Championship
               </Dialog.Title>
               <p className='text-lg tracking-tight text-gray-600 font-medium'>
-                TPC Twin Cities, Blaine, Minnesota
+                Sedgefield Country Club, Greensboro, North Carolina
               </p>
               <p className='text-sm text-gray-500 font-medium'>
-                July 24–27, 2025 • 5th annual
+                July 30–August 3, 2025 • 86th annual
               </p>
             </div>
 
@@ -39,23 +39,23 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Established:</strong> 2019, the 3M Open is a
-                    relatively new addition to the PGA Tour schedule but has
-                    quickly become popular with players and fans.
+                    <strong>Established:</strong> 1938 (originally the Greater
+                    Greensboro Open), the seventh-oldest event on the PGA Tour.
                   </li>
                   <li>
-                    <strong>Venue:</strong> TPC Twin Cities is known for its
-                    lush layout, challenging but fair setup, and a tournament
-                    week that typically features favorable summer weather.
+                    <strong>Venue:</strong> Sedgefield Country Club, a Donald
+                    Ross-designed course, has hosted since 2008 and was part of
+                    the tournament's early years, featuring a classic layout
+                    rewarding precision and iron play.
                   </li>
                   <li>
-                    <strong>Legacy:</strong> Despite its youth, the event has
-                    produced exciting finishes and competitive fields each year.
-                  </li>
-                  <li>
-                    <strong>Past Winners:</strong> Michael Thompson (2019),
-                    Bryson DeChambeau (2021), Max Homa (2022), Scottie Scheffler
-                    (2023), Keegan Bradley (2024).
+                    <strong>Legacy:</strong> Sam Snead holds the all-time record
+                    with eight wins, the most at any one PGA Tour event. The
+                    event has been a showcase for both legends (Byron Nelson,
+                    Ben Hogan, Seve Ballesteros, Gary Player) and breakthrough
+                    winners. It's known for drama, low scores, and was the first
+                    PGA event in the South to allow Black players (Charlie
+                    Sifford, 1961).
                   </li>
                 </ul>
 
@@ -64,25 +64,28 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Scottie Scheffler:</strong> World No. 1, defending
-                    champion from 2023, and recent dominant form makes him the
-                    +450 favorite.
+                    <strong>Field:</strong> 156 players, many outside the
+                    world's top rankings as stars have largely locked FedExCup
+                    spots.
                   </li>
                   <li>
-                    <strong>Keegan Bradley:</strong> 2024 champion and recent
-                    form (+900 odds).
+                    <strong>Matt Fitzpatrick:</strong> (+2000), the favorite
+                    after a strong summer and recent top-5 finish at The Open.
                   </li>
                   <li>
-                    <strong>Patrick Cantlay:</strong> Consistent performer at
-                    TPC Twin Cities (+1100).
+                    <strong>Ben Griffin, Keegan Bradley:</strong> Both at +2500;
+                    Bradley is the only current top-10 ranked player in the
+                    field and a fan favorite.
                   </li>
                   <li>
-                    <strong>Max Homa:</strong> Previous winner with solid
-                    all-around game (+1500).
+                    <strong>Major Champions:</strong> Jordan Spieth (+3000),
+                    Hideki Matsuyama (+3300), Adam Scott (+4500).
                   </li>
                   <li>
-                    <strong>Viktor Hovland:</strong> Known for accuracy and
-                    putting (+1800).
+                    <strong>Other notables:</strong> Aaron Rai (+2000 to +2500),
+                    Robert MacIntyre (+2800), Si Woo Kim (+3000), Tom Kim,
+                    Rickie Fowler (+5000), Akshay Bhatia, Lucas Glover, Jake
+                    Knapp, Luke Clanton, Harry Hall, Kurt Kitayama.
                   </li>
                 </ul>
 
@@ -91,18 +94,15 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>TPC Twin Cities:</strong> Par 71, 7,400 yards,
-                    characterized by tree-lined fairways, strategically placed
-                    bunkers, and fast, undulating greens.
+                    <strong>Sedgefield Country Club:</strong> Par 70,
+                    approximately 7,127 yards. Classic Donald Ross design with
+                    tree-lined fairways, slick greens, only two par-5s, and a
+                    layout favoring accuracy and iron play over power.
                   </li>
                   <li>
-                    <strong>Format:</strong> 72-hole stroke play, with a
-                    standard cut after 36 holes.
-                  </li>
-                  <li>
-                    <strong>Course Challenge:</strong> The course rewards
-                    precision and short game, with scoring opportunities on
-                    par-5s and reachable par-4s.
+                    <strong>Format:</strong> 72-hole stroke play, standard Tour
+                    cut after 36 holes (top 65 and ties advance for the
+                    weekend).
                   </li>
                 </ul>
 
@@ -111,24 +111,35 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Scheffler's Dominance:</strong> After winning here
-                    in 2023 and maintaining strong form, Scheffler aims to add
-                    another title and extend his hot streak on Tour.
+                    <strong>FedExCup Playoffs Bubble:</strong> This is the final
+                    event of the regular season—only the top 70 in the FedExCup
+                    standings qualify for the playoffs, so for many players,
+                    this week is must-perform.
                   </li>
                   <li>
-                    <strong>Bradley's Momentum:</strong> Fresh off his win at
-                    the John Deere Classic, Bradley is looking to carry momentum
-                    into Minnesota.
+                    <strong>Breakthrough Potential:</strong> With most top stars
+                    absent, there's a prime chance for a breakthrough
+                    winner—eight of the last 10 Tour events featured a first- or
+                    second-time winner.
                   </li>
                   <li>
-                    <strong>Course Challenge:</strong> TPC Twin Cities demands a
-                    balanced game, and players must be sharp around the greens
-                    to contend.
+                    <strong>Bradley's Playoff Push:</strong> Keegan Bradley aims
+                    to solidify or improve his playoff and Ryder Cup standing.
                   </li>
                   <li>
-                    <strong>Battle for Playoff Positioning:</strong> With the
-                    FedExCup playoffs approaching, this event is critical for
-                    players looking to improve their standings.
+                    <strong>Spieth & Matsuyama:</strong> Both major champions
+                    seek crucial points and momentum with playoffs and Cup
+                    captain's picks looming.
+                  </li>
+                  <li>
+                    <strong>Signature Event Access:</strong> The top 50 after
+                    the second FedExCup Playoff secure entry to next year's $20
+                    million events.
+                  </li>
+                  <li>
+                    <strong>Tour History:</strong> The tournament's rich
+                    tradition, Hall of Fame alumni, and unique place as a
+                    "last-chance saloon" for playoff hopefuls.
                   </li>
                 </ul>
 
@@ -137,12 +148,12 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>TV:</strong> Golf Channel (Thursday–Friday) and CBS
-                    (weekend).
+                    <strong>TV:</strong> Golf Channel (all rounds, early/NBC
+                    simulcast), CBS (final two rounds).
                   </li>
                   <li>
-                    <strong>Streaming:</strong> PGA Tour Live on ESPN+ and CBS
-                    All Access.
+                    <strong>Streaming:</strong> PGA Tour Live on ESPN+, CBS All
+                    Access, official tournament website coverage.
                   </li>
                 </ul>
 
@@ -167,7 +178,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Dates
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          July 24–27, 2025
+                          July 30–August 3, 2025
                         </td>
                       </tr>
                       <tr>
@@ -175,7 +186,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Venue
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          TPC Twin Cities, Blaine, Minnesota
+                          Sedgefield Country Club, Greensboro, NC
                         </td>
                       </tr>
                       <tr>
@@ -191,7 +202,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Defending Champ
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Scottie Scheffler
+                          Aaron Rai
                         </td>
                       </tr>
                       <tr>
@@ -199,8 +210,26 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Top Favorites
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Scheffler, Keegan Bradley, Patrick Cantlay, Max Homa,
-                          Viktor Hovland
+                          Fitzpatrick, Ben Griffin, Keegan Bradley, Jordan
+                          Spieth, Hideki Matsuyama, Adam Scott
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
+                          Tour Significance
+                        </td>
+                        <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
+                          Final FedExCup regular season event, last playoff
+                          qualifying chance
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
+                          Notable History
+                        </td>
+                        <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
+                          Sam Snead's eight wins; 19 Hall of Fame champions;
+                          first Black player in South (1961)
                         </td>
                       </tr>
                       <tr>

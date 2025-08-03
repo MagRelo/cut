@@ -73,13 +73,11 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cut?schema=public"
 JWT_SECRET=your_jwt_secret_here
 JWT_EXPIRES_IN=24h
 
-# Email Configuration
+# Email Configuration (MailerSend)
 
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password
-EMAIL_FROM=your_email@example.com
+MAILERSEND_API_KEY=your_mailersend_api_key
+MAILERSEND_FROM_EMAIL=your_verified_sender@domain.com
+MAILERSEND_FROM_NAME=Cut App
 
 # Hyperliquid Configuration
 
