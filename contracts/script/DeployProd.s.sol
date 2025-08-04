@@ -39,9 +39,9 @@ contract DeployProdScript is Script {
         platformToken.setTreasury(address(treasury));
         console2.log("Treasury set in PlatformToken");
 
-        // Deploy EscrowFactory
+        // Deploy EscrowFactory with platformToken instead of USDC
         EscrowFactory factory = new EscrowFactory(
-            USDC_BASE,
+            address(platformToken),
             address(treasury)
         );
         console2.log("EscrowFactory deployed to:", address(factory));

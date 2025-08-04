@@ -19,8 +19,9 @@ contract MockCToken is IERC20 {
         usdcToken = _usdcToken;
     }
     
-    // Compound V3 style functions (matching real Base Mainnet CUSDC)
-    function supply(uint256 amount) external returns (uint) {
+    // Compound V3 Comet style functions (matching real Base Mainnet CUSDC)
+    function supply(address asset, uint256 amount) external {
+        require(asset == usdcToken, "Only USDC supported");
         uint256 cTokensToMint = (amount * 1e18) / exchangeRate;
         balanceOf[msg.sender] += cTokensToMint;
         totalSupply += cTokensToMint;
@@ -28,10 +29,10 @@ contract MockCToken is IERC20 {
         
         // Transfer USDC from caller to this contract (simulating Compound's behavior)
         IERC20(usdcToken).transferFrom(msg.sender, address(this), amount);
-        return 0; // Success code
     }
     
-    function withdraw(uint256 amount) external returns (uint) {
+    function withdraw(address asset, uint256 amount) external {
+        require(asset == usdcToken, "Only USDC supported");
         uint256 cTokenAmount = (amount * 1e18) / exchangeRate;
         require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
         balanceOf[msg.sender] -= cTokenAmount;
@@ -45,7 +46,6 @@ contract MockCToken is IERC20 {
             PaymentToken(usdcToken).mint(address(this), amount - currentBalance);
         }
         IERC20(usdcToken).transfer(msg.sender, amount);
-        return 0; // Success code
     }
     
     // Keep Compound V2 functions for backward compatibility with existing code
@@ -104,75 +104,15 @@ contract MockCToken is IERC20 {
         return exchangeRate;
     }
     
-    function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint) {
-        return (0, balanceOf[account], 0, exchangeRate);
-    }
-    
-    function borrowRatePerBlock() external pure returns (uint) {
-        return 0;
-    }
-    
-    function supplyRatePerBlock() external pure returns (uint) {
-        return 0;
-    }
-    
-    function totalBorrowsCurrent() external pure returns (uint) {
-        return 0;
-    }
-    
-    function borrowBalanceCurrent(address) external pure returns (uint) {
-        return 0;
-    }
-    
-    function borrowBalanceStored(address) external pure returns (uint) {
-        return 0;
-    }
-    
     function getCash() external view returns (uint) {
-        return 0;
+        return IERC20(usdcToken).balanceOf(address(this));
     }
     
     function accrueInterest() external returns (uint) {
         return 0;
     }
     
-    function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint) {
-        require(balanceOf[borrower] >= seizeTokens, "Insufficient balance");
-        balanceOf[borrower] -= seizeTokens;
-        balanceOf[liquidator] += seizeTokens;
-        emit Transfer(borrower, liquidator, seizeTokens);
-        return 0;
-    }
-    
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        balanceOf[to] += amount;
-        emit Transfer(msg.sender, to, amount);
-        return true;
-    }
-    
-    function approve(address spender, uint256 amount) external override returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
-        return true;
-    }
-    
-    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
-        require(balanceOf[from] >= amount, "Insufficient balance");
-        require(allowance[from][msg.sender] >= amount, "Insufficient allowance");
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-        allowance[from][msg.sender] -= amount;
-        emit Transfer(from, to, amount);
-        return true;
-    }
-    
     // Mock functions for yield simulation
-    function setExchangeRate(uint256 newRate) external {
-        exchangeRate = newRate;
-    }
-    
     function addYield(uint256 yieldAmount) external {
         // Simulate yield by minting additional cTokens to represent yield earned
         uint256 additionalCTokens = (yieldAmount * 1e18) / exchangeRate;
@@ -190,6 +130,36 @@ contract MockCToken is IERC20 {
         // For testing purposes, we'll simulate that the contract has enough USDC
         // In a real scenario, this would come from interest earned
         // We'll just update the exchange rate to reflect the yield
+    }
+    
+    // IERC20 functions
+    function transfer(address to, uint256 amount) external override returns (bool) {
+        require(to != address(0), "Transfer to zero address");
+        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
+        
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        emit Transfer(msg.sender, to, amount);
+        return true;
+    }
+    
+    function approve(address spender, uint256 amount) external override returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+    
+    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
+        require(to != address(0), "Transfer to zero address");
+        require(balanceOf[from] >= amount, "Insufficient balance");
+        require(allowance[from][msg.sender] >= amount, "Insufficient allowance");
+        
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        allowance[from][msg.sender] -= amount;
+        
+        emit Transfer(from, to, amount);
+        return true;
     }
 }
 

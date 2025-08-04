@@ -16,7 +16,7 @@ contract EscrowFactoryTest is Test {
     Treasury public treasury;
     address public owner;
     address public oracle;
-    uint256 public constant DEPOSIT_AMOUNT = 1000e6; // 1000 USDC with 6 decimals
+    uint256 public constant DEPOSIT_AMOUNT = 1000e18; // 1000 Platform tokens with 18 decimals
     MockCToken public mockCUSDC;
 
     function setUp() public {
@@ -36,7 +36,7 @@ contract EscrowFactoryTest is Test {
         // Set treasury in platform token
         platformToken.setTreasury(address(treasury));
         factory = new EscrowFactory(
-            address(paymentToken),
+            address(platformToken),
             address(treasury)
         );
     }

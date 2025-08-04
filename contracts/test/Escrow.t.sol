@@ -16,7 +16,7 @@ contract EscrowTest is Test {
     address public owner;
     address public oracle;
     address public participant;
-    uint256 public constant DEPOSIT_AMOUNT = 1000e6; // 1000 USDC with 6 decimals
+    uint256 public constant DEPOSIT_AMOUNT = 1000e18; // 1000 Platform tokens with 18 decimals
     MockCToken public mockCUSDC;
 
     // Sets up an escrow with state OPEN and mints tokens to the participant
@@ -43,13 +43,17 @@ contract EscrowTest is Test {
             DEPOSIT_AMOUNT,
             10,
             block.timestamp + 1 days,
-            address(paymentToken),
+            address(platformToken),
             oracle,
             address(treasury)
         );
 
-        // Mint tokens to participant
-        paymentToken.mint(participant, DEPOSIT_AMOUNT * 10);
+        // Mint USDC to participant first, then deposit to get platform tokens
+        paymentToken.mint(participant, 1000e6); // 1000 USDC
+        vm.startPrank(participant);
+        paymentToken.approve(address(treasury), 1000e6);
+        treasury.depositUSDC(1000e6);
+        vm.stopPrank();
         
         // Enter market in comptroller
         address[] memory markets = new address[](1);
@@ -60,11 +64,11 @@ contract EscrowTest is Test {
     function testDeposit() public {
         vm.startPrank(participant);
         
-        uint256 initialBalance = paymentToken.balanceOf(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        uint256 initialBalance = platformToken.balanceOf(participant);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         
-        uint256 finalBalance = paymentToken.balanceOf(participant);
+        uint256 finalBalance = platformToken.balanceOf(participant);
         assertEq(finalBalance, initialBalance - DEPOSIT_AMOUNT, "Balance should decrease by deposit amount");
         assertTrue(escrow.hasDeposited(participant), "Participant should be marked as deposited");
         assertEq(escrow.getParticipantsCount(), 1, "Participant count should be 1");
@@ -75,15 +79,15 @@ contract EscrowTest is Test {
     function testWithdraw() public {
         // First deposit
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         
-        uint256 balanceAfterDeposit = paymentToken.balanceOf(participant);
+        uint256 balanceAfterDeposit = platformToken.balanceOf(participant);
         
         // Then withdraw
         escrow.withdraw();
         
-        uint256 finalBalance = paymentToken.balanceOf(participant);
+        uint256 finalBalance = platformToken.balanceOf(participant);
         assertEq(finalBalance, balanceAfterDeposit + DEPOSIT_AMOUNT, "Balance should be restored");
         assertFalse(escrow.hasDeposited(participant), "Participant should not be marked as deposited");
         assertEq(escrow.getParticipantsCount(), 0, "Participant count should be 0");
@@ -93,7 +97,7 @@ contract EscrowTest is Test {
 
     function testCloseDeposits() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
@@ -107,15 +111,20 @@ contract EscrowTest is Test {
     function testDistribute() public {
         // Setup: Multiple participants deposit
         address participant2 = address(0x3);
-        paymentToken.mint(participant2, DEPOSIT_AMOUNT * 10);
+        // Mint USDC to participant2, then deposit to get platform tokens
+        paymentToken.mint(participant2, 1000e6);
+        vm.startPrank(participant2);
+        paymentToken.approve(address(treasury), 1000e6);
+        treasury.depositUSDC(1000e6);
+        vm.stopPrank();
         
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
         vm.startPrank(participant2);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
@@ -135,23 +144,23 @@ contract EscrowTest is Test {
 
     function testCancelAndRefund() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
-        uint256 initialBalance = paymentToken.balanceOf(participant);
+        uint256 initialBalance = platformToken.balanceOf(participant);
         
         vm.startPrank(owner);
         escrow.cancelAndRefund();
         vm.stopPrank();
         
         assertEq(uint256(escrow.state()), uint256(Escrow.EscrowState.CANCELLED), "State should be CANCELLED");
-        assertEq(paymentToken.balanceOf(participant), initialBalance + DEPOSIT_AMOUNT, "Participant should be refunded");
+        assertEq(platformToken.balanceOf(participant), initialBalance + DEPOSIT_AMOUNT, "Participant should be refunded");
     }
 
     function testEmergencyWithdraw() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
@@ -159,16 +168,16 @@ contract EscrowTest is Test {
         vm.warp(block.timestamp + 2 days);
         
         vm.startPrank(participant);
-        uint256 initialBalance = paymentToken.balanceOf(participant);
+        uint256 initialBalance = platformToken.balanceOf(participant);
         escrow.emergencyWithdraw();
         vm.stopPrank();
         
-        assertEq(paymentToken.balanceOf(participant), initialBalance + DEPOSIT_AMOUNT, "Participant should receive emergency withdrawal");
+        assertEq(platformToken.balanceOf(participant), initialBalance + DEPOSIT_AMOUNT, "Participant should receive emergency withdrawal");
     }
 
     function testFailDepositInsufficientAllowance() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT - 1);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT - 1);
         escrow.deposit();
         vm.stopPrank();
     }
@@ -176,7 +185,7 @@ contract EscrowTest is Test {
     function testFailDepositInsufficientBalance() public {
         address poorParticipant = address(0x4);
         vm.startPrank(poorParticipant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
     }
@@ -209,7 +218,7 @@ contract EscrowTest is Test {
 
     function testFailEmergencyWithdrawBeforeEndTime() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         escrow.emergencyWithdraw();
         vm.stopPrank();
@@ -221,14 +230,14 @@ contract EscrowTest is Test {
         vm.stopPrank();
         
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
     }
 
     function testFailWithdrawAfterClose() public {
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
@@ -245,10 +254,12 @@ contract EscrowTest is Test {
         // Add participants up to the max
         for (uint i = 0; i < 10; i++) {
             address newParticipant = address(uint160(0x100 + i));
-            paymentToken.mint(newParticipant, DEPOSIT_AMOUNT * 10);
-            
+            // Mint USDC to newParticipant, then deposit to get platform tokens
+            paymentToken.mint(newParticipant, 1000e6);
             vm.startPrank(newParticipant);
-            paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+            paymentToken.approve(address(treasury), 1000e6);
+            treasury.depositUSDC(1000e6);
+            platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
             escrow.deposit();
             vm.stopPrank();
         }
@@ -257,10 +268,11 @@ contract EscrowTest is Test {
         
         // Try to add one more participant - should fail
         address extraParticipant = address(uint160(0x10A));
-        paymentToken.mint(extraParticipant, DEPOSIT_AMOUNT * 10);
-        
+        paymentToken.mint(extraParticipant, 1000e6);
         vm.startPrank(extraParticipant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        paymentToken.approve(address(treasury), 1000e6);
+        treasury.depositUSDC(1000e6);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         vm.expectRevert("Escrow full");
         escrow.deposit(); // This should revert
         vm.stopPrank();
@@ -270,24 +282,35 @@ contract EscrowTest is Test {
         address participant2 = address(0x3);
         address participant3 = address(0x4);
         
-        paymentToken.mint(participant2, DEPOSIT_AMOUNT * 10);
-        paymentToken.mint(participant3, DEPOSIT_AMOUNT * 10);
+        // Mint USDC to participants, then deposit to get platform tokens
+        paymentToken.mint(participant2, 1000e6);
+        paymentToken.mint(participant3, 1000e6);
+        
+        vm.startPrank(participant2);
+        paymentToken.approve(address(treasury), 1000e6);
+        treasury.depositUSDC(1000e6);
+        vm.stopPrank();
+        
+        vm.startPrank(participant3);
+        paymentToken.approve(address(treasury), 1000e6);
+        treasury.depositUSDC(1000e6);
+        vm.stopPrank();
         
         // First participant
         vm.startPrank(participant);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
         // Second participant
         vm.startPrank(participant2);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         
         // Third participant
         vm.startPrank(participant3);
-        paymentToken.approve(address(escrow), DEPOSIT_AMOUNT);
+        platformToken.approve(address(escrow), DEPOSIT_AMOUNT);
         escrow.deposit();
         vm.stopPrank();
         

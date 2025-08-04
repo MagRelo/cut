@@ -42,9 +42,9 @@ contract DeployScript is Script {
         // Set treasury in platform token
         platformToken.setTreasury(address(treasury));
 
-        // Deploy EscrowFactory
+        // Deploy EscrowFactory with platformToken instead of paymentToken
         EscrowFactory factory = new EscrowFactory(
-            address(paymentToken),
+            address(platformToken),
             address(treasury)
         );
 

@@ -1,15 +1,15 @@
-import { type Tournament } from './tournament';
-import { type UserGroup } from './userGroup';
-import { type ContestLineup } from './lineup';
+import { type Tournament } from "./tournament";
+import { type UserGroup } from "./userGroup";
+import { type ContestLineup } from "./lineup";
 
-export type ContestStatus = 'OPEN' | 'CLOSED' | 'SETTLED' | 'CANCELLED';
-export type ContestType = 'PUBLIC' | 'PRIVATE' | 'INVITE_ONLY';
+export type ContestStatus = "OPEN" | "CLOSED" | "SETTLED" | "CANCELLED";
+export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 export interface ContestSettings {
   fee: number;
   maxEntry: number;
   contestType: ContestType;
-  paymentTokenAddress: string;
-  paymentTokenSymbol: string;
+  platformTokenAddress: string;
+  platformTokenSymbol: string;
   chainId: number;
 }
 

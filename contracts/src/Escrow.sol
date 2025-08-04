@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Escrow is ReentrancyGuard, Ownable {
-    IERC20 public immutable paymentToken;
+    IERC20 public immutable platformToken;
     address public immutable oracle;
     address public immutable treasury;
 
@@ -49,7 +49,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         uint256 _depositAmount,
         uint256 _maxParticipants,
         uint256 _endTime,
-        address _paymentToken,
+        address _platformToken,
         address _oracle,
         address _treasury
     ) Ownable(msg.sender) {
@@ -59,7 +59,7 @@ contract Escrow is ReentrancyGuard, Ownable {
             maxParticipants: _maxParticipants,
             endTime: _endTime
         });
-        paymentToken = IERC20(_paymentToken);
+        platformToken = IERC20(_platformToken);
         oracle = _oracle;
         treasury = _treasury;
         state = EscrowState.OPEN;
@@ -69,7 +69,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         require(!hasDeposited[msg.sender], "Already deposited");
         require(participants.length < details.maxParticipants, "Escrow full");
 
-        paymentToken.transferFrom(msg.sender, address(this), details.depositAmount);
+        platformToken.transferFrom(msg.sender, address(this), details.depositAmount);
         
         // Track initial deposit
         totalInitialDeposits += details.depositAmount;
@@ -84,7 +84,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         require(hasDeposited[msg.sender], "Not deposited");
 
         // Return only the initial deposit
-        paymentToken.transfer(msg.sender, details.depositAmount);
+        platformToken.transfer(msg.sender, details.depositAmount);
         
         // Update tracking
         totalInitialDeposits -= details.depositAmount;
@@ -130,13 +130,13 @@ contract Escrow is ReentrancyGuard, Ownable {
 
         // External calls last
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
-            paymentToken.transfer(participants[i], calculatedPayouts[i]);
+            platformToken.transfer(participants[i], calculatedPayouts[i]);
         }
 
         // Transfer all remaining funds to treasury
-        uint256 remainingBalance = paymentToken.balanceOf(address(this));
+        uint256 remainingBalance = platformToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            paymentToken.transfer(treasury, remainingBalance);
+            platformToken.transfer(treasury, remainingBalance);
         }
     }
 
@@ -144,7 +144,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         require(hasDeposited[msg.sender], "Not deposited");
         require(block.timestamp > details.endTime, "Escrow not ended");
 
-        paymentToken.transfer(msg.sender, details.depositAmount);
+        platformToken.transfer(msg.sender, details.depositAmount);
         hasDeposited[msg.sender] = false;
     }
 
@@ -163,7 +163,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             if (hasDeposited[participant]) {
-                paymentToken.transfer(participant, details.depositAmount);
+                platformToken.transfer(participant, details.depositAmount);
                 hasDeposited[participant] = false;
                 emit ParticipantRefunded(participant, details.depositAmount);
             }
@@ -171,9 +171,9 @@ contract Escrow is ReentrancyGuard, Ownable {
         delete participants;
         
         // Transfer any remaining funds to treasury
-        uint256 remainingBalance = paymentToken.balanceOf(address(this));
+        uint256 remainingBalance = platformToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            paymentToken.transfer(treasury, remainingBalance);
+            platformToken.transfer(treasury, remainingBalance);
         }
     }
 } 

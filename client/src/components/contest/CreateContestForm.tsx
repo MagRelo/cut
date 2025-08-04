@@ -9,7 +9,7 @@ import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // contracts
-import { escrowFactoryAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import { escrowFactoryAddress, platformTokenAddress } from "../../utils/contracts/sepolia.json";
 import EscrowFactory from "../../utils/contracts/EscrowFactory.json";
 
 // Helper function to get status messages
@@ -52,10 +52,10 @@ export const CreateContestForm = () => {
     id: sendCallsData?.id,
   });
 
-  // get & set payment token
-  const { data: paymentTokenBalance } = useBalance({
+  // get & set platform token
+  const { data: platformTokenBalance } = useBalance({
     address: userAddress as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
     chainId: chainId ?? 0,
   });
 
@@ -72,8 +72,8 @@ export const CreateContestForm = () => {
       maxEntry: 50,
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
-      paymentTokenAddress: paymentTokenAddress as `0x${string}`,
-      paymentTokenSymbol: paymentTokenBalance?.symbol ?? "",
+      platformTokenAddress: platformTokenAddress as `0x${string}`,
+      platformTokenSymbol: platformTokenBalance?.symbol ?? "",
     },
     description: undefined,
     userGroupId: undefined,
@@ -167,7 +167,7 @@ export const CreateContestForm = () => {
         name: formData.name,
         depositAmount: parseUnits(
           formData.settings?.fee?.toString() ?? "0",
-          paymentTokenBalance?.decimals ?? 6
+          platformTokenBalance?.decimals ?? 18
         ),
         maxParticipants: formData.settings?.maxEntry,
         endTime,
@@ -184,7 +184,7 @@ export const CreateContestForm = () => {
               formData.name,
               parseUnits(
                 formData.settings?.fee?.toString() ?? "0",
-                paymentTokenBalance?.decimals ?? 6
+                platformTokenBalance?.decimals ?? 18
               ),
               formData.settings?.maxEntry?.toString() ?? "0",
               endTime.toString(),
@@ -249,8 +249,8 @@ export const CreateContestForm = () => {
                   maxEntry: Number(e.target.value),
                   fee: prev.settings?.fee ?? 0,
                   contestType: prev.settings?.contestType ?? "PUBLIC",
-                  paymentTokenAddress: prev.settings?.paymentTokenAddress ?? "",
-                  paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? "",
+                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
+                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
                   chainId: prev.settings?.chainId ?? 0,
                 },
               }));
@@ -278,8 +278,8 @@ export const CreateContestForm = () => {
                     fee: Number(e.target.value),
                     maxEntry: prev.settings?.maxEntry ?? 0,
                     contestType: prev.settings?.contestType ?? "PUBLIC",
-                    paymentTokenAddress: prev.settings?.paymentTokenAddress ?? "",
-                    paymentTokenSymbol: prev.settings?.paymentTokenSymbol ?? "",
+                    platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
+                    platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
                     chainId: prev.settings?.chainId ?? 0,
                   },
                 }));
@@ -290,7 +290,7 @@ export const CreateContestForm = () => {
               className="w-full p-2 border rounded-md pr-12"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {paymentTokenBalance?.symbol}
+              {platformTokenBalance?.symbol}
             </div>
           </div>
         </div>
