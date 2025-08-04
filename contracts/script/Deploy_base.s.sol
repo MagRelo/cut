@@ -39,7 +39,7 @@ contract DeployProdScript is Script {
         platformToken.setTreasury(address(treasury));
         console2.log("Treasury set in PlatformToken");
 
-        // Deploy EscrowFactory with platformToken instead of USDC
+        // Deploy EscrowFactory with platformToken
         EscrowFactory factory = new EscrowFactory(
             address(platformToken),
             address(treasury)
@@ -52,11 +52,11 @@ contract DeployProdScript is Script {
 
         // Log all deployed addresses for verification
         console2.log("\n=== Deployment Summary ===");
+        console2.log("USDC:", USDC_BASE);
+        console2.log("cUSDC:", CUSDC_BASE);
         console2.log("PlatformToken:", address(platformToken));
         console2.log("Treasury:", address(treasury));
         console2.log("EscrowFactory:", address(factory));
-        console2.log("USDC:", USDC_BASE);
-        console2.log("cUSDC:", CUSDC_BASE);
         console2.log("Initial Oracle:", msg.sender);
 
         vm.stopBroadcast();
