@@ -69,10 +69,10 @@ export function UserPage() {
             logoPosition="right"
           />
         </div>
-        <hr className="mt-2 mb-4" />
+        <hr className="mt-6 mb-4" />
 
         {/* Treasury Operations */}
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="flex justify-center gap-2">
           <Link
             to="/add"
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"

@@ -14,7 +14,7 @@ export const Home: React.FC = () => {
         <h1 className="text-6xl font-bold text-black">
           the Cut
           {/* <small className="text-sm text-gray-500 block">Fantasy Golf</small> */}
-          <h4 className="text-2xl font-bold text-gray-400 mb-3">Fantasy Golf</h4>
+          <div className="text-2xl font-bold text-gray-400 mb-3">Fantasy Golf</div>
         </h1>
       </div>
 

@@ -65,7 +65,7 @@ export function TreasuryPage() {
   // Format exchange rate for display (convert from 18 decimals)
   const formattedExchangeRate = exchangeRate
     ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(6)
-    : "1.000000";
+    : "1.00";
 
   // Calculate yield percentage
   const yieldPercentage =
@@ -105,7 +105,7 @@ export function TreasuryPage() {
           </div>
 
           {/* Original Deposits */}
-          <div className="font-medium">Original Deposits</div>
+          <div className="font-medium">Deposits</div>
           <div className="text-right">
             {totalUSDCBalanceLoading ? (
               <span className="text-gray-400">Loading...</span>
@@ -163,7 +163,7 @@ export function TreasuryPage() {
         </div>
         <div className="text-sm text-green-700">
           <p className="mb-2">• Yield is earned continuously through Compound V3 Comet</p>
-          <p className="mb-2">• All yield is automatically compounded (no monthly payouts)</p>
+          <p className="mb-2">• All yield is automatically compounded</p>
           <p className="mb-2">
             • When you withdraw, you receive your original deposit + accumulated yield
           </p>

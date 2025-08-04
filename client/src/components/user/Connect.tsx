@@ -46,6 +46,11 @@ export function Connect() {
       {
         connector,
         signInWithEthereum: {
+          // authUrl: {
+          //   nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
+          //   verify: import.meta.env.VITE_API_URL + "/auth/siwe",
+          //   logout: import.meta.env.VITE_API_URL + "/auth/siwe/logout",
+          // },
           authUrl: import.meta.env.VITE_API_URL + "/auth/siwe",
         },
       },
@@ -54,7 +59,6 @@ export function Connect() {
           setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
         },
         onError: (error) => {
-          console.log("discconect>", error);
           console.log(error);
           disconnect();
           setConnectionStatus(ConnectionStatus.ERROR);
