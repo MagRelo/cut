@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { formatOrdinal } from "../utils/formatting";
-import { useChainId, useReadContract } from "wagmi";
-import EscrowContract from "../utils/contracts/Escrow.json";
-
+import { useChainId, useChains } from "wagmi";
+// import EscrowContract from "../utils/contracts/Escrow.json";
 import { Contest } from "src/types.new/contest";
-
 import { useContestApi } from "../services/contestApi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -18,6 +15,23 @@ import { createExplorerLinkJSX } from "../utils/blockchain";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+// Function to get payout structure based on contest size
+function getPayoutStructure(participantCount: number) {
+  const isLargeContest = participantCount >= 10;
+
+  if (isLargeContest) {
+    return {
+      "1": 7000, // 70% for winner
+      "2": 2000, // 20% for second place
+      "3": 1000, // 10% for third place
+    };
+  } else {
+    return {
+      "1": 10000, // 100% for winner (small contests)
+    };
+  }
 }
 
 export const ContestLobby: React.FC = () => {
@@ -37,14 +51,16 @@ export const ContestLobby: React.FC = () => {
 
   // blockchain data
   const chainId = useChainId();
+  const chains = useChains();
+  const chain = chains.find((chain) => chain.id === chainId);
 
   // Get the payment token address from the escrow contract
-  const escrowPaymentToken = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "paymentToken",
-    args: [],
-  }).data as `0x${string}` | undefined;
+  // const escrowPaymentToken = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: EscrowContract.abi,
+  //   functionName: "paymentToken",
+  //   args: [],
+  // }).data as `0x${string}` | undefined;
 
   // fetch contest
   const fetchContest = async () => {
@@ -131,20 +147,12 @@ export const ContestLobby: React.FC = () => {
               {userInContest ? (
                 <div>
                   {contest?.contestLineups?.map((contestLineup) => (
-                    <div className="flex items-center gap-4 mb-2">
-                      <span className="text-xl text-gray-400 font-bold flex-shrink-0">
-                        {formatOrdinal(contestLineup.position)}
-                      </span>
-
-                      <div className="flex-1">
-                        <ContestLineupCard
-                          key={contestLineup.id}
-                          contestLineup={contestLineup}
-                          roundDisplay={contest?.tournament?.roundDisplay}
-                          tournamentStatus={contest?.tournament?.status}
-                        />
-                      </div>
-                    </div>
+                    <ContestLineupCard
+                      key={contestLineup.id}
+                      contestLineup={contestLineup}
+                      roundDisplay={contest?.tournament?.roundDisplay}
+                      tournamentStatus={contest?.tournament?.status}
+                    />
                   ))}
                 </div>
               ) : (
@@ -157,53 +165,68 @@ export const ContestLobby: React.FC = () => {
             </TabPanel>
             <TabPanel>
               <div className="flex flex-col gap-2">
-                <p className="text-gray-600 font-medium text-sm">Status: {contest?.status ?? ""}</p>
+                {/* Payout Structure */}
+                {contest?.contestLineups && (
+                  <div className="">
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Payout Structure</h3>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      {(() => {
+                        const participantCount = contest.contestLineups.length;
+                        const payoutStructure = getPayoutStructure(participantCount);
+                        // const isLargeContest = participantCount >= 10;
 
-                <p className="text-gray-600 font-medium text-sm">
-                  Fee: {contest?.settings?.fee} {contest?.settings?.paymentTokenSymbol}
-                </p>
-
-                <p className="text-gray-600 font-medium text-sm">
-                  Max Payout:{" "}
-                  {contest?.settings?.maxEntry
-                    ? contest?.settings?.maxEntry * contest?.settings?.fee
-                    : 0}{" "}
-                  {contest?.settings?.paymentTokenSymbol}
-                </p>
-
-                <p className="text-gray-600 font-medium text-sm">
-                  Entries: {contest?.contestLineups?.length ?? 0}/
-                  {String(contest?.settings?.maxEntry ?? 0)}
-                </p>
-
-                {/* Blockchain Explorer Links */}
-                {contest?.address && chainId && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Blockchain Details</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Contest Contract:</span>
-                        {createExplorerLinkJSX(
-                          contest.address,
-                          chainId,
-                          "View on Explorer",
-                          "text-emerald-600 hover:text-emerald-800 underline"
-                        )}
-                      </div>
-                      {escrowPaymentToken && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Payment Token:</span>
-                          {createExplorerLinkJSX(
-                            escrowPaymentToken,
-                            chainId,
-                            "View on Explorer",
-                            "text-emerald-600 hover:text-emerald-800 underline"
-                          )}
-                        </div>
-                      )}
+                        return (
+                          <div className="space-y-2">
+                            {/* <p className="text-xs text-gray-600">
+                              {isLargeContest ? "Large Contest" : "Small Contest"} (
+                              {participantCount} participants)
+                            </p> */}
+                            <div className="space-y-1">
+                              {Object.entries(payoutStructure).map(([position, percentage]) => (
+                                <div key={position} className="flex justify-between text-sm">
+                                  <span className="text-gray-700">
+                                    {position === "1"
+                                      ? "1st Place"
+                                      : position === "2"
+                                      ? "2nd Place"
+                                      : position === "3"
+                                      ? "3rd Place"
+                                      : `${position}th Place`}
+                                  </span>
+                                  <span className="font-medium text-emerald-600">
+                                    {(percentage / 100).toFixed(1)}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
+
+                {/* Blockchain Explorer Links */}
+                <h3 className="text-sm font-medium text-gray-900 mt-4">Blockchain</h3>
+                {contest?.address && chainId && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Contest:</span>
+                    {createExplorerLinkJSX(
+                      contest.address,
+                      chainId,
+                      "View on Explorer",
+                      "text-emerald-600 hover:text-emerald-800 underline text-sm"
+                    )}
+                  </div>
+                )}
+
+                {/* Chain Name */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Chain:</span>
+                  <span className="text-sm text-gray-600">{chain?.name}</span>
+                </div>
+
+                <hr className="mt-4" />
 
                 {userInContest && <ContestActions contest={contest} onSuccess={setContest} />}
               </div>

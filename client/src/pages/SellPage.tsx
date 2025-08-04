@@ -9,7 +9,7 @@ export function SellPage() {
         items={[{ label: "Account", path: "/user" }, { label: "Sell" }]}
         className="mb-3"
       />
-      <PageHeader title="Sell" className="mb-3" />
+      <PageHeader title="Sell CUT" className="mb-3" />
       <Sell />
     </div>
   );

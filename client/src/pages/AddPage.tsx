@@ -9,7 +9,7 @@ export function AddPage() {
         items={[{ label: "Account", path: "/user" }, { label: "Add" }]}
         className="mb-3"
       />
-      <PageHeader title="Add" className="mb-3" />
+      <PageHeader title="Add CUT" className="mb-3" />
       <Add />
     </div>
   );

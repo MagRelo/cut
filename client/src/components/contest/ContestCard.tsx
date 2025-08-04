@@ -1,7 +1,7 @@
 import { type Contest } from "../../types.new/contest";
 import { Link } from "react-router-dom";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
-import { formatOrdinal } from "../../utils/formatting";
+// import { usePortoAuth } from "../../contexts/PortoAuthContext";
+// import { formatOrdinal } from "../../utils/formatting";
 import { CutAmountDisplay } from "../common/CutAmountDisplay";
 
 import { useTournament } from "../../contexts/TournamentContext";
@@ -12,12 +12,12 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  const { user } = usePortoAuth();
+  // const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
 
-  const userPosition = contest?.contestLineups?.find(
-    (lineup) => lineup.userId === user?.id
-  )?.position;
+  // const userPosition = contest?.contestLineups?.find(
+  //   (lineup) => lineup.userId === user?.id
+  // )?.position;
 
   const renderPreTournamentCard = () => (
     <div className="p-4">
@@ -28,19 +28,20 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
         </div>
 
         <CutAmountDisplay
-          amount={contest.settings?.fee * (contest.settings.maxEntry ?? 0)}
-          label="Max"
+          amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
+          label="Cut"
+          logoPosition="right"
         />
       </div>
 
-      <div className="flex items-center gap-2 mt-2">
+      {/* <div className="flex items-center gap-2 mt-2">
         <div className="text-sm uppercase text-gray-400 font-semibold tracking-wider leading-none">
           Entries:
         </div>
         <span className="text-base text-gray-700 font-medium leading-none">
           {contest.contestLineups?.length}
         </span>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -55,9 +56,10 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
         <CutAmountDisplay
           amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
           label="Pot"
+          logoPosition="right"
         />
       </div>
-
+      {/* 
       <div className="flex items-center gap-2 mt-2">
         <div className="text-sm uppercase text-gray-400 font-semibold tracking-wider leading-none">
           Position:
@@ -71,7 +73,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
         <span className="text-base text-gray-700 font-medium leading-none">
           {contest.contestLineups?.length}
         </span>
-      </div>
+      </div> */}
     </div>
   );
 

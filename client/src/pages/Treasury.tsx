@@ -1,7 +1,7 @@
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
-import { TreasuryBalanceChart } from "../components/common/TreasuryBalanceChart";
+// import { TreasuryBalanceChart } from "../components/common/TreasuryBalanceChart";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { treasuryAddress } from "../utils/contracts/sepolia.json";
 import TreasuryContract from "../utils/contracts/Treasury.json";
@@ -20,9 +20,16 @@ export function TreasuryPage() {
     : "0.00";
 
   // Calculate estimated earnings (balance * interest rate)
-  const balance = treasuryBalance ? Number(formatUnits(treasuryBalance as bigint, 6)) : 0;
-  const interestRate = 6.08; // 6.08% APY
-  const estimatedEarnings = ((balance * interestRate) / 100).toFixed(2);
+  // const balance = treasuryBalance ? Number(formatUnits(treasuryBalance as bigint, 6)) : 0;
+  // const interestRate = 6.08; // 6.08% APY
+  // const estimatedEarnings = ((balance * interestRate) / 100).toFixed(2);
+
+  // getCompoundYield() from Treasury contract
+  const { data: compoundYield } = useReadContract({
+    address: treasuryAddress as `0x${string}`,
+    abi: TreasuryContract.abi,
+    functionName: "getCompoundYield",
+  });
 
   return (
     <div className="p-4">
@@ -48,28 +55,32 @@ export function TreasuryPage() {
             )}
           </div>
 
+          {/* Compound Yield */}
+          <div className="font-medium">Yield</div>
+          <div className="text-right">{compoundYield ? `$${compoundYield}` : "0.00"}</div>
+
           {/* Treasury Interest Rate */}
-          <div className="font-medium">APY</div>
-          <div className="text-right">6.08% </div>
+          {/* <div className="font-medium">APY</div>
+          <div className="text-right">6.08% </div> */}
 
           {/* Earnings */}
-          <div className="font-medium">Est. Earnings</div>
+          {/* <div className="font-medium">Est. Earnings</div>
           <div className="text-right">
             {treasuryBalanceLoading ? (
               <span className="text-gray-400">Loading...</span>
             ) : (
               `$${estimatedEarnings}`
             )}
-          </div>
+          </div> */}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 mb-4">
+      {/* <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Historical Balance
         </div>
         <TreasuryBalanceChart className="mb-4" />
-      </div>
+      </div> */}
     </div>
   );
 }
