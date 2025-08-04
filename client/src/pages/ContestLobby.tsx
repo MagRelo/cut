@@ -112,7 +112,11 @@ export const ContestLobby: React.FC = () => {
         <ContestCard contest={contest} />
 
         {/* tabs */}
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        <TabGroup
+          key={`${contest?.id}-${contest?.contestLineups?.length}`}
+          selectedIndex={selectedIndex}
+          onChange={setSelectedIndex}
+        >
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -170,7 +174,11 @@ export const ContestLobby: React.FC = () => {
               ) : (
                 <>
                   {contest && contest?.tournament?.status !== "IN_PROGRESS" && (
-                    <ContestActions contest={contest} onSuccess={setContest} />
+                    <ContestActions
+                      key={`${contest?.id}-${contest?.contestLineups?.length}`}
+                      contest={contest}
+                      onSuccess={setContest}
+                    />
                   )}
                 </>
               )}
@@ -271,9 +279,15 @@ export const ContestLobby: React.FC = () => {
                   </div>
                 </div>
 
-                <hr className="mt-4" />
+                <hr className="my-2" />
 
-                {userInContest && <ContestActions contest={contest} onSuccess={setContest} />}
+                {userInContest && (
+                  <ContestActions
+                    key={`${contest?.id}-${contest?.contestLineups?.length}`}
+                    contest={contest}
+                    onSuccess={setContest}
+                  />
+                )}
               </div>
             </TabPanel>
           </div>

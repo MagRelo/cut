@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useSendCalls,
   useWaitForCallsStatus,
@@ -14,6 +15,7 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export const Add = () => {
   const { address, isConnected } = useAccount();
+  const navigate = useNavigate();
 
   // Add form state
   const [addAmount, setAddAmount] = useState("");
@@ -201,6 +203,12 @@ export const Add = () => {
       {isConfirmed && (
         <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
           Transaction completed successfully!
+          <button
+            onClick={() => navigate("/user")}
+            className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+          >
+            Back to User
+          </button>
         </div>
       )}
     </div>

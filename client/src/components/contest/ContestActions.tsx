@@ -73,14 +73,6 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     id: sendCallsData?.id,
   });
 
-  // Get the payment token address from the escrow contract
-  const escrowPaymentToken = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "paymentToken",
-    args: [],
-  }).data as `0x${string}` | undefined;
-
   // Get the deposit amount from the escrow contract
   const escrowDetails = useReadContract({
     address: contest.address as `0x${string}`,
@@ -113,15 +105,15 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     const depositAmount = escrowDetails[1]; // depositAmount is the second element
     const hasEnough = platformTokenBalance.value >= depositAmount;
 
-    if (!hasEnough) {
-      console.log({
-        depositAmount: depositAmount.toString(),
-        balanceValue: platformTokenBalance.value.toString(),
-        hasEnoughBalance: hasEnough,
-        contestAddress: contest.address,
-        escrowPaymentToken: escrowPaymentToken,
-      });
-    }
+    // if (!hasEnough) {
+    //   console.log({
+    //     depositAmount: depositAmount.toString(),
+    //     balanceValue: platformTokenBalance.value.toString(),
+    //     hasEnoughBalance: hasEnough,
+    //     contestAddress: contest.address,
+    //     escrowPaymentToken: escrowPaymentToken,
+    //   });
+    // }
 
     return hasEnough;
   }, [platformTokenBalance, escrowDetails]);
@@ -131,19 +123,25 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     const handleBlockchainConfirmation = async () => {
       if (isConfirmed && pendingAction) {
         try {
+          let updatedContest: Contest | null = null;
+
           // Add lineup to contest in backend
           if (pendingAction === "join" && selectedLineupId) {
-            await addLineupToContest(contest.id, { tournamentLineupId: selectedLineupId });
+            updatedContest = await addLineupToContest(contest.id, {
+              tournamentLineupId: selectedLineupId,
+            });
             await getLineups(contest.tournamentId); // Refresh lineups
           } else if (pendingAction === "leave") {
             if (userContestLineup) {
-              await removeLineupFromContest(contest.id, userContestLineup.id);
+              updatedContest = await removeLineupFromContest(contest.id, userContestLineup.id);
               await getLineups(contest.tournamentId); // Refresh lineups
             }
           }
 
-          // Refresh contest data
-          onSuccess(contest);
+          // Refresh contest data with the updated contest
+          if (updatedContest) {
+            onSuccess(updatedContest);
+          }
           setPendingAction(null);
           setSelectedLineupId(null);
         } catch (error) {
@@ -297,7 +295,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       {/* Buttons */}
       {userInContest ? (
         <button
-          className="mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+          className=" bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
           onClick={handleLeaveContest}
           disabled={!userInContest || isSending || isConfirming}
         >
@@ -312,7 +310,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         </button>
       ) : (
         <button
-          className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+          className=" bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
           onClick={() => setLineupSelectionModal(true)}
           disabled={userInContest || isSending || isConfirming}
         >
