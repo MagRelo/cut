@@ -15,9 +15,9 @@ export interface ContractConfig {
  */
 export function getContractConfig(chainId: number): ContractConfig | null {
   switch (chainId) {
-    case 11155111: // Sepolia
+    case 84532: // Base Sepolia
       return sepoliaConfig as ContractConfig;
-    case 8453: // Base mainnet
+    case 8453: // Base
       return baseConfig as ContractConfig;
     default:
       return null;

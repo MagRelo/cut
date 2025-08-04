@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { useChainId, useChains } from "wagmi";
-// import EscrowContract from "../utils/contracts/Escrow.json";
-import { Contest } from "src/types.new/contest";
+import { useBalance, useChainId, useChains } from "wagmi";
+import { Contest } from "../types.new/contest";
 import { useContestApi } from "../services/contestApi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -12,6 +11,7 @@ import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX } from "../utils/blockchain";
+import { getContractAddress } from "../utils/contractConfig";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -54,13 +54,12 @@ export const ContestLobby: React.FC = () => {
   const chains = useChains();
   const chain = chains.find((chain) => chain.id === chainId);
 
-  // Get the payment token address from the escrow contract
-  // const escrowPaymentToken = useReadContract({
-  //   address: contest?.address as `0x${string}`,
-  //   abi: EscrowContract.abi,
-  //   functionName: "paymentToken",
-  //   args: [],
-  // }).data as `0x${string}` | undefined;
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
+  // platformTokenAddress balance
+  const { data: platformToken } = useBalance({
+    address: platformTokenAddress as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
+  });
 
   // fetch contest
   const fetchContest = async () => {
@@ -139,7 +138,20 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Details
+              Players
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-2 text-sm font-medium leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                )
+              }
+            >
+              Settings
             </Tab>
           </TabList>
           <div className="p-4">
@@ -162,6 +174,14 @@ export const ContestLobby: React.FC = () => {
                   )}
                 </>
               )}
+            </TabPanel>
+            <TabPanel>
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Tournament Players</h3>
+                <div className="text-sm text-gray-600">
+                  Player information will be displayed here.
+                </div>
+              </div>
             </TabPanel>
             <TabPanel>
               <div className="flex flex-col gap-2">
@@ -203,27 +223,52 @@ export const ContestLobby: React.FC = () => {
                         );
                       })()}
                     </div>
+
+                    {/* Contest Settings */}
+                    <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Contest Details</h3>
+                    <div className="flex flex-col gap-2 pl-3">
+                      {/* Entry Fee */}
+                      {contest?.settings?.fee && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Entry Fee:</span>
+                          <span className="text-sm text-gray-600">
+                            ${contest.settings.fee} {platformToken?.symbol}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Max Entries */}
+                      {contest?.settings?.maxEntry && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Max Entries:</span>
+                          <span className="text-sm text-gray-600">{contest.settings.maxEntry}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* Blockchain Explorer Links */}
                 <h3 className="text-sm font-medium text-gray-900 mt-4">Blockchain</h3>
-                {contest?.address && chainId && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Contest:</span>
-                    {createExplorerLinkJSX(
-                      contest.address,
-                      chainId,
-                      "View on Explorer",
-                      "text-emerald-600 hover:text-emerald-800 underline text-sm"
-                    )}
-                  </div>
-                )}
+                <div className="flex flex-col gap-2 pl-3">
+                  {/* Escrow Contract */}
+                  {contest?.address && chainId && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Escrow Contract:</span>
+                      {createExplorerLinkJSX(
+                        contest.address,
+                        chainId,
+                        "View on Explorer",
+                        "text-emerald-600 hover:text-emerald-800 underline text-sm"
+                      )}
+                    </div>
+                  )}
 
-                {/* Chain Name */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Chain:</span>
-                  <span className="text-sm text-gray-600">{chain?.name}</span>
+                  {/* Chain Name */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Chain:</span>
+                    <span className="text-sm text-gray-600">{chain?.name}</span>
+                  </div>
                 </div>
 
                 <hr className="mt-4" />

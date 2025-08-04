@@ -19,8 +19,9 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { LineupSelectionModal } from "./LineupSelectionModal";
 
 // Import contract addresses and ABIs
-import PaymentTokenContract from "../../utils/contracts/PaymentToken.json";
+import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
 import EscrowContract from "../../utils/contracts/Escrow.json";
+import { getContractAddress } from "../../utils/contractConfig";
 
 interface ContestActionsProps {
   contest: Contest;
@@ -88,10 +89,11 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     args: [],
   }).data as [string, bigint, bigint, bigint] | undefined;
 
-  // Payment Token balance - use the payment token from the escrow contract
-  const { data: escrowTokenBalance } = useBalance({
+  // get the platform token balance from the user
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
+  const { data: platformTokenBalance } = useBalance({
     address: userAddress as `0x${string}`,
-    token: escrowPaymentToken as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
     chainId: chainId ?? 0,
   });
 
@@ -105,22 +107,24 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
 
   // Helper: check if user has enough balance
   const hasEnoughBalance = React.useMemo(() => {
-    if (!escrowTokenBalance || !escrowDetails) return false;
+    if (!platformTokenBalance || !escrowDetails) return false;
 
     // Use the deposit amount from the escrow contract
     const depositAmount = escrowDetails[1]; // depositAmount is the second element
-    const hasEnough = escrowTokenBalance.value >= depositAmount;
+    const hasEnough = platformTokenBalance.value >= depositAmount;
 
     if (!hasEnough) {
       console.log({
         depositAmount: depositAmount.toString(),
-        balanceValue: escrowTokenBalance.value.toString(),
+        balanceValue: platformTokenBalance.value.toString(),
         hasEnoughBalance: hasEnough,
+        contestAddress: contest.address,
+        escrowPaymentToken: escrowPaymentToken,
       });
     }
 
     return hasEnough;
-  }, [escrowTokenBalance, escrowDetails]);
+  }, [platformTokenBalance, escrowDetails]);
 
   // Effect to handle blockchain confirmation
   useEffect(() => {
@@ -171,7 +175,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       setWarningModal({
         open: true,
         message: `You do not have enough ${
-          contest?.settings?.paymentTokenSymbol || "tokens"
+          contest?.settings?.platformTokenSymbol || "tokens"
         } to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
       });
       return;
@@ -192,13 +196,13 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       await sendCalls({
         calls: [
           {
-            abi: PaymentTokenContract.abi,
+            abi: PlatformTokenContract.abi,
             args: [
               contest.address as `0x${string}`,
               depositAmount, // Use the actual deposit amount from escrow
             ],
             functionName: "approve",
-            to: escrowPaymentToken as `0x${string}`,
+            to: platformTokenAddress as `0x${string}`,
           },
           {
             abi: EscrowContract.abi,

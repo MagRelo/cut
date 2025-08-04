@@ -3,8 +3,9 @@ import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
 // import { TreasuryBalanceChart } from "../components/common/TreasuryBalanceChart";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { treasuryAddress } from "../utils/contracts/sepolia.json";
+import { treasuryAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
 import TreasuryContract from "../utils/contracts/Treasury.json";
+import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
 export function TreasuryPage() {
   // Get treasury balance from contract
@@ -43,17 +44,17 @@ export function TreasuryPage() {
     ? Number(formatUnits(totalUSDCBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
-  // Get platform token supply
+  // Get platform token supply directly from PlatformToken contract
   const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
-    functionName: "totalPlatformTokensMinted",
+    address: platformTokenAddress as `0x${string}`,
+    abi: PlatformTokenContract.abi,
+    functionName: "totalSupply",
   });
 
   // Format platform token supply for display
   const formattedPlatformTokenSupply = platformTokenSupply
-    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(6)
-    : "0.000000";
+    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(2)
+    : "0.00";
 
   // Get exchange rate
   const { data: exchangeRate, isLoading: exchangeRateLoading } = useReadContract({
@@ -64,7 +65,7 @@ export function TreasuryPage() {
 
   // Format exchange rate for display (convert from 18 decimals)
   const formattedExchangeRate = exchangeRate
-    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(6)
+    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(2)
     : "1.00";
 
   // Calculate yield percentage
