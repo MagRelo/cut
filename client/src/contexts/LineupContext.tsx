@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect } 
 import { type TournamentLineup } from "../types.new/player";
 import { useLineupApi } from "../services/lineupApi";
 import { usePortoAuth } from "./PortoAuthContext";
+import { useTournament } from "./TournamentContext";
 
 interface LineupContextData {
   lineups: TournamentLineup[];
@@ -33,6 +34,7 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
   const [lineupError, setLineupError] = useState<string | null>(null);
   const lineupApi = useLineupApi();
   const { user } = usePortoAuth();
+  const { currentTournament } = useTournament();
 
   // Clear lineups when user logs out
   useEffect(() => {
@@ -128,6 +130,13 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
     setLineups([]);
     setLineupError(null);
   }, []);
+
+  // Load lineups when user logs in and there's an active tournament
+  useEffect(() => {
+    if (user && currentTournament) {
+      getLineups(currentTournament.id);
+    }
+  }, [user, currentTournament, getLineups]);
 
   const contextValue = useMemo(
     () => ({
