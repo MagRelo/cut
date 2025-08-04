@@ -25,6 +25,15 @@ router.get("/siwe/nonce", (req, res) => {
   res.send(response);
 });
 
+// SIWE Nonce endpoint (POST for Porto compatibility)
+router.post("/siwe/nonce", (req, res) => {
+  // console.log("Generating SIWE nonce");
+  const response = {
+    nonce: generateSiweNonce(),
+  };
+  res.send(response);
+});
+
 // SIWE authentication endpoint
 router.post("/siwe", async (req, res) => {
   try {
