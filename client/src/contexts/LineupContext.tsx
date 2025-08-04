@@ -36,14 +36,6 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
   const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
 
-  // Clear lineups when user logs out
-  useEffect(() => {
-    if (!user) {
-      setLineups([]);
-      setLineupError(null);
-    }
-  }, [user]);
-
   const getLineups = useCallback(
     async (tournamentId: string) => {
       try {
@@ -59,6 +51,21 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
     },
     [lineupApi]
   );
+
+  // Load lineups when user logs in and there's an active tournament
+  useEffect(() => {
+    if (user && currentTournament) {
+      getLineups(currentTournament.id);
+    }
+  }, [user, currentTournament, getLineups]);
+
+  // Clear lineups when user logs out
+  useEffect(() => {
+    if (!user) {
+      setLineups([]);
+      setLineupError(null);
+    }
+  }, [user]);
 
   const getLineupById = useCallback(
     async (lineupId: string) => {
@@ -130,13 +137,6 @@ export function LineupProvider({ children }: { children: React.ReactNode }) {
     setLineups([]);
     setLineupError(null);
   }, []);
-
-  // Load lineups when user logs in and there's an active tournament
-  useEffect(() => {
-    if (user && currentTournament) {
-      getLineups(currentTournament.id);
-    }
-  }, [user, currentTournament, getLineups]);
 
   const contextValue = useMemo(
     () => ({
