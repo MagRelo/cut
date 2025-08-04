@@ -1,0 +1,6 @@
+{
+  "paymentTokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "platformTokenAddress": "0x2163E7D874BDf8f81dDf470A57166202Ee0d0869",
+  "treasuryAddress": "0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5",
+  "escrowFactoryAddress": "0x8bc7681adbcf80075c6105de984890dd18e2a938"
+}

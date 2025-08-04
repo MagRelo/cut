@@ -9,12 +9,13 @@ import "./Escrow.sol";
 contract EscrowFactory is Ownable {
     mapping(address => bool) public oracles;
     Escrow[] public escrows;
-    address public immutable paymentToken;
+    address public paymentToken;
     address public immutable treasury;
 
     event EscrowCreated(address indexed escrow, address indexed host, uint256 depositAmount);
     event OracleAdded(address indexed oracle);
     event OracleRemoved(address indexed oracle);
+    event PaymentTokenUpdated(address indexed oldToken, address indexed newToken);
 
     constructor(
         address _paymentToken,
@@ -22,6 +23,13 @@ contract EscrowFactory is Ownable {
     ) Ownable(msg.sender) {
         paymentToken = _paymentToken;
         treasury = _treasury;
+    }
+
+    function setPaymentToken(address _newPaymentToken) external onlyOwner {
+        require(_newPaymentToken != address(0), "Invalid payment token address");
+        address oldToken = paymentToken;
+        paymentToken = _newPaymentToken;
+        emit PaymentTokenUpdated(oldToken, _newPaymentToken);
     }
 
     function createEscrow(

@@ -6,44 +6,19 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PlatformToken.sol";
 
-// Compound interfaces
+// Compound V3 Comet interfaces (matching real Base Mainnet CUSDC)
 interface ICErc20 {
-    function mint(uint mintAmount) external returns (uint);
-    function redeem(uint redeemTokens) external returns (uint);
-    function redeemUnderlying(uint redeemAmount) external returns (uint);
-    function borrow(uint borrowAmount) external returns (uint);
-    function repayBorrow(uint repayAmount) external returns (uint);
-    function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
-    function liquidateBorrow(address borrower, uint repayAmount, address cTokenCollateral) external returns (uint);
-    function transfer(address dst, uint amount) external returns (bool);
-    function transferFrom(address src, address dst, uint amount) external returns (bool);
-    function approve(address spender, uint amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function balanceOfUnderlying(address owner) external returns (uint);
-    function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
-    function borrowRatePerBlock() external view returns (uint);
-    function supplyRatePerBlock() external view returns (uint);
-    function totalBorrowsCurrent() external returns (uint);
-    function borrowBalanceCurrent(address account) external returns (uint);
-    function borrowBalanceStored(address account) external view returns (uint);
-    function exchangeRateCurrent() external returns (uint);
-    function exchangeRateStored() external view returns (uint);
-    function getCash() external view returns (uint);
-    function accrueInterest() external returns (uint);
-    function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
-    function _reduceReserves(uint reduceAmount) external returns (uint);
-    function _setReserveFactor(uint newReserveFactorMantissa) external returns (uint);
-    function _setInterestRateModel(address newInterestRateModel) external returns (uint);
-    function _setBorrowCap(uint newBorrowCap) external returns (uint);
-    function _setSupplyCap(uint newSupplyCap) external returns (uint);
-    function _setCompSpeed(uint compSpeed) external;
-    function _addReserves(uint addAmount) external returns (uint);
-    function _setImplementation(address implementation_, bool allowResign, bytes calldata becomeImplementationData) external;
-    function _becomeImplementation(bytes calldata data) external;
-    function _resignImplementation() external;
-    function _setPendingAdmin(address newPendingAdmin) external returns (uint);
-    function _acceptAdmin() external returns (uint);
+    // Compound V3 Comet style functions
+    function supply(address asset, uint256 amount) external;
+    function withdraw(address asset, uint256 amount) external;
+    
+    // Balance functions
+    function balanceOf(address owner) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
+    
+    // Pause status functions
+    function isSupplyPaused() external view returns (bool);
+    function isWithdrawPaused() external view returns (bool);
 }
 
 contract Treasury is ReentrancyGuard, Ownable {
@@ -84,9 +59,9 @@ contract Treasury is ReentrancyGuard, Ownable {
         totalUSDCBalance += amount;
         totalPlatformTokensMinted += platformTokensToMint;
         
-        // Deposit USDC to Compound for yield generation
+        // Deposit USDC to Compound for yield generation (use Compound V3 Comet function)
         usdcToken.approve(address(cUSDC), amount);
-        cUSDC.mint(amount);
+        cUSDC.supply(address(usdcToken), amount);
         
         emit USDCDeposited(msg.sender, amount, platformTokensToMint);
     }
@@ -102,13 +77,11 @@ contract Treasury is ReentrancyGuard, Ownable {
         // Burn platform tokens from user
         platformToken.burn(msg.sender, platformTokenAmount);
         
-        // Withdraw USDC from Compound if needed
+        // Withdraw USDC from Compound if needed (use Compound V3 function)
         uint256 treasuryUSDCBalance = usdcToken.balanceOf(address(this));
         if (treasuryUSDCBalance < usdcToReturn) {
             uint256 neededFromCompound = usdcToReturn - treasuryUSDCBalance;
-            // Convert USDC amount to cUSDC tokens for redemption
-            uint256 cUSDCToRedeem = (neededFromCompound * 1e18) / cUSDC.exchangeRateStored();
-            cUSDC.redeem(cUSDCToRedeem);
+            cUSDC.withdraw(address(usdcToken), neededFromCompound);
         }
         
         // Get the actual USDC balance after redemption (may be slightly different due to rounding)
@@ -148,13 +121,11 @@ contract Treasury is ReentrancyGuard, Ownable {
         require(to != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be greater than 0");
         
-        // Withdraw from Compound if needed
+        // Withdraw from Compound if needed (use Compound V3 Comet function)
         uint256 treasuryUSDCBalance = usdcToken.balanceOf(address(this));
         if (treasuryUSDCBalance < amount) {
             uint256 neededFromCompound = amount - treasuryUSDCBalance;
-            // Convert USDC amount to cUSDC tokens for redemption
-            uint256 cUSDCToRedeem = (neededFromCompound * 1e18) / cUSDC.exchangeRateStored();
-            cUSDC.redeem(cUSDCToRedeem);
+            cUSDC.withdraw(address(usdcToken), neededFromCompound);
         }
         
         usdcToken.transfer(to, amount);
@@ -181,17 +152,17 @@ contract Treasury is ReentrancyGuard, Ownable {
     }
 
     function getCompoundYield() internal view returns (uint256) {
+        // For Compound V3 Comet, the balanceOf function returns the USDC equivalent directly
         uint256 cUSDCBalance = cUSDC.balanceOf(address(this));
         if (cUSDCBalance == 0) {
             return 0;
         }
         
-        // Calculate yield as the difference between cUSDC balance converted to USDC and total USDC deposited
-        uint256 totalValueInUSDC = (cUSDCBalance * cUSDC.exchangeRateStored()) / 1e18;
+        // In Compound V3 Comet, balanceOf returns the USDC equivalent, so we can calculate yield directly
         uint256 totalDeposited = totalUSDCBalance;
         
-        if (totalValueInUSDC > totalDeposited) {
-            return totalValueInUSDC - totalDeposited;
+        if (cUSDCBalance > totalDeposited) {
+            return cUSDCBalance - totalDeposited;
         }
         return 0;
     }

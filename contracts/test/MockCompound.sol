@@ -19,6 +19,36 @@ contract MockCToken is IERC20 {
         usdcToken = _usdcToken;
     }
     
+    // Compound V3 style functions (matching real Base Mainnet CUSDC)
+    function supply(uint256 amount) external returns (uint) {
+        uint256 cTokensToMint = (amount * 1e18) / exchangeRate;
+        balanceOf[msg.sender] += cTokensToMint;
+        totalSupply += cTokensToMint;
+        emit Transfer(address(0), msg.sender, cTokensToMint);
+        
+        // Transfer USDC from caller to this contract (simulating Compound's behavior)
+        IERC20(usdcToken).transferFrom(msg.sender, address(this), amount);
+        return 0; // Success code
+    }
+    
+    function withdraw(uint256 amount) external returns (uint) {
+        uint256 cTokenAmount = (amount * 1e18) / exchangeRate;
+        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
+        balanceOf[msg.sender] -= cTokenAmount;
+        totalSupply -= cTokenAmount;
+        emit Transfer(msg.sender, address(0), cTokenAmount);
+        
+        // Transfer underlying USDC to the caller
+        // If we don't have enough USDC, mint it for testing purposes
+        uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
+        if (currentBalance < amount) {
+            PaymentToken(usdcToken).mint(address(this), amount - currentBalance);
+        }
+        IERC20(usdcToken).transfer(msg.sender, amount);
+        return 0; // Success code
+    }
+    
+    // Keep Compound V2 functions for backward compatibility with existing code
     function mint(uint256 amount) external returns (uint) {
         uint256 cTokensToMint = (amount * 1e18) / exchangeRate;
         balanceOf[msg.sender] += cTokensToMint;
@@ -31,14 +61,13 @@ contract MockCToken is IERC20 {
     }
     
     function redeem(uint256 cTokenAmount) external returns (uint) {
-        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
         uint256 underlyingAmount = (cTokenAmount * exchangeRate) / 1e18;
+        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
         balanceOf[msg.sender] -= cTokenAmount;
         totalSupply -= cTokenAmount;
         emit Transfer(msg.sender, address(0), cTokenAmount);
         
         // Transfer underlying USDC to the caller
-        // If we don't have enough USDC, mint it for testing purposes
         uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
         if (currentBalance < underlyingAmount) {
             PaymentToken(usdcToken).mint(address(this), underlyingAmount - currentBalance);
@@ -53,6 +82,13 @@ contract MockCToken is IERC20 {
         balanceOf[msg.sender] -= cTokenAmount;
         totalSupply -= cTokenAmount;
         emit Transfer(msg.sender, address(0), cTokenAmount);
+        
+        // Transfer underlying USDC to the caller
+        uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
+        if (currentBalance < redeemAmount) {
+            PaymentToken(usdcToken).mint(address(this), redeemAmount - currentBalance);
+        }
+        IERC20(usdcToken).transfer(msg.sender, redeemAmount);
         return 0; // Success code
     }
     

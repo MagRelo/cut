@@ -19,17 +19,66 @@ export function TreasuryPage() {
     ? Number(formatUnits(treasuryBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
-  // Calculate estimated earnings (balance * interest rate)
-  // const balance = treasuryBalance ? Number(formatUnits(treasuryBalance as bigint, 6)) : 0;
-  // const interestRate = 6.08; // 6.08% APY
-  // const estimatedEarnings = ((balance * interestRate) / 100).toFixed(2);
-
   // getCompoundYield() from Treasury contract
-  const { data: compoundYield } = useReadContract({
+  const { data: compoundYield, isLoading: compoundYieldLoading } = useReadContract({
     address: treasuryAddress as `0x${string}`,
     abi: TreasuryContract.abi,
     functionName: "getCompoundYield",
   });
+
+  // Format compound yield for display
+  const formattedCompoundYield = compoundYield
+    ? Number(formatUnits(compoundYield as bigint, 6)).toFixed(6)
+    : "0.000000";
+
+  // Get total USDC balance (original deposits)
+  const { data: totalUSDCBalance, isLoading: totalUSDCBalanceLoading } = useReadContract({
+    address: treasuryAddress as `0x${string}`,
+    abi: TreasuryContract.abi,
+    functionName: "totalUSDCBalance",
+  });
+
+  // Format total USDC balance for display
+  const formattedTotalUSDCBalance = totalUSDCBalance
+    ? Number(formatUnits(totalUSDCBalance as bigint, 6)).toFixed(2)
+    : "0.00";
+
+  // Get platform token supply
+  const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
+    address: treasuryAddress as `0x${string}`,
+    abi: TreasuryContract.abi,
+    functionName: "totalPlatformTokensMinted",
+  });
+
+  // Format platform token supply for display
+  const formattedPlatformTokenSupply = platformTokenSupply
+    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(6)
+    : "0.000000";
+
+  // Get exchange rate
+  const { data: exchangeRate, isLoading: exchangeRateLoading } = useReadContract({
+    address: treasuryAddress as `0x${string}`,
+    abi: TreasuryContract.abi,
+    functionName: "getExchangeRate",
+  });
+
+  // Format exchange rate for display (convert from 18 decimals)
+  const formattedExchangeRate = exchangeRate
+    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(6)
+    : "1.000000";
+
+  // Calculate yield percentage
+  const yieldPercentage =
+    compoundYield &&
+    totalUSDCBalance &&
+    typeof totalUSDCBalance === "bigint" &&
+    totalUSDCBalance > 0n
+      ? (
+          (Number(formatUnits(compoundYield as bigint, 6)) /
+            Number(formatUnits(totalUSDCBalance, 6))) *
+          100
+        ).toFixed(4)
+      : "0.0000";
 
   return (
     <div className="p-4">
@@ -44,9 +93,9 @@ export function TreasuryPage() {
           Platform Treasury
         </div>
 
-        <div className="grid grid-cols-[100px_1fr] gap-2">
+        <div className="grid grid-cols-[120px_1fr] gap-2">
           {/* Treasury Balance */}
-          <div className="font-medium">Balance</div>
+          <div className="font-medium">Total Balance</div>
           <div className="text-right">
             {treasuryBalanceLoading ? (
               <span className="text-gray-400">Loading...</span>
@@ -55,23 +104,70 @@ export function TreasuryPage() {
             )}
           </div>
 
-          {/* Compound Yield */}
-          <div className="font-medium">Yield</div>
-          <div className="text-right">{compoundYield ? `$${compoundYield}` : "0.00"}</div>
-
-          {/* Treasury Interest Rate */}
-          {/* <div className="font-medium">APY</div>
-          <div className="text-right">6.08% </div> */}
-
-          {/* Earnings */}
-          {/* <div className="font-medium">Est. Earnings</div>
+          {/* Original Deposits */}
+          <div className="font-medium">Original Deposits</div>
           <div className="text-right">
-            {treasuryBalanceLoading ? (
+            {totalUSDCBalanceLoading ? (
               <span className="text-gray-400">Loading...</span>
             ) : (
-              `$${estimatedEarnings}`
+              `$${formattedTotalUSDCBalance}`
             )}
-          </div> */}
+          </div>
+
+          {/* Compound Yield */}
+          <div className="font-medium">Yield Earned</div>
+          <div className="text-right">
+            {compoundYieldLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `$${formattedCompoundYield}`
+            )}
+          </div>
+
+          {/* Yield Percentage */}
+          <div className="font-medium">Yield %</div>
+          <div className="text-right text-green-600 font-semibold">
+            {compoundYieldLoading || totalUSDCBalanceLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `${yieldPercentage}%`
+            )}
+          </div>
+
+          {/* Platform Token Supply */}
+          <div className="font-medium">CUT Supply</div>
+          <div className="text-right">
+            {platformTokenSupplyLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `${formattedPlatformTokenSupply} CUT`
+            )}
+          </div>
+
+          {/* Exchange Rate */}
+          <div className="font-medium">Exchange Rate</div>
+          <div className="text-right">
+            {exchangeRateLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `1 CUT = $${formattedExchangeRate}`
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Yield Information Card */}
+      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-green-800 font-display mb-2">
+          Yield Information
+        </div>
+        <div className="text-sm text-green-700">
+          <p className="mb-2">• Yield is earned continuously through Compound V3 Comet</p>
+          <p className="mb-2">• All yield is automatically compounded (no monthly payouts)</p>
+          <p className="mb-2">
+            • When you withdraw, you receive your original deposit + accumulated yield
+          </p>
+          <p>• Yield rates are dynamic and change based on market conditions</p>
         </div>
       </div>
 

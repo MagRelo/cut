@@ -6,7 +6,7 @@ import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 import { PageHeader } from "../components/util/PageHeader";
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
-import { platformTokenAddress, paymentTokenAddress } from "../utils/contracts/sepolia.json";
+import { getContractAddress } from "../utils/contractConfig";
 import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 import { Connect } from "../components/user/Connect";
@@ -16,6 +16,10 @@ export function UserPage() {
   const { user } = usePortoAuth();
   const { address, chainId, chain } = useAccount();
   const { disconnect } = useDisconnect();
+
+  // Get contract addresses for current chain
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // platformTokenAddress balance
   const { data: platformTokenBalance } = useBalance({

@@ -1,0 +1,25 @@
+{
+  "name": "cut-contracts-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for testing Cut contracts",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test-treasury": "node test-treasury-deposit.js",
+    "test-treasury-simple": "node test-treasury-deposit-simple.js",
+    "mint-tokens": "node mint-tokens.js",
+    "mint-payment-tokens": "node mint-payment-tokens.js"
+  },
+  "dependencies": {
+    "ethers": "^6.8.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "ethereum",
+    "contracts",
+    "testing"
+  ],
+  "author": "",
+  "license": "MIT"
+}
