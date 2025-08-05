@@ -110,7 +110,8 @@ export const Add = () => {
   };
 
   // Format balance to 2 decimal points
-  const formattedBalance = (balance: bigint, decimals: number) => {
+  const formattedBalance = (balance: unknown, decimals: number) => {
+    if (!balance || typeof balance !== "bigint") return "0.00";
     return Number(formatUnits(balance, decimals)).toFixed(2);
   };
 
@@ -156,7 +157,7 @@ export const Add = () => {
           </div>
           <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
-            1 USDC = {formattedBalance(exchangeRate as bigint, 18)} CUT
+            1 USDC = {formattedBalance(exchangeRate, 18)} CUT
           </div>
         </div>
         <div>
