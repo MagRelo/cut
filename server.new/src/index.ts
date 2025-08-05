@@ -109,7 +109,7 @@ try {
   cronScheduler.start();
 
   app.listen(port, () => {
-    console.log(`[NEW]Server running on port ${port}`);
+    console.log(`[NEW] Server running on port ${port}`);
     console.log(`[CRON] Cron scheduler ${ENABLE_CRON ? "enabled" : "disabled"}`);
   });
 

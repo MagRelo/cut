@@ -68,7 +68,7 @@ class CronScheduler {
 
   public start(): void {
     if (!this.isEnabled) {
-      console.log("[CRON] Cron scheduler is disabled");
+      // console.log("[CRON] Cron scheduler is disabled");
       return;
     }
 
