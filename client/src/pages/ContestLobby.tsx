@@ -111,6 +111,17 @@ export const ContestLobby: React.FC = () => {
         {/* header */}
         <ContestCard contest={contest} />
 
+        {/* Actions */}
+        {contest && contest?.tournament?.status !== "IN_PROGRESS" && !userInContest && (
+          <div className="mb-4 px-4">
+            <ContestActions
+              key={`${contest?.id}-${contest?.contestLineups?.length}`}
+              contest={contest}
+              onSuccess={setContest}
+            />
+          </div>
+        )}
+
         {/* tabs */}
         <TabGroup
           key={`${contest?.id}-${contest?.contestLineups?.length}`}
@@ -160,28 +171,17 @@ export const ContestLobby: React.FC = () => {
           </TabList>
           <div className="p-4">
             <TabPanel>
-              {userInContest ? (
-                <div>
-                  {contest?.contestLineups?.map((contestLineup) => (
-                    <ContestLineupCard
-                      key={contestLineup.id}
-                      contestLineup={contestLineup}
-                      roundDisplay={contest?.tournament?.roundDisplay}
-                      tournamentStatus={contest?.tournament?.status}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {contest && contest?.tournament?.status !== "IN_PROGRESS" && (
-                    <ContestActions
-                      key={`${contest?.id}-${contest?.contestLineups?.length}`}
-                      contest={contest}
-                      onSuccess={setContest}
-                    />
-                  )}
-                </>
-              )}
+              <div className="space-y-4">
+                {/* Lineups */}
+                {contest?.contestLineups?.map((contestLineup) => (
+                  <ContestLineupCard
+                    key={contestLineup.id}
+                    contestLineup={contestLineup}
+                    roundDisplay={contest?.tournament?.roundDisplay}
+                    tournamentStatus={contest?.tournament?.status}
+                  />
+                ))}
+              </div>
             </TabPanel>
             <TabPanel>
               <div className="p-4">

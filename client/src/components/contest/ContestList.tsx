@@ -29,8 +29,11 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
     <div className="space-y-2">
       <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
         {contests.map((contest) => (
-          <div className="border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <ContestCard key={contest.id} contest={contest} />
+          <div
+            key={contest.id}
+            className="border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          >
+            <ContestCard contest={contest} />
           </div>
         ))}
       </div>

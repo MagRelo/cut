@@ -100,31 +100,27 @@ export const Sell = () => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-blue-600">Sell CUT → Get USDC</h3>
+      <h3 className="text-lg font-semibold mb-4 text-blue-600">Withdraw</h3>
 
       <div className="space-y-4">
         {/* Available Balance */}
         <div className="bg-gray-50 p-3 rounded-md">
-          <div className="text-sm font-medium text-gray-700 mb-1">Available CUT Balance</div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Available Balance</div>
           <div className="text-lg font-semibold text-blue-600 mb-2">
-            {formattedBalance(platformTokenBalance?.value ?? 0n, 18)} CUT
-          </div>
-          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
-          <div className="text-lg font-semibold text-blue-600 mb-2">
-            1 CUT = {formattedBalance(exchangeRate, 18)} USDC
+            ${formattedBalance(platformTokenBalance?.value ?? 0n, 18)}
           </div>
         </div>
 
         <div>
           <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            CUT Amount to Sell
+            Amount to Withdraw
           </label>
           <input
             id="sell-amount"
             type="number"
             value={sellAmount}
             onChange={(e) => setSellAmount(e.target.value)}
-            placeholder="Enter CUT amount"
+            placeholder="Enter amount"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isProcessing}
           />

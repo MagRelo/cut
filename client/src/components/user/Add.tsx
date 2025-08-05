@@ -121,7 +121,7 @@ export const Add = () => {
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="space-y-4">
         {/* Available Balance */}
-        <h3 className="text-lg font-semibold mb-4 text-green-600">Deposit USDC → Get CUT</h3>
+        <h3 className="text-lg font-semibold mb-4 text-green-600">Deposit USDC</h3>
         <div className="text-sm text-gray-600 mt-1">
           {/* USDC explanation */}
           <div className="text-sm font-medium text-gray-700">
@@ -154,10 +154,6 @@ export const Add = () => {
           <div className="text-sm font-medium text-gray-700 mb-1">Available USDC Balance</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
             ${formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
-          </div>
-          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
-          <div className="text-lg font-semibold text-green-600 mb-2">
-            1 USDC = {formattedBalance(exchangeRate, 18)} CUT
           </div>
         </div>
         <div>

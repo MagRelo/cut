@@ -29,7 +29,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
         <CutAmountDisplay
           amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
-          label="Cut"
+          label="Pot"
           logoPosition="right"
         />
       </div>

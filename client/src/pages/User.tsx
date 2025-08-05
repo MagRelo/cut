@@ -7,7 +7,7 @@ import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { PageHeader } from "../components/util/PageHeader";
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
 import { getContractAddress } from "../utils/contractConfig";
-import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
+// import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
@@ -71,20 +71,20 @@ export function UserPage() {
       <PageHeader title="Account" className="mb-3" />
 
       {/* Account Settings */}
-      <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <div className="bg-white rounded-lg shadow p-4 mb-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
           {/* Available Balance */}
-          <div className="text-lg font-semibold text-gray-700 font-display">CUT Balance</div>
-          <CutAmountDisplay
-            amount={Number(formattedPlatformBalance(platformTokenBalance?.value ?? 0n))}
-            label={platformTokenBalance?.symbol}
-            logoPosition="right"
-          />
+          <div className="text-lg font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">
+            ${formattedPlatformBalance(platformTokenBalance?.value ?? 0n)}
+          </div>
+
           {/* Yield */}
           <div className="text-lg font-semibold text-gray-700 font-display">Yield</div>
           <div className="text-lg font-semibold text-gray-700 font-display">{yieldPercentage}%</div>
         </div>
-        <hr className="mt-6 mb-4" />
+
+        <hr className="my-4" />
 
         {/* Treasury Operations */}
         <div className="flex justify-center gap-2">
@@ -92,13 +92,13 @@ export function UserPage() {
             to="/add"
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Add CUT
+            Deposit
           </Link>
           <Link
             to="/sell"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Sell CUT
+            Withdraw
           </Link>
           <Link
             to="/transfer"

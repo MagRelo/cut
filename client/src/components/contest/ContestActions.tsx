@@ -320,7 +320,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
               {getStatusMessages("idle", isSending, isConfirming)}
             </div>
           ) : (
-            "Join Contest"
+            "Join Contest" + " - $" + contest.settings?.fee
           )}
         </button>
       )}
