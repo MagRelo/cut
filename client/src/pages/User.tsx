@@ -80,7 +80,14 @@ export function UserPage() {
           </div>
 
           {/* Yield */}
-          <div className="text-lg font-semibold text-gray-700 font-display">Yield</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">
+            Yield
+            {/* "whats this?" link that leads to /treasury */}
+            <Link to="/treasury" className="text-gray-500 hover:text-gray-700 ml-2 text-sm">
+              {" "}
+              What's this?
+            </Link>
+          </div>
           <div className="text-lg font-semibold text-gray-700 font-display">{yieldPercentage}%</div>
         </div>
 

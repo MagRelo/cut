@@ -125,7 +125,8 @@ export const Deposit = () => {
         <div className="text-sm text-gray-600 mt-1">
           {/* USDC explanation */}
           <div className="text-sm font-medium text-gray-700">
-            USDC can be purchased using credit cards, bank transfers, and crypto options.{" "}
+            USDC is a digital coin that is always worth one U.S. dollar. USDC can be purchased using
+            credit cards, bank transfers, and crypto options.{" "}
             <a
               href={`https://stg.id.porto.sh/`}
               target="_blank"

@@ -89,6 +89,30 @@ export function TreasuryPage() {
       />
       <PageHeader title="Treasury" className="mb-3" />
 
+      {/* Yield Information Card */}
+      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-green-800 font-display mb-2">
+          Yield Information
+        </div>
+        <ul className="text-sm text-green-700 list-disc list-outside space-y-1 pl-4">
+          <li>
+            All deposits are continuously earning yield by providing liquidity to{" "}
+            <a
+              href="https://app.compound.finance/markets/usdc-basemainnet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Compound Finance
+            </a>
+            .
+          </li>
+          <li>Yield rates are dynamic and change based on market conditions.</li>
+          <li>All yield is automatically compounded.</li>
+          <li>When you withdraw, you receive your original deposit + accumulated yield.</li>
+        </ul>
+      </div>
+
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Platform Treasury
@@ -155,29 +179,6 @@ export function TreasuryPage() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Yield Information Card */}
-      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-green-800 font-display mb-2">
-          Yield Information
-        </div>
-        <ul className="text-sm text-green-700 list-disc list-outside space-y-1 pl-4">
-          <li>
-            All deposits are continuously earning yield through{" "}
-            <a
-              href="https://app.compound.finance/markets/usdc-basemainnet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Compound Finance
-            </a>
-            . Yield rates are dynamic and change based on market conditions.
-          </li>
-          <li>All yield is automatically compounded.</li>
-          <li>When you withdraw, you receive your original deposit + accumulated yield.</li>
-        </ul>
       </div>
 
       {/* <div className="bg-white rounded-lg shadow p-4 mb-4">
