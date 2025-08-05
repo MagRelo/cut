@@ -118,46 +118,50 @@ export const Add = () => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-green-600">Add USDC → Get CUT</h3>
-
       <div className="space-y-4">
         {/* Available Balance */}
-        <div className="bg-gray-50 p-3 rounded-md">
-          <div className="text-sm font-medium text-gray-700 mb-1">Available USDC Balance</div>
-          <div className="text-lg font-semibold text-green-600">
-            {formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
-            <div className="text-sm text-gray-600 mt-1">
-              <a
-                href={`https://stg.id.porto.sh/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-600"
+        <h3 className="text-lg font-semibold mb-4 text-green-600">Deposit USDC → Get CUT</h3>
+        <div className="text-sm text-gray-600 mt-1">
+          {/* USDC explanation */}
+          <div className="text-sm font-medium text-gray-700">
+            USDC can be purchased using credit cards, bank transfers, and crypto options.{" "}
+            <a
+              href={`https://stg.id.porto.sh/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-600"
+            >
+              Purchase USDC
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 inline ml-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <div className="flex items-center gap-1">
-                  Add Funds
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </div>
-              </a>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </a>
           </div>
         </div>
-
+        <div className="bg-gray-50 p-3 rounded-md">
+          <div className="text-sm font-medium text-gray-700 mb-1">Available USDC Balance</div>
+          <div className="text-lg font-semibold text-green-600 mb-2">
+            ${formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
+          </div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
+          <div className="text-lg font-semibold text-green-600 mb-2">
+            1 USDC = {formattedBalance(exchangeRate as bigint, 18)} CUT
+          </div>
+        </div>
         <div>
           <label htmlFor="add-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            USDC Amount to Add
+            USDC Amount to Deposit
           </label>
           <input
             id="add-amount"
@@ -174,9 +178,7 @@ export const Add = () => {
             </div>
           )}
         </div>
-
         {addError && <div className="text-red-600 text-sm">{addError}</div>}
-
         <button
           onClick={handleAdd}
           disabled={!isConnected || !addAmount || isProcessing}
@@ -188,7 +190,7 @@ export const Add = () => {
               {isPending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Add USDC"
+            "Deposit USDC"
           )}
         </button>
       </div>

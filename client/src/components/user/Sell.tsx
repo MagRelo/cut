@@ -105,8 +105,12 @@ export const Sell = () => {
         {/* Available Balance */}
         <div className="bg-gray-50 p-3 rounded-md">
           <div className="text-sm font-medium text-gray-700 mb-1">Available CUT Balance</div>
-          <div className="text-lg font-semibold text-blue-600">
+          <div className="text-lg font-semibold text-blue-600 mb-2">
             {formattedBalance(platformTokenBalance?.value ?? 0n, 18)} CUT
+          </div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
+          <div className="text-lg font-semibold text-blue-600 mb-2">
+            1 CUT = {formattedBalance(exchangeRate as bigint, 18)} USDC
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { useAccount, useBalance, useDisconnect } from "wagmi";
+import { useAccount, useBalance, useDisconnect, useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
+import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -43,6 +44,17 @@ export function UserPage() {
     return Number(formatUnits(balance, 6)).toFixed(2);
   };
 
+  // get yield value
+  const { data: yieldValue } = useReadContract({
+    address: platformTokenAddress as `0x${string}`,
+    abi: PlatformTokenContract.abi,
+    functionName: "getYield",
+  });
+
+  // Calculate yield percentage
+  const yieldPercentage =
+    yieldValue && typeof yieldValue === "bigint" && yieldValue > 0n ? "100.00" : "0.00";
+
   // if user is not connected, show the connect component
   if (!user) {
     return (
@@ -62,12 +74,15 @@ export function UserPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
           {/* Available Balance */}
-          <div className="text-lg font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">CUT Balance</div>
           <CutAmountDisplay
             amount={Number(formattedPlatformBalance(platformTokenBalance?.value ?? 0n))}
             label={platformTokenBalance?.symbol}
             logoPosition="right"
           />
+          {/* Yield */}
+          <div className="text-lg font-semibold text-gray-700 font-display">Yield</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">{yieldPercentage}%</div>
         </div>
         <hr className="mt-6 mb-4" />
 

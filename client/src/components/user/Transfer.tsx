@@ -50,7 +50,7 @@ export const Transfer = () => {
 
   return (
     <div className="">
-      <p className="text-sm text-gray-500 mb-2">
+      <p className="text-sm text-gray-700 mb-2">
         Use this form to transfer CUT directly to another user. This cannot be undone.
       </p>
 
