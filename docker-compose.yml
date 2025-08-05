@@ -9,7 +9,6 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://user:password@db:5432/betthecut
       - JWT_SECRET=your-secret-here
-      - HYPERLIQUID_API_KEY=your-api-key
     depends_on:
       - db
 

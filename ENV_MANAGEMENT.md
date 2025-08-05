@@ -81,11 +81,6 @@ EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 EMAIL_FROM=your_email@example.com
 
-# Hyperliquid Configuration
-
-HYPERLIQUID_API_URL=https://api.hyperliquid.xyz
-HYPERLIQUID_WALLET_PRIVATE_KEY=your_wallet_private_key
-
 # PGA Tour API Configuration
 
 PGA_API_KEY=your_pga_api_key
@@ -113,7 +108,6 @@ VITE_ENABLE_ANALYTICS=false
 VITE_ERROR_REPORTING=false
 
 # External Services
-VITE_HYPERLIQUID_API_URL=https://api.hyperliquid.xyz
 ```
 
 Note: All client-side environment variables must be prefixed with `VITE_` to be exposed to the Vite application.

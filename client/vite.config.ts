@@ -41,7 +41,6 @@ export default defineConfig(({ mode }) => {
       // Expose env variables to the client
       "process.env.VITE_NODE_ENV": JSON.stringify(env.VITE_NODE_ENV),
       "process.env.VITE_API_URL": JSON.stringify(env.VITE_API_URL),
-      "process.env.VITE_HYPERLIQUID_API_URL": JSON.stringify(env.VITE_HYPERLIQUID_API_URL),
     },
   };
 });

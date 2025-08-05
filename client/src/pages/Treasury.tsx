@@ -69,17 +69,17 @@ export function TreasuryPage() {
     : "1.00";
 
   // Calculate yield percentage
-  const yieldPercentage =
-    compoundYield &&
-    totalUSDCBalance &&
-    typeof totalUSDCBalance === "bigint" &&
-    totalUSDCBalance > 0n
-      ? (
-          (Number(formatUnits(compoundYield as bigint, 6)) /
-            Number(formatUnits(totalUSDCBalance, 6))) *
-          100
-        ).toFixed(4)
-      : "0.0000";
+  // const yieldPercentage =
+  //   compoundYield &&
+  //   totalUSDCBalance &&
+  //   typeof totalUSDCBalance === "bigint" &&
+  //   totalUSDCBalance > 0n
+  //     ? (
+  //         (Number(formatUnits(compoundYield as bigint, 6)) /
+  //           Number(formatUnits(totalUSDCBalance, 6))) *
+  //         100
+  //       ).toFixed(4)
+  //     : "0.0000";
 
   return (
     <div className="p-4">
