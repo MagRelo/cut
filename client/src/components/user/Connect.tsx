@@ -70,7 +70,7 @@ export function Connect() {
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       {/* logo from Home page */}
-      <div className="flex items-center justify-center gap-4 mt-4 mb-4">
+      <div className="flex items-center justify-center gap-3 mt-4 mb-4">
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
         <h1 className="text-6xl font-bold text-black">
@@ -81,7 +81,7 @@ export function Connect() {
 
       <div className="flex flex-col items-center gap-2 mb-4">
         {/* add a TOC checkbox */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 font-display">
           <input
             type="checkbox"
             id="toc"
