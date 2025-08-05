@@ -13,13 +13,13 @@ import { treasuryAddress, paymentTokenAddress } from "../../utils/contracts/sepo
 import TreasuryContract from "../../utils/contracts/Treasury.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
-export const Add = () => {
+export const Deposit = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  // Add form state
-  const [addAmount, setAddAmount] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
+  // Deposit form state
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositError, setDepositError] = useState<string | null>(null);
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
@@ -40,25 +40,25 @@ export const Add = () => {
     functionName: "getExchangeRate",
   });
 
-  const handleAdd = async () => {
-    if (!isConnected || !addAmount) {
-      setAddError("Please enter an amount");
+  const handleDeposit = async () => {
+    if (!isConnected || !depositAmount) {
+      setDepositError("Please enter an amount");
       return;
     }
 
     try {
-      setAddError(null);
+      setDepositError(null);
 
       // Convert amount to USDC units (6 decimals)
-      const usdcAmount = parseUnits(addAmount, 6);
+      const usdcAmount = parseUnits(depositAmount, 6);
 
       // Check if user has enough USDC
       if (usdcBalance && usdcBalance.value < usdcAmount) {
-        setAddError("Insufficient USDC balance");
+        setDepositError("Insufficient USDC balance");
         return;
       }
 
-      // Execute the add transaction with approval
+      // Execute the deposit transaction with approval
       sendCalls({
         calls: [
           // First approve the Treasury to spend USDC
@@ -79,7 +79,7 @@ export const Add = () => {
             functionName: "approve",
             to: paymentTokenAddress as `0x${string}`,
           },
-          // Then add USDC to Treasury
+          // Then deposit USDC to Treasury
           {
             abi: TreasuryContract.abi,
             args: [usdcAmount],
@@ -89,18 +89,18 @@ export const Add = () => {
         ],
       });
     } catch (error) {
-      console.error("Error adding to treasury:", error);
-      setAddError("Failed to add to treasury");
+      console.error("Error depositing to treasury:", error);
+      setDepositError("Failed to deposit to treasury");
     }
   };
 
-  // Calculate platform token amount based on exchange rate (for add)
+  // Calculate platform token amount based on exchange rate (for deposit)
   const calculatePlatformTokenAmount = () => {
-    if (!addAmount || !exchangeRate) return "0";
+    if (!depositAmount || !exchangeRate) return "0";
     try {
       // Since exchange rate is 1, 1 USDC = 1 CUT
       // But we need to account for different decimals: USDC (6) vs CUT (18)
-      const usdcAmount = parseUnits(addAmount, 6);
+      const usdcAmount = parseUnits(depositAmount, 6);
       // Convert USDC amount to CUT amount (multiply by 10^12 to account for decimal difference)
       const platformTokenAmount = usdcAmount * parseUnits("1", 12); // 18 - 6 = 12
       return formatUnits(platformTokenAmount, 18);
@@ -157,28 +157,28 @@ export const Add = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="add-amount" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="deposit-amount" className="block text-sm font-medium text-gray-700 mb-2">
             USDC Amount to Deposit
           </label>
           <input
-            id="add-amount"
+            id="deposit-amount"
             type="number"
-            value={addAmount}
-            onChange={(e) => setAddAmount(e.target.value)}
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(e.target.value)}
             placeholder="Enter USDC amount"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             disabled={isProcessing}
           />
-          {addAmount && (
+          {depositAmount && (
             <div className="text-sm text-gray-600 mt-1">
               You will receive approximately {calculatePlatformTokenAmount()} CUT
             </div>
           )}
         </div>
-        {addError && <div className="text-red-600 text-sm">{addError}</div>}
+        {depositError && <div className="text-red-600 text-sm">{depositError}</div>}
         <button
-          onClick={handleAdd}
-          disabled={!isConnected || !addAmount || isProcessing}
+          onClick={handleDeposit}
+          disabled={!isConnected || !depositAmount || isProcessing}
           className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded inline-flex items-center justify-center gap-2"
         >
           {isProcessing ? (

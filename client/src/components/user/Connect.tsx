@@ -16,6 +16,7 @@ export function Connect() {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
+  const [tocAccepted, setTocAccepted] = useState(false);
   const { disconnect } = useDisconnect();
 
   // Helper function to get status display text
@@ -68,10 +69,41 @@ export function Connect() {
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <div className="flex flex-col gap-2">
+      {/* logo from Home page */}
+      <div className="flex items-center justify-center gap-4 mt-4 mb-4">
+        <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
+
+        <h1 className="text-6xl font-bold text-black">
+          the Cut
+          <div className="text-2xl font-bold text-gray-400 mb-3">Fantasy Golf</div>
+        </h1>
+      </div>
+
+      <div className="flex flex-col items-center gap-2 mb-4">
+        {/* add a TOC checkbox */}
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            type="checkbox"
+            id="toc"
+            checked={tocAccepted}
+            onChange={(e) => setTocAccepted(e.target.checked)}
+          />
+          <label htmlFor="toc">
+            I agree to the{" "}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Terms of Service
+            </a>
+          </label>
+        </div>
+
         <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-          disabled={isConnecting}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 min-w-48"
+          disabled={isConnecting || !tocAccepted}
           key={connector.uid}
           onClick={handleConnect}
           type="button"
@@ -80,21 +112,20 @@ export function Connect() {
         </button>
       </div>
 
-      {/* Add status display */}
-      <div className="mt-2 text-sm text-center">
-        {/* Connecting display */}
-        {isConnecting && (
+      {/* Connecting display */}
+      {isConnecting && (
+        <div className="mt-2 text-sm text-center">
           <div className="flex items-center gap-2 w-full justify-center text-gray-600">
             <LoadingSpinnerSmall color={"green"} />
             {getStatusText()}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Error display */}
-        {connectionStatus === ConnectionStatus.ERROR && (
-          <div className="text-red-500">{error?.message}</div>
-        )}
-      </div>
+      {/* Error display */}
+      {connectionStatus === ConnectionStatus.ERROR && (
+        <div className="text-red-500 mt-2 text-sm">{error?.message}</div>
+      )}
     </div>
   );
 }

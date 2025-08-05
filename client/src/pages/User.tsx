@@ -89,13 +89,13 @@ export function UserPage() {
         {/* Treasury Operations */}
         <div className="flex justify-center gap-2">
           <Link
-            to="/add"
+            to="/deposit"
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
             Deposit
           </Link>
           <Link
-            to="/sell"
+            to="/withdraw"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
             Withdraw

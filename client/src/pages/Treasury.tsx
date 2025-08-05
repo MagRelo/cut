@@ -162,14 +162,22 @@ export function TreasuryPage() {
         <div className="text-lg font-semibold text-green-800 font-display mb-2">
           Yield Information
         </div>
-        <div className="text-sm text-green-700">
-          <p className="mb-2">• Yield is earned continuously through Compound V3 Comet</p>
-          <p className="mb-2">• All yield is automatically compounded</p>
-          <p className="mb-2">
-            • When you withdraw, you receive your original deposit + accumulated yield
-          </p>
-          <p>• Yield rates are dynamic and change based on market conditions</p>
-        </div>
+        <ul className="text-sm text-green-700 list-disc list-outside space-y-1 pl-4">
+          <li>
+            All deposits are continuously earning yield through{" "}
+            <a
+              href="https://app.compound.finance/markets/usdc-basemainnet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Compound Finance
+            </a>
+            . Yield rates are dynamic and change based on market conditions.
+          </li>
+          <li>All yield is automatically compounded.</li>
+          <li>When you withdraw, you receive your original deposit + accumulated yield.</li>
+        </ul>
       </div>
 
       {/* <div className="bg-white rounded-lg shadow p-4 mb-4">

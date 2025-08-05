@@ -13,13 +13,13 @@ import { platformTokenAddress, treasuryAddress } from "../../utils/contracts/sep
 import TreasuryContract from "../../utils/contracts/Treasury.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
-export const Sell = () => {
+export const Withdraw = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  // Sell form state
-  const [sellAmount, setSellAmount] = useState("");
-  const [sellError, setSellError] = useState<string | null>(null);
+  // Withdraw form state
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
@@ -40,25 +40,25 @@ export const Sell = () => {
     functionName: "getExchangeRate",
   });
 
-  const handleSell = async () => {
-    if (!isConnected || !sellAmount) {
-      setSellError("Please enter an amount");
+  const handleWithdraw = async () => {
+    if (!isConnected || !withdrawAmount) {
+      setWithdrawError("Please enter an amount");
       return;
     }
 
     try {
-      setSellError(null);
+      setWithdrawError(null);
 
       // Convert amount to platform token units (18 decimals)
-      const platformTokenAmount = parseUnits(sellAmount, 18);
+      const platformTokenAmount = parseUnits(withdrawAmount, 18);
 
       // Check if user has enough platform tokens
       if (platformTokenBalance && platformTokenBalance.value < platformTokenAmount) {
-        setSellError("Insufficient platform token balance");
+        setWithdrawError("Insufficient platform token balance");
         return;
       }
 
-      // Execute the sell transaction
+      // Execute the withdraw transaction
       sendCalls({
         calls: [
           {
@@ -70,18 +70,18 @@ export const Sell = () => {
         ],
       });
     } catch (error) {
-      console.error("Error selling from treasury:", error);
-      setSellError("Failed to sell from treasury");
+      console.error("Error withdrawing from treasury:", error);
+      setWithdrawError("Failed to withdraw from treasury");
     }
   };
 
-  // Calculate USDC amount based on exchange rate (for sell)
+  // Calculate USDC amount based on exchange rate (for withdraw)
   const calculateUSDCAmount = () => {
-    if (!sellAmount || !exchangeRate) return "0";
+    if (!withdrawAmount || !exchangeRate) return "0";
     try {
       // Since exchange rate is 1, 1 CUT = 1 USDC
       // But we need to account for different decimals: CUT (18) vs USDC (6)
-      const platformTokenAmount = parseUnits(sellAmount, 18);
+      const platformTokenAmount = parseUnits(withdrawAmount, 18);
       // Convert CUT amount to USDC amount (divide by 10^12 to account for decimal difference)
       const usdcAmount = platformTokenAmount / parseUnits("1", 12); // 18 - 6 = 12
       return formatUnits(usdcAmount, 6); // USDC has 6 decimals
@@ -112,30 +112,30 @@ export const Sell = () => {
         </div>
 
         <div>
-          <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="withdraw-amount" className="block text-sm font-medium text-gray-700 mb-2">
             Amount to Withdraw
           </label>
           <input
-            id="sell-amount"
+            id="withdraw-amount"
             type="number"
-            value={sellAmount}
-            onChange={(e) => setSellAmount(e.target.value)}
+            value={withdrawAmount}
+            onChange={(e) => setWithdrawAmount(e.target.value)}
             placeholder="Enter amount"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isProcessing}
           />
-          {sellAmount && (
+          {withdrawAmount && (
             <div className="text-sm text-gray-600 mt-1">
               You will receive approximately ${calculateUSDCAmount()} USDC
             </div>
           )}
         </div>
 
-        {sellError && <div className="text-red-600 text-sm">{sellError}</div>}
+        {withdrawError && <div className="text-red-600 text-sm">{withdrawError}</div>}
 
         <button
-          onClick={handleSell}
-          disabled={!isConnected || !sellAmount || isProcessing}
+          onClick={handleWithdraw}
+          disabled={!isConnected || !withdrawAmount || isProcessing}
           className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded inline-flex items-center justify-center gap-2"
         >
           {isProcessing ? (
@@ -144,7 +144,7 @@ export const Sell = () => {
               {isPending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Sell USDC"
+            "Withdraw USDC"
           )}
         </button>
       </div>
