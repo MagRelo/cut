@@ -60,7 +60,7 @@ app.use(express.json());
 
 // Serve static files from the public directory
 app.use(
-  express.static('dist/public/dist', {
+  express.static('public/dist', {
     maxAge: '1h', // Cache for 1 hour
     etag: true, // Enable ETag
     lastModified: true, // Enable Last-Modified
@@ -84,7 +84,7 @@ app.get('*', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.sendFile('index.html', { root: 'dist/public/dist' });
+  res.sendFile('index.html', { root: 'public/dist' });
 });
 
 // Error handling

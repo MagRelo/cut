@@ -21,13 +21,14 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className='p-4 sm:p-6 border-b border-gray-200'>
             <div className='space-y-0.5 pb-2 border-b border-gray-300'>
               <Dialog.Title className='text-3xl font-bold tracking-tight text-gray-900'>
-                2025 Wyndham Championship
+                2025 FedEx St. Jude Championship
               </Dialog.Title>
               <p className='text-lg tracking-tight text-gray-600 font-medium'>
-                Sedgefield Country Club, Greensboro, North Carolina
+                TPC Southwind, Memphis, Tennessee
               </p>
               <p className='text-sm text-gray-500 font-medium'>
-                July 30–August 3, 2025 • 86th annual
+                August 7–10, 2025 • The opening event of the 2025 FedExCup
+                Playoffs
               </p>
             </div>
 
@@ -39,23 +40,24 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Established:</strong> 1938 (originally the Greater
-                    Greensboro Open), the seventh-oldest event on the PGA Tour.
+                    <strong>Established:</strong> 1967 (as the Westchester
+                    Classic), later transitioning to Memphis and rebranded the
+                    St. Jude Championship as the FedEx Playoffs opener.
                   </li>
                   <li>
-                    <strong>Venue:</strong> Sedgefield Country Club, a Donald
-                    Ross-designed course, has hosted since 2008 and was part of
-                    the tournament's early years, featuring a classic layout
-                    rewarding precision and iron play.
+                    <strong>Venue:</strong> TPC Southwind, a challenging course
+                    known for penal rough, water threats, and demanding approach
+                    shots, has hosted since 2022.
                   </li>
                   <li>
-                    <strong>Legacy:</strong> Sam Snead holds the all-time record
-                    with eight wins, the most at any one PGA Tour event. The
-                    event has been a showcase for both legends (Byron Nelson,
-                    Ben Hogan, Seve Ballesteros, Gary Player) and breakthrough
-                    winners. It's known for drama, low scores, and was the first
-                    PGA event in the South to allow Black players (Charlie
-                    Sifford, 1961).
+                    <strong>Legacy:</strong> A staple on the PGA Tour and now
+                    the gateway to the FedExCup's three-event playoff series.
+                    The event raises millions for St. Jude Children's Research
+                    Hospital and has featured many world-class champions.
+                  </li>
+                  <li>
+                    <strong>Past Memphis Winners:</strong> Hideki Matsuyama
+                    (2024), Will Zalatoris (2023), Tony Finau (2022).
                   </li>
                 </ul>
 
@@ -64,28 +66,31 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Field:</strong> 156 players, many outside the
-                    world's top rankings as stars have largely locked FedExCup
-                    spots.
+                    <strong>Field:</strong> The top 70 players in the FedExCup
+                    standings qualify, making it the most competitive lineup of
+                    the year—there is no cut, and all players are live for
+                    playoff advancement.
                   </li>
                   <li>
-                    <strong>Matt Fitzpatrick:</strong> (+2000), the favorite
-                    after a strong summer and recent top-5 finish at The Open.
+                    <strong>Scottie Scheffler:</strong> World No. 1 and
+                    defending FedExCup champion, enters as the +280 favorite.
                   </li>
                   <li>
-                    <strong>Ben Griffin, Keegan Bradley:</strong> Both at +2500;
-                    Bradley is the only current top-10 ranked player in the
-                    field and a fan favorite.
+                    <strong>Xander Schauffele:</strong> Consistent playoff
+                    performer, second favorite (+1600).
                   </li>
                   <li>
-                    <strong>Major Champions:</strong> Jordan Spieth (+3000),
-                    Hideki Matsuyama (+3300), Adam Scott (+4500).
+                    <strong>Justin Thomas:</strong> Past FedExCup champ, strong
+                    course record (+2200).
                   </li>
                   <li>
-                    <strong>Other notables:</strong> Aaron Rai (+2000 to +2500),
-                    Robert MacIntyre (+2800), Si Woo Kim (+3000), Tom Kim,
-                    Rickie Fowler (+5000), Akshay Bhatia, Lucas Glover, Jake
-                    Knapp, Luke Clanton, Harry Hall, Kurt Kitayama.
+                    <strong>Tommy Fleetwood:</strong> Links and playoff
+                    specialist (+2500).
+                  </li>
+                  <li>
+                    <strong>Other Notables:</strong> Collin Morikawa, Viktor
+                    Hovland, Matt Fitzpatrick, Patrick Cantlay, Jordan Spieth,
+                    Hideki Matsuyama.
                   </li>
                 </ul>
 
@@ -94,15 +99,15 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>Sedgefield Country Club:</strong> Par 70,
-                    approximately 7,127 yards. Classic Donald Ross design with
-                    tree-lined fairways, slick greens, only two par-5s, and a
-                    layout favoring accuracy and iron play over power.
+                    <strong>TPC Southwind:</strong> Par 70, 7,244 yards. Known
+                    for tight, tree-lined fairways, numerous water hazards
+                    (notably "The Waters of Southwind"), and a layout that
+                    punishes inaccuracy.
                   </li>
                   <li>
-                    <strong>Format:</strong> 72-hole stroke play, standard Tour
-                    cut after 36 holes (top 65 and ties advance for the
-                    weekend).
+                    <strong>Format:</strong> 72 holes, no cut. Top 50 in
+                    cumulative FedExCup points after this week move on to the
+                    BMW Championship; everyone else is eliminated.
                   </li>
                 </ul>
 
@@ -111,35 +116,28 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>FedExCup Playoffs Bubble:</strong> This is the final
-                    event of the regular season—only the top 70 in the FedExCup
-                    standings qualify for the playoffs, so for many players,
-                    this week is must-perform.
+                    <strong>Scheffler's Dominance:</strong> Scottie Scheffler
+                    enters as both the regular-season points leader and
+                    defending champ, aiming to maintain his historic pace.
                   </li>
                   <li>
-                    <strong>Breakthrough Potential:</strong> With most top stars
-                    absent, there's a prime chance for a breakthrough
-                    winner—eight of the last 10 Tour events featured a first- or
-                    second-time winner.
+                    <strong>Playoff Pressure:</strong> For players 40th–70th in
+                    points, every shot counts—only the top 50 advance.
                   </li>
                   <li>
-                    <strong>Bradley's Playoff Push:</strong> Keegan Bradley aims
-                    to solidify or improve his playoff and Ryder Cup standing.
+                    <strong>Bubble Drama:</strong> Expect pressure-packed
+                    moments for stars in danger of missing the BMW (last year
+                    the difference was a single stroke).
                   </li>
                   <li>
-                    <strong>Spieth & Matsuyama:</strong> Both major champions
-                    seek crucial points and momentum with playoffs and Cup
-                    captain's picks looming.
+                    <strong>New Format Impact:</strong> With only three playoff
+                    events and smaller fields, a hot week can vault a player
+                    toward the Tour Championship.
                   </li>
                   <li>
-                    <strong>Signature Event Access:</strong> The top 50 after
-                    the second FedExCup Playoff secure entry to next year's $20
-                    million events.
-                  </li>
-                  <li>
-                    <strong>Tour History:</strong> The tournament's rich
-                    tradition, Hall of Fame alumni, and unique place as a
-                    "last-chance saloon" for playoff hopefuls.
+                    <strong>Charity Impact:</strong> The event's partnership
+                    with St. Jude is among the most visible in global golf,
+                    adding another layer of meaning to the competition.
                   </li>
                 </ul>
 
@@ -148,12 +146,12 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 </h3>
                 <ul className='list-disc pl-5 space-y-1.5'>
                   <li>
-                    <strong>TV:</strong> Golf Channel (all rounds, early/NBC
-                    simulcast), CBS (final two rounds).
+                    <strong>TV:</strong> Golf Channel (early/Thursday–Friday),
+                    NBC (weekend).
                   </li>
                   <li>
-                    <strong>Streaming:</strong> PGA Tour Live on ESPN+, CBS All
-                    Access, official tournament website coverage.
+                    <strong>Streaming:</strong> PGA Tour Live on ESPN+, Peacock,
+                    NBC Sports App.
                   </li>
                 </ul>
 
@@ -178,7 +176,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Dates
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          July 30–August 3, 2025
+                          August 7–10, 2025
                         </td>
                       </tr>
                       <tr>
@@ -186,7 +184,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Venue
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Sedgefield Country Club, Greensboro, NC
+                          TPC Southwind, Memphis, Tennessee
                         </td>
                       </tr>
                       <tr>
@@ -194,7 +192,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Field Size
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          156
+                          70 (no cut)
                         </td>
                       </tr>
                       <tr>
@@ -202,7 +200,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Defending Champ
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Aaron Rai
+                          Hideki Matsuyama
                         </td>
                       </tr>
                       <tr>
@@ -210,17 +208,17 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Top Favorites
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Fitzpatrick, Ben Griffin, Keegan Bradley, Jordan
-                          Spieth, Hideki Matsuyama, Adam Scott
+                          Scottie Scheffler, Xander Schauffele, Justin Thomas,
+                          Tommy Fleetwood
                         </td>
                       </tr>
                       <tr>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Tour Significance
+                          Playoff Format
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Final FedExCup regular season event, last playoff
-                          qualifying chance
+                          First FedExCup Playoff event – only top 50 advance to
+                          BMW Championship
                         </td>
                       </tr>
                       <tr>
@@ -228,8 +226,8 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Notable History
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Sam Snead's eight wins; 19 Hall of Fame champions;
-                          first Black player in South (1961)
+                          Formerly Westchester Classic, now major PGA Tour
+                          playoff event, Memphis host since 2022
                         </td>
                       </tr>
                       <tr>
@@ -237,7 +235,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                           Broadcast
                         </td>
                         <td className='border border-gray-300 px-3 py-2 text-sm text-gray-900'>
-                          Golf Channel, CBS, ESPN+, CBS All Access
+                          Golf Channel, NBC, ESPN+, Peacock
                         </td>
                       </tr>
                     </tbody>
