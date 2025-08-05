@@ -59,7 +59,6 @@ export function UserPage() {
   if (!user) {
     return (
       <div className="p-4">
-        <PageHeader title="Account" className="mb-3" />
         <Connect />
       </div>
     );

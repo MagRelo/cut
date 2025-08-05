@@ -53,7 +53,7 @@ export function TreasuryPage() {
 
   // Format platform token supply for display
   const formattedPlatformTokenSupply = platformTokenSupply
-    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(2)
+    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
     : "0.00";
 
   // Get exchange rate
@@ -65,7 +65,7 @@ export function TreasuryPage() {
 
   // Format exchange rate for display (convert from 18 decimals)
   const formattedExchangeRate = exchangeRate
-    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(2)
+    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(4)
     : "1.00";
 
   // Calculate yield percentage
@@ -118,24 +118,30 @@ export function TreasuryPage() {
           Platform Treasury
         </div>
 
-        <div className="grid grid-cols-[120px_1fr] gap-2">
-          {/* Treasury Balance */}
-          <div className="font-medium">Total Balance</div>
+        <div className="grid grid-cols-2 gap-2">
+          {/* Original Deposits */}
+          <div className="font-medium">
+            Deposits
+            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+          </div>
           <div className="text-right">
-            {treasuryBalanceLoading ? (
-              <span className="text-gray-400">Loading...</span>
+            {totalUSDCBalanceLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `$${formattedTreasuryBalance}`
+              `$${formattedTotalUSDCBalance}`
             )}
           </div>
 
-          {/* Original Deposits */}
-          <div className="font-medium">Deposits</div>
+          {/* Treasury Balance */}
+          <div className="font-medium">
+            Balance
+            <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span>
+          </div>
           <div className="text-right">
-            {totalUSDCBalanceLoading ? (
-              <span className="text-gray-400">Loading...</span>
+            {treasuryBalanceLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `$${formattedTotalUSDCBalance}`
+              `$${formattedTreasuryBalance}`
             )}
           </div>
 
@@ -143,21 +149,21 @@ export function TreasuryPage() {
           <div className="font-medium">Yield Earned</div>
           <div className="text-right">
             {compoundYieldLoading ? (
-              <span className="text-gray-400">Loading...</span>
+              <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
               `$${formattedCompoundYield}`
             )}
           </div>
 
           {/* Yield Percentage */}
-          <div className="font-medium">Yield %</div>
+          {/* <div className="font-medium">Yield %</div>
           <div className="text-right text-green-600 font-semibold">
             {compoundYieldLoading || totalUSDCBalanceLoading ? (
               <span className="text-gray-400">Loading...</span>
             ) : (
               `${yieldPercentage}%`
             )}
-          </div>
+          </div> */}
 
           {/* Platform Token Supply */}
           <div className="font-medium">CUT Supply</div>

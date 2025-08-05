@@ -19,6 +19,7 @@ export const Contests: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const contestApi = useContestApi();
   const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
@@ -53,8 +54,13 @@ export const Contests: React.FC = () => {
     return false;
   });
 
-  // Determine default tab based on whether user has entered any contests
-  const defaultTabIndex = userContests.length > 0 ? 0 : 1;
+  // Update selected tab when data changes
+  useEffect(() => {
+    if (!loading) {
+      const newTabIndex = userContests.length > 0 ? 0 : 1;
+      setSelectedTabIndex(newTabIndex);
+    }
+  }, [userContests.length, loading]);
 
   return (
     <div className="space-y-4 p-4">
@@ -83,7 +89,7 @@ export const Contests: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow">
-        <TabGroup defaultIndex={defaultTabIndex}>
+        <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
               className={({ selected }: { selected: boolean }) =>
