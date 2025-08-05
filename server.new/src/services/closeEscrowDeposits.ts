@@ -13,35 +13,25 @@ import Escrow from '../../contracts/Escrow.json' with { type: 'json' };
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.ORACLE_PRIVATE_KEY!, provider);
 
-export async function closeContest() {
+export async function closeEscrowDeposits() {
   try {
-    // Get all open contests
+    // Get all open contests with tournaments in progress
     const contests = await prisma.contest.findMany({
       where: {
         status: 'OPEN',
+        tournament: {
+          status: 'IN_PROGRESS',
+        },
       },
       include: {
         tournament: true,
-        contestLineups: {
-          include: {
-            user: true,
-          },
-          orderBy: {
-            score: 'desc',
-          },
-        },
       },
     });
 
-    console.log(`Found ${contests.length} open contests`);
+        console.log(`Found ${contests.length} open contests with tournaments in progress`);
 
     for (const contest of contests) {
-      // Only proceed if tournament is still in progress
-      if (contest.tournament.status !== 'IN_PROGRESS') {
-        continue;
-      }
-
-      console.log(`Closing contest: ${contest.id} - ${contest.name}`);
+      console.log(`Closing escrow deposits for ${contest.name}`);
 
       // Initialize escrow contract
       const escrowContract = new ethers.Contract(
@@ -68,7 +58,7 @@ export async function closeContest() {
         continue;
       }
 
-      // Close deposits on blockchain (equivalent to closeEntry in old Contest)
+      // Close deposits on blockchain. this sets the contract state to "IN_PROGRESS"
       const closeTx = await escrowContract.closeDeposits();
       console.log(`Close tx: ${closeTx.hash}`);
       await closeTx.wait();
@@ -76,26 +66,26 @@ export async function closeContest() {
       // Update contest status in database
       await prisma.contest.update({
         where: { id: contest.id },
-        data: { status: 'CLOSED' },
+        data: { status: 'IN_PROGRESS' },
       });
 
-      console.log(`Closed contest: ${contest.id} - ${contest.name}`);
+      console.log(`Closed escrow deposits for ${contest.name}`);
     }
   } catch (error) {
-    console.error('Error closing contests:', error);
+    console.error('Error closing escrow deposits:', error);
     throw error;
   }
 }
 
 // Main execution block
 if (import.meta.url === `file://${process.argv[1]}`) {
-  closeContest()
+  closeEscrowDeposits()
     .then(() => {
-      console.log('Contest close completed');
+      console.log('Escrow deposits closed');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('ContestLineups update failed:', error);
+      console.error('Escrow deposits close failed:', error);
       process.exit(1);
     });
 }

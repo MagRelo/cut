@@ -4,6 +4,7 @@ import tournamentRoutes from "./tournament.js";
 import lineupRoutes from "./lineup.js";
 import contestRoutes from "./contest.js";
 import portoRoutes from "./porto.js";
+import cronRoutes from "./cron.js";
 // import userRoutes from "./user.js";
 
 const router = Router();
@@ -28,5 +29,8 @@ router.use("/auth", authRoutes);
 
 // Porto routes
 router.use("/porto", portoRoutes);
+
+// Cron routes
+router.use("/cron", cronRoutes);
 
 export default router;

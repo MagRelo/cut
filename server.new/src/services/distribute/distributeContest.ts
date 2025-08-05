@@ -16,10 +16,13 @@ const wallet = new ethers.Wallet(process.env.ORACLE_PRIVATE_KEY!, provider);
 
 export async function distributeContest() {
   try {
-    // Get all open contests
+    // Get all contests where tournament is COMPLETED but contest is IN_PROGRESS
     const contests = await prisma.contest.findMany({
       where: {
-        status: 'OPEN',
+        status: 'IN_PROGRESS',
+        tournament: {
+          status: 'COMPLETED',
+        },
       },
       include: {
         tournament: true,
@@ -65,7 +68,7 @@ export async function distributeContest() {
         const escrowState = await escrowContract.state();
         if (escrowState !== 0) {
           // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
-          await updateContestToError(contest.id, 'Open Contest in DB is not open in blockchain');
+          await updateContestToError(contest.id, 'IN_PROGRESS Contest in DB is not open in blockchain');
           continue;
         }
 
@@ -138,7 +141,10 @@ export async function distributeContest() {
           },
         });
 
-        console.log(`Distributed contest: ${contest.id} - ${contest.name}`);
+        console.log(`✅ Successfully distributed and settled contest: ${contest.id} - ${contest.name}`);
+        console.log(`   - Participants: ${participants.length}`);
+        console.log(`   - Total payout distributed: ${payouts.reduce((sum, payout) => sum + payout, 0)}`);
+        console.log(`   - Transaction hash: ${distributeTx.hash}`);
       } catch (contestError) {
         console.error(`Error processing contest ${contest?.id}:`, contestError);
         await updateContestToError(contest?.id, `Processing error: ${contestError instanceof Error ? contestError.message : String(contestError)}`);

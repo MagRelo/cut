@@ -22,6 +22,9 @@ const requiredEnvVars = [
   "BASESCAN_API_KEY",
 ];
 
+// Optional environment variables
+const ENABLE_CRON = process.env.ENABLE_CRON === "true";
+
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     throw new Error(`Missing required environment variable: ${envVar}`);
@@ -34,6 +37,9 @@ import cookieParser from "cookie-parser";
 
 // Routes
 import apiRoutes from "./routes/api.js";
+
+// Cron scheduler
+import CronScheduler from "./cron/scheduler.js";
 
 // Middleware
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
@@ -98,8 +104,26 @@ app.use(errorHandler);
 try {
   console.log("Starting server initialization...");
 
+  // Initialize cron scheduler
+  const cronScheduler = new CronScheduler(ENABLE_CRON);
+  cronScheduler.start();
+
   app.listen(port, () => {
     console.log(`[NEW]Server running on port ${port}`);
+    console.log(`[CRON] Cron scheduler ${ENABLE_CRON ? "enabled" : "disabled"}`);
+  });
+
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received, shutting down gracefully...");
+    cronScheduler.stop();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", () => {
+    console.log("SIGINT received, shutting down gracefully...");
+    cronScheduler.stop();
+    process.exit(0);
   });
 } catch (error) {
   console.error("[NEW]Server startup failed:", error);
