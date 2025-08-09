@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
@@ -8,11 +7,11 @@ services:
       POSTGRES_PASSWORD: betthecut
       POSTGRES_DB: betthecut
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U betthecut']
+      test: ["CMD-SHELL", "pg_isready -U betthecut"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -8,18 +8,17 @@ declare global {
 // Helper to safely append connection parameters
 function appendConnectionParams(url: string): string {
   const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}connection_limit=10&pool_timeout=30`;
+  // Hardcoded connection limits for development stability
+  return `${url}${separator}connection_limit=5&pool_timeout=20&connect_timeout=10&socket_timeout=10`;
 }
 
 let prismaInstance: PrismaClient | undefined;
 
 export function getPrisma() {
   if (!prismaInstance) {
-    console.log("Initializing Prisma client");
     prismaInstance =
       global.prisma ||
       new PrismaClient({
-        log: ["error", "warn"],
         datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ""),
       });
 
@@ -30,12 +29,19 @@ export function getPrisma() {
   return prismaInstance;
 }
 
-// Handle cleanup on app termination
-process.on("beforeExit", async () => {
+// Graceful shutdown handler
+async function gracefulShutdown() {
   if (prismaInstance) {
     await prismaInstance.$disconnect();
+    prismaInstance = undefined;
+    global.prisma = undefined;
   }
-});
+}
+
+// Handle cleanup on app termination
+process.on("beforeExit", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
 // Export a proxy that will lazy initialize the client
 export const prisma = new Proxy({} as PrismaClient, {
@@ -44,3 +50,6 @@ export const prisma = new Proxy({} as PrismaClient, {
     return client[prop as keyof PrismaClient];
   },
 });
+
+// Export cleanup function for manual use
+export { gracefulShutdown };

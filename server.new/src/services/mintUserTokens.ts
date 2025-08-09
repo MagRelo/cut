@@ -12,28 +12,41 @@ const contractConfig = {
     rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org'
 };
 
-// Initialize provider and wallet
+// Initialize provider
 const provider = new ethers.JsonRpcProvider(contractConfig.rpcUrl);
-const oracleWallet = new ethers.Wallet(contractConfig.oracleWalletPrivateKey, provider);
 
-// Initialize contracts
-const paymentTokenContract = new ethers.Contract(
-    contractConfig.paymentTokenAddress,
-    PaymentToken.abi,
-    oracleWallet
-);
+// Lazy initialization function for wallet and contracts
+function initializeWalletAndContracts() {
+    if (!contractConfig.oracleWalletPrivateKey) {
+        throw new Error('ORACLE_WALLET_PRIVATE_KEY environment variable is required');
+    }
+    
+    if (contractConfig.oracleWalletPrivateKey.length !== 64 && !contractConfig.oracleWalletPrivateKey.startsWith('0x')) {
+        throw new Error('Invalid private key format. Expected 64 character hex string or 0x-prefixed hex string');
+    }
+    
+    const oracleWallet = new ethers.Wallet(contractConfig.oracleWalletPrivateKey, provider);
+    
+    const paymentTokenContract = new ethers.Contract(
+        contractConfig.paymentTokenAddress,
+        PaymentToken.abi,
+        oracleWallet
+    );
 
-const tokenManagerContract = new ethers.Contract(
-    contractConfig.tokenManagerAddress,
-    TokenManager.abi,
-    oracleWallet
-);
+    const tokenManagerContract = new ethers.Contract(
+        contractConfig.tokenManagerAddress,
+        TokenManager.abi,
+        oracleWallet
+    );
 
-const platformTokenContract = new ethers.Contract(
-    contractConfig.platformTokenAddress,
-    PlatformToken.abi,
-    oracleWallet
-);
+    const platformTokenContract = new ethers.Contract(
+        contractConfig.platformTokenAddress,
+        PlatformToken.abi,
+        oracleWallet
+    );
+    
+    return { oracleWallet, paymentTokenContract, tokenManagerContract, platformTokenContract };
+}
 
 /**
  * Mints USDC(x) tokens to the oracle wallet
@@ -42,6 +55,7 @@ const platformTokenContract = new ethers.Contract(
  */
 export async function mintUSDC(amount: number = 1000) {
     try {
+        const { oracleWallet, paymentTokenContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 6); // USDC has 6 decimals
         
         console.log(`Minting ${amount} USDC(x) to oracle wallet...`);
@@ -72,6 +86,7 @@ export async function mintUSDC(amount: number = 1000) {
  */
 export async function approveTokenManagerToSpendUSDC(amount: number = 1000) {
     try {
+        const { oracleWallet, paymentTokenContract, tokenManagerContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 6);
         
         console.log(`Approving TokenManager to spend ${amount} USDC(x)...`);
@@ -112,6 +127,7 @@ export async function approveTokenManagerToSpendUSDC(amount: number = 1000) {
  */
 export async function depositUSDCToTokenManager(amount: number = 1000) {
     try {
+        const { oracleWallet, tokenManagerContract, platformTokenContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 6);
         
         console.log(`Depositing ${amount} USDC(x) into TokenManager...`);
@@ -150,6 +166,7 @@ export async function depositUSDCToTokenManager(amount: number = 1000) {
  */
 export async function transferCUTToUser(userAddress: string, amount: number = 1000) {
     try {
+        const { platformTokenContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 18); // CUT has 18 decimals
         
         console.log(`Transferring ${amount} CUT to user ${userAddress}...`);

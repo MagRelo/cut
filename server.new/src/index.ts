@@ -15,7 +15,6 @@ console.log("envFile", envFile);
 // Validate required environment variables
 const requiredEnvVars = [
   "DATABASE_URL",
-  "PGA_API_KEY",
   "ORACLE_ADDRESS",
   "ORACLE_PRIVATE_KEY",
   "RPC_URL",

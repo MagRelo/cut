@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
-import { mintUserTokens, mintAndTransferToNewUser } from "../services/mintUserTokens.js";
+import { mintAndTransferToUser } from "../services/mintUserTokens.js";
 
 import { createClient, http, hashMessage } from "viem";
 import { Chains } from "porto";
@@ -107,7 +107,7 @@ router.post("/siwe", async (req, res) => {
       if (isTokenMintingEnabled) {
         // Mint $1000 USDC(x), convert to CUT, and transfer to new user
         try {
-          await mintAndTransferToNewUser(address!.toLowerCase(), 1000);
+          await mintAndTransferToUser(address!.toLowerCase(), 1000);
           console.log(
             `Minted and transferred $1000 worth of CUT tokens to new user: ${address!.toLowerCase()}`
           );

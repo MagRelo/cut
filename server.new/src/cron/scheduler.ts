@@ -34,6 +34,14 @@ class CronScheduler {
       console.log(`[CRON] Completed job: ${jobName}`);
     } catch (error) {
       console.error(`[CRON] Error in job ${jobName}:`, error);
+
+      // If it's a connection error, wait before continuing (hardcoded 30 seconds)
+      if ((error as any)?.code === "P2037" || (error as any)?.message?.includes("connection")) {
+        console.log(
+          `[CRON] Connection error in ${jobName}, waiting 30 seconds before next attempt`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 30000));
+      }
     }
   }
 
