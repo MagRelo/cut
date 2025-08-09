@@ -73,12 +73,12 @@ export const LineupList: React.FC = () => {
 
               {/* Display players in the lineup */}
               {lineup.players && lineup.players.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {lineup.players.map((player, index) => (
                     <PlayerDisplayCard
                       key={`${lineup.id}-player-${index}`}
                       player={player}
-                      roundDisplay=""
+                      roundDisplay={currentTournament?.roundDisplay || ""}
                     />
                   ))}
                 </div>
