@@ -1,7 +1,7 @@
 {
-  "paymentTokenAddress": "0x04329E36122Ed41A79fb186df7bCA4BB73e5BFAD",
-  "platformTokenAddress": "0xA5C8397286bf9FD349A2E52DAf5FAf3242A0c3ea",
-  "treasuryAddress": "0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5",
-  "escrowFactoryAddress": "0x82B6d0600E523116A82425c0a5cDa1F8fD01653f",
-  "mockCTokenAddress": "0x7BF7cF40079f26F5CB379D40E3c6815E87386480"
+  "paymentTokenAddress": "0xFA774B0c947f1Cf892e8971F7ffA4FC1892193d6",
+  "platformTokenAddress": "0xb5Ae36A746e177762cDe851e3Ee970a45be9AD9F",
+  "tokenManagerAddress": "0xed57ed5ea897eaC25e291a314FD29420381B77a0",
+  "escrowFactoryAddress": "0x87446Ef8ff9B142ADaa8cAb44bf8B12c27E5F0C3",
+  "mockCTokenAddress": "0x87148A169503ED54b32f3cd66948292014D1c5A3"
 }
