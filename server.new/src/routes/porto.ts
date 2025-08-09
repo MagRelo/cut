@@ -29,7 +29,7 @@ async function isSponsoredContract(
     }
 
     // Check if any address matches our contracts
-    const TreasuryAddress = process.env.TREASURY?.toLowerCase();
+    const TreasuryAddress = process.env.TOKEN_MANAGER?.toLowerCase();
     const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
 
     console.log({ TreasuryAddress });
