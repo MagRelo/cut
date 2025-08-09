@@ -76,11 +76,11 @@ contract TokenManager is ReentrancyGuard, Ownable {
         _updateUserYield(msg.sender);
         
         // Mint platform tokens to user (convert to 18 decimals)
-        platformToken.mint(msg.sender, platformTokensToMint * 1e12);
+        platformToken.mint(msg.sender, platformTokensToMint);
         
         // Update token manager balances
         totalUSDCBalance += amount;
-        totalPlatformTokensMinted += platformTokensToMint;
+        totalPlatformTokensMinted += platformTokensToMint; // Already in 18 decimals
         
         // Deposit USDC to Compound for yield generation
         usdcToken.approve(address(cUSDC), amount);
@@ -126,7 +126,7 @@ contract TokenManager is ReentrancyGuard, Ownable {
         // Update token manager balances
         uint256 originalDepositAmount = platformTokenAmount / 1e12;
         totalUSDCBalance -= originalDepositAmount;
-        totalPlatformTokensMinted -= originalDepositAmount;
+        totalPlatformTokensMinted -= platformTokenAmount; // Already in 18 decimals
         
         // Update exchange rate after withdrawal
         _updateExchangeRate();
@@ -145,15 +145,9 @@ contract TokenManager is ReentrancyGuard, Ownable {
         // Update user's yield tracking before burning tokens
         _updateUserYield(msg.sender);
         
-        // Get accumulated yield
-        uint256 yieldToClaim = userAccumulatedYield[msg.sender];
-        
-        // Calculate USDC to return for platform tokens
+        // Calculate USDC to return for platform tokens (this already includes yield through exchange rate)
         uint256 usdcToReturn = calculateUSDCForPlatformTokens(platformTokenBalance);
         require(usdcToReturn > 0, "No USDC to return");
-        
-        // Total USDC to return (deposit + yield)
-        uint256 totalUSDCToReturn = usdcToReturn + yieldToClaim;
         
         // Burn all platform tokens from user
         platformToken.burn(msg.sender, platformTokenBalance);
@@ -163,14 +157,14 @@ contract TokenManager is ReentrancyGuard, Ownable {
         
         // Withdraw USDC from Compound if needed
         uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
-        if (tokenManagerUSDCBalance < totalUSDCToReturn) {
-            uint256 neededFromCompound = totalUSDCToReturn - tokenManagerUSDCBalance;
+        if (tokenManagerUSDCBalance < usdcToReturn) {
+            uint256 neededFromCompound = usdcToReturn - tokenManagerUSDCBalance;
             cUSDC.withdraw(address(usdcToken), neededFromCompound);
         }
         
         // Get the actual USDC balance after redemption
         uint256 actualUSDCBalance = usdcToken.balanceOf(address(this));
-        uint256 actualUSDCToReturn = actualUSDCBalance < totalUSDCToReturn ? actualUSDCBalance : totalUSDCToReturn;
+        uint256 actualUSDCToReturn = actualUSDCBalance < usdcToReturn ? actualUSDCBalance : usdcToReturn;
         
         // Transfer USDC to user
         usdcToken.transfer(msg.sender, actualUSDCToReturn);
@@ -178,7 +172,7 @@ contract TokenManager is ReentrancyGuard, Ownable {
         // Update token manager balances (only for the original deposit portion)
         uint256 originalDepositAmount = platformTokenBalance / 1e12;
         totalUSDCBalance -= originalDepositAmount;
-        totalPlatformTokensMinted -= originalDepositAmount;
+        totalPlatformTokensMinted -= platformTokenBalance; // Already in 18 decimals
         
         // Update exchange rate after withdrawal
         _updateExchangeRate();
@@ -192,7 +186,11 @@ contract TokenManager is ReentrancyGuard, Ownable {
         }
         
         uint256 totalValue = totalUSDCBalance + getCompoundYield();
-        return (totalValue * 1e18) / totalPlatformTokensMinted;
+        // Convert totalValue from 6 decimals to 18 decimals, then calculate exchange rate
+        // Exchange rate = (totalValue in 18 decimals) / (totalPlatformTokensMinted in 18 decimals)
+        // Result should be in 18 decimals
+        uint256 totalValue18Decimals = totalValue * 1e12;
+        return (totalValue18Decimals * 1e18) / totalPlatformTokensMinted;
     }
 
     function getTokenManagerBalance() external view returns (uint256) {
@@ -257,12 +255,16 @@ contract TokenManager is ReentrancyGuard, Ownable {
 
     function calculatePlatformTokensForUSDC(uint256 usdcAmount) internal view returns (uint256) {
         if (totalPlatformTokensMinted == 0) {
-            return usdcAmount; // 1:1 rate for first deposit
+            // First deposit: 1:1 ratio, convert USDC amount to platform tokens
+            return usdcAmount * 1e12; // Convert 6 decimals to 18 decimals
         }
         
         uint256 totalValue = totalUSDCBalance + getCompoundYield();
-        // Use higher precision calculation to avoid precision loss
-        return (usdcAmount * totalPlatformTokensMinted * 1e18) / (totalValue * 1e18);
+        // For subsequent deposits, calculate platform tokens based on proportion of total value
+        // If the new deposit represents X% of the total value, mint X% of the total platform tokens
+        uint256 newTotalValue = totalValue + usdcAmount;
+        uint256 newPlatformTokens = (usdcAmount * totalPlatformTokensMinted) / totalValue;
+        return newPlatformTokens;
     }
 
     function calculateUSDCForPlatformTokens(uint256 platformTokenAmount) internal view returns (uint256) {
@@ -270,11 +272,9 @@ contract TokenManager is ReentrancyGuard, Ownable {
             return 0;
         }
         
-        // Convert platform token amount from 18 decimals to 6 decimals
-        uint256 platformTokenAmount6Decimals = platformTokenAmount / 1e12;
         uint256 totalValue = totalUSDCBalance + getCompoundYield();
         // Use higher precision calculation to avoid precision loss
-        return (platformTokenAmount6Decimals * totalValue * 1e18) / (totalPlatformTokensMinted * 1e18);
+        return (platformTokenAmount * totalValue) / totalPlatformTokensMinted;
     }
 
     function getCompoundYield() internal view returns (uint256) {
@@ -300,6 +300,8 @@ contract TokenManager is ReentrancyGuard, Ownable {
             // Add safety check to prevent division by zero
             require(totalPlatformTokensMinted > 0, "No platform tokens minted");
             
+            // Calculate yield per platform token (in USDC decimals)
+            // currentYield is in 6 decimals, totalPlatformTokensMinted is in 18 decimals
             uint256 yieldPerToken = (currentYield * 1e18) / totalPlatformTokensMinted;
             accumulatedYieldPerToken += yieldPerToken;
             lastYieldUpdateTime = block.timestamp;
@@ -314,6 +316,9 @@ contract TokenManager is ReentrancyGuard, Ownable {
         if (userBalance > 0) {
             uint256 yieldDifference = accumulatedYieldPerToken - userLastYieldPerToken[user];
             if (yieldDifference > 0) {
+                // Calculate user yield in USDC decimals
+                // userBalance is in 18 decimals, yieldDifference is in 18 decimals
+                // Result should be in 6 decimals (USDC)
                 uint256 userYield = (userBalance * yieldDifference) / 1e18;
                 userAccumulatedYield[user] += userYield;
             }
@@ -357,6 +362,9 @@ contract TokenManager is ReentrancyGuard, Ownable {
         }
         
         uint256 yieldDifference = tempAccumulatedYield - userLastYieldPerToken[user];
+        // Calculate additional yield in USDC decimals
+        // userBalance is in 18 decimals, yieldDifference is in 18 decimals
+        // Result should be in 6 decimals (USDC)
         uint256 additionalYield = (userBalance * yieldDifference) / 1e18;
         
         return userAccumulatedYield[user] + additionalYield;

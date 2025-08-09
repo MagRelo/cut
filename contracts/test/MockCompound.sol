@@ -3,319 +3,75 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../src/PaymentToken.sol";
+import "forge-std/Test.sol";
 
-contract MockCToken is IERC20 {
-    string public name = "Mock cToken";
-    string public symbol = "mcTOKEN";
-    uint8 public decimals = 8;
+contract MockCToken {
+    IERC20 public underlying;
+    mapping(address => uint256) public cTokenBalance;
+    mapping(address => uint256) public underlyingBalance;
     uint256 public totalSupply;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
     
-    uint256 public exchangeRate = 1e18; // 1:1 exchange rate initially
-    address public immutable usdcToken;
-    
-    constructor(address _usdcToken) {
-        usdcToken = _usdcToken;
-    }
-    
-    // Compound V3 Comet style functions (matching real Base Mainnet CUSDC)
-    function supply(address asset, uint256 amount) external {
-        require(asset == usdcToken, "Only USDC supported");
-        uint256 cTokensToMint = (amount * 1e18) / exchangeRate;
-        balanceOf[msg.sender] += cTokensToMint;
-        totalSupply += cTokensToMint;
-        emit Transfer(address(0), msg.sender, cTokensToMint);
-        
-        // Transfer USDC from caller to this contract (simulating Compound's behavior)
-        IERC20(usdcToken).transferFrom(msg.sender, address(this), amount);
-    }
-    
-    function withdraw(address asset, uint256 amount) external {
-        require(asset == usdcToken, "Only USDC supported");
-        uint256 cTokenAmount = (amount * 1e18) / exchangeRate;
-        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
-        balanceOf[msg.sender] -= cTokenAmount;
-        totalSupply -= cTokenAmount;
-        emit Transfer(msg.sender, address(0), cTokenAmount);
-        
-        // Transfer underlying USDC to the caller
-        // If we don't have enough USDC, mint it for testing purposes
-        uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
-        if (currentBalance < amount) {
-            PaymentToken(usdcToken).mint(address(this), amount - currentBalance);
-        }
-        IERC20(usdcToken).transfer(msg.sender, amount);
-    }
-    
-    // Keep Compound V2 functions for backward compatibility with existing code
-    function mint(uint256 amount) external returns (uint) {
-        uint256 cTokensToMint = (amount * 1e18) / exchangeRate;
-        balanceOf[msg.sender] += cTokensToMint;
-        totalSupply += cTokensToMint;
-        emit Transfer(address(0), msg.sender, cTokensToMint);
-        
-        // Transfer USDC from caller to this contract (simulating Compound's behavior)
-        IERC20(usdcToken).transferFrom(msg.sender, address(this), amount);
-        return 0; // Success code
-    }
-    
-    function redeem(uint256 cTokenAmount) external returns (uint) {
-        uint256 underlyingAmount = (cTokenAmount * exchangeRate) / 1e18;
-        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
-        balanceOf[msg.sender] -= cTokenAmount;
-        totalSupply -= cTokenAmount;
-        emit Transfer(msg.sender, address(0), cTokenAmount);
-        
-        // Transfer underlying USDC to the caller
-        uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
-        if (currentBalance < underlyingAmount) {
-            PaymentToken(usdcToken).mint(address(this), underlyingAmount - currentBalance);
-        }
-        IERC20(usdcToken).transfer(msg.sender, underlyingAmount);
-        return 0; // Success code
-    }
-    
-    function redeemUnderlying(uint256 redeemAmount) external returns (uint) {
-        uint256 cTokenAmount = (redeemAmount * 1e18) / exchangeRate;
-        require(balanceOf[msg.sender] >= cTokenAmount, "Insufficient balance");
-        balanceOf[msg.sender] -= cTokenAmount;
-        totalSupply -= cTokenAmount;
-        emit Transfer(msg.sender, address(0), cTokenAmount);
-        
-        // Transfer underlying USDC to the caller
-        uint256 currentBalance = IERC20(usdcToken).balanceOf(address(this));
-        if (currentBalance < redeemAmount) {
-            PaymentToken(usdcToken).mint(address(this), redeemAmount - currentBalance);
-        }
-        IERC20(usdcToken).transfer(msg.sender, redeemAmount);
-        return 0; // Success code
-    }
-    
-    function balanceOfUnderlying(address owner) external view returns (uint) {
-        return (balanceOf[owner] * exchangeRate) / 1e18;
-    }
-    
-    function exchangeRateStored() external view returns (uint) {
-        return exchangeRate;
-    }
-    
-    function exchangeRateCurrent() external returns (uint) {
-        return exchangeRate;
-    }
-    
-    function getCash() external view returns (uint) {
-        return IERC20(usdcToken).balanceOf(address(this));
-    }
-    
-    function accrueInterest() external returns (uint) {
-        return 0;
-    }
-    
-    // Mock functions for yield simulation
-    function addYield(uint256 yieldAmount) external {
-        // Simulate yield by minting additional cTokens to represent yield earned
-        uint256 additionalCTokens = (yieldAmount * 1e18) / exchangeRate;
-        balanceOf[msg.sender] += additionalCTokens;
-        totalSupply += additionalCTokens;
-        emit Transfer(address(0), msg.sender, additionalCTokens);
-        
-        // Update exchange rate to reflect the new total value
-        uint256 totalUnderlying = (totalSupply * exchangeRate) / 1e18;
-        totalUnderlying += yieldAmount;
-        if (totalSupply > 0) {
-            exchangeRate = (totalUnderlying * 1e18) / totalSupply;
-        }
-        
-        // For testing purposes, we'll simulate that the contract has enough USDC
-        // In a real scenario, this would come from interest earned
-        // We'll just update the exchange rate to reflect the yield
-    }
-    
-    // IERC20 functions
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        require(to != address(0), "Transfer to zero address");
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        
-        balanceOf[msg.sender] -= amount;
-        balanceOf[to] += amount;
-        emit Transfer(msg.sender, to, amount);
-        return true;
-    }
-    
-    function approve(address spender, uint256 amount) external override returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
-        return true;
-    }
-    
-    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
-        require(to != address(0), "Transfer to zero address");
-        require(balanceOf[from] >= amount, "Insufficient balance");
-        require(allowance[from][msg.sender] >= amount, "Insufficient allowance");
-        
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-        allowance[from][msg.sender] -= amount;
-        
-        emit Transfer(from, to, amount);
-        return true;
-    }
-}
+    bool public isSupplyPaused;
+    bool public isWithdrawPaused;
 
-contract MockComptroller {
-    mapping(address => bool) public marketListed;
-    
-    constructor() {
-        // Initialize with no markets listed
+    constructor(address _underlying) {
+        underlying = IERC20(_underlying);
     }
-    
-    function enterMarkets(address[] calldata cTokens) external returns (uint[] memory) {
-        uint[] memory results = new uint[](cTokens.length);
-        for (uint i = 0; i < cTokens.length; i++) {
-            marketListed[cTokens[i]] = true;
-            results[i] = 0; // Success code
+
+    function supply(address asset, uint256 amount) external {
+        require(!isSupplyPaused, "Supply paused");
+        require(asset == address(underlying), "Invalid asset");
+        
+        underlying.transferFrom(msg.sender, address(this), amount);
+        cTokenBalance[msg.sender] += amount;
+        underlyingBalance[msg.sender] += amount;
+        totalSupply += amount;
+    }
+
+    function withdraw(address asset, uint256 amount) external {
+        require(!isWithdrawPaused, "Withdraw paused");
+        require(asset == address(underlying), "Invalid asset");
+        require(underlyingBalance[msg.sender] >= amount, "Insufficient balance");
+        
+        // Only subtract from cTokenBalance if it exists (for users who called supply)
+        if (cTokenBalance[msg.sender] >= amount) {
+            cTokenBalance[msg.sender] -= amount;
         }
-        return results;
+        underlyingBalance[msg.sender] -= amount;
+        totalSupply -= amount;
+        
+        // In real Compound V3, the contract would have accumulated yield internally
+        // and would have enough underlying tokens to transfer
+        // For testing, we ensure the contract has enough tokens by minting if needed
+        uint256 contractBalance = underlying.balanceOf(address(this));
+        if (contractBalance < amount) {
+            // Mint the difference to simulate accumulated yield
+            PaymentToken(address(underlying)).mint(address(this), amount - contractBalance);
+        }
+        
+        // Transfer underlying tokens from this contract to the caller
+        underlying.transfer(msg.sender, amount);
     }
-    
-    function exitMarket(address cToken) external returns (uint) {
-        marketListed[cToken] = false;
-        return 0; // Success code
+
+    // In Compound V3, balanceOf returns the underlying balance directly
+    function balanceOf(address owner) external view returns (uint256) {
+        return underlyingBalance[owner];
     }
-    
-    function getAccountLiquidity(address) external pure returns (uint, uint, uint) {
-        return (0, 0, 0);
+
+    function setPauseStatus(bool _isSupplyPaused, bool _isWithdrawPaused) external {
+        isSupplyPaused = _isSupplyPaused;
+        isWithdrawPaused = _isWithdrawPaused;
     }
-    
-    function getHypotheticalAccountLiquidity(
-        address,
-        address,
-        uint,
-        uint
-    ) external pure returns (uint, uint, uint) {
-        return (0, 0, 0);
+
+    // Function to simulate yield generation for testing
+    // This adds yield to a specific address (typically the TokenManager)
+    function addYield(address to, uint256 yieldAmount) external {
+        // Add yield to the specified address
+        // This simulates Compound V3 yield generation
+        underlyingBalance[to] += yieldAmount;
+        totalSupply += yieldAmount;
+        
+        // In real Compound V3, the contract would have accumulated yield internally
+        // The test setup should ensure this contract has enough tokens to transfer
     }
-    
-    function getAssetsIn(address) external pure returns (address[] memory) {
-        return new address[](0);
-    }
-    
-    function getCompAddress() external pure returns (address) {
-        return address(0);
-    }
-    
-    function getAllMarkets() external pure returns (address[] memory) {
-        return new address[](0);
-    }
-    
-    function isComptroller() external pure returns (bool) {
-        return true;
-    }
-    
-    function isMarketListed(address cToken) external view returns (bool) {
-        return marketListed[cToken];
-    }
-    
-    function liquidateCalculateSeizeTokens(
-        address,
-        address,
-        uint
-    ) external pure returns (uint, uint) {
-        return (0, 0);
-    }
-    
-    function liquidateSeizeCalculateAmount(
-        address,
-        address,
-        uint
-    ) external pure returns (uint, uint) {
-        return (0, 0);
-    }
-    
-    function mintAllowed(address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function mintVerify(address, address, uint, uint) external {
-        // No-op for mock
-    }
-    
-    function redeemAllowed(address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function redeemVerify(address, address, uint, uint) external {
-        // No-op for mock
-    }
-    
-    function borrowAllowed(address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function borrowVerify(address, address, uint) external {
-        // No-op for mock
-    }
-    
-    function repayBorrowAllowed(address, address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function repayBorrowVerify(address, address, address, uint, uint) external {
-        // No-op for mock
-    }
-    
-    function liquidateBorrowAllowed(address, address, address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function liquidateBorrowVerify(address, address, address, address, uint, uint) external {
-        // No-op for mock
-    }
-    
-    function seizeAllowed(address, address, address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function seizeVerify(address, address, address, address, uint) external {
-        // No-op for mock
-    }
-    
-    function transferAllowed(address, address, address, uint) external pure returns (uint) {
-        return 0; // Success
-    }
-    
-    function transferVerify(address, address, address, uint) external {
-        // No-op for mock
-    }
-    
-    // Admin functions (all return success for mock)
-    function _setPriceOracle(address) external pure returns (uint) { return 0; }
-    function _setCloseFactor(uint) external pure returns (uint) { return 0; }
-    function _setCollateralFactor(address, uint) external pure returns (uint) { return 0; }
-    function _setMaxAssets(uint) external pure returns (uint) { return 0; }
-    function _setLiquidationIncentive(uint) external pure returns (uint) { return 0; }
-    function _supportMarket(address) external pure returns (uint) { return 0; }
-    function _setPauseGuardian(address) external pure returns (uint) { return 0; }
-    function _setMintPaused(address, bool) external pure returns (bool) { return false; }
-    function _setBorrowPaused(address, bool) external pure returns (bool) { return false; }
-    function _setTransferPaused(bool) external pure returns (bool) { return false; }
-    function _setSeizePaused(bool) external pure returns (bool) { return false; }
-    function _become(address) external {}
-    function _deployMarket(bytes calldata, bool) external pure returns (uint) { return 0; }
-    function _setReserveFactor(address, uint) external pure returns (uint) { return 0; }
-    function _setInterestRateModel(address, address) external pure returns (uint) { return 0; }
-    function _setBorrowCap(address, uint) external pure returns (uint) { return 0; }
-    function _setSupplyCap(address, uint) external pure returns (uint) { return 0; }
-    function _setCompSpeed(address, uint) external {}
-    function _addCompMarkets(address[] calldata) external {}
-    function _dropCompMarket(address) external {}
-    function _setCompRate(uint) external {}
-    function _setCompBorrowerRewardsDistributor(address) external {}
-    function _setCompSupplierRewardsDistributor(address) external {}
-    function _setCompGrantor(address) external {}
-    function _setCompRateAndCompBorrowerRewardsDistributor(uint, address) external {}
-    function _setCompRateAndCompSupplierRewardsDistributor(uint, address) external {}
-    function _setCompBorrowerRewardsDistributorAndCompSupplierRewardsDistributor(address, address) external {}
-    function _setCompRateAndCompBorrowerRewardsDistributorAndCompSupplierRewardsDistributor(uint, address, address) external {}
 } 

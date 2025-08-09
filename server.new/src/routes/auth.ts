@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
-import { mintUserTokens } from "../services/mintUserTokens.js";
+import { mintUserTokens, mintAndTransferToNewUser } from "../services/mintUserTokens.js";
 
 import { createClient, http, hashMessage } from "viem";
 import { Chains } from "porto";
@@ -102,13 +102,21 @@ router.post("/siwe", async (req, res) => {
         },
       });
 
-      // Mint 25 BTCUT tokens to the new user
-      try {
-        await mintUserTokens(address!.toLowerCase(), 25);
-        console.log(`Minted 25 BTCUT tokens to new user: ${address!.toLowerCase()}`);
-      } catch (mintError) {
-        console.error("Failed to mint tokens to new user:", mintError);
-        // Don't fail the user creation if token minting fails
+      // Check if token minting is enabled
+      const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
+      if (isTokenMintingEnabled) {
+        // Mint $1000 USDC(x), convert to CUT, and transfer to new user
+        try {
+          await mintAndTransferToNewUser(address!.toLowerCase(), 1000);
+          console.log(
+            `Minted and transferred $1000 worth of CUT tokens to new user: ${address!.toLowerCase()}`
+          );
+        } catch (mintError) {
+          console.error("Failed to mint and transfer tokens to new user:", mintError);
+          // Don't fail the user creation if token minting fails
+        }
+      } else {
+        console.log("Token minting is disabled. Skipping token transfer to new user.");
       }
     }
 

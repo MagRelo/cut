@@ -10,7 +10,6 @@ contract EscrowFactory is Ownable {
     mapping(address => bool) public oracles;
     Escrow[] public escrows;
     address public platformToken;
-    address public immutable treasury;
 
     event EscrowCreated(address indexed escrow, address indexed host, uint256 depositAmount);
     event OracleAdded(address indexed oracle);
@@ -18,11 +17,9 @@ contract EscrowFactory is Ownable {
     event PlatformTokenUpdated(address indexed oldToken, address indexed newToken);
 
     constructor(
-        address _platformToken,
-        address _treasury
+        address _platformToken
     ) Ownable(msg.sender) {
         platformToken = _platformToken;
-        treasury = _treasury;
     }
 
     function setPlatformToken(address _newPlatformToken) external onlyOwner {
@@ -35,23 +32,19 @@ contract EscrowFactory is Ownable {
     function createEscrow(
         string memory name,
         uint256 depositAmount,
-        uint256 maxParticipants,
         uint256 endTime,
         address oracle
     ) external returns (address) {
         require(endTime > block.timestamp, "End time must be in future");
-        require(maxParticipants > 1, "Need at least 2 participants");
         require(oracles[oracle], "Not an approved oracle");
         require(depositAmount > 0, "Deposit amount must be greater than 0");
 
         Escrow escrow = new Escrow(
             name,
             depositAmount,
-            maxParticipants,
             endTime,
             platformToken,
-            oracle,
-            treasury
+            oracle
         );
 
         escrows.push(escrow);

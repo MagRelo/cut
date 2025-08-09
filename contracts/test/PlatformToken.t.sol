@@ -3,168 +3,152 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/PlatformToken.sol";
-import "../src/Treasury.sol";
+import "../src/TokenManager.sol";
 import "../src/PaymentToken.sol";
-import "./MockCompound.sol";
 
 contract PlatformTokenTest is Test {
     PlatformToken public token;
-    Treasury public treasury;
+    TokenManager public tokenManager;
     PaymentToken public paymentToken;
-    address public owner;
-    address public user;
-    MockCToken public mockCUSDC;
 
     function setUp() public {
-        owner = address(this);
-        user = address(0x1);
-        token = new PlatformToken();
         paymentToken = new PaymentToken();
+        token = new PlatformToken();
         
-        mockCUSDC = new MockCToken(address(paymentToken));
-        // Mint a large amount of USDC to the MockCToken contract
-        paymentToken.mint(address(mockCUSDC), 1_000_000_001e6);
-        treasury = new Treasury(
+        tokenManager = new TokenManager(
             address(paymentToken),
             address(token),
-            address(mockCUSDC)
+            address(0x123) // Mock cUSDC address
         );
-        // Set treasury in platform token
-        token.setTreasury(address(treasury));
+        
+        // Set token manager in platform token
+        token.setTokenManager(address(tokenManager));
     }
 
-    function testTokenProperties() public {
-        assertEq(token.name(), "Cut Platform Token");
-        assertEq(token.symbol(), "CUT");
-        assertEq(token.decimals(), 18);
+    function testSetTokenManager() public {
+        address newTokenManager = address(0x999);
+        token.setTokenManager(newTokenManager);
+        assertEq(token.tokenManager(), newTokenManager);
     }
 
-    function testSetTreasury() public {
-        address newTreasury = address(0x999);
-        token.setTreasury(newTreasury);
-        assertEq(token.treasury(), newTreasury);
-    }
-
-    function testFailSetTreasuryNotOwner() public {
-        vm.startPrank(user);
-        token.setTreasury(address(0x999));
+    function testFailSetTokenManagerNotOwner() public {
+        vm.startPrank(address(0x123));
+        token.setTokenManager(address(0x999));
         vm.stopPrank();
     }
 
-    function testFailSetTreasuryZeroAddress() public {
-        token.setTreasury(address(0));
+    function testFailSetTokenManagerZeroAddress() public {
+        token.setTokenManager(address(0));
     }
 
-    function testMintByTreasury() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
+    function testMintByTokenManager() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
         vm.stopPrank();
         
-        assertEq(token.balanceOf(user), 100);
+        assertEq(token.balanceOf(address(0x123)), 1000e18);
     }
 
-    function testBurnByTreasury() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        token.burn(user, 50);
+    function testBurnByTokenManager() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.burn(address(0x123), 500e18);
         vm.stopPrank();
         
-        assertEq(token.balanceOf(user), 50);
+        assertEq(token.balanceOf(address(0x123)), 500e18);
     }
 
-    function testFailMintNotTreasury() public {
-        vm.startPrank(user);
-        token.mint(user, 100);
-        vm.stopPrank();
-    }
-
-    function testFailBurnNotTreasury() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        vm.stopPrank();
-        
-        vm.startPrank(user);
-        token.burn(user, 50);
+    function testFailMintNotTokenManager() public {
+        vm.startPrank(address(0x123));
+        token.mint(address(0x456), 1000e18);
         vm.stopPrank();
     }
 
-    function testFailBurnMoreThanBalance() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        token.burn(user, 150);
+    function testFailBurnNotTokenManager() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        vm.stopPrank();
+        
+        vm.startPrank(address(0x456));
+        token.burn(address(0x123), 500e18);
         vm.stopPrank();
     }
 
-    function testTransfer() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        vm.stopPrank();
-        
-        vm.startPrank(user);
-        token.transfer(address(0x2), 50);
-        vm.stopPrank();
-        
-        assertEq(token.balanceOf(user), 50);
-        assertEq(token.balanceOf(address(0x2)), 50);
-    }
-
-    function testFailTransferInsufficientBalance() public {
-        vm.startPrank(user);
-        token.transfer(address(0x2), 100);
+    function testFailBurnInsufficientBalance() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.burn(address(0x123), 1500e18); // Try to burn more than balance
         vm.stopPrank();
     }
 
-    function testApprove() public {
-        vm.startPrank(user);
-        token.approve(address(0x2), 100);
-        vm.stopPrank();
-        
-        assertEq(token.allowance(user, address(0x2)), 100);
-    }
-
-    function testTransferFrom() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        vm.stopPrank();
-        
-        vm.startPrank(user);
-        token.approve(address(0x2), 100);
-        vm.stopPrank();
-        
-        vm.startPrank(address(0x2));
-        token.transferFrom(user, address(0x3), 50);
-        vm.stopPrank();
-        
-        assertEq(token.balanceOf(user), 50);
-        assertEq(token.balanceOf(address(0x3)), 50);
-        assertEq(token.allowance(user, address(0x2)), 50);
-    }
-
-    function testFailTransferFromInsufficientAllowance() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 100);
-        vm.stopPrank();
-        
-        vm.startPrank(user);
-        token.approve(address(0x2), 30);
-        vm.stopPrank();
-        
-        vm.startPrank(address(0x2));
-        token.transferFrom(user, address(0x3), 50);
+    function testFailMintToZeroAddress() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0), 1000e18);
         vm.stopPrank();
     }
 
-    function testFailTransferFromInsufficientBalance() public {
-        vm.startPrank(address(treasury));
-        token.mint(user, 30);
+    function testFailBurnFromZeroAddress() public {
+        vm.startPrank(address(tokenManager));
+        token.burn(address(0), 1000e18);
+        vm.stopPrank();
+    }
+
+    function testFailMintZeroAmount() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 0);
+        vm.stopPrank();
+    }
+
+    function testFailBurnZeroAmount() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.burn(address(0x123), 0);
+        vm.stopPrank();
+    }
+
+    function testTokenManagerNotSet() public {
+        PlatformToken newToken = new PlatformToken();
+        
+        vm.startPrank(address(tokenManager));
+        vm.expectRevert("TokenManager not set");
+        newToken.mint(address(0x123), 1000e18);
+        vm.stopPrank();
+    }
+
+    function testTokenManagerAddress() public {
+        vm.startPrank(address(0x123));
+        vm.expectRevert("Only tokenManager can call this function");
+        token.mint(address(0x456), 1000e18);
+        vm.stopPrank();
+    }
+
+    function testBurnExactAmount() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.burn(address(0x123), 1000e18);
         vm.stopPrank();
         
-        vm.startPrank(user);
-        token.approve(address(0x2), 100);
+        assertEq(token.balanceOf(address(0x123)), 0);
+    }
+
+    function testMultipleMints() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.mint(address(0x123), 500e18);
+        token.mint(address(0x456), 750e18);
         vm.stopPrank();
         
-        vm.startPrank(address(0x2));
-        token.transferFrom(user, address(0x3), 50);
+        assertEq(token.balanceOf(address(0x123)), 1500e18);
+        assertEq(token.balanceOf(address(0x456)), 750e18);
+    }
+
+    function testMultipleBurns() public {
+        vm.startPrank(address(tokenManager));
+        token.mint(address(0x123), 1000e18);
+        token.burn(address(0x123), 300e18);
+        token.burn(address(0x123), 200e18);
         vm.stopPrank();
+        
+        assertEq(token.balanceOf(address(0x123)), 500e18);
     }
 } 

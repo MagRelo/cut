@@ -6,18 +6,16 @@ import "../src/EscrowFactory.sol";
 import "../src/Escrow.sol";
 import "../src/PlatformToken.sol";
 import "../src/PaymentToken.sol";
-import "../src/Treasury.sol";
-import "./MockCompound.sol";
+import "../src/TokenManager.sol";
 
 contract EscrowFactoryTest is Test {
     EscrowFactory public factory;
     PlatformToken public platformToken;
     PaymentToken public paymentToken;
-    Treasury public treasury;
+    TokenManager public tokenManager;
     address public owner;
     address public oracle;
     uint256 public constant DEPOSIT_AMOUNT = 1000e18; // 1000 Platform tokens with 18 decimals
-    MockCToken public mockCUSDC;
 
     function setUp() public {
         owner = address(this);
@@ -25,19 +23,17 @@ contract EscrowFactoryTest is Test {
         platformToken = new PlatformToken();
         paymentToken = new PaymentToken();
         
-        mockCUSDC = new MockCToken(address(paymentToken));
-        // Mint a large amount of USDC to the MockCToken contract
-        paymentToken.mint(address(mockCUSDC), 1_000_000_001e6);
-        treasury = new Treasury(
+        tokenManager = new TokenManager(
             address(paymentToken),
             address(platformToken),
-            address(mockCUSDC)
+            address(0x123) // Mock cUSDC address
         );
-        // Set treasury in platform token
-        platformToken.setTreasury(address(treasury));
+        
+        // Set token manager in platform token
+        platformToken.setTokenManager(address(tokenManager));
+        
         factory = new EscrowFactory(
-            address(platformToken),
-            address(treasury)
+            address(platformToken)
         );
     }
 
@@ -47,7 +43,6 @@ contract EscrowFactoryTest is Test {
         address escrowAddress = factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             block.timestamp + 1 days,
             oracle
         );
@@ -74,7 +69,6 @@ contract EscrowFactoryTest is Test {
         factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             block.timestamp + 1 days,
             oracle
         );
@@ -85,21 +79,26 @@ contract EscrowFactoryTest is Test {
         factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             block.timestamp - 1 days,
             oracle
         );
     }
 
-    function testFailCreateEscrowWithInvalidMaxParticipants() public {
+    function testCreateEscrowWithHardcodedMaxParticipants() public {
         factory.addOracle(oracle);
-        factory.createEscrow(
+        // This test verifies that maxParticipants is hardcoded to MAX_PARTICIPANTS (2000)
+        address escrowAddress = factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            0,
             block.timestamp + 1 days,
             oracle
         );
+        
+        // Verify the escrow was created successfully
+        Escrow escrow = Escrow(escrowAddress);
+        (string memory name, uint256 depositAmount, uint256 endTime) = escrow.details();
+        assertEq(depositAmount, DEPOSIT_AMOUNT, "Deposit amount should match");
+        assertEq(escrow.MAX_PARTICIPANTS(), 2000, "MAX_PARTICIPANTS should be 2000");
     }
 
     function testFailAddOracleNotOwner() public {
@@ -121,7 +120,6 @@ contract EscrowFactoryTest is Test {
         address escrow1 = factory.createEscrow(
             "Escrow 1",
             DEPOSIT_AMOUNT,
-            5,
             block.timestamp + 1 days,
             oracle
         );
@@ -129,7 +127,6 @@ contract EscrowFactoryTest is Test {
         address escrow2 = factory.createEscrow(
             "Escrow 2",
             DEPOSIT_AMOUNT * 2,
-            10,
             block.timestamp + 2 days,
             oracle
         );
@@ -146,15 +143,13 @@ contract EscrowFactoryTest is Test {
         address escrowAddress = factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             block.timestamp + 1 days,
             oracle
         );
         
         Escrow escrow = Escrow(escrowAddress);
-        (string memory name, uint256 depositAmount, uint256 maxParticipants, uint256 endTime) = escrow.details();
+        (string memory name, uint256 depositAmount, uint256 endTime) = escrow.details();
         assertEq(depositAmount, DEPOSIT_AMOUNT, "Deposit amount should match");
-        assertEq(maxParticipants, 10, "Max participants should match");
         assertEq(endTime, block.timestamp + 1 days, "End time should match");
         assertEq(escrow.oracle(), oracle, "Oracle should match");
         assertEq(escrow.owner(), address(factory), "Owner should be factory");
@@ -183,7 +178,6 @@ contract EscrowFactoryTest is Test {
         factory.createEscrow(
             "Test Escrow",
             0,
-            10,
             block.timestamp + 1 days,
             oracle
         );
@@ -194,7 +188,6 @@ contract EscrowFactoryTest is Test {
         factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             0,
             oracle
         );
@@ -204,7 +197,6 @@ contract EscrowFactoryTest is Test {
         factory.createEscrow(
             "Test Escrow",
             DEPOSIT_AMOUNT,
-            10,
             block.timestamp + 1 days,
             address(0)
         );
