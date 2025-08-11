@@ -1,8 +1,8 @@
-import { Withdraw } from "../components/user/Withdraw";
+import { Sell } from "../components/user/Sell";
 import { PageHeader } from "../components/util/PageHeader";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 
-export function WithdrawPage() {
+export function SellPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
@@ -10,7 +10,7 @@ export function WithdrawPage() {
         className="mb-3"
       />
       <PageHeader title="Sell CUT Tokens" className="mb-3" />
-      <Withdraw />
+      <Sell />
     </div>
   );
 }

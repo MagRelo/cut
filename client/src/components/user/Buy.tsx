@@ -13,7 +13,7 @@ import { tokenManagerAddress, paymentTokenAddress } from "../../utils/contracts/
 import TokenManagerContract from "../../utils/contracts/TokenManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
-export const Deposit = () => {
+export const Buy = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 

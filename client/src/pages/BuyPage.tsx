@@ -1,8 +1,8 @@
 import { PageHeader } from "../components/util/PageHeader";
-import { Deposit } from "../components/user/Deposit";
+import { Buy } from "../components/user/Buy";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 
-export function DepositPage() {
+export function BuyPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
@@ -10,7 +10,7 @@ export function DepositPage() {
         className="mb-3"
       />
       <PageHeader title="Buy CUT Tokens" className="mb-3" />
-      <Deposit />
+      <Buy />
     </div>
   );
 }

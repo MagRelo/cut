@@ -13,8 +13,8 @@ import { LineupProvider } from "./contexts/LineupContext";
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
 import { TokenManagerPage } from "./pages/TokenManager";
-import { DepositPage } from "./pages/DepositPage";
-import { WithdrawPage } from "./pages/WithdrawPage";
+import { BuyPage } from "./pages/BuyPage";
+import { SellPage } from "./pages/SellPage";
 import { TransferPage } from "./pages/TransferPage";
 
 import { LineupList } from "./pages/LineupList";
@@ -67,7 +67,7 @@ export const App: React.FC = () => {
                             path="/buy"
                             element={
                               <ProtectedRoute>
-                                <DepositPage />
+                                <BuyPage />
                               </ProtectedRoute>
                             }
                           />
@@ -75,7 +75,7 @@ export const App: React.FC = () => {
                             path="/sell"
                             element={
                               <ProtectedRoute>
-                                <WithdrawPage />
+                                <SellPage />
                               </ProtectedRoute>
                             }
                           />
