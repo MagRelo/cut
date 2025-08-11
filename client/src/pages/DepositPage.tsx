@@ -6,10 +6,10 @@ export function DepositPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/user" }, { label: "Deposit" }]}
+        items={[{ label: "Account", path: "/user" }, { label: "Buy" }]}
         className="mb-3"
       />
-      <PageHeader title="Deposit" className="mb-3" />
+      <PageHeader title="Buy CUT Tokens" className="mb-3" />
       <Deposit />
     </div>
   );

@@ -64,7 +64,7 @@ export const App: React.FC = () => {
 
                           {/* Token Manager Operations */}
                           <Route
-                            path="/deposit"
+                            path="/buy"
                             element={
                               <ProtectedRoute>
                                 <DepositPage />
@@ -72,7 +72,7 @@ export const App: React.FC = () => {
                             }
                           />
                           <Route
-                            path="/withdraw"
+                            path="/sell"
                             element={
                               <ProtectedRoute>
                                 <WithdrawPage />

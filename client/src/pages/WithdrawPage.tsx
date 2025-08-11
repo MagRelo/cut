@@ -6,10 +6,10 @@ export function WithdrawPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/user" }, { label: "Withdraw" }]}
+        items={[{ label: "Account", path: "/user" }, { label: "Sell" }]}
         className="mb-3"
       />
-      <PageHeader title="Withdraw" className="mb-3" />
+      <PageHeader title="Sell CUT Tokens" className="mb-3" />
       <Withdraw />
     </div>
   );

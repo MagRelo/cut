@@ -17,9 +17,9 @@ export const Deposit = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  // Deposit form state
-  const [depositAmount, setDepositAmount] = useState("");
-  const [depositError, setDepositError] = useState<string | null>(null);
+  // Buy form state
+  const [buyAmount, setBuyAmount] = useState("");
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
@@ -40,25 +40,25 @@ export const Deposit = () => {
     functionName: "getExchangeRate",
   });
 
-  const handleDeposit = async () => {
-    if (!isConnected || !depositAmount) {
-      setDepositError("Please enter an amount");
+  const handleBuy = async () => {
+    if (!isConnected || !buyAmount) {
+      setBuyError("Please enter an amount");
       return;
     }
 
     try {
-      setDepositError(null);
+      setBuyError(null);
 
       // Convert amount to USDC units (6 decimals)
-      const usdcAmount = parseUnits(depositAmount, 6);
+      const usdcAmount = parseUnits(buyAmount, 6);
 
       // Check if user has enough USDC
       if (usdcBalance && usdcBalance.value < usdcAmount) {
-        setDepositError("Insufficient USDC balance");
+        setBuyError("Insufficient USDC balance");
         return;
       }
 
-      // Execute the deposit transaction with approval
+      // Execute the buy transaction with approval
       sendCalls({
         calls: [
           // First approve the TokenManager to spend USDC
@@ -79,7 +79,7 @@ export const Deposit = () => {
             functionName: "approve",
             to: paymentTokenAddress as `0x${string}`,
           },
-          // Then deposit USDC to TokenManager
+          // Then buy CUT tokens with USDC
           {
             abi: TokenManagerContract.abi,
             args: [usdcAmount],
@@ -89,18 +89,18 @@ export const Deposit = () => {
         ],
       });
     } catch (error) {
-      console.error("Error depositing to token manager:", error);
-      setDepositError("Failed to deposit to token manager");
+      console.error("Error buying CUT tokens:", error);
+      setBuyError("Failed to buy CUT tokens");
     }
   };
 
-  // Calculate platform token amount based on exchange rate (for deposit)
+  // Calculate platform token amount based on exchange rate (for buy)
   const calculatePlatformTokenAmount = () => {
-    if (!depositAmount || !exchangeRate) return "0";
+    if (!buyAmount || !exchangeRate) return "0";
     try {
       // Since exchange rate is 1, 1 USDC = 1 CUT
       // But we need to account for different decimals: USDC (6) vs CUT (18)
-      const usdcAmount = parseUnits(depositAmount, 6);
+      const usdcAmount = parseUnits(buyAmount, 6);
       // Convert USDC amount to CUT amount (multiply by 10^12 to account for decimal difference)
       const platformTokenAmount = usdcAmount * parseUnits("1", 12); // 18 - 6 = 12
       return formatUnits(platformTokenAmount, 18);
@@ -121,7 +121,7 @@ export const Deposit = () => {
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="space-y-4">
         {/* Available Balance */}
-        <h3 className="text-lg font-semibold mb-4 text-green-600">Deposit USDC</h3>
+        <h3 className="text-lg font-semibold mb-4 text-green-600">Buy CUT Tokens</h3>
         <div className="text-sm text-gray-600 mt-1">
           {/* USDC explanation */}
           <div className="text-sm font-medium text-gray-700">
@@ -158,28 +158,28 @@ export const Deposit = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="deposit-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            USDC Amount to Deposit
+          <label htmlFor="buy-amount" className="block text-sm font-medium text-gray-700 mb-2">
+            USDC Amount to Buy
           </label>
           <input
-            id="deposit-amount"
+            id="buy-amount"
             type="number"
-            value={depositAmount}
-            onChange={(e) => setDepositAmount(e.target.value)}
+            value={buyAmount}
+            onChange={(e) => setBuyAmount(e.target.value)}
             placeholder="Enter USDC amount"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             disabled={isProcessing}
           />
-          {depositAmount && (
+          {buyAmount && (
             <div className="text-sm text-gray-600 mt-1">
               You will receive approximately {calculatePlatformTokenAmount()} CUT
             </div>
           )}
         </div>
-        {depositError && <div className="text-red-600 text-sm">{depositError}</div>}
+        {buyError && <div className="text-red-600 text-sm">{buyError}</div>}
         <button
-          onClick={handleDeposit}
-          disabled={!isConnected || !depositAmount || isProcessing}
+          onClick={handleBuy}
+          disabled={!isConnected || !buyAmount || isProcessing}
           className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded inline-flex items-center justify-center gap-2"
         >
           {isProcessing ? (
@@ -188,7 +188,7 @@ export const Deposit = () => {
               {isPending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Deposit USDC"
+            "Buy CUT Tokens"
           )}
         </button>
       </div>

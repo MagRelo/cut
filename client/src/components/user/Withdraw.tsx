@@ -17,9 +17,9 @@ export const Withdraw = () => {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  // Withdraw form state
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  // Sell form state
+  const [sellAmount, setSellAmount] = useState("");
+  const [sellError, setSellError] = useState<string | null>(null);
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
@@ -40,25 +40,25 @@ export const Withdraw = () => {
     functionName: "getExchangeRate",
   });
 
-  const handleWithdraw = async () => {
-    if (!isConnected || !withdrawAmount) {
-      setWithdrawError("Please enter an amount");
+  const handleSell = async () => {
+    if (!isConnected || !sellAmount) {
+      setSellError("Please enter an amount");
       return;
     }
 
     try {
-      setWithdrawError(null);
+      setSellError(null);
 
       // Convert amount to platform token units (18 decimals)
-      const platformTokenAmount = parseUnits(withdrawAmount, 18);
+      const platformTokenAmount = parseUnits(sellAmount, 18);
 
       // Check if user has enough platform tokens
       if (platformTokenBalance && platformTokenBalance.value < platformTokenAmount) {
-        setWithdrawError("Insufficient platform token balance");
+        setSellError("Insufficient platform token balance");
         return;
       }
 
-      // Execute the withdraw transaction
+      // Execute the sell transaction
       sendCalls({
         calls: [
           {
@@ -70,18 +70,18 @@ export const Withdraw = () => {
         ],
       });
     } catch (error) {
-      console.error("Error withdrawing from token manager:", error);
-      setWithdrawError("Failed to withdraw from token manager");
+      console.error("Error selling CUT tokens:", error);
+      setSellError("Failed to sell CUT tokens");
     }
   };
 
-  // Calculate USDC amount based on exchange rate (for withdraw)
+  // Calculate USDC amount based on exchange rate (for sell)
   const calculateUSDCAmount = () => {
-    if (!withdrawAmount || !exchangeRate) return "0";
+    if (!sellAmount || !exchangeRate) return "0";
     try {
       // Since exchange rate is 1, 1 CUT = 1 USDC
       // But we need to account for different decimals: CUT (18) vs USDC (6)
-      const platformTokenAmount = parseUnits(withdrawAmount, 18);
+      const platformTokenAmount = parseUnits(sellAmount, 18);
       // Convert CUT amount to USDC amount (divide by 10^12 to account for decimal difference)
       const usdcAmount = platformTokenAmount / parseUnits("1", 12); // 18 - 6 = 12
       return formatUnits(usdcAmount, 6); // USDC has 6 decimals
@@ -100,42 +100,42 @@ export const Withdraw = () => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-blue-600">Withdraw</h3>
+      <h3 className="text-lg font-semibold mb-4 text-blue-600">Sell CUT Tokens</h3>
 
       <div className="space-y-4">
         {/* Available Balance */}
         <div className="bg-gray-50 p-3 rounded-md">
-          <div className="text-sm font-medium text-gray-700 mb-1">Available Balance</div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Available CUT Balance</div>
           <div className="text-lg font-semibold text-blue-600 mb-2">
-            ${formattedBalance(platformTokenBalance?.value ?? 0n, 18)}
+            {formattedBalance(platformTokenBalance?.value ?? 0n, 18)} CUT
           </div>
         </div>
 
         <div>
-          <label htmlFor="withdraw-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            Amount to Withdraw
+          <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
+            CUT Amount to Sell
           </label>
           <input
-            id="withdraw-amount"
+            id="sell-amount"
             type="number"
-            value={withdrawAmount}
-            onChange={(e) => setWithdrawAmount(e.target.value)}
+            value={sellAmount}
+            onChange={(e) => setSellAmount(e.target.value)}
             placeholder="Enter amount"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isProcessing}
           />
-          {withdrawAmount && (
+          {sellAmount && (
             <div className="text-sm text-gray-600 mt-1">
               You will receive approximately ${calculateUSDCAmount()} USDC
             </div>
           )}
         </div>
 
-        {withdrawError && <div className="text-red-600 text-sm">{withdrawError}</div>}
+        {sellError && <div className="text-red-600 text-sm">{sellError}</div>}
 
         <button
-          onClick={handleWithdraw}
-          disabled={!isConnected || !withdrawAmount || isProcessing}
+          onClick={handleSell}
+          disabled={!isConnected || !sellAmount || isProcessing}
           className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded inline-flex items-center justify-center gap-2"
         >
           {isProcessing ? (
@@ -144,7 +144,7 @@ export const Withdraw = () => {
               {isPending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Withdraw USDC"
+            "Sell CUT Tokens"
           )}
         </button>
       </div>

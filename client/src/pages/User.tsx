@@ -95,16 +95,16 @@ export function UserPage() {
         {/* Token Manager Operations */}
         <div className="flex justify-center gap-2">
           <Link
-            to="/deposit"
+            to="/buy"
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Deposit
+            Buy
           </Link>
           <Link
-            to="/withdraw"
+            to="/sell"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
           >
-            Withdraw
+            Sell
           </Link>
           <Link
             to="/transfer"

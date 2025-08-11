@@ -32,7 +32,7 @@ export function TokenManagerPage() {
     ? Number(formatUnits(compoundYield as bigint, 6)).toFixed(6)
     : "0.000000";
 
-  // Get total USDC balance (original deposits)
+  // Get total USDC balance (original purchases)
   const { data: totalUSDCBalance, isLoading: totalUSDCBalanceLoading } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
     abi: TokenManagerContract.abi,
@@ -96,9 +96,9 @@ export function TokenManagerPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Original Deposits */}
+          {/* Original Purchases */}
           <div className="font-medium">
-            Deposits
+            Purchases
             <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
           <div className="text-right">
@@ -171,7 +171,7 @@ export function TokenManagerPage() {
         </div>
         <ul className="text-sm text-green-700 list-disc list-outside space-y-1 pl-4">
           <li>
-            All deposits are continuously earning yield by providing liquidity to{" "}
+            All purchases are continuously earning yield by providing liquidity to{" "}
             <a
               href="https://app.compound.finance/markets/usdc-basemainnet"
               target="_blank"
@@ -184,7 +184,7 @@ export function TokenManagerPage() {
           </li>
           <li>Yield rates are dynamic and change based on market conditions.</li>
           <li>All yield is automatically compounded.</li>
-          <li>When you withdraw, you receive your original deposit + accumulated yield.</li>
+          <li>When you sell, you receive your original buy amount + accumulated yield.</li>
         </ul>
       </div>
 
@@ -199,7 +199,7 @@ export function TokenManagerPage() {
             involved or earned in this environment.
           </p>
           <p>
-            When deployed to mainnet, real USDC deposits will earn actual yield through Compound
+            When deployed to mainnet, real USDC purchases will earn actual yield through Compound
             Finance integration.
           </p>
         </div>
