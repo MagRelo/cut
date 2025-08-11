@@ -121,7 +121,7 @@ export const Buy = () => {
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="space-y-4">
         {/* Available Balance */}
-        <h3 className="text-lg font-semibold mb-4 text-green-600">Buy CUT Tokens</h3>
+        <h3 className="text-lg font-semibold mb-4 text-green-600">Buy CUT Tokens using USDC</h3>
         <div className="text-sm text-gray-600 mt-1">
           {/* USDC explanation */}
           <div className="text-sm font-medium text-gray-700">
@@ -156,10 +156,15 @@ export const Buy = () => {
           <div className="text-lg font-semibold text-green-600 mb-2">
             ${formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
           </div>
+
+          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
+          <div className="text-lg font-semibold text-green-600 mb-2">
+            1 USDC = {formattedBalance(exchangeRate ?? 0n, 18)} CUT
+          </div>
         </div>
         <div>
           <label htmlFor="buy-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            USDC Amount to Buy
+            Amount to Buy (USDC)
           </label>
           <input
             id="buy-amount"

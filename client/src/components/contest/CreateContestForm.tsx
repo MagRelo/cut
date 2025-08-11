@@ -69,7 +69,6 @@ export const CreateContestForm = () => {
     tournamentId: currentTournament?.id ?? "",
     settings: {
       fee: 10,
-      maxEntry: 50,
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
       platformTokenAddress: platformTokenAddress as `0x${string}`,
@@ -167,9 +166,8 @@ export const CreateContestForm = () => {
         name: formData.name,
         depositAmount: parseUnits(
           formData.settings?.fee?.toString() ?? "0",
-          platformTokenBalance?.decimals ?? 18
+          18 // PlatformToken has 18 decimals
         ),
-        maxParticipants: formData.settings?.maxEntry,
         endTime,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
         hasABI: !!EscrowFactory.abi,
@@ -184,9 +182,8 @@ export const CreateContestForm = () => {
               formData.name,
               parseUnits(
                 formData.settings?.fee?.toString() ?? "0",
-                platformTokenBalance?.decimals ?? 18
+                18 // PlatformToken has 18 decimals
               ),
-              formData.settings?.maxEntry?.toString() ?? "0",
               endTime.toString(),
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
             ],
@@ -232,22 +229,21 @@ export const CreateContestForm = () => {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label htmlFor="settings.maxEntry" className="block font-medium">
-            Maximum Entries
-          </label>
+      <div className="space-y-2">
+        <label htmlFor="settings.fee" className="block font-medium">
+          Entry Fee
+        </label>
+        <div className="relative">
           <input
             type="number"
-            id="settings.maxEntry"
-            name="settings.maxEntry"
-            value={formData.settings?.maxEntry ?? 0}
+            id="settings.fee"
+            name="settings.fee"
+            value={formData.settings?.fee ?? 0}
             onChange={(e) => {
               setFormData((prev) => ({
                 ...prev,
                 settings: {
-                  maxEntry: Number(e.target.value),
-                  fee: prev.settings?.fee ?? 0,
+                  fee: Number(e.target.value),
                   contestType: prev.settings?.contestType ?? "PUBLIC",
                   platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
                   platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
@@ -256,42 +252,12 @@ export const CreateContestForm = () => {
               }));
             }}
             min="0"
+            step="0.01"
             required
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border rounded-md pr-12"
           />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="settings.fee" className="block font-medium">
-            Entry Fee
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              id="settings.fee"
-              name="settings.fee"
-              value={formData.settings?.fee ?? 0}
-              onChange={(e) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  settings: {
-                    fee: Number(e.target.value),
-                    maxEntry: prev.settings?.maxEntry ?? 0,
-                    contestType: prev.settings?.contestType ?? "PUBLIC",
-                    platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
-                    platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
-                    chainId: prev.settings?.chainId ?? 0,
-                  },
-                }));
-              }}
-              min="0"
-              step="0.01"
-              required
-              className="w-full p-2 border rounded-md pr-12"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {platformTokenBalance?.symbol}
-            </div>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+            {platformTokenBalance?.symbol}
           </div>
         </div>
       </div>

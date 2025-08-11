@@ -13,7 +13,7 @@ import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX } from "../utils/blockchain";
 import { getContractAddress } from "../utils/contractConfig";
 
-type SortOption = "ownership" | "points" | "position" | "name";
+type SortOption = "ownership" | "points" | "position" | "name" | "score";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -187,13 +187,6 @@ export const ContestLobby: React.FC = () => {
                     tournamentStatus={contest?.tournament?.status}
                   />
                 ))}
-
-                {/* temp */}
-                <ContestActions
-                  key={`${contest?.id}-${contest?.contestLineups?.length}`}
-                  contest={contest}
-                  onSuccess={setContest}
-                />
               </div>
             </TabPanel>
 
@@ -272,6 +265,20 @@ export const ContestLobby: React.FC = () => {
                             b.player.pga_displayName || ""
                           );
                         }
+                        case "score": {
+                          const aScore = a.leaderboardTotal;
+                          const bScore = b.leaderboardTotal;
+
+                          // Handle special cases like "E" (even par)
+                          if (aScore === "E" && bScore === "E") return 0;
+                          if (aScore === "E") return -1;
+                          if (bScore === "E") return 1;
+
+                          // Handle numeric scores (negative is better in golf)
+                          const aNum = parseFloat(aScore) || 999;
+                          const bNum = parseFloat(bScore) || 999;
+                          return aNum - bNum; // Lower scores first (better golf scores)
+                        }
                         default:
                           return 0;
                       }
@@ -290,26 +297,6 @@ export const ContestLobby: React.FC = () => {
 
                   return (
                     <div className="space-y-4">
-                      {/* Sort Controls */}
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          Players ({playersData.length})
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-500">Sort by:</span>
-                          <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as SortOption)}
-                            className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                          >
-                            <option value="ownership">Ownership %</option>
-                            <option value="points">Fantasy Points</option>
-                            <option value="position">Leaderboard Position</option>
-                            <option value="name">Player Name</option>
-                          </select>
-                        </div>
-                      </div>
-
                       {/* Header */}
                       <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg border">
                         <div className="flex-1">
@@ -343,7 +330,14 @@ export const ContestLobby: React.FC = () => {
                           </button>
                         </div>
                         <div className="w-16 text-center">
-                          <h3 className="text-sm font-medium text-gray-900">Score</h3>
+                          <button
+                            onClick={() => setSortBy("score")}
+                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
+                              sortBy === "score" ? "text-emerald-600" : "text-gray-900"
+                            }`}
+                          >
+                            Score
+                          </button>
                         </div>
                         <div className="w-16 text-center">
                           <button

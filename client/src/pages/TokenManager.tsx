@@ -1,4 +1,4 @@
-import { useReadContract } from "wagmi";
+import { useReadContract, useAccount, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
 // import { TokenManagerBalanceChart } from "../components/common/TokenManagerBalanceChart";
@@ -6,8 +6,12 @@ import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { tokenManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
 import TokenManagerContract from "../utils/contracts/TokenManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
+import { createExplorerLinkJSX } from "../utils/blockchain";
 
 export function TokenManagerPage() {
+  const { address } = useAccount();
+  const chainId = useChainId();
+
   // Get token manager balance from contract
   const { data: tokenManagerBalance, isLoading: tokenManagerBalanceLoading } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
@@ -68,18 +72,129 @@ export function TokenManagerPage() {
     ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(4)
     : "1.00";
 
-  // Calculate yield percentage
-  // const yieldPercentage =
-  //   compoundYield &&
-  //   totalUSDCBalance &&
-  //   typeof totalUSDCBalance === "bigint" &&
-  //   totalUSDCBalance > 0n
-  //     ? (
-  //         (Number(formatUnits(compoundYield as bigint, 6)) /
-  //           Number(formatUnits(totalUSDCBalance, 6))) *
-  //         100
-  //       ).toFixed(4)
-  //     : "0.0000";
+  // Get total platform tokens minted
+  const { data: totalPlatformTokensMinted, isLoading: totalPlatformTokensMintedLoading } =
+    useReadContract({
+      address: tokenManagerAddress as `0x${string}`,
+      abi: TokenManagerContract.abi,
+      functionName: "totalPlatformTokensMinted",
+    });
+
+  // Format total platform tokens minted for display
+  const formattedTotalPlatformTokensMinted = totalPlatformTokensMinted
+    ? Number(formatUnits(totalPlatformTokensMinted as bigint, 18)).toFixed(0)
+    : "0";
+
+  // Get token manager USDC balance
+  const { data: tokenManagerUSDCBalance, isLoading: tokenManagerUSDCBalanceLoading } =
+    useReadContract({
+      address: tokenManagerAddress as `0x${string}`,
+      abi: TokenManagerContract.abi,
+      functionName: "getTokenManagerUSDCBalance",
+    });
+
+  // Format token manager USDC balance for display
+  const formattedTokenManagerUSDCBalance = tokenManagerUSDCBalance
+    ? Number(formatUnits(tokenManagerUSDCBalance as bigint, 6)).toFixed(2)
+    : "0.00";
+
+  // Get total available balance
+  const { data: totalAvailableBalance, isLoading: totalAvailableBalanceLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getTotalAvailableBalance",
+  });
+
+  // Format total available balance for display
+  const formattedTotalAvailableBalance = totalAvailableBalance
+    ? Number(formatUnits(totalAvailableBalance as bigint, 6)).toFixed(2)
+    : "0.00";
+
+  // Get last yield update time
+  const { data: lastYieldUpdateTime, isLoading: lastYieldUpdateTimeLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getLastYieldUpdateTime",
+  });
+
+  // Format last yield update time for display
+  const formattedLastYieldUpdateTime = lastYieldUpdateTime
+    ? new Date(Number(lastYieldUpdateTime) * 1000).toLocaleString()
+    : "Never";
+
+  // Get accumulated yield per token
+  const { data: accumulatedYieldPerToken, isLoading: accumulatedYieldPerTokenLoading } =
+    useReadContract({
+      address: tokenManagerAddress as `0x${string}`,
+      abi: TokenManagerContract.abi,
+      functionName: "getAccumulatedYieldPerToken",
+    });
+
+  // Format accumulated yield per token for display
+  const formattedAccumulatedYieldPerToken = accumulatedYieldPerToken
+    ? Number(formatUnits(accumulatedYieldPerToken as bigint, 18)).toFixed(6)
+    : "0.000000";
+
+  // Get user's claimable yield (if address is available)
+  const { data: userClaimableYield, isLoading: userClaimableYieldLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getClaimableYield",
+    args: address ? [address] : undefined,
+  });
+
+  // Format user's claimable yield for display
+  const formattedUserClaimableYield = userClaimableYield
+    ? Number(formatUnits(userClaimableYield as bigint, 6)).toFixed(6)
+    : "0.000000";
+
+  // Get user's last yield per token (if address is available)
+  const { data: userLastYieldPerToken, isLoading: userLastYieldPerTokenLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "userLastYieldPerToken",
+    args: address ? [address] : undefined,
+  });
+
+  // Format user's last yield per token for display
+  const formattedUserLastYieldPerToken = userLastYieldPerToken
+    ? Number(formatUnits(userLastYieldPerToken as bigint, 18)).toFixed(6)
+    : "0.000000";
+
+  // Get user's accumulated yield (if address is available)
+  const { data: userAccumulatedYield, isLoading: userAccumulatedYieldLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "userAccumulatedYield",
+    args: address ? [address] : undefined,
+  });
+
+  // Format user's accumulated yield for display
+  const formattedUserAccumulatedYield = userAccumulatedYield
+    ? Number(formatUnits(userAccumulatedYield as bigint, 6)).toFixed(6)
+    : "0.000000";
+
+  // Get contract addresses
+  const { data: usdcTokenAddress, isLoading: usdcTokenAddressLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "usdcToken",
+  });
+
+  const {
+    data: platformTokenAddressFromContract,
+    isLoading: platformTokenAddressFromContractLoading,
+  } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "platformToken",
+  });
+
+  const { data: cUSDCAddress, isLoading: cUSDCAddressLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "cUSDC",
+  });
 
   return (
     <div className="p-4">
@@ -92,13 +207,13 @@ export function TokenManagerPage() {
       {/* Platform Token Manager Figures */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Platform Token Manager
+          Platform Token Manager Overview
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           {/* Original Purchases */}
           <div className="font-medium">
-            Purchases
+            Total Purchases
             <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
           <div className="text-right">
@@ -109,10 +224,23 @@ export function TokenManagerPage() {
             )}
           </div>
 
+          {/* Total Platform Tokens Minted */}
+          <div className="font-medium">
+            Total CUT Minted
+            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+          </div>
+          <div className="text-right">
+            {totalPlatformTokensMintedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              `${formattedTotalPlatformTokensMinted} CUT`
+            )}
+          </div>
+
           {/* Token Manager Balance */}
           <div className="font-medium">
-            Balance
-            <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span>
+            Total Balance
+            <span className="text-gray-400 ml-2 text-sm">(USDC + Yield)</span>
           </div>
           <div className="text-right">
             {tokenManagerBalanceLoading ? (
@@ -122,9 +250,22 @@ export function TokenManagerPage() {
             )}
           </div>
 
+          {/* Token Manager USDC Balance */}
+          <div className="font-medium">
+            USDC Balance
+            <span className="text-gray-400 ml-2 text-sm">(In Contract)</span>
+          </div>
+          <div className="text-right">
+            {tokenManagerUSDCBalanceLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              `$${formattedTokenManagerUSDCBalance}`
+            )}
+          </div>
+
           {/* Compound Yield */}
           <div className="font-medium">Yield Earned</div>
-          <div className="text-right">
+          <div className="text-right text-green-600">
             {compoundYieldLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
@@ -132,15 +273,18 @@ export function TokenManagerPage() {
             )}
           </div>
 
-          {/* Yield Percentage */}
-          {/* <div className="font-medium">Yield %</div>
-          <div className="text-right text-green-600 font-semibold">
-            {compoundYieldLoading || totalUSDCBalanceLoading ? (
-              <span className="text-gray-400">Loading...</span>
+          {/* Total Available Balance */}
+          <div className="font-medium">
+            Total Available
+            <span className="text-gray-400 ml-2 text-sm">(USDC + cUSDC)</span>
+          </div>
+          <div className="text-right">
+            {totalAvailableBalanceLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `${yieldPercentage}%`
+              `$${formattedTotalAvailableBalance}`
             )}
-          </div> */}
+          </div>
 
           {/* Platform Token Supply */}
           <div className="font-medium">CUT Supply</div>
@@ -160,6 +304,168 @@ export function TokenManagerPage() {
             ) : (
               `1 CUT = $${formattedExchangeRate}`
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Yield Tracking Information */}
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-gray-700 font-display mb-2">Yield Tracking</div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* Last Yield Update Time */}
+          <div className="font-medium">
+            Last Yield Update
+            <span className="text-gray-400 ml-2 text-sm">(Timestamp)</span>
+          </div>
+          <div className="text-right">
+            {lastYieldUpdateTimeLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              formattedLastYieldUpdateTime
+            )}
+          </div>
+
+          {/* Accumulated Yield Per Token */}
+          <div className="font-medium">
+            Yield Per Token
+            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+          </div>
+          <div className="text-right">
+            {accumulatedYieldPerTokenLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              formattedAccumulatedYieldPerToken
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* User-Specific Information */}
+      {address && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
+          <div className="text-lg font-semibold text-blue-800 font-display mb-2">
+            Your Yield Information
+          </div>
+          <div className="text-sm text-blue-700 mb-2">
+            Wallet: {address.slice(0, 6)}...{address.slice(-4)}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* User's Claimable Yield */}
+            <div className="font-medium">
+              Your Claimable Yield
+              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+            </div>
+            <div className="text-right text-green-600">
+              {userClaimableYieldLoading ? (
+                <span className="text-gray-400 text-sm">Loading...</span>
+              ) : (
+                `$${formattedUserClaimableYield}`
+              )}
+            </div>
+
+            {/* User's Last Yield Per Token */}
+            <div className="font-medium">
+              Your Last Yield Per Token
+              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+            </div>
+            <div className="text-right">
+              {userLastYieldPerTokenLoading ? (
+                <span className="text-gray-400 text-sm">Loading...</span>
+              ) : (
+                formattedUserLastYieldPerToken
+              )}
+            </div>
+
+            {/* User's Accumulated Yield */}
+            <div className="font-medium">
+              Your Accumulated Yield
+              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+            </div>
+            <div className="text-right">
+              {userAccumulatedYieldLoading ? (
+                <span className="text-gray-400 text-sm">Loading...</span>
+              ) : (
+                `$${formattedUserAccumulatedYield}`
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contract Addresses */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-gray-700 font-display mb-2">
+          Contract Addresses
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          {/* USDC Token Address */}
+          <div className="flex justify-between">
+            <span className="font-medium">USDC Token:</span>
+            <span className="font-mono">
+              {usdcTokenAddressLoading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : chainId && usdcTokenAddress ? (
+                createExplorerLinkJSX(
+                  usdcTokenAddress as string,
+                  chainId,
+                  `${(usdcTokenAddress as string)?.slice(0, 6)}...${(
+                    usdcTokenAddress as string
+                  )?.slice(-4)}`,
+                  "text-blue-600 hover:text-blue-800 underline"
+                )
+              ) : (
+                `${(usdcTokenAddress as string)?.slice(0, 6)}...${(
+                  usdcTokenAddress as string
+                )?.slice(-4)}`
+              )}
+            </span>
+          </div>
+
+          {/* Platform Token Address */}
+          <div className="flex justify-between">
+            <span className="font-medium">Platform Token:</span>
+            <span className="font-mono">
+              {platformTokenAddressFromContractLoading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : chainId && platformTokenAddressFromContract ? (
+                createExplorerLinkJSX(
+                  platformTokenAddressFromContract as string,
+                  chainId,
+                  `${(platformTokenAddressFromContract as string)?.slice(0, 6)}...${(
+                    platformTokenAddressFromContract as string
+                  )?.slice(-4)}`,
+                  "text-blue-600 hover:text-blue-800 underline"
+                )
+              ) : (
+                `${(platformTokenAddressFromContract as string)?.slice(0, 6)}...${(
+                  platformTokenAddressFromContract as string
+                )?.slice(-4)}`
+              )}
+            </span>
+          </div>
+
+          {/* cUSDC Address */}
+          <div className="flex justify-between">
+            <span className="font-medium">Compound cUSDC:</span>
+            <span className="font-mono">
+              {cUSDCAddressLoading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : chainId && cUSDCAddress ? (
+                createExplorerLinkJSX(
+                  cUSDCAddress as string,
+                  chainId,
+                  `${(cUSDCAddress as string)?.slice(0, 6)}...${(cUSDCAddress as string)?.slice(
+                    -4
+                  )}`,
+                  "text-blue-600 hover:text-blue-800 underline"
+                )
+              ) : (
+                `${(cUSDCAddress as string)?.slice(0, 6)}...${(cUSDCAddress as string)?.slice(-4)}`
+              )}
+            </span>
           </div>
         </div>
       </div>

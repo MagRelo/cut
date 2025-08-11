@@ -4,7 +4,7 @@ import Escrow from '../../../contracts/Escrow.json' with { type: 'json' };
 
 export interface ContestSettings {
   fee: number;
-  maxEntry: number;
+  maxEntry?: number;
   paymentTokenAddress: string;
   paymentTokenSymbol: string;
   chainId: number;

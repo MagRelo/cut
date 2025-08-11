@@ -6,7 +6,7 @@ export type ContestStatus = "OPEN" | "CLOSED" | "SETTLED" | "CANCELLED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 export interface ContestSettings {
   fee: number;
-  maxEntry: number;
+  maxEntry?: number;
   contestType: ContestType;
   platformTokenAddress: string;
   platformTokenSymbol: string;

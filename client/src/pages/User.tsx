@@ -11,7 +11,7 @@ import { getContractAddress } from "../utils/contractConfig";
 
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
-import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
+import TokenManagerContract from "../utils/contracts/TokenManager.json";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -21,6 +21,7 @@ export function UserPage() {
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
+  const tokenManagerAddress = getContractAddress(chainId ?? 0, "tokenManagerAddress");
 
   // platformTokenAddress balance
   const { data: platformTokenBalance } = useBalance({
@@ -44,16 +45,18 @@ export function UserPage() {
     return Number(formatUnits(balance, 6)).toFixed(2);
   };
 
-  // get yield value
-  const { data: yieldValue } = useReadContract({
-    address: platformTokenAddress as `0x${string}`,
-    abi: PlatformTokenContract.abi,
-    functionName: "getYield",
+  // Get user's claimable yield from TokenManager contract
+  const { data: userClaimableYield, isLoading: userClaimableYieldLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getClaimableYield",
+    args: address ? [address] : undefined,
   });
 
-  // Calculate yield percentage
-  const yieldPercentage =
-    yieldValue && typeof yieldValue === "bigint" && yieldValue > 0n ? "100.00" : "0.00";
+  // Format user's claimable yield for display
+  const formattedUserClaimableYield = userClaimableYield
+    ? Number(formatUnits(userClaimableYield as bigint, 6)).toFixed(6)
+    : "0.000000";
 
   // if user is not connected, show the connect component
   if (!user) {
@@ -78,16 +81,22 @@ export function UserPage() {
             ${formattedPlatformBalance(platformTokenBalance?.value ?? 0n)}
           </div>
 
-          {/* Yield */}
+          {/* Claimable Yield */}
           <div className="text-lg font-semibold text-gray-700 font-display">
-            Yield
+            Claimable Yield
             {/* "whats this?" link that leads to /token-manager */}
             <Link to="/token-manager" className="text-gray-500 hover:text-gray-700 ml-2 text-sm">
               {" "}
               What's this?
             </Link>
           </div>
-          <div className="text-lg font-semibold text-gray-700 font-display">{yieldPercentage}%</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">
+            {userClaimableYieldLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              `$${formattedUserClaimableYield}`
+            )}
+          </div>
         </div>
 
         <hr className="my-4" />
