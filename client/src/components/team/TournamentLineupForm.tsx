@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlayerSelectionCard } from "./PlayerSelectionCard";
-import { PlayerSelectionModal } from "./PlayerSelectionModal";
+
+import { TournamentLineup, PlayerWithTournamentData } from "../../types.new/player";
+
 import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";
-import { TournamentLineup, PlayerWithTournamentData } from "../../types.new/player";
 import { ErrorMessage } from "../util/ErrorMessage";
+
+import { PlayerSelectionModal } from "./PlayerSelectionModal";
+import { PlayerSelectionCard } from "./PlayerSelectionCard";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 
 /**
