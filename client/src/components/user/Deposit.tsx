@@ -9,8 +9,8 @@ import {
 } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { treasuryAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
-import TreasuryContract from "../../utils/contracts/Treasury.json";
+import { tokenManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import TokenManagerContract from "../../utils/contracts/TokenManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export const Deposit = () => {
@@ -33,10 +33,10 @@ export const Deposit = () => {
     token: paymentTokenAddress as `0x${string}`,
   });
 
-  // Get treasury exchange rate
+  // Get token manager exchange rate
   const { data: exchangeRate } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
     functionName: "getExchangeRate",
   });
 
@@ -61,7 +61,7 @@ export const Deposit = () => {
       // Execute the deposit transaction with approval
       sendCalls({
         calls: [
-          // First approve the Treasury to spend USDC
+          // First approve the TokenManager to spend USDC
           {
             abi: [
               {
@@ -75,22 +75,22 @@ export const Deposit = () => {
                 stateMutability: "nonpayable",
               },
             ],
-            args: [treasuryAddress as `0x${string}`, usdcAmount],
+            args: [tokenManagerAddress as `0x${string}`, usdcAmount],
             functionName: "approve",
             to: paymentTokenAddress as `0x${string}`,
           },
-          // Then deposit USDC to Treasury
+          // Then deposit USDC to TokenManager
           {
-            abi: TreasuryContract.abi,
+            abi: TokenManagerContract.abi,
             args: [usdcAmount],
             functionName: "depositUSDC",
-            to: treasuryAddress as `0x${string}`,
+            to: tokenManagerAddress as `0x${string}`,
           },
         ],
       });
     } catch (error) {
-      console.error("Error depositing to treasury:", error);
-      setDepositError("Failed to deposit to treasury");
+      console.error("Error depositing to token manager:", error);
+      setDepositError("Failed to deposit to token manager");
     }
   };
 

@@ -29,10 +29,10 @@ async function isSponsoredContract(
     }
 
     // Check if any address matches our contracts
-    const TreasuryAddress = process.env.TOKEN_MANAGER?.toLowerCase();
+    const TokenManagerAddress = process.env.TOKEN_MANAGER?.toLowerCase();
     const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
 
-    console.log({ TreasuryAddress });
+    console.log({ TreasuryAddress: TokenManagerAddress });
     console.log({ EscrowFactoryAddress });
     console.log({ to: addresses });
 
@@ -52,7 +52,7 @@ async function isSponsoredContract(
     // Check if all addresses are either merchant factory, payment token, or sponsored contests
     const allSponsored = addresses.every(
       (address) =>
-        address === TreasuryAddress ||
+        address === TokenManagerAddress ||
         address === EscrowFactoryAddress ||
         contestAddresses.includes(address)
     );
@@ -71,9 +71,10 @@ const portoHandler = MerchantRpc.requestHandler({
   key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
   sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
     // const isSponsored = await isSponsoredContract(request);
-    // console.log("Porto sponsor function called; isSponsored:", isSponsored);
-    // return isSponsored;
-    return true;
+    const isSponsored = true;
+    console.log("Porto sponsor function called; isSponsored:", isSponsored);
+    return isSponsored;
+    // return true;
   },
 });
 
@@ -81,7 +82,7 @@ const portoHandler = MerchantRpc.requestHandler({
 router.all(
   "/rpc",
   (req, res, next) => {
-    console.log("Porto RPC request received");
+    // console.log("Porto RPC request received");
     next();
   },
   createPortoMiddleware(portoHandler)

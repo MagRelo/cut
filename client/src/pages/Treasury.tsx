@@ -3,16 +3,16 @@ import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
 // import { TreasuryBalanceChart } from "../components/common/TreasuryBalanceChart";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { treasuryAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
-import TreasuryContract from "../utils/contracts/Treasury.json";
+import { tokenManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
+import TokenManagerContract from "../utils/contracts/TokenManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
 export function TreasuryPage() {
-  // Get treasury balance from contract
+  // Get token manager balance from contract
   const { data: treasuryBalance, isLoading: treasuryBalanceLoading } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
-    functionName: "getTreasuryBalance",
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getTokenManagerBalance",
   });
 
   // Format treasury balance for display
@@ -20,11 +20,11 @@ export function TreasuryPage() {
     ? Number(formatUnits(treasuryBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
-  // getCompoundYield() from Treasury contract
+  // getCompoundUSDCBalance() from TokenManager contract
   const { data: compoundYield, isLoading: compoundYieldLoading } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
-    functionName: "getCompoundYield",
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getCompoundUSDCBalance",
   });
 
   // Format compound yield for display
@@ -34,8 +34,8 @@ export function TreasuryPage() {
 
   // Get total USDC balance (original deposits)
   const { data: totalUSDCBalance, isLoading: totalUSDCBalanceLoading } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
     functionName: "totalUSDCBalance",
   });
 
@@ -58,8 +58,8 @@ export function TreasuryPage() {
 
   // Get exchange rate
   const { data: exchangeRate, isLoading: exchangeRateLoading } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
     functionName: "getExchangeRate",
   });
 
@@ -84,15 +84,15 @@ export function TreasuryPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/user" }, { label: "Treasury" }]}
+        items={[{ label: "Account", path: "/user" }, { label: "Token Manager" }]}
         className="mb-3"
       />
-      <PageHeader title="Treasury" className="mb-3" />
+      <PageHeader title="Token Manager" className="mb-3" />
 
       {/* Platform Treasury Figures */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Platform Treasury
+          Platform Token Manager
         </div>
 
         <div className="grid grid-cols-2 gap-2">

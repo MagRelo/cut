@@ -9,8 +9,8 @@ import {
 } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { platformTokenAddress, treasuryAddress } from "../../utils/contracts/sepolia.json";
-import TreasuryContract from "../../utils/contracts/Treasury.json";
+import { platformTokenAddress, tokenManagerAddress } from "../../utils/contracts/sepolia.json";
+import TokenManagerContract from "../../utils/contracts/TokenManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export const Withdraw = () => {
@@ -33,10 +33,10 @@ export const Withdraw = () => {
     token: platformTokenAddress as `0x${string}`,
   });
 
-  // Get treasury exchange rate
+  // Get token manager exchange rate
   const { data: exchangeRate } = useReadContract({
-    address: treasuryAddress as `0x${string}`,
-    abi: TreasuryContract.abi,
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
     functionName: "getExchangeRate",
   });
 
@@ -62,16 +62,16 @@ export const Withdraw = () => {
       sendCalls({
         calls: [
           {
-            abi: TreasuryContract.abi,
+            abi: TokenManagerContract.abi,
             args: [platformTokenAmount],
             functionName: "withdrawUSDC",
-            to: treasuryAddress as `0x${string}`,
+            to: tokenManagerAddress as `0x${string}`,
           },
         ],
       });
     } catch (error) {
-      console.error("Error withdrawing from treasury:", error);
-      setWithdrawError("Failed to withdraw from treasury");
+      console.error("Error withdrawing from token manager:", error);
+      setWithdrawError("Failed to withdraw from token manager");
     }
   };
 

@@ -105,15 +105,15 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     const depositAmount = escrowDetails[1]; // depositAmount is the second element
     const hasEnough = platformTokenBalance.value >= depositAmount;
 
-    // if (!hasEnough) {
-    //   console.log({
-    //     depositAmount: depositAmount.toString(),
-    //     balanceValue: platformTokenBalance.value.toString(),
-    //     hasEnoughBalance: hasEnough,
-    //     contestAddress: contest.address,
-    //     escrowPaymentToken: escrowPaymentToken,
-    //   });
-    // }
+    if (!hasEnough) {
+      console.log({
+        depositAmount: depositAmount.toString(),
+        balanceValue: platformTokenBalance.value.toString(),
+        hasEnoughBalance: hasEnough,
+        contestAddress: contest.address,
+        escrowPaymentToken: escrowDetails[0],
+      });
+    }
 
     return hasEnough;
   }, [platformTokenBalance, escrowDetails]);

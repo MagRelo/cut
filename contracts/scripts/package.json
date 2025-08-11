@@ -4,7 +4,11 @@
   "description": "Scripts for testing Cut contracts",
   "main": "index.js",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "mint": "node mintPaymentToken.js",
+    "mint:help": "node mintPaymentToken.js",
+    "mint:env": "./mint-with-env.sh"
+  },
   "dependencies": {
     "ethers": "^6.8.1",
     "dotenv": "^16.3.1"

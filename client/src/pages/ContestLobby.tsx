@@ -128,13 +128,6 @@ export const ContestLobby: React.FC = () => {
           </div>
         )}
 
-        {/* temp */}
-        <ContestActions
-          key={`${contest?.id}-${contest?.contestLineups?.length}`}
-          contest={contest}
-          onSuccess={setContest}
-        />
-
         {/* tabs */}
         <TabGroup
           key={`${contest?.id}-${contest?.contestLineups?.length}`}
@@ -194,6 +187,13 @@ export const ContestLobby: React.FC = () => {
                     tournamentStatus={contest?.tournament?.status}
                   />
                 ))}
+
+                {/* temp */}
+                <ContestActions
+                  key={`${contest?.id}-${contest?.contestLineups?.length}`}
+                  contest={contest}
+                  onSuccess={setContest}
+                />
               </div>
             </TabPanel>
 
