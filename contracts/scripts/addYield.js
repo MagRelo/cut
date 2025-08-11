@@ -9,9 +9,9 @@ dotenv.config({ path: "../.env" });
 const MOCK_CTOKEN_ABI = [
   "function balanceOf(address owner) external view returns (uint256)",
   "function totalSupply() external view returns (uint256)",
-  "function exchangeRate() external view returns (uint256)",
-  "function balanceOf(address owner) external view returns (uint)",
-  "function decimals() external pure returns (uint8)",
+  "function addYield(address to, uint256 yieldAmount) external",
+  "function underlying() external view returns (address)",
+  "function underlyingBalance(address owner) external view returns (uint256)",
 ];
 
 async function getLatestDeployment() {
@@ -52,15 +52,27 @@ async function getLatestDeployment() {
     throw new Error("MockCToken deployment not found in latest deployment");
   }
 
-  return mockCTokenDeployment.contractAddress;
+  // Find TokenManager deployment
+  const tokenManagerDeployment = deploymentData.transactions.find(
+    (tx) => tx.contractName === "TokenManager"
+  );
+
+  if (!tokenManagerDeployment) {
+    throw new Error("TokenManager deployment not found in latest deployment");
+  }
+
+  return {
+    mockCTokenAddress: mockCTokenDeployment.contractAddress,
+    tokenManagerAddress: tokenManagerDeployment.contractAddress,
+  };
 }
 
 async function addYield() {
   // Get environment variables
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
-  const RPC_URL =
-    process.env.SEPOLIA_RPC_URL || process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+  const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const YIELD_AMOUNT = process.env.YIELD_AMOUNT || "1000000"; // 1 USDC (6 decimals)
+  const YIELD_RECIPIENT = process.env.YIELD_RECIPIENT; // Address to receive yield
   const USE_LATEST_DEPLOYMENT = process.env.USE_LATEST_DEPLOYMENT === "true";
 
   if (!PRIVATE_KEY) {
@@ -68,18 +80,25 @@ async function addYield() {
   }
 
   let MOCK_CTOKEN_ADDRESS;
+  let TOKEN_MANAGER_ADDRESS;
 
   if (USE_LATEST_DEPLOYMENT) {
     try {
-      MOCK_CTOKEN_ADDRESS = await getLatestDeployment();
-      console.log("📋 Using MockCToken address from latest deployment:", MOCK_CTOKEN_ADDRESS);
+      const deployment = await getLatestDeployment();
+      MOCK_CTOKEN_ADDRESS = deployment.mockCTokenAddress;
+      TOKEN_MANAGER_ADDRESS = deployment.tokenManagerAddress;
+      console.log("📋 Using addresses from latest deployment:");
+      console.log("  MockCToken:", MOCK_CTOKEN_ADDRESS);
+      console.log("  TokenManager:", TOKEN_MANAGER_ADDRESS);
     } catch (error) {
       console.error("Failed to get latest deployment:", error.message);
-      console.log("Falling back to MOCK_CTOKEN_ADDRESS environment variable");
+      console.log("Falling back to environment variables");
       MOCK_CTOKEN_ADDRESS = process.env.MOCK_CTOKEN_ADDRESS;
+      TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
     }
   } else {
     MOCK_CTOKEN_ADDRESS = process.env.MOCK_CTOKEN_ADDRESS;
+    TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
   }
 
   if (!MOCK_CTOKEN_ADDRESS) {
@@ -97,31 +116,60 @@ async function addYield() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
+  // Use TokenManager as default recipient if not specified
+  const recipientAddress = YIELD_RECIPIENT || TOKEN_MANAGER_ADDRESS;
+
+  if (!recipientAddress) {
+    throw new Error(
+      "No recipient address specified. Set YIELD_RECIPIENT or ensure TOKEN_MANAGER_ADDRESS is available."
+    );
+  }
+
   console.log("🔗 Connected to network:", await provider.getNetwork());
   console.log("👛 Wallet address:", wallet.address);
   console.log("🎯 MockCToken address:", MOCK_CTOKEN_ADDRESS);
   console.log("💰 Yield amount to add:", YIELD_AMOUNT, "USDC (6 decimals)");
+  console.log("🎁 Yield recipient:", recipientAddress);
+  console.log("🎁 Yield amount in wei:", YIELD_AMOUNT);
 
   // Create contract instance
   const mockCToken = new ethers.Contract(MOCK_CTOKEN_ADDRESS, MOCK_CTOKEN_ABI, wallet);
 
+  // Get underlying token address and create instance
+  const underlyingAddress = await mockCToken.underlying();
+  console.log("💎 Underlying token address:", underlyingAddress);
+
+  // Create underlying token contract instance (PaymentToken)
+  const underlyingToken = new ethers.Contract(
+    underlyingAddress,
+    [
+      "function balanceOf(address owner) external view returns (uint256)",
+      "function symbol() external view returns (string)",
+    ],
+    wallet
+  );
+
+  const underlyingSymbol = await underlyingToken.symbol();
+  const mockCTokenUnderlyingBalance = await underlyingToken.balanceOf(MOCK_CTOKEN_ADDRESS);
+  console.log(
+    `💎 MockCToken ${underlyingSymbol} balance:`,
+    ethers.formatUnits(mockCTokenUnderlyingBalance, 6)
+  );
+
   try {
     // Get current state before adding yield
-    const currentBalance = await mockCToken.balanceOf(wallet.address);
+    const currentBalance = await mockCToken.balanceOf(recipientAddress);
     const currentTotalSupply = await mockCToken.totalSupply();
-    const currentExchangeRate = await mockCToken.exchangeRate();
-    const currentUnderlyingBalance = await mockCToken.balanceOf(wallet.address);
-    const decimals = await mockCToken.decimals();
+    const currentUnderlyingBalance = await mockCToken.underlyingBalance(recipientAddress);
 
     console.log("\n📊 Current state:");
-    console.log("💳 Current cToken balance:", ethers.formatUnits(currentBalance, decimals));
-    console.log("📈 Current total supply:", ethers.formatUnits(currentTotalSupply, decimals));
-    console.log("💱 Current exchange rate:", ethers.formatUnits(currentExchangeRate, 18));
+    console.log("💳 Current cToken balance:", ethers.formatUnits(currentBalance, 6));
+    console.log("📈 Current total supply:", ethers.formatUnits(currentTotalSupply, 6));
     console.log("💰 Current underlying balance:", ethers.formatUnits(currentUnderlyingBalance, 6));
 
     // Add yield
     console.log("\n🌱 Adding yield...");
-    const tx = await mockCToken.addYield(YIELD_AMOUNT);
+    const tx = await mockCToken.addYield(recipientAddress, YIELD_AMOUNT);
     console.log("📝 Transaction hash:", tx.hash);
 
     // Wait for transaction to be mined
@@ -130,27 +178,23 @@ async function addYield() {
     console.log("⛽ Gas used:", receipt.gasUsed.toString());
 
     // Get new state after adding yield
-    const newBalance = await mockCToken.balanceOf(wallet.address);
+    const newBalance = await mockCToken.balanceOf(recipientAddress);
     const newTotalSupply = await mockCToken.totalSupply();
-    const newExchangeRate = await mockCToken.exchangeRate();
-    const newUnderlyingBalance = await mockCToken.balanceOf(wallet.address);
+    const newUnderlyingBalance = await mockCToken.underlyingBalance(recipientAddress);
 
     console.log("\n📊 New state after yield:");
-    console.log("💳 New cToken balance:", ethers.formatUnits(newBalance, decimals));
-    console.log("📈 New total supply:", ethers.formatUnits(newTotalSupply, decimals));
-    console.log("💱 New exchange rate:", ethers.formatUnits(newExchangeRate, 18));
+    console.log("💳 New cToken balance:", ethers.formatUnits(newBalance, 6));
+    console.log("📈 New total supply:", ethers.formatUnits(newTotalSupply, 6));
     console.log("💰 New underlying balance:", ethers.formatUnits(newUnderlyingBalance, 6));
 
     // Calculate changes
     const balanceChange = newBalance - currentBalance;
     const totalSupplyChange = newTotalSupply - currentTotalSupply;
-    const exchangeRateChange = newExchangeRate - currentExchangeRate;
     const underlyingBalanceChange = newUnderlyingBalance - currentUnderlyingBalance;
 
     console.log("\n📈 Changes:");
-    console.log("💳 cToken balance change:", ethers.formatUnits(balanceChange, decimals));
-    console.log("📈 Total supply change:", ethers.formatUnits(totalSupplyChange, decimals));
-    console.log("💱 Exchange rate change:", ethers.formatUnits(exchangeRateChange, 18));
+    console.log("💳 cToken balance change:", ethers.formatUnits(balanceChange, 6));
+    console.log("📈 Total supply change:", ethers.formatUnits(totalSupplyChange, 6));
     console.log("💰 Underlying balance change:", ethers.formatUnits(underlyingBalanceChange, 6));
 
     console.log(

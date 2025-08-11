@@ -71,7 +71,11 @@ contract MockCToken {
         underlyingBalance[to] += yieldAmount;
         totalSupply += yieldAmount;
         
-        // In real Compound V3, the contract would have accumulated yield internally
-        // The test setup should ensure this contract has enough tokens to transfer
+        // Ensure the contract has enough underlying tokens to support this yield
+        uint256 contractBalance = underlying.balanceOf(address(this));
+        if (contractBalance < totalSupply) {
+            // Mint the difference to simulate accumulated yield
+            PaymentToken(address(underlying)).mint(address(this), totalSupply - contractBalance);
+        }
     }
 } 
