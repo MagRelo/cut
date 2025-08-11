@@ -76,12 +76,12 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url <your-rpc-url> --broadca
 1. **Verify Contracts**
 
    - Check all contracts are deployed correctly
-   - Verify treasury is set in PlatformToken
+   - Verify token manager is set in PlatformToken
    - Confirm oracle is added to EscrowFactory
 
 2. **Test Integration**
 
-   - Test USDC deposits to Treasury
+   - Test USDC deposits to Token Manager
    - Verify Compound integration works
    - Test platform token minting/burning
 
@@ -92,8 +92,8 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url <your-rpc-url> --broadca
 ## Important Notes
 
 - **Gas Fees**: Base network has lower gas fees than Ethereum mainnet
-- **USDC Approval**: Users need to approve USDC spending for Treasury
-- **Compound Integration**: Treasury automatically deposits USDC to Compound for yield
+- **USDC Approval**: Users need to approve USDC spending for Token Manager
+- **Compound Integration**: Token Manager automatically deposits USDC to Compound for yield
 - **Oracle Management**: Only authorized oracles can settle contests
 
 ## Troubleshooting

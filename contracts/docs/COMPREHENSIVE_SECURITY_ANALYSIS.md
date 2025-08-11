@@ -1,8 +1,8 @@
-# Treasury & PlatformToken Security Analysis
+# TokenManager & PlatformToken Security Analysis
 
 ## Overview
 
-This document provides a comprehensive security analysis of the Treasury and PlatformToken contracts, identifying potential vulnerabilities, attack vectors, and security recommendations.
+This document provides a comprehensive security analysis of the TokenManager and PlatformToken contracts, identifying potential vulnerabilities, attack vectors, and security recommendations.
 
 ## PlatformToken Security Analysis
 
@@ -10,11 +10,11 @@ This document provides a comprehensive security analysis of the Treasury and Pla
 
 ```solidity
 contract PlatformToken is ERC20, Ownable {
-    address public treasury;
+    address public tokenManager;
 
-    function setTreasury(address _treasury) external onlyOwner
-    function mint(address to, uint256 amount) external onlyTreasury
-    function burn(address from, uint256 amount) external onlyTreasury
+    function setTokenManager(address _tokenManager) external onlyOwner
+function mint(address to, uint256 amount) external onlyTokenManager
+function burn(address from, uint256 amount) external onlyTokenManager
 }
 ```
 
@@ -22,48 +22,48 @@ contract PlatformToken is ERC20, Ownable {
 
 #### 1. **Owner Role**
 
-- **Capabilities**: Can set treasury address
+- **Capabilities**: Can set token manager address
 - **Risk Level**: HIGH
 - **Attack Vectors**:
   - **Centralization Risk**: Single point of failure
-  - **Treasury Hijacking**: Owner can change treasury to malicious contract
+  - **Token Manager Hijacking**: Owner can change token manager to malicious contract
   - **No Timelock**: Changes take effect immediately
 
-#### 2. **Treasury Role**
+#### 2. **Token Manager Role**
 
 - **Capabilities**: Can mint and burn tokens
 - **Risk Level**: HIGH
 - **Attack Vectors**:
-  - **Infinite Minting**: Treasury can mint unlimited tokens
-  - **Arbitrary Burning**: Treasury can burn any user's tokens
+  - **Infinite Minting**: Token Manager can mint unlimited tokens
+- **Arbitrary Burning**: Token Manager can burn any user's tokens
   - **No Rate Limiting**: No limits on mint/burn operations
 
 ### Security Vulnerabilities
 
-#### 1. **Treasury Address Validation**
+#### 1. **Token Manager Address Validation**
 
 ```solidity
-function setTreasury(address _treasury) external onlyOwner {
-    require(_treasury != address(0), "Invalid treasury address");
-    treasury = _treasury;
+function setTokenManager(address _tokenManager) external onlyOwner {
+require(_tokenManager != address(0), "Invalid token manager address");
+tokenManager = _tokenManager;
 }
 ```
 
 **Issues**:
 
 - ✅ Validates zero address
-- ❌ No validation that `_treasury` is a contract
-- ❌ No validation that `_treasury` has expected interface
+- ❌ No validation that `_tokenManager` is a contract
+- ❌ No validation that `_tokenManager` has expected interface
 - ❌ No timelock or delay mechanism
 
 #### 2. **Mint/Burn Authorization**
 
 ```solidity
-function mint(address to, uint256 amount) external onlyTreasury {
+function mint(address to, uint256 amount) external onlyTokenManager {
     _mint(to, amount);
 }
 
-function burn(address from, uint256 amount) external onlyTreasury {
+function burn(address from, uint256 amount) external onlyTokenManager {
     _burn(from, amount);
 }
 ```
@@ -78,37 +78,37 @@ function burn(address from, uint256 amount) external onlyTreasury {
 
 ### Attack Vectors
 
-#### 1. **Treasury Hijacking Attack**
+#### 1. **Token Manager Hijacking Attack**
 
 ```solidity
 // Attacker becomes owner
-// Sets treasury to malicious contract
-token.setTreasury(maliciousContract);
+// Sets token manager to malicious contract
+token.setTokenManager(maliciousContract);
 // Malicious contract can now mint unlimited tokens
 ```
 
 #### 2. **Infinite Minting Attack**
 
 ```solidity
-// If treasury is compromised
-treasury.mint(attacker, type(uint256).max);
+// If token manager is compromised
+tokenManager.mint(attacker, type(uint256).max);
 // Attacker now has infinite tokens
 ```
 
 #### 3. **Arbitrary Burning Attack**
 
 ```solidity
-// If treasury is compromised
-treasury.burn(victim, victim.balanceOf(victim));
+// If token manager is compromised
+tokenManager.burn(victim, victim.balanceOf(victim));
 // Victim loses all tokens
 ```
 
-## Treasury Security Analysis
+## TokenManager Security Analysis
 
 ### Contract Structure
 
 ```solidity
-contract Treasury is ReentrancyGuard, Ownable {
+contract TokenManager is ReentrancyGuard, Ownable {
     // State variables for yield tracking
     // User-specific yield tracking mappings
     // Functions for deposit, withdraw, yield claiming
@@ -148,7 +148,7 @@ function emergencyWithdrawUSDC(address to, uint256 amount) external onlyOwner {
 - ❌ No maximum withdrawal limit
 - ❌ No timelock or delay
 - ❌ No emergency pause mechanism
-- ❌ Can drain entire treasury
+- ❌ Can drain entire token manager
 
 #### 2. **Exchange Rate Manipulation**
 
@@ -202,15 +202,15 @@ function getCompoundYield() internal view returns (uint256) {
 
 ```solidity
 // Malicious owner
-treasury.emergencyWithdrawUSDC(attacker, treasury.getTreasuryBalance());
-// Entire treasury drained
+tokenManager.emergencyWithdrawUSDC(attacker, tokenManager.getTokenManagerBalance());
+// Entire token manager drained
 ```
 
 #### 2. **Exchange Rate Manipulation**
 
 ```solidity
 // Attacker calls repeatedly
-treasury.updateExchangeRate();
+tokenManager.updateExchangeRate();
 // Could manipulate yield calculations
 ```
 
@@ -218,7 +218,7 @@ treasury.updateExchangeRate();
 
 ```solidity
 // Small deposits might lose precision
-treasury.depositUSDC(1); // 1 wei
+tokenManager.depositUSDC(1); // 1 wei
 // Could result in 0 platform tokens due to conversion
 ```
 
@@ -226,7 +226,7 @@ treasury.depositUSDC(1); // 1 wei
 
 ```solidity
 // If Compound contract is compromised
-// Treasury calculations could be manipulated
+// TokenManager calculations could be manipulated
 // Yield tracking could be inaccurate
 ```
 
@@ -234,21 +234,21 @@ treasury.depositUSDC(1); // 1 wei
 
 ### 1. **High Severity**
 
-#### A. Treasury Address Control
+#### A. Token Manager Address Control
 
-- **Issue**: Owner can change treasury to any address
+- **Issue**: Owner can change token manager to any address
 - **Impact**: Complete system compromise
 - **Recommendation**: Implement timelock and validation
 
 #### B. Emergency Withdrawal Abuse
 
-- **Issue**: Owner can drain entire treasury
+- **Issue**: Owner can drain entire token manager
 - **Impact**: Total loss of user funds
 - **Recommendation**: Add limits and timelock
 
 #### C. Infinite Minting
 
-- **Issue**: Treasury can mint unlimited tokens
+- **Issue**: Token Manager can mint unlimited tokens
 - **Impact**: Token value dilution
 - **Recommendation**: Add supply limits
 
@@ -278,14 +278,14 @@ treasury.depositUSDC(1); // 1 wei
 
 ### 1. **Immediate Fixes**
 
-#### A. Add Treasury Validation
+#### A. Add Token Manager Validation
 
 ```solidity
-function setTreasury(address _treasury) external onlyOwner {
-    require(_treasury != address(0), "Invalid treasury address");
-    require(_treasury.code.length > 0, "Must be a contract");
+function setTokenManager(address _tokenManager) external onlyOwner {
+    require(_tokenManager != address(0), "Invalid token manager address");
+    require(_tokenManager.code.length > 0, "Must be a contract");
     // Add interface validation
-    treasury = _treasury;
+    tokenManager = _tokenManager;
 }
 ```
 
@@ -308,7 +308,7 @@ function emergencyWithdrawUSDC(address to, uint256 amount) external onlyOwner {
 uint256 public maxSupply;
 uint256 public maxMintPerTx;
 
-function mint(address to, uint256 amount) external onlyTreasury {
+function mint(address to, uint256 amount) external onlyTokenManager {
     require(totalSupply() + amount <= maxSupply, "Exceeds max supply");
     require(amount <= maxMintPerTx, "Exceeds per-tx limit");
     _mint(to, amount);
@@ -366,7 +366,7 @@ function calculatePlatformTokensForUSDC(uint256 usdcAmount) internal view return
 #### A. Add Event Monitoring
 
 ```solidity
-event TreasuryChanged(address indexed oldTreasury, address indexed newTreasury);
+event TokenManagerChanged(address indexed oldTokenManager, address indexed newTokenManager);
 event EmergencyWithdrawal(address indexed to, uint256 amount);
 event LargeMint(address indexed to, uint256 amount);
 ```
@@ -469,7 +469,7 @@ function claimYield() external nonReentrant {
 
 ### **CRITICAL (Fix Immediately)**
 
-1. ✅ **Add treasury address validation** - Prevent malicious treasury setting
+1. ✅ **Add token manager address validation** - Prevent malicious token manager setting
 2. ✅ **Add supply limits** - Prevent infinite minting
 3. ✅ **Add emergency withdrawal limits** - Prevent fund drainage
 4. ✅ **Add precision validation** - Prevent fund loss
@@ -492,7 +492,7 @@ function claimYield() external nonReentrant {
 
 The current implementation has **critical security vulnerabilities** that need immediate attention:
 
-1. **Treasury address control** - High risk of complete compromise
+1. **Token Manager address control** - High risk of complete compromise
 2. **Emergency withdrawal abuse** - Risk of fund drainage
 3. **Infinite minting** - Risk of token value destruction
 4. **Precision loss** - Risk of user fund loss

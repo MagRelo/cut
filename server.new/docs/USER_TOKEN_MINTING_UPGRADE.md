@@ -1,20 +1,20 @@
 # User Token Minting Upgrade Implementation
 
-This document tracks the implementation of the enhanced token minting system that mints $1000 USDC(x), deposits it into the Treasury contract to mint CUT tokens, and transfers them to new users upon account creation.
+This document tracks the implementation of the enhanced token minting system that mints $1000 USDC(x), deposits it into the Token Manager contract to mint CUT tokens, and transfers them to new users upon account creation.
 
 ## Overview
 
 The new system implements a complete flow:
 
 1. Mint $1000 USDC(x) to the oracle wallet
-2. Approve Treasury contract to spend USDC
-3. Deposit USDC into Treasury (which mints CUT tokens to oracle wallet)
+2. Approve Token Manager contract to spend USDC
+3. Deposit USDC into Token Manager (which mints CUT tokens to oracle wallet)
 4. Transfer CUT tokens to new user
 
 ## Completed Tasks
 
 - [x] Updated `mintUserTokens.ts` service with new functions
-- [x] Added Treasury contract integration
+- [x] Added Token Manager contract integration
 - [x] Implemented proper USDC to CUT conversion flow
 - [x] Updated contract addresses to use base.json configuration
 - [x] Updated auth route to use new `mintAndTransferToNewUser` function
@@ -24,7 +24,7 @@ The new system implements a complete flow:
 ## In Progress Tasks
 
 - [ ] Test the complete flow end-to-end
-- [ ] Verify Treasury contract integration works correctly
+- [ ] Verify Token Manager contract integration works correctly
 - [ ] Update environment variables documentation
 
 ## Future Tasks
@@ -39,8 +39,8 @@ The new system implements a complete flow:
 ### Service Functions
 
 1. **`mintUSDC(amount)`** - Mints USDC(x) to oracle wallet
-2. **`approveTreasuryToSpendUSDC(amount)`** - Approves Treasury to spend USDC
-3. **`depositUSDCToTreasury(amount)`** - Deposits USDC into Treasury (mints CUT)
+2. **`approveTokenManagerToSpendUSDC(amount)`** - Approves Token Manager to spend USDC
+3. **`depositUSDCToTokenManager(amount)`** - Deposits USDC into Token Manager (mints CUT)
 4. **`transferCUTToUser(userWalletAddress, amount)`** - Transfers CUT to user
 5. **`mintAndTransferToNewUser(userWalletAddress, usdcAmount)`** - Complete flow
 
@@ -48,7 +48,7 @@ The new system implements a complete flow:
 
 - **PaymentToken (USDC)**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - **PlatformToken (CUT)**: `0x2163E7D874BDf8f81dDf470A57166202Ee0d0869`
-- **Treasury**: `0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5`
+- **Token Manager**: `0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5`
 
 ### Environment Variables Required
 
@@ -74,7 +74,7 @@ npm run tsx src/services/mintUserTokens.ts complete 0x1234... 1000
 - `server.new/src/services/mintUserTokens.ts` - ✅ Main service implementation
 - `server.new/src/routes/auth.ts` - ✅ Updated to use new function
 - `server.new/contracts/base.json` - ✅ Contract addresses configuration
-- `server.new/contracts/Treasury.json` - ✅ Treasury contract ABI
+- `server.new/contracts/TokenManager.json` - ✅ Token Manager contract ABI
 - `server.new/contracts/PaymentToken.json` - ✅ USDC contract ABI
 - `server.new/contracts/PlatformToken.json` - ✅ CUT contract ABI
 
@@ -85,11 +85,11 @@ New User Registration
     ↓
 1. Mint $1000 USDC to Oracle Wallet
     ↓
-2. Approve Treasury to Spend USDC
+2. Approve Token Manager to Spend USDC
     ↓
-3. Deposit USDC into Treasury
+3. Deposit USDC into Token Manager
     ↓
-4. Treasury Mints CUT Tokens to Oracle
+4. Token Manager Mints CUT Tokens to Oracle
     ↓
 5. Transfer CUT Tokens to New User
     ↓
@@ -106,6 +106,6 @@ User Receives $1000 Worth of CUT Tokens
 ## Security Considerations
 
 - Oracle private key must be securely stored
-- Treasury contract handles the USDC to CUT conversion
+- Token Manager contract handles the USDC to CUT conversion
 - All transactions are signed by the oracle wallet
 - User wallet addresses are validated before transfers

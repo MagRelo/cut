@@ -81,8 +81,8 @@ export function UserPage() {
           {/* Yield */}
           <div className="text-lg font-semibold text-gray-700 font-display">
             Yield
-            {/* "whats this?" link that leads to /treasury */}
-            <Link to="/treasury" className="text-gray-500 hover:text-gray-700 ml-2 text-sm">
+            {/* "whats this?" link that leads to /token-manager */}
+            <Link to="/token-manager" className="text-gray-500 hover:text-gray-700 ml-2 text-sm">
               {" "}
               What's this?
             </Link>
@@ -92,7 +92,7 @@ export function UserPage() {
 
         <hr className="my-4" />
 
-        {/* Treasury Operations */}
+        {/* Token Manager Operations */}
         <div className="flex justify-center gap-2">
           <Link
             to="/deposit"
@@ -114,10 +114,10 @@ export function UserPage() {
           </Link>
         </div>
 
-        {/* Link to treasury */}
+        {/* Link to token manager */}
         {/* <div className="flex justify-center">
-          <Link to="/treasury" className="text-gray-500 hover:text-gray-700">
-            View Treasury
+          <Link to="/token-manager" className="text-gray-500 hover:text-gray-700">
+            View Token Manager
           </Link>
         </div> */}
       </div>

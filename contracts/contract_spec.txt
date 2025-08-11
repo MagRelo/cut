@@ -3,13 +3,13 @@ Contracts
 Purpose: This system will provide accounting for a fantasy sports platform. Users can 
   create new escrows, deposit into escrows. Escrow contracts will hold the funds for the escrow 
   while the escrow is in progress. The Oracle will close escrows to new deposits and 
-  set the split for the escrow contracts. The Treasury/Exchange contract handles USDC to platform token conversion and yield generation.
+  set the split for the escrow contracts. The TokenManager/Exchange contract handles USDC to platform token conversion and yield generation.
 
 Actors:
 - Oracle: this actor is responsible for closing escrows to new deposits, and setting the results of the escrows
   - Must be whitelisted by platform admin
   - Can be revoked if malicious behavior is detected
-  - Receives all yield from treasury operations
+  - Receives all yield from token manager operations
 - Escrow Owner: this actor is the creator of the escrow contract
   - Can cancel and refund participants when escrow is in OPEN state
   - Has full control over escrow cancellation
@@ -17,17 +17,17 @@ Actors:
   - Must have sufficient funds in the payment token
   - Can withdraw from escrows before they are in progress
   - Can emergency withdraw after escrow end time
-- Treasury Manager: this actor manages the treasury/exchange operations
+- Token Manager: this actor manages the token manager/exchange operations
   - Can mint platform tokens for USDC deposits
   - Can burn platform tokens for USDC withdrawals
   - Manages Aave integration for yield generation
 
 Contracts: 
-- Treasury/Exchange (Ownable)
+- TokenManager/Exchange (Ownable)
   - depositUSDC(uint256 amount) - Converts USDC to platform tokens
   - withdrawUSDC(uint256 platformTokenAmount) - Converts platform tokens back to USDC
   - getExchangeRate() returns (uint256) - Current USDC to platform token exchange rate
-  - getTreasuryBalance() returns (uint256) - Total USDC held in treasury
+  - getTokenManagerBalance() returns (uint256) - Total USDC held in token manager
   - getPlatformTokenSupply() returns (uint256) - Total platform tokens minted
   - emergencyWithdrawUSDC(address to, uint256 amount) (Owner only) - Emergency USDC withdrawal
   - Constructor requires: usdcToken, platformToken, aavePoolAddressesProvider
@@ -43,7 +43,7 @@ Contracts:
   - addOracle(address oracle) (Owner only)
   - removeOracle(address oracle) (Owner only)
   - getEscrows() returns (Escrow[])
-  - Constructor requires: paymentToken, treasuryAddress
+  - Constructor requires: paymentToken, tokenManagerAddress
 
 - Escrow (Ownable)
   - deposit() - Requires approval of depositAmount tokens
@@ -52,7 +52,7 @@ Contracts:
   - closeDeposits() (Oracle only)
   - distribute(uint256[] payouts) (Oracle only) - Takes basis points array
   - cancelAndRefund() (Owner only) - Cancels escrow and refunds all participants
-  - Constructor requires: name, depositAmount, maxParticipants, endTime, paymentToken, oracle, treasuryAddress
+  - Constructor requires: name, depositAmount, maxParticipants, endTime, paymentToken, oracle, tokenManagerAddress
   - Owner is set to msg.sender in constructor (escrow creator)
 
 - Payment Token (ERC20 - USDC simulation)
@@ -78,25 +78,25 @@ Contracts:
   - transferFrom(address from, address to, uint256 amount) returns (bool)
   - approve(address spender, uint256 amount) returns (bool)
   - allowance(address owner, address spender) returns (uint256)
-  - mint(address to, uint256 amount) (Treasury only)
-  - burn(address from, uint256 amount) (Treasury only)
+  - mint(address to, uint256 amount) (TokenManager only)
+- burn(address from, uint256 amount) (TokenManager only)
 
 Token Distribution Rules:
 - Platform Token Minting:
-  - Treasury can mint platform tokens for USDC deposits
-  - Exchange rate determined by treasury balance and platform token supply
+  - TokenManager can mint platform tokens for USDC deposits
+  - Exchange rate determined by token manager balance and platform token supply
 - Platform Token Burning:
-  - Treasury can burn platform tokens for USDC withdrawals
+  - TokenManager can burn platform tokens for USDC withdrawals
 - USDC Simulation:
   - Platform can mint tokens for ecosystem growth
   - Platform can burn tokens for deflationary pressure
   - Note: This is a USDC simulation for development. Production should use actual USDC.
 
-Treasury/Exchange Integration:
+TokenManager/Exchange Integration:
 - All USDC deposits are automatically deposited into Compound to earn yield
-- Exchange rate calculated as: (Treasury USDC Balance + Compound Yield) / Platform Token Supply
+- Exchange rate calculated as: (TokenManager USDC Balance + Compound Yield) / Platform Token Supply
 - Yield is tracked separately from initial deposits
-- Treasury receives all yield from Compound deposits
+- TokenManager receives all yield from Compound deposits
 - Platform tokens are minted/burned based on current exchange rate
 
 States:
@@ -124,19 +124,19 @@ Financial Considerations:
 - Maximum escrow size: Configurable per escrow
 - Deposit amounts: Must be in payment token (USDC simulation)
 - Emergency withdrawal: Available after escrow end time
-- Yield distribution: Treasury receives all yield from Aave
+- Yield distribution: TokenManager receives all yield from Aave
 - Participant payouts: Based on initial deposits only
-- Exchange rate: Dynamic based on treasury balance and platform token supply
+- Exchange rate: Dynamic based on token manager balance and platform token supply
 
 Security Considerations:
 - Reentrancy protection (using OpenZeppelin's ReentrancyGuard)
 - Access control for all privileged functions (using OpenZeppelin's Ownable)
 - Oracle whitelist system
 - Funds safety checks
-- Token minting/burning restrictions (Treasury only for platform tokens)
-- Compound integration for yield generation in Treasury only
+- Token minting/burning restrictions (TokenManager only for platform tokens)
+- Compound integration for yield generation in TokenManager only
 - External calls made last in distribute function
-- Treasury emergency withdrawal capability
+- TokenManager emergency withdrawal capability
 
 Constants to Set/Decide:
 - Payment Token Name: "USD Coin(x)" (simulation)
@@ -147,16 +147,16 @@ Constants to Set/Decide:
 - Platform Token Decimals: 18
 - Escrow Max Participants: Configurable per escrow
 - Escrow End Time: Must be in future
-- Compound cUSDC and Comptroller: Required for treasury yield generation
+- Compound cUSDC and Comptroller: Required for token manager yield generation
 
 Key Differences from Previous Spec:
-- Treasury/Exchange contract handles USDC to platform token conversion
-- Compound integration moved from Escrow contracts to Treasury contract
+- TokenManager/Exchange contract handles USDC to platform token conversion
+- Compound integration moved from Escrow contracts to TokenManager contract
 - Platform token introduced for ecosystem
-- Dynamic exchange rate based on treasury balance and platform token supply
-- All yield goes to treasury instead of oracle
+- Dynamic exchange rate based on token manager balance and platform token supply
+- All yield goes to token manager instead of oracle
 - Oracle no longer receives yield directly
-- Treasury manages all Compound deposits and yield generation
+- TokenManager manages all Compound deposits and yield generation
 
 
 
@@ -166,5 +166,5 @@ Contract	Address	Purpose
 PaymentToken	0x069d435bCb929d54A8A4C7973Fe7f66733726599	USDC simulation token
 PlatformToken	0x1A213BD5CB7ABa03D21e385E38a1BAd36B0C8b65	CUT platform token
 MockCToken	0x326DC41e6E1eE524D515940a2d655Fe0D5103A0a	Compound v3 simulation
-Treasury	0x49b10152Ef893D405189b274E2064C63B2EF8C23	Main treasury contract
+TokenManager	0x49b10152Ef893D405189b274E2064C63B2EF8C23	Main token manager contract
 EscrowFactory	0x98A926Dc63982A21030ff84d8c67F1DC865D8c1a	Escrow factory

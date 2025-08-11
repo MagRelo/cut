@@ -1,7 +1,7 @@
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
-// import { TreasuryBalanceChart } from "../components/common/TreasuryBalanceChart";
+// import { TokenManagerBalanceChart } from "../components/common/TokenManagerBalanceChart";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { tokenManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
 import TokenManagerContract from "../utils/contracts/TokenManager.json";
@@ -89,7 +89,7 @@ export function TokenManagerPage() {
       />
       <PageHeader title="Token Manager" className="mb-3" />
 
-      {/* Platform Treasury Figures */}
+      {/* Platform Token Manager Figures */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Platform Token Manager
@@ -209,7 +209,7 @@ export function TokenManagerPage() {
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Historical Balance
         </div>
-        <TreasuryBalanceChart className="mb-4" />
+        <TokenManagerBalanceChart className="mb-4" />
       </div> */}
     </div>
   );

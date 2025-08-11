@@ -74,6 +74,6 @@
 ## Notes
 
 - This deployment uses the actual contract sources from `/contracts/src/`
-- No Treasury contract exists in current implementation
+- TokenManager contract handles all treasury/exchange functionality
 - All yield flows through TokenManager to CUT token holders
 - MockCToken is used for Sepolia testing; production would use real Compound cUSDC

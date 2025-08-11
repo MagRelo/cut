@@ -40,7 +40,7 @@ The Bet the Cut platform is a decentralized betting and fantasy sports system bu
 - `mint(address to, uint256 amount)` - Mints tokens (TokenManager only)
 - `burn(address from, uint256 amount)` - Burns tokens (TokenManager only)
 
-### TokenManager.sol (Treasury.sol)
+### TokenManager.sol
 
 **Purpose**: Core contract that manages USDC deposits, platform token minting/burning, and yield generation through Compound V3.
 

@@ -32,7 +32,7 @@ async function isSponsoredContract(
     const TokenManagerAddress = process.env.TOKEN_MANAGER?.toLowerCase();
     const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
 
-    console.log({ TreasuryAddress: TokenManagerAddress });
+    console.log({ TokenManagerAddress });
     console.log({ EscrowFactoryAddress });
     console.log({ to: addresses });
 

@@ -113,7 +113,7 @@ export async function distributeContest() {
         const distributeTx = await escrowContract.distribute(payouts);
         await distributeTx.wait();
 
-        // Minting is now handled by the treasury
+        // Minting is now handled by the token manager
         // const platformTokenContract = new ethers.Contract(
         //   process.env.PLATFORM_TOKEN_ADDRESS!,
         //   PlatformToken.abi,

@@ -5,10 +5,10 @@ import path from "path";
 
 dotenv.config({ path: "../.env" });
 
-// Treasury ABI - including internal functions for debugging
-const TREASURY_ABI = [
+// TokenManager ABI - including internal functions for debugging
+const TOKEN_MANAGER_ABI = [
   "function getExchangeRate() external view returns (uint256)",
-  "function getTreasuryBalance() external view returns (uint256)",
+  "function getTokenManagerBalance() external view returns (uint256)",
   "function getPlatformTokenSupply() external view returns (uint256)",
   "function totalUSDCBalance() external view returns (uint256)",
   "function totalPlatformTokensMinted() external view returns (uint256)",
@@ -54,61 +54,63 @@ async function getLatestDeployment() {
 
   const deploymentData = JSON.parse(fs.readFileSync(latestRunFile, "utf8"));
 
-  // Find Treasury and MockCToken deployments
-  const treasuryDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "Treasury"
+  // Find TokenManager and MockCToken deployments
+  const tokenManagerDeployment = deploymentData.transactions.find(
+    (tx) => tx.contractName === "TokenManager"
   );
   const mockCTokenDeployment = deploymentData.transactions.find(
     (tx) => tx.contractName === "MockCToken"
   );
 
-  if (!treasuryDeployment) {
-    throw new Error("Treasury deployment not found in latest deployment");
+  if (!tokenManagerDeployment) {
+    throw new Error("TokenManager deployment not found in latest deployment");
   }
   if (!mockCTokenDeployment) {
     throw new Error("MockCToken deployment not found in latest deployment");
   }
 
   return {
-    treasury: treasuryDeployment.contractAddress,
+    tokenManager: tokenManagerDeployment.contractAddress,
     mockCToken: mockCTokenDeployment.contractAddress,
   };
 }
 
-async function debugTreasuryYield() {
+async function debugTokenManagerYield() {
   // Get environment variables
   const RPC_URL =
     process.env.SEPOLIA_RPC_URL || process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const USE_LATEST_DEPLOYMENT = process.env.USE_LATEST_DEPLOYMENT === "true";
 
-  let TREASURY_ADDRESS, MOCK_CTOKEN_ADDRESS;
+  let TOKEN_MANAGER_ADDRESS, MOCK_CTOKEN_ADDRESS;
 
   if (USE_LATEST_DEPLOYMENT) {
     try {
       const addresses = await getLatestDeployment();
-      TREASURY_ADDRESS = addresses.treasury;
+      TOKEN_MANAGER_ADDRESS = addresses.tokenManager;
       MOCK_CTOKEN_ADDRESS = addresses.mockCToken;
       console.log("📋 Using addresses from latest deployment:");
-      console.log("  Treasury:", TREASURY_ADDRESS);
+      console.log("  TokenManager:", TOKEN_MANAGER_ADDRESS);
       console.log("  MockCToken:", MOCK_CTOKEN_ADDRESS);
     } catch (error) {
       console.error("Failed to get latest deployment:", error.message);
       console.log("Falling back to environment variables");
-      TREASURY_ADDRESS = process.env.TREASURY_ADDRESS;
+      TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
       MOCK_CTOKEN_ADDRESS = process.env.MOCK_CTOKEN_ADDRESS;
     }
   } else {
-    TREASURY_ADDRESS = process.env.TREASURY_ADDRESS;
+    TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
     MOCK_CTOKEN_ADDRESS = process.env.MOCK_CTOKEN_ADDRESS;
   }
 
-  if (!TREASURY_ADDRESS || !MOCK_CTOKEN_ADDRESS) {
-    throw new Error("TREASURY_ADDRESS and MOCK_CTOKEN_ADDRESS environment variables are required");
+  if (!TOKEN_MANAGER_ADDRESS || !MOCK_CTOKEN_ADDRESS) {
+    throw new Error(
+      "TOKEN_MANAGER_ADDRESS and MOCK_CTOKEN_ADDRESS environment variables are required"
+    );
   }
 
   // Validate contract addresses
-  if (!ethers.isAddress(TREASURY_ADDRESS)) {
-    throw new Error("Invalid TREASURY_ADDRESS");
+  if (!ethers.isAddress(TOKEN_MANAGER_ADDRESS)) {
+    throw new Error("Invalid TOKEN_MANAGER_ADDRESS");
   }
   if (!ethers.isAddress(MOCK_CTOKEN_ADDRESS)) {
     throw new Error("Invalid MOCK_CTOKEN_ADDRESS");
@@ -118,27 +120,27 @@ async function debugTreasuryYield() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
 
   console.log("🔗 Connected to network:", await provider.getNetwork());
-  console.log("🎯 Treasury address:", TREASURY_ADDRESS);
+  console.log("🎯 TokenManager address:", TOKEN_MANAGER_ADDRESS);
   console.log("🎯 MockCToken address:", MOCK_CTOKEN_ADDRESS);
 
   // Create contract instances
-  const treasury = new ethers.Contract(TREASURY_ADDRESS, TREASURY_ABI, provider);
+  const tokenManager = new ethers.Contract(TOKEN_MANAGER_ADDRESS, TOKEN_MANAGER_ABI, provider);
   const mockCToken = new ethers.Contract(MOCK_CTOKEN_ADDRESS, MOCK_CTOKEN_ABI, provider);
 
   try {
-    console.log("\n🔍 Debugging Treasury Yield Calculation:");
+    console.log("\n🔍 Debugging TokenManager Yield Calculation:");
 
     // Get raw values
-    const totalUSDCBalance = await treasury.totalUSDCBalance();
-    const treasuryBalance = await treasury.getTreasuryBalance();
-    const cTokenBalance = await mockCToken.balanceOf(TREASURY_ADDRESS);
-    const underlyingBalance = await mockCToken.balanceOf(TREASURY_ADDRESS);
+    const totalUSDCBalance = await tokenManager.totalUSDCBalance();
+    const tokenManagerBalance = await tokenManager.getTokenManagerBalance();
+    const cTokenBalance = await mockCToken.balanceOf(TOKEN_MANAGER_ADDRESS);
+    const underlyingBalance = await mockCToken.balanceOf(TOKEN_MANAGER_ADDRESS);
     const exchangeRate = await mockCToken.exchangeRate();
     const decimals = await mockCToken.decimals();
 
     console.log("\n📊 Raw Values:");
     console.log("💰 totalUSDCBalance:", totalUSDCBalance.toString());
-    console.log("🏦 treasuryBalance:", treasuryBalance.toString());
+    console.log("🏦 tokenManagerBalance:", tokenManagerBalance.toString());
     console.log("💳 cTokenBalance:", cTokenBalance.toString());
     console.log("💰 underlyingBalance:", underlyingBalance.toString());
     console.log("💱 exchangeRate:", exchangeRate.toString());
@@ -146,14 +148,14 @@ async function debugTreasuryYield() {
 
     console.log("\n📊 Formatted Values:");
     console.log("💰 totalUSDCBalance:", ethers.formatUnits(totalUSDCBalance, 6), "USDC");
-    console.log("🏦 treasuryBalance:", ethers.formatUnits(treasuryBalance, 6), "USDC");
+    console.log("🏦 tokenManagerBalance:", ethers.formatUnits(tokenManagerBalance, 6), "USDC");
     console.log("💳 cTokenBalance:", ethers.formatUnits(cTokenBalance, decimals));
     console.log("💰 underlyingBalance:", ethers.formatUnits(underlyingBalance, 6), "USDC");
     console.log("💱 exchangeRate:", ethers.formatUnits(exchangeRate, 18));
 
     // Manual calculations
     const expectedYield = underlyingBalance - totalUSDCBalance;
-    const actualYield = treasuryBalance - totalUSDCBalance;
+    const actualYield = tokenManagerBalance - totalUSDCBalance;
 
     console.log("\n🧮 Manual Calculations:");
     console.log(
@@ -161,11 +163,15 @@ async function debugTreasuryYield() {
       ethers.formatUnits(expectedYield, 6),
       "USDC"
     );
-    console.log("🌱 Actual Yield (treasury - total):", ethers.formatUnits(actualYield, 6), "USDC");
+    console.log(
+      "🌱 Actual Yield (tokenManager - total):",
+      ethers.formatUnits(actualYield, 6),
+      "USDC"
+    );
 
     // Try to call getCompoundYield directly
     try {
-      const compoundYield = await treasury.getCompoundYield();
+      const compoundYield = await tokenManager.getCompoundYield();
       console.log("🔍 Direct getCompoundYield():", ethers.formatUnits(compoundYield, 6), "USDC");
     } catch (error) {
       console.log("❌ getCompoundYield() call failed:", error.message);
@@ -173,8 +179,16 @@ async function debugTreasuryYield() {
 
     // Check if the issue is with the cToken balanceOf function
     console.log("\n🔍 Checking cToken balanceOf behavior:");
-    console.log("💳 cToken.balanceOf(Treasury):", ethers.formatUnits(underlyingBalance, 6), "USDC");
-    console.log("💰 cToken.balanceOf(Treasury):", ethers.formatUnits(underlyingBalance, 6), "USDC");
+    console.log(
+      "💳 cToken.balanceOf(TokenManager):",
+      ethers.formatUnits(underlyingBalance, 6),
+      "USDC"
+    );
+    console.log(
+      "💰 cToken.balanceOf(TokenManager):",
+      ethers.formatUnits(underlyingBalance, 6),
+      "USDC"
+    );
 
     // Calculate what balanceOf should return if it returns underlying value
     const calculatedUnderlying = (cTokenBalance * exchangeRate) / ethers.parseUnits("1", 18);
@@ -184,10 +198,10 @@ async function debugTreasuryYield() {
       "USDC"
     );
   } catch (error) {
-    console.error("❌ Error debugging Treasury yield:", error.message);
+    console.error("❌ Error debugging TokenManager yield:", error.message);
     process.exit(1);
   }
 }
 
 // Run the script
-debugTreasuryYield().catch(console.error);
+debugTokenManagerYield().catch(console.error);

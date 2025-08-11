@@ -7,8 +7,8 @@ This document describes the automatic token minting feature that provides new us
 When a new user registers through wallet authentication (SIWE or Web3), the system automatically:
 
 1. Mints $1000 USDC(x) to the oracle wallet
-2. Approves the Treasury contract to spend the USDC
-3. Deposits USDC into the Treasury contract (which mints CUT tokens to the oracle wallet)
+2. Approves the Token Manager contract to spend the USDC
+3. Deposits USDC into the Token Manager contract (which mints CUT tokens to the oracle wallet)
 4. Transfers the CUT tokens to the new user's wallet
 
 This provides new users with initial tokens to participate in contests and use platform features.
@@ -22,14 +22,14 @@ The core functionality is implemented in `src/services/mintUserTokens.ts`:
 - **Function**: `mintAndTransferToNewUser(userWalletAddress: string, usdcAmount: number = 1000)`
 - **Purpose**: Complete flow from USDC minting to CUT token transfer
 - **Default Amount**: $1000 USDC (converted to equivalent CUT tokens)
-- **Contract Integration**: Uses PaymentToken (USDC), Treasury, and PlatformToken (CUT) contracts
+- **Contract Integration**: Uses PaymentToken (USDC), Token Manager, and PlatformToken (CUT) contracts
 - **Blockchain Library**: Uses ethers.js for blockchain interactions
 
 ### Individual Functions
 
 1. **`mintUSDC(amount)`** - Mints USDC(x) to oracle wallet
-2. **`approveTreasuryToSpendUSDC(amount)`** - Approves Treasury to spend USDC
-3. **`depositUSDCToTreasury(amount)`** - Deposits USDC into Treasury (mints CUT)
+2. **`approveTokenManagerToSpendUSDC(amount)`** - Approves Token Manager to spend USDC
+3. **`depositUSDCToTokenManager(amount)`** - Deposits USDC into Token Manager (mints CUT)
 4. **`transferCUTToUser(userWalletAddress, amount)`** - Transfers CUT to user
 
 ### Integration Points
@@ -62,7 +62,7 @@ The system uses the following contract addresses from `contracts/base.json`:
 
 - **PaymentToken (USDC)**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - **PlatformToken (CUT)**: `0x2163E7D874BDf8f81dDf470A57166202Ee0d0869`
-- **Treasury**: `0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5`
+- **Token Manager**: `0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5`
 
 ## Testing
 
@@ -103,19 +103,19 @@ npm test src/services/mintUserTokens.test.ts
 - **Decimals**: 18
 - **Purpose**: Platform token for contests and features
 
-## Treasury Integration
+## Token Manager Integration
 
-The Treasury contract handles the USDC to CUT conversion:
+The Token Manager contract handles the USDC to CUT conversion:
 
-1. User deposits USDC into Treasury
-2. Treasury mints CUT tokens based on exchange rate
+1. User deposits USDC into Token Manager
+2. Token Manager mints CUT tokens based on exchange rate
 3. CUT tokens are minted to the depositor (oracle wallet)
 4. Oracle wallet transfers CUT tokens to the new user
 
 ## Security Considerations
 
 - Oracle private key must be securely stored
-- Treasury contract handles the USDC to CUT conversion securely
+- Token Manager contract handles the USDC to CUT conversion securely
 - All transactions are signed by the oracle wallet
 - User wallet addresses are validated before transfers
 - Failed token operations don't prevent user registration
