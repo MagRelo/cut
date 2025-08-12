@@ -8,7 +8,7 @@ const contractConfig = {
     paymentTokenAddress: process.env.PAYMENT_TOKEN_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
     tokenManagerAddress: process.env.TOKEN_MANAGER_ADDRESS || '0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5',
     platformTokenAddress: process.env.PLATFORM_TOKEN_ADDRESS || '0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5',
-    oracleWalletPrivateKey: process.env.ORACLE_WALLET_PRIVATE_KEY || '',
+    oracleWalletPrivateKey: process.env.ORACLE_PRIVATE_KEY || '',
     rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org'
 };
 
