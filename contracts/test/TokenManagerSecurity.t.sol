@@ -105,7 +105,8 @@ contract TokenManagerSecurityTest is Test {
         // Initial state checks
         assertEq(tokenManager.totalUSDCBalance(), 0);
         assertEq(tokenManager.totalPlatformTokensMinted(), 0);
-        assertEq(tokenManager.getExchangeRate(), 1e18);
+        // Check initial exchange rate is 1:1
+        assertEq(tokenManager.getExchangeRateExternal(), 1e6);
         
         // Mint USDC to users for testing (by the PaymentToken owner)
         vm.startPrank(paymentTokenOwner);
@@ -118,9 +119,9 @@ contract TokenManagerSecurityTest is Test {
     // Helper function to add yield to the MockCompound contract
     // This simulates how Compound V3 would accumulate yield internally
     function addYieldToCompound(uint256 yieldAmount) internal {
-        vm.startPrank(paymentTokenOwner);
-        paymentToken.mint(address(mockCUSDC), yieldAmount);
-        vm.stopPrank();
+        // Instead of manually adding yield, we advance time to let interest accrue naturally
+        // This simulates the realistic Compound V3 behavior
+        vm.warp(block.timestamp + 30 days); // Advance 30 days to accrue interest
     }
 
     function testBasicDepositAndWithdraw() public {
@@ -149,7 +150,6 @@ contract TokenManagerSecurityTest is Test {
         
         // Simulate yield generation by adding yield to the token manager's cUSDC position
         addYieldToCompound(1000 * 1e6); // Add 1000 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 1000 * 1e6); // Add 1000 USDC yield
         
         // Check yield is claimable
         uint256 claimableYield = tokenManager.getClaimableYield(alice);
@@ -178,7 +178,6 @@ contract TokenManagerSecurityTest is Test {
         
         // Simulate yield generation
         addYieldToCompound(1000 * 1e6); // Add 1000 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 1000 * 1e6); // Add 1000 USDC yield
         
         // Check both users have yield
         uint256 aliceYield = tokenManager.getClaimableYield(alice);
@@ -196,7 +195,7 @@ contract TokenManagerSecurityTest is Test {
         vm.stopPrank();
         
         // Simulate yield generation
-        mockCUSDC.addYield(address(tokenManager), 10000 * 1e6); // Add 10000 USDC yield
+        addYieldToCompound(10000 * 1e6); // Add 10000 USDC yield
         
         // Check yield distribution
         uint256 aliceYield = tokenManager.getClaimableYield(alice);
@@ -214,7 +213,7 @@ contract TokenManagerSecurityTest is Test {
         vm.stopPrank();
         
         // Simulate yield generation
-        mockCUSDC.addYield(address(tokenManager), 5000 * 1e6); // Add 5000 USDC yield
+        addYieldToCompound(5000 * 1e6); // Add 5000 USDC yield
         
         // Bob deposits after yield generation
         vm.startPrank(bob);
@@ -224,7 +223,6 @@ contract TokenManagerSecurityTest is Test {
         
         // Simulate more yield generation
         addYieldToCompound(3000 * 1e6); // Add 3000 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 3000 * 1e6); // Add 3000 USDC yield
         
         // Check yield distribution
         uint256 aliceYield = tokenManager.getClaimableYield(alice);
@@ -244,7 +242,6 @@ contract TokenManagerSecurityTest is Test {
         // Simulate yield generation - need to add enough tokens to cover both deposit and yield
         uint256 yieldAmount = 5000 * 1e6;
         addYieldToCompound(yieldAmount + 100000 * 1e6); // Add enough tokens to cover deposit + yield
-        mockCUSDC.addYield(address(tokenManager), yieldAmount); // Add 5000 USDC yield
         
         uint256 claimableYield = tokenManager.getClaimableYield(alice);
         assertGt(claimableYield, 0, "Should have claimable yield");
@@ -292,12 +289,12 @@ contract TokenManagerSecurityTest is Test {
         tokenManager.depositUSDC(100000 * 1e6);
         vm.stopPrank();
         
-        uint256 initialRate = tokenManager.getExchangeRate();
+        uint256 initialRate = tokenManager.getExchangeRateExternal();
         
         // Simulate yield generation
-        mockCUSDC.addYield(address(tokenManager), 10000 * 1e6); // Add 10000 USDC yield
+        addYieldToCompound(10000 * 1e6); // Add 10000 USDC yield
         
-        uint256 rateAfterYield = tokenManager.getExchangeRate();
+        uint256 rateAfterYield = tokenManager.getExchangeRateExternal();
         assertGt(rateAfterYield, initialRate, "Rate should increase with yield");
         
         // Large deposit should not significantly affect rate
@@ -306,7 +303,7 @@ contract TokenManagerSecurityTest is Test {
         tokenManager.depositUSDC(1000000 * 1e6);
         vm.stopPrank();
         
-        uint256 rateAfterLargeDeposit = tokenManager.getExchangeRate();
+        uint256 rateAfterLargeDeposit = tokenManager.getExchangeRateExternal();
         assertGt(rateAfterLargeDeposit, initialRate, "Rate should still be higher than initial");
     }
 
@@ -319,7 +316,6 @@ contract TokenManagerSecurityTest is Test {
         
         // Simulate yield generation
         addYieldToCompound(100 * 1e6); // Add 100 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 100 * 1e6); // Add 100 USDC yield
         
         uint256 smallYield = tokenManager.getClaimableYield(alice);
         assertGe(smallYield, 0, "Should handle small amounts gracefully");
@@ -334,7 +330,6 @@ contract TokenManagerSecurityTest is Test {
         
         // Simulate yield generation
         addYieldToCompound(5000 * 1e6); // Add 5000 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 5000 * 1e6); // Add 5000 USDC yield
         
         uint256 claimableYield = tokenManager.getClaimableYield(alice);
         assertGt(claimableYield, 0, "Should have claimable yield");
@@ -349,9 +344,9 @@ contract TokenManagerSecurityTest is Test {
     }
 
     function testTokenManagerMint() public {
-        // Test direct minting by token manager
-        vm.startPrank(address(tokenManager));
-        platformToken.mint(alice, 1000 * 1e18);
+        // Test direct minting by token manager owner
+        vm.startPrank(tokenManagerOwner);
+        tokenManager.tokenManagerMint(alice, 1000 * 1e18);
         vm.stopPrank();
         
         assertEq(platformToken.balanceOf(alice), 1000 * 1e18, "Should mint tokens directly");

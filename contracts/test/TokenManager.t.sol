@@ -50,9 +50,9 @@ contract TokenManagerTest is Test {
     // Helper function to add yield to the MockCompound contract
     // This simulates how Compound V3 would accumulate yield internally
     function addYieldToCompound(uint256 yieldAmount) internal {
-        vm.startPrank(paymentTokenOwner);
-        paymentToken.mint(address(mockCUSDC), yieldAmount);
-        vm.stopPrank();
+        // Instead of manually adding yield, we advance time to let interest accrue naturally
+        // This simulates the realistic Compound V3 behavior
+        vm.warp(block.timestamp + 30 days); // Advance 30 days to accrue interest
     }
 
     function testDepositUSDC() public {
@@ -93,15 +93,15 @@ contract TokenManagerTest is Test {
     function testExchangeRate() public {
         vm.startPrank(user);
         
-        uint256 initialRate = tokenManager.getExchangeRate();
-        assertEq(initialRate, 1e18, "Initial exchange rate should be 1:1");
+        uint256 initialRate = tokenManager.getExchangeRateExternal();
+        assertEq(initialRate, 1e6, "Initial exchange rate should be 1:1 (in 6 decimals)");
         
         paymentToken.approve(address(tokenManager), USDC_AMOUNT);
         tokenManager.depositUSDC(USDC_AMOUNT);
         
         // Check exchange rate after deposit (should still be 1:1 since no yield)
-        uint256 exchangeRate = tokenManager.getExchangeRate();
-        assertEq(exchangeRate, 1e18, "Exchange rate should remain 1:1 after deposit without yield");
+        uint256 exchangeRate = tokenManager.getExchangeRateExternal();
+        assertEq(exchangeRate, 1e6, "Exchange rate should remain 1:1 after deposit without yield (in 6 decimals)");
         
         vm.stopPrank();
     }
@@ -145,17 +145,17 @@ contract TokenManagerTest is Test {
         tokenManager.depositUSDC(USDC_AMOUNT);
         vm.stopPrank();
         
-        // Simulate yield generation - add yield to the TokenManager address
+        // Add yield to Compound (simulate interest accrual)
         addYieldToCompound(100e6); // Add 100 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 100e6); // Add 100 USDC yield
+        // Note: Interest now accrues automatically based on time
         
-        // Check that token manager balance includes yield
+        // Check that yield is reflected in the exchange rate
         uint256 tokenManagerBalance = tokenManager.getTokenManagerBalance();
         assertGt(tokenManagerBalance, USDC_AMOUNT, "TokenManager balance should include yield");
         
-        // Check exchange rate
-        uint256 exchangeRate = tokenManager.getExchangeRate();
-        assertGt(exchangeRate, 1e18, "Exchange rate should increase with yield");
+        // Check exchange rate (should be greater than 1e6 when there's yield)
+        uint256 exchangeRate = tokenManager.getExchangeRateExternal();
+        assertGt(exchangeRate, 1e6, "Exchange rate should increase with yield (in 6 decimals)");
     }
 
     function testYieldWithdrawal() public {
@@ -166,7 +166,6 @@ contract TokenManagerTest is Test {
         
         // Simulate yield generation - add yield to the TokenManager address
         addYieldToCompound(100e6); // Add 100 USDC yield to Compound
-        mockCUSDC.addYield(address(tokenManager), 100e6); // Add 100 USDC yield
         
         vm.startPrank(user);
         uint256 platformTokensReceived = platformToken.balanceOf(user);

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PlatformToken.sol";
+import "forge-std/console.sol";
 
 // Compound V3 Comet interfaces (matching real Base Mainnet CUSDC)
 interface ICErc20 {
@@ -180,17 +181,22 @@ contract TokenManager is ReentrancyGuard, Ownable {
         emit USDCWithdrawn(msg.sender, platformTokenBalance, actualUSDCToReturn);
     }
 
-    function getExchangeRate() external view returns (uint256) {
+    function getExchangeRate() internal view returns (uint256) {
         if (totalPlatformTokensMinted == 0) {
-            return 1e18; // 1:1 rate if no tokens minted yet
+            return 1e6; // 1:1 rate if no tokens minted yet (in 6 decimals)
         }
         
         uint256 totalValue = totalUSDCBalance + getCompoundYield();
-        // Convert totalValue from 6 decimals to 18 decimals, then calculate exchange rate
-        // Exchange rate = (totalValue in 18 decimals) / (totalPlatformTokensMinted in 18 decimals)
-        // Result should be in 18 decimals
-        uint256 totalValue18Decimals = totalValue * 1e12;
-        return (totalValue18Decimals * 1e18) / totalPlatformTokensMinted;
+        // Calculate exchange rate: USDC per platform token
+        // totalValue: 6 decimals (USDC)
+        // totalPlatformTokensMinted: 18 decimals
+        // Result should be in 6 decimals (USDC per platform token)
+        // Formula: (totalValue * 1e6) / (totalPlatformTokensMinted / 1e12)
+        return (totalValue * 1e6) / (totalPlatformTokensMinted / 1e12);
+    }
+
+    function getExchangeRateExternal() external view returns (uint256) {
+        return getExchangeRate();
     }
 
     function getTokenManagerBalance() external view returns (uint256) {
@@ -256,6 +262,9 @@ contract TokenManager is ReentrancyGuard, Ownable {
     function calculatePlatformTokensForUSDC(uint256 usdcAmount) internal view returns (uint256) {
         if (totalPlatformTokensMinted == 0) {
             // First deposit: 1:1 ratio, convert USDC amount to platform tokens
+            // usdcAmount is in 6 decimals, we want platform tokens in 18 decimals
+            // For a 1:1 ratio, we should mint the same number of platform tokens as USDC
+            // So we multiply by 1e12 to convert 6 decimals to 18 decimals
             return usdcAmount * 1e12; // Convert 6 decimals to 18 decimals
         }
         
@@ -272,9 +281,15 @@ contract TokenManager is ReentrancyGuard, Ownable {
             return 0;
         }
         
-        uint256 totalValue = totalUSDCBalance + getCompoundYield();
-        // Use higher precision calculation to avoid precision loss
-        return (platformTokenAmount * totalValue) / totalPlatformTokensMinted;
+        // Calculate exchange rate first (in 18 decimals)
+        uint256 exchangeRate = getExchangeRate();
+        
+        // Convert platform tokens to USDC using exchange rate
+        // platformTokenAmount: 18 decimals
+        // exchangeRate: 6 decimals (represents USDC per platform token)
+        // Result should be in 6 decimals (USDC)
+        // Formula: (platformTokenAmount * exchangeRate) / 1e18
+        return (platformTokenAmount * exchangeRate) / 1e18;
     }
 
     function getCompoundYield() internal view returns (uint256) {

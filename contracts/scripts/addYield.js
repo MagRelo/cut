@@ -10,6 +10,7 @@ const MOCK_CTOKEN_ABI = [
   "function balanceOf(address owner) external view returns (uint256)",
   "function totalSupply() external view returns (uint256)",
   "function addYield(address to, uint256 yieldAmount) external",
+  "function accrueAccount(address account) external",
   "function underlying() external view returns (address)",
   "function underlyingBalance(address owner) external view returns (uint256)",
 ];
