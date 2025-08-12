@@ -1,13 +1,15 @@
 run manual update on upcoming tourney
 
+0. npm install
+
+1. npm run prisma:studio
+
 1. npm run update:tournament <new tourney id>
-
-2. npm run update:profiles
-   npm run clean:team-players
-
-3. set tournament:
    -- "startTime": cutoff for league list
    -- "endTime": countdown
-   -- flip "manualActive"
 
-4. Update description
+1. Update description, deploy
+
+1. -- flip "manualActive"
+   npm run update:profiles
+   npm run clean:team-players
