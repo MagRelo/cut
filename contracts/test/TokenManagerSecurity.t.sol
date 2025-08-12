@@ -70,6 +70,7 @@ contract TokenManagerSecurityTest is Test {
     address public maliciousUser = address(0x3);
     address public paymentTokenOwner = address(0x999); // Owner of PaymentToken
     address public tokenManagerOwner = address(0x888); // Owner of TokenManager system
+    address public paymentTokenManager = address(0x777); // Manager for minting interest payments
 
     function setUp() public {
         // Deploy payment token (USDC) with a specific owner
@@ -108,8 +109,9 @@ contract TokenManagerSecurityTest is Test {
         // Check initial exchange rate is 1:1
         assertEq(tokenManager.getExchangeRateExternal(), 1e6);
         
-        // Mint USDC to users for testing (by the PaymentToken owner)
+        // Mint USDC for interest payments and testing (by the PaymentToken owner)
         vm.startPrank(paymentTokenOwner);
+        paymentToken.mint(paymentTokenManager, 20000000 * 1e6); // 20M USDC for interest payments
         paymentToken.mint(alice, 1000000e6); // 1M USDC
         paymentToken.mint(bob, 1000000e6);   // 1M USDC
         paymentToken.mint(maliciousUser, 1000000e6); // 1M USDC
@@ -119,9 +121,18 @@ contract TokenManagerSecurityTest is Test {
     // Helper function to add yield to the MockCompound contract
     // This simulates how Compound V3 would accumulate yield internally
     function addYieldToCompound(uint256 yieldAmount) internal {
-        // Instead of manually adding yield, we advance time to let interest accrue naturally
-        // This simulates the realistic Compound V3 behavior
+        // Advance time to let interest accrue naturally
         vm.warp(block.timestamp + 30 days); // Advance 30 days to accrue interest
+        
+        // Calculate expected interest for the current period (5% APY)
+        uint256 currentBalance = mockCUSDC.balanceOf(address(tokenManager));
+        uint256 timeElapsed = 30 days; // 1 month
+        uint256 expectedInterest = (currentBalance * 5 * timeElapsed) / (100 * 365 days); // 5% APY
+        
+        // Add interest payment to MockCompound (simulating borrowers paying interest)
+        vm.startPrank(paymentTokenOwner);
+        paymentToken.mint(address(mockCUSDC), expectedInterest);
+        vm.stopPrank();
     }
 
     function testBasicDepositAndWithdraw() public {

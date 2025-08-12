@@ -12,7 +12,13 @@ contract PlatformTokenTest is Test {
     PaymentToken public paymentToken;
 
     function setUp() public {
+        address paymentTokenOwner = address(0x999); // Owner of PaymentToken
+        
+        // Deploy payment token (USDC) with a specific owner
+        vm.startPrank(paymentTokenOwner);
         paymentToken = new PaymentToken();
+        vm.stopPrank();
+        
         token = new PlatformToken();
         
         tokenManager = new TokenManager(

@@ -26,10 +26,18 @@ contract TokenManagerYieldTest is Test {
     uint256 public totalWithdrawals;
 
     function setUp() public {
-        // Deploy contracts
+        // Deploy payment token (USDC) with a specific owner
+        vm.startPrank(paymentTokenManager);
         usdc = new PaymentToken();
+        vm.stopPrank();
+        
+        // Deploy platform token
         platformToken = new PlatformToken();
+        
+        // Deploy mock compound
         mockCompound = new MockCToken(address(usdc));
+        
+        // Deploy token manager
         tokenManager = new TokenManager(
             address(usdc),
             address(platformToken),
@@ -39,8 +47,7 @@ contract TokenManagerYieldTest is Test {
         // Set up PlatformToken
         platformToken.setTokenManager(address(tokenManager));
 
-        // Set up payment token manager
-        usdc.transferOwnership(paymentTokenManager);
+        // Mint USDC for interest payments and testing (by the PaymentToken owner)
         vm.startPrank(paymentTokenManager);
         usdc.mint(paymentTokenManager, 20000000 * 1e6); // 20M USDC
         vm.stopPrank();

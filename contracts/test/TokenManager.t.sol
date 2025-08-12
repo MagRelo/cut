@@ -15,6 +15,7 @@ contract TokenManagerTest is Test {
     address public user = address(0x1);
     address public paymentTokenOwner = address(0x999); // Owner of PaymentToken
     address public tokenManagerOwner = address(0x888); // Owner of TokenManager system
+    address public paymentTokenManager = address(0x777); // Manager for minting interest payments
     uint256 public constant USDC_AMOUNT = 1000e6; // 1000 USDC with 6 decimals
 
     function setUp() public {
@@ -41,8 +42,9 @@ contract TokenManagerTest is Test {
         // Set token manager in platform token
         platformToken.setTokenManager(address(tokenManager));
         
-        // Mint USDC to user for testing (by the PaymentToken owner)
+        // Mint USDC for interest payments and testing (by the PaymentToken owner)
         vm.startPrank(paymentTokenOwner);
+        paymentToken.mint(paymentTokenManager, 20000000 * 1e6); // 20M USDC for interest payments
         paymentToken.mint(user, 10000e6);
         vm.stopPrank();
     }
@@ -50,9 +52,18 @@ contract TokenManagerTest is Test {
     // Helper function to add yield to the MockCompound contract
     // This simulates how Compound V3 would accumulate yield internally
     function addYieldToCompound(uint256 yieldAmount) internal {
-        // Instead of manually adding yield, we advance time to let interest accrue naturally
-        // This simulates the realistic Compound V3 behavior
+        // Advance time to let interest accrue naturally
         vm.warp(block.timestamp + 30 days); // Advance 30 days to accrue interest
+        
+        // Calculate expected interest for the current period (5% APY)
+        uint256 currentBalance = mockCUSDC.balanceOf(address(tokenManager));
+        uint256 timeElapsed = 30 days; // 1 month
+        uint256 expectedInterest = (currentBalance * 5 * timeElapsed) / (100 * 365 days); // 5% APY
+        
+        // Add interest payment to MockCompound (simulating borrowers paying interest)
+        vm.startPrank(paymentTokenOwner);
+        paymentToken.mint(address(mockCUSDC), expectedInterest);
+        vm.stopPrank();
     }
 
     function testDepositUSDC() public {

@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PlatformToken.sol";
-import "forge-std/console.sol";
 
 // Compound V3 Comet interfaces (matching real Base Mainnet CUSDC)
 interface ICErc20 {
@@ -269,9 +268,11 @@ contract TokenManager is ReentrancyGuard, Ownable {
         }
         
         uint256 totalValue = totalUSDCBalance + getCompoundYield();
+        // Add explicit zero check to prevent division by zero
+        require(totalValue > 0, "Total value must be greater than 0");
+        
         // For subsequent deposits, calculate platform tokens based on proportion of total value
         // If the new deposit represents X% of the total value, mint X% of the total platform tokens
-        uint256 newTotalValue = totalValue + usdcAmount;
         uint256 newPlatformTokens = (usdcAmount * totalPlatformTokensMinted) / totalValue;
         return newPlatformTokens;
     }
@@ -367,6 +368,8 @@ contract TokenManager is ReentrancyGuard, Ownable {
         uint256 tempAccumulatedYield = accumulatedYieldPerToken;
         
         if (currentYield > 0 && totalPlatformTokensMinted > 0) {
+            // Add explicit zero check to prevent division by zero
+            require(totalPlatformTokensMinted > 0, "No platform tokens minted");
             uint256 yieldPerToken = (currentYield * 1e18) / totalPlatformTokensMinted;
             tempAccumulatedYield += yieldPerToken;
         }
@@ -394,6 +397,8 @@ contract TokenManager is ReentrancyGuard, Ownable {
             newRate = 1e18; // 1:1 rate if no tokens minted yet
         } else {
             uint256 totalValue = totalUSDCBalance + getCompoundYield();
+            // Add explicit zero check to prevent division by zero
+            require(totalPlatformTokensMinted > 0, "No platform tokens minted");
             newRate = (totalValue * 1e18) / totalPlatformTokensMinted;
         }
         

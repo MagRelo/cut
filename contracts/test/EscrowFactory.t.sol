@@ -20,8 +20,14 @@ contract EscrowFactoryTest is Test {
     function setUp() public {
         owner = address(this);
         oracle = address(0x1);
-        platformToken = new PlatformToken();
+        address paymentTokenOwner = address(0x999); // Owner of PaymentToken
+        
+        // Deploy payment token (USDC) with a specific owner
+        vm.startPrank(paymentTokenOwner);
         paymentToken = new PaymentToken();
+        vm.stopPrank();
+        
+        platformToken = new PlatformToken();
         
         tokenManager = new TokenManager(
             address(paymentToken),
