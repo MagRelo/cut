@@ -12,7 +12,7 @@ export function TokenManagerPage() {
   const { address } = useAccount();
   const chainId = useChainId();
 
-  // Get token manager balance from contract
+  // Get token manager balance from contract (includes yield)
   const { data: tokenManagerBalance, isLoading: tokenManagerBalanceLoading } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
     abi: TokenManagerContract.abi,
@@ -36,6 +36,14 @@ export function TokenManagerPage() {
     ? Number(formatUnits(totalUSDCBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
+  // Calculate total yield generated
+  const totalYieldGenerated =
+    tokenManagerBalance && totalUSDCBalance
+      ? Number(
+          formatUnits((tokenManagerBalance as bigint) - (totalUSDCBalance as bigint), 6)
+        ).toFixed(2)
+      : "0.00";
+
   // Get platform token supply directly from PlatformToken contract
   const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
     address: platformTokenAddress as `0x${string}`,
@@ -46,19 +54,19 @@ export function TokenManagerPage() {
   // Format platform token supply for display
   const formattedPlatformTokenSupply = platformTokenSupply
     ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
-    : "0.00";
+    : "0";
 
-  // Get exchange rate
+  // Get exchange rate (fixed function call)
   const { data: exchangeRate, isLoading: exchangeRateLoading } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
     abi: TokenManagerContract.abi,
-    functionName: "getExchangeRate",
+    functionName: "getExchangeRateExternal",
   });
 
-  // Format exchange rate for display (convert from 18 decimals)
+  // Format exchange rate for display (convert from 6 decimals to show as USDC per token)
   const formattedExchangeRate = exchangeRate
-    ? Number(formatUnits(exchangeRate as bigint, 18)).toFixed(4)
-    : "1.00";
+    ? Number(formatUnits(exchangeRate as bigint, 6)).toFixed(4)
+    : "1.0000";
 
   // Get total platform tokens minted
   const { data: totalPlatformTokensMinted, isLoading: totalPlatformTokensMintedLoading } =
@@ -72,6 +80,51 @@ export function TokenManagerPage() {
   const formattedTotalPlatformTokensMinted = totalPlatformTokensMinted
     ? Number(formatUnits(totalPlatformTokensMinted as bigint, 18)).toFixed(0)
     : "0";
+
+  // Get system-wide accumulated yield per token
+  const { data: accumulatedYieldPerToken, isLoading: accumulatedYieldPerTokenLoading } =
+    useReadContract({
+      address: tokenManagerAddress as `0x${string}`,
+      abi: TokenManagerContract.abi,
+      functionName: "getAccumulatedYieldPerToken",
+    });
+
+  // Get last yield update time
+  const { data: lastYieldUpdateTime, isLoading: lastYieldUpdateTimeLoading } = useReadContract({
+    address: tokenManagerAddress as `0x${string}`,
+    abi: TokenManagerContract.abi,
+    functionName: "getLastYieldUpdateTime",
+  });
+
+  // Format last yield update time
+  const formattedLastYieldUpdateTime = lastYieldUpdateTime
+    ? new Date(Number(lastYieldUpdateTime) * 1000).toLocaleString()
+    : "Never";
+
+  // Get user's platform token balance (if address is available)
+  const { data: userPlatformTokenBalance, isLoading: userPlatformTokenBalanceLoading } =
+    useReadContract({
+      address: platformTokenAddress as `0x${string}`,
+      abi: PlatformTokenContract.abi,
+      functionName: "balanceOf",
+      args: address ? [address] : undefined,
+    });
+
+  // Format user's platform token balance for display
+  const formattedUserPlatformTokenBalance = userPlatformTokenBalance
+    ? Number(formatUnits(userPlatformTokenBalance as bigint, 18)).toFixed(2)
+    : "0.00";
+
+  // Calculate user's current value in USDC
+  const userCurrentValue =
+    userPlatformTokenBalance && exchangeRate
+      ? Number(
+          formatUnits(
+            ((userPlatformTokenBalance as bigint) * (exchangeRate as bigint)) / BigInt(1e18),
+            6
+          )
+        ).toFixed(2)
+      : "0.00";
 
   // Get user's claimable yield (if address is available)
   const { data: userClaimableYield, isLoading: userClaimableYieldLoading } = useReadContract({
@@ -142,14 +195,14 @@ export function TokenManagerPage() {
       />
       <PageHeader title="Token Manager" className="mb-3" />
 
-      {/* Platform Token Manager Figures */}
+      {/* Platform Token Manager Overview */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Platform Token Manager Overview
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Original Purchases */}
+          {/* Total Purchases */}
           <div className="font-medium">
             Total Purchases
             <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
@@ -162,39 +215,29 @@ export function TokenManagerPage() {
             )}
           </div>
 
-          {/* Total Platform Tokens Minted */}
+          {/* Total Yield Generated */}
           <div className="font-medium">
-            Total CUT Minted
-            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+            Total Yield Generated
+            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
-          <div className="text-right">
-            {totalPlatformTokensMintedLoading ? (
+          <div className="text-right text-green-600">
+            {tokenManagerBalanceLoading || totalUSDCBalanceLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `${formattedTotalPlatformTokensMinted} CUT`
+              `$${totalYieldGenerated}`
             )}
           </div>
 
-          {/* Token Manager Balance */}
+          {/* Total Balance (including yield) */}
           <div className="font-medium">
             Total Balance
-            <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span>
+            <span className="text-gray-400 ml-2 text-sm">(USDC + Yield)</span>
           </div>
           <div className="text-right">
             {tokenManagerBalanceLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
               `$${formattedTokenManagerBalance}`
-            )}
-          </div>
-
-          {/* Platform Token Supply */}
-          <div className="font-medium">CUT Supply</div>
-          <div className="text-right">
-            {platformTokenSupplyLoading ? (
-              <span className="text-gray-400">Loading...</span>
-            ) : (
-              `${formattedPlatformTokenSupply} CUT`
             )}
           </div>
 
@@ -207,6 +250,71 @@ export function TokenManagerPage() {
               `1 CUT = $${formattedExchangeRate}`
             )}
           </div>
+
+          {/* Total CUT Minted */}
+          <div className="font-medium">
+            Total CUT Minted
+            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+          </div>
+          <div className="text-right">
+            {totalPlatformTokensMintedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : (
+              `${formattedTotalPlatformTokensMinted} CUT`
+            )}
+          </div>
+
+          {/* Current CUT Supply */}
+          <div className="font-medium">Current CUT Supply</div>
+          <div className="text-right">
+            {platformTokenSupplyLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `${formattedPlatformTokenSupply} CUT`
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Yield System Information */}
+      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-green-800 font-display mb-2">
+          Yield System Information
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* System Accumulated Yield Per Token */}
+          <div className="font-medium">
+            System Yield Per Token
+            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+          </div>
+          <div className="text-right">
+            {accumulatedYieldPerTokenLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : accumulatedYieldPerToken ? (
+              Number(formatUnits(accumulatedYieldPerToken as bigint, 18)).toFixed(6)
+            ) : (
+              "0.000000"
+            )}
+          </div>
+
+          {/* Last Yield Update */}
+          <div className="font-medium">Last Yield Update</div>
+          <div className="text-right text-sm">
+            {lastYieldUpdateTimeLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              formattedLastYieldUpdateTime
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 text-sm text-green-700">
+          <p className="mb-2">• All purchases earn yield through Compound Finance integration</p>
+          <p className="mb-2">
+            • Yield is automatically compounded and reflected in the exchange rate
+          </p>
+          <p>• When you withdraw, you receive your original amount plus accumulated yield</p>
         </div>
       </div>
 
@@ -214,13 +322,39 @@ export function TokenManagerPage() {
       {address && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
           <div className="text-lg font-semibold text-blue-800 font-display mb-2">
-            Your Yield Information
+            Your Token Manager Status
           </div>
           <div className="text-sm text-blue-700 mb-2">
             Wallet: {address.slice(0, 6)}...{address.slice(-4)}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
+            {/* User's Platform Token Balance */}
+            <div className="font-medium">
+              Your CUT Balance
+              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+            </div>
+            <div className="text-right">
+              {userPlatformTokenBalanceLoading ? (
+                <span className="text-gray-400 text-sm">Loading...</span>
+              ) : (
+                `${formattedUserPlatformTokenBalance} CUT`
+              )}
+            </div>
+
+            {/* User's Current Value */}
+            <div className="font-medium">
+              Your Current Value
+              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+            </div>
+            <div className="text-right">
+              {userPlatformTokenBalanceLoading || exchangeRateLoading ? (
+                <span className="text-gray-400 text-sm">Loading...</span>
+              ) : (
+                `$${userCurrentValue}`
+              )}
+            </div>
+
             {/* User's Claimable Yield */}
             <div className="font-medium">
               Your Claimable Yield
@@ -234,19 +368,6 @@ export function TokenManagerPage() {
               )}
             </div>
 
-            {/* User's Last Yield Per Token */}
-            <div className="font-medium">
-              Your Last Yield Per Token
-              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
-            </div>
-            <div className="text-right">
-              {userLastYieldPerTokenLoading ? (
-                <span className="text-gray-400 text-sm">Loading...</span>
-              ) : (
-                formattedUserLastYieldPerToken
-              )}
-            </div>
-
             {/* User's Accumulated Yield */}
             <div className="font-medium">
               Your Accumulated Yield
@@ -257,6 +378,19 @@ export function TokenManagerPage() {
                 <span className="text-gray-400 text-sm">Loading...</span>
               ) : (
                 `$${formattedUserAccumulatedYield}`
+              )}
+            </div>
+
+            {/* User's Last Yield Per Token */}
+            <div className="font-medium">
+              Your Last Yield Per Token
+              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
+            </div>
+            <div className="text-right text-sm">
+              {userLastYieldPerTokenLoading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : (
+                formattedUserLastYieldPerToken
               )}
             </div>
           </div>
@@ -337,30 +471,6 @@ export function TokenManagerPage() {
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Yield Information Card */}
-      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-green-800 font-display mb-2">
-          Yield Information
-        </div>
-        <ul className="text-sm text-green-700 list-disc list-outside space-y-1 pl-4">
-          <li>
-            All purchases are continuously earning yield by providing liquidity to{" "}
-            <a
-              href="https://app.compound.finance/markets/usdc-basemainnet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Compound Finance
-            </a>
-            .
-          </li>
-          <li>Yield rates are dynamic and change based on market conditions.</li>
-          <li>All yield is automatically compounded.</li>
-          <li>When you sell, you receive your original buy amount + accumulated yield.</li>
-        </ul>
       </div>
 
       {/* Test Network Warning Card */}
