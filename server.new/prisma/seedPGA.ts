@@ -121,12 +121,9 @@ async function main() {
     console.log("Players upserted.");
 
     // 3. For a selected tournament, update inField for players in the field
-    const manualTournament = "R2025034";
-    const selectedTournament = await prisma.tournament.findFirst({
-      where: { pgaTourId: manualTournament },
-    });
+    const selectedTournament = await prisma.tournament.findFirst();
     if (!selectedTournament) {
-      throw new Error(`Tournament not found in DB: ${manualTournament}`);
+      throw new Error("No tournaments found in DB");
     }
 
     // update the tournament to "manualActive"
