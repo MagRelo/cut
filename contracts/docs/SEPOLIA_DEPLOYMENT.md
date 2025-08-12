@@ -2,17 +2,17 @@
 
 **Deployment Date:** January 7, 2025  
 **Network:** Base Sepolia (Chain ID: 84532)  
-**Deployer:** 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
+**Deployer:** 0xbe18962D9C9dA9681b6EF29df03055A3F329f352
 
 ## Deployed Contracts
 
 | Contract      | Address                                      | Purpose                              | Verified |
 | ------------- | -------------------------------------------- | ------------------------------------ | -------- |
-| PaymentToken  | `0xFA774B0c947f1Cf892e8971F7ffA4FC1892193d6` | Mock USDC (6 decimals)               | ✅       |
-| PlatformToken | `0xb5Ae36A746e177762cDe851e3Ee970a45be9AD9F` | CUT platform token (18 decimals)     | ❌       |
-| MockCToken    | `0x87148A169503ED54b32f3cd66948292014D1c5A3` | Mock Compound cUSDC                  | ✅       |
-| TokenManager  | `0xed57ed5ea897eaC25e291a314FD29420381B77a0` | Manages deposits/withdrawals & yield | ✅       |
-| EscrowFactory | `0x87446Ef8ff9B142ADaa8cAb44bf8B12c27E5F0C3` | Creates escrow contracts             | ✅       |
+| PaymentToken  | `0x6bEd86bb757dBf61880724fa1D7f04a067896126` | Mock USDC (6 decimals)               | ✅       |
+| PlatformToken | `0x7AC48aa698F5328E4C3e2e845889E32A1A9D82cB` | CUT platform token (18 decimals)     | ✅       |
+| MockCToken    | `0x8934A193949edfE128EF34eaD1536A85e8a153fE` | Mock Compound cUSDC                  | ✅       |
+| TokenManager  | `0x5eA021F56cB0568529723A69A96BE06372edAaa3` | Manages deposits/withdrawals & yield | ✅       |
+| EscrowFactory | `0xE0612eac9e5bFbb2EE803516a8AcF722E9f80317` | Creates escrow contracts             | ✅       |
 
 ## Contract Architecture
 
@@ -57,19 +57,19 @@
 
 ## Initial Configuration
 
-- **Initial Oracle**: 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
+- **Initial Oracle**: 0xbe18962D9C9dA9681b6EF29df03055A3F329f352
 - **MockCToken Balance**: 1,000,000 USDC pre-minted for testing yield
-- **All contracts verified** except PlatformToken (verification rate limit)
+- **All contracts verified** on BaseScan
 
 ## Block Information
 
-- **Block Number**: 29497320
-- **Gas Used**: 6,554,787 total
-- **Total ETH Cost**: 0.000006169175435577 ETH
+- **Block Number**: 29627019
+- **Gas Used**: 7,342,260 total
+- **Total ETH Cost**: 0.00000734264179752 ETH
 
 ## Verification Status
 
-4 out of 5 contracts successfully verified on BaseScan. PlatformToken verification failed due to API rate limiting but can be re-attempted.
+All 5 contracts successfully verified on BaseScan.
 
 ## Notes
 
