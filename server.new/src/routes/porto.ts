@@ -65,18 +65,23 @@ async function isSponsoredContract(
   }
 }
 
-// Create Porto RequestHandler
-const portoHandler = MerchantRpc.requestHandler({
-  address: process.env.MERCHANT_ADDRESS as `0x${string}`,
-  key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-  sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-    // const isSponsored = await isSponsoredContract(request);
-    const isSponsored = true;
-    console.log("Porto sponsor function called; isSponsored:", isSponsored);
-    return isSponsored;
-    // return true;
-  },
-});
+// Create Porto RequestHandler function
+function createPortoHandler() {
+  return MerchantRpc.requestHandler({
+    address: process.env.MERCHANT_ADDRESS as `0x${string}`,
+    key: {
+      type: "secp256k1",
+      privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+    },
+    sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
+      // const isSponsored = await isSponsoredContract(request);
+      const isSponsored = true;
+      console.log("Porto sponsor function called; isSponsored:", isSponsored);
+      return isSponsored;
+      // return true;
+    },
+  });
+}
 
 // Porto RPC endpoint for handling merchant RPC requests
 router.all(
@@ -85,7 +90,11 @@ router.all(
     // console.log("Porto RPC request received");
     next();
   },
-  createPortoMiddleware(portoHandler)
+  (req, res, next) => {
+    // Create the Porto handler when the route is accessed
+    const portoHandler = createPortoHandler();
+    return createPortoMiddleware(portoHandler)(req, res, next);
+  }
 );
 
 export default router;

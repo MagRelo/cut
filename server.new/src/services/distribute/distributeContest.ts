@@ -11,8 +11,22 @@ export interface ContestSettings {
 }
 
 // Initialize blockchain connection
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-const wallet = new ethers.Wallet(process.env.ORACLE_PRIVATE_KEY!, provider);
+function getWallet() {
+  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+
+  // Validate private key before creating wallet
+  const privateKey = process.env.ORACLE_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error('ORACLE_PRIVATE_KEY environment variable is required');
+  }
+
+  // Validate private key format
+  if (!privateKey.startsWith('0x') || privateKey.length !== 66) {
+    throw new Error('ORACLE_PRIVATE_KEY must be a valid 32-byte hex string starting with 0x');
+  }
+
+  return new ethers.Wallet(privateKey, provider);
+}
 
 export async function distributeContest() {
   try {
@@ -58,6 +72,7 @@ export async function distributeContest() {
         }
 
         // Initialize escrow contract
+        const wallet = getWallet();
         const escrowContract = new ethers.Contract(
           contest.address,
           Escrow.abi,

@@ -1,4 +1,7 @@
 import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 // Load environment variables based on NODE_ENV
 const envFile =
@@ -8,9 +11,11 @@ const envFile =
     ? ".env"
     : ".env.development";
 
+// Load environment variables
 dotenv.config({ path: envFile });
-console.log("NODE_ENV", process.env.NODE_ENV);
-console.log("envFile", envFile);
+
+// Also try to load .env as fallback
+dotenv.config({ path: ".env" });
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -19,6 +24,8 @@ const requiredEnvVars = [
   "ORACLE_PRIVATE_KEY",
   "RPC_URL",
   "BASESCAN_API_KEY",
+  "MERCHANT_ADDRESS",
+  "MERCHANT_PRIVATE_KEY",
 ];
 
 // Optional environment variables
@@ -29,10 +36,6 @@ for (const envVar of requiredEnvVars) {
     throw new Error(`Missing required environment variable: ${envVar}`);
   }
 }
-
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
 
 // Routes
 import apiRoutes from "./routes/api.js";
@@ -108,7 +111,7 @@ try {
   cronScheduler.start();
 
   app.listen(port, () => {
-    console.log(`[NEW] Server running on port ${port}`);
+    console.log(`[SERVER] Server running on port ${port}`);
     console.log(`[CRON] Cron scheduler ${ENABLE_CRON ? "enabled" : "disabled"}`);
   });
 
@@ -125,6 +128,6 @@ try {
     process.exit(0);
   });
 } catch (error) {
-  console.error("[NEW]Server startup failed:", error);
+  console.error("[SERVER] Server startup failed:", error);
   process.exit(1);
 }
