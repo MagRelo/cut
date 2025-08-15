@@ -7,9 +7,17 @@ import { baseSepolia } from "wagmi/chains";
 export const theme: ThemeFragment = {
   colorScheme: "light",
   primaryBackground: "#3b82f6", // Tailwind blue-500
-  secondaryContent: "#3b82f6", // Tailwind blue-500
+
   primaryContent: "#ffffff", // White text
-  baseContent: "#1f2937", // Tailwind gray-800
+  // primaryContent: "#000000", // Black text
+
+  // baseContent: "#1f2937", // Tailwind gray-800
+  baseContent: "#000000", // Tailwind gray-800
+  baseContentSecondary: "#000000", // Tailwind blue-100
+  baseContentTertiary: "#000000", // Tailwind blue-100
+
+  secondaryContent: "#3b82f6", // Tailwind blue-500
+
   badgeInfoContent: "#3b82f6", // Tailwind blue-500
   badgeInfoBackground: "#dbeafe", // Tailwind blue-100
   frameRadius: 8, // Tailwind rounded-lg

@@ -3,158 +3,172 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/PlatformToken.sol";
-import "../src/TokenManager.sol";
-import "../src/PaymentToken.sol";
+import "../src/DepositManager.sol";
+import "../src/mocks/MockUSDC.sol";
+import "../src/mocks/MockCompound.sol";
 
 contract PlatformTokenTest is Test {
-    PlatformToken public token;
-    TokenManager public tokenManager;
-    PaymentToken public paymentToken;
+    PlatformToken public platformToken;
+    DepositManager public depositManager;
+    MockUSDC public usdcToken;
+    MockCompound public mockCompound;
+
+    address public owner = address(this);
+    address public user1 = address(0x1);
+    address public user2 = address(0x2);
 
     function setUp() public {
-        address paymentTokenOwner = address(0x999); // Owner of PaymentToken
-        
-        // Deploy payment token (USDC) with a specific owner
-        vm.startPrank(paymentTokenOwner);
-        paymentToken = new PaymentToken();
-        vm.stopPrank();
-        
-        token = new PlatformToken();
-        
-        tokenManager = new TokenManager(
-            address(paymentToken),
-            address(token),
-            address(0x123) // Mock cUSDC address
+        // Deploy mock contracts
+        usdcToken = new MockUSDC();
+        mockCompound = new MockCompound(address(usdcToken));
+        platformToken = new PlatformToken();
+        depositManager = new DepositManager(
+            address(usdcToken),
+            address(platformToken),
+            address(mockCompound)
         );
+
+        // Set up permissions
+        platformToken.setDepositManager(address(depositManager));
+    }
+
+    function testInitialState() public view {
+        assertEq(platformToken.name(), "Cut Platform Token");
+        assertEq(platformToken.symbol(), "CUT");
+        assertEq(platformToken.decimals(), 18);
+        assertEq(platformToken.totalSupply(), 0);
+        assertEq(platformToken.depositManager(), address(depositManager));
+    }
+
+    function testSetDepositManager() public {
+        address newDepositManager = address(0x999);
+        platformToken.setDepositManager(newDepositManager);
+        assertEq(platformToken.depositManager(), newDepositManager);
+    }
+
+    function testSetDepositManagerOnlyOwner() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        platformToken.setDepositManager(address(0x999));
+    }
+
+    function testSetDepositManagerZeroAddress() public {
+        vm.expectRevert("Invalid depositManager address");
+        platformToken.setDepositManager(address(0));
+    }
+
+    function testMintByDepositManager() public {
+        uint256 amount = 1000 * 1e18;
         
-        // Set token manager in platform token
-        token.setTokenManager(address(tokenManager));
-    }
-
-    function testSetTokenManager() public {
-        address newTokenManager = address(0x999);
-        token.setTokenManager(newTokenManager);
-        assertEq(token.tokenManager(), newTokenManager);
-    }
-
-    function testFailSetTokenManagerNotOwner() public {
-        vm.startPrank(address(0x123));
-        token.setTokenManager(address(0x999));
-        vm.stopPrank();
-    }
-
-    function testFailSetTokenManagerZeroAddress() public {
-        token.setTokenManager(address(0));
-    }
-
-    function testMintByTokenManager() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        vm.stopPrank();
+        // Mint through DepositManager (which has permission)
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
         
-        assertEq(token.balanceOf(address(0x123)), 1000e18);
+        assertEq(platformToken.balanceOf(user1), amount);
+        assertEq(platformToken.totalSupply(), amount);
     }
 
-    function testBurnByTokenManager() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.burn(address(0x123), 500e18);
-        vm.stopPrank();
+    function testMintByNonDepositManager() public {
+        vm.prank(user1);
+        vm.expectRevert("Only depositManager can call this function");
+        platformToken.mint(user2, 1000 * 1e18);
+    }
+
+    function testMintToZeroAddress() public {
+        vm.prank(address(depositManager));
+        vm.expectRevert("Cannot mint to zero address");
+        platformToken.mint(address(0), 1000 * 1e18);
+    }
+
+    function testMintZeroAmount() public {
+        vm.prank(address(depositManager));
+        vm.expectRevert("Amount must be greater than 0");
+        platformToken.mint(user1, 0);
+    }
+
+    function testBurnByDepositManager() public {
+        uint256 amount = 1000 * 1e18;
         
-        assertEq(token.balanceOf(address(0x123)), 500e18);
-    }
-
-    function testFailMintNotTokenManager() public {
-        vm.startPrank(address(0x123));
-        token.mint(address(0x456), 1000e18);
-        vm.stopPrank();
-    }
-
-    function testFailBurnNotTokenManager() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        vm.stopPrank();
+        // First mint some tokens
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
         
-        vm.startPrank(address(0x456));
-        token.burn(address(0x123), 500e18);
-        vm.stopPrank();
-    }
-
-    function testFailBurnInsufficientBalance() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.burn(address(0x123), 1500e18); // Try to burn more than balance
-        vm.stopPrank();
-    }
-
-    function testFailMintToZeroAddress() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0), 1000e18);
-        vm.stopPrank();
-    }
-
-    function testFailBurnFromZeroAddress() public {
-        vm.startPrank(address(tokenManager));
-        token.burn(address(0), 1000e18);
-        vm.stopPrank();
-    }
-
-    function testFailMintZeroAmount() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 0);
-        vm.stopPrank();
-    }
-
-    function testFailBurnZeroAmount() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.burn(address(0x123), 0);
-        vm.stopPrank();
-    }
-
-    function testTokenManagerNotSet() public {
-        PlatformToken newToken = new PlatformToken();
+        // Then burn through DepositManager
+        vm.prank(address(depositManager));
+        platformToken.burn(user1, amount);
         
-        vm.startPrank(address(tokenManager));
-        vm.expectRevert("TokenManager not set");
-        newToken.mint(address(0x123), 1000e18);
-        vm.stopPrank();
+        assertEq(platformToken.balanceOf(user1), 0);
+        assertEq(platformToken.totalSupply(), 0);
     }
 
-    function testTokenManagerAddress() public {
-        vm.startPrank(address(0x123));
-        vm.expectRevert("Only tokenManager can call this function");
-        token.mint(address(0x456), 1000e18);
-        vm.stopPrank();
-    }
-
-    function testBurnExactAmount() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.burn(address(0x123), 1000e18);
-        vm.stopPrank();
+    function testBurnByNonDepositManager() public {
+        uint256 amount = 1000 * 1e18;
         
-        assertEq(token.balanceOf(address(0x123)), 0);
+        // First mint some tokens
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
+        
+        // Try to burn without permission
+        vm.prank(user1);
+        vm.expectRevert("Only depositManager can call this function");
+        platformToken.burn(user1, amount);
     }
 
-    function testMultipleMints() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.mint(address(0x123), 500e18);
-        token.mint(address(0x456), 750e18);
-        vm.stopPrank();
-        
-        assertEq(token.balanceOf(address(0x123)), 1500e18);
-        assertEq(token.balanceOf(address(0x456)), 750e18);
+    function testBurnFromZeroAddress() public {
+        vm.prank(address(depositManager));
+        vm.expectRevert("Cannot burn from zero address");
+        platformToken.burn(address(0), 1000 * 1e18);
     }
 
-    function testMultipleBurns() public {
-        vm.startPrank(address(tokenManager));
-        token.mint(address(0x123), 1000e18);
-        token.burn(address(0x123), 300e18);
-        token.burn(address(0x123), 200e18);
-        vm.stopPrank();
-        
-        assertEq(token.balanceOf(address(0x123)), 500e18);
+    function testBurnZeroAmount() public {
+        vm.prank(address(depositManager));
+        vm.expectRevert("Amount must be greater than 0");
+        platformToken.burn(user1, 0);
     }
-} 
+
+    function testBurnInsufficientBalance() public {
+        uint256 amount = 1000 * 1e18;
+        
+        // First mint some tokens
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
+        
+        // Try to burn more than available
+        vm.prank(address(depositManager));
+        vm.expectRevert("Insufficient balance to burn");
+        platformToken.burn(user1, amount + 1);
+    }
+
+    function testTransfer() public {
+        uint256 amount = 1000 * 1e18;
+        
+        // First mint some tokens
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
+        
+        // Transfer tokens
+        vm.prank(user1);
+        platformToken.transfer(user2, amount / 2);
+        
+        assertEq(platformToken.balanceOf(user1), amount / 2);
+        assertEq(platformToken.balanceOf(user2), amount / 2);
+    }
+
+    function testTransferFrom() public {
+        uint256 amount = 1000 * 1e18;
+        
+        // First mint some tokens
+        vm.prank(address(depositManager));
+        platformToken.mint(user1, amount);
+        
+        // Approve and transfer
+        vm.prank(user1);
+        platformToken.approve(user2, amount);
+        
+        vm.prank(user2);
+        platformToken.transferFrom(user1, address(0x3), amount / 2);
+        
+        assertEq(platformToken.balanceOf(user1), amount / 2);
+        assertEq(platformToken.balanceOf(address(0x3)), amount / 2);
+    }
+}

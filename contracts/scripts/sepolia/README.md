@@ -1,161 +1,82 @@
-# PaymentToken Minting Scripts
+# Sepolia Scripts
 
-This directory contains scripts to mint PaymentTokens (USDC simulation) to a specified address on the Sepolia network and add yield to mock cTokens.
+This directory contains scripts for interacting with the deployed contracts on Base Sepolia testnet.
 
 ## Scripts
 
-### 1. `mintPaymentToken.js` - Basic Script
+### `mintPaymentTokenAdvanced.js`
 
-A simple script that requires you to manually specify the PaymentToken contract address.
+Mints PaymentToken (Mock USDC) to a specified address.
 
-### 2. `mintPaymentTokenAdvanced.js` - Advanced Script
+### `createEscrow.js`
 
-An enhanced script that can automatically read the PaymentToken address from the latest deployment artifacts.
+Creates a new escrow using the EscrowFactory contract.
 
-### 3. `addYield.js` - Yield Simulation Script
+### `depositUSDC.js`
 
-A script to add yield to the mock cUESC token for testing purposes. This simulates yield generation by calling the `addYield()` function on the MockCToken contract.
-
-## Prerequisites
-
-1. Make sure you have the required dependencies installed:
-
-   ```bash
-   cd contracts/scripts
-   npm install
-   ```
-
-2. Set up your environment variables in a `.env` file in the `contracts` directory:
+Deposits USDC into the TokenManager to receive CUT tokens.
 
 ## Environment Variables
 
-Create a `.env` file with the following variables:
+Create a `.env` file in the `contracts` directory with the following variables:
 
-```env
-# Your private key (must be the owner of the PaymentToken contract)
-PRIVATE_KEY=your_private_key_here
+### Required Variables
 
-# Sepolia RPC URL (defaults to Base Sepolia)
-SEPOLIA_RPC_URL=https://sepolia.base.org
+- `PRIVATE_KEY`: Your wallet's private key (without 0x prefix)
+- `ORACLE_ADDRESS`: The address of the oracle for the escrow (must be approved) - **for createEscrow.js**
 
-# The address to mint tokens to (currently empty in your .env file)
-RECIPIENT_ADDRESS=0x...
+### Optional Variables
 
-# Amount to mint (in wei, 6 decimals for USDC simulation)
-# Default: 1000000 (1 USDC)
-AMOUNT=1000000
-
-# For basic script only - The deployed PaymentToken contract address
-PAYMENT_TOKEN_ADDRESS=0x...
-
-# For advanced script only - Set to 'true' to use latest deployment
-USE_LATEST_DEPLOYMENT=false
-
-# For addYield script - Amount of yield to add (in wei, 6 decimals for USDC)
-# Default: 1000000 (1 USDC)
-YIELD_AMOUNT=1000000
-
-# For addYield script only - The deployed MockCToken contract address
-MOCK_CTOKEN_ADDRESS=0x...
-```
+- `SEPOLIA_RPC_URL` or `BASE_SEPOLIA_RPC_URL`: RPC URL for Base Sepolia (defaults to "https://sepolia.base.org")
+- `USE_LATEST_DEPLOYMENT`: Set to "true" to automatically use the latest deployment address
+- `ESCROW_FACTORY_ADDRESS`: Manual EscrowFactory address (required if not using latest deployment)
+- `ESCROW_NAME`: Name for the escrow (defaults to "Test Escrow") - **for createEscrow.js**
+- `DEPOSIT_AMOUNT`: Deposit amount in wei (18 decimals, defaults to "1000000" = 1 CUT token) - **for createEscrow.js**
+- `END_TIME`: Unix timestamp for escrow end time (defaults to 24 hours from now) - **for createEscrow.js**
+- `USDC_AMOUNT`: Amount of USDC to deposit (6 decimals, defaults to "1000000" = 1 USDC) - **for depositUSDC.js**
 
 ## Usage
 
-### Basic Script
+### Prerequisites
 
-Run the basic script from the `contracts/scripts` directory:
+1. Deploy contracts using Foundry: `forge script script/Deploy_sepolia.s.sol --rpc-url <RPC_URL> --broadcast`
+2. Install dependencies: `npm install` (in the scripts directory)
+3. Set up environment variables
 
-```bash
-node sepolia/mintPaymentToken.js
-```
-
-### Advanced Script
-
-Run the advanced script from the `contracts/scripts` directory:
+### Running the Scripts
 
 ```bash
-node sepolia/mintPaymentTokenAdvanced.js
+# Navigate to the scripts directory
+cd contracts/scripts/sepolia
+
+# Create an escrow
+node createEscrow.js
+
+# Deposit USDC to get CUT tokens
+node depositUSDC.js
+
+# Mint payment tokens
+node mintPaymentTokenAdvanced.js
 ```
 
-The advanced script will automatically find the PaymentToken address from your latest deployment if `USE_LATEST_DEPLOYMENT=true` is set in your `.env` file.
+## Example .env File
 
-### Yield Simulation Script
-
-Run the yield simulation script from the `contracts/scripts` directory:
-
-```bash
-node sepolia/addYield.js
+```env
+PRIVATE_KEY=your_private_key_here
+ORACLE_ADDRESS=0x1234567890123456789012345678901234567890
+USE_LATEST_DEPLOYMENT=true
+ESCROW_NAME="My Test Escrow"
+DEPOSIT_AMOUNT=1000000000000000000
+END_TIME=1704067200
+USDC_AMOUNT=1000000
 ```
-
-The script will automatically find the MockCToken address from your latest deployment if `USE_LATEST_DEPLOYMENT=true` is set in your `.env` file.
-
-## Examples
-
-### Basic Script Example
-
-```bash
-# Set environment variables
-export PRIVATE_KEY="0x1234567890abcdef..."
-export PAYMENT_TOKEN_ADDRESS="0xabcdef1234567890..."
-export RECIPIENT_ADDRESS="0x9876543210fedcba..."
-export AMOUNT="5000000"  # 5 USDC
-
-# Run the basic script
-node sepolia/mintPaymentToken.js
-```
-
-### Advanced Script Example
-
-```bash
-# Set environment variables
-export PRIVATE_KEY="0x1234567890abcdef..."
-export RECIPIENT_ADDRESS="0x9876543210fedcba..."
-export AMOUNT="5000000"  # 5 USDC
-export USE_LATEST_DEPLOYMENT="true"
-
-# Run the advanced script
-node sepolia/mintPaymentTokenAdvanced.js
-```
-
-### Yield Simulation Example
-
-```bash
-# Set environment variables
-export PRIVATE_KEY="0x1234567890abcdef..."
-export MOCK_CTOKEN_ADDRESS="0xabcdef1234567890..."
-export YIELD_AMOUNT="5000000"  # 5 USDC worth of yield
-export USE_LATEST_DEPLOYMENT="true"
-
-# Run the yield simulation script
-node sepolia/addYield.js
-```
-
-## Output
-
-All scripts will output:
-
-- Network connection details
-- Wallet and contract addresses
-- Transaction hash
-- Confirmation details
-- Success/error messages
-
-The advanced script also shows:
-
-- Current and new balance of the recipient
-- Formatted token amounts with proper decimals
-
-The yield simulation script shows:
-
-- Current and new cToken balance, total supply, and exchange rate
-- Underlying balance changes
-- Detailed yield impact on the mock cToken
 
 ## Notes
 
-- Both minting scripts validate that your wallet is the owner of the PaymentToken contract
-- PaymentToken uses 6 decimals (like real USDC)
-- Only the contract owner can mint tokens
-- All scripts include error handling and address validation
-- The advanced script and yield simulation script require deployment artifacts to be present in the `broadcast` directory
-- The yield simulation script can be called by anyone (no owner restriction) and simulates yield by updating the exchange rate and minting additional cTokens
+- The oracle address must be approved in the EscrowFactory contract before creating an escrow
+- The end time must be in the future
+- The deposit amount must be greater than 0
+- The script will automatically detect the latest deployment if `USE_LATEST_DEPLOYMENT=true`
+- All amounts are in wei (18 decimals for CUT tokens, 6 decimals for USDC)
+- For `depositUSDC.js`, you must have sufficient USDC balance before running the script
+- The script will automatically approve USDC spending if needed

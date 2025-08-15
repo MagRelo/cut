@@ -37,7 +37,7 @@ export const Buy = () => {
   const { data: exchangeRate } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
     abi: TokenManagerContract.abi,
-    functionName: "getExchangeRate",
+    functionName: "getExchangeRateExternal",
   });
 
   const handleBuy = async () => {
@@ -69,7 +69,7 @@ export const Buy = () => {
                 name: "approve",
                 inputs: [
                   { name: "spender", type: "address" },
-                  { name: "amount", type: "uint256" },
+                  { name: "value", type: "uint256" },
                 ],
                 outputs: [{ name: "", type: "bool" }],
                 stateMutability: "nonpayable",
@@ -98,11 +98,10 @@ export const Buy = () => {
   const calculatePlatformTokenAmount = () => {
     if (!buyAmount || !exchangeRate) return "0";
     try {
-      // Since exchange rate is 1, 1 USDC = 1 CUT
-      // But we need to account for different decimals: USDC (6) vs CUT (18)
+      // Exchange rate is in 6 decimals (USDC per platform token)
+      // To get platform tokens for USDC: (USDC amount * 1e18) / exchange rate
       const usdcAmount = parseUnits(buyAmount, 6);
-      // Convert USDC amount to CUT amount (multiply by 10^12 to account for decimal difference)
-      const platformTokenAmount = usdcAmount * parseUnits("1", 12); // 18 - 6 = 12
+      const platformTokenAmount = (usdcAmount * parseUnits("1", 18)) / (exchangeRate as bigint);
       return formatUnits(platformTokenAmount, 18);
     } catch {
       return "0";
@@ -159,7 +158,7 @@ export const Buy = () => {
 
           <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
-            1 USDC = {formattedBalance(exchangeRate ?? 0n, 18)} CUT
+            1 CUT = ${formattedBalance(exchangeRate ?? 0n, 6)} USDC
           </div>
         </div>
         <div>

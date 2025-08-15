@@ -37,7 +37,7 @@ export const Sell = () => {
   const { data: exchangeRate } = useReadContract({
     address: tokenManagerAddress as `0x${string}`,
     abi: TokenManagerContract.abi,
-    functionName: "getExchangeRate",
+    functionName: "getExchangeRateExternal",
   });
 
   const handleSell = async () => {
@@ -79,11 +79,10 @@ export const Sell = () => {
   const calculateUSDCAmount = () => {
     if (!sellAmount || !exchangeRate) return "0";
     try {
-      // Since exchange rate is 1, 1 CUT = 1 USDC
-      // But we need to account for different decimals: CUT (18) vs USDC (6)
+      // Exchange rate is in 6 decimals (USDC per platform token)
+      // To get USDC for platform tokens: (platform token amount * exchange rate) / 1e18
       const platformTokenAmount = parseUnits(sellAmount, 18);
-      // Convert CUT amount to USDC amount (divide by 10^12 to account for decimal difference)
-      const usdcAmount = platformTokenAmount / parseUnits("1", 12); // 18 - 6 = 12
+      const usdcAmount = (platformTokenAmount * (exchangeRate as bigint)) / parseUnits("1", 18);
       return formatUnits(usdcAmount, 6); // USDC has 6 decimals
     } catch {
       return "0";

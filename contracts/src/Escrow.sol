@@ -7,34 +7,37 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Escrow is ReentrancyGuard, Ownable {
-    uint256 public constant MAX_PARTICIPANTS = 2000;
+    uint256 public constant MAX_PARTICIPANTS = 2000; // max implemented for gas considerations on distribute() function
     
-    IERC20 public immutable platformToken;
+    IERC20 public immutable paymentToken;
+    uint8 public immutable paymentTokenDecimals;
     address public immutable oracle;
-
-    uint256 public totalInitialDeposits;
-
-    enum EscrowState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
-    EscrowState public state;
-
+    uint256 public immutable oracleFee; // Basis points (e.g., 100 = 1%)
     struct EscrowDetails {
-        string name;
         uint256 depositAmount;
-        uint256 endTime;
+        uint256 expiry;
     }
     EscrowDetails public details;
 
+    // State variables
+    uint256 public totalInitialDeposits;
+    enum EscrowState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
+    EscrowState public state;
+
+    // Participant tracking
     mapping(address => bool) public hasDeposited;
     mapping(address => uint256) public participantIndex; // Track participant index for O(1) removal
     address[] public participants;
 
+    // Events
     event EscrowDeposited(address indexed participant);
     event EscrowWithdrawn(address indexed participant);
     event DepositsClosed();
     event PayoutsDistributed(uint256[] payouts);
-    event EmergencyWithdrawn(address indexed participant, uint256 amount);
+    event ExpiredEscrowWithdraw(address indexed participant, uint256 amount);
     event EscrowCancelled();
 
+    // Modifiers
     modifier whenOpen() {
         require(state == EscrowState.OPEN, "Escrow not open");
         _;
@@ -46,25 +49,27 @@ contract Escrow is ReentrancyGuard, Ownable {
     }
 
     constructor(
-        string memory _name,
         uint256 _depositAmount,
-        uint256 _endTime,
-        address _platformToken,
-        address _oracle
+        uint256 _expiry,
+        address _paymentToken,
+        uint8 _decimals,
+        address _oracle,
+        uint256 _oracleFee
     ) Ownable(msg.sender) {
-        require(bytes(_name).length > 0, "Name cannot be empty");
         require(_depositAmount > 0, "Deposit amount must be greater than 0");
-        require(_endTime > block.timestamp, "End time must be in the future");
-        require(_platformToken != address(0), "Platform token cannot be zero address");
+        require(_expiry > block.timestamp, "Expiry must be in the future");
+        require(_paymentToken != address(0), "Payment token cannot be zero address");
         require(_oracle != address(0), "Oracle cannot be zero address");
+        require(_oracleFee <= 10000, "Oracle fee cannot exceed 100%");
         
         details = EscrowDetails({
-            name: _name,
             depositAmount: _depositAmount,
-            endTime: _endTime
+            expiry: _expiry
         });
-        platformToken = IERC20(_platformToken);
+        paymentToken = IERC20(_paymentToken);
+        paymentTokenDecimals = _decimals;
         oracle = _oracle;
+        oracleFee = _oracleFee;
         state = EscrowState.OPEN;
     }
 
@@ -72,7 +77,7 @@ contract Escrow is ReentrancyGuard, Ownable {
         require(!hasDeposited[msg.sender], "Already deposited");
         require(participants.length < MAX_PARTICIPANTS, "Escrow full");
 
-        platformToken.transferFrom(msg.sender, address(this), details.depositAmount);
+        paymentToken.transferFrom(msg.sender, address(this), details.depositAmount);
         
         // Track initial deposit
         totalInitialDeposits += details.depositAmount;
@@ -87,11 +92,8 @@ contract Escrow is ReentrancyGuard, Ownable {
     function withdraw() external whenOpen nonReentrant {
         require(hasDeposited[msg.sender], "Not deposited");
 
-        // Store the deposit amount before state changes
-        uint256 depositAmount = details.depositAmount;
-        
-        // Update state BEFORE external calls (checks-effects-interactions pattern)
-        totalInitialDeposits -= depositAmount;
+        // Update participant state
+        totalInitialDeposits -= details.depositAmount;
         hasDeposited[msg.sender] = false;
         uint256 lastIndex = participants.length - 1;
         if (lastIndex > participantIndex[msg.sender]) {
@@ -102,8 +104,8 @@ contract Escrow is ReentrancyGuard, Ownable {
         participants.pop();
         delete participantIndex[msg.sender];
 
-        // External call LAST (interactions)
-        platformToken.transfer(msg.sender, depositAmount);
+        // Refund deposit amount
+        paymentToken.transfer(msg.sender, details.depositAmount);
 
         emit EscrowWithdrawn(msg.sender);
     }
@@ -123,21 +125,19 @@ contract Escrow is ReentrancyGuard, Ownable {
         }
         require(totalBasisPoints == 10000, "Total must be 10000 basis points");
 
-        // Calculate payouts based on basis points from initial deposits only
+        // Calculate oracle fee
+        uint256 oracleFeeAmount = (totalInitialDeposits * oracleFee) / 10000;
+        uint256 remainingForParticipants = totalInitialDeposits - oracleFeeAmount;
+
+        // Calculate payouts based on basis points from remaining amount after oracle fee
         uint256[] memory calculatedPayouts = new uint256[](_payoutBasisPoints.length);
         uint256 totalCalculatedPayouts = 0;
         
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
             // Use higher precision intermediate calculation to avoid precision loss
-            uint256 payout = (totalInitialDeposits * _payoutBasisPoints[i]) / 10000;
+            uint256 payout = (remainingForParticipants * _payoutBasisPoints[i]) / 10000;
             calculatedPayouts[i] = payout;
             totalCalculatedPayouts += payout;
-        }
-        
-        // Handle any dust amounts due to rounding by adding to the last participant
-        if (totalCalculatedPayouts < totalInitialDeposits && calculatedPayouts.length > 0) {
-            uint256 dust = totalInitialDeposits - totalCalculatedPayouts;
-            calculatedPayouts[calculatedPayouts.length - 1] += dust;
         }
 
         // Update state 
@@ -146,50 +146,24 @@ contract Escrow is ReentrancyGuard, Ownable {
 
         // External calls last
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
-            platformToken.transfer(participants[i], calculatedPayouts[i]);
+            paymentToken.transfer(participants[i], calculatedPayouts[i]);
         }
 
-        // Transfer any remaining funds to oracle (should be zero)
-        uint256 remainingBalance = platformToken.balanceOf(address(this));
+        // Transfer oracle fee and any remaining funds to oracle, including dust amounts
+        uint256 remainingBalance = paymentToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            platformToken.transfer(oracle, remainingBalance);
+            paymentToken.transfer(oracle, remainingBalance);
         }
     }
 
-    function emergencyWithdraw() external nonReentrant {
-        require(hasDeposited[msg.sender], "Not deposited");
-        require(block.timestamp > details.endTime, "Escrow not ended");
-        require(state == EscrowState.OPEN, "Escrow not in emergency state");
-
-        // Store the deposit amount before state changes
-        uint256 depositAmount = details.depositAmount;
-        
-        // Update state BEFORE external calls (checks-effects-interactions pattern)
-        totalInitialDeposits -= depositAmount;
-        hasDeposited[msg.sender] = false;
-        uint256 lastIndex = participants.length - 1;
-        if (lastIndex > participantIndex[msg.sender]) {
-            address lastParticipant = participants[lastIndex];
-            participants[participantIndex[msg.sender]] = lastParticipant;
-            participantIndex[lastParticipant] = participantIndex[msg.sender];
-        }
-        participants.pop();
-        delete participantIndex[msg.sender];
-
-        // External call LAST (interactions)
-        platformToken.transfer(msg.sender, depositAmount);
-
-        emit EmergencyWithdrawn(msg.sender, depositAmount);
-    }
-
-    function cancelAndRefund() external onlyOwner {
-        require(state == EscrowState.OPEN, "Escrow not open");
+    function cancelAndRefund() external onlyOracle {
+        require(state == EscrowState.OPEN || state == EscrowState.IN_PROGRESS, "Escrow not in cancellable state");
         
         // Refund all participants
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             if (hasDeposited[participant]) {
-                platformToken.transfer(participant, details.depositAmount);
+                paymentToken.transfer(participant, details.depositAmount);
                 hasDeposited[participant] = false;
             }
         }
@@ -202,6 +176,28 @@ contract Escrow is ReentrancyGuard, Ownable {
         state = EscrowState.CANCELLED;
         
         emit EscrowCancelled();
+    }
+
+    function expiredEscrowWithdraw() external nonReentrant {
+        require(hasDeposited[msg.sender], "Not deposited");
+        require(block.timestamp > details.expiry, "Escrow not ended");
+
+        // Update participant state
+        totalInitialDeposits -= details.depositAmount;
+        hasDeposited[msg.sender] = false;
+        uint256 lastIndex = participants.length - 1;
+        if (lastIndex > participantIndex[msg.sender]) {
+            address lastParticipant = participants[lastIndex];
+            participants[participantIndex[msg.sender]] = lastParticipant;
+            participantIndex[lastParticipant] = participantIndex[msg.sender];
+        }
+        participants.pop();
+        delete participantIndex[msg.sender];
+
+        // Refund deposit amount
+        paymentToken.transfer(msg.sender, details.depositAmount);
+
+        emit ExpiredEscrowWithdraw(msg.sender, details.depositAmount);
     }
 
     function getParticipantsCount() external view returns (uint256) {

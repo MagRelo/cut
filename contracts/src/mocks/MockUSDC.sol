@@ -5,16 +5,22 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title PaymentToken
- * @dev This contract simulates USDC for development purposes.
+ * @title MockUSDC
+ * @dev This contract mocks USDC for testing purposes.
  * USDC uses 6 decimals instead of the standard 18 decimals.
  * When deploying to production, this contract should not be deployed
  * and instead the actual USDC contract address should be used.
+ * 
+ * Real USDC functions we need to mock:
+ * - transfer(address to, uint256 amount) - returns bool
+ * - transferFrom(address from, address to, uint256 amount) - returns bool
+ * - balanceOf(address account) - returns uint256
+ * - decimals() - returns 6
  */
-contract PaymentToken is ERC20, Ownable {
+contract MockUSDC is ERC20, Ownable {
     uint8 private constant DECIMALS = 6;
 
-    constructor() ERC20("USD Coin(x)", "USDC(x)") Ownable(msg.sender) {}
+    constructor() ERC20("USD Coin", "USDC") Ownable(msg.sender) {}
 
     /**
      * @dev Returns the number of decimals used to get its user representation.
