@@ -30,15 +30,17 @@ interface ICErc20 {
  * This contract implements a simplified token system where:
  * - Users deposit USDC and receive CUT tokens in a 1:1 ratio
  * - USDC is automatically supplied to Compound V3 for yield generation
+ * - If Compound V3 is paused or deposit fails, USDC is stored directly in the contract
  * - Users can withdraw their original deposit amount (1:1 ratio)
  * - All yield generated stays in the contract for platform use
  * 
  * Key Features:
  * - 1:1 USDC to CUT token conversion
  * - Automatic Compound V3 integration for yield generation
+ * - Fallback to direct USDC storage if Compound is unavailable
  * - Yield retention by platform (no user distribution)
  * - Emergency withdrawal capabilities
- * - Compound V3 pause state handling (respects external pause states)
+ * - Compound V3 pause state handling with graceful fallback
  * 
  * @custom:security This contract uses OpenZeppelin's ReentrancyGuard and Ownable for security
  */
@@ -77,6 +79,12 @@ contract DepositManager is ReentrancyGuard, Ownable {
     /// @param amount The total amount withdrawn
     /// @param timestamp The timestamp of the withdrawal
     event EmergencyWithdrawal(address indexed owner, address indexed recipient, uint256 amount, uint256 timestamp);
+    
+    /// @notice Emitted when Compound deposit fails and USDC is stored directly in contract
+    /// @param user The address of the user making the deposit
+    /// @param usdcAmount The amount of USDC stored directly in contract
+    /// @param reason The reason for the fallback (e.g., "Compound supply failed")
+    event CompoundDepositFallback(address indexed user, uint256 usdcAmount, string reason);
 
     /**
      * @notice Constructor initializes the DepositManager with required contract addresses
@@ -105,18 +113,18 @@ contract DepositManager is ReentrancyGuard, Ownable {
     /**
      * @notice Deposits USDC and mints CUT tokens in a 1:1 ratio
      * @dev Automatically supplies USDC to Compound V3 for yield generation
+     * Falls back to storing USDC directly in contract if Compound deposit fails
      * @param amount The amount of USDC to deposit
      * 
      * Requirements:
      * - amount must be greater than 0
-     * - Compound V3 supply must not be paused
      * - User must have approved sufficient USDC allowance
      * 
      * Emits a {USDCDeposited} event
+     * Emits a {CompoundDepositFallback} event if Compound deposit fails
      */
     function depositUSDC(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than 0");
-        require(!cUSDC.isSupplyPaused(), "Compound supply is paused");
         
         // Calculate platform tokens to mint (1:1 ratio)
         // USDC has 6 decimals, PlatformToken has 18 decimals
@@ -129,9 +137,22 @@ contract DepositManager is ReentrancyGuard, Ownable {
         // Mint platform tokens to user
         platformToken.mint(msg.sender, platformTokensToMint);
         
-        // Deposit USDC to Compound for yield generation
-        usdcToken.approve(address(cUSDC), amount);
-        cUSDC.supply(address(usdcToken), amount);
+        // Try to deposit USDC to Compound for yield generation
+        // If it fails, USDC remains in the contract as a fallback
+        if (!cUSDC.isSupplyPaused()) {
+            // Approve USDC for Compound
+            usdcToken.approve(address(cUSDC), amount);
+            
+            try cUSDC.supply(address(usdcToken), amount) {
+                // Compound deposit successful
+            } catch {
+                // Compound deposit failed - USDC stays in contract
+                emit CompoundDepositFallback(msg.sender, amount, "Compound supply failed");
+            }
+        } else {
+            // Compound is paused - USDC stays in contract
+            emit CompoundDepositFallback(msg.sender, amount, "Compound supply paused");
+        }
         
         emit USDCDeposited(msg.sender, amount, platformTokensToMint);
     }
@@ -139,32 +160,41 @@ contract DepositManager is ReentrancyGuard, Ownable {
     /**
      * @notice Withdraws USDC by burning the specified amount of CUT tokens
      * @dev Withdraws from Compound V3 if necessary to fulfill the withdrawal
+     * Falls back to contract USDC if Compound is paused and sufficient funds are available
      * @param platformTokenAmount The amount of CUT tokens to burn
      * 
      * Requirements:
      * - platformTokenAmount must be greater than 0
      * - User must have sufficient CUT token balance
-     * - Compound V3 withdraw must not be paused
+     * - Either Compound V3 withdraw is not paused OR sufficient USDC is available in contract
      * 
      * Emits a {USDCWithdrawn} event
      */
     function withdrawUSDC(uint256 platformTokenAmount) external nonReentrant {
         require(platformTokenAmount > 0, "Amount must be greater than 0");
         require(platformToken.balanceOf(msg.sender) >= platformTokenAmount, "Insufficient platform tokens");
-        require(!cUSDC.isWithdrawPaused(), "Compound withdraw is paused");
         
         // Calculate USDC to return (1:1 ratio)
         // PlatformToken has 18 decimals, USDC has 6 decimals
         uint256 usdcToReturn = platformTokenAmount / 1e12; // Convert 18 decimals to 6 decimals
         require(usdcToReturn > 0, "No USDC to return");
         
+        // Check if we have sufficient USDC in contract to avoid Compound withdrawal
+        uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
+        bool hasSufficientContractBalance = tokenManagerUSDCBalance >= usdcToReturn;
+        
+        // Only require Compound to be unpaused if we need to withdraw from it
+        if (!hasSufficientContractBalance) {
+            require(!cUSDC.isWithdrawPaused(), "Compound withdraw is paused and insufficient contract balance");
+        }
+        
         // Burn platform tokens from user
         platformToken.burn(msg.sender, platformTokenAmount);
         
         // Withdraw USDC from Compound if needed
-        uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
-        if (tokenManagerUSDCBalance < usdcToReturn) {
-            uint256 neededFromCompound = usdcToReturn - tokenManagerUSDCBalance;
+        uint256 currentUSDCBalance = usdcToken.balanceOf(address(this));
+        if (currentUSDCBalance < usdcToReturn) {
+            uint256 neededFromCompound = usdcToReturn - currentUSDCBalance;
             cUSDC.withdraw(address(usdcToken), neededFromCompound);
         }
         
@@ -182,29 +212,38 @@ contract DepositManager is ReentrancyGuard, Ownable {
     /**
      * @notice Withdraws all USDC by burning all of the user's CUT tokens
      * @dev Convenience function that burns all user's CUT tokens and returns equivalent USDC
+     * Falls back to contract USDC if Compound is paused and sufficient funds are available
      * 
      * Requirements:
      * - User must have CUT token balance greater than 0
-     * - Compound V3 withdraw must not be paused
+     * - Either Compound V3 withdraw is not paused OR sufficient USDC is available in contract
      * 
      * Emits a {USDCWithdrawn} event
      */
     function withdrawAll() external nonReentrant {
         uint256 platformTokenBalance = platformToken.balanceOf(msg.sender);
         require(platformTokenBalance > 0, "No platform tokens to withdraw");
-        require(!cUSDC.isWithdrawPaused(), "Compound withdraw is paused");
         
         // Calculate USDC to return (1:1 ratio)
         uint256 usdcToReturn = platformTokenBalance / 1e12; // Convert 18 decimals to 6 decimals
         require(usdcToReturn > 0, "No USDC to return");
         
+        // Check if we have sufficient USDC in contract to avoid Compound withdrawal
+        uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
+        bool hasSufficientContractBalance = tokenManagerUSDCBalance >= usdcToReturn;
+        
+        // Only require Compound to be unpaused if we need to withdraw from it
+        if (!hasSufficientContractBalance) {
+            require(!cUSDC.isWithdrawPaused(), "Compound withdraw is paused and insufficient contract balance");
+        }
+        
         // Burn all platform tokens from user
         platformToken.burn(msg.sender, platformTokenBalance);
         
         // Withdraw USDC from Compound if needed
-        uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
-        if (tokenManagerUSDCBalance < usdcToReturn) {
-            uint256 neededFromCompound = usdcToReturn - tokenManagerUSDCBalance;
+        uint256 currentUSDCBalance = usdcToken.balanceOf(address(this));
+        if (currentUSDCBalance < usdcToReturn) {
+            uint256 neededFromCompound = usdcToReturn - currentUSDCBalance;
             cUSDC.withdraw(address(usdcToken), neededFromCompound);
         }
         
@@ -241,6 +280,22 @@ contract DepositManager is ReentrancyGuard, Ownable {
      */
     function getTotalAvailableBalance() external view returns (uint256) {
         return usdcToken.balanceOf(address(this)) + cUSDC.balanceOf(address(this));
+    }
+
+    /**
+     * @notice Gets the Compound V3 supply pause status
+     * @return True if Compound supply is paused, false otherwise
+     */
+    function isCompoundSupplyPaused() external view returns (bool) {
+        return cUSDC.isSupplyPaused();
+    }
+
+    /**
+     * @notice Gets the Compound V3 withdraw pause status
+     * @return True if Compound withdraw is paused, false otherwise
+     */
+    function isCompoundWithdrawPaused() external view returns (bool) {
+        return cUSDC.isWithdrawPaused();
     }
 
     /**

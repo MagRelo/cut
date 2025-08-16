@@ -27,6 +27,7 @@ contract MockCompound {
     // Pause flags (like real Compound V3)
     bool public _isSupplyPaused;
     bool public _isWithdrawPaused;
+    bool public _supplyShouldFail;
     
     // Events (like real Compound V3)
     event Supply(address indexed from, address indexed dst, uint amount);
@@ -45,6 +46,7 @@ contract MockCompound {
         require(!_isSupplyPaused, "Supply paused");
         require(asset == address(underlying), "Invalid asset");
         require(amount > 0, "Amount must be greater than 0");
+        require(!_supplyShouldFail, "Supply failed");
         
         // Transfer underlying from user to this contract
         underlying.transferFrom(msg.sender, address(this), amount);
@@ -126,6 +128,14 @@ contract MockCompound {
      */
     function setWithdrawPaused(bool paused) external {
         _isWithdrawPaused = paused;
+    }
+
+    /**
+     * @dev Set supply failure flag (for testing)
+     * @param shouldFail True to make supply fail
+     */
+    function setSupplyShouldFail(bool shouldFail) external {
+        _supplyShouldFail = shouldFail;
     }
 
     /**
