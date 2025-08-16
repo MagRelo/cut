@@ -5,7 +5,7 @@ import "./Escrow.sol";
 
 /**
  * @title EscrowFactory
- * @author Bet the Cut Team
+ * @author MagRelo
  * @dev Factory contract for creating and managing Escrow contracts
  * 
  * This contract serves as a factory for creating Escrow contracts with consistent

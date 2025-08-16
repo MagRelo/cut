@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title Escrow
- * @author Bet the Cut Team
+ * @author MagRelo
  * @dev Generic escrow contract for managing deposits and payouts
  * 
  * This contract implements a flexible escrow system where:

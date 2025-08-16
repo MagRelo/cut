@@ -24,7 +24,7 @@ interface ICErc20 {
 
 /**
  * @title DepositManager
- * @author Bet the Cut Team
+ * @author MagRelo
  * @dev Manages USDC deposits, CUT token minting/burning, and yield generation through Compound V3
  * 
  * This contract implements a simplified token system where:
