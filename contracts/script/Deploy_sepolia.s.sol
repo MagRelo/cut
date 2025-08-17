@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "../src/DepositManager.sol";
 import "../src/PlatformToken.sol";
+import "../src/EscrowFactory.sol";
 import "../src/mocks/MockUSDC.sol";
 import "../src/mocks/MockCompound.sol";
 
@@ -20,7 +21,7 @@ contract DeploySepolia is Script {
         MockCompound mockCompound = new MockCompound(address(mockUSDC));
         console2.log("MockCompound deployed to:", address(mockCompound));
 
-        // Deploy platform token
+        // Deploy PlatformToken
         PlatformToken platformToken = new PlatformToken();
         console2.log("PlatformToken deployed to:", address(platformToken));
 
@@ -36,6 +37,10 @@ contract DeploySepolia is Script {
         platformToken.setDepositManager(address(depositManager));
         console2.log("DepositManager set in PlatformToken");
 
+        // Deploy EscrowFactory
+        EscrowFactory escrowFactory = new EscrowFactory();
+        console2.log("EscrowFactory deployed to:", address(escrowFactory));
+
         vm.stopBroadcast();
 
         console2.log("=== Deployment Summary ===");
@@ -43,5 +48,6 @@ contract DeploySepolia is Script {
         console2.log("MockCompound:", address(mockCompound));
         console2.log("PlatformToken:", address(platformToken));
         console2.log("DepositManager:", address(depositManager));
+        console2.log("EscrowFactory:", address(escrowFactory));
     }
 } 

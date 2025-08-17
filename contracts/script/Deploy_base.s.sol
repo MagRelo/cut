@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "../src/DepositManager.sol";
 import "../src/PlatformToken.sol";
+import "../src/EscrowFactory.sol";
 
 contract DeployBase is Script {
     function run() external {
@@ -26,10 +27,15 @@ contract DeployBase is Script {
         platformToken.setDepositManager(address(depositManager));
         console2.log("DepositManager set in PlatformToken");
 
+        // Deploy EscrowFactory
+        EscrowFactory escrowFactory = new EscrowFactory();
+        console2.log("EscrowFactory deployed to:", address(escrowFactory));
+
         vm.stopBroadcast();
 
         console2.log("=== Deployment Summary ===");
         console2.log("PlatformToken:", address(platformToken));
         console2.log("DepositManager:", address(depositManager));
+        console2.log("EscrowFactory:", address(escrowFactory));
     }
 } 

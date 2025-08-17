@@ -259,11 +259,10 @@ contract Escrow is ReentrancyGuard {
             totalCalculatedPayouts += payout;
         }
 
-        // Update state 
+        // Update state (effects)
         state = EscrowState.SETTLED;
-        emit PayoutsDistributed(calculatedPayouts);
 
-        // External calls last
+        // Transfer payouts to participants (interactions)
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
             paymentToken.transfer(participants[i], calculatedPayouts[i]);
         }
@@ -273,6 +272,10 @@ contract Escrow is ReentrancyGuard {
         if (remainingBalance > 0) {
             paymentToken.transfer(oracle, remainingBalance);
         }
+
+        // Emit distribution event (after interactions)
+        emit PayoutsDistributed(calculatedPayouts);
+
     }
 
     /**
