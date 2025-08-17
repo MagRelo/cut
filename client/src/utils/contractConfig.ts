@@ -4,7 +4,7 @@ import baseConfig from "./contracts/base.json";
 export interface ContractConfig {
   paymentTokenAddress: string;
   platformTokenAddress: string;
-  tokenManagerAddress: string;
+  depositManagerAddress: string;
   escrowFactoryAddress: string;
 }
 

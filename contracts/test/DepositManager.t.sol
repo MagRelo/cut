@@ -293,60 +293,7 @@ contract DepositManagerTest is Test {
         assertEq(usdcToken.balanceOf(user1), 1000000 * 1e6); // Back to original balance
     }
 
-    // ============ WITHDRAW ALL TESTS ============
 
-    function testWithdrawAll() public {
-        uint256 depositAmount = 1000 * 1e6;
-        uint256 expectedTokens = depositAmount * 1e12;
-
-        // First deposit
-        vm.startPrank(user1);
-        usdcToken.approve(address(depositManager), depositAmount);
-        depositManager.depositUSDC(depositAmount);
-        vm.stopPrank();
-
-        // Then withdraw all
-        vm.startPrank(user1);
-        depositManager.withdrawAll();
-        vm.stopPrank();
-
-        assertEq(platformToken.balanceOf(user1), 0);
-        assertEq(usdcToken.balanceOf(user1), 1000000 * 1e6); // Back to original balance
-        assertEq(platformToken.totalSupply(), 0);
-    }
-
-    function testWithdrawAllNoTokens() public {
-        vm.startPrank(user1);
-        vm.expectRevert("No platform tokens to withdraw");
-        depositManager.withdrawAll();
-        vm.stopPrank();
-    }
-
-    function testWithdrawAllMultipleDeposits() public {
-        uint256 depositAmount1 = 500 * 1e6;
-        uint256 depositAmount2 = 300 * 1e6;
-
-        // First deposit
-        vm.startPrank(user1);
-        usdcToken.approve(address(depositManager), depositAmount1);
-        depositManager.depositUSDC(depositAmount1);
-        vm.stopPrank();
-
-        // Second deposit
-        vm.startPrank(user1);
-        usdcToken.approve(address(depositManager), depositAmount2);
-        depositManager.depositUSDC(depositAmount2);
-        vm.stopPrank();
-
-        // Withdraw all
-        vm.startPrank(user1);
-        depositManager.withdrawAll();
-        vm.stopPrank();
-
-        assertEq(platformToken.balanceOf(user1), 0);
-        assertEq(usdcToken.balanceOf(user1), 1000000 * 1e6); // Back to original balance
-        assertEq(platformToken.totalSupply(), 0);
-    }
 
     // ============ YIELD AND BALANCE SUPPLY TESTS ============
 
@@ -631,7 +578,7 @@ contract DepositManagerTest is Test {
 
         // User2 withdraws all
         vm.startPrank(user2);
-        depositManager.withdrawAll();
+        depositManager.withdrawUSDC(platformToken.balanceOf(user2));
         vm.stopPrank();
 
         // Owner withdraws yield
@@ -682,7 +629,7 @@ contract DepositManagerTest is Test {
         // Test gas usage for withdraw
         gasBefore = gasleft();
         vm.startPrank(user1);
-        depositManager.withdrawAll();
+        depositManager.withdrawUSDC(platformToken.balanceOf(user1));
         vm.stopPrank();
         gasUsed = gasBefore - gasleft();
 
@@ -704,7 +651,7 @@ contract DepositManagerTest is Test {
 
         // Withdraw large amount
         vm.startPrank(user1);
-        depositManager.withdrawAll();
+        depositManager.withdrawUSDC(platformToken.balanceOf(user1));
         vm.stopPrank();
 
         assertEq(platformToken.balanceOf(user1), 0);

@@ -27,7 +27,11 @@
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "mint-tokens": "node contracts/scripts/mint-tokens.js",
     "mint-payment-tokens": "node contracts/scripts/mint-payment-tokens.js",
-    "deploy": "npm run client:build && npm run copy-static && npm run server:build && npm run server:deploy"
+    "deploy": "npm run client:build && npm run copy-static && npm run server:build && npm run server:deploy",
+    "deploy:contracts": "node scripts/deploy.js",
+    "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
+    "deploy:contracts:base": "node scripts/deploy.js base",
+    "deploy:full": "npm run deploy:contracts && npm run deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

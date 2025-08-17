@@ -29,10 +29,10 @@ async function isSponsoredContract(
     }
 
     // Check if any address matches our contracts
-    const TokenManagerAddress = process.env.TOKEN_MANAGER?.toLowerCase();
+    const DepositManagerAddress = process.env.DEPOSIT_MANAGER?.toLowerCase();
     const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
 
-    console.log({ TokenManagerAddress });
+    console.log({ DepositManagerAddress });
     console.log({ EscrowFactoryAddress });
     console.log({ to: addresses });
 
@@ -52,7 +52,7 @@ async function isSponsoredContract(
     // Check if all addresses are either merchant factory, payment token, or sponsored contests
     const allSponsored = addresses.every(
       (address) =>
-        address === TokenManagerAddress ||
+        address === DepositManagerAddress ||
         address === EscrowFactoryAddress ||
         contestAddresses.includes(address)
     );

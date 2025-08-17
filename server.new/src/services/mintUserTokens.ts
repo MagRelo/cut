@@ -1,15 +1,15 @@
 import { ethers } from 'ethers';
-import TokenManager from '../../contracts/TokenManager.json' with { type: 'json' };
-import PaymentToken from '../../contracts/PaymentToken.json' with { type: 'json' };
+import DepositManager from '../../contracts/DepositManager.json' with { type: 'json' };
+import MockUSDC from '../../contracts/MockUSDC.json' with { type: 'json' };
 import PlatformToken from '../../contracts/PlatformToken.json' with { type: 'json' };
 
 // Contract configuration
 const contractConfig = {
-    paymentTokenAddress: process.env.PAYMENT_TOKEN_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
-    tokenManagerAddress: process.env.TOKEN_MANAGER_ADDRESS || '0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5',
-    platformTokenAddress: process.env.PLATFORM_TOKEN_ADDRESS || '0x9Ba098Bcd17b3474E6dA824A43704b8baA8cC3b5',
+    paymentTokenAddress: process.env.PAYMENT_TOKEN_ADDRESS || '0x7150669d6aD21be53D2d71c09138D46381b90b5b', // MockUSDC on Base Sepolia
+    depositManagerAddress: process.env.DEPOSIT_MANAGER_ADDRESS || '0x14138DC74022AE1290132cd4945381e94aCE2A88',
+    platformTokenAddress: process.env.PLATFORM_TOKEN_ADDRESS || '0x772c846Ac2BC1CF0733331e76912d90479c0481d',
     oracleWalletPrivateKey: process.env.ORACLE_PRIVATE_KEY || '',
-    rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org'
+    rpcUrl: process.env.RPC_URL || 'https://sepolia.base.org'
 };
 
 // Initialize provider
@@ -29,13 +29,13 @@ function initializeWalletAndContracts() {
     
     const paymentTokenContract = new ethers.Contract(
         contractConfig.paymentTokenAddress,
-        PaymentToken.abi,
+        MockUSDC.abi,
         oracleWallet
     );
 
-    const tokenManagerContract = new ethers.Contract(
-        contractConfig.tokenManagerAddress,
-        TokenManager.abi,
+    const depositManagerContract = new ethers.Contract(
+        contractConfig.depositManagerAddress,
+        DepositManager.abi,
         oracleWallet
     );
 
@@ -45,7 +45,7 @@ function initializeWalletAndContracts() {
         oracleWallet
     );
     
-    return { oracleWallet, paymentTokenContract, tokenManagerContract, platformTokenContract };
+    return { oracleWallet, paymentTokenContract, depositManagerContract, platformTokenContract };
 }
 
 /**
@@ -80,27 +80,27 @@ export async function mintUSDC(amount: number = 1000) {
 }
 
 /**
- * Approves TokenManager contract to spend USDC from oracle wallet
+ * Approves DepositManager contract to spend USDC from oracle wallet
  * @param amount Amount of USDC to approve (in USDC units)
  * @returns Transaction result
  */
-export async function approveTokenManagerToSpendUSDC(amount: number = 1000) {
+export async function approveDepositManagerToSpendUSDC(amount: number = 1000) {
     try {
-        const { oracleWallet, paymentTokenContract, tokenManagerContract } = initializeWalletAndContracts();
+        const { oracleWallet, paymentTokenContract, depositManagerContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 6);
         
-        console.log(`Approving TokenManager to spend ${amount} USDC(x)...`);
+        console.log(`Approving DepositManager to spend ${amount} USDC(x)...`);
         
-        // Approve TokenManager to spend USDC from oracle wallet
-        const approveTx = await paymentTokenContract.approve(tokenManagerContract.target, tokenAmount);
+        // Approve DepositManager to spend USDC from oracle wallet
+        const approveTx = await paymentTokenContract.approve(depositManagerContract.target, tokenAmount);
         await approveTx.wait();
         
-        console.log(`Approved TokenManager to spend ${amount} USDC(x). Transaction: ${approveTx.hash}`);
+        console.log(`Approved DepositManager to spend ${amount} USDC(x). Transaction: ${approveTx.hash}`);
         
         // Verify approval
         const allowance = await paymentTokenContract.allowance(
             oracleWallet.address,
-            tokenManagerContract.target
+            depositManagerContract.target
         );
         
         console.log(`Allowance verified: ${ethers.formatUnits(allowance, 6)} USDC`);
@@ -108,11 +108,11 @@ export async function approveTokenManagerToSpendUSDC(amount: number = 1000) {
         return {
             success: true,
             transaction: approveTx.hash,
-            spender: tokenManagerContract.target,
+            spender: depositManagerContract.target,
             amount: amount
         };
     } catch (error) {
-        console.error('Error approving TokenManager to spend USDC:', error);
+        console.error('Error approving DepositManager to spend USDC:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -121,22 +121,22 @@ export async function approveTokenManagerToSpendUSDC(amount: number = 1000) {
 }
 
 /**
- * Deposits USDC into TokenManager contract, which mints CUT tokens to the oracle wallet
+ * Deposits USDC into DepositManager contract, which mints CUT tokens to the oracle wallet
  * @param amount Amount of USDC to deposit (in USDC units)
  * @returns Transaction result
  */
-export async function depositUSDCToTokenManager(amount: number = 1000) {
+export async function depositUSDCToDepositManager(amount: number = 1000) {
     try {
-        const { oracleWallet, tokenManagerContract, platformTokenContract } = initializeWalletAndContracts();
+        const { oracleWallet, depositManagerContract, platformTokenContract } = initializeWalletAndContracts();
         const tokenAmount = ethers.parseUnits(amount.toString(), 6);
         
-        console.log(`Depositing ${amount} USDC(x) into TokenManager...`);
+        console.log(`Depositing ${amount} USDC(x) into DepositManager...`);
         
-        // Deposit USDC into TokenManager (this will mint CUT tokens to the oracle wallet)
-        const depositTx = await tokenManagerContract.depositUSDC(tokenAmount);
+        // Deposit USDC into DepositManager (this will mint CUT tokens to the oracle wallet)
+        const depositTx = await depositManagerContract.depositUSDC(tokenAmount);
         await depositTx.wait();
         
-        console.log(`Deposited ${amount} USDC(x) into TokenManager. Transaction: ${depositTx.hash}`);
+        console.log(`Deposited ${amount} USDC(x) into DepositManager. Transaction: ${depositTx.hash}`);
         
         // Check CUT token balance
         const cutBalance = await platformTokenContract.balanceOf(oracleWallet.address);
@@ -145,12 +145,12 @@ export async function depositUSDCToTokenManager(amount: number = 1000) {
         return {
             success: true,
             transaction: depositTx.hash,
-            tokenManager: tokenManagerContract.target,
+            depositManager: depositManagerContract.target,
             amount: amount,
             cutBalance: ethers.formatUnits(cutBalance, 18)
         };
     } catch (error) {
-        console.error('Error depositing USDC to TokenManager:', error);
+        console.error('Error depositing USDC to DepositManager:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -192,7 +192,7 @@ export async function transferCUTToUser(userAddress: string, amount: number = 10
 }
 
 /**
- * Complete flow: Mint USDC, approve TokenManager, deposit to TokenManager (mints CUT), and transfer to new user
+ * Complete flow: Mint USDC, approve DepositManager, deposit to DepositManager (mints CUT), and transfer to new user
  * @param userAddress Address of the user to receive CUT tokens
  * @param usdcAmount Amount of USDC to process (in USDC units)
  * @param cutAmount Amount of CUT tokens to transfer to user (in CUT units)
@@ -213,16 +213,16 @@ export async function mintAndTransferToUser(
             throw new Error(`Minting failed: ${mintResult.error}`);
         }
         
-        // Step 2: Approve TokenManager to spend USDC
-        console.log('Step 2: Approving TokenManager to spend USDC...');
-        const approveResult = await approveTokenManagerToSpendUSDC(usdcAmount);
+        // Step 2: Approve DepositManager to spend USDC
+        console.log('Step 2: Approving DepositManager to spend USDC...');
+        const approveResult = await approveDepositManagerToSpendUSDC(usdcAmount);
         if (!approveResult.success) {
             throw new Error(`Approval failed: ${approveResult.error}`);
         }
         
-        // Step 3: Deposit USDC into TokenManager (this mints CUT tokens to oracle wallet)
-        console.log('Step 3: Depositing USDC into TokenManager...');
-        const depositResult = await depositUSDCToTokenManager(usdcAmount);
+        // Step 3: Deposit USDC into DepositManager (this mints CUT tokens to oracle wallet)
+        console.log('Step 3: Depositing USDC into DepositManager...');
+        const depositResult = await depositUSDCToDepositManager(usdcAmount);
         if (!depositResult.success) {
             throw new Error(`Deposit failed: ${depositResult.error}`);
         }
@@ -240,8 +240,8 @@ export async function mintAndTransferToUser(
             success: true,
             steps: {
                 usdcMint: mintResult,
-                tokenManagerApproval: approveResult,
-                tokenManagerDeposit: depositResult,
+                depositManagerApproval: approveResult,
+                depositManagerDeposit: depositResult,
                 cutTransfer: transferResult
             },
             summary: {
@@ -272,8 +272,8 @@ export async function quickMintAndTransfer(userAddress: string, amount: number =
     await mintUSDC(amount);
     
     // Then approve and deposit
-    await approveTokenManagerToSpendUSDC(amount);
-    await depositUSDCToTokenManager(amount);
+    await approveDepositManagerToSpendUSDC(amount);
+    await depositUSDCToDepositManager(amount);
     
     // Finally transfer to user
     return await transferCUTToUser(userAddress, amount);

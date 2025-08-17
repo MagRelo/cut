@@ -209,54 +209,7 @@ contract DepositManager is ReentrancyGuard, Ownable {
         emit USDCWithdrawn(msg.sender, platformTokenAmount, actualUSDCToReturn);
     }
 
-    /**
-     * @notice Withdraws all USDC by burning all of the user's CUT tokens
-     * @dev Convenience function that burns all user's CUT tokens and returns equivalent USDC
-     * Falls back to contract USDC if Compound is paused and sufficient funds are available
-     * 
-     * Requirements:
-     * - User must have CUT token balance greater than 0
-     * - Either Compound V3 withdraw is not paused OR sufficient USDC is available in contract
-     * 
-     * Emits a {USDCWithdrawn} event
-     */
-    function withdrawAll() external nonReentrant {
-        uint256 platformTokenBalance = platformToken.balanceOf(msg.sender);
-        require(platformTokenBalance > 0, "No platform tokens to withdraw");
-        
-        // Calculate USDC to return (1:1 ratio)
-        uint256 usdcToReturn = platformTokenBalance / 1e12; // Convert 18 decimals to 6 decimals
-        require(usdcToReturn > 0, "No USDC to return");
-        
-        // Check if we have sufficient USDC in contract to avoid Compound withdrawal
-        uint256 tokenManagerUSDCBalance = usdcToken.balanceOf(address(this));
-        bool hasSufficientContractBalance = tokenManagerUSDCBalance >= usdcToReturn;
-        
-        // Only require Compound to be unpaused if we need to withdraw from it
-        if (!hasSufficientContractBalance) {
-            require(!cUSDC.isWithdrawPaused(), "Compound withdraw is paused and insufficient contract balance");
-        }
-        
-        // Burn all platform tokens from user
-        platformToken.burn(msg.sender, platformTokenBalance);
-        
-        // Withdraw USDC from Compound if needed
-        uint256 currentUSDCBalance = usdcToken.balanceOf(address(this));
-        if (currentUSDCBalance < usdcToReturn) {
-            uint256 neededFromCompound = usdcToReturn - currentUSDCBalance;
-            cUSDC.withdraw(address(usdcToken), neededFromCompound);
-        }
-        
-        // Get the actual USDC balance after redemption
-        uint256 actualUSDCBalance = usdcToken.balanceOf(address(this));
-        uint256 actualUSDCToReturn = actualUSDCBalance < usdcToReturn ? actualUSDCBalance : usdcToReturn;
-        
-        // Transfer USDC to user
-        bool transferSuccess = usdcToken.transfer(msg.sender, actualUSDCToReturn);
-        require(transferSuccess, "USDC transfer failed");
-        
-        emit USDCWithdrawn(msg.sender, platformTokenBalance, actualUSDCToReturn);
-    }
+
 
     /**
      * @notice Gets the USDC balance held directly by this contract

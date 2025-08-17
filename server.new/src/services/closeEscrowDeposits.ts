@@ -11,7 +11,7 @@ import Escrow from '../../contracts/Escrow.json' with { type: 'json' };
 
 // Initialize blockchain connection
 function getWallet() {
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'https://sepolia.base.org');
 
   // Validate private key before creating wallet
   const privateKey = process.env.ORACLE_PRIVATE_KEY;
