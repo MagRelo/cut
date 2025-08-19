@@ -6,7 +6,7 @@ import { mintAndTransferToUser } from "../services/mintUserTokens.js";
 
 import { createClient, http, hashMessage } from "viem";
 import { Chains } from "porto";
-import { Key, ServerActions } from "porto/viem";
+import { Key, RelayActions } from "porto";
 import { generateSiweNonce, parseSiweMessage } from "viem/siwe";
 // Instantiate a Viem Client with Porto-compatible Chain.
 const client = createClient({
@@ -63,7 +63,7 @@ router.post("/siwe", async (req, res) => {
     const { address, chainId, nonce } = parseSiweMessage(message);
 
     // Verify the signature
-    const valid = await ServerActions.verifySignature(client, {
+    const valid = await RelayActions.verifySignature(client, {
       address: address!,
       digest: hashMessage(message),
       signature,

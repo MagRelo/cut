@@ -3,15 +3,16 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
-// TokenManager ABI - just the functions we need
-const TOKEN_MANAGER_ABI = [
+// DepositManager ABI - just the functions we need
+const DEPOSIT_MANAGER_ABI = [
   "function depositUSDC(uint256 amount) external",
-  "function getExchangeRateExternal() external view returns (uint256)",
-  "function getTokenManagerBalance() external view returns (uint256)",
-  "function getPlatformTokenSupply() external view returns (uint256)",
+  "function getTokenManagerUSDCBalance() external view returns (uint256)",
+  "function getCompoundUSDCBalance() external view returns (uint256)",
   "function getTotalAvailableBalance() external view returns (uint256)",
+  "function isCompoundSupplyPaused() external view returns (bool)",
+  "function isCompoundWithdrawPaused() external view returns (bool)",
 ];
 
 // PaymentToken (USDC) ABI
@@ -28,6 +29,7 @@ const PAYMENT_TOKEN_ABI = [
 const PLATFORM_TOKEN_ABI = [
   "function balanceOf(address account) external view returns (uint256)",
   "function decimals() external pure returns (uint8)",
+  "function totalSupply() external view returns (uint256)",
 ];
 
 async function mintUSDCIfNeeded(paymentToken, wallet, requiredAmount) {
@@ -76,7 +78,7 @@ async function mintUSDCIfNeeded(paymentToken, wallet, requiredAmount) {
 }
 
 async function getLatestDeployment() {
-  const broadcastDir = path.join(process.cwd(), "..", "broadcast", "Deploy_sepolia.s.sol");
+  const broadcastDir = path.join(process.cwd(), "contracts", "broadcast", "Deploy_sepolia.s.sol");
 
   if (!fs.existsSync(broadcastDir)) {
     throw new Error(
@@ -104,29 +106,29 @@ async function getLatestDeployment() {
 
   const deploymentData = JSON.parse(fs.readFileSync(latestRunFile, "utf8"));
 
-  // Find TokenManager, PaymentToken, and PlatformToken deployments
-  const tokenManagerDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "TokenManager"
+  // Find DepositManager, PaymentToken, and PlatformToken deployments
+  const depositManagerDeployment = deploymentData.transactions.find(
+    (tx) => tx.contractName === "DepositManager"
   );
   const paymentTokenDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "PaymentToken"
+    (tx) => tx.contractName === "MockUSDC"
   );
   const platformTokenDeployment = deploymentData.transactions.find(
     (tx) => tx.contractName === "PlatformToken"
   );
 
-  if (!tokenManagerDeployment) {
-    throw new Error("TokenManager deployment not found in latest deployment");
+  if (!depositManagerDeployment) {
+    throw new Error("DepositManager deployment not found in latest deployment");
   }
   if (!paymentTokenDeployment) {
-    throw new Error("PaymentToken deployment not found in latest deployment");
+    throw new Error("MockUSDC deployment not found in latest deployment");
   }
   if (!platformTokenDeployment) {
     throw new Error("PlatformToken deployment not found in latest deployment");
   }
 
   return {
-    tokenManager: tokenManagerDeployment.contractAddress,
+    depositManager: depositManagerDeployment.contractAddress,
     paymentToken: paymentTokenDeployment.contractAddress,
     platformToken: platformTokenDeployment.contractAddress,
   };
@@ -146,40 +148,40 @@ async function depositUSDC() {
     throw new Error("PRIVATE_KEY environment variable is required");
   }
 
-  let TOKEN_MANAGER_ADDRESS, PAYMENT_TOKEN_ADDRESS, PLATFORM_TOKEN_ADDRESS;
+  let DEPOSIT_MANAGER_ADDRESS, PAYMENT_TOKEN_ADDRESS, PLATFORM_TOKEN_ADDRESS;
 
   if (USE_LATEST_DEPLOYMENT) {
     try {
       const addresses = await getLatestDeployment();
-      TOKEN_MANAGER_ADDRESS = addresses.tokenManager;
+      DEPOSIT_MANAGER_ADDRESS = addresses.depositManager;
       PAYMENT_TOKEN_ADDRESS = addresses.paymentToken;
       PLATFORM_TOKEN_ADDRESS = addresses.platformToken;
       console.log("📋 Using addresses from latest deployment:");
-      console.log("  TokenManager:", TOKEN_MANAGER_ADDRESS);
+      console.log("  DepositManager:", DEPOSIT_MANAGER_ADDRESS);
       console.log("  PaymentToken:", PAYMENT_TOKEN_ADDRESS);
       console.log("  PlatformToken:", PLATFORM_TOKEN_ADDRESS);
     } catch (error) {
       console.error("Failed to get latest deployment:", error.message);
       console.log("Falling back to environment variables");
-      TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
+      DEPOSIT_MANAGER_ADDRESS = process.env.DEPOSIT_MANAGER_ADDRESS;
       PAYMENT_TOKEN_ADDRESS = process.env.PAYMENT_TOKEN_ADDRESS;
       PLATFORM_TOKEN_ADDRESS = process.env.PLATFORM_TOKEN_ADDRESS;
     }
   } else {
-    TOKEN_MANAGER_ADDRESS = process.env.TOKEN_MANAGER_ADDRESS;
+    DEPOSIT_MANAGER_ADDRESS = process.env.DEPOSIT_MANAGER_ADDRESS;
     PAYMENT_TOKEN_ADDRESS = process.env.PAYMENT_TOKEN_ADDRESS;
     PLATFORM_TOKEN_ADDRESS = process.env.PLATFORM_TOKEN_ADDRESS;
   }
 
-  if (!TOKEN_MANAGER_ADDRESS || !PAYMENT_TOKEN_ADDRESS || !PLATFORM_TOKEN_ADDRESS) {
+  if (!DEPOSIT_MANAGER_ADDRESS || !PAYMENT_TOKEN_ADDRESS || !PLATFORM_TOKEN_ADDRESS) {
     throw new Error(
-      "TOKEN_MANAGER_ADDRESS, PAYMENT_TOKEN_ADDRESS, and PLATFORM_TOKEN_ADDRESS environment variables are required when not using latest deployment"
+      "DEPOSIT_MANAGER_ADDRESS, PAYMENT_TOKEN_ADDRESS, and PLATFORM_TOKEN_ADDRESS environment variables are required when not using latest deployment"
     );
   }
 
   // Validate contract addresses
-  if (!ethers.isAddress(TOKEN_MANAGER_ADDRESS)) {
-    throw new Error("Invalid TOKEN_MANAGER_ADDRESS");
+  if (!ethers.isAddress(DEPOSIT_MANAGER_ADDRESS)) {
+    throw new Error("Invalid DEPOSIT_MANAGER_ADDRESS");
   }
   if (!ethers.isAddress(PAYMENT_TOKEN_ADDRESS)) {
     throw new Error("Invalid PAYMENT_TOKEN_ADDRESS");
@@ -197,7 +199,7 @@ async function depositUSDC() {
   console.log("💰 USDC amount to deposit:", ethers.formatUnits(USDC_AMOUNT, 6), "USDC");
 
   // Create contract instances
-  const tokenManager = new ethers.Contract(TOKEN_MANAGER_ADDRESS, TOKEN_MANAGER_ABI, wallet);
+  const depositManager = new ethers.Contract(DEPOSIT_MANAGER_ADDRESS, DEPOSIT_MANAGER_ABI, wallet);
   const paymentToken = new ethers.Contract(PAYMENT_TOKEN_ADDRESS, PAYMENT_TOKEN_ABI, wallet);
   const platformToken = new ethers.Contract(PLATFORM_TOKEN_ADDRESS, PLATFORM_TOKEN_ABI, wallet);
 
@@ -223,7 +225,7 @@ async function depositUSDC() {
     console.log("🎯 Current CUT balance:", ethers.formatUnits(cutBalanceBefore, 18), "CUT");
 
     // Check current allowance
-    const currentAllowance = await paymentToken.allowance(wallet.address, TOKEN_MANAGER_ADDRESS);
+    const currentAllowance = await paymentToken.allowance(wallet.address, DEPOSIT_MANAGER_ADDRESS);
     console.log("✅ Current allowance:", ethers.formatUnits(currentAllowance, 6), "USDC");
 
     // Approve USDC spending if needed
@@ -231,14 +233,14 @@ async function depositUSDC() {
       console.log("\n🔐 Approving USDC spending...");
 
       // Approve the exact amount needed for this transaction
-      const approveTx = await paymentToken.approve(TOKEN_MANAGER_ADDRESS, USDC_AMOUNT);
+      const approveTx = await paymentToken.approve(DEPOSIT_MANAGER_ADDRESS, USDC_AMOUNT);
       console.log("📝 Approval transaction hash:", approveTx.hash);
 
       const approveReceipt = await approveTx.wait();
       console.log("✅ Approval confirmed in block:", approveReceipt.blockNumber);
 
       // Verify the approval was successful
-      const newAllowance = await paymentToken.allowance(wallet.address, TOKEN_MANAGER_ADDRESS);
+      const newAllowance = await paymentToken.allowance(wallet.address, DEPOSIT_MANAGER_ADDRESS);
       console.log("✅ New allowance:", ethers.formatUnits(newAllowance, 6), "USDC");
 
       if (newAllowance < BigInt(USDC_AMOUNT)) {
@@ -248,16 +250,24 @@ async function depositUSDC() {
       console.log("✅ Sufficient allowance already exists");
     }
 
-    // Get exchange rate before deposit
-    const exchangeRateBefore = await tokenManager.getExchangeRateExternal();
-    console.log("📊 Exchange rate before deposit:", ethers.formatUnits(exchangeRateBefore, 6));
-
-    // Get token manager stats before deposit
-    const tokenManagerBalanceBefore = await tokenManager.getTokenManagerBalance();
-    const platformTokenSupplyBefore = await tokenManager.getPlatformTokenSupply();
+    // Get DepositManager stats before deposit
+    const tokenManagerBalanceBefore = await depositManager.getTokenManagerUSDCBalance();
+    const compoundBalanceBefore = await depositManager.getCompoundUSDCBalance();
+    const totalAvailableBalanceBefore = await depositManager.getTotalAvailableBalance();
+    const platformTokenSupplyBefore = await platformToken.totalSupply();
     console.log(
-      "🏦 TokenManager USDC balance before:",
+      "🏦 DepositManager USDC balance before:",
       ethers.formatUnits(tokenManagerBalanceBefore, 6),
+      "USDC"
+    );
+    console.log(
+      "🏦 Compound USDC balance before:",
+      ethers.formatUnits(compoundBalanceBefore, 6),
+      "USDC"
+    );
+    console.log(
+      "🏦 Total available balance before:",
+      ethers.formatUnits(totalAvailableBalanceBefore, 6),
       "USDC"
     );
     console.log(
@@ -266,18 +276,24 @@ async function depositUSDC() {
       "CUT"
     );
 
+    // Check Compound pause status
+    const isCompoundSupplyPaused = await depositManager.isCompoundSupplyPaused();
+    const isCompoundWithdrawPaused = await depositManager.isCompoundWithdrawPaused();
+    console.log("⏸️ Compound supply paused:", isCompoundSupplyPaused);
+    console.log("⏸️ Compound withdraw paused:", isCompoundWithdrawPaused);
+
     // Deposit USDC
     console.log("\n💸 Depositing USDC...");
     console.log("📋 Deposit details:");
     console.log("  - Amount:", ethers.formatUnits(USDC_AMOUNT, 6), "USDC");
-    console.log("  - TokenManager address:", TOKEN_MANAGER_ADDRESS);
+    console.log("  - DepositManager address:", DEPOSIT_MANAGER_ADDRESS);
     console.log(
       "  - Current allowance:",
-      ethers.formatUnits(await paymentToken.allowance(wallet.address, TOKEN_MANAGER_ADDRESS), 6),
+      ethers.formatUnits(await paymentToken.allowance(wallet.address, DEPOSIT_MANAGER_ADDRESS), 6),
       "USDC"
     );
 
-    const depositTx = await tokenManager.depositUSDC(USDC_AMOUNT);
+    const depositTx = await depositManager.depositUSDC(USDC_AMOUNT);
     console.log("📝 Deposit transaction hash:", depositTx.hash);
 
     // Wait for transaction to be mined
@@ -289,9 +305,10 @@ async function depositUSDC() {
     // Get new balances and stats
     const cutBalanceAfter = await platformToken.balanceOf(wallet.address);
     const usdcBalanceAfter = await paymentToken.balanceOf(wallet.address);
-    const exchangeRateAfter = await tokenManager.getExchangeRateExternal();
-    const tokenManagerBalanceAfter = await tokenManager.getTokenManagerBalance();
-    const platformTokenSupplyAfter = await tokenManager.getPlatformTokenSupply();
+    const tokenManagerBalanceAfter = await depositManager.getTokenManagerUSDCBalance();
+    const compoundBalanceAfter = await depositManager.getCompoundUSDCBalance();
+    const totalAvailableBalanceAfter = await depositManager.getTotalAvailableBalance();
+    const platformTokenSupplyAfter = await platformToken.totalSupply();
 
     // Calculate CUT received
     const cutReceived = cutBalanceAfter - cutBalanceBefore;
@@ -300,10 +317,19 @@ async function depositUSDC() {
     console.log("🎯 CUT received:", ethers.formatUnits(cutReceived, 18), "CUT");
     console.log("💳 New USDC balance:", ethers.formatUnits(usdcBalanceAfter, 6), "USDC");
     console.log("🎯 New CUT balance:", ethers.formatUnits(cutBalanceAfter, 18), "CUT");
-    console.log("📊 Exchange rate after:", ethers.formatUnits(exchangeRateAfter, 6));
     console.log(
-      "🏦 TokenManager USDC balance after:",
+      "🏦 DepositManager USDC balance after:",
       ethers.formatUnits(tokenManagerBalanceAfter, 6),
+      "USDC"
+    );
+    console.log(
+      "🏦 Compound USDC balance after:",
+      ethers.formatUnits(compoundBalanceAfter, 6),
+      "USDC"
+    );
+    console.log(
+      "🏦 Total available balance after:",
+      ethers.formatUnits(totalAvailableBalanceAfter, 6),
       "USDC"
     );
     console.log(

@@ -11,6 +11,7 @@ export interface ContestSettings {
   platformTokenAddress: string;
   platformTokenSymbol: string;
   chainId: number;
+  oracleFee?: number; // Oracle fee in basis points (100 = 1%)
 }
 
 export interface Contest {

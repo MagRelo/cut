@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
 // PaymentToken ABI - just the mint function
 const PAYMENT_TOKEN_ABI = [
@@ -14,7 +14,7 @@ const PAYMENT_TOKEN_ABI = [
 ];
 
 async function getLatestDeployment() {
-  const broadcastDir = path.join(process.cwd(), "..", "broadcast", "Deploy_sepolia.s.sol");
+  const broadcastDir = path.join(process.cwd(), "contracts", "broadcast", "Deploy_sepolia.s.sol");
 
   if (!fs.existsSync(broadcastDir)) {
     throw new Error(
@@ -44,11 +44,11 @@ async function getLatestDeployment() {
 
   // Find PaymentToken deployment
   const paymentTokenDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "PaymentToken"
+    (tx) => tx.contractName === "MockUSDC"
   );
 
   if (!paymentTokenDeployment) {
-    throw new Error("PaymentToken deployment not found in latest deployment");
+    throw new Error("MockUSDC deployment not found in latest deployment");
   }
 
   return paymentTokenDeployment.contractAddress;

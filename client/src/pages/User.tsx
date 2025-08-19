@@ -1,17 +1,13 @@
-import { useAccount, useBalance, useDisconnect, useReadContract } from "wagmi";
+import { useAccount, useBalance, useDisconnect } from "wagmi";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 
-import { usePortoAuth } from "../contexts/PortoAuthContext";
-
 import { PageHeader } from "../components/util/PageHeader";
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
-import { getContractAddress } from "../utils/contractConfig";
-// import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
-
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
-import TokenManagerContract from "../utils/contracts/TokenManager.json";
+import { getContractAddress } from "../utils/contractConfig";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -21,7 +17,6 @@ export function UserPage() {
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-  const tokenManagerAddress = getContractAddress(chainId ?? 0, "tokenManagerAddress");
 
   // platformTokenAddress balance
   const { data: platformTokenBalance } = useBalance({
@@ -37,26 +32,13 @@ export function UserPage() {
 
   // round balance to 2 decimal points for platform tokens (18 decimals)
   const formattedPlatformBalance = (balance: bigint) => {
-    return Number(formatUnits(balance, 18)).toFixed(2);
+    return Number(formatUnits(balance, 18)).toFixed(0);
   };
 
   // round balance to 2 decimal points for payment tokens (6 decimals)
   const formattedPaymentBalance = (balance: bigint) => {
     return Number(formatUnits(balance, 6)).toFixed(2);
   };
-
-  // Get user's claimable yield from TokenManager contract
-  const { data: userClaimableYield, isLoading: userClaimableYieldLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getClaimableYield",
-    args: address ? [address] : undefined,
-  });
-
-  // Format user's claimable yield for display
-  const formattedUserClaimableYield = userClaimableYield
-    ? Number(formatUnits(userClaimableYield as bigint, 6)).toFixed(6)
-    : "0.000000";
 
   // if user is not connected, show the connect component
   if (!user) {
@@ -76,27 +58,16 @@ export function UserPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
           {/* Available Balance */}
-          <div className="text-lg font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">Available Balance</div>
           <div className="text-lg font-semibold text-gray-700 font-display">
-            ${formattedPlatformBalance(platformTokenBalance?.value ?? 0n)}
+            {formattedPlatformBalance(platformTokenBalance?.value ?? 0n)} CUT
           </div>
 
-          {/* Claimable Yield */}
+          {/* USDC Balance */}
+          {/* <div className="text-lg font-semibold text-gray-700 font-display">USDC Balance</div>
           <div className="text-lg font-semibold text-gray-700 font-display">
-            Claimable Yield
-            {/* "whats this?" link that leads to /token-manager */}
-            <Link to="/token-manager" className="text-gray-500 hover:text-gray-700 ml-2 text-sm">
-              {" "}
-              What's this?
-            </Link>
-          </div>
-          <div className="text-lg font-semibold text-gray-700 font-display">
-            {userClaimableYieldLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : (
-              `$${formattedUserClaimableYield}`
-            )}
-          </div>
+            ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)} USDC
+          </div> */}
         </div>
 
         <hr className="my-4" />
@@ -124,9 +95,9 @@ export function UserPage() {
         </div>
 
         {/* Link to token manager */}
-        {/* <div className="flex justify-center">
+        {/* <div className="flex justify-center mt-4">
           <Link to="/token-manager" className="text-gray-500 hover:text-gray-700">
-            View Token Manager
+            View Token Manager Details
           </Link>
         </div> */}
       </div>

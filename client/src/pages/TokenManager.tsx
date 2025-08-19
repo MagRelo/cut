@@ -1,10 +1,9 @@
 import { useReadContract, useAccount, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
-// import { TokenManagerBalanceChart } from "../components/common/TokenManagerBalanceChart";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { tokenManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
-import TokenManagerContract from "../utils/contracts/TokenManager.json";
+import { depositManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
+import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 import { createExplorerLinkJSX } from "../utils/blockchain";
 
@@ -12,37 +11,41 @@ export function TokenManagerPage() {
   const { address } = useAccount();
   const chainId = useChainId();
 
-  // Get token manager balance from contract (includes yield)
-  const { data: tokenManagerBalance, isLoading: tokenManagerBalanceLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getTokenManagerBalance",
+  // Get total USDC balance (contract + Compound)
+  const { data: totalAvailableBalance, isLoading: totalAvailableBalanceLoading } = useReadContract({
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
+    functionName: "getTotalAvailableBalance",
   });
 
-  // Format token manager balance for display
-  const formattedTokenManagerBalance = tokenManagerBalance
-    ? Number(formatUnits(tokenManagerBalance as bigint, 6)).toFixed(2)
+  // Format total available balance for display
+  const formattedTotalAvailableBalance = totalAvailableBalance
+    ? Number(formatUnits(totalAvailableBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
-  // Get total USDC balance (original purchases)
-  const { data: totalUSDCBalance, isLoading: totalUSDCBalanceLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "totalUSDCBalance",
+  // Get USDC balance in contract
+  const { data: contractUSDCBalance, isLoading: contractUSDCBalanceLoading } = useReadContract({
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
+    functionName: "getTokenManagerUSDCBalance",
   });
 
-  // Format total USDC balance for display
-  const formattedTotalUSDCBalance = totalUSDCBalance
-    ? Number(formatUnits(totalUSDCBalance as bigint, 6)).toFixed(2)
+  // Format contract USDC balance for display
+  const formattedContractUSDCBalance = contractUSDCBalance
+    ? Number(formatUnits(contractUSDCBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
-  // Calculate total yield generated
-  const totalYieldGenerated =
-    tokenManagerBalance && totalUSDCBalance
-      ? Number(
-          formatUnits((tokenManagerBalance as bigint) - (totalUSDCBalance as bigint), 6)
-        ).toFixed(2)
-      : "0.00";
+  // Get USDC balance in Compound
+  const { data: compoundUSDCBalance, isLoading: compoundUSDCBalanceLoading } = useReadContract({
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
+    functionName: "getCompoundUSDCBalance",
+  });
+
+  // Format compound USDC balance for display
+  const formattedCompoundUSDCBalance = compoundUSDCBalance
+    ? Number(formatUnits(compoundUSDCBalance as bigint, 6)).toFixed(2)
+    : "0.00";
 
   // Get platform token supply directly from PlatformToken contract
   const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
@@ -56,50 +59,21 @@ export function TokenManagerPage() {
     ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
     : "0";
 
-  // Get exchange rate (fixed function call)
-  const { data: exchangeRate, isLoading: exchangeRateLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getExchangeRateExternal",
-  });
-
-  // Format exchange rate for display (convert from 6 decimals to show as USDC per token)
-  const formattedExchangeRate = exchangeRate
-    ? Number(formatUnits(exchangeRate as bigint, 6)).toFixed(4)
-    : "1.0000";
-
-  // Get total platform tokens minted
-  const { data: totalPlatformTokensMinted, isLoading: totalPlatformTokensMintedLoading } =
+  // Get Compound supply pause status
+  const { data: isCompoundSupplyPaused, isLoading: isCompoundSupplyPausedLoading } =
     useReadContract({
-      address: tokenManagerAddress as `0x${string}`,
-      abi: TokenManagerContract.abi,
-      functionName: "totalPlatformTokensMinted",
+      address: depositManagerAddress as `0x${string}`,
+      abi: DepositManagerContract.abi,
+      functionName: "isCompoundSupplyPaused",
     });
 
-  // Format total platform tokens minted for display
-  const formattedTotalPlatformTokensMinted = totalPlatformTokensMinted
-    ? Number(formatUnits(totalPlatformTokensMinted as bigint, 18)).toFixed(0)
-    : "0";
-
-  // Get system-wide accumulated yield per token
-  const { data: accumulatedYieldPerToken, isLoading: accumulatedYieldPerTokenLoading } =
+  // Get Compound withdraw pause status
+  const { data: isCompoundWithdrawPaused, isLoading: isCompoundWithdrawPausedLoading } =
     useReadContract({
-      address: tokenManagerAddress as `0x${string}`,
-      abi: TokenManagerContract.abi,
-      functionName: "getAccumulatedYieldPerToken",
+      address: depositManagerAddress as `0x${string}`,
+      abi: DepositManagerContract.abi,
+      functionName: "isCompoundWithdrawPaused",
     });
-
-  // Get last yield update time
-  const { data: lastYieldUpdateTime, isLoading: lastYieldUpdateTimeLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getLastYieldUpdateTime",
-  });
-
-  // Format last yield update time
-  const formattedLastYieldUpdateTime = lastYieldUpdateTime
-    ? new Date(Number(lastYieldUpdateTime) * 1000).toLocaleString()
-    : "Never";
 
   // Get user's platform token balance (if address is available)
   const { data: userPlatformTokenBalance, isLoading: userPlatformTokenBalanceLoading } =
@@ -115,60 +89,13 @@ export function TokenManagerPage() {
     ? Number(formatUnits(userPlatformTokenBalance as bigint, 18)).toFixed(2)
     : "0.00";
 
-  // Calculate user's current value in USDC
-  const userCurrentValue =
-    userPlatformTokenBalance && exchangeRate
-      ? Number(
-          formatUnits(
-            ((userPlatformTokenBalance as bigint) * (exchangeRate as bigint)) / BigInt(1e18),
-            6
-          )
-        ).toFixed(2)
-      : "0.00";
-
-  // Get user's claimable yield (if address is available)
-  const { data: userClaimableYield, isLoading: userClaimableYieldLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getClaimableYield",
-    args: address ? [address] : undefined,
-  });
-
-  // Format user's claimable yield for display
-  const formattedUserClaimableYield = userClaimableYield
-    ? Number(formatUnits(userClaimableYield as bigint, 6)).toFixed(6)
-    : "0.000000";
-
-  // Get user's last yield per token (if address is available)
-  const { data: userLastYieldPerToken, isLoading: userLastYieldPerTokenLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "userLastYieldPerToken",
-    args: address ? [address] : undefined,
-  });
-
-  // Format user's last yield per token for display
-  const formattedUserLastYieldPerToken = userLastYieldPerToken
-    ? Number(formatUnits(userLastYieldPerToken as bigint, 18)).toFixed(6)
-    : "0.000000";
-
-  // Get user's accumulated yield (if address is available)
-  const { data: userAccumulatedYield, isLoading: userAccumulatedYieldLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "userAccumulatedYield",
-    args: address ? [address] : undefined,
-  });
-
-  // Format user's accumulated yield for display
-  const formattedUserAccumulatedYield = userAccumulatedYield
-    ? Number(formatUnits(userAccumulatedYield as bigint, 6)).toFixed(6)
-    : "0.000000";
+  // Calculate user's current value in USDC (1:1 ratio)
+  const userCurrentValue = formattedUserPlatformTokenBalance;
 
   // Get contract addresses
   const { data: usdcTokenAddress, isLoading: usdcTokenAddressLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
     functionName: "usdcToken",
   });
 
@@ -176,14 +103,14 @@ export function TokenManagerPage() {
     data: platformTokenAddressFromContract,
     isLoading: platformTokenAddressFromContractLoading,
   } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
     functionName: "platformToken",
   });
 
   const { data: cUSDCAddress, isLoading: cUSDCAddressLoading } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
+    address: depositManagerAddress as `0x${string}`,
+    abi: DepositManagerContract.abi,
     functionName: "cUSDC",
   });
 
@@ -202,67 +129,48 @@ export function TokenManagerPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Total Purchases */}
+          {/* Total Available Balance */}
           <div className="font-medium">
-            Total Purchases
+            Total Available Balance
             <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
           <div className="text-right">
-            {totalUSDCBalanceLoading ? (
+            {totalAvailableBalanceLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `$${formattedTotalUSDCBalance}`
+              `$${formattedTotalAvailableBalance}`
             )}
           </div>
 
-          {/* Total Yield Generated */}
+          {/* Contract USDC Balance */}
           <div className="font-medium">
-            Total Yield Generated
+            Contract USDC Balance
             <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
-          <div className="text-right text-green-600">
-            {tokenManagerBalanceLoading || totalUSDCBalanceLoading ? (
+          <div className="text-right">
+            {contractUSDCBalanceLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `$${totalYieldGenerated}`
+              `$${formattedContractUSDCBalance}`
             )}
           </div>
 
-          {/* Total Balance (including yield) */}
+          {/* Compound USDC Balance */}
           <div className="font-medium">
-            Total Balance
-            <span className="text-gray-400 ml-2 text-sm">(USDC + Yield)</span>
+            Compound USDC Balance
+            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
           </div>
           <div className="text-right">
-            {tokenManagerBalanceLoading ? (
+            {compoundUSDCBalanceLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
             ) : (
-              `$${formattedTokenManagerBalance}`
+              `$${formattedCompoundUSDCBalance}`
             )}
           </div>
 
           {/* Exchange Rate */}
           <div className="font-medium">Exchange Rate</div>
-          <div className="text-right">
-            {exchangeRateLoading ? (
-              <span className="text-gray-400">Loading...</span>
-            ) : (
-              `1 CUT = $${formattedExchangeRate}`
-            )}
-          </div>
-
-          {/* Total CUT Minted */}
-          <div className="font-medium">
-            Total CUT Minted
-            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
-          </div>
-          <div className="text-right">
-            {totalPlatformTokensMintedLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : (
-              `${formattedTotalPlatformTokensMinted} CUT`
-            )}
-          </div>
+          <div className="text-right">1 CUT = 1 USDC (1:1 ratio)</div>
 
           {/* Current CUT Supply */}
           <div className="font-medium">Current CUT Supply</div>
@@ -276,55 +184,54 @@ export function TokenManagerPage() {
         </div>
       </div>
 
-      {/* Yield System Information */}
-      <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-green-800 font-display mb-2">
-          Yield System Information
+      {/* Compound Integration Status */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-blue-800 font-display mb-2">
+          Compound V3 Integration Status
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* System Accumulated Yield Per Token */}
-          <div className="font-medium">
-            System Yield Per Token
-            <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
-          </div>
+          {/* Compound Supply Status */}
+          <div className="font-medium">Compound Supply</div>
           <div className="text-right">
-            {accumulatedYieldPerTokenLoading ? (
+            {isCompoundSupplyPausedLoading ? (
               <span className="text-gray-400 text-sm">Loading...</span>
-            ) : accumulatedYieldPerToken ? (
-              Number(formatUnits(accumulatedYieldPerToken as bigint, 18)).toFixed(6)
+            ) : isCompoundSupplyPaused ? (
+              <span className="text-red-600">Paused</span>
             ) : (
-              "0.000000"
+              <span className="text-green-600">Active</span>
             )}
           </div>
 
-          {/* Last Yield Update */}
-          <div className="font-medium">Last Yield Update</div>
-          <div className="text-right text-sm">
-            {lastYieldUpdateTimeLoading ? (
-              <span className="text-gray-400">Loading...</span>
+          {/* Compound Withdraw Status */}
+          <div className="font-medium">Compound Withdraw</div>
+          <div className="text-right">
+            {isCompoundWithdrawPausedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : isCompoundWithdrawPaused ? (
+              <span className="text-red-600">Paused</span>
             ) : (
-              formattedLastYieldUpdateTime
+              <span className="text-green-600">Active</span>
             )}
           </div>
         </div>
 
-        <div className="mt-3 text-sm text-green-700">
-          <p className="mb-2">• All purchases earn yield through Compound Finance integration</p>
+        <div className="mt-3 text-sm text-blue-700">
           <p className="mb-2">
-            • Yield is automatically compounded and reflected in the exchange rate
+            • USDC is automatically supplied to Compound V3 for yield generation
           </p>
-          <p>• When you withdraw, you receive your original amount plus accumulated yield</p>
+          <p className="mb-2">• If Compound is paused, USDC is stored directly in the contract</p>
+          <p>• Yield is retained by the platform for operational use</p>
         </div>
       </div>
 
       {/* User-Specific Information */}
       {address && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
-          <div className="text-lg font-semibold text-blue-800 font-display mb-2">
+        <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
+          <div className="text-lg font-semibold text-green-800 font-display mb-2">
             Your Token Manager Status
           </div>
-          <div className="text-sm text-blue-700 mb-2">
+          <div className="text-sm text-green-700 mb-2">
             Wallet: {address.slice(0, 6)}...{address.slice(-4)}
           </div>
 
@@ -348,49 +255,10 @@ export function TokenManagerPage() {
               <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
             </div>
             <div className="text-right">
-              {userPlatformTokenBalanceLoading || exchangeRateLoading ? (
+              {userPlatformTokenBalanceLoading ? (
                 <span className="text-gray-400 text-sm">Loading...</span>
               ) : (
                 `$${userCurrentValue}`
-              )}
-            </div>
-
-            {/* User's Claimable Yield */}
-            <div className="font-medium">
-              Your Claimable Yield
-              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
-            </div>
-            <div className="text-right text-green-600">
-              {userClaimableYieldLoading ? (
-                <span className="text-gray-400 text-sm">Loading...</span>
-              ) : (
-                `$${formattedUserClaimableYield}`
-              )}
-            </div>
-
-            {/* User's Accumulated Yield */}
-            <div className="font-medium">
-              Your Accumulated Yield
-              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
-            </div>
-            <div className="text-right">
-              {userAccumulatedYieldLoading ? (
-                <span className="text-gray-400 text-sm">Loading...</span>
-              ) : (
-                `$${formattedUserAccumulatedYield}`
-              )}
-            </div>
-
-            {/* User's Last Yield Per Token */}
-            <div className="font-medium">
-              Your Last Yield Per Token
-              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
-            </div>
-            <div className="text-right text-sm">
-              {userLastYieldPerTokenLoading ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : (
-                formattedUserLastYieldPerToken
               )}
             </div>
           </div>
@@ -489,13 +357,6 @@ export function TokenManagerPage() {
           </p>
         </div>
       </div>
-
-      {/* <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Historical Balance
-        </div>
-        <TokenManagerBalanceChart className="mb-4" />
-      </div> */}
     </div>
   );
 }

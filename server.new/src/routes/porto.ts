@@ -78,7 +78,6 @@ function createPortoHandler() {
       const isSponsored = true;
       console.log("Porto sponsor function called; isSponsored:", isSponsored);
       return isSponsored;
-      // return true;
     },
   });
 }

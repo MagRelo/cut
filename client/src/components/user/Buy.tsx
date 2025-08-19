@@ -9,8 +9,8 @@ import {
 } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { tokenManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
-import TokenManagerContract from "../../utils/contracts/TokenManager.json";
+import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export const Buy = () => {
@@ -33,11 +33,26 @@ export const Buy = () => {
     token: paymentTokenAddress as `0x${string}`,
   });
 
-  // Get token manager exchange rate
-  const { data: exchangeRate } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getExchangeRateExternal",
+  // Get current USDC allowance for DepositManager
+  const { data: currentAllowance } = useReadContract({
+    address: paymentTokenAddress as `0x${string}`,
+    abi: [
+      {
+        type: "function",
+        name: "allowance",
+        inputs: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+        ],
+        outputs: [{ name: "", type: "uint256" }],
+        stateMutability: "view",
+      },
+    ],
+    functionName: "allowance",
+    args: [address as `0x${string}`, depositManagerAddress as `0x${string}`],
+    query: {
+      enabled: !!address && !!isConnected,
+    },
   });
 
   const handleBuy = async () => {
@@ -61,7 +76,7 @@ export const Buy = () => {
       // Execute the buy transaction with approval
       sendCalls({
         calls: [
-          // First approve the TokenManager to spend USDC
+          // First approve the DepositManager to spend USDC
           {
             abi: [
               {
@@ -75,16 +90,16 @@ export const Buy = () => {
                 stateMutability: "nonpayable",
               },
             ],
-            args: [tokenManagerAddress as `0x${string}`, usdcAmount],
+            args: [depositManagerAddress as `0x${string}`, usdcAmount],
             functionName: "approve",
             to: paymentTokenAddress as `0x${string}`,
           },
-          // Then buy CUT tokens with USDC
+          // Then buy CUT tokens with USDC (1:1 ratio)
           {
-            abi: TokenManagerContract.abi,
+            abi: DepositManagerContract.abi,
             args: [usdcAmount],
             functionName: "depositUSDC",
-            to: tokenManagerAddress as `0x${string}`,
+            to: depositManagerAddress as `0x${string}`,
           },
         ],
       });
@@ -94,18 +109,10 @@ export const Buy = () => {
     }
   };
 
-  // Calculate platform token amount based on exchange rate (for buy)
+  // Calculate platform token amount (1:1 ratio)
   const calculatePlatformTokenAmount = () => {
-    if (!buyAmount || !exchangeRate) return "0";
-    try {
-      // Exchange rate is in 6 decimals (USDC per platform token)
-      // To get platform tokens for USDC: (USDC amount * 1e18) / exchange rate
-      const usdcAmount = parseUnits(buyAmount, 6);
-      const platformTokenAmount = (usdcAmount * parseUnits("1", 18)) / (exchangeRate as bigint);
-      return formatUnits(platformTokenAmount, 18);
-    } catch {
-      return "0";
-    }
+    if (!buyAmount) return "0";
+    return buyAmount; // 1:1 ratio, so same amount
   };
 
   // Format balance to 2 decimal points
@@ -156,9 +163,14 @@ export const Buy = () => {
             ${formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
           </div>
 
+          <div className="text-sm font-medium text-gray-700 mb-1">Current Approval Level</div>
+          <div className="text-lg font-semibold text-blue-600 mb-2">
+            ${formattedBalance(currentAllowance ?? 0n, 6)} USDC
+          </div>
+
           <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
-            1 CUT = ${formattedBalance(exchangeRate ?? 0n, 6)} USDC
+            1 CUT = 1 USDC (1:1 ratio)
           </div>
         </div>
         <div>
@@ -176,7 +188,7 @@ export const Buy = () => {
           />
           {buyAmount && (
             <div className="text-sm text-gray-600 mt-1">
-              You will receive approximately {calculatePlatformTokenAmount()} CUT
+              You will receive {calculatePlatformTokenAmount()} CUT tokens
             </div>
           )}
         </div>
@@ -215,6 +227,70 @@ export const Buy = () => {
           </button>
         </div>
       )}
+
+      {/* Temporary Approval-Only Section */}
+      <div className="mt-8 p-4 border border-yellow-300 bg-yellow-50 rounded-lg">
+        <h4 className="text-lg font-semibold text-yellow-800 mb-3">Temporary: Approval Only</h4>
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="approval-amount"
+              className="block text-sm font-medium text-yellow-700 mb-1"
+            >
+              Approval Amount (USDC)
+            </label>
+            <input
+              id="approval-amount"
+              type="number"
+              placeholder="Enter USDC amount to approve"
+              className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              disabled={isProcessing}
+            />
+          </div>
+          <button
+            onClick={() => {
+              const approvalAmount = (
+                document.getElementById("approval-amount") as HTMLInputElement
+              )?.value;
+              if (!approvalAmount || !isConnected) return;
+
+              const usdcAmount = parseUnits(approvalAmount, 6);
+              sendCalls({
+                calls: [
+                  {
+                    abi: [
+                      {
+                        type: "function",
+                        name: "approve",
+                        inputs: [
+                          { name: "spender", type: "address" },
+                          { name: "value", type: "uint256" },
+                        ],
+                        outputs: [{ name: "", type: "bool" }],
+                        stateMutability: "nonpayable",
+                      },
+                    ],
+                    args: [depositManagerAddress as `0x${string}`, usdcAmount],
+                    functionName: "approve",
+                    to: paymentTokenAddress as `0x${string}`,
+                  },
+                ],
+              });
+            }}
+            disabled={!isConnected || isProcessing}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded"
+          >
+            {isProcessing ? (
+              <>
+                <LoadingSpinnerSmall />
+                "Approving..."
+              </>
+            ) : (
+              "Approve USDC Only"
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

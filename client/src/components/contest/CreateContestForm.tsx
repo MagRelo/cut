@@ -73,6 +73,7 @@ export const CreateContestForm = () => {
       chainId: chainId ?? 0,
       platformTokenAddress: platformTokenAddress as `0x${string}`,
       platformTokenSymbol: platformTokenBalance?.symbol ?? "",
+      oracleFee: 500, // Default 5% oracle fee (500 basis points)
     },
     description: undefined,
     userGroupId: undefined,
@@ -169,7 +170,10 @@ export const CreateContestForm = () => {
           18 // PlatformToken has 18 decimals
         ),
         endTime,
+        paymentToken: platformTokenAddress,
+        paymentTokenDecimals: 18,
         oracle: import.meta.env.VITE_ORACLE_ADDRESS,
+        oracleFee: formData.settings?.oracleFee ?? 500,
         hasABI: !!EscrowFactory.abi,
       });
 
@@ -179,13 +183,15 @@ export const CreateContestForm = () => {
           {
             abi: EscrowFactory.abi,
             args: [
-              formData.name,
               parseUnits(
                 formData.settings?.fee?.toString() ?? "0",
                 18 // PlatformToken has 18 decimals
               ),
               endTime.toString(),
+              platformTokenAddress as `0x${string}`,
+              18, // PlatformToken has 18 decimals
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
+              formData.settings?.oracleFee ?? 500,
             ],
             functionName: "createEscrow",
             to: escrowFactoryAddress as `0x${string}`,
@@ -248,6 +254,7 @@ export const CreateContestForm = () => {
                   platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
                   platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
                   chainId: prev.settings?.chainId ?? 0,
+                  oracleFee: prev.settings?.oracleFee ?? 500,
                 },
               }));
             }}
@@ -259,6 +266,44 @@ export const CreateContestForm = () => {
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
             {platformTokenBalance?.symbol}
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="settings.oracleFee" className="block font-medium">
+          Oracle Fee (basis points)
+        </label>
+        <div className="relative">
+          <input
+            type="number"
+            id="settings.oracleFee"
+            name="settings.oracleFee"
+            value={formData.settings?.oracleFee ?? 500}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                settings: {
+                  fee: prev.settings?.fee ?? 0,
+                  contestType: prev.settings?.contestType ?? "PUBLIC",
+                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
+                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
+                  chainId: prev.settings?.chainId ?? 0,
+                  oracleFee: Number(e.target.value),
+                },
+              }));
+            }}
+            min="0"
+            max="10000"
+            step="1"
+            required
+            className="w-full p-2 border rounded-md pr-12"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+            bp
+          </div>
+        </div>
+        <div className="text-sm text-gray-600">
+          Oracle fee in basis points (100 = 1%). Default: 500 (5%)
         </div>
       </div>
 

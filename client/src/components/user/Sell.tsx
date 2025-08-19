@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  useSendCalls,
-  useWaitForCallsStatus,
-  useAccount,
-  useBalance,
-  useReadContract,
-} from "wagmi";
+import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { platformTokenAddress, tokenManagerAddress } from "../../utils/contracts/sepolia.json";
-import TokenManagerContract from "../../utils/contracts/TokenManager.json";
+import { depositManagerAddress } from "../../utils/contracts/sepolia.json";
+import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export const Sell = () => {
@@ -30,14 +24,7 @@ export const Sell = () => {
   // Get platform token balance
   const { data: platformTokenBalance } = useBalance({
     address,
-    token: platformTokenAddress as `0x${string}`,
-  });
-
-  // Get token manager exchange rate
-  const { data: exchangeRate } = useReadContract({
-    address: tokenManagerAddress as `0x${string}`,
-    abi: TokenManagerContract.abi,
-    functionName: "getExchangeRateExternal",
+    token: depositManagerAddress as `0x${string}`,
   });
 
   const handleSell = async () => {
@@ -62,10 +49,10 @@ export const Sell = () => {
       sendCalls({
         calls: [
           {
-            abi: TokenManagerContract.abi,
+            abi: DepositManagerContract.abi,
             args: [platformTokenAmount],
             functionName: "withdrawUSDC",
-            to: tokenManagerAddress as `0x${string}`,
+            to: depositManagerAddress as `0x${string}`,
           },
         ],
       });
@@ -75,18 +62,10 @@ export const Sell = () => {
     }
   };
 
-  // Calculate USDC amount based on exchange rate (for sell)
+  // Calculate USDC amount (1:1 ratio)
   const calculateUSDCAmount = () => {
-    if (!sellAmount || !exchangeRate) return "0";
-    try {
-      // Exchange rate is in 6 decimals (USDC per platform token)
-      // To get USDC for platform tokens: (platform token amount * exchange rate) / 1e18
-      const platformTokenAmount = parseUnits(sellAmount, 18);
-      const usdcAmount = (platformTokenAmount * (exchangeRate as bigint)) / parseUnits("1", 18);
-      return formatUnits(usdcAmount, 6); // USDC has 6 decimals
-    } catch {
-      return "0";
-    }
+    if (!sellAmount) return "0";
+    return sellAmount; // 1:1 ratio, so same amount
   };
 
   // Format balance to 2 decimal points
@@ -125,7 +104,7 @@ export const Sell = () => {
           />
           {sellAmount && (
             <div className="text-sm text-gray-600 mt-1">
-              You will receive approximately ${calculateUSDCAmount()} USDC
+              You will receive ${calculateUSDCAmount()} USDC
             </div>
           )}
         </div>
