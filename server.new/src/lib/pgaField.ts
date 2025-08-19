@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 interface PGAPlayer {
   id: string;
   lastName: string;
@@ -16,8 +14,8 @@ interface PGAFieldResponse {
   };
 }
 
-const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
-const PGA_API_KEY = process.env.PGA_API_KEY || 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
+const PGA_API_URL = "https://orchestrator.pgatour.com/graphql";
+const PGA_API_KEY = process.env.PGA_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
 
 /**
  * Fetches the active players for a given tournament from the PGA Tour API
@@ -40,24 +38,28 @@ export async function getActivePlayers(tournamentId: string) {
       }
     `;
 
-    const response = await axios.post<PGAFieldResponse>(
-      PGA_API_URL,
-      { query },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': PGA_API_KEY,
-        },
-      }
-    );
+    const response = await fetch(PGA_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": PGA_API_KEY,
+      },
+      body: JSON.stringify({ query }),
+    });
 
-    if (!response.data?.data?.field) {
-      throw new Error('Invalid response format from PGA Tour API');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PGA Tour field data: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as PGAFieldResponse;
+
+    if (!data?.data?.field) {
+      throw new Error("Invalid response format from PGA Tour API");
     }
 
     return {
-      tournamentName: response.data.data.field.tournamentName,
-      players: response.data.data.field.players,
+      tournamentName: data.data.field.tournamentName,
+      players: data.data.field.players,
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -72,13 +74,6 @@ export async function getActivePlayers(tournamentId: string) {
  * @param players - Array of PGA players
  * @returns Array of player data arrays [id, lastName, firstName, owgr]
  */
-export function formatPlayersToArray(
-  players: PGAPlayer[]
-): (string | number)[][] {
-  return players.map((player) => [
-    player.id,
-    player.lastName,
-    player.firstName,
-    player.owgr,
-  ]);
+export function formatPlayersToArray(players: PGAPlayer[]): (string | number)[][] {
+  return players.map((player) => [player.id, player.lastName, player.firstName, player.owgr]);
 }
