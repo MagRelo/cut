@@ -25,13 +25,14 @@ export const theme: ThemeFragment = {
 };
 
 const portoConnector = porto({
-  chains: [baseSepolia],
-  transports: {
-    [baseSepolia.id]: http(),
+  merchantRpcUrl: import.meta.env.VITE_API_URL + "/porto/rpc",
+  authUrl: {
+    nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
+    verify: import.meta.env.VITE_API_URL + "/auth/siwe",
+    logout: import.meta.env.VITE_API_URL + "/auth/siwe/logout",
   },
-  merchantRpcUrl: import.meta.env.VITE_API_URL + import.meta.env.VITE_MERCHANT_RPC_PATH,
   mode: Mode.dialog({
-    theme, // pass your theme to Mode.dialog()
+    theme,
   }),
 });
 

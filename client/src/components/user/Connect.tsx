@@ -46,13 +46,6 @@ export function Connect() {
     await connect(
       {
         connector,
-        signInWithEthereum: {
-          authUrl: {
-            nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
-            verify: import.meta.env.VITE_API_URL + "/auth/siwe",
-            logout: import.meta.env.VITE_API_URL + "/auth/siwe/logout",
-          },
-        },
       },
       {
         onSuccess: () => {
