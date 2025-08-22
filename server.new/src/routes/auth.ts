@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
-import { mintAndTransferToUser } from "../services/mintUserTokens.js";
+import { mintUSDCToUser } from "../services/mintUserTokens.js";
 
 import { createClient, http, hashMessage } from "viem";
 import { Chains } from "porto";
@@ -105,12 +105,10 @@ router.post("/siwe", async (req, res) => {
       // Check if token minting is enabled
       const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
       if (isTokenMintingEnabled) {
-        // Mint $1000 USDC(x), convert to CUT, and transfer to new user
+        // Mint $1000 USDC(x) to new user
         try {
-          await mintAndTransferToUser(address!.toLowerCase(), 1000);
-          console.log(
-            `Minted and transferred $1000 worth of CUT tokens to new user: ${address!.toLowerCase()}`
-          );
+          await mintUSDCToUser(address!.toLowerCase(), 1000);
+          console.log(`Minted $1000 USDC(x) to new user: ${address!.toLowerCase()}`);
         } catch (mintError) {
           console.error("Failed to mint and transfer tokens to new user:", mintError);
           // Don't fail the user creation if token minting fails

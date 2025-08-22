@@ -7,24 +7,23 @@ vi.mock("ethers", () => ({
     JsonRpcProvider: vi.fn(),
     Wallet: vi.fn(),
     Contract: vi.fn(),
-    isAddress: vi.fn(),
     parseUnits: vi.fn(),
   },
 }));
 
 // Mock contract ABIs
-vi.mock("../../contracts/PlatformToken.json", () => ({
+vi.mock("../../contracts/MockUSDC.json", () => ({
   default: {
     abi: ["function mint(address, uint256)"],
   },
 }));
 
-import { mintUserTokens } from "./mintUserTokens.js";
+import { mintUSDCToUser, quickMintUSDCToUser } from "./mintUserTokens.js";
 
 describe("mintUserTokens", () => {
   const mockProvider = {};
   const mockWallet = {};
-  const mockPlatformTokenContract = {
+  const mockPaymentTokenContract = {
     mint: vi.fn(),
   };
 
@@ -35,17 +34,16 @@ describe("mintUserTokens", () => {
     process.env.RPC_URL = "http://localhost:8545";
     process.env.ORACLE_PRIVATE_KEY =
       "0x1234567890123456789012345678901234567890123456789012345678901234";
-    process.env.PLATFORM_TOKEN_ADDRESS = "0xPlatformTokenAddress";
+    process.env.PAYMENT_TOKEN_ADDRESS = "0xMockUSDCAddress";
 
     // Setup ethers mocks
     (ethers.JsonRpcProvider as any).mockReturnValue(mockProvider);
     (ethers.Wallet as any).mockReturnValue(mockWallet);
-    (ethers.Contract as any).mockReturnValue(mockPlatformTokenContract);
-    (ethers.isAddress as any).mockReturnValue(true);
-    (ethers.parseUnits as any).mockReturnValue("25000000000000000000"); // 25 tokens with 18 decimals
+    (ethers.Contract as any).mockReturnValue(mockPaymentTokenContract);
+    (ethers.parseUnits as any).mockReturnValue("1000000000"); // 1000 USDC with 6 decimals
 
     // Setup contract mocks
-    mockPlatformTokenContract.mint.mockResolvedValue({
+    mockPaymentTokenContract.mint.mockResolvedValue({
       hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
       wait: vi.fn().mockResolvedValue({}),
     });
@@ -55,66 +53,114 @@ describe("mintUserTokens", () => {
     vi.restoreAllMocks();
   });
 
-  describe("Success cases", () => {
-    it("should mint tokens to a valid wallet address", async () => {
-      const walletAddress = "0x1234567890123456789012345678901234567890";
-      const amount = 25;
+  describe("mintUSDCToUser", () => {
+    describe("Success cases", () => {
+      it("should mint USDC(x) to a valid user address", async () => {
+        const userAddress = "0x1234567890123456789012345678901234567890";
+        const amount = 1000;
 
-      const result = await mintUserTokens(walletAddress, amount);
+        const result = await mintUSDCToUser(userAddress, amount);
 
-      expect(ethers.isAddress).toHaveBeenCalledWith(walletAddress);
-      expect(ethers.parseUnits).toHaveBeenCalledWith("25", 18);
-      expect(mockPlatformTokenContract.mint).toHaveBeenCalledWith(
-        walletAddress,
-        "25000000000000000000"
-      );
-      expect(result).toEqual({
-        success: true,
-        transactionHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        amount: 25,
-        recipient: walletAddress,
+        expect(ethers.parseUnits).toHaveBeenCalledWith("1000", 6);
+        expect(mockPaymentTokenContract.mint).toHaveBeenCalledWith(userAddress, "1000000000");
+        expect(result).toEqual({
+          success: true,
+          transaction: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          amount: 1000,
+          recipient: userAddress,
+        });
+      });
+
+      it("should use default amount of 1000 when no amount is provided", async () => {
+        const userAddress = "0x1234567890123456789012345678901234567890";
+
+        await mintUSDCToUser(userAddress);
+
+        expect(ethers.parseUnits).toHaveBeenCalledWith("1000", 6);
+        expect(mockPaymentTokenContract.mint).toHaveBeenCalledWith(userAddress, "1000000000");
       });
     });
 
-    it("should use default amount of 25 when no amount is provided", async () => {
-      const walletAddress = "0x1234567890123456789012345678901234567890";
+    describe("Error cases", () => {
+      it("should return error when contract mint fails", async () => {
+        const userAddress = "0x1234567890123456789012345678901234567890";
+        mockPaymentTokenContract.mint.mockRejectedValue(new Error("Transaction failed"));
 
-      await mintUserTokens(walletAddress);
+        const result = await mintUSDCToUser(userAddress);
 
-      expect(ethers.parseUnits).toHaveBeenCalledWith("25", 18);
-      expect(mockPlatformTokenContract.mint).toHaveBeenCalledWith(
-        walletAddress,
-        "25000000000000000000"
-      );
+        expect(result).toEqual({
+          success: false,
+          error: "Transaction failed",
+        });
+      });
+
+      it("should return error when transaction wait fails", async () => {
+        const userAddress = "0x1234567890123456789012345678901234567890";
+        mockPaymentTokenContract.mint.mockResolvedValue({
+          wait: vi.fn().mockRejectedValue(new Error("Transaction confirmation failed")),
+        });
+
+        const result = await mintUSDCToUser(userAddress);
+
+        expect(result).toEqual({
+          success: false,
+          error: "Transaction confirmation failed",
+        });
+      });
+
+      it("should return error when ORACLE_PRIVATE_KEY is missing", async () => {
+        delete process.env.ORACLE_PRIVATE_KEY;
+        const userAddress = "0x1234567890123456789012345678901234567890";
+
+        const result = await mintUSDCToUser(userAddress);
+
+        expect(result).toEqual({
+          success: false,
+          error: "ORACLE_WALLET_PRIVATE_KEY environment variable is required",
+        });
+      });
+
+      it("should return error when private key format is invalid", async () => {
+        process.env.ORACLE_PRIVATE_KEY = "invalid-key";
+        const userAddress = "0x1234567890123456789012345678901234567890";
+
+        const result = await mintUSDCToUser(userAddress);
+
+        expect(result).toEqual({
+          success: false,
+          error:
+            "Invalid private key format. Expected 64 character hex string or 0x-prefixed hex string",
+        });
+      });
     });
   });
 
-  describe("Error cases", () => {
-    it("should throw error for invalid wallet address", async () => {
-      const invalidAddress = "invalid-address";
-      (ethers.isAddress as any).mockReturnValue(false);
+  describe("quickMintUSDCToUser", () => {
+    it("should call mintUSDCToUser with the provided parameters", async () => {
+      const userAddress = "0x1234567890123456789012345678901234567890";
+      const amount = 500;
 
-      await expect(mintUserTokens(invalidAddress)).rejects.toThrow(
-        "Invalid wallet address: invalid-address"
+      const result = await quickMintUSDCToUser(userAddress, amount);
+
+      expect(ethers.parseUnits).toHaveBeenCalledWith("500", 6);
+      expect(mockPaymentTokenContract.mint).toHaveBeenCalledWith(
+        userAddress,
+        "1000000000" // This will be the mocked return value
       );
-    });
-
-    it("should throw error when contract mint fails", async () => {
-      const walletAddress = "0x1234567890123456789012345678901234567890";
-      mockPlatformTokenContract.mint.mockRejectedValue(new Error("Transaction failed"));
-
-      await expect(mintUserTokens(walletAddress)).rejects.toThrow("Transaction failed");
-    });
-
-    it("should throw error when transaction wait fails", async () => {
-      const walletAddress = "0x1234567890123456789012345678901234567890";
-      mockPlatformTokenContract.mint.mockResolvedValue({
-        wait: vi.fn().mockRejectedValue(new Error("Transaction confirmation failed")),
+      expect(result).toEqual({
+        success: true,
+        transaction: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        amount: 500,
+        recipient: userAddress,
       });
+    });
 
-      await expect(mintUserTokens(walletAddress)).rejects.toThrow(
-        "Transaction confirmation failed"
-      );
+    it("should use default amount of 1000 when no amount is provided", async () => {
+      const userAddress = "0x1234567890123456789012345678901234567890";
+
+      await quickMintUSDCToUser(userAddress);
+
+      expect(ethers.parseUnits).toHaveBeenCalledWith("1000", 6);
     });
   });
 });

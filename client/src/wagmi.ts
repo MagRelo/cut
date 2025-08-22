@@ -4,24 +4,16 @@ import { porto } from "porto/wagmi";
 import { createConfig, http } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
 
-export const theme: ThemeFragment = {
-  colorScheme: "light",
-  primaryBackground: "#3b82f6", // Tailwind blue-500
-
-  primaryContent: "#ffffff", // White text
-  // primaryContent: "#000000", // Black text
-
-  // baseContent: "#1f2937", // Tailwind gray-800
-  baseContent: "#000000", // Tailwind gray-800
-  baseContentSecondary: "#000000", // Tailwind blue-100
-  baseContentTertiary: "#000000", // Tailwind blue-100
-
-  secondaryContent: "#3b82f6", // Tailwind blue-500
-
-  badgeInfoContent: "#3b82f6", // Tailwind blue-500
-  badgeInfoBackground: "#dbeafe", // Tailwind blue-100
+// Current theme overrides (you can modify these values)
+export const themeOverrides: ThemeFragment = {
+  colorScheme: "light dark",
+  primaryBackground: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
+  primaryContent: ["#ffffff", "#ffffff"], // Tailwind blue-500
+  secondaryContent: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
+  badgeInfoContent: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
+  badgeInfoBackground: ["#dbeafe", "#dbeafe"], // Tailwind blue-100
   frameRadius: 8, // Tailwind rounded-lg
-  strongContent: "#1f2937", // Tailwind gray-800
+  strongContent: ["#1f2937", "#1f2937"], // Tailwind gray-800
 };
 
 const portoConnector = porto({
@@ -32,7 +24,7 @@ const portoConnector = porto({
     logout: import.meta.env.VITE_API_URL + "/auth/siwe/logout",
   },
   mode: Mode.dialog({
-    theme,
+    theme: themeOverrides,
   }),
 });
 

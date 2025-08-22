@@ -75,7 +75,8 @@ function createPortoHandler() {
     },
     sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
       // const isSponsored = await isSponsoredContract(request);
-      const isSponsored = true;
+      // const isSponsored = true;
+      const isSponsored = false;
       console.log("Porto sponsor function called; isSponsored:", isSponsored);
       return isSponsored;
     },
