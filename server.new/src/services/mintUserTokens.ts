@@ -1,9 +1,26 @@
 import { ethers } from 'ethers';
 import MockUSDC from '../../contracts/MockUSDC.json' with { type: 'json' };
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+// Function to load payment token address from sepolia.json
+function loadPaymentTokenAddressFromSepolia(): string {
+    try {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const sepoliaConfigPath = path.join(__dirname, '../../contracts/sepolia.json');
+        const sepoliaConfig = JSON.parse(fs.readFileSync(sepoliaConfigPath, 'utf8'));
+        return sepoliaConfig.paymentTokenAddress;
+    } catch (error) {
+        console.error('Error loading payment token address from sepolia.json:', error);
+        throw new Error('Failed to load payment token address from sepolia.json');
+    }
+}
 
 // Contract configuration
 const contractConfig = {
-    paymentTokenAddress: process.env.PAYMENT_TOKEN_ADDRESS || '0x7150669d6aD21be53D2d71c09138D46381b90b5b', // MockUSDC on Base Sepolia
+    paymentTokenAddress: loadPaymentTokenAddressFromSepolia(), // Load from sepolia.json
     oracleWalletPrivateKey: process.env.ORACLE_PRIVATE_KEY || '',
     rpcUrl: process.env.RPC_URL || 'https://sepolia.base.org'
 };

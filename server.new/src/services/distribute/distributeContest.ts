@@ -128,25 +128,6 @@ export async function distributeContest() {
         const distributeTx = await escrowContract.distribute(payouts);
         await distributeTx.wait();
 
-        // Minting is now handled by the token manager
-        // const platformTokenContract = new ethers.Contract(
-        //   process.env.PLATFORM_TOKEN_ADDRESS!,
-        //   PlatformToken.abi,
-        //   wallet
-        // );
-        
-        // // Calculate fees for each participant
-        // const settings = contest.settings as unknown as ContestSettings;
-        // const fees = participants.map((participant: string) => {
-        //   return settings?.fee || 0;
-        // });
-        
-        // // Mint tokens to each participant
-        // for (let i = 0; i < participants.length; i++) {
-        //   const mintTx = await platformTokenContract.mint(participants[i], fees[i]);
-        //   await mintTx.wait();
-        // }
-
         // Update contest status in database
         await prisma.contest.update({
           where: { id: contest.id },

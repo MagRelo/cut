@@ -1,13 +1,31 @@
 import { Router } from "express";
 import { MerchantRpc } from "porto/server";
 import type { RpcSchema } from "porto";
-import { baseSepolia } from "viem/chains";
-import { http, createClient } from "viem";
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 import { prisma } from "../lib/prisma.js";
 import { createPortoMiddleware } from "../middleware/portoHandler.js";
 
 const router = Router();
+
+// Function to load contract addresses from sepolia.json
+function loadContractAddressesFromSepolia() {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const sepoliaConfigPath = path.join(__dirname, "../../contracts/sepolia.json");
+    const sepoliaConfig = JSON.parse(fs.readFileSync(sepoliaConfigPath, "utf8"));
+    return {
+      depositManagerAddress: sepoliaConfig.depositManagerAddress.toLowerCase(),
+      escrowFactoryAddress: sepoliaConfig.escrowFactoryAddress.toLowerCase(),
+    };
+  } catch (error) {
+    console.error("Error loading contract addresses from sepolia.json:", error);
+    throw new Error("Failed to load contract addresses from sepolia.json");
+  }
+}
 
 // Function to check if a contract address is sponsored
 async function isSponsoredContract(
@@ -28,12 +46,11 @@ async function isSponsoredContract(
       return false;
     }
 
-    // Check if any address matches our contracts
-    const DepositManagerAddress = process.env.DEPOSIT_MANAGER?.toLowerCase();
-    const EscrowFactoryAddress = process.env.ESCROW_FACTORY?.toLowerCase();
+    // Load contract addresses from sepolia.json
+    const { depositManagerAddress, escrowFactoryAddress } = loadContractAddressesFromSepolia();
 
-    console.log({ DepositManagerAddress });
-    console.log({ EscrowFactoryAddress });
+    console.log({ depositManagerAddress });
+    console.log({ escrowFactoryAddress });
     console.log({ to: addresses });
 
     // Make a single database query to find all contests that match the addresses
@@ -52,8 +69,8 @@ async function isSponsoredContract(
     // Check if all addresses are either merchant factory, payment token, or sponsored contests
     const allSponsored = addresses.every(
       (address) =>
-        address === DepositManagerAddress ||
-        address === EscrowFactoryAddress ||
+        address === depositManagerAddress ||
+        address === escrowFactoryAddress ||
         contestAddresses.includes(address)
     );
 

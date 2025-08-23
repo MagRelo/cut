@@ -1,0 +1,33 @@
+# Syncing contracts artifacts and addresses
+
+- a common task will be to sync the latest contract artifacts and deployment addresses from the `/contracts` directory to the app code directories, which are `/client` and `/server`.
+
+## Contracts
+
+Contracts and their tests are always considered the 'source-of-truth'. if there is a mismatch in naming or functionality between the `/contracts` dir and the other parts of the app always assume the functionality in the `/contracts` dir is correct. Never change the contracts or their tests in order to satisfy other goals in other parts of the app.
+
+### Contract Types
+
+There are two types of contracts to consider when syncing:
+
+1. **Factory-Deployed Contracts**: Contracts that are deployed once and have fixed addresses (like MockUSDC, PlatformToken, DepositManager, EscrowFactory)
+2. **Dynamically Created Contracts**: Contracts that are created on-the-fly by factory contracts (like Escrow contracts created by EscrowFactory)
+
+For factory-deployed contracts, sync both artifacts and addresses from the deployment file.
+For dynamically created contracts, sync only the artifacts (no addresses needed since they're created dynamically).
+
+## Server
+
+All server functionality is located in `/server.new`. When asked to sync, make sure that the:
+
+1. For factory-deployed contracts: find all contracts listed in `/contracts/broadcast/Deploy_Sepolia.s.sol/run-latest.json`. Ensure that the contract's artifacts are up to date in `/server.new/contracts`
+2. For factory-deployed contracts: find all contracts deployed in `/contracts/broadcast/Deploy_Sepolia.s.sol/run-latest.json`. Ensure that the contract's addresses are up to date in `/server.new/contracts/sepolia.json`
+3. For dynamically created contracts: ensure that all contract artifacts from `/contracts/src` are present in `/server.new/contracts` (even if not in deployment file)
+
+## Client
+
+All client functionality is located in `/client`. When asked to sync, make sure that the:
+
+1. For factory-deployed contracts: find all contracts listed in `/contracts/broadcast/Deploy_Sepolia.s.sol/run-latest.json`. Ensure that the contract's artifacts are up to date in `/client/src/utils/contracts`
+2. For factory-deployed contracts: find all contracts deployed in `/contracts/broadcast/Deploy_Sepolia.s.sol/run-latest.json`. Ensure that the contract's addresses are up to date in `/client/src/utils/contracts/sepolia.json`
+3. For dynamically created contracts: ensure that all contract artifacts from `/contracts/src` are present in `/client/src/utils/contracts` (even if not in deployment file)
