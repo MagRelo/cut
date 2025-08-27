@@ -2,7 +2,7 @@ import { Mode } from "porto";
 import type { ThemeFragment } from "porto/theme";
 import { porto } from "porto/wagmi";
 import { createConfig, http } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
+import { baseSepolia } from "wagmi/chains";
 
 // Current theme overrides (you can modify these values)
 export const themeOverrides: ThemeFragment = {
@@ -29,10 +29,9 @@ const portoConnector = porto({
 });
 
 export const config = createConfig({
-  chains: [import.meta.env.VITE_PORTO_NETWORK == "base-sepolia" ? baseSepolia : base],
+  chains: [baseSepolia],
   connectors: [portoConnector],
   transports: {
-    [base.id]: http(),
     [baseSepolia.id]: http(),
   },
 });

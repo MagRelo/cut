@@ -117,7 +117,7 @@ export function Connect() {
 
       {/* Error display */}
       {connectionStatus === ConnectionStatus.ERROR && (
-        <div className="text-red-500 mt-2 text-sm text-center">{error?.message}</div>
+        <div className="text-red-500 mt-2 text-sm text-center">{error?.shortMessage}</div>
       )}
     </div>
   );
