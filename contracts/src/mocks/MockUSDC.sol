@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract MockUSDC is ERC20, Ownable {
     uint8 private constant DECIMALS = 6;
 
-    constructor() ERC20("USD Coin", "USDC") Ownable(msg.sender) {}
+    constructor() ERC20("USD Coin (xUSDC)", "xUSDC") Ownable(msg.sender) {}
 
     /**
      * @dev Returns the number of decimals used to get its user representation.

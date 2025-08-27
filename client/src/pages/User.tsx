@@ -8,6 +8,7 @@ import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress } from "../utils/contractConfig";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useTokenSymbol } from "../utils/tokenUtils";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -23,6 +24,9 @@ export function UserPage() {
     address: address,
     token: platformTokenAddress as `0x${string}`,
   });
+
+  // Get payment token symbol
+  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
 
   // paymentTokenAddress balance
   const { data: paymentTokenBalance } = useBalance({
@@ -63,10 +67,10 @@ export function UserPage() {
             {formattedPlatformBalance(platformTokenBalance?.value ?? 0n)} CUT
           </div>
 
-          {/* USDC Balance */}
-          {/* <div className="text-lg font-semibold text-gray-700 font-display">USDC Balance</div>
+          {/* Payment Token Balance */}
+          {/* <div className="text-lg font-semibold text-gray-700 font-display">{paymentTokenSymbol || "USDC"} Balance</div>
           <div className="text-lg font-semibold text-gray-700 font-display">
-            ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)} USDC
+            ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)} {paymentTokenSymbol || "USDC"}
           </div> */}
         </div>
 
@@ -118,7 +122,7 @@ export function UserPage() {
           </div>
 
           {/* Payment Token Balance */}
-          <div className="font-medium">USDC</div>
+          <div className="font-medium">{paymentTokenSymbol || "USDC"}</div>
           <div>
             {formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}{" "}
             {paymentTokenBalance?.symbol}

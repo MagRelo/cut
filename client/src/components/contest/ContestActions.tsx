@@ -188,7 +188,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       setPendingAction("join");
 
       // Get the deposit amount from escrow details
-      const depositAmount = escrowDetails[1]; // depositAmount is the second element
+      const depositAmount = escrowDetails[0]; // depositAmount is the first element
 
       // Execute blockchain transaction with both approval and transfer
       await sendCalls({

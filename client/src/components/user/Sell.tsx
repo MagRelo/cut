@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { depositManagerAddress } from "../../utils/contracts/sepolia.json";
+import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useTokenSymbol } from "../../utils/tokenUtils";
 
 export const Sell = () => {
   const { address, isConnected } = useAccount();
@@ -20,6 +21,9 @@ export const Sell = () => {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
     id: data?.id,
   });
+
+  // Get payment token symbol
+  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
 
   // Get platform token balance
   const { data: platformTokenBalance } = useBalance({
@@ -62,8 +66,8 @@ export const Sell = () => {
     }
   };
 
-  // Calculate USDC amount (1:1 ratio)
-  const calculateUSDCAmount = () => {
+  // Calculate payment token amount (1:1 ratio)
+  const calculatePaymentTokenAmount = () => {
     if (!sellAmount) return "0";
     return sellAmount; // 1:1 ratio, so same amount
   };
@@ -104,7 +108,7 @@ export const Sell = () => {
           />
           {sellAmount && (
             <div className="text-sm text-gray-600 mt-1">
-              You will receive ${calculateUSDCAmount()} USDC
+              You will receive ${calculatePaymentTokenAmount()} {paymentTokenSymbol || "USDC"}
             </div>
           )}
         </div>

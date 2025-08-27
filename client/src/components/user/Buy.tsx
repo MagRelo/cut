@@ -12,6 +12,7 @@ import { formatUnits, parseUnits } from "viem";
 import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useTokenSymbol } from "../../utils/tokenUtils";
 
 export const Buy = () => {
   const { address, isConnected } = useAccount();
@@ -32,6 +33,9 @@ export const Buy = () => {
     address,
     token: paymentTokenAddress as `0x${string}`,
   });
+
+  // Get payment token symbol
+  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
 
   // Get current USDC allowance for DepositManager
   const { data: currentAllowance } = useReadContract({
@@ -127,12 +131,15 @@ export const Buy = () => {
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="space-y-4">
         {/* Available Balance */}
-        <h3 className="text-lg font-semibold mb-4 text-green-600">Buy CUT Tokens using USDC</h3>
+        <h3 className="text-lg font-semibold mb-4 text-green-600">
+          Buy CUT Tokens using {paymentTokenSymbol || "USDC"}
+        </h3>
         <div className="text-sm text-gray-600 mt-1">
           {/* USDC explanation */}
           <div className="text-sm font-medium text-gray-700">
-            USDC is a digital coin that is always worth one U.S. dollar. USDC can be purchased using
-            credit cards, bank transfers, and crypto options.{" "}
+            {paymentTokenSymbol || "USDC"} is a digital coin that is always worth one U.S. dollar.{" "}
+            {paymentTokenSymbol || "USDC"} can be purchased using credit cards, bank transfers, and
+            crypto options.{" "}
             <a
               href={`https://stg.id.porto.sh/`}
               target="_blank"
@@ -158,31 +165,33 @@ export const Buy = () => {
           </div>
         </div>
         <div className="bg-gray-50 p-3 rounded-md">
-          <div className="text-sm font-medium text-gray-700 mb-1">Available USDC Balance</div>
+          <div className="text-sm font-medium text-gray-700 mb-1">
+            Available {paymentTokenSymbol || "USDC"} Balance
+          </div>
           <div className="text-lg font-semibold text-green-600 mb-2">
-            ${formattedBalance(usdcBalance?.value ?? 0n, 6)} USDC
+            ${formattedBalance(usdcBalance?.value ?? 0n, 6)} {paymentTokenSymbol || "USDC"}
           </div>
 
           <div className="text-sm font-medium text-gray-700 mb-1">Current Approval Level</div>
           <div className="text-lg font-semibold text-blue-600 mb-2">
-            ${formattedBalance(currentAllowance ?? 0n, 6)} USDC
+            ${formattedBalance(currentAllowance ?? 0n, 6)} {paymentTokenSymbol || "USDC"}
           </div>
 
           <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
-            1 CUT = 1 USDC (1:1 ratio)
+            1 CUT = 1 {paymentTokenSymbol || "USDC"} (1:1 ratio)
           </div>
         </div>
         <div>
           <label htmlFor="buy-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            Amount to Buy (USDC)
+            Amount to Buy ({paymentTokenSymbol || "USDC"})
           </label>
           <input
             id="buy-amount"
             type="number"
             value={buyAmount}
             onChange={(e) => setBuyAmount(e.target.value)}
-            placeholder="Enter USDC amount"
+            placeholder={`Enter ${paymentTokenSymbol || "USDC"} amount`}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             disabled={isProcessing}
           />
@@ -237,12 +246,12 @@ export const Buy = () => {
               htmlFor="approval-amount"
               className="block text-sm font-medium text-yellow-700 mb-1"
             >
-              Approval Amount (USDC)
+              Approval Amount ({paymentTokenSymbol || "USDC"})
             </label>
             <input
               id="approval-amount"
               type="number"
-              placeholder="Enter USDC amount to approve"
+              placeholder={`Enter ${paymentTokenSymbol || "USDC"} amount to approve`}
               className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
               disabled={isProcessing}
             />
@@ -286,7 +295,7 @@ export const Buy = () => {
                 "Approving..."
               </>
             ) : (
-              "Approve USDC Only"
+              `Approve ${paymentTokenSymbol || "USDC"} Only`
             )}
           </button>
         </div>

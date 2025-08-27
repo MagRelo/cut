@@ -6,6 +6,7 @@ import { depositManagerAddress, platformTokenAddress } from "../utils/contracts/
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 import { createExplorerLinkJSX } from "../utils/blockchain";
+import { useTokenSymbol } from "../utils/tokenUtils";
 
 export function TokenManagerPage() {
   const { address } = useAccount();
@@ -99,6 +100,10 @@ export function TokenManagerPage() {
     functionName: "usdcToken",
   });
 
+  // Get payment token symbol
+  const { data: paymentTokenSymbol } = useTokenSymbol(usdcTokenAddress as string);
+  console.log({ paymentTokenSymbol });
+
   const {
     data: platformTokenAddressFromContract,
     isLoading: platformTokenAddressFromContractLoading,
@@ -117,22 +122,48 @@ export function TokenManagerPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/user" }, { label: "Token Manager" }]}
+        items={[{ label: "Account", path: "/user" }, { label: "Deposit Manager" }]}
         className="mb-3"
       />
       <PageHeader title="Token Manager" className="mb-3" />
 
+      {/* Test Network Warning Card */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-yellow-800 font-display mb-2">
+          ⚠️ Test Network: Base Sepolia
+        </div>
+        <div className="text-sm text-yellow-700">
+          <p className="mb-2">
+            This project is currently deployed on a test network (Base Sepolia). No actual value is
+            involved or earned in this environment.
+          </p>
+        </div>
+      </div>
+
       {/* Platform Token Manager Overview */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Platform Token Manager Overview
+          Deposit Manager Overview
         </div>
 
         <div className="grid grid-cols-2 gap-2">
+          {/* Current CUT Supply */}
+          <div className="font-medium">
+            CUT Supply
+            <span className="text-gray-400 ml-2 text-sm">(CUT)</span>
+          </div>
+          <div className="text-right">
+            {platformTokenSupplyLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `${formattedPlatformTokenSupply} CUT`
+            )}
+          </div>
+
           {/* Total Available Balance */}
           <div className="font-medium">
-            Total Available Balance
-            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+            Present Value
+            <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span>
           </div>
           <div className="text-right">
             {totalAvailableBalanceLoading ? (
@@ -142,86 +173,35 @@ export function TokenManagerPage() {
             )}
           </div>
 
-          {/* Contract USDC Balance */}
-          <div className="font-medium">
-            Contract USDC Balance
-            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
-          </div>
-          <div className="text-right">
-            {contractUSDCBalanceLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : (
-              `$${formattedContractUSDCBalance}`
-            )}
-          </div>
-
           {/* Compound USDC Balance */}
-          <div className="font-medium">
-            Compound USDC Balance
-            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+          <div className="font-medium text-sm text-gray-600 ml-4">
+            c{paymentTokenSymbol || "USDC"} Balance
+            <span className="text-gray-400 ml-2 text-xs">(c{paymentTokenSymbol || "USDC"})</span>
           </div>
-          <div className="text-right">
+          <div className="text-right text-sm text-gray-600">
             {compoundUSDCBalanceLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
+              <span className="text-gray-400 text-xs">Loading...</span>
             ) : (
               `$${formattedCompoundUSDCBalance}`
             )}
           </div>
 
+          {/* Contract USDC Balance */}
+          <div className="font-medium text-sm text-gray-600 ml-4">
+            {paymentTokenSymbol || "USDC"} Balance
+            <span className="text-gray-400 ml-2 text-xs">({paymentTokenSymbol || "USDC"})</span>
+          </div>
+          <div className="text-right text-sm text-gray-600">
+            {contractUSDCBalanceLoading ? (
+              <span className="text-gray-400 text-xs">Loading...</span>
+            ) : (
+              `$${formattedContractUSDCBalance}`
+            )}
+          </div>
+
           {/* Exchange Rate */}
           <div className="font-medium">Exchange Rate</div>
-          <div className="text-right">1 CUT = 1 USDC (1:1 ratio)</div>
-
-          {/* Current CUT Supply */}
-          <div className="font-medium">Current CUT Supply</div>
-          <div className="text-right">
-            {platformTokenSupplyLoading ? (
-              <span className="text-gray-400">Loading...</span>
-            ) : (
-              `${formattedPlatformTokenSupply} CUT`
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Compound Integration Status */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-blue-800 font-display mb-2">
-          Compound V3 Integration Status
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {/* Compound Supply Status */}
-          <div className="font-medium">Compound Supply</div>
-          <div className="text-right">
-            {isCompoundSupplyPausedLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : isCompoundSupplyPaused ? (
-              <span className="text-red-600">Paused</span>
-            ) : (
-              <span className="text-green-600">Active</span>
-            )}
-          </div>
-
-          {/* Compound Withdraw Status */}
-          <div className="font-medium">Compound Withdraw</div>
-          <div className="text-right">
-            {isCompoundWithdrawPausedLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : isCompoundWithdrawPaused ? (
-              <span className="text-red-600">Paused</span>
-            ) : (
-              <span className="text-green-600">Active</span>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-3 text-sm text-blue-700">
-          <p className="mb-2">
-            • USDC is automatically supplied to Compound V3 for yield generation
-          </p>
-          <p className="mb-2">• If Compound is paused, USDC is stored directly in the contract</p>
-          <p>• Yield is retained by the platform for operational use</p>
+          <div className="text-right">1 CUT = 1 {paymentTokenSymbol || "USDC"}</div>
         </div>
       </div>
 
@@ -265,6 +245,51 @@ export function TokenManagerPage() {
         </div>
       )}
 
+      {/* Compound Integration Status */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
+        <div className="text-lg font-semibold text-blue-800 font-display mb-2">
+          Compound V3 Integration Status
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* Compound Supply Status */}
+          <div className="font-medium">Compound Supply</div>
+          <div className="text-right">
+            {isCompoundSupplyPausedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : isCompoundSupplyPaused ? (
+              <span className="text-red-600">Paused</span>
+            ) : (
+              <span className="text-green-600">Active</span>
+            )}
+          </div>
+
+          {/* Compound Withdraw Status */}
+          <div className="font-medium">Compound Withdraw</div>
+          <div className="text-right">
+            {isCompoundWithdrawPausedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : isCompoundWithdrawPaused ? (
+              <span className="text-red-600">Paused</span>
+            ) : (
+              <span className="text-green-600">Active</span>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 text-sm text-blue-700">
+          <p className="mb-2">
+            • {paymentTokenSymbol || "USDC"} is automatically supplied to Compound V3 for yield
+            generation
+          </p>
+          <p className="mb-2">
+            • If Compound is paused, {paymentTokenSymbol || "USDC"} is stored directly in the
+            contract
+          </p>
+          <p>• Yield is retained by the platform for operational use</p>
+        </div>
+      </div>
+
       {/* Contract Addresses */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
@@ -274,7 +299,7 @@ export function TokenManagerPage() {
         <div className="grid grid-cols-1 gap-2 text-sm">
           {/* USDC Token Address */}
           <div className="flex justify-between">
-            <span className="font-medium">USDC Token:</span>
+            <span className="font-medium">{paymentTokenSymbol || "USDC"} Token:</span>
             <span className="font-mono">
               {usdcTokenAddressLoading ? (
                 <span className="text-gray-400">Loading...</span>
@@ -320,7 +345,7 @@ export function TokenManagerPage() {
 
           {/* cUSDC Address */}
           <div className="flex justify-between">
-            <span className="font-medium">Compound cUSDC:</span>
+            <span className="font-medium">Compound c{paymentTokenSymbol || "USDC"}:</span>
             <span className="font-mono">
               {cUSDCAddressLoading ? (
                 <span className="text-gray-400">Loading...</span>
@@ -338,23 +363,6 @@ export function TokenManagerPage() {
               )}
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* Test Network Warning Card */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-yellow-800 font-display mb-2">
-          ⚠️ Test Network Notice
-        </div>
-        <div className="text-sm text-yellow-700">
-          <p className="mb-2">
-            This project is currently deployed on a test network (Base Sepolia). No actual value is
-            involved or earned in this environment.
-          </p>
-          <p>
-            When deployed to mainnet, real USDC purchases will earn actual yield through Compound
-            Finance integration.
-          </p>
         </div>
       </div>
     </div>
