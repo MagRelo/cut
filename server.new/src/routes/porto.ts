@@ -20,6 +20,7 @@ function loadContractAddressesFromSepolia() {
     return {
       depositManagerAddress: sepoliaConfig.depositManagerAddress.toLowerCase(),
       escrowFactoryAddress: sepoliaConfig.escrowFactoryAddress.toLowerCase(),
+      paymentTokenAddress: sepoliaConfig.paymentTokenAddress.toLowerCase(),
     };
   } catch (error) {
     console.error("Error loading contract addresses from sepolia.json:", error);
@@ -47,10 +48,12 @@ async function isSponsoredContract(
     }
 
     // Load contract addresses from sepolia.json
-    const { depositManagerAddress, escrowFactoryAddress } = loadContractAddressesFromSepolia();
+    const { depositManagerAddress, escrowFactoryAddress, paymentTokenAddress } =
+      loadContractAddressesFromSepolia();
 
     console.log({ depositManagerAddress });
     console.log({ escrowFactoryAddress });
+    console.log({ paymentTokenAddress });
     console.log({ to: addresses });
 
     // Make a single database query to find all contests that match the addresses
@@ -71,6 +74,7 @@ async function isSponsoredContract(
       (address) =>
         address === depositManagerAddress ||
         address === escrowFactoryAddress ||
+        address === paymentTokenAddress ||
         contestAddresses.includes(address)
     );
 
@@ -91,9 +95,9 @@ function createPortoHandler() {
       privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
     },
     sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
-      // const isSponsored = await isSponsoredContract(request);
+      const isSponsored = await isSponsoredContract(request);
       // const isSponsored = true;
-      const isSponsored = false;
+      // const isSponsored = false;
       console.log("Porto sponsor function called; isSponsored:", isSponsored);
       return isSponsored;
     },

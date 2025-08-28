@@ -6,6 +6,7 @@ import {
   useAccount,
   useBalance,
   useReadContract,
+  useChainId,
 } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
@@ -13,9 +14,11 @@ import { depositManagerAddress, paymentTokenAddress } from "../../utils/contract
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTokenSymbol } from "../../utils/tokenUtils";
+import { createTransactionLinkJSX } from "../../utils/blockchain";
 
 export const Buy = () => {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const navigate = useNavigate();
 
   // Buy form state
@@ -227,7 +230,12 @@ export const Buy = () => {
 
       {isConfirmed && (
         <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
-          Transaction completed successfully!
+          <div className="mb-3">
+            Transaction completed successfully!
+            {data?.id &&
+              chainId &&
+              createTransactionLinkJSX(data.id, chainId, "View Transaction", "mt-2 block")}
+          </div>
           <button
             onClick={() => navigate("/user")}
             className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
@@ -236,70 +244,6 @@ export const Buy = () => {
           </button>
         </div>
       )}
-
-      {/* Temporary Approval-Only Section */}
-      <div className="mt-8 p-4 border border-yellow-300 bg-yellow-50 rounded-lg">
-        <h4 className="text-lg font-semibold text-yellow-800 mb-3">Temporary: Approval Only</h4>
-        <div className="space-y-3">
-          <div>
-            <label
-              htmlFor="approval-amount"
-              className="block text-sm font-medium text-yellow-700 mb-1"
-            >
-              Approval Amount ({paymentTokenSymbol || "USDC"})
-            </label>
-            <input
-              id="approval-amount"
-              type="number"
-              placeholder={`Enter ${paymentTokenSymbol || "USDC"} amount to approve`}
-              className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              disabled={isProcessing}
-            />
-          </div>
-          <button
-            onClick={() => {
-              const approvalAmount = (
-                document.getElementById("approval-amount") as HTMLInputElement
-              )?.value;
-              if (!approvalAmount || !isConnected) return;
-
-              const usdcAmount = parseUnits(approvalAmount, 6);
-              sendCalls({
-                calls: [
-                  {
-                    abi: [
-                      {
-                        type: "function",
-                        name: "approve",
-                        inputs: [
-                          { name: "spender", type: "address" },
-                          { name: "value", type: "uint256" },
-                        ],
-                        outputs: [{ name: "", type: "bool" }],
-                        stateMutability: "nonpayable",
-                      },
-                    ],
-                    args: [depositManagerAddress as `0x${string}`, usdcAmount],
-                    functionName: "approve",
-                    to: paymentTokenAddress as `0x${string}`,
-                  },
-                ],
-              });
-            }}
-            disabled={!isConnected || isProcessing}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded"
-          >
-            {isProcessing ? (
-              <>
-                <LoadingSpinnerSmall />
-                "Approving..."
-              </>
-            ) : (
-              `Approve ${paymentTokenSymbol || "USDC"} Only`
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

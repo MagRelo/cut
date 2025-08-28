@@ -102,7 +102,6 @@ export function TokenManagerPage() {
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(usdcTokenAddress as string);
-  console.log({ paymentTokenSymbol });
 
   const {
     data: platformTokenAddressFromContract,

@@ -122,3 +122,67 @@ export function getExplorerName(chainId: number): string | null {
 export function isChainSupported(chainId: number): boolean {
   return chainId in EXPLORER_CONFIG;
 }
+
+/**
+ * Generates a blockchain explorer URL for a given transaction hash and chain ID
+ * @param txHash - The transaction hash
+ * @param chainId - The chain ID
+ * @returns The full explorer URL or null if chain is not supported
+ */
+export function getTransactionUrl(txHash: string, chainId: number): string | null {
+  const config = EXPLORER_CONFIG[chainId];
+  if (!config) {
+    return null;
+  }
+
+  return `${config.baseUrl}/tx/${txHash}`;
+}
+
+/**
+ * Creates a React JSX element for a blockchain transaction link
+ * @param txHash - The transaction hash
+ * @param chainId - The chain ID
+ * @param displayText - Optional text to display (defaults to shortened hash)
+ * @param className - Optional CSS class for styling
+ * @returns JSX element or null if chain is not supported
+ */
+export function createTransactionLinkJSX(
+  txHash: string,
+  chainId: number,
+  displayText?: string,
+  className?: string
+): React.ReactElement | null {
+  const url = getTransactionUrl(txHash, chainId);
+  if (!url) {
+    return null;
+  }
+
+  const text = displayText || `View Transaction`;
+  const shortenedHash = `${txHash.slice(0, 6)}...${txHash.slice(-4)}`;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`text-blue-500 hover:text-blue-600 underline ${className || ""}`}
+      title={`View transaction ${shortenedHash} on ${getExplorerName(chainId)}`}
+    >
+      {text} <span className="text-xs">({shortenedHash})</span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 inline ml-1"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+        />
+      </svg>
+    </a>
+  );
+}

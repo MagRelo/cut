@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
+import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTokenSymbol } from "../../utils/tokenUtils";
+import { createTransactionLinkJSX } from "../../utils/blockchain";
 
 export const Sell = () => {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const navigate = useNavigate();
 
   // Sell form state
@@ -140,7 +142,12 @@ export const Sell = () => {
 
       {isConfirmed && (
         <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
-          Transaction completed successfully!
+          <div className="mb-3">
+            Transaction completed successfully!
+            {data?.id &&
+              chainId &&
+              createTransactionLinkJSX(data.id, chainId, "View Transaction", "mt-2 block")}
+          </div>
           <button
             onClick={() => navigate("/user")}
             className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
