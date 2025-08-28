@@ -20,9 +20,16 @@ export const Sell = () => {
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    data: statusData, // This contains the receipts with transaction hashes
+  } = useWaitForCallsStatus({
     id: data?.id,
   });
+
+  // Extract transaction hash from receipts when confirmed
+  const transactionHash = isConfirmed && statusData?.receipts?.[0]?.transactionHash;
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
@@ -144,15 +151,15 @@ export const Sell = () => {
         <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
           <div className="mb-3">
             Transaction completed successfully!
-            {data?.id &&
+            {transactionHash &&
               chainId &&
-              createTransactionLinkJSX(data.id, chainId, "View Transaction", "mt-2 block")}
+              createTransactionLinkJSX(transactionHash, chainId, "View Transaction", "mt-2 block")}
           </div>
           <button
             onClick={() => navigate("/user")}
             className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
           >
-            Back to User
+            Back to Account
           </button>
         </div>
       )}

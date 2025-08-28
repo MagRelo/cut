@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  useSendCalls,
-  useWaitForCallsStatus,
-  useAccount,
-  useBalance,
-  useReadContract,
-  useChainId,
-} from "wagmi";
+import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
@@ -27,9 +20,16 @@ export const Buy = () => {
 
   // Transaction state
   const { data, isPending, sendCalls, error: sendError } = useSendCalls();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    data: statusData, // This contains the receipts with transaction hashes
+  } = useWaitForCallsStatus({
     id: data?.id,
   });
+
+  // Extract transaction hash from receipts when confirmed
+  const transactionHash = isConfirmed && statusData?.receipts?.[0]?.transactionHash;
 
   // Get USDC balance
   const { data: usdcBalance } = useBalance({
@@ -39,28 +39,6 @@ export const Buy = () => {
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
-
-  // Get current USDC allowance for DepositManager
-  const { data: currentAllowance } = useReadContract({
-    address: paymentTokenAddress as `0x${string}`,
-    abi: [
-      {
-        type: "function",
-        name: "allowance",
-        inputs: [
-          { name: "owner", type: "address" },
-          { name: "spender", type: "address" },
-        ],
-        outputs: [{ name: "", type: "uint256" }],
-        stateMutability: "view",
-      },
-    ],
-    functionName: "allowance",
-    args: [address as `0x${string}`, depositManagerAddress as `0x${string}`],
-    query: {
-      enabled: !!address && !!isConnected,
-    },
-  });
 
   const handleBuy = async () => {
     if (!isConnected || !buyAmount) {
@@ -175,11 +153,6 @@ export const Buy = () => {
             ${formattedBalance(usdcBalance?.value ?? 0n, 6)} {paymentTokenSymbol || "USDC"}
           </div>
 
-          <div className="text-sm font-medium text-gray-700 mb-1">Current Approval Level</div>
-          <div className="text-lg font-semibold text-blue-600 mb-2">
-            ${formattedBalance(currentAllowance ?? 0n, 6)} {paymentTokenSymbol || "USDC"}
-          </div>
-
           <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold text-green-600 mb-2">
             1 CUT = 1 {paymentTokenSymbol || "USDC"} (1:1 ratio)
@@ -232,15 +205,15 @@ export const Buy = () => {
         <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
           <div className="mb-3">
             Transaction completed successfully!
-            {data?.id &&
+            {transactionHash &&
               chainId &&
-              createTransactionLinkJSX(data.id, chainId, "View Transaction", "mt-2 block")}
+              createTransactionLinkJSX(transactionHash, chainId, "View Transaction", "mt-2 block")}
           </div>
           <button
             onClick={() => navigate("/user")}
             className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
           >
-            Back to User
+            Back to Account
           </button>
         </div>
       )}
