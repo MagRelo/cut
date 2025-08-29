@@ -4,26 +4,14 @@ import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
 
-import { createClient, http, hashMessage } from "viem";
-import { Chains } from "porto";
-import { Key, RelayActions } from "porto";
+import { hashMessage } from "viem";
 import { generateSiweNonce, parseSiweMessage } from "viem/siwe";
-// Instantiate a Viem Client with Porto-compatible Chain.
-const client = createClient({
-  chain: Chains.baseSepolia,
-  transport: http(),
-});
+
+import { RelayActions, Porto } from "porto";
+import { RelayClient } from "porto/viem";
+const porto = Porto.create();
 
 const router = Router();
-
-// SIWE Nonce endpoint
-router.get("/siwe/nonce", (req, res) => {
-  // console.log("Generating SIWE nonce");
-  const response = {
-    nonce: generateSiweNonce(),
-  };
-  res.send(response);
-});
 
 // SIWE Nonce endpoint (POST for Porto compatibility)
 router.post("/siwe/nonce", (req, res) => {
@@ -35,7 +23,7 @@ router.post("/siwe/nonce", (req, res) => {
 });
 
 // SIWE authentication endpoint
-router.post("/siwe", async (req, res) => {
+router.post("/siwe/verify", async (req, res) => {
   try {
     // Handle different body formats
     let message, signature;
@@ -60,9 +48,10 @@ router.post("/siwe", async (req, res) => {
       return res.status(400).json({ error: "Message and signature are required" });
     }
 
-    const { address, chainId, nonce } = parseSiweMessage(message);
+    const { address, chainId } = parseSiweMessage(message);
 
-    // Verify the signature
+    // Verify the signature.
+    const client = RelayClient.fromPorto(porto, { chainId });
     const valid = await RelayActions.verifySignature(client, {
       address: address!,
       digest: hashMessage(message),
@@ -70,7 +59,7 @@ router.post("/siwe", async (req, res) => {
     });
 
     // If the signature is invalid, we cannot authenticate the user
-    if (!valid.valid) {
+    if (!valid) {
       return res.status(401).json({ error: "Invalid signature" });
     }
 

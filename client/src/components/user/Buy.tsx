@@ -217,6 +217,78 @@ export const Buy = () => {
           </button>
         </div>
       )}
+
+      {/* Full Receipt Details */}
+      {/* {isConfirmed && statusData && (
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+          <h4 className="text-lg font-semibold mb-3 text-gray-800">Transaction Receipt Details</h4>
+          <div className="space-y-3">
+            <div>
+              <span className="font-medium text-gray-700">Transaction ID:</span>
+              <span className="ml-2 text-sm font-mono text-gray-600">{data?.id}</span>
+            </div>
+            {statusData.receipts?.map((receipt, index) => (
+              <div key={index} className="border-t pt-3">
+                <h5 className="font-medium text-gray-700 mb-2">Receipt {index + 1}:</h5>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-600">Transaction Hash:</span>
+                    <span className="ml-2 font-mono text-gray-500 break-all">
+                      {receipt.transactionHash}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Block Number:</span>
+                    <span className="ml-2 font-mono text-gray-500">
+                      {receipt.blockNumber?.toString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Gas Used:</span>
+                    <span className="ml-2 font-mono text-gray-500">
+                      {receipt.gasUsed?.toString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">Status:</span>
+                    <span
+                      className={`ml-2 ${
+                        receipt.status === "success" ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {receipt.status === "success" ? "Success" : "Failed"}
+                    </span>
+                  </div>
+                  {receipt.logs && receipt.logs.length > 0 && (
+                    <div>
+                      <span className="font-medium text-gray-600">Logs:</span>
+                      <div className="mt-1 ml-2">
+                        {receipt.logs.map((log, logIndex) => (
+                          <div key={logIndex} className="text-xs font-mono text-gray-500 mb-1">
+                            <div>Address: {log.address}</div>
+                            <div>Topics: {log.topics?.join(", ")}</div>
+                            <div>Data: {log.data}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="mt-4 p-3 bg-white rounded border">
+              <h6 className="font-medium text-gray-700 mb-2">Raw Status Data:</h6>
+              <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap">
+                {JSON.stringify(
+                  statusData,
+                  (key, value) => (typeof value === "bigint" ? value.toString() : value),
+                  2
+                )}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 };

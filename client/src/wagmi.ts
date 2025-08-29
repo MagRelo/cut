@@ -17,10 +17,11 @@ export const themeOverrides: ThemeFragment = {
 };
 
 const portoConnector = porto({
+  feeToken: "EXP",
   merchantRpcUrl: import.meta.env.VITE_API_URL + "/porto/rpc",
   authUrl: {
     nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
-    verify: import.meta.env.VITE_API_URL + "/auth/siwe",
+    verify: import.meta.env.VITE_API_URL + "/auth/siwe/verify",
     logout: import.meta.env.VITE_API_URL + "/auth/siwe/logout",
   },
   mode: Mode.dialog({

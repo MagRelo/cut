@@ -49,12 +49,13 @@ export function Connect() {
       },
       {
         onSuccess: () => {
+          // console.log("connect OnSuccess called");
           setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
         },
         onError: (error) => {
-          console.log(error);
-          disconnect();
+          console.log("connect OnError called", error);
           setConnectionStatus(ConnectionStatus.ERROR);
+          disconnect();
         },
       }
     );

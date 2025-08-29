@@ -51,10 +51,10 @@ async function isSponsoredContract(
     const { depositManagerAddress, escrowFactoryAddress, paymentTokenAddress } =
       loadContractAddressesFromSepolia();
 
-    console.log({ depositManagerAddress });
-    console.log({ escrowFactoryAddress });
-    console.log({ paymentTokenAddress });
-    console.log({ to: addresses });
+    // console.log({ depositManagerAddress });
+    // console.log({ escrowFactoryAddress });
+    // console.log({ paymentTokenAddress });
+    // console.log({ to: addresses });
 
     // Make a single database query to find all contests that match the addresses
     const contests = await prisma.contest.findMany({
