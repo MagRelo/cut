@@ -1,5 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
-import { ethers } from 'ethers';
+import { createWalletClient, http, getContract } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
 import Escrow from '../../../contracts/Escrow.json' with { type: 'json' };
 
 export interface ContestSettings {
@@ -11,9 +13,7 @@ export interface ContestSettings {
 }
 
 // Initialize blockchain connection
-function getWallet() {
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'https://sepolia.base.org');
-
+function getWalletClient() {
   // Validate private key before creating wallet
   const privateKey = process.env.ORACLE_PRIVATE_KEY;
   if (!privateKey) {
@@ -25,7 +25,14 @@ function getWallet() {
     throw new Error('ORACLE_PRIVATE_KEY must be a valid 32-byte hex string starting with 0x');
   }
 
-  return new ethers.Wallet(privateKey, provider);
+  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const walletClient = createWalletClient({
+    account,
+    chain: baseSepolia,
+    transport: http(process.env.RPC_URL || 'https://sepolia.base.org')
+  });
+
+  return { walletClient, account };
 }
 
 export async function distributeContest() {
@@ -72,15 +79,15 @@ export async function distributeContest() {
         }
 
         // Initialize escrow contract
-        const wallet = getWallet();
-        const escrowContract = new ethers.Contract(
-          contest.address,
-          Escrow.abi,
-          wallet
-        );
+        const { walletClient } = getWalletClient();
+        const escrowContract = getContract({
+          address: contest.address as `0x${string}`,
+          abi: Escrow.abi,
+          client: walletClient
+        });
 
         // Get escrow state from blockchain
-        const escrowState = await escrowContract.state();
+        const escrowState = await escrowContract.read.state();
         if (escrowState !== 0) {
           // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
           await updateContestToError(contest.id, 'IN_PROGRESS Contest in DB is not open in blockchain');
@@ -88,7 +95,7 @@ export async function distributeContest() {
         }
 
         // Get the participants count from the escrowContract        
-        const participantsCount = await escrowContract.getParticipantsCount();        
+        const participantsCount = await escrowContract.read.getParticipantsCount();        
         if (!participantsCount || Number(participantsCount) === 0) {
           await updateContestToError(contest.id, 'No participants found in escrow');
           continue;
@@ -97,8 +104,8 @@ export async function distributeContest() {
         // Get participants array by iterating through the count
         const participants: string[] = [];
         for (let i = 0; i < Number(participantsCount); i++) {
-          const participant = await escrowContract.participants(i);
-          participants.push(participant);
+          const participant = await escrowContract.read.participants([BigInt(i)]);
+          participants.push(participant as string);
         }
 
         if (!participants || !Array.isArray(participants)) {
@@ -125,22 +132,21 @@ export async function distributeContest() {
         }
 
         // Distribute prizes on blockchain
-        const distributeTx = await escrowContract.distribute(payouts);
-        await distributeTx.wait();
+        const hash = await escrowContract.write.distribute([payouts]);
 
         // Update contest status in database
         await prisma.contest.update({
           where: { id: contest.id },
           data: {
             status: 'SETTLED',
-            results: { payouts, participants, distributeTx },
+            results: { payouts, participants, distributeTx: { hash } },
           },
         });
 
         console.log(`✅ Successfully distributed and settled contest: ${contest.id} - ${contest.name}`);
         console.log(`   - Participants: ${participants.length}`);
         console.log(`   - Total payout distributed: ${payouts.reduce((sum, payout) => sum + payout, 0)}`);
-        console.log(`   - Transaction hash: ${distributeTx.hash}`);
+        console.log(`   - Transaction hash: ${hash}`);
       } catch (contestError) {
         console.error(`Error processing contest ${contest?.id}:`, contestError);
         await updateContestToError(contest?.id, `Processing error: ${contestError instanceof Error ? contestError.message : String(contestError)}`);

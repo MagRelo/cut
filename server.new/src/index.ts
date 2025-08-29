@@ -92,7 +92,7 @@ app.use((req, res, next) => {
     return next();
   }
 
-  console.log("Catch-all route hit:", req.url);
+  // console.log("Catch-all route hit:", req.url);
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");

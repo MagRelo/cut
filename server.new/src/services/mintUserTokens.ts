@@ -1,4 +1,6 @@
-import { ethers } from 'ethers';
+import { createWalletClient, http, parseUnits, getContract } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
 import MockUSDC from '../../contracts/MockUSDC.json' with { type: 'json' };
 import * as fs from 'fs';
 import * as path from 'path';
@@ -25,8 +27,7 @@ const contractConfig = {
     rpcUrl: process.env.RPC_URL || 'https://sepolia.base.org'
 };
 
-// Initialize provider
-const provider = new ethers.JsonRpcProvider(contractConfig.rpcUrl);
+
 
 // Lazy initialization function for wallet and contracts
 function initializeWalletAndContracts() {
@@ -38,15 +39,20 @@ function initializeWalletAndContracts() {
         throw new Error('Invalid private key format. Expected 64 character hex string or 0x-prefixed hex string');
     }
     
-    const oracleWallet = new ethers.Wallet(contractConfig.oracleWalletPrivateKey, provider);
+    const account = privateKeyToAccount(contractConfig.oracleWalletPrivateKey as `0x${string}`);
+    const walletClient = createWalletClient({
+        account,
+        chain: baseSepolia,
+        transport: http(contractConfig.rpcUrl)
+    });
     
-    const paymentTokenContract = new ethers.Contract(
-        contractConfig.paymentTokenAddress,
-        MockUSDC.abi,
-        oracleWallet
-    );
+    const paymentTokenContract = getContract({
+        address: contractConfig.paymentTokenAddress as `0x${string}`,
+        abi: MockUSDC.abi,
+        client: walletClient
+    });
     
-    return { oracleWallet, paymentTokenContract };
+    return { account, walletClient, paymentTokenContract };
 }
 
 /**
@@ -57,18 +63,17 @@ function initializeWalletAndContracts() {
  */
 export async function mintUSDCToUser(userAddress: string, amount: number = 1000) {
     try {
-        const { paymentTokenContract } = initializeWalletAndContracts();
-        const tokenAmount = ethers.parseUnits(amount.toString(), 6); // USDC has 6 decimals
+        const { paymentTokenContract, walletClient } = initializeWalletAndContracts();
+        const tokenAmount = parseUnits(amount.toString(), 6); // USDC has 6 decimals
         
         console.log(`Minting ${amount} USDC(x) to user ${userAddress}...`);
-        const mintTx = await paymentTokenContract.mint(userAddress, tokenAmount);
-        await mintTx.wait();
+        const hash = await paymentTokenContract.write.mint([userAddress, tokenAmount]);
         
-        console.log(`Minted ${amount} USDC(x) to user. Transaction: ${mintTx.hash}`);
+        console.log(`Minted ${amount} USDC(x) to user. Transaction: ${hash}`);
         
         return {
             success: true,
-            transaction: mintTx.hash,
+            transaction: hash,
             amount: amount,
             recipient: userAddress
         };
