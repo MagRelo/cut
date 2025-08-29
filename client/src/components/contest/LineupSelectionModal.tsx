@@ -1,6 +1,6 @@
 import React from "react";
 import { Dialog } from "@headlessui/react";
-import { TournamentLineup } from "../../types.new/player";
+import { TournamentLineup } from "../../types/player";
 
 interface LineupSelectionModalProps {
   isOpen: boolean;

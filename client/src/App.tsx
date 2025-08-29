@@ -12,16 +12,14 @@ import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
-import { TokenManagerPage } from "./pages/TokenManager";
-import { BuyPage } from "./pages/BuyPage";
-import { SellPage } from "./pages/SellPage";
-import { TransferPage } from "./pages/TransferPage";
+import { TokenManagerPage } from "./pages/PlatformTokenManagerPage";
+import { PlatformTokenPage } from "./pages/PlatformTokenPage";
 
-import { LineupList } from "./pages/LineupList";
+import { LineupList } from "./pages/LineupListPage";
 import LineupCreatePage from "./pages/LineupCreatePage";
 
 import { Contests } from "./pages/ContestListPage";
-import { ContestLobby } from "./pages/ContestLobby";
+import { ContestLobby } from "./pages/ContestLobbyPage";
 import CreateContestPage from "./pages/ContestCreatePage";
 
 import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
@@ -62,28 +60,12 @@ export const App: React.FC = () => {
                             }
                           />
 
-                          {/* Token Manager Operations */}
+                          {/* Unified Token Management */}
                           <Route
-                            path="/buy"
+                            path="/tokens"
                             element={
                               <ProtectedRoute>
-                                <BuyPage />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/sell"
-                            element={
-                              <ProtectedRoute>
-                                <SellPage />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/transfer"
-                            element={
-                              <ProtectedRoute>
-                                <TransferPage />
+                                <PlatformTokenPage />
                               </ProtectedRoute>
                             }
                           />

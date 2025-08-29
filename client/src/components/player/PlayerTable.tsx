@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import type {
-  PlayerWithTournamentData,
-  TournamentPlayerData,
-  RoundData,
-} from "../../types.new/player";
+import type { PlayerWithTournamentData, TournamentPlayerData, RoundData } from "../../types/player";
 
 import { PlayerScorecard } from "./PlayerScorecard";
 

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { type TournamentLineup } from "../types.new/player";
+import { type TournamentLineup } from "../types/player";
 import { handleApiResponse } from "../utils/apiError";
 
 interface LineupResponse {

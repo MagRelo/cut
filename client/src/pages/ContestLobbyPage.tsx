@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useBalance, useChainId, useChains } from "wagmi";
-import { Contest } from "../types.new/contest";
+import { Contest } from "../types/contest";
 import { useContestApi } from "../services/contestApi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";

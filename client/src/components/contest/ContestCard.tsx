@@ -1,4 +1,4 @@
-import { type Contest } from "../../types.new/contest";
+import { type Contest } from "../../types/contest";
 import { Link } from "react-router-dom";
 // import { usePortoAuth } from "../../contexts/PortoAuthContext";
 // import { formatOrdinal } from "../../utils/formatting";

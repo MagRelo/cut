@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 // import { Link } from "react-router-dom";
 
-import { type Contest } from "../types.new/contest";
+import { type Contest } from "../types/contest";
 // import { TournamentStatus } from "../types.new/tournament";
 
 import { useContestApi } from "../services/contestApi";

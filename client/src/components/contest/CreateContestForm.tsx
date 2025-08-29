@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useBalance, useAccount, useSendCalls, useWaitForCallsStatus, useChainId } from "wagmi";
 
 import { useTournament } from "../../contexts/TournamentContext";
-import { type CreateContestInput } from "../../types.new/contest";
+import { type CreateContestInput } from "../../types/contest";
 import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 

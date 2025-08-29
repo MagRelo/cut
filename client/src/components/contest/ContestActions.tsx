@@ -11,7 +11,7 @@ import {
   useReadContract,
 } from "wagmi";
 
-import { Contest } from "src/types.new/contest";
+import { Contest } from "src/types/contest";
 import { useContestApi } from "../../services/contestApi";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";

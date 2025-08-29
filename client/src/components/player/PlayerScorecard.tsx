@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import type {
-  PlayerWithTournamentData,
-  RoundData,
-  TournamentPlayerData,
-} from "../../types.new/player";
+import type { PlayerWithTournamentData, RoundData, TournamentPlayerData } from "../../types/player";
 
 interface StablefordDisplayProps {
   points: number;

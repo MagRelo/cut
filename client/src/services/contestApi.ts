@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { type Contest } from "../types.new/contest";
+import { type Contest } from "../types/contest";
 // import { type ContestLineup } from '../types.new/lineup';
 import apiClient from "../utils/apiClient";
 

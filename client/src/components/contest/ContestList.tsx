@@ -1,4 +1,4 @@
-import { type Contest } from "../../types.new/contest";
+import { type Contest } from "../../types/contest";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestCard } from "./ContestCard";
 

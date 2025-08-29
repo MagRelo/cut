@@ -9,6 +9,7 @@ import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress } from "../utils/contractConfig";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useTokenSymbol } from "../utils/tokenUtils";
+import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -63,8 +64,13 @@ export function UserPage() {
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
           {/* Available Balance */}
           <div className="text-lg font-semibold text-gray-700 font-display">Available Balance</div>
+
           <div className="text-lg font-semibold text-gray-700 font-display">
-            {formattedPlatformBalance(platformTokenBalance?.value ?? 0n)} CUT
+            <CutAmountDisplay
+              amount={Number(formatUnits(platformTokenBalance?.value ?? 0n, 18))}
+              logoPosition="right"
+              label="CUT"
+            />
           </div>
 
           {/* Payment Token Balance */}
@@ -72,30 +78,6 @@ export function UserPage() {
           <div className="text-lg font-semibold text-gray-700 font-display">
             ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)} {paymentTokenSymbol || "USDC"}
           </div> */}
-        </div>
-
-        <hr className="my-4" />
-
-        {/* Token Manager Operations */}
-        <div className="flex justify-center gap-2">
-          <Link
-            to="/buy"
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
-          >
-            Buy
-          </Link>
-          <Link
-            to="/sell"
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
-          >
-            Sell
-          </Link>
-          <Link
-            to="/transfer"
-            className="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1"
-          >
-            Transfer
-          </Link>
         </div>
 
         {/* Link to token manager */}
@@ -118,7 +100,13 @@ export function UserPage() {
           <div className="font-medium">CUT</div>
           <div>
             {formattedPlatformBalance(platformTokenBalance?.value ?? 0n)}{" "}
-            {platformTokenBalance?.symbol}
+            {platformTokenBalance?.symbol}{" "}
+            <Link
+              to="/tokens"
+              className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+            >
+              Manage...
+            </Link>
           </div>
 
           {/* Payment Token Balance */}
@@ -135,7 +123,7 @@ export function UserPage() {
               href={`https://stg.id.porto.sh/`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600"
+              className="text-blue-600 hover:text-blue-600"
             >
               <div className="flex items-center gap-1">
                 Porto Wallet

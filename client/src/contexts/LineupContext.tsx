@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { type TournamentLineup } from "../types.new/player";
+import { type TournamentLineup } from "../types/player";
 import { useLineupApi } from "../services/lineupApi";
 import { usePortoAuth } from "./PortoAuthContext";
 import { useTournament } from "./TournamentContext";

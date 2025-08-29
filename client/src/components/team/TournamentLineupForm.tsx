@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { TournamentLineup, PlayerWithTournamentData } from "../../types.new/player";
+import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";

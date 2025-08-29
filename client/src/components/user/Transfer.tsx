@@ -49,7 +49,9 @@ export const Transfer = () => {
   };
 
   return (
-    <div className="">
+    <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <h3 className="text-lg font-semibold mb-4 text-purple-600">Transfer CUT Tokens</h3>
+
       <p className="text-sm text-gray-700 mb-2">
         Use this form to transfer CUT directly to another user. This cannot be undone.
       </p>

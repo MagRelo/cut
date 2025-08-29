@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
-import { type Tournament } from "../types.new/tournament";
-import { type PlayerWithTournamentData } from "../types.new/player";
+import { type Tournament } from "../types/tournament";
+import { type PlayerWithTournamentData } from "../types/player";
 import { useTournamentApi } from "../services/tournamentApi";
 
 interface TournamentContextType {
