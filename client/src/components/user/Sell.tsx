@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
+import {
+  depositManagerAddress,
+  paymentTokenAddress,
+  platformTokenAddress,
+} from "../../utils/contracts/sepolia.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTokenSymbol } from "../../utils/tokenUtils";
@@ -37,7 +41,7 @@ export const Sell = () => {
   // Get platform token balance
   const { data: platformTokenBalance } = useBalance({
     address,
-    token: depositManagerAddress as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
   });
 
   const handleSell = async () => {
@@ -99,6 +103,11 @@ export const Sell = () => {
           <div className="text-sm font-medium text-gray-700 mb-1">Available CUT Balance</div>
           <div className="text-lg font-semibold text-blue-600 mb-2">
             {formattedBalance(platformTokenBalance?.value ?? 0n, 18)} CUT
+          </div>
+
+          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
+          <div className="text-lg font-semibold text-blue-600 mb-2">
+            1 CUT = 1 {paymentTokenSymbol || "USDC"} (1:1 ratio)
           </div>
         </div>
 

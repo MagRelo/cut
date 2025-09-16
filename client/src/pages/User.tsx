@@ -1,49 +1,26 @@
-import { useAccount, useBalance, useDisconnect } from "wagmi";
+import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 
 import { PageHeader } from "../components/util/PageHeader";
-import { CopyToClipboard } from "../components/util/CopyToClipboard";
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress } from "../utils/contractConfig";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useTokenSymbol } from "../utils/tokenUtils";
 import { CutAmountDisplay } from "../components/common/CutAmountDisplay";
 
 export function UserPage() {
   const { user } = usePortoAuth();
-  const { address, chainId, chain } = useAccount();
-  const { disconnect } = useDisconnect();
+  const { address, chainId } = useAccount();
 
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // platformTokenAddress balance
   const { data: platformTokenBalance } = useBalance({
     address: address,
     token: platformTokenAddress as `0x${string}`,
   });
-
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
-
-  // paymentTokenAddress balance
-  const { data: paymentTokenBalance } = useBalance({
-    address: address,
-    token: paymentTokenAddress as `0x${string}`,
-  });
-
-  // round balance to 2 decimal points for platform tokens (18 decimals)
-  const formattedPlatformBalance = (balance: bigint) => {
-    return Number(formatUnits(balance, 18)).toFixed(0);
-  };
-
-  // round balance to 2 decimal points for payment tokens (6 decimals)
-  const formattedPaymentBalance = (balance: bigint) => {
-    return Number(formatUnits(balance, 6)).toFixed(2);
-  };
 
   // if user is not connected, show the connect component
   if (!user) {
@@ -63,7 +40,15 @@ export function UserPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-2">
         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
           {/* Available Balance */}
-          <div className="text-lg font-semibold text-gray-700 font-display">Available Balance</div>
+          <div className="text-lg font-semibold text-gray-700 font-display">
+            Available Balance{" "}
+            <Link
+              to="/tokens"
+              className="text-gray-500 hover:text-gray-800 font-medium text-sm transition-colors ml-2"
+            >
+              Manage...
+            </Link>
+          </div>
 
           <div className="text-lg font-semibold text-gray-700 font-display">
             <CutAmountDisplay
@@ -90,95 +75,6 @@ export function UserPage() {
 
       {/* User Settings */}
       <UserSettings />
-
-      {/* Wallet */}
-      <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Wallet</div>
-
-        <div className="grid grid-cols-[100px_1fr] gap-2">
-          {/* Platform Token Balance */}
-          <div className="font-medium">CUT</div>
-          <div>
-            {formattedPlatformBalance(platformTokenBalance?.value ?? 0n)}{" "}
-            {platformTokenBalance?.symbol}{" "}
-            <Link
-              to="/tokens"
-              className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
-            >
-              Manage...
-            </Link>
-          </div>
-
-          {/* Payment Token Balance */}
-          <div className="font-medium">{paymentTokenSymbol || "USDC"}</div>
-          <div>
-            {formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}{" "}
-            {paymentTokenBalance?.symbol}
-          </div>
-
-          <div className="font-medium">Wallet:</div>
-
-          <div>
-            <a
-              href={`https://stg.id.porto.sh/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-600"
-            >
-              <div className="flex items-center gap-1">
-                Porto Wallet
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </div>
-            </a>
-          </div>
-
-          {/* Address */}
-          <div className="font-medium">Address:</div>
-
-          <div>
-            <CopyToClipboard
-              text={address || ""}
-              displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-            />
-          </div>
-
-          {/* Chain */}
-          <div className="font-medium">Chain:</div>
-          <div>{chain?.name}</div>
-
-          {/* Chain ID */}
-          <div className="font-medium">Chain ID:</div>
-          <div>{chainId}</div>
-        </div>
-
-        <hr className="my-4" />
-        <div className="flex justify-center">
-          {!!address && (
-            <button
-              className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
-              disabled={!address}
-              onClick={() => {
-                disconnect();
-              }}
-            >
-              Sign out
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
