@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { useNavigate } from "react-router-dom";
+import { formatUnits, parseUnits } from "viem";
 
 import {
   useBalance,
@@ -21,6 +22,7 @@ import { LineupSelectionModal } from "./LineupSelectionModal";
 // Import contract addresses and ABIs
 import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
 import EscrowContract from "../../utils/contracts/Escrow.json";
+import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { getContractAddress } from "../../utils/contractConfig";
 
 interface ContestActionsProps {
@@ -43,6 +45,25 @@ const getStatusMessages = (
   }
 
   return defaultMessage;
+};
+
+// Helper functions for decimal conversion
+// Payment token (USDC) has 6 decimals, Platform token has 18 decimals
+const PAYMENT_TOKEN_DECIMALS = 6;
+const PLATFORM_TOKEN_DECIMALS = 18;
+
+// Convert payment token amount to platform token equivalent (1:1 ratio but different decimals)
+const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
+  // Convert payment token to human readable format, then parse as platform token
+  const humanReadableAmount = formatUnits(paymentTokenAmount, PAYMENT_TOKEN_DECIMALS);
+  return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
+};
+
+// Convert platform token amount to payment token equivalent (1:1 ratio but different decimals)
+const convertPlatformToPaymentTokens = (platformTokenAmount: bigint): bigint => {
+  // Convert platform token to human readable format, then parse as payment token
+  const humanReadableAmount = formatUnits(platformTokenAmount, PLATFORM_TOKEN_DECIMALS);
+  return parseUnits(humanReadableAmount, PAYMENT_TOKEN_DECIMALS);
 };
 
 export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
@@ -79,13 +100,21 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     abi: EscrowContract.abi,
     functionName: "details",
     args: [],
-  }).data as [string, bigint, bigint, bigint] | undefined;
+  }).data as [bigint, bigint] | undefined;
 
   // get the platform token balance from the user
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
   const { data: platformTokenBalance } = useBalance({
     address: userAddress as `0x${string}`,
     token: platformTokenAddress as `0x${string}`,
+    chainId: chainId ?? 0,
+  });
+
+  // get the payment token balance from the user
+  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress") ?? "";
+  const { data: paymentTokenBalance } = useBalance({
+    address: userAddress as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}`,
     chainId: chainId ?? 0,
   });
 
@@ -97,26 +126,40 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   const [lineupSelectionModal, setLineupSelectionModal] = React.useState(false);
   const [selectedLineupId, setSelectedLineupId] = React.useState<string | null>(null);
 
-  // Helper: check if user has enough balance
+  // Helper: check if user has enough balance (sum of platform and payment tokens)
   const hasEnoughBalance = React.useMemo(() => {
-    if (!platformTokenBalance || !escrowDetails) return false;
+    if (!escrowDetails) return false;
 
     // Use the deposit amount from the escrow contract
-    const depositAmount = escrowDetails[1]; // depositAmount is the second element
-    const hasEnough = platformTokenBalance.value >= depositAmount;
+    const depositAmount = escrowDetails[0]; // depositAmount is the first element
+
+    // Get current balances (default to 0 if undefined)
+    const platformTokenAmount = platformTokenBalance?.value ?? 0n;
+    const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
+
+    // Convert payment token amount to platform token equivalent (accounting for decimals)
+    const paymentTokenAsPlatformTokens = convertPaymentToPlatformTokens(paymentTokenAmount);
+
+    // Calculate total available balance in platform token terms
+    const totalAvailableBalance = platformTokenAmount + paymentTokenAsPlatformTokens;
+
+    const hasEnough = totalAvailableBalance >= depositAmount;
 
     if (!hasEnough) {
       console.log({
         depositAmount: depositAmount.toString(),
-        balanceValue: platformTokenBalance.value.toString(),
+        platformTokenBalance: platformTokenAmount.toString(),
+        paymentTokenBalance: paymentTokenAmount.toString(),
+        paymentTokenAsPlatformTokens: paymentTokenAsPlatformTokens.toString(),
+        totalAvailableBalance: totalAvailableBalance.toString(),
         hasEnoughBalance: hasEnough,
         contestAddress: contest.address,
-        escrowPaymentToken: escrowDetails[0],
+        escrowExpiry: escrowDetails[1],
       });
     }
 
     return hasEnough;
-  }, [platformTokenBalance, escrowDetails]);
+  }, [platformTokenBalance, paymentTokenBalance, escrowDetails, contest.address]);
 
   // Effect to handle blockchain confirmation
   useEffect(() => {
@@ -174,7 +217,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         open: true,
         message: `You do not have enough ${
           contest?.settings?.platformTokenSymbol || "tokens"
-        } to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
+        } or USDC to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
       });
       return;
     }
@@ -190,26 +233,70 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       // Get the deposit amount from escrow details
       const depositAmount = escrowDetails[0]; // depositAmount is the first element
 
-      // Execute blockchain transaction with both approval and transfer
-      await sendCalls({
-        calls: [
-          {
-            abi: PlatformTokenContract.abi,
-            args: [
-              contest.address as `0x${string}`,
-              depositAmount, // Use the actual deposit amount from escrow
-            ],
-            functionName: "approve",
-            to: platformTokenAddress as `0x${string}`,
-          },
-          {
-            abi: EscrowContract.abi,
-            args: [],
-            functionName: "deposit",
-            to: contest.address as `0x${string}`,
-          },
-        ],
+      // Get current balances (default to 0 if undefined)
+      const platformTokenAmount = platformTokenBalance?.value ?? 0n;
+      const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
+
+      // Calculate how many platform tokens we need to swap
+      const platformTokensNeeded =
+        depositAmount > platformTokenAmount ? depositAmount - platformTokenAmount : 0n;
+
+      // Convert platform tokens needed to payment token equivalent (accounting for decimals)
+      const paymentTokensNeeded = convertPlatformToPaymentTokens(platformTokensNeeded);
+
+      // Get deposit manager address
+      const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress") ?? "";
+
+      const calls = [];
+
+      // If we need to swap payment tokens for platform tokens, do it
+      if (platformTokensNeeded > 0n && paymentTokenAmount >= paymentTokensNeeded) {
+        // First approve the DepositManager to spend payment tokens
+        calls.push({
+          abi: [
+            {
+              type: "function",
+              name: "approve",
+              inputs: [
+                { name: "spender", type: "address" },
+                { name: "value", type: "uint256" },
+              ],
+              outputs: [{ name: "", type: "bool" }],
+              stateMutability: "nonpayable",
+            },
+          ],
+          args: [depositManagerAddress as `0x${string}`, paymentTokensNeeded],
+          functionName: "approve",
+          to: paymentTokenAddress as `0x${string}`,
+        });
+
+        // Then buy platform tokens with payment tokens (1:1 ratio)
+        calls.push({
+          abi: DepositManagerContract.abi,
+          args: [paymentTokensNeeded],
+          functionName: "depositUSDC",
+          to: depositManagerAddress as `0x${string}`,
+        });
+      }
+
+      // Approve the escrow contract to spend platform tokens
+      calls.push({
+        abi: PlatformTokenContract.abi,
+        args: [contest.address as `0x${string}`, depositAmount],
+        functionName: "approve",
+        to: platformTokenAddress as `0x${string}`,
       });
+
+      // Deposit to the escrow contract
+      calls.push({
+        abi: EscrowContract.abi,
+        args: [],
+        functionName: "deposit",
+        to: contest.address as `0x${string}`,
+      });
+
+      // Execute blockchain transaction
+      await sendCalls({ calls });
     } catch (err) {
       console.error("Error joining contest:", err);
       setSubmissionError(
