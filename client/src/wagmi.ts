@@ -18,7 +18,7 @@ export const themeOverrides: ThemeFragment = {
 
 const portoConnector = porto({
   feeToken: "EXP",
-  merchantRpcUrl: import.meta.env.VITE_API_URL + "/porto/rpc",
+  merchantUrl: import.meta.env.VITE_API_URL + "/porto/merchant",
   authUrl: {
     nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
     verify: import.meta.env.VITE_API_URL + "/auth/siwe/verify",

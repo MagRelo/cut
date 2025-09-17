@@ -3,8 +3,8 @@ import authRoutes from "./auth.js";
 import tournamentRoutes from "./tournament.js";
 import lineupRoutes from "./lineup.js";
 import contestRoutes from "./contest.js";
-import portoRoutes from "./porto.js";
 import cronRoutes from "./cron.js";
+import portoListener from "./porto.js";
 // import userRoutes from "./user.js";
 
 const router = Router();
@@ -27,8 +27,8 @@ router.use("/auth", authRoutes);
 // User Group routes
 // router.use("/users", userRoutes);
 
-// Porto routes
-router.use("/porto", portoRoutes);
+// Porto routes - direct integration
+router.use(portoListener);
 
 // Cron routes
 router.use("/cron", cronRoutes);

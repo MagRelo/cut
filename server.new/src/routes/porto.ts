@@ -1,14 +1,11 @@
-import { Router } from "express";
-import { MerchantRpc } from "porto/server";
+import { Router as ExpressRouter } from "express";
+import { Router, Route } from "porto/server";
 import type { RpcSchema } from "porto";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
 import { prisma } from "../lib/prisma.js";
-import { createPortoMiddleware } from "../middleware/portoHandler.js";
-
-const router = Router();
 
 // Function to load contract addresses from sepolia.json
 function loadContractAddressesFromSepolia() {
@@ -30,7 +27,7 @@ function loadContractAddressesFromSepolia() {
 
 // Function to check if a contract address is sponsored
 async function isSponsoredContract(
-  request: RpcSchema.wallet_prepareCalls.Parameters
+  request: any // Using any for now due to type compatibility issues
 ): Promise<boolean> {
   try {
     const { calls } = request;
@@ -40,9 +37,9 @@ async function isSponsoredContract(
 
     // Extract all 'to' addresses from calls
     const addresses = calls
-      .map((call) => call.to)
-      .filter((to): to is `0x${string}` => !!to)
-      .map((address) => address.toLowerCase());
+      .map((call: any) => call.to)
+      .filter((to: any): to is `0x${string}` => !!to)
+      .map((address: any) => address.toLowerCase());
     if (addresses.length === 0) {
       return false;
     }
@@ -71,7 +68,7 @@ async function isSponsoredContract(
 
     // Check if all addresses are either merchant factory, payment token, or sponsored contests
     const allSponsored = addresses.every(
-      (address) =>
+      (address: any) =>
         address === depositManagerAddress ||
         address === escrowFactoryAddress ||
         address === paymentTokenAddress ||
@@ -86,36 +83,19 @@ async function isSponsoredContract(
   }
 }
 
-// Create Porto RequestHandler function
-function createPortoHandler() {
-  return MerchantRpc.requestHandler({
+// Create Porto Router with merchant route - direct integration
+const porto = Router({ basePath: "/porto" }).route(
+  "/merchant",
+  Route.merchant({
     address: process.env.MERCHANT_ADDRESS as `0x${string}`,
-    key: {
-      type: "secp256k1",
-      privateKey: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
-    },
-    sponsor: async (request: RpcSchema.wallet_prepareCalls.Parameters) => {
+    key: process.env.MERCHANT_PRIVATE_KEY as `0x${string}`,
+    sponsor: async (request: any) => {
       const isSponsored = await isSponsoredContract(request);
-      // const isSponsored = true;
-      // const isSponsored = false;
       console.log("Porto sponsor function called; isSponsored:", isSponsored);
       return isSponsored;
     },
-  });
-}
-
-// Porto RPC endpoint for handling merchant RPC requests
-router.all(
-  "/rpc",
-  (req, res, next) => {
-    // console.log("Porto RPC request received");
-    next();
-  },
-  (req, res, next) => {
-    // Create the Porto handler when the route is accessed
-    const portoHandler = createPortoHandler();
-    return createPortoMiddleware(portoHandler)(req, res, next);
-  }
+  })
 );
 
-export default router;
+// Export the porto listener directly for app-level integration
+export default porto.listener;
