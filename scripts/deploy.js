@@ -148,7 +148,7 @@ function updateConfigFiles(network, addresses) {
   // Update server config
   const serverConfigPath = path.join(
     projectRoot,
-    "server.new",
+    "server",
     "contracts",
     `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`
   );
@@ -162,7 +162,7 @@ function copyContractArtifacts() {
   logStep("Copying contract artifacts to server");
 
   const contractsOutDir = path.join(projectRoot, "contracts", "out");
-  const serverContractsDir = path.join(projectRoot, "server.new", "contracts");
+  const serverContractsDir = path.join(projectRoot, "server", "contracts");
 
   // Ensure server contracts directory exists
   if (!fs.existsSync(serverContractsDir)) {

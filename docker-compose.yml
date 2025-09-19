@@ -2,7 +2,7 @@ version: "3.8"
 services:
   app:
     build:
-      context: ./server.new
+      context: ./server
     ports:
       - "3000:3000"
     environment:
