@@ -89,7 +89,7 @@ export function UserPage() {
           </div>
         </div>
 
-        <hr className="my-2 border-gray-200" />
+        <hr className="my-3 border-gray-200" />
 
         {/* Manage Link */}
         <div className="flex justify-center mt-3">
