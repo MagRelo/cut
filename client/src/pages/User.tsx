@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../components/util/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+// import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 // Logo components using CSS background images (cached by browser)
 const CutLogo = () => (
@@ -25,7 +25,7 @@ const UsdcLogo = () => (
 );
 
 export function UserPage() {
-  const { user } = usePortoAuth();
+  // const { user } = usePortoAuth();
   const { address, chainId } = useAccount();
 
   // Get contract addresses for current chain
