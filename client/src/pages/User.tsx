@@ -5,8 +5,25 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../components/util/PageHeader";
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
-import { getContractAddress } from "../utils/blockchainUtils.tsx";
+import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
+
+// Logo components using CSS background images (cached by browser)
+const CutLogo = () => (
+  <div
+    className="h-9 w-9 bg-contain bg-no-repeat bg-center"
+    style={{ backgroundImage: "url(/logo-transparent.png)" }}
+    aria-label="CUT logo"
+  />
+);
+
+const UsdcLogo = () => (
+  <div
+    className="h-7 w-7 ml-1 bg-contain bg-no-repeat bg-center"
+    style={{ backgroundImage: "url(/usd-coin-usdc-logo.svg)" }}
+    aria-label="USDC logo"
+  />
+);
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -28,10 +45,13 @@ export function UserPage() {
     token: paymentTokenAddress as `0x${string}`,
   });
 
-  // Calculate combined total balance
-  const platformTokenAmount = Number(formatUnits(platformTokenBalance?.value ?? 0n, 18));
-  const paymentTokenAmount = Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6));
-  const combinedTotal = platformTokenAmount + paymentTokenAmount;
+  // Get payment token symbol
+  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
+
+  // round balance to 2 decimal points for payment tokens (6 decimals)
+  const formattedPaymentBalance = (balance: bigint) => {
+    return Number(formatUnits(balance, 6)).toFixed(2);
+  };
 
   // if user is not connected, show the connect component
   if (!user) {
@@ -47,23 +67,46 @@ export function UserPage() {
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
 
-      {/* Account Settings */}
+      {/* Token Balances */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
-        {/* Balance Header with Total */}
+        {/* Balance Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
           <div className="text-xl font-semibold text-gray-900 font-display">
-            ${combinedTotal.toFixed(2)}
+            $
+            {(
+              Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)) +
+              Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6))
+            ).toFixed(2)}
           </div>
         </div>
 
-        <hr className="my-3 border-gray-200" />
+        {/* Token Breakdown */}
+        <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
+          {/* CUT Token */}
+          <CutLogo />
+          <div className="text-sm text-gray-600 font-medium">CUT Token</div>
+          <div className="text-sm font-semibold text-gray-700 text-right">
+            ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
+          </div>
+
+          {/* Payment Token */}
+          <UsdcLogo />
+          <div className="text-sm text-gray-600 font-medium">
+            {paymentTokenSymbol || "USDC"} Token
+          </div>
+          <div className="text-sm font-semibold text-gray-700 text-right">
+            ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}
+          </div>
+        </div>
+
+        <hr className="my-2 border-gray-200" />
 
         {/* Manage Link */}
-        <div className="flex justify-center">
+        <div className="flex justify-center mt-3">
           <Link
             to="/account/funds"
-            className="text-blue-500 hover:text-blue-700 font-medium text-base transition-colors"
+            className="text-blue-500 hover:text-blue-700 text-sm text-base transition-colors"
           >
             Manage Funds
           </Link>

@@ -31,16 +31,17 @@ export const Home: React.FC = () => {
 
       <div className="flex flex-col items-center text-center gap-8 mt-4">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">create a lineup</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">create lineups</h3>
           <p className="text-gray-700 max-w-xs">
-            Select any four players from the field each week.
+            Select any four golfers from the field each week.
           </p>
         </div>
 
         <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">enter a contest</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">enter contests</h3>
           <p className="text-gray-700 max-w-xs">
-            Every tournament has multiple contests. Play every week or skip a week - no big deal.
+            Every tournament has multiple contests and each contest allows you to enter multiple
+            lineups.
           </p>
         </div>
 

@@ -181,8 +181,8 @@ export function UserManageFunds() {
         </div>
         <div className="text-sm text-blue-700">
           <p className="mb-2">
-            To use the Cut you'll need to fund your account with USDC. If you're new to crypto,
-            consider asking another user to transfer you some funds to get started.
+            To use <b>the Cut</b> you'll need to fund your account with USDC. If you're new to
+            crypto, consider asking another user to transfer you some funds to get started.
           </p>
           <p className="mb-6">
             If you already own USDC you can transfer it directly to your Cut account: (click to
@@ -190,7 +190,7 @@ export function UserManageFunds() {
           </p>
 
           <p className="mb-2 text-center font-medium text-md">
-            <span className="mr-2 border border-blue-300 rounded-md p-2">
+            <span className="mr-2 border border-blue-600 rounded-md p-2">
               <CopyToClipboard
                 text={address || ""}
                 displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
