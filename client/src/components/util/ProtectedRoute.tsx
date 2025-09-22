@@ -18,8 +18,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    // Redirect to login but save the attempted location
-    return <Navigate to="/account" state={{ from: location }} replace />;
+    // Redirect to connect page with the current location as return URL
+    return <Navigate to="/connect" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -3,7 +3,6 @@ import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 
 import { PageHeader } from "../components/util/PageHeader";
-import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
@@ -53,16 +52,6 @@ export function UserPage() {
     return Number(formatUnits(balance, 6)).toFixed(2);
   };
 
-  // if user is not connected, show the connect component
-  if (!user) {
-    return (
-      <div className="p-4">
-        <Connect />
-      </div>
-    );
-  }
-
-  // if user is connected, show the account settings
   return (
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
@@ -106,7 +95,7 @@ export function UserPage() {
         <div className="flex justify-center mt-3">
           <Link
             to="/account/funds"
-            className="text-blue-500 hover:text-blue-700 text-sm text-base transition-colors"
+            className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
           >
             Manage Funds
           </Link>

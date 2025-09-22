@@ -12,6 +12,7 @@ import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
+import { ConnectPage } from "./pages/ConnectPage";
 import { TokenManagerPage } from "./pages/PlatformTokenManagerPage";
 import { UserManageFunds } from "./pages/UserManageFunds";
 
@@ -51,7 +52,15 @@ export const App: React.FC = () => {
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
-                          <Route path="/account" element={<UserPage />} />
+                          <Route path="/connect" element={<ConnectPage />} />
+                          <Route
+                            path="/account"
+                            element={
+                              <ProtectedRoute>
+                                <UserPage />
+                              </ProtectedRoute>
+                            }
+                          />
                           <Route path="/contracts" element={<ContractsPage />} />
                           <Route
                             path="/deposits"
