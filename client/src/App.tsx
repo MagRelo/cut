@@ -13,7 +13,7 @@ import { LineupProvider } from "./contexts/LineupContext";
 import { Home } from "./pages/Home";
 import { UserPage } from "./pages/User";
 import { TokenManagerPage } from "./pages/PlatformTokenManagerPage";
-import { PlatformTokenPage } from "./pages/PlatformTokenPage";
+import { UserManageFunds } from "./pages/UserManageFunds";
 
 import { LineupList } from "./pages/LineupListPage";
 import LineupCreatePage from "./pages/LineupCreatePage";
@@ -21,6 +21,7 @@ import LineupCreatePage from "./pages/LineupCreatePage";
 import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
 import CreateContestPage from "./pages/ContestCreatePage";
+import ContractsPage from "./pages/ContractsPage";
 
 import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
 import { ProtectedRoute } from "./components/util/ProtectedRoute";
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
                           <Route path="/user" element={<UserPage />} />
+                          <Route path="/contracts" element={<ContractsPage />} />
                           <Route
                             path="/token-manager"
                             element={
@@ -65,7 +67,7 @@ export const App: React.FC = () => {
                             path="/tokens"
                             element={
                               <ProtectedRoute>
-                                <PlatformTokenPage />
+                                <UserManageFunds />
                               </ProtectedRoute>
                             }
                           />

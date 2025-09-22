@@ -15,7 +15,7 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function PlatformTokenPage() {
+export function UserManageFunds() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { address, chainId, chain } = useAccount();
   const { disconnect } = useDisconnect();
@@ -72,7 +72,7 @@ export function PlatformTokenPage() {
 
         <div>
           <a
-            href={`https://stg.id.porto.sh/`}
+            href={`https://id.porto.sh/`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-600"
@@ -150,7 +150,7 @@ export function PlatformTokenPage() {
                   "w-full py-2 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }
@@ -163,7 +163,7 @@ export function PlatformTokenPage() {
                   "w-full py-2 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }
@@ -176,7 +176,7 @@ export function PlatformTokenPage() {
                   "w-full py-2 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }
@@ -189,7 +189,7 @@ export function PlatformTokenPage() {
                   "w-full py-2 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }

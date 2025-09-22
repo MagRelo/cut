@@ -164,13 +164,15 @@ export const ContestLineupCard: React.FC<ContestLineupCardProps> = ({
               </span> */}
 
               <span
-                className="inline-block w-4 h-4 rounded-full mr-2"
+                className="inline-block w-4 h-4 rounded-full mr-2 border border-gray-300"
                 style={{
-                  backgroundColor: (contestLineup.user?.settings?.color as string) || "#00FF00",
+                  backgroundColor: (contestLineup.user?.settings?.color as string) || "#D3D3D3",
                 }}
                 aria-label="Lineup color"
               />
-              <span className="text-xl font-bold text-gray-900">{contestLineup.user?.name}</span>
+              <span className="text-xl font-semibold text-gray-900">
+                {contestLineup.user?.name}
+              </span>
             </div>
             <div className="flex items-center">
               <span className="text-xl text-gray-600 font-bold">{contestLineup.score}</span>

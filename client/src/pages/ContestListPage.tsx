@@ -96,7 +96,7 @@ export const Contests: React.FC = () => {
                 classNames(
                   "w-full py-2 text-sm font-medium leading-5",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }
@@ -108,7 +108,7 @@ export const Contests: React.FC = () => {
                 classNames(
                   "w-full py-2 text-sm font-medium leading-5",
                   selected
-                    ? "border-b-2 border-emerald-500 text-emerald-600"
+                    ? "border-b-2 border-blue-500 text-blue-600"
                     : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )
               }
