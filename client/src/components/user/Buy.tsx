@@ -2,15 +2,21 @@ import { useState } from "react";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import { depositManagerAddress, paymentTokenAddress } from "../../utils/contracts/sepolia.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useTokenSymbol } from "../../utils/tokenUtils";
-import { createTransactionLinkJSX } from "../../utils/blockchain";
+import {
+  useTokenSymbol,
+  createTransactionLinkJSX,
+  getContractAddress,
+} from "../../utils/blockchainUtils.tsx";
 
 export const Buy = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
+
+  // Get contract addresses dynamically
+  const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
+  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // Buy form state
   const [buyAmount, setBuyAmount] = useState("");

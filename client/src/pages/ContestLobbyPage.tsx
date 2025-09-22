@@ -10,8 +10,7 @@ import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
-import { createExplorerLinkJSX } from "../utils/blockchain";
-import { getContractAddress } from "../utils/contractConfig";
+import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 
 type SortOption = "ownership" | "points" | "position" | "name" | "score";
 

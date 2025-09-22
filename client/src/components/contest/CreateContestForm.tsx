@@ -9,8 +9,8 @@ import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 // contracts
-import { escrowFactoryAddress, platformTokenAddress } from "../../utils/contracts/sepolia.json";
 import EscrowFactory from "../../utils/contracts/EscrowFactory.json";
+import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 // Helper function to get status messages
 const getStatusMessages = (
@@ -37,6 +37,10 @@ export const CreateContestForm = () => {
   // wagmi functions
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
+
+  // Get contract addresses dynamically
+  const escrowFactoryAddress = getContractAddress(chainId ?? 0, "escrowFactoryAddress");
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
   const {
     sendCalls,
     data: sendCallsData,

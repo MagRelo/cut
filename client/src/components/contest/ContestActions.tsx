@@ -23,7 +23,7 @@ import { LineupSelectionModal } from "./LineupSelectionModal";
 import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
 import EscrowContract from "../../utils/contracts/Escrow.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
-import { getContractAddress } from "../../utils/contractConfig";
+import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 interface ContestActionsProps {
   contest: Contest;

@@ -8,8 +8,7 @@ import { CopyToClipboard } from "../components/util/CopyToClipboard";
 import { Buy } from "../components/user/Buy";
 import { Sell } from "../components/user/Sell";
 import { Transfer } from "../components/user/Transfer";
-import { getContractAddress } from "../utils/contractConfig";
-import { useTokenSymbol } from "../utils/tokenUtils";
+import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -185,16 +184,18 @@ export function UserManageFunds() {
             To use the Cut you'll need to fund your account with USDC. If you're new to crypto,
             consider asking another user to transfer you some funds to get started.
           </p>
-          <p className="mb-4">
+          <p className="mb-6">
             If you already own USDC you can transfer it directly to your Cut account: (click to
             copy)
           </p>
 
           <p className="mb-2 text-center font-medium text-md">
-            <CopyToClipboard
-              text={address || ""}
-              displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
-            />
+            <span className="mr-2 border border-blue-300 rounded-md p-2">
+              <CopyToClipboard
+                text={address || ""}
+                displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
+              />
+            </span>
           </p>
         </div>
       </div>

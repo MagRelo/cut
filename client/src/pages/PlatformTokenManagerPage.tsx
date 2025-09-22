@@ -2,21 +2,31 @@ import { useReadContract, useAccount, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { depositManagerAddress, platformTokenAddress } from "../utils/contracts/sepolia.json";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
-import { createExplorerLinkJSX } from "../utils/blockchain";
-import { useTokenSymbol } from "../utils/tokenUtils";
+import {
+  createExplorerLinkJSX,
+  useTokenSymbol,
+  getContractAddress,
+} from "../utils/blockchainUtils.tsx";
 
 export function TokenManagerPage() {
   const { address } = useAccount();
   const chainId = useChainId();
+
+  // Get contract addresses dynamically
+  const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // Get total USDC balance (contract + Compound)
   const { data: totalAvailableBalance, isLoading: totalAvailableBalanceLoading } = useReadContract({
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "getTotalAvailableBalance",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   // Format total available balance for display
@@ -29,6 +39,9 @@ export function TokenManagerPage() {
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "getTokenManagerUSDCBalance",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   // Format contract USDC balance for display
@@ -41,6 +54,9 @@ export function TokenManagerPage() {
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "getCompoundUSDCBalance",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   // Format compound USDC balance for display
@@ -53,6 +69,9 @@ export function TokenManagerPage() {
     address: platformTokenAddress as `0x${string}`,
     abi: PlatformTokenContract.abi,
     functionName: "totalSupply",
+    query: {
+      enabled: !!platformTokenAddress,
+    },
   });
 
   // Format platform token supply for display
@@ -66,6 +85,9 @@ export function TokenManagerPage() {
       address: depositManagerAddress as `0x${string}`,
       abi: DepositManagerContract.abi,
       functionName: "isCompoundSupplyPaused",
+      query: {
+        enabled: !!depositManagerAddress,
+      },
     });
 
   // Get Compound withdraw pause status
@@ -74,6 +96,9 @@ export function TokenManagerPage() {
       address: depositManagerAddress as `0x${string}`,
       abi: DepositManagerContract.abi,
       functionName: "isCompoundWithdrawPaused",
+      query: {
+        enabled: !!depositManagerAddress,
+      },
     });
 
   // Get user's platform token balance (if address is available)
@@ -83,6 +108,9 @@ export function TokenManagerPage() {
       abi: PlatformTokenContract.abi,
       functionName: "balanceOf",
       args: address ? [address] : undefined,
+      query: {
+        enabled: !!platformTokenAddress && !!address,
+      },
     });
 
   // Format user's platform token balance for display
@@ -98,10 +126,13 @@ export function TokenManagerPage() {
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "usdcToken",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(usdcTokenAddress as string);
+  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
 
   const {
     data: platformTokenAddressFromContract,
@@ -110,12 +141,18 @@ export function TokenManagerPage() {
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "platformToken",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   const { data: cUSDCAddress, isLoading: cUSDCAddressLoading } = useReadContract({
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "cUSDC",
+    query: {
+      enabled: !!depositManagerAddress,
+    },
   });
 
   return (

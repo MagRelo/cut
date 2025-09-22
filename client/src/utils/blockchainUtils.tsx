@@ -1,9 +1,23 @@
 import React from "react";
+import { useReadContract } from "wagmi";
+import { erc20Abi } from "viem";
+import sepoliaConfig from "./contracts/sepolia.json";
+import baseConfig from "./contracts/base.json";
 
 /**
- * Blockchain explorer utility functions
+ * Contract configuration interface
  */
+export interface ContractConfig {
+  paymentTokenAddress: string;
+  platformTokenAddress: string;
+  depositManagerAddress: string;
+  escrowFactoryAddress: string;
+  mockCTokenAddress?: string; // Only available on testnet
+}
 
+/**
+ * Blockchain explorer configuration interface
+ */
 export interface BlockchainExplorerConfig {
   [chainId: number]: {
     name: string;
@@ -35,6 +49,105 @@ const EXPLORER_CONFIG: BlockchainExplorerConfig = {
   10: { name: "Optimistic Etherscan", baseUrl: "https://optimistic.etherscan.io" },
   11155420: { name: "Optimism Sepolia", baseUrl: "https://sepolia-optimism.etherscan.io" },
 };
+
+// ============================================================================
+// CONTRACT CONFIGURATION UTILITIES
+// ============================================================================
+
+/**
+ * Gets the contract configuration for a given chain ID
+ * @param chainId - The chain ID
+ * @returns The contract configuration or null if not supported
+ */
+export function getContractConfig(chainId: number): ContractConfig | null {
+  switch (chainId) {
+    case 84532: // Base Sepolia
+      return sepoliaConfig as ContractConfig;
+    case 8453: // Base
+      return baseConfig as ContractConfig;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Gets a specific contract address for a given chain ID
+ * @param chainId - The chain ID
+ * @param contractType - The type of contract to get
+ * @returns The contract address or null if not supported
+ */
+export function getContractAddress(
+  chainId: number,
+  contractType: keyof ContractConfig
+): string | null {
+  const config = getContractConfig(chainId);
+  return config ? config[contractType] : null;
+}
+
+/**
+ * Checks if a chain ID is supported for contracts
+ * @param chainId - The chain ID to check
+ * @returns True if the chain is supported
+ */
+export function isChainSupported(chainId: number): boolean {
+  return getContractConfig(chainId) !== null;
+}
+
+// ============================================================================
+// TOKEN UTILITIES
+// ============================================================================
+
+/**
+ * Hook to get the symbol of an ERC20 token
+ * @param tokenAddress - The address of the ERC20 token contract
+ * @returns Object with symbol data and loading state
+ */
+export function useTokenSymbol(tokenAddress: string | undefined) {
+  return useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "symbol",
+    query: {
+      enabled: !!tokenAddress,
+    },
+  });
+}
+
+/**
+ * Hook to get the name of an ERC20 token
+ * @param tokenAddress - The address of the ERC20 token contract
+ * @returns Object with name data and loading state
+ */
+export function useTokenName(tokenAddress: string | undefined) {
+  return useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "name",
+    query: {
+      enabled: !!tokenAddress,
+    },
+  });
+}
+
+/**
+ * Hook to get the decimals of an ERC20 token
+ * @param tokenAddress - The address of the ERC20 token contract
+ * @returns Object with decimals data and loading state
+ */
+export function useTokenDecimals(tokenAddress: string | undefined) {
+  return useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: {
+      enabled: !!tokenAddress,
+    },
+  });
+}
+
+// ============================================================================
+// BLOCKCHAIN EXPLORER UTILITIES
+// ============================================================================
 
 /**
  * Generates a blockchain explorer URL for a given address and chain ID
@@ -119,7 +232,7 @@ export function getExplorerName(chainId: number): string | null {
  * @param chainId - The chain ID to check
  * @returns True if the chain is supported
  */
-export function isChainSupported(chainId: number): boolean {
+export function isExplorerChainSupported(chainId: number): boolean {
   return chainId in EXPLORER_CONFIG;
 }
 

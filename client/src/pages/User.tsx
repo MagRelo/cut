@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../components/util/PageHeader";
 import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
-import { getContractAddress } from "../utils/contractConfig";
+import { getContractAddress } from "../utils/blockchainUtils.tsx";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 export function UserPage() {

@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance } from "wagmi";
+import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseEther } from "viem";
-import { platformTokenAddress } from "../../utils/contracts/sepolia.json";
 import PlatformToken from "../../utils/contracts/PlatformToken.json";
+import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 export const Transfer = () => {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+
+  // Get contract addresses dynamically
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
