@@ -104,9 +104,9 @@ export const TournamentInfoCard: React.FC = () => {
                 </Link>
               </div>
               <Link
-                to="/user"
+                to="/account"
                 className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                  location.pathname === "/user" ? "border-white bg-white/20" : "border-white/50"
+                  location.pathname === "/account" ? "border-white bg-white/20" : "border-white/50"
                 } rounded-full transition-colors flex items-center justify-center`}
                 style={{ width: "31px", height: "31px" }}
               >

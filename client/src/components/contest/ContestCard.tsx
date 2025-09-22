@@ -1,7 +1,5 @@
 import { type Contest } from "../../types/contest";
 import { Link } from "react-router-dom";
-// import { usePortoAuth } from "../../contexts/PortoAuthContext";
-// import { formatOrdinal } from "../../utils/formatting";
 import { CutAmountDisplay } from "../common/CutAmountDisplay";
 
 import { useTournament } from "../../contexts/TournamentContext";
@@ -12,12 +10,7 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  // const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
-
-  // const userPosition = contest?.contestLineups?.find(
-  //   (lineup) => lineup.userId === user?.id
-  // )?.position;
 
   const renderPreTournamentCard = () => (
     <div className="p-4">
@@ -33,15 +26,6 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           logoPosition="right"
         />
       </div>
-
-      {/* <div className="flex items-center gap-2 mt-2">
-        <div className="text-sm uppercase text-gray-400 font-semibold tracking-wider leading-none">
-          Entries:
-        </div>
-        <span className="text-base text-gray-700 font-medium leading-none">
-          {contest.contestLineups?.length}
-        </span>
-      </div> */}
     </div>
   );
 
@@ -59,21 +43,6 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           logoPosition="right"
         />
       </div>
-      {/* 
-      <div className="flex items-center gap-2 mt-2">
-        <div className="text-sm uppercase text-gray-400 font-semibold tracking-wider leading-none">
-          Position:
-        </div>
-        <span className="text-base text-gray-700 font-medium leading-none">
-          {formatOrdinal(userPosition)}
-        </span>
-        <div className="text-sm uppercase text-gray-400 font-semibold tracking-wider leading-none">
-          Entries:
-        </div>
-        <span className="text-base text-gray-700 font-medium leading-none">
-          {contest.contestLineups?.length}
-        </span>
-      </div> */}
     </div>
   );
 

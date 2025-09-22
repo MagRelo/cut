@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
@@ -16,7 +15,6 @@ import { createTransactionLinkJSX } from "../../utils/blockchain";
 export const Sell = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const navigate = useNavigate();
 
   // Sell form state
   const [sellAmount, setSellAmount] = useState("");
@@ -94,8 +92,8 @@ export const Sell = () => {
   const isProcessing = isPending || isConfirming;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-blue-600">Sell CUT Tokens</h3>
+    <>
+      <h3 className="text-lg font-semibold mb-4 ">Sell CUT Tokens</h3>
 
       <div className="space-y-4">
         {/* Available Balance */}
@@ -164,14 +162,8 @@ export const Sell = () => {
               chainId &&
               createTransactionLinkJSX(transactionHash, chainId, "View Transaction", "mt-2 block")}
           </div>
-          <button
-            onClick={() => navigate("/user")}
-            className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Back to Account
-          </button>
         </div>
       )}
-    </div>
+    </>
   );
 };

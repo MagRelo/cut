@@ -33,9 +33,20 @@ export const Home: React.FC = () => {
         <div>
           <h3 className="text-2xl font-bold text-gray-800 mb-2">create a lineup</h3>
           <p className="text-gray-700 max-w-xs">
-            Select any four players from the field each week. Points are awarded using stableford
-            scoring:
+            Select any four players from the field each week.
           </p>
+        </div>
+
+        <div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">enter a contest</h3>
+          <p className="text-gray-700 max-w-xs">
+            Every tournament has multiple contests. Play every week or skip a week - no big deal.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">score points</h3>
+          <p className="text-gray-700 max-w-xs">Points are awarded using stableford scoring:</p>
           <div className="mt-4 max-w-xs relative overflow-hidden">
             <div
               className="absolute inset-0 pointer-events-none z-10"
@@ -46,13 +57,6 @@ export const Home: React.FC = () => {
             />
             <InfoScorecard />
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">enter a contest</h3>
-          <p className="text-gray-700 max-w-xs">
-            Every tournament has multiple contests. Play every week or skip a week - no big deal.
-          </p>
         </div>
 
         {/* 

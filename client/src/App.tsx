@@ -51,10 +51,10 @@ export const App: React.FC = () => {
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
-                          <Route path="/user" element={<UserPage />} />
+                          <Route path="/account" element={<UserPage />} />
                           <Route path="/contracts" element={<ContractsPage />} />
                           <Route
-                            path="/token-manager"
+                            path="/deposits"
                             element={
                               <ProtectedRoute>
                                 <TokenManagerPage />
@@ -64,7 +64,7 @@ export const App: React.FC = () => {
 
                           {/* Unified Token Management */}
                           <Route
-                            path="/tokens"
+                            path="/account/funds"
                             element={
                               <ProtectedRoute>
                                 <UserManageFunds />

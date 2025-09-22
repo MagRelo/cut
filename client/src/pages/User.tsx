@@ -7,7 +7,6 @@ import { Connect } from "../components/user/Connect";
 import { UserSettings } from "../components/user/UserSettings";
 import { getContractAddress } from "../utils/contractConfig";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useTokenSymbol } from "../utils/tokenUtils";
 
 export function UserPage() {
   const { user } = usePortoAuth();
@@ -28,14 +27,6 @@ export function UserPage() {
     address: address,
     token: paymentTokenAddress as `0x${string}`,
   });
-
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress ?? undefined);
-
-  // Helper function to format payment token balance
-  const formattedPaymentBalance = (balance: bigint) => {
-    return Number(formatUnits(balance, 6)).toFixed(2); // USDC has 6 decimals
-  };
 
   // Calculate combined total balance
   const platformTokenAmount = Number(formatUnits(platformTokenBalance?.value ?? 0n, 18));
@@ -60,41 +51,19 @@ export function UserPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         {/* Balance Header with Total */}
         <div className="flex items-center justify-between mb-2">
-          <div className="text-2xl font-semibold text-gray-700 font-display">Balance</div>
-          <div className="text-2xl font-bold text-gray-900 font-display">
+          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-xl font-semibold text-gray-900 font-display">
             ${combinedTotal.toFixed(2)}
           </div>
         </div>
 
-        {/* Token Breakdown */}
-        <div className="space-y-2">
-          {/* CUT Token */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600 font-medium">CUT Token</div>
-            <div className="text-sm font-semibold text-gray-700">
-              ${platformTokenAmount.toFixed(2)} CUT
-            </div>
-          </div>
-
-          {/* Payment Token */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600 font-medium">
-              {paymentTokenSymbol || "USDC"} Token
-            </div>
-            <div className="text-sm font-semibold text-gray-700">
-              ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}{" "}
-              {paymentTokenSymbol || "USDC"}
-            </div>
-          </div>
-        </div>
-
-        <hr className="my-4 border-gray-200" />
+        <hr className="my-3 border-gray-200" />
 
         {/* Manage Link */}
         <div className="flex justify-center">
           <Link
-            to="/tokens"
-            className="text-blue-600 hover:text-blue-800 font-medium text-base transition-colors"
+            to="/account/funds"
+            className="text-blue-500 hover:text-blue-700 font-medium text-base transition-colors"
           >
             Manage Funds
           </Link>

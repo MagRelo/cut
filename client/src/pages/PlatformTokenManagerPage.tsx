@@ -121,23 +121,10 @@ export function TokenManagerPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/user" }, { label: "Deposit Manager" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Deposit Manager" }]}
         className="mb-3"
       />
-      <PageHeader title="Token Manager" className="mb-3" />
-
-      {/* Test Network Warning Card */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-yellow-800 font-display mb-2">
-          ⚠️ Test Network: Base Sepolia
-        </div>
-        <div className="text-sm text-yellow-700">
-          <p className="mb-2">
-            This project is currently deployed on a test network (Base Sepolia). No actual value is
-            involved or earned in this environment.
-          </p>
-        </div>
-      </div>
+      <PageHeader title="Deposit Manager" className="mb-3" />
 
       {/* Platform Token Manager Overview */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">

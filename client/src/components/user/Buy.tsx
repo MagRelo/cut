@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
@@ -12,7 +11,6 @@ import { createTransactionLinkJSX } from "../../utils/blockchain";
 export const Buy = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const navigate = useNavigate();
 
   // Buy form state
   const [buyAmount, setBuyAmount] = useState("");
@@ -109,42 +107,13 @@ export const Buy = () => {
   const isProcessing = isPending || isConfirming;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <>
       <div className="space-y-4">
         {/* Available Balance */}
-        <h3 className="text-lg font-semibold mb-4 text-green-600">
+        <h3 className="text-lg font-semibold mb-4">
           Buy CUT Tokens using {paymentTokenSymbol || "USDC"}
         </h3>
-        <div className="text-sm text-gray-600 mt-1">
-          {/* USDC explanation */}
-          <div className="text-sm font-medium text-gray-700">
-            {paymentTokenSymbol || "USDC"} is a digital coin that is always worth one U.S. dollar.{" "}
-            {paymentTokenSymbol || "USDC"} can be purchased using credit cards, bank transfers, and
-            crypto options.{" "}
-            <a
-              href={`https://stg.id.porto.sh/`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600"
-            >
-              Purchase USDC
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 inline ml-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            </a>
-          </div>
-        </div>
+
         <div className="bg-gray-50 p-3 rounded-md">
           <div className="text-sm font-medium text-gray-700 mb-1">
             Available {paymentTokenSymbol || "USDC"} Balance
@@ -209,12 +178,6 @@ export const Buy = () => {
               chainId &&
               createTransactionLinkJSX(transactionHash, chainId, "View Transaction", "mt-2 block")}
           </div>
-          <button
-            onClick={() => navigate("/user")}
-            className="w-full mt-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Back to Account
-          </button>
         </div>
       )}
 
@@ -289,6 +252,6 @@ export const Buy = () => {
           </div>
         </div>
       )} */}
-    </div>
+    </>
   );
 };
