@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { serve } from "@hono/node-server";
 import app from "./app.js";
+import CronScheduler from "./cron/scheduler.js";
 
 // Load environment variables based on NODE_ENV
 const envFile =
@@ -28,7 +29,7 @@ const requiredEnvVars = [
 ];
 
 // Optional environment variables
-// const ENABLE_CRON = process.env.ENABLE_CRON === "true";
+const ENABLE_CRON = process.env.ENABLE_CRON === "true";
 
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
@@ -37,6 +38,16 @@ for (const envVar of requiredEnvVars) {
 }
 
 const port = process.env.PORT || 3001; // Use different port to avoid conflict with Express
+
+// Initialize cron scheduler
+let cronScheduler: CronScheduler | null = null;
+if (ENABLE_CRON) {
+  console.log("Initializing cron scheduler...");
+  cronScheduler = new CronScheduler(true);
+  cronScheduler.start();
+} else {
+  console.log("Cron scheduler disabled (ENABLE_CRON not set to 'true')");
+}
 
 try {
   console.log("Starting Hono server initialization...");
@@ -52,11 +63,17 @@ try {
   // Graceful shutdown
   process.on("SIGTERM", () => {
     console.log("SIGTERM received, shutting down gracefully...");
+    if (cronScheduler) {
+      cronScheduler.stop();
+    }
     process.exit(0);
   });
 
   process.on("SIGINT", () => {
     console.log("SIGINT received, shutting down gracefully...");
+    if (cronScheduler) {
+      cronScheduler.stop();
+    }
     process.exit(0);
   });
 } catch (error) {

@@ -22,6 +22,14 @@ ENABLE_CRON=true npm run dev
 ENABLE_CRON=false npm run dev
 ```
 
+### Server Integration
+
+The cron scheduler is automatically initialized when the server starts:
+
+- If `ENABLE_CRON=true`, the scheduler starts automatically with all jobs
+- If `ENABLE_CRON` is not set or `false`, the scheduler is disabled
+- The scheduler stops gracefully when the server receives SIGTERM or SIGINT signals
+
 ## Scheduled Jobs
 
 ### Every 5 Minutes
@@ -63,6 +71,32 @@ These jobs only run when `tournament.roundStatusDisplay` is 'In Progress' or 'Co
 ## API Endpoints
 
 - `GET /api/cron/status` - Check cron system status
+
+  Returns detailed information about the cron scheduler including:
+
+  - Whether cron is enabled/disabled
+  - List of active jobs
+  - Current status and environment
+  - Timestamp of the status check
+
+  Example response:
+
+  ```json
+  {
+    "enabled": true,
+    "status": "active",
+    "message": "Cron scheduler is running. Check server logs for detailed job execution status.",
+    "environment": "development",
+    "jobs": [
+      "Update Tournament (every 5 minutes)",
+      "Close Escrow Deposits (every 5 minutes)",
+      "Distribute Contests (every 5 minutes)",
+      "Update Tournament Players (every 5 minutes, conditional)",
+      "Update Contest Lineups (every 5 minutes, conditional)"
+    ],
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+  ```
 
 ## Logging
 
