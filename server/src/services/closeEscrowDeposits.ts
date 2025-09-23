@@ -63,17 +63,17 @@ export async function closeEscrowDeposits() {
       });
 
       // Get escrow state from blockchain
-      const escrowState = await escrowContract.read.state();
-      if (Number(escrowState) !== 0) {
+      const escrowState = await escrowContract.read.state?.();
+      if (!escrowState || Number(escrowState) !== 0) {
         // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
         console.log(
-          `Escrow state not open: ${contest.id}: ${Number(escrowState)}`
+          `Escrow state not open: ${contest.id}: ${escrowState ? Number(escrowState) : 'undefined'}`
         );
         continue;
       }
 
-      const oracle = await escrowContract.read.oracle();
-      if (oracle !== process.env.ORACLE_ADDRESS) {
+      const oracle = await escrowContract.read.oracle?.();
+      if (!oracle || oracle !== process.env.ORACLE_ADDRESS) {
         console.log(
           `Oracle mismatch: ${oracle} !== ${process.env.ORACLE_ADDRESS}`
         );
@@ -81,7 +81,7 @@ export async function closeEscrowDeposits() {
       }
 
       // Close deposits on blockchain. this sets the contract state to "IN_PROGRESS"
-      const hash = await escrowContract.write.closeDeposits();
+      const hash = await escrowContract.write.closeDeposits?.();
       console.log(`Close tx: ${hash}`);
 
       // Update contest status in database

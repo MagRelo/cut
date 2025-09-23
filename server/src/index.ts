@@ -28,7 +28,7 @@ const requiredEnvVars = [
 ];
 
 // Optional environment variables
-const ENABLE_CRON = process.env.ENABLE_CRON === "true";
+// const ENABLE_CRON = process.env.ENABLE_CRON === "true";
 
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {

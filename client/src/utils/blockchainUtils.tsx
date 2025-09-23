@@ -81,7 +81,7 @@ export function getContractAddress(
   contractType: keyof ContractConfig
 ): string | null {
   const config = getContractConfig(chainId);
-  return config ? config[contractType] : null;
+  return config ? config[contractType] ?? null : null;
 }
 
 /**

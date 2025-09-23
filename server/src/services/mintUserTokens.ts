@@ -63,11 +63,11 @@ function initializeWalletAndContracts() {
  */
 export async function mintUSDCToUser(userAddress: string, amount: number = 1000) {
     try {
-        const { paymentTokenContract, walletClient } = initializeWalletAndContracts();
+        const { paymentTokenContract } = initializeWalletAndContracts();
         const tokenAmount = parseUnits(amount.toString(), 6); // USDC has 6 decimals
         
         console.log(`Minting ${amount} USDC(x) to user ${userAddress}...`);
-        const hash = await paymentTokenContract.write.mint([userAddress, tokenAmount]);
+        const hash = await paymentTokenContract.write.mint?.([userAddress, tokenAmount]);
         
         console.log(`Minted ${amount} USDC(x) to user. Transaction: ${hash}`);
         

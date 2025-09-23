@@ -1,8 +1,7 @@
 // this service will run periodcally to keep the tournament up to date
 
-import { prisma } from '../lib/prisma.js';
-import { getTournament } from '../lib/pgaTournament.js';
-import { getActivePlayers } from '../lib/pgaField.js';
+import { prisma } from "../lib/prisma.js";
+import { getTournament } from "../lib/pgaTournament.js";
 
 export async function updateTournament() {
   try {
@@ -11,7 +10,7 @@ export async function updateTournament() {
     });
 
     if (!currentTournament) {
-      console.error('No current tournament found');
+      console.error("No current tournament found");
       return;
     }
 
@@ -26,7 +25,9 @@ export async function updateTournament() {
         currentRound: tournamentData.currentRound,
         weather: tournamentData.weather as any,
         beautyImage: tournamentData.beautyImage,
-        course: tournamentData.courses[0]?.courseName,
+        ...(tournamentData.courses?.[0]?.courseName && {
+          course: tournamentData.courses[0].courseName,
+        }),
         city: tournamentData.city,
         state: tournamentData.state,
         timezone: tournamentData.timezone,
@@ -35,7 +36,7 @@ export async function updateTournament() {
 
     console.log(`Updated tournament data for '${currentTournament.name}'.`);
   } catch (error) {
-    console.error('Error in updateTournamentPlayerScores:', error);
+    console.error("Error in updateTournamentPlayerScores:", error);
     throw error;
   }
 }
@@ -44,11 +45,11 @@ export async function updateTournament() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   updateTournament()
     .then(() => {
-      console.log('Tournament update completed');
+      console.log("Tournament update completed");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Tournament update failed:', error);
+      console.error("Tournament update failed:", error);
       process.exit(1);
     });
 }

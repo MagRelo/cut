@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
+import { setCookie } from "hono/cookie";
 import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
@@ -185,20 +185,22 @@ authRouter.get("/me", requireAuth, async (c) => {
     const userData = await prisma.user.findUnique({
       where: { id: user.userId },
       include: {
-        tournamentLineups: {
-          where: { tournamentId: activeTournament?.id },
-          include: {
-            players: {
-              include: {
-                tournamentPlayer: {
-                  include: {
-                    player: true,
+        ...(activeTournament?.id && {
+          tournamentLineups: {
+            where: { tournamentId: activeTournament.id },
+            include: {
+              players: {
+                include: {
+                  tournamentPlayer: {
+                    include: {
+                      player: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
+        }),
         userGroups: {
           include: {
             userGroup: true,
@@ -212,11 +214,11 @@ authRouter.get("/me", requireAuth, async (c) => {
     }
 
     // filter out user info that is not needed
-    const { tournamentLineups, userGroups, ...userInfo } = userData;
+    const { tournamentLineups = [], userGroups, ...userInfo } = userData;
     // Format tournamentLineups to match TournamentLineup type
-    const formattedLineups = tournamentLineups.map((lineup) => ({
+    const formattedLineups = tournamentLineups.map((lineup: any) => ({
       id: lineup.id,
-      players: lineup.players.map((lineupPlayer) => ({
+      players: lineup.players.map((lineupPlayer: any) => ({
         ...lineupPlayer.tournamentPlayer.player,
         tournamentId: lineup.tournamentId,
         tournamentData: {

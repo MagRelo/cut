@@ -2,19 +2,11 @@ import cron from "node-cron";
 import { prisma } from "../lib/prisma.js";
 
 // Import services
-import { initTournament } from "../services/initTournament.js";
 import { updateTournament } from "../services/updateTournament.js";
 import { updateTournamentPlayerScores } from "../services/updateTournamentPlayers.js";
 import { updateContestLineups } from "../services/updateContestLineups.js";
 import { closeEscrowDeposits } from "../services/closeEscrowDeposits.js";
 import { distributeContest } from "../services/distribute/distributeContest.js";
-
-interface CronJob {
-  name: string;
-  schedule: string;
-  task: () => Promise<void>;
-  enabled: boolean;
-}
 
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();

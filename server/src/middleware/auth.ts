@@ -14,7 +14,7 @@ declare module "hono" {
   }
 }
 
-export const requireAuth = async (c: Context, next: Next) => {
+export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     // Check for token in Authorization header first
     let token: string | undefined;

@@ -45,7 +45,7 @@ process.on("SIGTERM", gracefulShutdown);
 
 // Export a proxy that will lazy initialize the client
 export const prisma = new Proxy({} as PrismaClient, {
-  get: (target, prop) => {
+  get: (_target, prop) => {
     const client = getPrisma();
     return client[prop as keyof PrismaClient];
   },

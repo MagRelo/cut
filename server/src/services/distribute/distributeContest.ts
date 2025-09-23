@@ -87,15 +87,15 @@ export async function distributeContest() {
         });
 
         // Get escrow state from blockchain
-        const escrowState = await escrowContract.read.state();
-        if (escrowState !== 0) {
+        const escrowState = await escrowContract.read.state?.();
+        if (!escrowState || escrowState !== 0) {
           // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
           await updateContestToError(contest.id, 'IN_PROGRESS Contest in DB is not open in blockchain');
           continue;
         }
 
         // Get the participants count from the escrowContract        
-        const participantsCount = await escrowContract.read.getParticipantsCount();        
+        const participantsCount = await escrowContract.read.getParticipantsCount?.();        
         if (!participantsCount || Number(participantsCount) === 0) {
           await updateContestToError(contest.id, 'No participants found in escrow');
           continue;
@@ -104,8 +104,10 @@ export async function distributeContest() {
         // Get participants array by iterating through the count
         const participants: string[] = [];
         for (let i = 0; i < Number(participantsCount); i++) {
-          const participant = await escrowContract.read.participants([BigInt(i)]);
-          participants.push(participant as string);
+          const participant = await escrowContract.read.participants?.([BigInt(i)]);
+          if (participant) {
+            participants.push(participant as string);
+          }
         }
 
         if (!participants || !Array.isArray(participants)) {
@@ -132,7 +134,7 @@ export async function distributeContest() {
         }
 
         // Distribute prizes on blockchain
-        const hash = await escrowContract.write.distribute([payouts]);
+        const hash = await escrowContract.write.distribute?.([payouts]);
 
         // Update contest status in database
         await prisma.contest.update({

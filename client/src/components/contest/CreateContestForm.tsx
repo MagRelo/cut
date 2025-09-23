@@ -95,7 +95,7 @@ export const CreateContestForm = () => {
         try {
           // Parse logs from the EscrowFactory address
           const escrowFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
-            (log) => log.address.toLowerCase() === escrowFactoryAddress.toLowerCase()
+            (log) => log.address.toLowerCase() === escrowFactoryAddress?.toLowerCase()
           );
           if (!escrowFactoryLogs?.length) {
             console.log("Confirmation data:", confirmationData);

@@ -5,7 +5,6 @@ import {
   type Tournament,
   type Weather,
   type PlayerRowV3,
-  nextDataSchema,
 } from "../schemas/leaderboard.js";
 
 interface CacheItem {
@@ -109,7 +108,8 @@ export async function getPgaLeaderboard(): Promise<LeaderboardData> {
 }
 
 function formatCourseName(tournament: Tournament): string {
-  const courseName = tournament.courses[0].courseName;
+  const courseName = tournament.courses?.[0]?.courseName;
+  if (!courseName) return "Unknown Course";
   return courseName.length > 44 ? `${courseName.substring(0, 36)}...` : courseName;
 }
 

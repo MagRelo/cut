@@ -37,7 +37,9 @@ export async function initTournament(pgaTourId: string) {
         currentRound: tournamentData.currentRound,
         weather: tournamentData.weather as any,
         beautyImage: tournamentData.beautyImage,
-        course: tournamentData.courses[0]?.courseName,
+        ...(tournamentData.courses?.[0]?.courseName && {
+          course: tournamentData.courses[0].courseName,
+        }),
         city: tournamentData.city,
         state: tournamentData.state,
         timezone: tournamentData.timezone,
@@ -93,8 +95,8 @@ export async function initTournament(pgaTourId: string) {
           },
           data: {
             pga_performance: {
-              performance: playersWithProfiles[0].profile?.performance,
-              standings: playersWithProfiles[0].profile?.standings,
+              performance: playersWithProfiles[0]?.profile?.performance,
+              standings: playersWithProfiles[0]?.profile?.standings,
             },
           },
         });

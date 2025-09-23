@@ -1,6 +1,6 @@
 // this service will run periodcally to keep the tournament up to date
 
-import { prisma } from '../lib/prisma.js';
+import { prisma } from "../lib/prisma.js";
 
 export async function updateContestLineups() {
   try {
@@ -9,7 +9,7 @@ export async function updateContestLineups() {
     });
 
     if (!currentTournament) {
-      console.error('No current tournament found');
+      console.error("No current tournament found");
       return;
     }
 
@@ -32,35 +32,23 @@ export async function updateContestLineups() {
         },
       },
     });
-    console.log(
-      `- Updating scores for ${contestLineups.length} contest lineups`
-    );
+    console.log(`- Updating scores for ${contestLineups.length} contest lineups`);
 
     // update ContestLineup score
-    const updateContestScorePromises = contestLineups.map(
-      async (contestLineup) => {
-        const totalScore = contestLineup.tournamentLineup.players.reduce(
-          (sum, lineupPlayer) => {
-            const player = lineupPlayer.tournamentPlayer;
-            return (
-              sum +
-              (player.total || 0) +
-              (player.cut || 0) +
-              (player.bonus || 0)
-            );
-          },
-          0
-        );
-        return prisma.contestLineup.update({
-          where: {
-            id: contestLineup.id,
-          },
-          data: {
-            score: totalScore,
-          },
-        });
-      }
-    );
+    const updateContestScorePromises = contestLineups.map(async (contestLineup) => {
+      const totalScore = contestLineup.tournamentLineup.players.reduce((sum, lineupPlayer) => {
+        const player = lineupPlayer.tournamentPlayer;
+        return sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0);
+      }, 0);
+      return prisma.contestLineup.update({
+        where: {
+          id: contestLineup.id,
+        },
+        data: {
+          score: totalScore,
+        },
+      });
+    });
     await Promise.all(updateContestScorePromises);
     console.log(`- Updated contest lineup scores`);
 
@@ -76,7 +64,7 @@ export async function updateContestLineups() {
 
     // update ContestLineup position
     const positionUpdatePromises = Object.entries(contestLineupsByContest).map(
-      async ([contestId, lineups]) => {
+      async ([_contestId, lineups]) => {
         // Sort lineups by score in descending order
         const sortedLineups = [...lineups].sort((a, b) => {
           const scoreA = a.score ?? 0;
@@ -100,7 +88,7 @@ export async function updateContestLineups() {
 
     console.log(`Updated tournament data for '${currentTournament.name}'.`);
   } catch (error) {
-    console.error('Error in updateTournamentPlayerScores:', error);
+    console.error("Error in updateTournamentPlayerScores:", error);
     throw error;
   }
 }
@@ -109,11 +97,11 @@ export async function updateContestLineups() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   updateContestLineups()
     .then(() => {
-      console.log('ContestLineups update completed');
+      console.log("ContestLineups update completed");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('ContestLineups update failed:', error);
+      console.error("ContestLineups update failed:", error);
       process.exit(1);
     });
 }
