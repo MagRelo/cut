@@ -28,7 +28,7 @@ const NETWORKS = {
     chainId: 8453,
     rpcUrl: process.env.BASE_RPC_URL,
     explorerUrl: "https://basescan.org",
-    script: "Deploy.s.sol",
+    script: "Deploy_base.s.sol",
     verifyChain: "base",
   },
 };
@@ -159,14 +159,18 @@ function updateConfigFiles(network, addresses) {
 }
 
 function copyContractArtifacts() {
-  logStep("Copying contract artifacts to server");
+  logStep("Copying contract artifacts to server and client");
 
   const contractsOutDir = path.join(projectRoot, "contracts", "out");
   const serverContractsDir = path.join(projectRoot, "server", "contracts");
+  const clientContractsDir = path.join(projectRoot, "client", "src", "utils", "contracts");
 
-  // Ensure server contracts directory exists
+  // Ensure directories exist
   if (!fs.existsSync(serverContractsDir)) {
     fs.mkdirSync(serverContractsDir, { recursive: true });
+  }
+  if (!fs.existsSync(clientContractsDir)) {
+    fs.mkdirSync(clientContractsDir, { recursive: true });
   }
 
   // List of contracts to copy artifacts for
@@ -179,25 +183,39 @@ function copyContractArtifacts() {
     "MockCompound",
   ];
 
-  let copiedCount = 0;
+  let serverCopiedCount = 0;
+  let clientCopiedCount = 0;
+
   for (const contractName of contractsToCopy) {
     const artifactPath = path.join(contractsOutDir, `${contractName}.sol`, `${contractName}.json`);
-    const destPath = path.join(serverContractsDir, `${contractName}.json`);
+    const serverDestPath = path.join(serverContractsDir, `${contractName}.json`);
+    const clientDestPath = path.join(clientContractsDir, `${contractName}.json`);
 
     if (fs.existsSync(artifactPath)) {
       try {
-        fs.copyFileSync(artifactPath, destPath);
-        logSuccess(`Copied ${contractName}.json`);
-        copiedCount++;
+        // Copy to server
+        fs.copyFileSync(artifactPath, serverDestPath);
+        logSuccess(`Copied ${contractName}.json to server`);
+        serverCopiedCount++;
       } catch (error) {
-        logWarning(`Failed to copy ${contractName}.json: ${error.message}`);
+        logWarning(`Failed to copy ${contractName}.json to server: ${error.message}`);
+      }
+
+      try {
+        // Copy to client
+        fs.copyFileSync(artifactPath, clientDestPath);
+        logSuccess(`Copied ${contractName}.json to client`);
+        clientCopiedCount++;
+      } catch (error) {
+        logWarning(`Failed to copy ${contractName}.json to client: ${error.message}`);
       }
     } else {
       logWarning(`Artifact not found for ${contractName} at ${artifactPath}`);
     }
   }
 
-  logSuccess(`Copied ${copiedCount} contract artifacts to server`);
+  logSuccess(`Copied ${serverCopiedCount} contract artifacts to server`);
+  logSuccess(`Copied ${clientCopiedCount} contract artifacts to client`);
 }
 
 function verifyContracts(network, addresses) {
@@ -218,7 +236,7 @@ function verifyContracts(network, addresses) {
           } ${addresses.PlatformToken} ${addresses.MockCompound || addresses.CUSDC})`;
         }
 
-        const verifyCommand = `forge verify-contract ${address} src/${contractName}.sol:${contractName} --chain ${network.verifyChain} --etherscan-api-key ${process.env.BASESCAN_API_KEY} ${constructorArgs}`;
+        const verifyCommand = `forge verify-contract ${address} src/${contractName}.sol:${contractName} --chain ${network.verifyChain} --etherscan-api-key ${process.env.BASESCAN_API_KEY} --verifier-url https://api.basescan.org/api ${constructorArgs}`;
 
         try {
           runCommand(verifyCommand, contractsDir);
@@ -268,7 +286,7 @@ function deployContracts(network) {
   }
 
   // Run deployment
-  const deployCommand = `forge script script/${network.script} --rpc-url ${network.rpcUrl} --broadcast --verify`;
+  const deployCommand = `forge script script/${network.script} --rpc-url ${network.rpcUrl} --broadcast`;
   const output = runCommand(deployCommand, contractsDir);
 
   // Parse deployment addresses
