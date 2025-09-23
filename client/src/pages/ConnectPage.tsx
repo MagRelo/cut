@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useConnectors, useDisconnect } from "wagmi";
 import { Hooks } from "porto/wagmi";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { LoadingSpinnerSmall } from "../components/common/LoadingSpinnerSmall";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
@@ -22,6 +22,7 @@ export function ConnectPage() {
   const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Get the return URL from location state, default to /account
   const returnUrl = (location.state as any)?.from?.pathname || "/account";
@@ -53,10 +54,10 @@ export function ConnectPage() {
       setConnectionStatus(ConnectionStatus.SUCCESS);
       // Small delay to show success state, then redirect
       setTimeout(() => {
-        window.location.href = returnUrl;
+        navigate(returnUrl, { replace: true });
       }, 1000);
     }
-  }, [user, connectionStatus, returnUrl]);
+  }, [user, connectionStatus, returnUrl, navigate]);
 
   // Redirect if already connected - moved after all hooks
   if (user) {
