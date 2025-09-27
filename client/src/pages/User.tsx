@@ -74,14 +74,14 @@ export function UserPage() {
         <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
           {/* CUT Token */}
           <CutLogo />
-          <div className="text-sm text-gray-600 font-medium">CUT Token</div>
+          <div className="text-sm text-gray-600 font-semibold">CUT Token</div>
           <div className="text-sm font-semibold text-gray-700 text-right">
             ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
           </div>
 
           {/* Payment Token */}
           <UsdcLogo />
-          <div className="text-sm text-gray-600 font-medium">
+          <div className="text-sm text-gray-600 font-semibold ">
             {paymentTokenSymbol || "USDC"} Token
           </div>
           <div className="text-sm font-semibold text-gray-700 text-right">

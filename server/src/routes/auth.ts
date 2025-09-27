@@ -97,19 +97,27 @@ authRouter.post("/siwe/verify", async (c) => {
         },
       });
 
-      // Check if token minting is enabled
+      // Check if token minting is enabled and user is on Base Sepolia testnet
       const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
-      if (isTokenMintingEnabled) {
-        // Mint $1000 USDC(x) to new user
+      const isBaseSepolia = Number(chainId) === 84532; // Base Sepolia chain ID
+
+      if (isTokenMintingEnabled && isBaseSepolia) {
+        // Mint $1000 USDC(x) to new user on Base Sepolia testnet
         try {
           await mintUSDCToUser(address!.toLowerCase(), 1000);
-          console.log(`Minted $1000 USDC(x) to new user: ${address!.toLowerCase()}`);
+          console.log(
+            `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`
+          );
         } catch (mintError) {
           console.error("Failed to mint and transfer tokens to new user:", mintError);
           // Don't fail the user creation if token minting fails
         }
-      } else {
+      } else if (!isTokenMintingEnabled) {
         console.log("Token minting is disabled. Skipping token transfer to new user.");
+      } else if (!isBaseSepolia) {
+        console.log(
+          `Token minting only available on Base Sepolia testnet. User connected to chain ${chainId}.`
+        );
       }
     }
 

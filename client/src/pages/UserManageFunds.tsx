@@ -9,6 +9,8 @@ import { Buy } from "../components/user/Buy";
 import { Sell } from "../components/user/Sell";
 import { Transfer } from "../components/user/Transfer";
 import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
+import { NetworkStatus } from "../components/util/NetworkStatus";
+import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -33,7 +35,7 @@ const UsdcLogo = () => (
 
 export function UserManageFunds() {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { address, chainId, chain } = useAccount();
+  const { address, chainId } = useAccount();
   const { disconnect } = useDisconnect();
 
   // Get contract addresses for current chain
@@ -142,11 +144,10 @@ export function UserManageFunds() {
           />
         </div>
 
-        <div className="font-medium">Chain:</div>
-        <div>{chain?.name}</div>
-
-        <div className="font-medium">Chain ID:</div>
-        <div>{chainId}</div>
+        <div className="font-medium">Network:</div>
+        <div>
+          <NetworkStatus />
+        </div>
       </div>
 
       <hr className="my-4" />
@@ -174,6 +175,10 @@ export function UserManageFunds() {
       />
       <PageHeader title="Manage Funds" className="mb-3" />
 
+      {/* Chain Warnings */}
+      <ChainWarning />
+      <TestnetWarning />
+
       {/* Test Network Warning Card */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-blue-800 font-display mb-2">
@@ -182,7 +187,7 @@ export function UserManageFunds() {
         <div className="text-sm text-blue-700">
           <p className="mb-2">
             You'll need to fund your account with USDC. If you're new to crypto, consider asking
-            another user to transfer you some funds to get started.
+            another user to transfer you some USDC to get started.
           </p>
           <p className="mb-2">
             If you already own USDC you can transfer it directly to your Cut account:

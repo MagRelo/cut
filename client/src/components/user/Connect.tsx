@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { useConnectors, useDisconnect } from "wagmi";
+import { useState, useEffect } from "react";
+import { useConnectors, useDisconnect, useSwitchChain } from "wagmi";
 import { Hooks } from "porto/wagmi";
+import { base, baseSepolia } from "wagmi/chains";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 enum ConnectionStatus {
   IDLE = "idle",
@@ -12,12 +14,21 @@ enum ConnectionStatus {
   ERROR = "error",
 }
 
-export function Connect() {
+type NetworkOption = "mainnet" | "testnet";
+
+interface ConnectProps {
+  onSuccess?: () => void;
+}
+
+export function Connect({ onSuccess }: ConnectProps = {}) {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
+  const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkOption>("mainnet");
   const { disconnect } = useDisconnect();
+  const { user } = usePortoAuth();
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -40,25 +51,47 @@ export function Connect() {
     connectionStatus === ConnectionStatus.CONNECTING_WALLET ||
     connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
+  // Watch for successful authentication and call onSuccess callback
+  useEffect(() => {
+    if (user && connectionStatus === ConnectionStatus.CONNECTING_TO_CUT) {
+      setConnectionStatus(ConnectionStatus.SUCCESS);
+      if (onSuccess) {
+        onSuccess();
+      }
+    }
+  }, [user, connectionStatus, onSuccess]);
+
   const handleConnect = async () => {
     disconnect();
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
-    await connect(
-      {
-        connector,
-      },
-      {
-        onSuccess: () => {
-          // console.log("connect OnSuccess called");
-          setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+
+    // Switch to selected network before connecting
+    const targetChainId = selectedNetwork === "mainnet" ? base.id : baseSepolia.id;
+
+    try {
+      // First switch to the selected network
+      await switchChain({ chainId: targetChainId as 8453 | 84532 });
+
+      // Then connect the wallet
+      await connect(
+        {
+          connector,
         },
-        onError: (error) => {
-          console.log("connect OnError called", error);
-          setConnectionStatus(ConnectionStatus.ERROR);
-          disconnect();
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+          },
+          onError: (error) => {
+            console.log("connect OnError called", error);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            disconnect();
+          },
+        }
+      );
+    } catch (error) {
+      console.log("Network switch failed:", error);
+      setConnectionStatus(ConnectionStatus.ERROR);
+    }
   };
 
   return (
@@ -73,9 +106,53 @@ export function Connect() {
         </h1>
       </div>
 
-      <div className="flex flex-col items-center gap-2 mb-4">
-        {/* add a TOC checkbox */}
-        <div className="flex items-center gap-2 mb-2 font-display">
+      <div className="flex flex-col items-center gap-4 mb-4">
+        {/* Network Selection */}
+        <div className="w-full max-w-sm">
+          <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+            Choose Network
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedNetwork("mainnet")}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                selectedNetwork === "mainnet"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center gap-2 justify-center">
+                <span className="text-lg">🔵</span>
+                <div className="text-left">
+                  <div className="font-medium">Base Mainnet</div>
+                  <div className="text-xs text-gray-500">Production</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedNetwork("testnet")}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                selectedNetwork === "testnet"
+                  ? "border-orange-500 bg-orange-50 text-orange-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center gap-2 justify-center">
+                <span className="text-lg">🧪</span>
+                <div className="text-left">
+                  <div className="font-medium">Base Sepolia</div>
+                  <div className="text-xs text-gray-500">Testnet</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* TOC checkbox */}
+        <div className="flex items-center gap-2 font-display">
           <input
             type="checkbox"
             id="toc"
@@ -95,6 +172,7 @@ export function Connect() {
           </label>
         </div>
 
+        {/* Connect button */}
         <button
           className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 min-w-48"
           disabled={isConnecting || !tocAccepted}
@@ -102,7 +180,9 @@ export function Connect() {
           onClick={handleConnect}
           type="button"
         >
-          {isConnecting ? "Connecting..." : "Connect"}
+          {isConnecting
+            ? "Connecting..."
+            : `Connect to ${selectedNetwork === "mainnet" ? "Base Mainnet" : "Base Sepolia"}`}
         </button>
       </div>
 
