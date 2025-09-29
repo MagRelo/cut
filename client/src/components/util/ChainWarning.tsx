@@ -74,14 +74,12 @@ export function RealMoneyWarning() {
           If you already own USDC or CUT you can transfer it directly to your Cut account:
         </p>
 
-        <p className="text-center font-medium text-md pt-4 pb-3">
-          <span className="mr-2 border border-blue-500 rounded-md p-2">
-            <CopyToClipboard
-              text={address || ""}
-              displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
-            />
-          </span>
-        </p>
+        <div className="text-center font-medium text-sm pt-4 pb-3">
+          <div className="bg-gray-100 border border-blue-500 rounded-lg p-3">
+            <p className="text-xs font-mono text-gray-700 break-all mb-3">{address}</p>
+            <CopyToClipboard text={address || ""} displayText="Click to copy" />
+          </div>
+        </div>
       </div>
     </div>
   );
