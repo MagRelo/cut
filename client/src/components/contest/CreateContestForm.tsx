@@ -191,7 +191,7 @@ export const CreateContestForm = () => {
                 formData.settings?.fee?.toString() ?? "0",
                 18 // PlatformToken has 18 decimals
               ),
-              endTime.toString(),
+              BigInt(endTime),
               platformTokenAddress as `0x${string}`,
               18, // PlatformToken has 18 decimals
               import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,

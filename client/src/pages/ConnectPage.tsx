@@ -9,7 +9,8 @@ export function ConnectPage() {
   const navigate = useNavigate();
 
   // Get the return URL from location state, default to /account
-  const returnUrl = (location.state as any)?.from?.pathname || "/account";
+  const returnUrl =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || "/account";
 
   // Redirect if already connected
   if (user) {
@@ -17,9 +18,9 @@ export function ConnectPage() {
   }
 
   const handleConnectSuccess = () => {
-    // Small delay to show success state, then redirect
+    // Small delay to show success state, then redirect to contests
     setTimeout(() => {
-      navigate(returnUrl, { replace: true });
+      navigate("/contests", { replace: true });
     }, 1000);
   };
 

@@ -26,6 +26,7 @@ export interface Contest {
   settings: ContestSettings;
   transactionId?: string;
   address?: string;
+  chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   createdAt: Date;
   updatedAt: Date;
   tournament?: Tournament;
@@ -40,7 +41,7 @@ export interface CreateContestInput {
   tournamentId: string;
   transactionId: string;
   address: string;
-  chainId: number;
+  chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;

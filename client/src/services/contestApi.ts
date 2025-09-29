@@ -5,7 +5,8 @@ import apiClient from "../utils/apiClient";
 
 export const useContestApi = () => {
   const getAllContests = useCallback(
-    (tournamentId: string) => apiClient.get<Contest[]>(`/contests?tournamentId=${tournamentId}`),
+    (tournamentId: string, chainId: number) =>
+      apiClient.get<Contest[]>(`/contests?tournamentId=${tournamentId}&chainId=${chainId}`),
     []
   );
 

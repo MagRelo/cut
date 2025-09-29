@@ -1,21 +1,38 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
 
 const contestRouter = new Hono();
 
-// Get contests by tournament ID
+// Get contests by tournament ID and chainId
 contestRouter.get("/", requireAuth, async (c) => {
   try {
     const tournamentId = c.req.query("tournamentId");
+    const chainId = c.req.query("chainId");
 
-    if (!tournamentId) {
-      return c.json({ error: "tournamentId is required" }, 400);
+    // Validate query parameters
+    const validation = contestQuerySchema.safeParse({
+      tournamentId,
+      chainId: chainId ? parseInt(chainId) : undefined,
+    });
+
+    if (!validation.success) {
+      return c.json(
+        {
+          error: "Invalid query parameters",
+          details: validation.error.errors,
+        },
+        400
+      );
     }
+
+    const { tournamentId: validTournamentId, chainId: validChainId } = validation.data;
 
     const contests = await prisma.contest.findMany({
       where: {
-        tournamentId: tournamentId,
+        tournamentId: validTournamentId,
+        chainId: validChainId,
       },
       include: {
         tournament: true,
@@ -129,8 +146,22 @@ contestRouter.get("/:id", requireAuth, async (c) => {
 // Create new contest
 contestRouter.post("/", requireAuth, async (c) => {
   try {
-    const { name, description, tournamentId, userGroupId, endTime, address, settings } =
-      await c.req.json();
+    const body = await c.req.json();
+
+    // Validate request body
+    const validation = createContestSchema.safeParse(body);
+    if (!validation.success) {
+      return c.json(
+        {
+          error: "Invalid request body",
+          details: validation.error.errors,
+        },
+        400
+      );
+    }
+
+    const { name, description, tournamentId, userGroupId, endDate, address, chainId, settings } =
+      validation.data;
 
     const contest = await prisma.contest.create({
       data: {
@@ -138,8 +169,9 @@ contestRouter.post("/", requireAuth, async (c) => {
         description,
         tournamentId,
         userGroupId,
-        endTime: new Date(endTime),
+        endTime: new Date(endDate),
         address,
+        chainId,
         status: "OPEN",
         settings,
       },

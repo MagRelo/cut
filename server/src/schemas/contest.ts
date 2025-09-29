@@ -26,6 +26,13 @@ export const createContestSchema = z.object({
   userGroupId: z.string().cuid("Invalid user group ID"),
   startDate: z.string().datetime("Invalid start date"),
   endDate: z.string().datetime("Invalid end date"),
+  chainId: z
+    .number()
+    .int()
+    .refine((val) => [8453, 84532].includes(val), {
+      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+    }),
+  address: z.string().min(1, "Contract address is required"),
   status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).default("OPEN"),
   settings: z
     .object({
@@ -41,6 +48,14 @@ export const updateContestSchema = z.object({
   description: z.string().optional(),
   startDate: z.string().datetime("Invalid start date").optional(),
   endDate: z.string().datetime("Invalid end date").optional(),
+  chainId: z
+    .number()
+    .int()
+    .refine((val) => [8453, 84532].includes(val), {
+      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+    })
+    .optional(),
+  address: z.string().min(1, "Contract address is required").optional(),
   status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).optional(),
   settings: z
     .object({
@@ -55,6 +70,17 @@ export const contestIdSchema = z.object({
   id: z.string().cuid("Invalid contest ID"),
 });
 
+// Schema for contest query parameters
+export const contestQuerySchema = z.object({
+  tournamentId: z.string().cuid("Invalid tournament ID"),
+  chainId: z
+    .number()
+    .int()
+    .refine((val) => [8453, 84532].includes(val), {
+      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+    }),
+});
+
 // Types derived from schemas
 export type CreateUserGroupBody = z.infer<typeof createUserGroupSchema>;
 export type UpdateUserGroupBody = z.infer<typeof updateUserGroupSchema>;
@@ -62,3 +88,4 @@ export type AddUserGroupMemberBody = z.infer<typeof addUserGroupMemberSchema>;
 export type CreateContestBody = z.infer<typeof createContestSchema>;
 export type UpdateContestBody = z.infer<typeof updateContestSchema>;
 export type ContestIdParam = z.infer<typeof contestIdSchema>;
+export type ContestQueryParams = z.infer<typeof contestQuerySchema>;

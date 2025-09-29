@@ -11,6 +11,7 @@ import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
+import { ChainWarning, TestnetWarning, RealMoneyWarning } from "../components/util/ChainWarning";
 
 type SortOption = "ownership" | "points" | "position" | "name" | "score";
 
@@ -72,6 +73,15 @@ export const ContestLobby: React.FC = () => {
     try {
       setIsLoading(true);
       const contest = await getContestById(contestId);
+
+      // Validate that the contest is on the user's current chain
+      if (contest.chainId !== chainId) {
+        setError(
+          `This contest is on a different network. Expected chain ${contest.chainId}, but you're connected to chain ${chainId}.`
+        );
+        return;
+      }
+
       setContest(contest);
       setError(null);
     } catch (err) {
@@ -79,7 +89,7 @@ export const ContestLobby: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [contestId, getContestById]);
+  }, [contestId, getContestById, chainId]);
 
   useEffect(() => {
     fetchContest();

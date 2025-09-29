@@ -10,7 +10,7 @@ import { Sell } from "../components/user/Sell";
 import { Transfer } from "../components/user/Transfer";
 import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 import { NetworkStatus } from "../components/util/NetworkStatus";
-import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning";
+import { ChainWarning, TestnetWarning, RealMoneyWarning } from "../components/util/ChainWarning";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -103,66 +103,69 @@ export function UserManageFunds() {
   // Wallet Info Component (below tabs)
   const WalletInfo = () => (
     <div className="bg-white rounded-lg shadow p-4 mt-4">
-      <div className="text-lg font-semibold text-gray-700 mb-4 font-display">
-        Wallet Information
-      </div>
-
-      <div className="grid grid-cols-[100px_1fr] gap-2 mb-4">
-        <div className="font-medium">Wallet:</div>
+      <div className="space-y-6">
         <div>
-          <a
-            href={`https://id.porto.sh/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-600"
-          >
-            <div className="flex items-center gap-1">
-              Porto Wallet
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Wallet</h3>
+          {/* <div className="text-sm text-gray-600 mt-1">
+            <div className="text-sm font-medium text-gray-700">
+              Manage your connected wallet and view account details.
             </div>
-          </a>
+          </div> */}
         </div>
 
-        <div className="font-medium">Address:</div>
-        <div>
-          <CopyToClipboard
-            text={address || ""}
-            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-          />
-        </div>
+        <div className="grid gap-4">
+          {/* Wallet Information */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">Connected Wallet</h4>
+            </div>
 
-        <div className="font-medium">Network:</div>
-        <div>
-          <NetworkStatus />
-        </div>
-      </div>
+            <div className="space-y-3">
+              {/* Wallet */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 font-medium">Wallet:</span>
+                <a
+                  href={`https://id.porto.sh/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Porto Wallet →
+                </a>
+              </div>
 
-      <hr className="my-4" />
-      <div className="flex justify-center">
-        {!!address && (
-          <button
-            className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
-            disabled={!address}
-            onClick={() => {
-              disconnect();
-            }}
-          >
-            Sign out
-          </button>
-        )}
+              {/* Address */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 font-medium">Address:</span>
+                <CopyToClipboard
+                  text={address || ""}
+                  displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                />
+              </div>
+
+              {/* Network */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 font-medium">Network:</span>
+                <NetworkStatus />
+              </div>
+            </div>
+
+            <hr className="my-4" />
+            <div className="flex justify-center">
+              {!!address && (
+                <button
+                  className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
+                  disabled={!address}
+                  onClick={() => {
+                    disconnect();
+                  }}
+                >
+                  Sign out
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -178,31 +181,7 @@ export function UserManageFunds() {
       {/* Chain Warnings */}
       <ChainWarning />
       <TestnetWarning />
-
-      {/* Test Network Warning Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-blue-800 font-display mb-2">
-          💡 Funding Your Account
-        </div>
-        <div className="text-sm text-blue-700">
-          <p className="mb-2">
-            You'll need to fund your account with USDC. If you're new to crypto, consider asking
-            another user to transfer you some USDC to get started.
-          </p>
-          <p className="mb-2">
-            If you already own USDC you can transfer it directly to your Cut account:
-          </p>
-
-          <p className="text-center font-medium text-md pt-4 pb-3">
-            <span className="mr-2 border border-blue-500 rounded-md p-2">
-              <CopyToClipboard
-                text={address || ""}
-                displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
-              />
-            </span>
-          </p>
-        </div>
-      </div>
+      <RealMoneyWarning />
 
       {/* Token Balances - Above tabs */}
       <TokenBalances />

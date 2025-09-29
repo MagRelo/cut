@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import { useChainId } from "wagmi";
 // import { Link } from "react-router-dom";
 
 import { type Contest } from "../types/contest";
@@ -23,17 +24,18 @@ export const Contests: React.FC = () => {
   const contestApi = useContestApi();
   const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
+  const chainId = useChainId();
 
   useEffect(() => {
     const fetchContests = async () => {
-      if (!currentTournament) {
+      if (!currentTournament || !chainId) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const data = await contestApi.getAllContests(currentTournament.id);
+        const data = await contestApi.getAllContests(currentTournament.id, chainId);
         setContests(data);
         setError(null);
       } catch (err) {
@@ -44,7 +46,7 @@ export const Contests: React.FC = () => {
       }
     };
     fetchContests();
-  }, [contestApi, currentTournament]);
+  }, [contestApi, currentTournament, chainId]);
 
   // Separate contests into user's contests and all contests
   const userContests = contests.filter((contest) => {

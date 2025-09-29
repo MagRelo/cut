@@ -224,6 +224,7 @@ model Contest {
   name            String
   endTime         DateTime
   address         String
+  chainId         Int              // Chain ID (8453 for Base, 84532 for Base Sepolia)
   tournamentId    String
   status          String
   userGroupId     String?
@@ -241,6 +242,8 @@ model Contest {
   @@index([tournamentId])
   @@index([userGroupId])
   @@index([status])
+  @@index([chainId])
+  @@index([chainId, tournamentId])
 }
 
 model ContestLineup {

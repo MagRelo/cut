@@ -26,7 +26,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkOption>("mainnet");
   const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
 
@@ -61,12 +60,12 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     }
   }, [user, connectionStatus, onSuccess]);
 
-  const handleConnect = async () => {
+  const handleConnect = async (network: NetworkOption) => {
     disconnect();
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
 
     // Switch to selected network before connecting
-    const targetChainId = selectedNetwork === "mainnet" ? base.id : baseSepolia.id;
+    const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
 
     try {
       // First switch to the selected network
@@ -97,7 +96,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       {/* logo from Home page */}
-      <div className="flex items-center justify-center gap-3 mt-4 mb-4">
+      <div className="flex items-center justify-center gap-3 mt-4 mb-6">
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
         <h1 className="text-6xl font-bold text-black">
@@ -106,89 +105,82 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </h1>
       </div>
 
-      <div className="flex flex-col items-center gap-4 mb-4">
-        {/* Network Selection */}
-        <div className="w-full max-w-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
-            Choose Network
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedNetwork("mainnet")}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                selectedNetwork === "mainnet"
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2 justify-center">
-                <span className="text-lg">🔵</span>
-                <div className="text-left">
-                  <div className="font-medium">Base Mainnet</div>
-                  <div className="text-xs text-gray-500">Production</div>
-                </div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedNetwork("testnet")}
-              className={`p-3 rounded-lg border-2 transition-colors ${
-                selectedNetwork === "testnet"
-                  ? "border-orange-500 bg-orange-50 text-orange-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2 justify-center">
-                <span className="text-lg">🧪</span>
-                <div className="text-left">
-                  <div className="font-medium">Base Sepolia</div>
-                  <div className="text-xs text-gray-500">Testnet</div>
-                </div>
-              </div>
-            </button>
+      <div className="space-y-8">
+        {/* Real Money Section */}
+        <div className="border border-gray-200 rounded-lg p-6 bg-blue-50">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">💰</span>
+            <div>
+              <h2 className="text-xl font-bold text-blue-800">Real Money Contests</h2>
+              <p className="text-sm text-blue-600">Base Mainnet</p>
+            </div>
           </div>
+
+          <p className="text-gray-700 mb-4">
+            Play with real money and compete for actual prizes. All contests use real USDC and real
+            rewards.
+          </p>
+
+          {/* TOC checkbox for mainnet */}
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="checkbox"
+              id="toc"
+              checked={tocAccepted}
+              onChange={(e) => setTocAccepted(e.target.checked)}
+            />
+            <label htmlFor="toc" className="text-sm">
+              I agree to the{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Terms of Service
+              </a>
+            </label>
+          </div>
+
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg disabled:opacity-50 w-full"
+            disabled={isConnecting || !tocAccepted}
+            onClick={() => handleConnect("mainnet")}
+            type="button"
+          >
+            {isConnecting ? "Connecting..." : "Connect"}
+          </button>
         </div>
 
-        {/* TOC checkbox */}
-        <div className="flex items-center gap-2 font-display">
-          <input
-            type="checkbox"
-            id="toc"
-            checked={tocAccepted}
-            onChange={(e) => setTocAccepted(e.target.checked)}
-          />
-          <label htmlFor="toc">
-            I agree to the{" "}
-            <a
-              href="/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Terms of Service
-            </a>
-          </label>
-        </div>
+        {/* Testing Section */}
+        <div className="border border-gray-200 rounded-lg p-6 bg-orange-50">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">🎮</span>
+            <div>
+              <h2 className="text-xl font-bold text-orange-800">Testing & Practice</h2>
+              <p className="text-sm text-orange-600">Base Sepolia</p>
+            </div>
+          </div>
 
-        {/* Connect button */}
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 min-w-48"
-          disabled={isConnecting || !tocAccepted}
-          key={connector.uid}
-          onClick={handleConnect}
-          type="button"
-        >
-          {isConnecting
-            ? "Connecting..."
-            : `Connect to ${selectedNetwork === "mainnet" ? "Base Mainnet" : "Base Sepolia"}`}
-        </button>
+          <p className="text-gray-700 mb-4">
+            Practice with fake money and test features without any risk. Perfect for learning how to
+            play.
+          </p>
+
+          <button
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg disabled:opacity-50 w-full"
+            disabled={isConnecting}
+            onClick={() => handleConnect("testnet")}
+            type="button"
+          >
+            {isConnecting ? "Connecting..." : "Connect"}
+          </button>
+        </div>
       </div>
 
       {/* Connecting display */}
       {isConnecting && (
-        <div className="mt-2 text-sm text-center">
+        <div className="mt-4 text-sm text-center">
           <div className="flex items-center gap-2 w-full justify-center text-gray-600">
             <LoadingSpinnerSmall color={"green"} />
             {getStatusText()}
@@ -198,7 +190,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
 
       {/* Error display */}
       {connectionStatus === ConnectionStatus.ERROR && (
-        <div className="text-red-500 mt-2 text-sm text-center">{error?.shortMessage}</div>
+        <div className="text-red-500 mt-4 text-sm text-center">{error?.shortMessage}</div>
       )}
     </div>
   );

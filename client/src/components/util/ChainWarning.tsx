@@ -1,6 +1,7 @@
 import { useAccount } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { base, baseSepolia } from "wagmi/chains";
 import { isChainSupported } from "../../utils/blockchainUtils";
+import { CopyToClipboard } from "./CopyToClipboard";
 
 export function ChainWarning() {
   const { chainId } = useAccount();
@@ -37,17 +38,49 @@ export function TestnetWarning() {
 
   return (
     <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-4 mb-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-orange-600 text-lg">🧪</span>
-        <div className="text-lg font-semibold text-orange-800 font-display">Testnet Mode</div>
-      </div>
+      <div className="text-lg font-semibold text-orange-800 font-display mb-2">🧪 Testing Mode</div>
       <div className="text-sm text-orange-700">
         <p className="mb-2">
-          You're currently connected to Base Sepolia testnet. This is for testing purposes only.
+          You're connected to Base Sepolia testnet. This is perfect for learning how to play without
+          any risk.
         </p>
         <p>
-          <strong>Note:</strong> Tokens on testnet have no real value and transactions may be
-          slower.
+          <strong>Note:</strong> Funds for testing have been added to your account.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function RealMoneyWarning() {
+  const { chainId, address } = useAccount();
+
+  if (chainId !== base.id) {
+    return null;
+  }
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
+      <div className="text-lg font-semibold text-blue-800 font-display mb-2">
+        💡 Funding Your Account
+      </div>
+      <div className="text-sm text-blue-700">
+        <p className="mb-2">
+          You'll need to fund your account with USDC tokens or CUT tokens in order to join contests.
+          If you're new to crypto, consider asking another user to transfer you some USDC to get
+          started.
+        </p>
+        <p className="mb-2">
+          If you already own USDC or CUT you can transfer it directly to your Cut account:
+        </p>
+
+        <p className="text-center font-medium text-md pt-4 pb-3">
+          <span className="mr-2 border border-blue-500 rounded-md p-2">
+            <CopyToClipboard
+              text={address || ""}
+              displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
+            />
+          </span>
         </p>
       </div>
     </div>
