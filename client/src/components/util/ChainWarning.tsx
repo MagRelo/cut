@@ -75,10 +75,16 @@ export function RealMoneyWarning() {
         </p>
 
         <div className="text-center font-medium text-sm pt-4 pb-3">
-          <div className="bg-gray-100 border border-blue-500 rounded-lg p-3">
-            <p className="text-xs font-mono text-gray-700 break-all mb-3">{address}</p>
-            <CopyToClipboard text={address || ""} displayText="Click to copy" />
-          </div>
+          <CopyToClipboard
+            text={address || ""}
+            displayText={
+              <div className="text-center w-full">
+                <p className="text-xs font-mono text-blue-700 break-all text-center">{address}</p>
+                <span className="text-xs text-gray-500 mt-1 inline-block">(click to copy)</span>
+              </div>
+            }
+            className="bg-gray-100 border border-blue-500 rounded-lg p-3 block w-full hover:bg-gray-200 transition-colors text-center"
+          />
         </div>
       </div>
     </div>
