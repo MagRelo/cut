@@ -45,7 +45,7 @@ export function TestnetWarning() {
           any risk.
         </p>
         <p>
-          <strong>Note:</strong> Funds for testing have been added to your account.
+          <strong>Note:</strong> Testnet funds have been added to your account.
         </p>
       </div>
     </div>

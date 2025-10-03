@@ -62,7 +62,7 @@ export function UserPage() {
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <Disclosure>
           {({ open }) => (
-            <>
+            <div>
               {/* Balance Header with Accordion Toggle */}
               <div className="flex items-center justify-between w-full mb-2">
                 <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export function UserPage() {
                   Manage Funds
                 </Link>
               </div>
-            </>
+            </div>
           )}
         </Disclosure>
       </div>

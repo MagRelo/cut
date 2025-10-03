@@ -1,11 +1,10 @@
 import { Mode } from "porto";
-import type { ThemeFragment } from "porto/theme";
 import { porto } from "porto/wagmi";
 import { createConfig, http } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 
 // Current theme overrides (you can modify these values)
-export const themeOverrides: ThemeFragment = {
+export const themeOverrides = {
   colorScheme: "light dark",
   primaryBackground: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
   primaryContent: ["#ffffff", "#ffffff"], // Tailwind blue-500
@@ -17,7 +16,7 @@ export const themeOverrides: ThemeFragment = {
 };
 
 const portoConnector = porto({
-  feeToken: "EXP",
+  feeToken: "ETH",
   merchantUrl: import.meta.env.VITE_API_URL + "/porto/merchant",
   authUrl: {
     nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
@@ -28,6 +27,15 @@ const portoConnector = porto({
     theme: themeOverrides,
   }),
 });
+
+// Base Sepolia
+// export const config = createConfig({
+//   chains: [baseSepolia],
+//   connectors: [portoConnector],
+//   transports: {
+//     [baseSepolia.id]: http(),
+//   },
+// });
 
 // Base
 export const config = createConfig({

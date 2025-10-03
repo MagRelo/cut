@@ -103,69 +103,53 @@ export function UserManageFunds() {
   // Wallet Info Component (below tabs)
   const WalletInfo = () => (
     <div className="bg-white rounded-lg shadow p-4 mt-4">
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Wallet</h3>
-          {/* <div className="text-sm text-gray-600 mt-1">
-            <div className="text-sm font-medium text-gray-700">
-              Manage your connected wallet and view account details.
-            </div>
-          </div> */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Connected Wallet</h3>
+      </div>
+
+      <div className="space-y-3">
+        {/* Wallet */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 font-medium">Wallet:</span>
+          <a
+            href={`https://id.porto.sh/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800"
+          >
+            Porto Wallet →
+          </a>
         </div>
 
-        <div className="grid gap-4">
-          {/* Wallet Information */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-gray-900">Connected Wallet</h4>
-            </div>
-
-            <div className="space-y-3">
-              {/* Wallet */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 font-medium">Wallet:</span>
-                <a
-                  href={`https://id.porto.sh/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  Porto Wallet →
-                </a>
-              </div>
-
-              {/* Address */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 font-medium">Address:</span>
-                <CopyToClipboard
-                  text={address || ""}
-                  displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                />
-              </div>
-
-              {/* Network */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 font-medium">Network:</span>
-                <NetworkStatus />
-              </div>
-            </div>
-
-            <hr className="my-4" />
-            <div className="flex justify-center">
-              {!!address && (
-                <button
-                  className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
-                  disabled={!address}
-                  onClick={() => {
-                    disconnect();
-                  }}
-                >
-                  Sign out
-                </button>
-              )}
-            </div>
-          </div>
+        {/* Address */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 font-medium">Address:</span>
+          <CopyToClipboard
+            text={address || ""}
+            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+          />
         </div>
+
+        {/* Network */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 font-medium">Network:</span>
+          <NetworkStatus />
+        </div>
+      </div>
+
+      <hr className="my-4" />
+      <div className="flex justify-center">
+        {!!address && (
+          <button
+            className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
+            disabled={!address}
+            onClick={() => {
+              disconnect();
+            }}
+          >
+            Sign out
+          </button>
+        )}
       </div>
     </div>
   );

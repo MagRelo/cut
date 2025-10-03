@@ -33,15 +33,14 @@ export const Home: React.FC = () => {
         <div>
           <h3 className="text-2xl font-bold text-gray-800 mb-2">create lineups</h3>
           <p className="text-gray-700 max-w-xs">
-            Select any four golfers from the field each week.
+            Create a lineup of any four golfers from the field each week
           </p>
         </div>
 
         <div>
           <h3 className="text-2xl font-bold text-gray-800 mb-2">enter contests</h3>
           <p className="text-gray-700 max-w-xs">
-            Every tournament has multiple contests and each contest allows you to enter multiple
-            lineups.
+            Enter your lineups into contests to compete for prizes
           </p>
         </div>
 
