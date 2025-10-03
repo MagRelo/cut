@@ -45,9 +45,9 @@
     "hono": "^4.9.7",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
-    "porto": "0.2.6",
+    "porto": "0.2.23",
     "twilio": "^5.7.0",
-    "viem": "^2.37.6",
+    "viem": "^2.37.9",
     "zod": "^3.24.2"
   },
   "devDependencies": {
