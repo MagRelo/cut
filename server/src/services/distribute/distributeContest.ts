@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { createWalletClient, http, getContract } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { baseSepolia } from 'viem/chains';
+import { getChainConfig } from '../../lib/chainConfig.js';
 import Escrow from '../../../contracts/Escrow.json' with { type: 'json' };
 
 export interface ContestSettings {
@@ -13,7 +13,7 @@ export interface ContestSettings {
 }
 
 // Initialize blockchain connection
-function getWalletClient() {
+function getWalletClient(chainId: number) {
   // Validate private key before creating wallet
   const privateKey = process.env.ORACLE_PRIVATE_KEY;
   if (!privateKey) {
@@ -25,11 +25,14 @@ function getWalletClient() {
     throw new Error('ORACLE_PRIVATE_KEY must be a valid 32-byte hex string starting with 0x');
   }
 
+  // Get chain configuration
+  const chainConfig = getChainConfig(chainId);
+
   const account = privateKeyToAccount(privateKey as `0x${string}`);
   const walletClient = createWalletClient({
     account,
-    chain: baseSepolia,
-    transport: http(process.env.RPC_URL || 'https://sepolia.base.org')
+    chain: chainConfig.chain,
+    transport: http(chainConfig.rpcUrl)
   });
 
   return { walletClient, account };
@@ -78,8 +81,8 @@ export async function distributeContest() {
           continue;
         }
 
-        // Initialize escrow contract
-        const { walletClient } = getWalletClient();
+        // Initialize escrow contract with contest's chain ID
+        const { walletClient } = getWalletClient(contest.chainId);
         const escrowContract = getContract({
           address: contest.address as `0x${string}`,
           abi: Escrow.abi,
@@ -146,6 +149,7 @@ export async function distributeContest() {
         });
 
         console.log(`✅ Successfully distributed and settled contest: ${contest.id} - ${contest.name}`);
+        console.log(`   - Chain ID: ${contest.chainId}`);
         console.log(`   - Participants: ${participants.length}`);
         console.log(`   - Total payout distributed: ${payouts.reduce((sum, payout) => sum + payout, 0)}`);
         console.log(`   - Transaction hash: ${hash}`);
