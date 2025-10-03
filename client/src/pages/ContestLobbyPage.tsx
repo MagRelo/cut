@@ -11,7 +11,6 @@ import { ContestActions } from "../components/contest/ContestActions";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
-import { ChainWarning, TestnetWarning, RealMoneyWarning } from "../components/util/ChainWarning";
 
 type SortOption = "ownership" | "points" | "position" | "name" | "score";
 
@@ -57,7 +56,7 @@ export const ContestLobby: React.FC = () => {
   // blockchain data
   const chainId = useChainId();
   const chains = useChains();
-  const chain = chains.find((chain) => chain.id === chainId);
+  const chain = chains.find((c: { id: number }) => c.id === chainId);
 
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
   // platformTokenAddress balance

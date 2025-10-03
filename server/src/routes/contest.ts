@@ -79,6 +79,7 @@ contestRouter.get("/:id", requireAuth, async (c) => {
         userGroupId: true,
         endTime: true,
         address: true,
+        chainId: true,
         status: true,
         settings: true,
         createdAt: true,
@@ -163,18 +164,30 @@ contestRouter.post("/", requireAuth, async (c) => {
     const { name, description, tournamentId, userGroupId, endDate, address, chainId, settings } =
       validation.data;
 
+    // Handle endDate conversion - it can be a string datetime or number timestamp
+    const endTime = endDate
+      ? typeof endDate === "number"
+        ? new Date(endDate)
+        : new Date(endDate)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days from now
+
+    const contestData: any = {
+      name,
+      description: description || null,
+      tournamentId,
+      userGroupId: userGroupId || null,
+      endTime,
+      address,
+      chainId,
+      status: "OPEN",
+    };
+
+    if (settings) {
+      contestData.settings = settings;
+    }
+
     const contest = await prisma.contest.create({
-      data: {
-        name,
-        description,
-        tournamentId,
-        userGroupId,
-        endTime: new Date(endDate),
-        address,
-        chainId,
-        status: "OPEN",
-        settings,
-      },
+      data: contestData,
       include: {
         tournament: true,
         userGroup: true,
@@ -215,6 +228,7 @@ contestRouter.post("/:id/lineups", requireAuth, async (c) => {
         userGroupId: true,
         endTime: true,
         address: true,
+        chainId: true,
         status: true,
         settings: true,
         createdAt: true,
@@ -320,6 +334,7 @@ contestRouter.delete("/:id/lineups/:lineupId", requireAuth, async (c) => {
         userGroupId: true,
         endTime: true,
         address: true,
+        chainId: true,
         status: true,
         settings: true,
         createdAt: true,

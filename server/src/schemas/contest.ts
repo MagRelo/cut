@@ -23,9 +23,9 @@ export const createContestSchema = z.object({
   name: z.string().min(1, "Contest name is required"),
   description: z.string().optional(),
   tournamentId: z.string().cuid("Invalid tournament ID"),
-  userGroupId: z.string().cuid("Invalid user group ID"),
-  startDate: z.string().datetime("Invalid start date"),
-  endDate: z.string().datetime("Invalid end date"),
+  userGroupId: z.string().cuid("Invalid user group ID").optional(),
+  startDate: z.string().datetime("Invalid start date").optional(),
+  endDate: z.union([z.string().datetime("Invalid end date"), z.number()]).optional(),
   chainId: z
     .number()
     .int()
@@ -36,8 +36,14 @@ export const createContestSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).default("OPEN"),
   settings: z
     .object({
-      maxPlayers: z.number().int().positive(),
-      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]),
+      fee: z.number().optional(),
+      contestType: z.string().optional(),
+      chainId: z.number().optional(),
+      platformTokenAddress: z.string().optional(),
+      platformTokenSymbol: z.string().optional(),
+      oracleFee: z.number().optional(),
+      maxPlayers: z.number().int().positive().optional(),
+      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]).optional(),
     })
     .optional(),
 });
@@ -59,8 +65,14 @@ export const updateContestSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).optional(),
   settings: z
     .object({
-      maxPlayers: z.number().int().positive(),
-      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]),
+      fee: z.number().optional(),
+      contestType: z.string().optional(),
+      chainId: z.number().optional(),
+      platformTokenAddress: z.string().optional(),
+      platformTokenSymbol: z.string().optional(),
+      oracleFee: z.number().optional(),
+      maxPlayers: z.number().int().positive().optional(),
+      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]).optional(),
     })
     .optional(),
 });
