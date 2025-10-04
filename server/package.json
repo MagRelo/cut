@@ -29,7 +29,8 @@
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:close-contest": "tsx src/services/closeContest.ts",
-    "service:distribute-contest": "tsx src/services/distributeContest.ts"
+    "service:close-escrow": "tsx src/services/closeEscrowDeposits.ts",
+    "service:distribute-contest": "tsx src/services/distribute/distributeContest.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
@@ -42,7 +43,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
-    "hono": "^4.9.7",
+    "hono": "^4.9.9",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
     "porto": "0.2.23",

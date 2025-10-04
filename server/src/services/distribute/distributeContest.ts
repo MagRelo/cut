@@ -90,27 +90,48 @@ export async function distributeContest() {
         });
 
         // Get escrow state from blockchain
-        const escrowState = await escrowContract.read.state?.();
-        if (!escrowState || escrowState !== 0) {
-          // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
-          await updateContestToError(contest.id, 'IN_PROGRESS Contest in DB is not open in blockchain');
+        try {
+          const escrowState = await escrowContract.read.state!() as bigint;
+          console.log(`Escrow state for ${contest.address}: ${Number(escrowState)} (0=OPEN, 1=IN_PROGRESS, 2=SETTLED, 3=CANCELLED)`);
+          
+          if (Number(escrowState) !== 1) {
+            // 0 = OPEN, 1 = IN_PROGRESS, 2 = SETTLED, 3 = CANCELLED
+            await updateContestToError(contest.id, `Contest in DB is IN_PROGRESS but blockchain state is ${Number(escrowState)} (expected 1)`);
+            continue;
+          }
+        } catch (error) {
+          console.error(`Error reading escrow state for ${contest.address}:`, error);
+          await updateContestToError(contest.id, `Failed to read escrow state: ${error instanceof Error ? error.message : String(error)}`);
           continue;
         }
 
         // Get the participants count from the escrowContract        
-        const participantsCount = await escrowContract.read.getParticipantsCount?.();        
-        if (!participantsCount || Number(participantsCount) === 0) {
-          await updateContestToError(contest.id, 'No participants found in escrow');
+        let participantsCount: bigint;
+        try {
+          participantsCount = await escrowContract.read.getParticipantsCount!() as bigint;
+          if (Number(participantsCount) === 0) {
+            await updateContestToError(contest.id, 'No participants found in escrow');
+            continue;
+          }
+        } catch (error) {
+          console.error(`Error reading participants count for ${contest.address}:`, error);
+          await updateContestToError(contest.id, `Failed to read participants count: ${error instanceof Error ? error.message : String(error)}`);
           continue;
         }
 
         // Get participants array by iterating through the count
         const participants: string[] = [];
-        for (let i = 0; i < Number(participantsCount); i++) {
-          const participant = await escrowContract.read.participants?.([BigInt(i)]);
-          if (participant) {
-            participants.push(participant as string);
+        try {
+          for (let i = 0; i < Number(participantsCount); i++) {
+            const participant = await escrowContract.read.participants!([BigInt(i)]) as string;
+            if (participant) {
+              participants.push(participant as string);
+            }
           }
+        } catch (error) {
+          console.error(`Error reading participants for ${contest.address}:`, error);
+          await updateContestToError(contest.id, `Failed to read participants: ${error instanceof Error ? error.message : String(error)}`);
+          continue;
         }
 
         if (!participants || !Array.isArray(participants)) {
@@ -137,7 +158,14 @@ export async function distributeContest() {
         }
 
         // Distribute prizes on blockchain
-        const hash = await escrowContract.write.distribute?.([payouts]);
+        let hash: string;
+        try {
+          hash = await escrowContract.write.distribute!([payouts]) as string;
+        } catch (error) {
+          console.error(`Error distributing for ${contest.address}:`, error);
+          await updateContestToError(contest.id, `Failed to distribute: ${error instanceof Error ? error.message : String(error)}`);
+          continue;
+        }
 
         // Update contest status in database
         await prisma.contest.update({

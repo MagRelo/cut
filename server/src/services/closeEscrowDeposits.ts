@@ -66,26 +66,43 @@ export async function closeEscrowDeposits() {
       });
 
       // Get escrow state from blockchain
-      const escrowState = await escrowContract.read.state?.();
-      if (!escrowState || Number(escrowState) !== 0) {
-        // 0 = OPEN (assuming EscrowState enum starts with OPEN = 0)
-        console.log(
-          `Escrow state not open: ${contest.id}: ${escrowState ? Number(escrowState) : 'undefined'}`
-        );
+      try {
+        const escrowState = await escrowContract.read.state!() as bigint;
+        console.log(`Escrow state for ${contest.address}: ${Number(escrowState)} (0=OPEN, 1=IN_PROGRESS, 2=SETTLED, 3=CANCELLED)`);
+        
+        if (Number(escrowState) !== 0) {
+          // 0 = OPEN, 1 = IN_PROGRESS, 2 = SETTLED, 3 = CANCELLED
+          console.log(
+            `Escrow state not open: ${contest.address} (Chain ID: ${contest.chainId}): ${Number(escrowState)}`
+          );
+          continue;
+        }
+      } catch (error) {
+        console.error(`Error reading escrow state for ${contest.address}:`, error);
         continue;
       }
 
-      const oracle = await escrowContract.read.oracle?.();
-      if (!oracle || oracle !== process.env.ORACLE_ADDRESS) {
-        console.log(
-          `Oracle mismatch: ${oracle} !== ${process.env.ORACLE_ADDRESS}`
-        );
+      try {
+        const oracle = await escrowContract.read.oracle!() as string;
+        if (oracle !== process.env.ORACLE_ADDRESS) {
+          console.log(
+            `Oracle mismatch: ${oracle} !== ${process.env.ORACLE_ADDRESS}`
+          );
+          continue;
+        }
+      } catch (error) {
+        console.error(`Error reading oracle address for ${contest.address}:`, error);
         continue;
       }
 
       // Close deposits on blockchain. this sets the contract state to "IN_PROGRESS"
-      const hash = await escrowContract.write.closeDeposits?.();
-      console.log(`Close tx: ${hash}`);
+      try {
+        const hash = await escrowContract.write.closeDeposits!() as string;
+        console.log(`Close tx: ${hash}`);
+      } catch (error) {
+        console.error(`Error closing deposits for ${contest.address}:`, error);
+        continue;
+      }
 
       // Update contest status in database
       await prisma.contest.update({

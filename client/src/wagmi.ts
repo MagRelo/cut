@@ -5,14 +5,14 @@ import { base, baseSepolia } from "wagmi/chains";
 
 // Current theme overrides (you can modify these values)
 export const themeOverrides = {
-  colorScheme: "light dark",
-  primaryBackground: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
-  primaryContent: ["#ffffff", "#ffffff"], // Tailwind blue-500
-  secondaryContent: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
-  badgeInfoContent: ["#3b82f6", "#3b82f6"], // Tailwind blue-500
-  badgeInfoBackground: ["#dbeafe", "#dbeafe"], // Tailwind blue-100
+  colorScheme: "light dark" as const,
+  primaryBackground: ["#3b82f6", "#3b82f6"] as const, // Tailwind blue-500
+  primaryContent: ["#ffffff", "#ffffff"] as const, // Tailwind blue-500
+  secondaryContent: ["#3b82f6", "#3b82f6"] as const, // Tailwind blue-500
+  badgeInfoContent: ["#3b82f6", "#3b82f6"] as const, // Tailwind blue-500
+  badgeInfoBackground: ["#dbeafe", "#dbeafe"] as const, // Tailwind blue-100
   frameRadius: 8, // Tailwind rounded-lg
-  strongContent: ["#1f2937", "#1f2937"], // Tailwind gray-800
+  strongContent: ["#1f2937", "#1f2937"] as const, // Tailwind gray-800
 };
 
 const portoConnector = porto({
