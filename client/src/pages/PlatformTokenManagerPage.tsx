@@ -1,4 +1,4 @@
-import { useReadContract, useAccount, useChainId } from "wagmi";
+import { useReadContract, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { PageHeader } from "../components/util/PageHeader";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
@@ -11,7 +11,6 @@ import {
 } from "../utils/blockchainUtils.tsx";
 
 export function TokenManagerPage() {
-  const { address } = useAccount();
   const chainId = useChainId();
 
   // Get contract addresses dynamically
@@ -101,26 +100,6 @@ export function TokenManagerPage() {
       },
     });
 
-  // Get user's platform token balance (if address is available)
-  const { data: userPlatformTokenBalance, isLoading: userPlatformTokenBalanceLoading } =
-    useReadContract({
-      address: platformTokenAddress as `0x${string}`,
-      abi: PlatformTokenContract.abi,
-      functionName: "balanceOf",
-      args: address ? [address] : undefined,
-      query: {
-        enabled: !!platformTokenAddress && !!address,
-      },
-    });
-
-  // Format user's platform token balance for display
-  const formattedUserPlatformTokenBalance = userPlatformTokenBalance
-    ? Number(formatUnits(userPlatformTokenBalance as bigint, 18)).toFixed(2)
-    : "0.00";
-
-  // Calculate user's current value in USDC (1:1 ratio)
-  const userCurrentValue = formattedUserPlatformTokenBalance;
-
   // Get contract addresses
   const { data: usdcTokenAddress, isLoading: usdcTokenAddressLoading } = useReadContract({
     address: depositManagerAddress as `0x${string}`,
@@ -158,35 +137,42 @@ export function TokenManagerPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Deposit Manager" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Token Manager" }]}
         className="mb-3"
       />
-      <PageHeader title="Deposit Manager" className="mb-3" />
+      <PageHeader title="Token Manager" className="mb-3" />
 
       {/* Platform Token Manager Overview */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Deposit Manager Overview
+          Token Manager Overview
         </div>
 
         <div className="grid grid-cols-2 gap-2">
+          {/* Exchange Rate */}
+          <div className="font-medium">
+            Deposits
+            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
+          </div>
+          <div className="text-right">${formattedTotalAvailableBalance}</div>
+
           {/* Current CUT Supply */}
           <div className="font-medium">
-            CUT Supply
+            CUT Minted
             <span className="text-gray-400 ml-2 text-sm">(CUT)</span>
           </div>
           <div className="text-right">
             {platformTokenSupplyLoading ? (
               <span className="text-gray-400">Loading...</span>
             ) : (
-              `${formattedPlatformTokenSupply} CUT`
+              `${formattedPlatformTokenSupply}`
             )}
           </div>
 
           {/* Total Available Balance */}
           <div className="font-medium">
-            Present Value
-            <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span>
+            Available Balance
+            {/* <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span> */}
           </div>
           <div className="text-right">
             {totalAvailableBalanceLoading ? (
@@ -223,50 +209,10 @@ export function TokenManagerPage() {
           </div>
 
           {/* Exchange Rate */}
-          <div className="font-medium">Exchange Rate</div>
-          <div className="text-right">1 CUT = 1 {paymentTokenSymbol || "USDC"}</div>
+          {/* <div className="font-medium">Exchange Rate</div> */}
+          {/* <div className="text-right">1 CUT = 1 {paymentTokenSymbol || "USDC"}</div> */}
         </div>
       </div>
-
-      {/* User-Specific Information */}
-      {address && (
-        <div className="bg-green-50 border border-green-200 rounded-lg shadow p-4 mb-4">
-          <div className="text-lg font-semibold text-green-800 font-display mb-2">
-            Your Token Manager Status
-          </div>
-          <div className="text-sm text-green-700 mb-2">
-            Wallet: {address.slice(0, 6)}...{address.slice(-4)}
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {/* User's Platform Token Balance */}
-            <div className="font-medium">
-              Your CUT Balance
-              <span className="text-gray-400 ml-2 text-sm">(18 decimals)</span>
-            </div>
-            <div className="text-right">
-              {userPlatformTokenBalanceLoading ? (
-                <span className="text-gray-400 text-sm">Loading...</span>
-              ) : (
-                `${formattedUserPlatformTokenBalance} CUT`
-              )}
-            </div>
-
-            {/* User's Current Value */}
-            <div className="font-medium">
-              Your Current Value
-              <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
-            </div>
-            <div className="text-right">
-              {userPlatformTokenBalanceLoading ? (
-                <span className="text-gray-400 text-sm">Loading...</span>
-              ) : (
-                `$${userCurrentValue}`
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Compound Integration Status */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
@@ -298,18 +244,18 @@ export function TokenManagerPage() {
               <span className="text-green-600">Active</span>
             )}
           </div>
-        </div>
 
-        <div className="mt-3 text-sm text-blue-700">
-          <p className="mb-2">
-            • {paymentTokenSymbol || "USDC"} is automatically supplied to Compound V3 for yield
-            generation
-          </p>
-          <p className="mb-2">
-            • If Compound is paused, {paymentTokenSymbol || "USDC"} is stored directly in the
-            contract
-          </p>
-          <p>• Yield is retained by the platform for operational use</p>
+          {/* Current Supply rate for market */}
+          <div className="font-medium">Supply Rate</div>
+          <div className="text-right">
+            {isCompoundSupplyPausedLoading ? (
+              <span className="text-gray-400 text-sm">Loading...</span>
+            ) : isCompoundSupplyPaused ? (
+              <span className="text-red-600">N/A</span>
+            ) : (
+              <span className="text-green-600">{"formattedCompoundSupplyRate"}</span>
+            )}
+          </div>
         </div>
       </div>
 

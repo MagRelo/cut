@@ -1,8 +1,6 @@
 import { useAccount, useBalance, useDisconnect } from "wagmi";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
-import { Disclosure } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
 
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
 import { NetworkStatus } from "../components/util/NetworkStatus";
@@ -128,65 +126,56 @@ export function UserPage() {
 
       {/* Token Balances */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <Disclosure>
-          {({ open }) => (
-            <div>
-              {/* Balance Header with Accordion Toggle */}
-              <div className="flex items-center justify-between w-full mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
-                  <Disclosure.Button>
-                    <ChevronDownIcon
-                      className={`h-5 w-5 text-gray-700 font-bold transition-transform duration-200 ${
-                        open ? "rotate-180" : ""
-                      }`}
-                    />
-                  </Disclosure.Button>
-                </div>
-                <div className="text-xl font-semibold text-gray-900 font-display">
-                  $
-                  {(
-                    Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)) +
-                    Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6))
-                  ).toFixed(2)}
-                </div>
-              </div>
+        {/* Balance Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-xl font-semibold text-gray-900 font-display">
+            $
+            {(
+              Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)) +
+              Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6))
+            ).toFixed(2)}
+          </div>
+        </div>
 
-              {/* Token Breakdown - Hidden by default */}
-              <Disclosure.Panel>
-                <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
-                  {/* CUT Token */}
-                  <CutLogo />
-                  <div className="text-sm text-gray-600 font-semibold">CUT Token</div>
-                  <div className="text-sm font-semibold text-gray-700 text-right">
-                    ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
-                  </div>
+        {/* Token Breakdown */}
+        <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
+          {/* CUT Token */}
+          <CutLogo />
+          <div className="text-sm text-gray-600 font-medium">
+            CUT Token
+            <Link
+              to="/deposits"
+              className="text-gray-400 ml-2 hover:text-gray-600 transition-colors"
+            >
+              What's this?
+            </Link>
+          </div>
+          <div className="text-sm font-semibold text-gray-700 text-right">
+            ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
+          </div>
 
-                  {/* Payment Token */}
-                  <UsdcLogo />
-                  <div className="text-sm text-gray-600 font-semibold ">
-                    {paymentTokenSymbol || "USDC"} Token
-                  </div>
-                  <div className="text-sm font-semibold text-gray-700 text-right">
-                    ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}
-                  </div>
-                </div>
-              </Disclosure.Panel>
+          {/* Payment Token */}
+          <UsdcLogo />
+          <div className="text-sm text-gray-600 font-medium">
+            {paymentTokenSymbol || "USDC"} Token
+          </div>
+          <div className="text-sm font-semibold text-gray-700 text-right">
+            ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}
+          </div>
+        </div>
 
-              <hr className="my-3 border-gray-200" />
+        <hr className="my-3 border-gray-200" />
 
-              {/* Manage Link */}
-              <div className="flex justify-center mt-3">
-                <Link
-                  to="/account/funds"
-                  className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
-                >
-                  Manage Funds
-                </Link>
-              </div>
-            </div>
-          )}
-        </Disclosure>
+        {/* Manage Link */}
+        <div className="flex justify-center mt-3">
+          <Link
+            to="/account/funds"
+            className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
+          >
+            Manage Funds
+          </Link>
+        </div>
       </div>
 
       {/* User Settings */}
