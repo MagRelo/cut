@@ -252,6 +252,8 @@ authRouter.get("/me", requireAuth, async (c) => {
       isVerified: userInfo.isVerified,
       tournamentLineups: formattedLineups,
       userGroups,
+      walletAddress: user.address,
+      chainId: user.chainId,
     };
 
     return c.json(response);
