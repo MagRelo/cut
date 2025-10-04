@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { handleApiResponse, ApiError } from "../utils/apiError";
 
 interface PortoUser {
@@ -12,6 +12,8 @@ interface PortoUser {
   isVerified: boolean;
   userGroups: Array<unknown>;
   token: string;
+  chainId: number;
+  walletAddress: string;
 }
 
 interface PortoAuthContextData {
@@ -35,7 +37,8 @@ export function usePortoAuth() {
 }
 
 export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
-  const { address } = useAccount();
+  const { address, chainId: currentChainId } = useAccount();
+  const { switchChain } = useSwitchChain();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -128,6 +131,17 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
+
+        // Switch to preferred chain if user is connected and chain is different
+        if (address && currentChainId && currentChainId !== response.chainId) {
+          try {
+            await switchChain({ chainId: response.chainId as 8453 | 84532 });
+          } catch (switchError) {
+            console.warn("Failed to switch chain:", switchError);
+            // Continue with user setup even if chain switch fails
+          }
+        }
+
         setUser(response);
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -143,7 +157,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, [address, request]);
+  }, [address, request, currentChainId, switchChain]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
