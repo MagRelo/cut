@@ -6,6 +6,7 @@ import { ChevronDownIcon } from "@heroicons/react/20/solid";
 
 import { CopyToClipboard } from "../components/util/CopyToClipboard";
 import { NetworkStatus } from "../components/util/NetworkStatus";
+import { TestnetWarning } from "../components/util/ChainWarning";
 
 import { PageHeader } from "../components/util/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
@@ -121,6 +122,9 @@ export function UserPage() {
   return (
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
+
+      {/* Testnet Warning */}
+      <TestnetWarning />
 
       {/* Token Balances */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">

@@ -38,14 +38,13 @@ export function TestnetWarning() {
 
   return (
     <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-4 mb-4">
-      <div className="text-lg font-semibold text-orange-800 font-display mb-2">🧪 Testing Mode</div>
+      <div className="text-lg font-semibold text-orange-800 font-display mb-2">
+        🧪 You're in Testing Mode
+      </div>
       <div className="text-sm text-orange-700">
         <p className="mb-2">
-          You're connected to Base Sepolia testnet. This is perfect for learning how to play without
-          any risk.
-        </p>
-        <p>
-          <strong>Note:</strong> Testnet funds have been added to your account.
+          You're in Testing Mode - <b>the money is not real</b>. This is perfect for learning how to
+          play without any risk.
         </p>
       </div>
     </div>

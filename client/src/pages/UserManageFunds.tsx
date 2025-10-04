@@ -109,10 +109,11 @@ export function UserManageFunds() {
       {/* Chain Warnings */}
       <ChainWarning />
       <TestnetWarning />
-      <RealMoneyWarning />
 
       {/* Token Balances - Above tabs */}
       <TokenBalances />
+
+      <RealMoneyWarning />
 
       <div className="bg-white rounded-lg shadow">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
