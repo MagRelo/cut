@@ -28,16 +28,6 @@ const portoConnector = porto({
   }),
 });
 
-// Base Sepolia
-// export const config = createConfig({
-//   chains: [baseSepolia],
-//   connectors: [portoConnector],
-//   transports: {
-//     [baseSepolia.id]: http(),
-//   },
-// });
-
-// Base
 export const config = createConfig({
   chains: [base, baseSepolia],
   connectors: [portoConnector],
