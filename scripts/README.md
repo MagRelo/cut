@@ -95,14 +95,14 @@ The script automatically updates the following configuration files:
 
 ### Server Configuration
 
-- `server/contracts/sepolia.json`
-- `server/contracts/base.json`
-- `server/contracts/DepositManager.json`
-- `server/contracts/EscrowFactory.json`
-- `server/contracts/Escrow.json`
-- `server/contracts/PlatformToken.json`
-- `server/contracts/MockUSDC.json`
-- `server/contracts/MockCompound.json`
+- `server/src/contracts/sepolia.json`
+- `server/src/contracts/base.json`
+- `server/src/contracts/DepositManager.json`
+- `server/src/contracts/EscrowFactory.json`
+- `server/src/contracts/Escrow.json`
+- `server/src/contracts/PlatformToken.json`
+- `server/src/contracts/MockUSDC.json`
+- `server/src/contracts/MockCompound.json`
 
 ## Output
 
@@ -133,7 +133,7 @@ The script provides colored console output with:
 
 === Updating configuration files for base_sepolia ===
 ✅ Updated client config: /path/to/client/src/utils/contracts/sepolia.json
-✅ Updated server config: /path/to/server/contracts/sepolia.json
+✅ Updated server config: /path/to/server/src/contracts/sepolia.json
 
 === Copying contract artifacts to server ===
 ✅ Copied DepositManager.json

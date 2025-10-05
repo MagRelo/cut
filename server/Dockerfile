@@ -25,11 +25,8 @@ COPY server/dist/ ./dist/
 # Copy built frontend
 COPY client/dist/ ./public/dist/
 
-# Copy contract files
-COPY client/src/utils/contracts/ ./contracts/
-
 # Expose port
 EXPOSE 3000
 
 # Start command
-CMD ["node", "dist/index.js"] 
+CMD ["node", "dist/src/index.js"] 

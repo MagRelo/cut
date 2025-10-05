@@ -9,7 +9,7 @@ import { prisma } from '../lib/prisma.js';
 import { createWalletClient, http, getContract } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { getChainConfig } from '../lib/chainConfig.js';
-import Escrow from '../../contracts/Escrow.json' with { type: 'json' };
+import Escrow from '../contracts/Escrow.json' with { type: 'json' };
 
 // Initialize blockchain connection
 function getWalletClient(chainId: number) {

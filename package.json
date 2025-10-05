@@ -4,7 +4,7 @@
   "description": "the Cut application",
   "type": "module",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "cd server/dist && node src/index.js",
     "client:dev": "npm run dev --workspace=client",
     "client:build": "npm run build --workspace=client",
     "client:lint": "npm run lint --workspace=client",

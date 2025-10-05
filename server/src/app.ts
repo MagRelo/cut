@@ -40,16 +40,30 @@ app.use(
 
 // Cookie middleware is handled per-route as needed
 
+// Health check endpoint
+app.get("/health", (c) => {
+  return c.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// API routes (should come before static file serving)
+app.route("/api", apiRoutes);
+
 // Serve static files from the public directory
 app.use(
-  "*",
+  "/*",
   serveStatic({
-    root: "dist/public/dist",
+    root: "public",
     getContent: async (path: string, c) => {
       try {
         const fs = await import("fs");
         const pathModule = await import("path");
-        const fullPath = pathModule.join(process.cwd(), "dist/public/dist", path);
+
+        // Remove leading slash from path
+        const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+        const fullPath = pathModule.join(process.cwd(), cleanPath);
 
         // Check if file exists
         if (!fs.existsSync(fullPath)) {
@@ -60,42 +74,42 @@ app.use(
         if (stats.isDirectory()) {
           return null;
         }
-
         const content = fs.readFileSync(fullPath);
 
-        // Set caching headers for static assets
-        c.header("Cache-Control", "public, max-age=3600"); // 1 hour
-        c.header("ETag", `"${stats.mtime.getTime()}"`);
-        c.header("Last-Modified", stats.mtime.toUTCString());
+        // Set caching headers for static assets (except HTML)
+        if (!cleanPath.endsWith(".html")) {
+          c.header("Cache-Control", "public, max-age=3600"); // 1 hour
+          c.header("ETag", `"${stats.mtime.getTime()}"`);
+          c.header("Last-Modified", stats.mtime.toUTCString());
+        }
 
         return new Response(content);
       } catch (error) {
-        console.error("Error serving static file:", error);
         return null;
       }
     },
   })
 );
 
-// Health check endpoint
-app.get("/", (c) => {
-  return c.json({
-    message: "Hono server is running!",
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-  });
-});
+// Serve index.html for root route
+app.get("/", async (c) => {
+  // Set no-cache headers for HTML files
+  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
+  c.header("Pragma", "no-cache");
+  c.header("Expires", "0");
 
-// Health check endpoint
-app.get("/health", (c) => {
-  return c.json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-  });
+  // Serve the actual index.html file
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const indexPath = path.join(process.cwd(), "public/index.html");
+    const indexContent = fs.readFileSync(indexPath, "utf-8");
+    return c.html(indexContent);
+  } catch (error) {
+    console.error("Error serving index.html:", error);
+    return c.notFound();
+  }
 });
-
-// API routes
-app.route("/api", apiRoutes);
 
 // Serve index.html for all other routes to support client-side routing
 app.get("*", async (c) => {
@@ -114,7 +128,7 @@ app.get("*", async (c) => {
   try {
     const fs = await import("fs");
     const path = await import("path");
-    const indexPath = path.join(process.cwd(), "dist/public/dist/index.html");
+    const indexPath = path.join(process.cwd(), "public/index.html");
     const indexContent = fs.readFileSync(indexPath, "utf-8");
     return c.html(indexContent);
   } catch (error) {

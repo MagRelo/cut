@@ -9,7 +9,7 @@ import { Sell } from "../components/user/Sell";
 import { Transfer } from "../components/user/Transfer";
 import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 
-import { ChainWarning, TestnetWarning, RealMoneyWarning } from "../components/util/ChainWarning";
+import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -113,7 +113,7 @@ export function UserManageFunds() {
       {/* Token Balances - Above tabs */}
       <TokenBalances />
 
-      <RealMoneyWarning />
+      {/* <RealMoneyWarning /> */}
 
       <div className="bg-white rounded-lg shadow">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>

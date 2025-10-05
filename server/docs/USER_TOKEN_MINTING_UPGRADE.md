@@ -73,10 +73,10 @@ npm run tsx src/services/mintUserTokens.ts complete 0x1234... 1000
 
 - `server/src/services/mintUserTokens.ts` - ✅ Main service implementation
 - `server/src/routes/auth.ts` - ✅ Updated to use new function
-- `server/contracts/base.json` - ✅ Contract addresses configuration
-- `server/contracts/TokenManager.json` - ✅ Token Manager contract ABI
-- `server/contracts/PaymentToken.json` - ✅ USDC contract ABI
-- `server/contracts/PlatformToken.json` - ✅ CUT contract ABI
+- `server/src/contracts/base.json` - ✅ Contract addresses configuration
+- `server/src/contracts/TokenManager.json` - ✅ Token Manager contract ABI
+- `server/src/contracts/PaymentToken.json` - ✅ USDC contract ABI
+- `server/src/contracts/PlatformToken.json` - ✅ CUT contract ABI
 
 ## Architecture Flow
 

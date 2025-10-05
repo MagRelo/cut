@@ -122,16 +122,18 @@ authRouter.post("/siwe/verify", async (c) => {
     }
 
     // Generate a JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        address: address!.toLowerCase(),
-        chainId: Number(chainId),
-        userType: user.userType,
-      },
-      process.env.JWT_SECRET || "temporary-secret-key",
-      { expiresIn: "7d" }
-    );
+    const tokenPayload = {
+      userId: user.id,
+      address: address!.toLowerCase(),
+      chainId: Number(chainId),
+      userType: user.userType,
+    };
+
+    console.log("Creating JWT token with payload:", tokenPayload);
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || "temporary-secret-key", {
+      expiresIn: "7d",
+    });
 
     setCookie(c, "auth", token, {
       httpOnly: true,
@@ -242,6 +244,14 @@ authRouter.get("/me", requireAuth, async (c) => {
         },
       })),
     }));
+    // Debug logging for production issues
+    console.log("User from JWT:", {
+      userId: user.userId,
+      address: user.address,
+      chainId: user.chainId,
+      userType: user.userType,
+    });
+
     const response = {
       id: userInfo.id,
       name: userInfo.name,
@@ -255,6 +265,11 @@ authRouter.get("/me", requireAuth, async (c) => {
       walletAddress: user.address,
       chainId: user.chainId,
     };
+
+    console.log("Response walletAddress and chainId:", {
+      walletAddress: response.walletAddress,
+      chainId: response.chainId,
+    });
 
     return c.json(response);
   } catch (error) {

@@ -9,7 +9,7 @@ function loadContractAddressesFromSepolia() {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const sepoliaConfigPath = path.join(__dirname, "../../contracts/sepolia.json");
+    const sepoliaConfigPath = path.join(__dirname, "../contracts/sepolia.json");
     const sepoliaConfig = JSON.parse(fs.readFileSync(sepoliaConfigPath, "utf8"));
     return {
       depositManagerAddress: sepoliaConfig.depositManagerAddress.toLowerCase(),

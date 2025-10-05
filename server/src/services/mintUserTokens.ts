@@ -1,7 +1,7 @@
 import { createWalletClient, http, parseUnits, getContract } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
-import MockUSDC from '../../contracts/MockUSDC.json' with { type: 'json' };
+import MockUSDC from '../contracts/MockUSDC.json' with { type: 'json' };
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,7 @@ function loadPaymentTokenAddressFromSepolia(): string {
     try {
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
-        const sepoliaConfigPath = path.join(__dirname, '../../contracts/sepolia.json');
+        const sepoliaConfigPath = path.join(__dirname, '../contracts/sepolia.json');
         const sepoliaConfig = JSON.parse(fs.readFileSync(sepoliaConfigPath, 'utf8'));
         return sepoliaConfig.paymentTokenAddress;
     } catch (error) {
