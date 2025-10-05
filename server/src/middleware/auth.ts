@@ -41,16 +41,6 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
         userType: string;
       };
 
-      // Debug logging for production issues
-      console.log("JWT Decoded:", {
-        userId: decoded.userId,
-        address: decoded.address,
-        chainId: decoded.chainId,
-        userType: decoded.userType,
-        hasAddress: !!decoded.address,
-        hasChainId: decoded.chainId !== undefined,
-      });
-
       // Add user information to context
       c.set("user", {
         userId: decoded.userId,

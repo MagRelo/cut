@@ -90,16 +90,6 @@ export function TokenManagerPage() {
       },
     });
 
-  // Get contract addresses
-  const { data: usdcTokenAddress, isLoading: usdcTokenAddressLoading } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "usdcToken",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
-
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
 
@@ -202,7 +192,69 @@ export function TokenManagerPage() {
         items={[{ label: "Account", path: "/account" }, { label: "Token Manager" }]}
         className="mb-3"
       />
-      <PageHeader title="CUT Token Manager" className="mb-3" />
+      <PageHeader title="CUT Token" className="mb-3" />
+
+      {/* CUT Token Hero Card */}
+      <div className="relative bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl shadow-lg border border-emerald-200 overflow-hidden mb-6">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20"></div>
+        </div>
+
+        <div className="relative p-6">
+          {/* Header with Logo and Title */}
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-16 h-16 bg-white rounded-full shadow-md flex items-center justify-center">
+              <img
+                src="/logo-transparent.png"
+                alt="CUT Token Logo"
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 font-display mb-1">CUT</h1>
+              <p className="text-sm text-emerald-700 font-medium">the Cut Platform Token</p>
+            </div>
+          </div>
+
+          {/* Token Description */}
+          <div className="p-2 mb-4">
+            <p className="text-emerald-900 leading-relaxed font-medium">
+              CUT Token is a ERC-20 token powering the Bet the Cut platform. The CUT token is
+              integrated with Compound V3 Comet to generate yield on USDC deposits.
+            </p>
+          </div>
+
+          {/* Token Stats */}
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-gray-900">
+                {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
+              </div>
+              <div className="text-xs text-gray-600">Total Supply</div>
+            </div>
+
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-gray-900">
+                ${formattedTotalAvailableBalance}
+              </div>
+              <div className="text-xs text-gray-600">Total Value Locked</div>
+            </div>
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-blue-600">
+                {isCompoundSupplyPaused ? "Paused" : "Active"}
+              </div>
+              <div className="text-xs text-gray-600">Compound Status</div>
+            </div>
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-blue-600">
+                {formattedSupplyAPR.toFixed(2)}%
+              </div>
+              <div className="text-xs text-gray-600">Supply APY</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Platform Token Manager Overview */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
@@ -278,7 +330,7 @@ export function TokenManagerPage() {
 
       {/* Compound Integration Status */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
-        <div className="text-lg font-semibold text-slate-800 font-display mb-2">
+        <div className="text-lg font-semibold text-blue-600 font-display mb-2">
           Compound V3 Integration
         </div>
 
@@ -330,51 +382,9 @@ export function TokenManagerPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-2 text-sm">
-          {/* Deposit Manager Address */}
-          <div className="flex justify-between">
-            <span className="font-medium">Deposit Manager:</span>
-            <span className="font-mono">
-              {chainId && depositManagerAddress ? (
-                createExplorerLinkJSX(
-                  depositManagerAddress as string,
-                  chainId,
-                  `${(depositManagerAddress as string)?.slice(0, 6)}...${(
-                    depositManagerAddress as string
-                  )?.slice(-4)}`,
-                  "text-blue-600 hover:text-blue-800 underline"
-                )
-              ) : (
-                <span className="text-gray-400">Loading...</span>
-              )}
-            </span>
-          </div>
-
-          {/* USDC Token Address */}
-          <div className="flex justify-between">
-            <span className="font-medium">{paymentTokenSymbol || "USDC"} Token:</span>
-            <span className="font-mono">
-              {usdcTokenAddressLoading ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : chainId && usdcTokenAddress ? (
-                createExplorerLinkJSX(
-                  usdcTokenAddress as string,
-                  chainId,
-                  `${(usdcTokenAddress as string)?.slice(0, 6)}...${(
-                    usdcTokenAddress as string
-                  )?.slice(-4)}`,
-                  "text-blue-600 hover:text-blue-800 underline"
-                )
-              ) : (
-                `${(usdcTokenAddress as string)?.slice(0, 6)}...${(
-                  usdcTokenAddress as string
-                )?.slice(-4)}`
-              )}
-            </span>
-          </div>
-
           {/* Platform Token Address */}
           <div className="flex justify-between">
-            <span className="font-medium">Platform Token:</span>
+            <span className="font-medium">CUT Token:</span>
             <span className="font-mono">
               {platformTokenAddressFromContractLoading ? (
                 <span className="text-gray-400">Loading...</span>
@@ -391,6 +401,25 @@ export function TokenManagerPage() {
                 `${(platformTokenAddressFromContract as string)?.slice(0, 6)}...${(
                   platformTokenAddressFromContract as string
                 )?.slice(-4)}`
+              )}
+            </span>
+          </div>
+
+          {/* Deposit Manager Address */}
+          <div className="flex justify-between">
+            <span className="font-medium">CUT Token Manager:</span>
+            <span className="font-mono">
+              {chainId && depositManagerAddress ? (
+                createExplorerLinkJSX(
+                  depositManagerAddress as string,
+                  chainId,
+                  `${(depositManagerAddress as string)?.slice(0, 6)}...${(
+                    depositManagerAddress as string
+                  )?.slice(-4)}`,
+                  "text-blue-600 hover:text-blue-800 underline"
+                )
+              ) : (
+                <span className="text-gray-400">Loading...</span>
               )}
             </span>
           </div>

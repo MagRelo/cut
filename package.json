@@ -9,7 +9,7 @@
     "client:build": "npm run build --workspace=client",
     "client:lint": "npm run lint --workspace=client",
     "client:preview": "npm run preview --workspace=client",
-    "copy-static": "cp -r client/dist server/dist/public",
+    "copy-static": "rm -rf server/dist/public/* && cp -r client/dist/* server/dist/public/",
     "server:dev": "npm run dev --workspace=server",
     "server:build": "npm run build --workspace=server",
     "server:deploy": "npm run deploy --workspace=server",

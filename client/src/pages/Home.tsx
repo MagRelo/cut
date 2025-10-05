@@ -7,7 +7,7 @@ export const Home: React.FC = () => {
   // const { openInstructions } = useAuth();
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-10 pb-20">
+    <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-10 pb-10">
       <div className="flex items-center gap-4">
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
