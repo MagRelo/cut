@@ -79,11 +79,10 @@ app.use(
         // Set caching headers for static assets (except HTML)
         if (!cleanPath.endsWith(".html")) {
           c.header("Cache-Control", "public, max-age=3600"); // 1 hour
-          c.header("ETag", `"${stats.mtime.getTime()}"`);
-          c.header("Last-Modified", stats.mtime.toUTCString());
         }
 
-        return new Response(content);
+        // Return the content - Hono will handle MIME types automatically
+        return content;
       } catch (error) {
         return null;
       }
