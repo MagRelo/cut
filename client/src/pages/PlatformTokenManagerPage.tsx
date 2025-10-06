@@ -213,42 +213,51 @@ export function TokenManagerPage() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 font-display mb-1">CUT</h1>
-              <p className="text-sm text-emerald-700 font-medium">the Cut Platform Token</p>
+              <p className="text-sm text-emerald-700 font-medium">the Cut platform token</p>
             </div>
           </div>
 
           {/* Token Description */}
           <div className="p-2 mb-4">
             <p className="text-emerald-900 leading-relaxed font-medium">
-              CUT Token is a ERC-20 token powering the Bet the Cut platform. The CUT token is
-              integrated with Compound V3 Comet to generate yield on USDC deposits.
+              CUT token is a ERC-20 token powering the the Cut platform. CUT token is integrated
+              with{" "}
+              <a
+                href="https://app.compound.finance/?market=usdc-basemainnet"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-800 underline"
+              >
+                Compound V3
+              </a>{" "}
+              to generate yield on USDC deposits.
             </p>
           </div>
 
           {/* Token Stats */}
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
+              <div className="text-lg font-bold text-green-800">
                 {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
               </div>
               <div className="text-xs text-gray-600">CUT Supply</div>
             </div>
 
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-green-800">
                 {isCompoundSupplyPaused ? "Paused" : "Active"}
               </div>
               <div className="text-xs text-gray-600">Compound Status</div>
             </div>
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-green-800">
                 {formattedSupplyAPR.toFixed(2)}%
               </div>
               <div className="text-xs text-gray-600">Supply APY</div>
             </div>
 
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-green-800">
                 ${formattedTotalAvailableBalance}
               </div>
               <div className="text-xs text-gray-600">Total Value</div>
@@ -331,7 +340,7 @@ export function TokenManagerPage() {
 
       {/* Compound Integration Status */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
-        <div className="text-lg font-semibold text-blue-600 font-display mb-2">
+        <div className="text-lg font-semibold text-green-700 font-display mb-2">
           Compound V3 Integration
         </div>
 
