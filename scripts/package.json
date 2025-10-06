@@ -1,19 +1,18 @@
 {
-  "name": "cut-contracts-scripts",
+  "name": "cut-scripts",
   "version": "1.0.0",
-  "description": "Scripts for testing Cut contracts",
+  "description": "Scripts for Cut project",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "mint": "node mintPaymentToken.js",
-    "mint:help": "node mintPaymentToken.js",
-    "mint:env": "./mint-with-env.sh"
+    "mint": "node sepolia/mintPaymentToken.js",
+    "create-escrow": "node sepolia/createEscrow.js",
+    "deposit-usdc": "node sepolia/depositUSDC.js"
   },
   "dependencies": {
     "ethers": "^6.8.1",
     "dotenv": "^16.3.1"
   },
-  "devDependencies": {},
   "keywords": [
     "ethereum",
     "contracts",

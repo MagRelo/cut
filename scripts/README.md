@@ -1,16 +1,26 @@
-# Deployment Script
+# Scripts
 
-This directory contains the deployment script for the Cut application contracts.
+This directory contains scripts for the Cut project, including deployment and interaction scripts.
 
-## Overview
+## Scripts Overview
 
-The deployment script (`deploy.js`) automates the entire contract deployment process including:
+### Deployment Script (`deploy.js`)
+
+The deployment script automates the entire contract deployment process including:
 
 1. **Environment Validation** - Checks for required environment variables
 2. **Contract Deployment** - Deploys contracts using Foundry
 3. **Contract Verification** - Verifies contracts on the blockchain explorer
 4. **Configuration Updates** - Updates contract addresses in both client and server config files
 5. **Artifact Copying** - Copies contract ABIs to the server directory
+
+### Sepolia Interaction Scripts (`sepolia/`)
+
+The sepolia directory contains scripts for interacting with deployed contracts on Base Sepolia testnet:
+
+- `createEscrow.js` - Creates a new escrow using the EscrowFactory contract
+- `depositUSDC.js` - Deposits USDC into the DepositManager to receive CUT tokens
+- `mintPaymentToken.js` - Mints PaymentToken (Mock USDC) to a specified address
 
 ## Prerequisites
 
@@ -61,6 +71,12 @@ npm run deploy:full
 
 # Run the script directly
 node scripts/deploy.js [network]
+
+# Run sepolia interaction scripts
+cd scripts
+npm run mint                    # Mint payment tokens
+npm run create-escrow          # Create an escrow
+npm run deposit-usdc           # Deposit USDC to get CUT tokens
 ```
 
 ### Network Options

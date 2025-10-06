@@ -47,7 +47,7 @@ Create a `.env` file in the `contracts` directory with the following variables:
 
 ```bash
 # Navigate to the scripts directory
-cd contracts/scripts/sepolia
+cd scripts/sepolia
 
 # Create an escrow
 node createEscrow.js
