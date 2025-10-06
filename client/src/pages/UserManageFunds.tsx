@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
+import { useSearchParams } from "react-router-dom";
+
 import { PageHeader } from "../components/util/PageHeader";
+import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning";
+import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
+
 import { Buy } from "../components/user/Buy";
 import { Sell } from "../components/user/Sell";
 import { Transfer } from "../components/user/Transfer";
-import { getContractAddress, useTokenSymbol } from "../utils/blockchainUtils.tsx";
-
-import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -33,7 +35,27 @@ const UsdcLogo = () => (
 );
 
 export function UserManageFunds() {
+  const [searchParams] = useSearchParams();
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Check query params for tab selection
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      // Map tab names to indices
+      const tabMap: { [key: string]: number } = {
+        usdc: 0,
+        buy: 1,
+        sell: 2,
+        transfer: 3,
+      };
+
+      const tabIndex = tabMap[tab.toLowerCase()];
+      if (tabIndex !== undefined) {
+        setSelectedIndex(tabIndex);
+      }
+    }
+  }, [searchParams]);
   const { address, chainId } = useAccount();
 
   // Get contract addresses for current chain
