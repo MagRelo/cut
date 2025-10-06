@@ -55,7 +55,7 @@ export const LeaderboardPage: React.FC = () => {
 
   return (
     <div className="p-4">
-      <PageHeader title="Leaderboard" className="mb-2" />
+      <PageHeader title="Leaderboards" className="mb-2" />
 
       {/* Tournament Status */}
       {currentTournament && (
