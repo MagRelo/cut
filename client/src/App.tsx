@@ -47,7 +47,7 @@ export const App: React.FC = () => {
                   <div className="flex flex-col flex-grow">
                     <div className="container mx-auto md:py-8">
                       <div className="max-w-2xl mx-auto">
-                        <div className="md:mb-6">
+                        <div>
                           <TournamentInfoCard />
                         </div>
                         <Routes>
