@@ -82,7 +82,7 @@ export const TournamentInfoCard: React.FC = () => {
           <div className="mt-5">
             <div className="flex flex-row items-center justify-between">
               {/* nav links */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <Link
                   to="/contests"
                   className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
