@@ -26,6 +26,7 @@
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "mint-tokens": "node scripts/sepolia/mintPaymentToken.js",
     "deposit-usdc": "node scripts/sepolia/depositUSDC.js",
+    "base:deposit-usdc": "node scripts/base/depositUSDC.js",
     "create-escrow": "node scripts/sepolia/createEscrow.js",
     "deploy": "npm run client:build && npm run server:build && npm run docker:build",
     "deploy:contracts": "node scripts/deploy.js",
