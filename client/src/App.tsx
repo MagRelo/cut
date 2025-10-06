@@ -23,6 +23,7 @@ import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
 import CreateContestPage from "./pages/ContestCreatePage";
 import ContractsPage from "./pages/ContractsPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
 
 import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
 import { ProtectedRoute } from "./components/util/ProtectedRoute";
@@ -125,6 +126,9 @@ export const App: React.FC = () => {
                               </ProtectedRoute>
                             }
                           />
+
+                          {/* Leaderboard */}
+                          <Route path="/leaderboard" element={<LeaderboardPage />} />
                         </Routes>
                       </div>
                     </div>
