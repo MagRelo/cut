@@ -204,7 +204,7 @@ export function TokenManagerPage() {
         <div className="relative p-6">
           {/* Header with Logo and Title */}
           <div className="flex items-center gap-4 mb-2">
-            <div className="w-16 h-16 bg-white rounded-full shadow-md flex items-center justify-center">
+            <div className="w-16 h-16 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center">
               <img
                 src="/logo-transparent.png"
                 alt="CUT Token Logo"
