@@ -120,27 +120,24 @@ async function isSponsoredContract(
   }
 }
 
-// Create Porto Router with merchant route using Hono adapter
-// Provide default values for test environment
-const merchantAddress =
-  process.env.MERCHANT_ADDRESS || "0x1234567890123456789012345678901234567890";
-const merchantKey =
-  process.env.MERCHANT_PRIVATE_KEY ||
-  "0x1234567890123456789012345678901234567890123456789012345678901234";
-
+// Create Porto Router with sponsor route using Hono adapter
+const merchantAddress = process.env.MERCHANT_ADDRESS;
+const merchantKey = process.env.MERCHANT_PRIVATE_KEY;
 const porto = Router().route(
-  "/merchant",
+  "/sponsor",
   Route.merchant({
     address: merchantAddress as `0x${string}`,
     key: merchantKey as `0x${string}`,
     sponsor: async (_request: any) => {
-      // const isSponsored = false;
       const isSponsored = await isSponsoredContract(_request);
-      // console.log("Sponsor request:", {
-      //   chain: getNetworkFromRequest(_request),
-      //   isSponsored: isSponsored,
-      //   sponsor: merchantAddress,
-      // });
+
+      console.log("Sponsor request:", {
+        chain: getNetworkFromRequest(_request),
+        merchantAddress: merchantAddress,
+        feeToken: _request.capabilities.meta.feeToken,
+        Sponsor: isSponsored,
+      });
+
       return isSponsored;
     },
   })
