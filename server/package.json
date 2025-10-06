@@ -9,7 +9,7 @@
     "start:prod": "NODE_ENV=production node dist/src/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && cp -r src/contracts/* dist/src/contracts/",
-    "deploy": "bash deploy.sh",
+    "build:docker": "bash build.sh",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
