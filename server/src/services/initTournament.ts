@@ -123,13 +123,19 @@ export async function initTournament(pgaTourId: string) {
       `Created TournamentPlayer records for ${playersInField.length} players in the field.`
     );
 
-    // Update manualActive to true
+    // Update manualActive to false for all tournaments
+    await prisma.tournament.updateMany({
+      where: { manualActive: true },
+      data: { manualActive: false },
+    });
+
+    // Update manualActive to true for the current tournament
     await prisma.tournament.update({
       where: { id: tournament.id },
       data: { manualActive: true },
     });
 
-    console.log(`initTournament: Completed '${tournament.name}'`);
+    console.log(`initTournament: Completed init for ${tournament.name}`);
   } catch (error) {
     console.error("Error in initTournament:", error);
     throw error;
