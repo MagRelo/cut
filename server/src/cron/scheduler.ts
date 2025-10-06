@@ -6,7 +6,7 @@ import { updateTournament } from "../services/updateTournament.js";
 import { updateTournamentPlayerScores } from "../services/updateTournamentPlayers.js";
 import { updateContestLineups } from "../services/updateContestLineups.js";
 import { closeEscrowDeposits } from "../services/closeEscrowDeposits.js";
-import { distributeContest } from "../services/distribute/distributeContest.js";
+import { distributeContest } from "../services/distributeContest.js";
 
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();

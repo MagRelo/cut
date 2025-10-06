@@ -1,8 +1,8 @@
-import { prisma } from '../../lib/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import { createWalletClient, http, getContract } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { getChainConfig } from '../../lib/chainConfig.js';
-import Escrow from '../../contracts/Escrow.json' with { type: 'json' };
+import { getChainConfig } from '../lib/chainConfig.js';
+import Escrow from '../contracts/Escrow.json' with { type: 'json' };
 
 export interface ContestSettings {
   fee: number;
