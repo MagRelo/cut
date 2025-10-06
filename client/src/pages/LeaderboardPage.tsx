@@ -55,13 +55,23 @@ export const LeaderboardPage: React.FC = () => {
 
   return (
     <div className="p-4">
-      <PageHeader title="Leaderboard" className="mb-6" />
+      <PageHeader title="Leaderboard" className="mb-2" />
+
+      {/* Tournament Status */}
+      {currentTournament && (
+        <p className="text-gray-500 font-display font-medium mb-4">
+          {currentTournament.roundDisplay} - {currentTournament.roundStatusDisplay}
+        </p>
+      )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  POS
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Player
                 </th>
@@ -77,8 +87,8 @@ export const LeaderboardPage: React.FC = () => {
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                   R4
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  POS
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  Total
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Points
@@ -88,6 +98,9 @@ export const LeaderboardPage: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedPlayers.map((player) => (
                 <tr key={player.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+                    {player.tournamentData.leaderboardPosition || "-"}
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8">
@@ -135,13 +148,13 @@ export const LeaderboardPage: React.FC = () => {
                       ? formatScore(player.tournamentData.r4.total)
                       : "-"}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
-                    {player.tournamentData.leaderboardPosition || "-"}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900 hidden sm:table-cell">
                     {player.tournamentData.total !== undefined
                       ? formatScore(player.tournamentData.total)
                       : "-"}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
+                    {player.tournamentData.leaderboardTotal || "-"}
                   </td>
                 </tr>
               ))}
