@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 
 const lineupRouter = new Hono();
 
 // Create a new lineup for a tournament
-lineupRouter.post("/:tournamentId", requireAuth, async (c) => {
+lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, async (c) => {
   try {
     const tournamentId = c.req.param("tournamentId");
     const { players, name = "My Lineup" } = await c.req.json();
@@ -96,7 +97,7 @@ lineupRouter.post("/:tournamentId", requireAuth, async (c) => {
 });
 
 // Update an existing lineup
-lineupRouter.put("/:lineupId", requireAuth, async (c) => {
+lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c) => {
   try {
     const lineupId = c.req.param("lineupId");
     const { players, name } = await c.req.json();

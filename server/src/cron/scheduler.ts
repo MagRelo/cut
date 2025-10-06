@@ -40,12 +40,12 @@ class CronScheduler {
   private async shouldSkipPlayerUpdates(): Promise<boolean> {
     try {
       const currentTournament = await prisma.tournament.findFirst({
-        where: { status: "IN_PROGRESS" },
+        where: { manualActive: true },
         orderBy: { createdAt: "desc" },
       });
 
       if (!currentTournament) {
-        console.log("[CRON] No tournament in progress, skipping player updates");
+        console.log("[CRON] No tournament is active, skipping player updates");
         return true;
       }
 

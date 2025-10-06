@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
 import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 
 const contestRouter = new Hono();
 
@@ -145,7 +146,7 @@ contestRouter.get("/:id", requireAuth, async (c) => {
 });
 
 // Create new contest
-contestRouter.post("/", requireAuth, async (c) => {
+contestRouter.post("/", requireAuth, requireTournamentEditable, async (c) => {
   try {
     const body = await c.req.json();
 
@@ -202,7 +203,7 @@ contestRouter.post("/", requireAuth, async (c) => {
 });
 
 // Add lineup to contest
-contestRouter.post("/:id/lineups", requireAuth, async (c) => {
+contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async (c) => {
   try {
     const { tournamentLineupId } = await c.req.json();
     const user = c.get("user");
@@ -294,63 +295,68 @@ contestRouter.post("/:id/lineups", requireAuth, async (c) => {
 });
 
 // Remove lineup from contest
-contestRouter.delete("/:id/lineups/:lineupId", requireAuth, async (c) => {
-  try {
-    const user = c.get("user");
-    const contestId = c.req.param("id");
-    const contestLineupId = c.req.param("lineupId");
+contestRouter.delete(
+  "/:id/lineups/:lineupId",
+  requireTournamentEditable,
+  requireAuth,
+  async (c) => {
+    try {
+      const user = c.get("user");
+      const contestId = c.req.param("id");
+      const contestLineupId = c.req.param("lineupId");
 
-    // First verify the lineup belongs to this contest
-    const lineup = await prisma.contestLineup.findFirst({
-      where: {
-        id: contestLineupId,
-        contestId: contestId,
-      },
-    });
-    if (!lineup) {
-      return c.json({ error: "Lineup not found in this contest" }, 404);
-    }
+      // First verify the lineup belongs to this contest
+      const lineup = await prisma.contestLineup.findFirst({
+        where: {
+          id: contestLineupId,
+          contestId: contestId,
+        },
+      });
+      if (!lineup) {
+        return c.json({ error: "Lineup not found in this contest" }, 404);
+      }
 
-    // then verify the lineup belongs to this user
-    if (lineup?.userId !== user.userId) {
-      return c.json({ error: "Lineup does not belong to this user" }, 401);
-    }
+      // then verify the lineup belongs to this user
+      if (lineup?.userId !== user.userId) {
+        return c.json({ error: "Lineup does not belong to this user" }, 401);
+      }
 
-    // Delete the lineup
-    await prisma.contestLineup.delete({
-      where: {
-        id: contestLineupId,
-      },
-    });
+      // Delete the lineup
+      await prisma.contestLineup.delete({
+        where: {
+          id: contestLineupId,
+        },
+      });
 
-    // Fetch the updated contest with all related data
-    const contest = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        tournamentId: true,
-        userGroupId: true,
-        endTime: true,
-        address: true,
-        chainId: true,
-        status: true,
-        settings: true,
-        createdAt: true,
-        updatedAt: true,
-        tournament: true,
-        userGroup: true,
-        contestLineups: {
-          include: {
-            user: true,
-            tournamentLineup: {
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
+      // Fetch the updated contest with all related data
+      const contest = await prisma.contest.findUnique({
+        where: { id: contestId },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          tournamentId: true,
+          userGroupId: true,
+          endTime: true,
+          address: true,
+          chainId: true,
+          status: true,
+          settings: true,
+          createdAt: true,
+          updatedAt: true,
+          tournament: true,
+          userGroup: true,
+          contestLineups: {
+            include: {
+              user: true,
+              tournamentLineup: {
+                include: {
+                  players: {
+                    include: {
+                      tournamentPlayer: {
+                        include: {
+                          player: true,
+                        },
                       },
                     },
                   },
@@ -359,44 +365,44 @@ contestRouter.delete("/:id/lineups/:lineupId", requireAuth, async (c) => {
             },
           },
         },
-      },
-    });
+      });
 
-    if (!contest) {
-      return c.json({ error: "Contest not found" }, 404);
+      if (!contest) {
+        return c.json({ error: "Contest not found" }, 404);
+      }
+
+      // Format the contest data
+      const formattedContest = {
+        ...contest,
+        contestLineups: contest.contestLineups.map((lineup) => ({
+          ...lineup,
+          tournamentLineup: {
+            ...lineup.tournamentLineup,
+            players: lineup.tournamentLineup.players.map((playerData) => ({
+              ...playerData.tournamentPlayer.player,
+              tournamentId: contest.tournamentId,
+              tournamentData: {
+                leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
+                r1: playerData.tournamentPlayer.r1,
+                r2: playerData.tournamentPlayer.r2,
+                r3: playerData.tournamentPlayer.r3,
+                r4: playerData.tournamentPlayer.r4,
+                cut: playerData.tournamentPlayer.cut,
+                bonus: playerData.tournamentPlayer.bonus,
+                total: playerData.tournamentPlayer.total,
+                leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
+              },
+            })),
+          },
+        })),
+      };
+
+      return c.json(formattedContest);
+    } catch (error) {
+      console.error("Error removing lineup from contest:", error);
+      return c.json({ error: "Failed to remove lineup from contest" }, 500);
     }
-
-    // Format the contest data
-    const formattedContest = {
-      ...contest,
-      contestLineups: contest.contestLineups.map((lineup) => ({
-        ...lineup,
-        tournamentLineup: {
-          ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData) => ({
-            ...playerData.tournamentPlayer.player,
-            tournamentId: contest.tournamentId,
-            tournamentData: {
-              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
-              r1: playerData.tournamentPlayer.r1,
-              r2: playerData.tournamentPlayer.r2,
-              r3: playerData.tournamentPlayer.r3,
-              r4: playerData.tournamentPlayer.r4,
-              cut: playerData.tournamentPlayer.cut,
-              bonus: playerData.tournamentPlayer.bonus,
-              total: playerData.tournamentPlayer.total,
-              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
-            },
-          })),
-        },
-      })),
-    };
-
-    return c.json(formattedContest);
-  } catch (error) {
-    console.error("Error removing lineup from contest:", error);
-    return c.json({ error: "Failed to remove lineup from contest" }, 500);
   }
-});
+);
 
 export default contestRouter;
