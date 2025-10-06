@@ -238,7 +238,7 @@ export function TokenManagerPage() {
               <div className="text-lg font-bold text-gray-900">
                 ${formattedTotalAvailableBalance}
               </div>
-              <div className="text-xs text-gray-600">Total Value Locked</div>
+              <div className="text-xs text-gray-600">Total Value</div>
             </div>
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
               <div className="text-lg font-bold text-blue-600">
