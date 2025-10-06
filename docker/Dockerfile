@@ -19,11 +19,14 @@ COPY server/prisma ./prisma/
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy built backend
+# Copy built server application files
 COPY server/dist/ ./
+
+# Copy built client application files
+COPY client/dist/ ./public/
 
 # Expose port
 EXPOSE 3000
 
 # Start command
-CMD ["node", "src/index.js"] 
+CMD ["node", "src/index.js"]
