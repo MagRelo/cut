@@ -231,15 +231,9 @@ export function TokenManagerPage() {
               <div className="text-lg font-bold text-gray-900">
                 {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
               </div>
-              <div className="text-xs text-gray-600">Total Supply</div>
+              <div className="text-xs text-gray-600">CUT Supply</div>
             </div>
 
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-900">
-                ${formattedTotalAvailableBalance}
-              </div>
-              <div className="text-xs text-gray-600">Total Value</div>
-            </div>
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
               <div className="text-lg font-bold text-blue-600">
                 {isCompoundSupplyPaused ? "Paused" : "Active"}
@@ -251,6 +245,13 @@ export function TokenManagerPage() {
                 {formattedSupplyAPR.toFixed(2)}%
               </div>
               <div className="text-xs text-gray-600">Supply APY</div>
+            </div>
+
+            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-blue-600">
+                ${formattedTotalAvailableBalance}
+              </div>
+              <div className="text-xs text-gray-600">Total Value</div>
             </div>
           </div>
         </div>
