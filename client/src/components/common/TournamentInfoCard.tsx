@@ -82,10 +82,10 @@ export const TournamentInfoCard: React.FC = () => {
           <div className="mt-5">
             <div className="flex flex-row items-center justify-between">
               {/* nav links */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <Link
                   to="/contests"
-                  className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
+                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                     location.pathname === "/contests"
                       ? "border-white bg-white/20"
                       : "border-white/50"
@@ -95,7 +95,7 @@ export const TournamentInfoCard: React.FC = () => {
                 </Link>
                 <Link
                   to="/lineups"
-                  className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
+                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                     location.pathname === "/lineups"
                       ? "border-white bg-white/20"
                       : "border-white/50"
@@ -105,7 +105,7 @@ export const TournamentInfoCard: React.FC = () => {
                 </Link>
                 <Link
                   to="/leaderboard"
-                  className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
+                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                     location.pathname === "/leaderboard"
                       ? "border-white bg-white/20"
                       : "border-white/50"
