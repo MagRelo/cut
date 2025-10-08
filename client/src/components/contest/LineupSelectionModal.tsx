@@ -9,6 +9,7 @@ interface LineupSelectionModalProps {
   selectedLineupId: string | null;
   onSelectLineup: (lineupId: string) => void;
   onCreateNew: () => void;
+  enteredLineupIds?: string[]; // IDs of lineups already entered in this contest
 }
 
 export const LineupSelectionModal: React.FC<LineupSelectionModalProps> = ({
@@ -18,6 +19,7 @@ export const LineupSelectionModal: React.FC<LineupSelectionModalProps> = ({
   selectedLineupId,
   onSelectLineup,
   onCreateNew,
+  enteredLineupIds = [],
 }) => {
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -35,35 +37,48 @@ export const LineupSelectionModal: React.FC<LineupSelectionModalProps> = ({
                   No lineups found. Create your first lineup to join this contest.
                 </div>
               ) : (
-                lineups.map((lineup) => (
-                  <button
-                    key={lineup.id}
-                    onClick={() => onSelectLineup(lineup.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      selectedLineupId === lineup.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900">
-                      {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {lineup.players && lineup.players.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          <ul className="list-disc list-inside space-y-0.5">
-                            {lineup.players.map((player, index) => (
-                              <li key={index}>
-                                {player.pga_displayName ||
-                                  `${player.pga_firstName} ${player.pga_lastName}`}
-                              </li>
-                            ))}
-                          </ul>
+                lineups.map((lineup) => {
+                  const isAlreadyEntered = enteredLineupIds.includes(lineup.id);
+                  return (
+                    <button
+                      key={lineup.id}
+                      onClick={() => !isAlreadyEntered && onSelectLineup(lineup.id)}
+                      disabled={isAlreadyEntered}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        isAlreadyEntered
+                          ? "border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed"
+                          : selectedLineupId === lineup.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="font-medium text-gray-900">
+                          {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
                         </div>
-                      )}
-                    </div>
-                  </button>
-                ))
+                        {isAlreadyEntered && (
+                          <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                            Already Entered
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {lineup.players && lineup.players.length > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            <ul className="list-disc list-inside space-y-0.5">
+                              {lineup.players.map((player, index) => (
+                                <li key={index}>
+                                  {player.pga_displayName ||
+                                    `${player.pga_firstName} ${player.pga_lastName}`}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
               )}
 
               <button

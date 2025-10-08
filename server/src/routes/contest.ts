@@ -209,6 +209,18 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
     const user = c.get("user");
     const contestId = c.req.param("id");
 
+    // Check if this lineup is already in this contest
+    const existingLineup = await prisma.contestLineup.findFirst({
+      where: {
+        contestId: contestId,
+        tournamentLineupId: tournamentLineupId,
+      },
+    });
+
+    if (existingLineup) {
+      return c.json({ error: "This lineup has already been added to this contest" }, 400);
+    }
+
     await prisma.contestLineup.create({
       data: {
         contestId: contestId,

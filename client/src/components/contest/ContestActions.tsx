@@ -342,6 +342,11 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     navigate("/lineups/create");
   };
 
+  // Get IDs of lineups already entered in this contest
+  const enteredLineupIds = React.useMemo(() => {
+    return contest?.contestLineups?.map((cl) => cl.tournamentLineupId) || [];
+  }, [contest?.contestLineups]);
+
   return (
     <div className="flex flex-col gap-2">
       {/* Lineup Selection Modal */}
@@ -352,6 +357,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         selectedLineupId={selectedLineupId}
         onSelectLineup={handleLineupSelect}
         onCreateNew={handleCreateNewLineup}
+        enteredLineupIds={enteredLineupIds}
       />
 
       {/* Warning Modal */}
