@@ -84,22 +84,24 @@ export async function initTournament(pgaTourId: string) {
         })
       );
 
-      // Filter players that have profiles and batch update them
+      // Filter players that have profiles and update each individually
       const playersWithProfiles = playerProfiles.filter((p) => p.profile);
 
       if (playersWithProfiles.length > 0) {
-        // Use batch update for players with profiles
-        await prisma.player.updateMany({
-          where: {
-            id: { in: playersWithProfiles.map((p) => p.playerId) },
-          },
-          data: {
-            pga_performance: {
-              performance: playersWithProfiles[0]?.profile?.performance,
-              standings: playersWithProfiles[0]?.profile?.standings,
-            },
-          },
-        });
+        // Update each player with their own profile data
+        await Promise.all(
+          playersWithProfiles.map((playerProfile) =>
+            prisma.player.update({
+              where: { id: playerProfile.playerId },
+              data: {
+                pga_performance: {
+                  performance: playerProfile.profile?.performance,
+                  standings: playerProfile.profile?.standings,
+                },
+              },
+            })
+          )
+        );
 
         totalProfilesUpdated += playersWithProfiles.length;
       }
