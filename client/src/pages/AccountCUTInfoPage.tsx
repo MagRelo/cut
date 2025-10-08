@@ -230,9 +230,9 @@ export function CUTInfoPage() {
           {/* Token Description */}
           <div className="p-2 mb-4">
             <p className="text-emerald-900 leading-relaxed font-medium">
-              The CUT token is the currency that powers the Cut platform. CUT is always backed by
-              (and convertable to) USDC at a 1:1 ratio. USDC deposits are held in Compound III in
-              order to generate yield for platform rewards.
+              The CUT token is the native currency of the Cut platform. Each CUT is backed by and
+              convertible to USDC at a 1:1 ratio. USDC deposits are held in Compound III to generate
+              yield that funds platform rewards.
             </p>
           </div>
 
@@ -241,7 +241,7 @@ export function CUTInfoPage() {
             {/* Token Section */}
             <div>
               <h3 className="text-sm font-semibold text-emerald-900 mb-2 px-1">CUT Token</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-green-800">
                     ${totalAvailableBalanceLoading ? "..." : formattedTotalAvailableBalance}
@@ -275,7 +275,7 @@ export function CUTInfoPage() {
                   Compound III
                 </a>{" "}
               </h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
                   <div className="text-lg font-bold text-green-800">
                     {cUSDCUtilization === undefined ? "..." : `${formattedUtilization.toFixed(2)}%`}
