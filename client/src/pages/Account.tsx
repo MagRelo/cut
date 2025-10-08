@@ -82,7 +82,7 @@ export function UserPage() {
       <TestnetWarning />
 
       {/* Token Balances */}
-      <TokenBalances showManageLink={true} showCutTokenLink={true} />
+      <TokenBalances showManageLink={false} showCutTokenLink={true} showUsdcLink={true} />
 
       {/* User Settings */}
       <UserSettings />

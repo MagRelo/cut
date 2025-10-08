@@ -24,11 +24,13 @@ const UsdcLogo = () => (
 interface TokenBalancesProps {
   showManageLink?: boolean;
   showCutTokenLink?: boolean;
+  showUsdcLink?: boolean;
 }
 
 export function TokenBalances({
   showManageLink = false,
   showCutTokenLink = false,
+  showUsdcLink = false,
 }: TokenBalancesProps) {
   const { address, chainId } = useAccount();
 
@@ -74,12 +76,12 @@ export function TokenBalances({
       <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
         {/* CUT Token */}
         <CutLogo />
-        <div className="text-sm text-gray-600 font-medium">
-          CUT Token
+        <div className="text-sm text-gray-600 font-semibold">
+          CUT
           {showCutTokenLink && (
             <Link
-              to="/deposits"
-              className="text-gray-400 ml-2 hover:text-gray-600 transition-colors"
+              to="/cut"
+              className="text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium"
             >
               What's this?
             </Link>
@@ -91,8 +93,16 @@ export function TokenBalances({
 
         {/* Payment Token */}
         <UsdcLogo />
-        <div className="text-sm text-gray-600 font-medium">
-          {paymentTokenSymbol || "USDC"} Token
+        <div className="text-sm text-gray-600 font-semibold">
+          {paymentTokenSymbol || "USDC"}
+          {showUsdcLink && (
+            <Link
+              to="/usdc"
+              className="text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium"
+            >
+              What's this?
+            </Link>
+          )}
         </div>
         <div className="text-sm font-semibold text-gray-700 text-right">
           ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}

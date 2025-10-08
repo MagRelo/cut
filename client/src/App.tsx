@@ -11,23 +11,24 @@ import { TournamentProvider } from "./contexts/TournamentContext";
 import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
-import { UserPage } from "./pages/User";
 import { ConnectPage } from "./pages/ConnectPage";
-import { TokenManagerPage } from "./pages/PlatformTokenManagerPage";
-import { UserManageFunds } from "./pages/UserManageFunds";
+import { UserPage } from "./pages/Account";
+import { CUTInfoPage } from "./pages/AccountCUTInfoPage";
+import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
 
 import { LineupList } from "./pages/LineupListPage";
 import LineupCreatePage from "./pages/LineupCreatePage";
 
 import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
-import CreateContestPage from "./pages/ContestCreatePage";
 import ContractsPage from "./pages/ContractsPage";
+
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 
 import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
 import { ProtectedRoute } from "./components/util/ProtectedRoute";
 import { Navigation } from "./components/Navigation";
+import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
@@ -54,6 +55,7 @@ export const App: React.FC = () => {
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
                           <Route path="/connect" element={<ConnectPage />} />
+                          <Route path="/contracts" element={<ContractsPage />} />
                           <Route
                             path="/account"
                             element={
@@ -62,25 +64,8 @@ export const App: React.FC = () => {
                               </ProtectedRoute>
                             }
                           />
-                          <Route path="/contracts" element={<ContractsPage />} />
-                          <Route
-                            path="/deposits"
-                            element={
-                              <ProtectedRoute>
-                                <TokenManagerPage />
-                              </ProtectedRoute>
-                            }
-                          />
-
-                          {/* Unified Token Management */}
-                          <Route
-                            path="/account/funds"
-                            element={
-                              <ProtectedRoute>
-                                <UserManageFunds />
-                              </ProtectedRoute>
-                            }
-                          />
+                          <Route path="/usdc" element={<USDCInfoPage />} />
+                          <Route path="/cut" element={<CUTInfoPage />} />
 
                           {/* Contests */}
                           <Route

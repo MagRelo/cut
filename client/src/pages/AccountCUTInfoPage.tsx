@@ -1,7 +1,15 @@
+import { useState, useEffect } from "react";
 import { useReadContract, useChainId } from "wagmi";
 import { formatUnits } from "viem";
-import { PageHeader } from "../components/util/PageHeader";
-import { Breadcrumbs } from "../components/util/Breadcrumbs";
+import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/util/PageHeader.tsx";
+import { Breadcrumbs } from "../components/util/Breadcrumbs.tsx";
+import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning.tsx";
+// import { TokenBalances } from "../components/user/TokenBalances";
+import { Buy } from "../components/user/Buy.tsx";
+import { Sell } from "../components/user/Sell.tsx";
+import { Transfer } from "../components/user/Transfer.tsx";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 import cUSDCContract from "../utils/contracts/cUSDC.json";
@@ -11,8 +19,32 @@ import {
   getContractAddress,
 } from "../utils/blockchainUtils.tsx";
 
-export function TokenManagerPage() {
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export function CUTInfoPage() {
   const chainId = useChainId();
+  const [searchParams] = useSearchParams();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Check query params for tab selection
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      // Map tab names to indices
+      const tabMap: { [key: string]: number } = {
+        buy: 0,
+        sell: 1,
+        transfer: 2,
+      };
+
+      const tabIndex = tabMap[tab.toLowerCase()];
+      if (tabIndex !== undefined) {
+        setSelectedIndex(tabIndex);
+      }
+    }
+  }, [searchParams]);
 
   // Get contract addresses dynamically
   const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
@@ -32,21 +64,6 @@ export function TokenManagerPage() {
   // Format total available balance for display
   const formattedTotalAvailableBalance = totalAvailableBalance
     ? Number(formatUnits(totalAvailableBalance as bigint, 6)).toFixed(2)
-    : "0.00";
-
-  // Get USDC balance in contract
-  const { data: contractUSDCBalance, isLoading: contractUSDCBalanceLoading } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "getTokenManagerUSDCBalance",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
-
-  // Format contract USDC balance for display
-  const formattedContractUSDCBalance = contractUSDCBalance
-    ? Number(formatUnits(contractUSDCBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
   // Get USDC balance in Compound
@@ -78,17 +95,6 @@ export function TokenManagerPage() {
   const formattedPlatformTokenSupply = platformTokenSupply
     ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
     : "0";
-
-  // Get Compound supply pause status
-  const { data: isCompoundSupplyPaused, isLoading: isCompoundSupplyPausedLoading } =
-    useReadContract({
-      address: depositManagerAddress as `0x${string}`,
-      abi: DepositManagerContract.abi,
-      functionName: "isCompoundSupplyPaused",
-      query: {
-        enabled: !!depositManagerAddress,
-      },
-    });
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
@@ -189,10 +195,14 @@ export function TokenManagerPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Token Manager" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "CUT Token" }]}
         className="mb-3"
       />
       <PageHeader title="CUT Token" className="mb-3" />
+
+      {/* Chain Warnings */}
+      <ChainWarning />
+      <TestnetWarning />
 
       {/* CUT Token Hero Card */}
       <div className="relative bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl shadow-lg border border-emerald-200 overflow-hidden mb-6">
@@ -213,174 +223,139 @@ export function TokenManagerPage() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 font-display mb-1">CUT</h1>
-              <p className="text-sm text-emerald-700 font-medium">the Cut platform token</p>
+              <p className="text-sm text-emerald-700 font-medium">ERC-20 token</p>
             </div>
           </div>
 
           {/* Token Description */}
           <div className="p-2 mb-4">
             <p className="text-emerald-900 leading-relaxed font-medium">
-              CUT token is a ERC-20 token powering the the Cut platform. CUT token is integrated
-              with{" "}
-              <a
-                href="https://app.compound.finance/?market=usdc-basemainnet"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600 hover:text-green-800 underline"
-              >
-                Compound V3
-              </a>{" "}
-              to generate yield on USDC deposits.
+              The CUT token is the currency that powers the Cut platform. CUT is always backed by
+              (and convertable to) USDC at a 1:1 ratio. USDC deposits are held in Compound III in
+              order to generate yield for platform rewards.
             </p>
           </div>
 
           {/* Token Stats */}
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-green-800">
-                {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
+          <div className="mt-4 space-y-4">
+            {/* Token Section */}
+            <div>
+              <h3 className="text-sm font-semibold text-emerald-900 mb-2 px-1">CUT Token</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">
+                    ${totalAvailableBalanceLoading ? "..." : formattedTotalAvailableBalance}
+                  </div>
+                  <div className="text-xs text-gray-600">USDC Deposited</div>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">
+                    {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
+                  </div>
+                  <div className="text-xs text-gray-600">CUT Minted</div>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">∞</div>
+                  <div className="text-xs text-gray-600">Max Supply</div>
+                </div>
               </div>
-              <div className="text-xs text-gray-600">CUT Supply</div>
             </div>
 
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-green-800">
-                {isCompoundSupplyPaused ? "Paused" : "Active"}
+            {/* Deposits Section */}
+            <div>
+              <h3 className="text-sm font-semibold text-emerald-900 mb-2 px-1">
+                <a
+                  href="https://app.compound.finance/?market=usdc-basemainnet"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-900 hover:text-green-600 underline"
+                >
+                  Compound III
+                </a>{" "}
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">
+                    {cUSDCUtilization === undefined ? "..." : `${formattedUtilization.toFixed(2)}%`}
+                  </div>
+                  <div className="text-xs text-gray-600">Utilization Rate</div>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">
+                    {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
+                  </div>
+                  <div className="text-xs text-gray-600">Supply APY</div>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-800">
+                    {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
+                  </div>
+                  <div className="text-xs text-gray-600">cUSDC Balance</div>
+                </div>
               </div>
-              <div className="text-xs text-gray-600">Compound Status</div>
             </div>
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-green-800">
-                {formattedSupplyAPR.toFixed(2)}%
+          </div>
+
+          {/* Buy/Sell/Transfer Tabs */}
+          <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-lg border border-emerald-200/50">
+            <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+              <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+                <Tab
+                  className={({ selected }: { selected: boolean }) =>
+                    classNames(
+                      "w-full py-2 text-sm font-medium leading-5",
+                      "focus:outline-none",
+                      selected
+                        ? "border-b-2 border-green-600 text-green-700"
+                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
+                    )
+                  }
+                >
+                  Buy
+                </Tab>
+                <Tab
+                  className={({ selected }: { selected: boolean }) =>
+                    classNames(
+                      "w-full py-2 text-sm font-medium leading-5",
+                      "focus:outline-none",
+                      selected
+                        ? "border-b-2 border-green-600 text-green-700"
+                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
+                    )
+                  }
+                >
+                  Sell
+                </Tab>
+                <Tab
+                  className={({ selected }: { selected: boolean }) =>
+                    classNames(
+                      "w-full py-2 text-sm font-medium leading-5",
+                      "focus:outline-none",
+                      selected
+                        ? "border-b-2 border-green-600 text-green-700"
+                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
+                    )
+                  }
+                >
+                  Transfer
+                </Tab>
+              </TabList>
+              <div className="p-4">
+                <TabPanel>
+                  <Buy />
+                </TabPanel>
+                <TabPanel>
+                  <Sell />
+                </TabPanel>
+                <TabPanel>
+                  <Transfer />
+                </TabPanel>
               </div>
-              <div className="text-xs text-gray-600">Supply APY</div>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-green-800">
-                ${formattedTotalAvailableBalance}
-              </div>
-              <div className="text-xs text-gray-600">Total Value</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Platform Token Manager Overview */}
-      <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <div className="text-lg font-semibold text-gray-700 font-display mb-2">
-          Token Manager Overview
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {/* Exchange Rate */}
-          <div className="font-medium">
-            Deposits
-            <span className="text-gray-400 ml-2 text-sm">(USDC)</span>
-          </div>
-          <div className="text-right">${formattedTotalAvailableBalance}</div>
-
-          {/* Current CUT Supply */}
-          <div className="font-medium">
-            CUT Minted
-            <span className="text-gray-400 ml-2 text-sm">(CUT)</span>
-          </div>
-          <div className="text-right">
-            {platformTokenSupplyLoading ? (
-              <span className="text-gray-400">Loading...</span>
-            ) : (
-              `${formattedPlatformTokenSupply}`
-            )}
-          </div>
-
-          {/* Total Available Balance */}
-          <div className="font-medium">
-            Available Balance
-            {/* <span className="text-gray-400 ml-2 text-sm">(cUSDC)</span> */}
-          </div>
-          <div className="text-right">
-            {totalAvailableBalanceLoading ? (
-              <span className="text-gray-400 text-sm">Loading...</span>
-            ) : (
-              `$${formattedTotalAvailableBalance}`
-            )}
-          </div>
-
-          {/* Compound USDC Balance */}
-          <div className="font-medium text-sm text-gray-600 ml-4">
-            c{paymentTokenSymbol || "USDC"} Balance
-            <span className="text-gray-400 ml-2 text-xs">(c{paymentTokenSymbol || "USDC"})</span>
-          </div>
-          <div className="text-right text-sm text-gray-600">
-            {compoundUSDCBalanceLoading ? (
-              <span className="text-gray-400 text-xs">Loading...</span>
-            ) : (
-              `$${formattedCompoundUSDCBalance}`
-            )}
-          </div>
-
-          {/* Contract USDC Balance */}
-          <div className="font-medium text-sm text-gray-600 ml-4">
-            {paymentTokenSymbol || "USDC"} Balance
-            <span className="text-gray-400 ml-2 text-xs">({paymentTokenSymbol || "USDC"})</span>
-          </div>
-          <div className="text-right text-sm text-gray-600">
-            {contractUSDCBalanceLoading ? (
-              <span className="text-gray-400 text-xs">Loading...</span>
-            ) : (
-              `$${formattedContractUSDCBalance}`
-            )}
-          </div>
-
-          {/* Exchange Rate */}
-          {/* <div className="font-medium">Exchange Rate</div> */}
-          {/* <div className="text-right">1 CUT = 1 {paymentTokenSymbol || "USDC"}</div> */}
-        </div>
-      </div>
-
-      {/* Compound Integration Status */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
-        <div className="text-lg font-semibold text-green-700 font-display mb-2">
-          Compound V3 Integration
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {/* Compound Supply Status */}
-          <div className="font-medium text-slate-700">Supply Status</div>
-          <div className="text-right">
-            {isCompoundSupplyPausedLoading ? (
-              <span className="text-slate-400 text-sm">Loading...</span>
-            ) : isCompoundSupplyPaused ? (
-              <span className="text-amber-600 font-medium">Paused</span>
-            ) : (
-              <span className="text-emerald-600 font-medium">Active</span>
-            )}
-          </div>
-
-          {/* Current Utilization rate for market */}
-          <div className="font-medium text-slate-700">Utilization Rate</div>
-          <div className="text-right">
-            {cUSDCUtilization === undefined ? (
-              <span className="text-slate-400 text-sm">Loading...</span>
-            ) : (
-              <span className="text-slate-600 font-medium">{`${formattedUtilization.toFixed(
-                2
-              )}%`}</span>
-            )}
-          </div>
-
-          {/* Current Supply rate for market */}
-          <div className="font-medium text-slate-700">Supply APY</div>
-          <div className="text-right">
-            {isCompoundSupplyPausedLoading || cUSDCSupplyRateLoading ? (
-              <span className="text-slate-400 text-sm">Loading...</span>
-            ) : isCompoundSupplyPaused ? (
-              <span className="text-amber-600 font-medium">N/A</span>
-            ) : (
-              <span className="text-slate-600 font-medium">{`${formattedSupplyAPR.toFixed(
-                2
-              )}%`}</span>
-            )}
+            </TabGroup>
           </div>
         </div>
       </div>

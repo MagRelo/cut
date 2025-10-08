@@ -96,48 +96,61 @@ export const Sell = () => {
 
   return (
     <>
-      <h3 className="text-lg font-semibold mb-4 ">Sell CUT Tokens</h3>
+      <div className="space-y-5">
+        <div>
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Sell CUT for USDC</h3>
 
-      <div className="space-y-4">
-        {/* Available Balance */}
-        <div className="bg-gray-50 p-3 rounded-md">
-          <div className="text-sm font-medium text-gray-700 mb-1">Available CUT Balance</div>
-          <div className="text-lg font-semibold text-blue-600 mb-2">
-            {formattedBalance(platformTokenBalance?.value ?? 0n, 18)} CUT
-          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
+              <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
+              <div className="text-lg font-semibold text-gray-800">
+                {formattedBalance(platformTokenBalance?.value ?? 0n, 18)}
+              </div>
+              <div className="text-xs text-gray-500">CUT</div>
+            </div>
 
-          <div className="text-sm font-medium text-gray-700 mb-1">Exchange Rate</div>
-          <div className="text-lg font-semibold text-blue-600 mb-2">
-            1 CUT = 1 {paymentTokenSymbol || "USDC"} (1:1 ratio)
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
+              <div className="text-xs font-medium text-gray-600 mb-1">Exchange Rate</div>
+              <div className="text-lg font-semibold text-gray-800">1:1</div>
+              <div className="text-xs text-gray-500">CUT to {paymentTokenSymbol || "USDC"}</div>
+            </div>
           </div>
         </div>
 
         <div>
           <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            CUT Amount to Sell
+            Amount (CUT)
           </label>
           <input
             id="sell-amount"
             type="number"
             value={sellAmount}
             onChange={(e) => setSellAmount(e.target.value)}
-            placeholder="Enter amount"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="0.00"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
             disabled={isProcessing}
           />
           {sellAmount && (
-            <div className="text-sm text-gray-600 mt-1">
-              You will receive ${calculatePaymentTokenAmount()} {paymentTokenSymbol || "USDC"}
+            <div className="text-sm text-gray-600 mt-2 flex items-center gap-1">
+              <span className="text-gray-500">→</span>
+              You will receive{" "}
+              <span className="font-semibold text-green-700">
+                ${calculatePaymentTokenAmount()} {paymentTokenSymbol || "USDC"}
+              </span>
             </div>
           )}
         </div>
 
-        {sellError && <div className="text-red-600 text-sm">{sellError}</div>}
+        {sellError && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+            {sellError}
+          </div>
+        )}
 
         <button
           onClick={handleSell}
           disabled={!isConnected || !sellAmount || isProcessing}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded inline-flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md disabled:shadow-none"
         >
           {isProcessing ? (
             <>
@@ -152,19 +165,23 @@ export const Sell = () => {
 
       {/* Transaction Status */}
       {sendError && (
-        <div className="text-red-600 text-sm bg-red-50 p-3 rounded mt-4">
-          Transaction failed: {sendError.message}
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
+          <div className="font-medium mb-1">Transaction failed</div>
+          <div className="text-red-600">{sendError.message}</div>
         </div>
       )}
 
       {isConfirmed && (
-        <div className="text-green-600 text-sm bg-green-50 p-3 rounded mt-4">
-          <div className="mb-3">
-            Transaction completed successfully!
-            {transactionHash &&
-              chainId &&
-              createTransactionLinkJSX(transactionHash, chainId, "View Transaction", "mt-2 block")}
-          </div>
+        <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+          <div className="text-green-700 font-medium mb-2">Transaction completed successfully!</div>
+          {transactionHash &&
+            chainId &&
+            createTransactionLinkJSX(
+              transactionHash,
+              chainId,
+              "View Transaction",
+              "text-green-600 hover:text-green-800 font-medium"
+            )}
         </div>
       )}
     </>
