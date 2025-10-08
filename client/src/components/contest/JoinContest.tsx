@@ -14,7 +14,6 @@ import {
 
 import { Contest } from "src/types/contest";
 import { useContestApi } from "../../services/contestApi";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { LineupSelectionModal } from "./LineupSelectionModal";
@@ -25,7 +24,7 @@ import EscrowContract from "../../utils/contracts/Escrow.json";
 import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
-interface ContestActionsProps {
+interface JoinContestProps {
   contest: Contest;
   onSuccess: (contest: Contest) => void;
 }
@@ -66,16 +65,13 @@ const convertPlatformToPaymentTokens = (platformTokenAmount: bigint): bigint => 
   return parseUnits(humanReadableAmount, PAYMENT_TOKEN_DECIMALS);
 };
 
-export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSuccess }) => {
+export const JoinContest: React.FC<JoinContestProps> = ({ contest, onSuccess }) => {
   const navigate = useNavigate();
-  const { user } = usePortoAuth();
   const { lineups, getLineups } = useLineup();
-  const { addLineupToContest, removeLineupFromContest } = useContestApi();
-  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
-  const userInContest = userContestLineup?.userId === user?.id;
+  const { addLineupToContest } = useContestApi();
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [submissionError, setSubmissionError] = React.useState<string | null>(null);
-  const [pendingAction, setPendingAction] = React.useState<"join" | "leave" | null>(null);
+  const [pendingAction, setPendingAction] = React.useState<boolean>(false);
 
   // Wagmi functions
   const { address: userAddress } = useAccount();
@@ -164,35 +160,26 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
   // Effect to handle blockchain confirmation
   useEffect(() => {
     const handleBlockchainConfirmation = async () => {
-      if (isConfirmed && pendingAction) {
+      if (isConfirmed && pendingAction && selectedLineupId) {
         try {
-          let updatedContest: Contest | null = null;
-
           // Add lineup to contest in backend
-          if (pendingAction === "join" && selectedLineupId) {
-            updatedContest = await addLineupToContest(contest.id, {
-              tournamentLineupId: selectedLineupId,
-            });
-            await getLineups(contest.tournamentId); // Refresh lineups
-          } else if (pendingAction === "leave") {
-            if (userContestLineup) {
-              updatedContest = await removeLineupFromContest(contest.id, userContestLineup.id);
-              await getLineups(contest.tournamentId); // Refresh lineups
-            }
-          }
+          const updatedContest = await addLineupToContest(contest.id, {
+            tournamentLineupId: selectedLineupId,
+          });
+          await getLineups(contest.tournamentId); // Refresh lineups
 
           // Refresh contest data with the updated contest
           if (updatedContest) {
             onSuccess(updatedContest);
           }
-          setPendingAction(null);
+          setPendingAction(false);
           setSelectedLineupId(null);
         } catch (error) {
           console.error("Error updating contest:", error);
           setServerError(
             `Failed to update contest: ${error instanceof Error ? error.message : "Unknown error"}`
           );
-          setPendingAction(null);
+          setPendingAction(false);
         }
       }
     };
@@ -203,12 +190,10 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     pendingAction,
     selectedLineupId,
     contest.id,
-    userContestLineup,
+    contest.tournamentId,
     addLineupToContest,
-    removeLineupFromContest,
     getLineups,
     onSuccess,
-    contest,
   ]);
 
   const handleJoinContest = async () => {
@@ -228,7 +213,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
     }
 
     try {
-      setPendingAction("join");
+      setPendingAction(true);
 
       // Get the deposit amount from escrow details
       const depositAmount = escrowDetails[0]; // depositAmount is the first element
@@ -302,31 +287,7 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
       setSubmissionError(
         `Failed to join contest: ${err instanceof Error ? err.message : "Unknown error"}`
       );
-      setPendingAction(null);
-    }
-  };
-
-  const handleLeaveContest = async () => {
-    try {
-      setPendingAction("leave");
-
-      // Execute blockchain transaction to withdraw from escrow
-      await sendCalls({
-        calls: [
-          {
-            abi: EscrowContract.abi,
-            args: [],
-            functionName: "withdraw",
-            to: contest.address as `0x${string}`,
-          },
-        ],
-      });
-    } catch (err) {
-      console.error("Error leaving contest:", err);
-      setSubmissionError(
-        `Failed to leave contest: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
-      setPendingAction(null);
+      setPendingAction(false);
     }
   };
 
@@ -385,38 +346,21 @@ export const ContestActions: React.FC<ContestActionsProps> = ({ contest, onSucce
         </div>
       </Dialog>
 
-      {/* Buttons */}
-      {userInContest ? (
-        <button
-          className=" bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-          onClick={handleLeaveContest}
-          disabled={!userInContest || isSending || isConfirming}
-        >
-          {isSending || isConfirming ? (
-            <div className="flex items-center gap-2 w-full justify-center">
-              <LoadingSpinnerSmall />
-              {getStatusMessages("idle", isSending, isConfirming)}
-            </div>
-          ) : (
-            "Leave Contest"
-          )}
-        </button>
-      ) : (
-        <button
-          className=" bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-          onClick={() => setLineupSelectionModal(true)}
-          disabled={userInContest || isSending || isConfirming}
-        >
-          {isSending || isConfirming ? (
-            <div className="flex items-center gap-2 w-full justify-center">
-              <LoadingSpinnerSmall />
-              {getStatusMessages("idle", isSending, isConfirming)}
-            </div>
-          ) : (
-            "Join Contest" + " - $" + contest.settings?.fee
-          )}
-        </button>
-      )}
+      {/* Join Button */}
+      <button
+        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+        onClick={() => setLineupSelectionModal(true)}
+        disabled={isSending || isConfirming}
+      >
+        {isSending || isConfirming ? (
+          <div className="flex items-center gap-2 w-full justify-center">
+            <LoadingSpinnerSmall />
+            {getStatusMessages("idle", isSending, isConfirming)}
+          </div>
+        ) : (
+          "Join Contest" + " - $" + contest.settings?.fee
+        )}
+      </button>
 
       {/* Error Display */}
       {(submissionError || serverError || sendCallsError || confirmationError) && (

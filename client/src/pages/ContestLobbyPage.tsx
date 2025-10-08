@@ -7,7 +7,8 @@ import { useContestApi } from "../services/contestApi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { ContestActions } from "../components/contest/ContestActions";
+import { JoinContest } from "../components/contest/JoinContest";
+import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
@@ -128,7 +129,7 @@ export const ContestLobby: React.FC = () => {
         {/* Actions */}
         {contest && contest?.tournament?.status !== "IN_PROGRESS" && !userInContest && (
           <div className="mb-4 px-4">
-            <ContestActions
+            <JoinContest
               key={`${contest?.id}-${contest?.contestLineups?.length}`}
               contest={contest}
               onSuccess={setContest}
@@ -523,7 +524,7 @@ export const ContestLobby: React.FC = () => {
                 <hr className="my-2" />
 
                 {userInContest && (
-                  <ContestActions
+                  <LeaveContest
                     key={`${contest?.id}-${contest?.contestLineups?.length}`}
                     contest={contest}
                     onSuccess={setContest}
