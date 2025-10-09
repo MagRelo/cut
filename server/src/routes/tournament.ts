@@ -66,7 +66,24 @@ tournamentRouter.get("/active", async (c) => {
         : {},
     }));
 
-    return c.json({ tournament, players: playersWithTournamentData });
+    // Fetch all contests for this tournament
+    const contests = await prisma.contest.findMany({
+      where: {
+        tournamentId: tournament.id,
+      },
+      include: {
+        _count: {
+          select: {
+            contestLineups: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return c.json({ tournament, players: playersWithTournamentData, contests });
   } catch (error) {
     console.error("Error fetching active tournament:", error);
     return c.json({ error: "Failed to fetch tournament" }, 500);

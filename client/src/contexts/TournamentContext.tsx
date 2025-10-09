@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
 import { type Tournament } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
-import { useTournamentApi } from "../services/tournamentApi";
+import { useTournamentApi, type ContestWithCount } from "../services/tournamentApi";
 
 interface TournamentContextType {
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament | null) => void;
   players: PlayerWithTournamentData[];
+  contests: ContestWithCount[];
   isLoading: boolean;
   error: Error | null;
 }
@@ -20,6 +21,7 @@ interface TournamentProviderProps {
 export function TournamentProvider({ children }: TournamentProviderProps) {
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
   const [players, setPlayers] = useState<PlayerWithTournamentData[]>([]);
+  const [contests, setContests] = useState<ContestWithCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -33,12 +35,13 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
         setIsLoading(true);
         setError(null);
 
-        // Fetch current tournament and players in parallel
-        const { tournament, players } = await tournamentApi.getCurrentTournament();
+        // Fetch current tournament, players, and contests
+        const { tournament, players, contests } = await tournamentApi.getCurrentTournament();
 
         if (isMounted) {
           setCurrentTournament(tournament);
           setPlayers(players);
+          setContests(contests);
         }
       } catch (err) {
         if (isMounted) {
@@ -63,10 +66,11 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
       currentTournament,
       setCurrentTournament,
       players,
+      contests,
       isLoading,
       error,
     }),
-    [currentTournament, players, isLoading, error]
+    [currentTournament, players, contests, isLoading, error]
   );
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;

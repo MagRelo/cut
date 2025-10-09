@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useChainId } from "wagmi";
 // import { Link } from "react-router-dom";
 
-import { type Contest } from "../types/contest";
 // import { TournamentStatus } from "../types.new/tournament";
 
-import { useContestApi } from "../services/contestApi";
 import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
@@ -17,36 +15,18 @@ function classNames(...classes: string[]) {
 }
 
 export const Contests: React.FC = () => {
-  const [contests, setContests] = useState<Contest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const contestApi = useContestApi();
   const { user } = usePortoAuth();
-  const { currentTournament } = useTournament();
+  const { contests: allContests, isLoading, error: tournamentError } = useTournament();
   const chainId = useChainId();
 
-  useEffect(() => {
-    const fetchContests = async () => {
-      if (!currentTournament || !chainId) {
-        setLoading(false);
-        return;
-      }
+  // Filter contests by current chain ID
+  const contests = useMemo(() => {
+    if (!chainId) return [];
+    return allContests.filter((contest) => contest.chainId === chainId);
+  }, [allContests, chainId]);
 
-      try {
-        setLoading(true);
-        const data = await contestApi.getAllContests(currentTournament.id, chainId);
-        setContests(data);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching contests:", err);
-        setError("Failed to fetch contests");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContests();
-  }, [contestApi, currentTournament, chainId]);
+  const error = tournamentError ? "Failed to fetch contests" : null;
 
   // Separate contests into user's contests and all contests
   const userContests = contests.filter((contest) => {
@@ -58,11 +38,11 @@ export const Contests: React.FC = () => {
 
   // Update selected tab when data changes
   useEffect(() => {
-    if (!loading) {
+    if (!isLoading) {
       const newTabIndex = userContests.length > 0 ? 0 : 1;
       setSelectedTabIndex(newTabIndex);
     }
-  }, [userContests.length, loading]);
+  }, [userContests.length, isLoading]);
 
   return (
     <div className="space-y-4 p-4">
@@ -120,10 +100,10 @@ export const Contests: React.FC = () => {
           </TabList>
           <div className="p-4">
             <TabPanel>
-              <ContestList contests={userContests} loading={loading} error={error} />
+              <ContestList contests={userContests} loading={isLoading} error={error} />
             </TabPanel>
             <TabPanel>
-              <ContestList contests={contests} loading={loading} error={error} />
+              <ContestList contests={contests} loading={isLoading} error={error} />
             </TabPanel>
           </div>
         </TabGroup>
