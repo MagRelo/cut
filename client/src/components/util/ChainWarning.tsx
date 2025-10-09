@@ -39,7 +39,7 @@ export function TestnetWarning() {
   return (
     <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-4 mb-4">
       <div className="text-lg font-semibold text-orange-700 font-display mb-2">
-        🧪 You're in Testing Mode
+        <span className="pr-1">🎮</span> You're in Testing Mode
       </div>
       <div className="text-sm text-orange-700">
         <p className="mb-2 font-medium">Balances shown do not represent real value.</p>

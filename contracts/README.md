@@ -190,3 +190,11 @@ For detailed information about security implementations, see `SECURITY_BEST_PRAC
 ## License
 
 MIT License
+
+to do:
+
+- handle multiple entries in escrow contract
+
+ideas:
+
+- reformat as option contract - everyone buys no shares against everyone else

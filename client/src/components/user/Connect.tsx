@@ -25,7 +25,8 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const { mutate: connect, error } = Hooks.useConnect();
   const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
-  const [tocAccepted, setTocAccepted] = useState(false);
+  const [mainnetTocAccepted, setMainnetTocAccepted] = useState(false);
+  const [testnetTocAccepted, setTestnetTocAccepted] = useState(false);
   const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
 
@@ -105,31 +106,28 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </h1>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-3">
         {/* Real Money Section */}
-        <div className="border border-gray-200 rounded-lg p-6 bg-blue-50">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">💰</span>
+        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">💰</span>
             <div>
-              <h2 className="text-xl font-bold text-blue-800">Real Money Contests</h2>
-              <p className="text-sm text-blue-600">Base Mainnet</p>
+              <h2 className="text-lg font-bold text-gray-800">Real Money Contests</h2>
+              <p className="text-xs text-gray-600">Base Mainnet</p>
             </div>
           </div>
 
-          <p className="text-gray-700 mb-4">
-            Play with real money and compete for actual prizes. All contests use real USDC and real
-            rewards.
-          </p>
+          <p className="text-gray-600 text-sm mb-3">Deposit USDC and compete for real stakes.</p>
 
           {/* TOC checkbox for mainnet */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <input
               type="checkbox"
-              id="toc"
-              checked={tocAccepted}
-              onChange={(e) => setTocAccepted(e.target.checked)}
+              id="toc-mainnet"
+              checked={mainnetTocAccepted}
+              onChange={(e) => setMainnetTocAccepted(e.target.checked)}
             />
-            <label htmlFor="toc" className="text-sm">
+            <label htmlFor="toc-mainnet" className="text-sm text-gray-700">
               I agree to the{" "}
               <a
                 href="/terms"
@@ -143,8 +141,8 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
           </div>
 
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg disabled:opacity-50 w-full"
-            disabled={isConnecting || !tocAccepted}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
+            disabled={isConnecting || !mainnetTocAccepted}
             onClick={() => handleConnect("mainnet")}
             type="button"
           >
@@ -153,23 +151,44 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </div>
 
         {/* Testing Section */}
-        <div className="border border-gray-200 rounded-lg p-6 bg-orange-50">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">🎮</span>
+        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">🎮</span>
             <div>
-              <h2 className="text-xl font-bold text-orange-800">Testing & Practice</h2>
-              <p className="text-sm text-orange-600">Base Sepolia</p>
+              <h2 className="text-lg font-bold text-gray-800">Testing & Practice</h2>
+              <p className="text-xs text-gray-600">Base Sepolia testnet</p>
             </div>
           </div>
 
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-600 text-sm mb-3">
             Practice with fake money and test features without any risk. Perfect for learning how to
             play.
           </p>
 
+          {/* TOC checkbox for testnet */}
+          <div className="flex items-center gap-2 mb-3">
+            <input
+              type="checkbox"
+              id="toc-testnet"
+              checked={testnetTocAccepted}
+              onChange={(e) => setTestnetTocAccepted(e.target.checked)}
+            />
+            <label htmlFor="toc-testnet" className="text-sm text-gray-700">
+              I agree to the{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Terms of Service
+              </a>
+            </label>
+          </div>
+
           <button
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg disabled:opacity-50 w-full"
-            disabled={isConnecting}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
+            disabled={isConnecting || !testnetTocAccepted}
             onClick={() => handleConnect("testnet")}
             type="button"
           >
