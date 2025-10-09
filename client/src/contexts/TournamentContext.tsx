@@ -9,6 +9,7 @@ interface TournamentContextType {
   contests: ContestWithCount[];
   isLoading: boolean;
   error: Error | null;
+  isTournamentEditable: boolean;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -31,12 +32,19 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
   // React Query handles all the complexity!
   const { data, isLoading, error } = useTournamentData();
 
+  // Check if tournament is editable (matches server middleware logic)
+  // Tournament is NOT editable when status is "In Progress" or "Complete"
+  const tournamentStatus = data?.tournament?.roundStatusDisplay || "Unknown";
+  const isTournamentEditable =
+    tournamentStatus !== "In Progress" && tournamentStatus !== "Complete";
+
   const value: TournamentContextType = {
     currentTournament: data?.tournament ?? null,
     players: data?.players ?? [],
     contests: data?.contests ?? [],
     isLoading,
     error: error as Error | null,
+    isTournamentEditable,
   };
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useBalance, useChainId, useChains } from "wagmi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { JoinContest } from "../components/contest/JoinContest";
@@ -37,6 +38,7 @@ function getPayoutStructure(participantCount: number) {
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
+  const { isTournamentEditable } = useTournament();
 
   // React Query - handles all fetching, caching, and refetching automatically!
   const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
@@ -106,7 +108,7 @@ export const ContestLobby: React.FC = () => {
         <ContestCard contest={contest} />
 
         {/* Actions */}
-        {contest && contest?.tournament?.status !== "IN_PROGRESS" && !userInContest && (
+        {contest && isTournamentEditable && !userInContest && (
           <div className="mb-4 px-4">
             <JoinContest contest={contest} />
           </div>
@@ -494,7 +496,8 @@ export const ContestLobby: React.FC = () => {
 
                 <hr className="my-2" />
 
-                {userInContest && <LeaveContest contest={contest} />}
+                {/* Leave Contest */}
+                {userInContest && isTournamentEditable && <LeaveContest contest={contest} />}
               </div>
             </TabPanel>
           </div>

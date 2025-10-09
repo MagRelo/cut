@@ -12,7 +12,11 @@ import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
 
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading } = usePortoAuth();
-  const { isLoading: isTournamentLoading, currentTournament } = useTournament();
+  const {
+    isLoading: isTournamentLoading,
+    currentTournament,
+    isTournamentEditable,
+  } = useTournament();
   const { lineups, lineupError, getLineups } = useLineup();
 
   useEffect(() => {
@@ -64,12 +68,14 @@ export const LineupList: React.FC = () => {
                     {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
                   </h3>
                 </div>
-                <Link
-                  to={`/lineups/edit/${lineup.id}`}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-medium transition-colors"
-                >
-                  Edit
-                </Link>
+                {isTournamentEditable && (
+                  <Link
+                    to={`/lineups/edit/${lineup.id}`}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-medium transition-colors"
+                  >
+                    Edit
+                  </Link>
+                )}
               </div>
 
               {/* Display players in the lineup */}
@@ -93,29 +99,31 @@ export const LineupList: React.FC = () => {
         </div>
       )}
 
-      {/* Create/Add Lineup Button - always shown */}
-      <div className="text-center mt-6">
-        <Link
-          to="/lineups/create"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
-        >
-          Add Lineup
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* Create/Add Lineup Button */}
+      {isTournamentEditable && (
+        <div className="text-center mt-6">
+          <Link
+            to="/lineups/create"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-        </Link>
-      </div>
+            Add Lineup
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+          </Link>
+        </div>
+      )}
 
       {/* Share Section */}
       {/* <div className="flex justify-center my-8">
