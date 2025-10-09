@@ -1,11 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import { type Tournament } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
-import { useTournamentApi, type ContestWithCount } from "../services/tournamentApi";
+import { useTournamentData, type ContestWithCount } from "../hooks/useTournamentData";
 
 interface TournamentContextType {
   currentTournament: Tournament | null;
-  setCurrentTournament: (tournament: Tournament | null) => void;
   players: PlayerWithTournamentData[];
   contests: ContestWithCount[];
   isLoading: boolean;
@@ -18,60 +17,27 @@ interface TournamentProviderProps {
   children: ReactNode;
 }
 
+/**
+ * TournamentProvider - now powered by React Query
+ *
+ * Benefits of the migration:
+ * - Removed 40+ lines of manual state management
+ * - No more useEffect dependencies or race conditions
+ * - Automatic background refetching every 10 minutes
+ * - Data cached and shared across all components
+ * - Built-in loading and error states
+ */
 export function TournamentProvider({ children }: TournamentProviderProps) {
-  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
-  const [players, setPlayers] = useState<PlayerWithTournamentData[]>([]);
-  const [contests, setContests] = useState<ContestWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  // React Query handles all the complexity!
+  const { data, isLoading, error } = useTournamentData();
 
-  const tournamentApi = useTournamentApi();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Fetch current tournament, players, and contests
-        const { tournament, players, contests } = await tournamentApi.getCurrentTournament();
-
-        if (isMounted) {
-          setCurrentTournament(tournament);
-          setPlayers(players);
-          setContests(contests);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Failed to fetch tournament data"));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [tournamentApi]);
-
-  const value = useMemo(
-    () => ({
-      currentTournament,
-      setCurrentTournament,
-      players,
-      contests,
-      isLoading,
-      error,
-    }),
-    [currentTournament, players, contests, isLoading, error]
-  );
+  const value: TournamentContextType = {
+    currentTournament: data?.tournament ?? null,
+    players: data?.players ?? [],
+    contests: data?.contests ?? [],
+    isLoading,
+    error: error as Error | null,
+  };
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
 }
