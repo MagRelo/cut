@@ -87,6 +87,11 @@ contestRouter.get("/:id", requireAuth, async (c) => {
         updatedAt: true,
         tournament: true,
         userGroup: true,
+        _count: {
+          select: {
+            contestLineups: true,
+          },
+        },
         contestLineups: {
           include: {
             user: true,

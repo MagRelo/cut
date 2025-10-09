@@ -32,6 +32,9 @@ export interface Contest {
   tournament?: Tournament;
   userGroup?: UserGroup;
   contestLineups?: ContestLineup[];
+  _count?: {
+    contestLineups: number;
+  };
 }
 
 // Optional: Create a type for creating a new contest
