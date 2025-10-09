@@ -13,7 +13,10 @@ interface BreadcrumbsProps {
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
   return (
-    <nav className={`flex items-center text-sm mb-2 ${className}`} aria-label="Breadcrumb">
+    <nav
+      className={`flex items-center text-sm font-display mb-2 ${className}`}
+      aria-label="Breadcrumb"
+    >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
 

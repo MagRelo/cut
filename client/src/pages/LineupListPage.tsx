@@ -64,7 +64,7 @@ export const LineupList: React.FC = () => {
               {/* lineup header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-400">
+                  <h3 className="text-lg font-semibold text-gray-600">
                     {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
                   </h3>
                 </div>

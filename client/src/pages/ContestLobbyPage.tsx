@@ -77,14 +77,37 @@ export const ContestLobby: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <LoadingSpinner />
+      <div className="space-y-2 p-4">
+        <div>
+          {/* breadcrumbs */}
+          <p className="text-gray-500 text-sm text-display">Loading Contest...</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow">
+          <div className="flex items-center justify-center min-h-[176px]">
+            <LoadingSpinner />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
-    return <div className="space-y-2 p-4">Error: {error}</div>;
+    return (
+      <div className="space-y-2 p-4">
+        <div>
+          {/* breadcrumbs */}
+          <Breadcrumbs items={[{ label: "Contests", path: "/contests" }]} />
+        </div>
+
+        <div className="bg-white rounded-lg shadow min-h-[176px]">
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <p className="text-lg font-medium text-gray-800 mb-2">Unable to load contest</p>
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!contest) {
@@ -157,6 +180,7 @@ export const ContestLobby: React.FC = () => {
             </Tab>
           </TabList>
           <div className="p-4">
+            {/* Teams */}
             <TabPanel>
               {(() => {
                 // Calculate total points for each lineup and sort by points
