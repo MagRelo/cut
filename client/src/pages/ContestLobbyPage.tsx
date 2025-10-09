@@ -85,11 +85,11 @@ export const ContestLobby: React.FC = () => {
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="space-y-2 p-4">Error: {error}</div>;
   }
 
   if (!contest) {
-    return <div>Contest not found</div>;
+    return <div className="space-y-2 p-4">Contest not found</div>;
   }
 
   return (
@@ -416,64 +416,75 @@ export const ContestLobby: React.FC = () => {
                       {(() => {
                         const participantCount = contest.contestLineups.length;
                         const payoutStructure = getPayoutStructure(participantCount);
-                        // const isLargeContest = participantCount >= 10;
+
+                        // Calculate total prize pool
+                        const entryFee = contest.settings?.fee || 0;
+                        const totalPrizePool = entryFee * participantCount;
+
+                        // Deduct oracle fee from total
+                        const oracleFee = contest.settings?.oracleFee || 0;
+                        const oracleFeeAmount = (totalPrizePool * oracleFee) / 10000;
+                        const remainingForPayouts = totalPrizePool - oracleFeeAmount;
 
                         return (
                           <div className="space-y-2">
-                            {/* <p className="text-xs text-gray-600">
-                              {isLargeContest ? "Large Contest" : "Small Contest"} (
-                              {participantCount} participants)
-                            </p> */}
                             <div className="space-y-1">
-                              {Object.entries(payoutStructure).map(([position, percentage]) => (
-                                <div key={position} className="flex justify-between text-sm">
-                                  <span className="text-gray-700">
-                                    {position === "1"
-                                      ? "1st Place"
-                                      : position === "2"
-                                      ? "2nd Place"
-                                      : position === "3"
-                                      ? "3rd Place"
-                                      : `${position}th Place`}
-                                  </span>
-                                  <span className="font-medium text-emerald-600">
-                                    {(percentage / 100).toFixed(1)}%
-                                  </span>
-                                </div>
-                              ))}
+                              {Object.entries(payoutStructure).map(([position, percentage]) => {
+                                const payoutAmount = (remainingForPayouts * percentage) / 10000;
+                                return (
+                                  <div key={position} className="flex justify-between text-sm">
+                                    <span className="text-gray-700">
+                                      {position === "1"
+                                        ? "1st Place"
+                                        : position === "2"
+                                        ? "2nd Place"
+                                        : position === "3"
+                                        ? "3rd Place"
+                                        : `${position}th Place`}
+                                    </span>
+                                    <span className="font-medium text-emerald-600">
+                                      ${payoutAmount.toFixed(2)} {platformToken?.symbol}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
                       })()}
                     </div>
-
-                    {/* Contest Settings */}
-                    <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Contest Details</h3>
-                    <div className="flex flex-col gap-2 pl-3">
-                      {/* Entry Fee */}
-                      {contest?.settings?.fee && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Entry Fee:</span>
-                          <span className="text-sm text-gray-600">
-                            ${contest.settings.fee} {platformToken?.symbol}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Max Entries */}
-                      {contest?.settings?.maxEntry && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Max Entries:</span>
-                          <span className="text-sm text-gray-600">{contest.settings.maxEntry}</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
 
-                {/* Blockchain Explorer Links */}
-                <h3 className="text-sm font-medium text-gray-900 mt-4">Blockchain</h3>
+                {/* Contest Settings */}
+                <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Contest Details</h3>
                 <div className="flex flex-col gap-2 pl-3">
+                  {/* Entry Fee */}
+                  {contest?.settings?.fee && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Entry Fee:</span>
+                      <span className="text-sm text-gray-600">
+                        ${contest.settings.fee} {platformToken?.symbol}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Oracle Fee */}
+                  {contest?.settings?.oracleFee !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Data Oracle Fee:</span>
+                      <span className="text-sm text-gray-600">
+                        {(contest.settings.oracleFee / 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Chain Name */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Chain:</span>
+                    <span className="text-sm text-gray-600">{chain?.name}</span>
+                  </div>
+
                   {/* Escrow Contract */}
                   {contest?.address && chainId && (
                     <div className="flex items-center gap-2">
@@ -486,12 +497,6 @@ export const ContestLobby: React.FC = () => {
                       )}
                     </div>
                   )}
-
-                  {/* Chain Name */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Chain:</span>
-                    <span className="text-sm text-gray-600">{chain?.name}</span>
-                  </div>
                 </div>
 
                 <hr className="my-2" />
