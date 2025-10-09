@@ -58,14 +58,14 @@ contract Escrow is ReentrancyGuard {
     enum EscrowState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
     EscrowState public state;
 
-    /// @notice Mapping to track if an address has deposited
-    mapping(address => bool) public hasDeposited;
+    /// @notice Mapping to track total deposit balance per address
+    mapping(address => uint256) public depositBalance;
     
-    /// @notice Mapping to track participant index for O(1) removal
-    mapping(address => uint256) public participantIndex;
-    
-    /// @notice Array of all participants (for iteration and payout distribution)
+    /// @notice Array of unique participant addresses (for cancelAndRefund)
     address[] public participants;
+    
+    /// @notice Mapping to track if an address is in the participants array
+    mapping(address => bool) private isParticipant;
 
     /// @notice Emitted when a participant deposits into the escrow
     /// @param participant The address of the participant who deposited
@@ -147,53 +147,64 @@ contract Escrow is ReentrancyGuard {
          /**
       * @notice Allows a participant to deposit the required amount into the escrow
       * @dev Transfers tokens from participant to escrow and tracks participation
+      * @dev Same address can deposit multiple times, increasing their balance
       * 
       * Requirements:
       * - Escrow must be in OPEN state
-      * - Escrow must not be at maximum capacity
+      * - Escrow must not be at maximum unique participants
       * - Participant must have approved sufficient token allowance
       * 
       * Emits an {EscrowDeposited} event
       */
     function deposit() external whenOpen nonReentrant {
-        require(participants.length < MAX_PARTICIPANTS, "Escrow full");
+        // Add to participants array if this is their first deposit
+        if (!isParticipant[msg.sender]) {
+            require(participants.length < MAX_PARTICIPANTS, "Escrow full");
+            participants.push(msg.sender);
+            isParticipant[msg.sender] = true;
+        }
 
         paymentToken.transferFrom(msg.sender, address(this), details.depositAmount);
         
-        // Track initial deposit
+        // Track deposits
         totalInitialDeposits += details.depositAmount;
-        
-        participants.push(msg.sender);
-        hasDeposited[msg.sender] = true;
-        participantIndex[msg.sender] = participants.length - 1;
+        depositBalance[msg.sender] += details.depositAmount;
 
         emit EscrowDeposited(msg.sender);
     }
 
          /**
-      * @notice Allows a participant to withdraw their deposit before the escrow proceeds
-     * @dev Refunds the deposit amount and removes participant from tracking
+      * @notice Allows a participant to withdraw one deposit amount before the escrow proceeds
+     * @dev Refunds the deposit amount and updates balance tracking
+     * @dev If balance reaches zero, removes participant from tracking
      * 
      * Requirements:
      * - Escrow must be in OPEN state
-     * - Participant must have deposited
+     * - Participant must have a non-zero balance
      * 
      * Emits an {EscrowWithdrawn} event
      */
     function withdraw() external whenOpen nonReentrant {
-        require(hasDeposited[msg.sender], "Not deposited");
+        require(depositBalance[msg.sender] >= details.depositAmount, "Insufficient balance");
 
-        // Update participant state
+        // Update balances
         totalInitialDeposits -= details.depositAmount;
-        hasDeposited[msg.sender] = false;
-        uint256 lastIndex = participants.length - 1;
-        if (lastIndex > participantIndex[msg.sender]) {
-            address lastParticipant = participants[lastIndex];
-            participants[participantIndex[msg.sender]] = lastParticipant;
-            participantIndex[lastParticipant] = participantIndex[msg.sender];
+        depositBalance[msg.sender] -= details.depositAmount;
+        
+        // Remove from participants array if balance is now zero
+        if (depositBalance[msg.sender] == 0) {
+            isParticipant[msg.sender] = false;
+            
+            // Find and remove from participants array
+            for (uint256 i = 0; i < participants.length; i++) {
+                if (participants[i] == msg.sender) {
+                    // Swap with last element and pop
+                    participants[i] = participants[participants.length - 1];
+                    participants.pop();
+                    break;
+                }
+            }
         }
-        participants.pop();
-        delete participantIndex[msg.sender];
 
         // Refund deposit amount
         paymentToken.transfer(msg.sender, details.depositAmount);
@@ -217,29 +228,33 @@ contract Escrow is ReentrancyGuard {
     }
 
          /**
-      * @notice Distributes payouts to participants
+      * @notice Distributes payouts to participants by address
       * @dev Only callable by the oracle
-     * @param _payoutBasisPoints Array of basis points for each participant (10000 = 100%)
+     * @param _addresses Array of addresses to receive payouts
+     * @param _payoutBasisPoints Array of basis points for each address (10000 = 100%)
      * 
      * This function:
      * - Calculates oracle fee from total deposits
-     * - Distributes remaining funds according to basis points
+     * - Distributes remaining funds according to basis points to specified addresses
      * - Transfers any remaining dust amounts to oracle
      * 
      * Requirements:
      * - Caller must be the oracle
      * - Escrow must be in IN_PROGRESS state
-     * - _payoutBasisPoints length must match participant count
+     * - _addresses and _payoutBasisPoints arrays must have same length
      * - Total basis points must equal 10000 (100%)
+     * - Addresses must not be zero address
      * 
      * Emits a {PayoutsDistributed} event
      */
-    function distribute(uint256[] calldata _payoutBasisPoints) external onlyOracle nonReentrant {
+    function distribute(address[] calldata _addresses, uint256[] calldata _payoutBasisPoints) external onlyOracle nonReentrant {
         require(state == EscrowState.IN_PROGRESS, "Escrow not in progress");
-        require(_payoutBasisPoints.length == participants.length, "Invalid payouts length");
+        require(_addresses.length == _payoutBasisPoints.length, "Array length mismatch");
+        require(_addresses.length > 0, "Empty arrays");
 
         uint256 totalBasisPoints;
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
+            require(_addresses[i] != address(0), "Invalid address");
             totalBasisPoints += _payoutBasisPoints[i];
         }
         require(totalBasisPoints == 10000, "Total must be 10000 basis points");
@@ -250,21 +265,21 @@ contract Escrow is ReentrancyGuard {
 
         // Calculate payouts based on basis points from remaining amount after oracle fee
         uint256[] memory calculatedPayouts = new uint256[](_payoutBasisPoints.length);
-        uint256 totalCalculatedPayouts = 0;
         
         for (uint256 i = 0; i < _payoutBasisPoints.length; i++) {
             // Use higher precision intermediate calculation to avoid precision loss
             uint256 payout = (remainingForParticipants * _payoutBasisPoints[i]) / 10000;
             calculatedPayouts[i] = payout;
-            totalCalculatedPayouts += payout;
         }
 
         // Update state (effects)
         state = EscrowState.SETTLED;
 
-        // Transfer payouts to participants (interactions)
+        // Transfer payouts to addresses (interactions)
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
-            paymentToken.transfer(participants[i], calculatedPayouts[i]);
+            if (calculatedPayouts[i] > 0) {
+                paymentToken.transfer(_addresses[i], calculatedPayouts[i]);
+            }
         }
 
         // Transfer oracle fee and any remaining funds to oracle, including dust amounts
@@ -283,7 +298,7 @@ contract Escrow is ReentrancyGuard {
      * @dev Only callable by the oracle in emergency situations
      * 
      * This function:
-     * - Refunds all participants their original deposit
+     * - Refunds all participants their full deposit balance
      * - Clears all participant tracking
      * - Moves escrow to CANCELLED state
      * 
@@ -296,12 +311,14 @@ contract Escrow is ReentrancyGuard {
     function cancelAndRefund() external onlyOracle {
         require(state == EscrowState.OPEN || state == EscrowState.IN_PROGRESS, "Escrow not in cancellable state");
         
-        // Refund all participants
+        // Refund all participants their full balance
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
-            if (hasDeposited[participant]) {
-                paymentToken.transfer(participant, details.depositAmount);
-                hasDeposited[participant] = false;
+            uint256 balance = depositBalance[participant];
+            if (balance > 0) {
+                paymentToken.transfer(participant, balance);
+                depositBalance[participant] = 0;
+                isParticipant[participant] = false;
             }
         }
         
@@ -316,30 +333,38 @@ contract Escrow is ReentrancyGuard {
     }
 
     /**
-     * @notice Allows participants to withdraw their deposit after escrow expiry
+     * @notice Allows participants to withdraw one deposit amount after escrow expiry
      * @dev Can be called by any participant after the expiry timestamp
+     * @dev If balance reaches zero, removes participant from tracking
      * 
      * Requirements:
-     * - Participant must have deposited
+     * - Participant must have a non-zero balance
      * - Current timestamp must be after expiry
      * 
      * Emits an {ExpiredEscrowWithdraw} event
      */
     function expiredEscrowWithdraw() external nonReentrant {
-        require(hasDeposited[msg.sender], "Not deposited");
+        require(depositBalance[msg.sender] >= details.depositAmount, "Insufficient balance");
         require(block.timestamp > details.expiry, "Escrow not ended");
 
-        // Update participant state
+        // Update balances
         totalInitialDeposits -= details.depositAmount;
-        hasDeposited[msg.sender] = false;
-        uint256 lastIndex = participants.length - 1;
-        if (lastIndex > participantIndex[msg.sender]) {
-            address lastParticipant = participants[lastIndex];
-            participants[participantIndex[msg.sender]] = lastParticipant;
-            participantIndex[lastParticipant] = participantIndex[msg.sender];
+        depositBalance[msg.sender] -= details.depositAmount;
+        
+        // Remove from participants array if balance is now zero
+        if (depositBalance[msg.sender] == 0) {
+            isParticipant[msg.sender] = false;
+            
+            // Find and remove from participants array
+            for (uint256 i = 0; i < participants.length; i++) {
+                if (participants[i] == msg.sender) {
+                    // Swap with last element and pop
+                    participants[i] = participants[participants.length - 1];
+                    participants.pop();
+                    break;
+                }
+            }
         }
-        participants.pop();
-        delete participantIndex[msg.sender];
 
         // Refund deposit amount
         paymentToken.transfer(msg.sender, details.depositAmount);
@@ -348,8 +373,8 @@ contract Escrow is ReentrancyGuard {
     }
 
     /**
-     * @notice Gets the current number of participants in the escrow
-     * @return The number of participants who have deposited
+     * @notice Gets the current number of unique participants in the escrow
+     * @return The number of unique addresses that have deposited
      */
     function getParticipantsCount() external view returns (uint256) {
         return participants.length;

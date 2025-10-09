@@ -138,8 +138,7 @@ contract EscrowTest is Test {
         escrow.deposit();
         vm.stopPrank();
 
-        assertEq(escrow.hasDeposited(user1), true);
-        assertEq(escrow.participantIndex(user1), 0);
+        assertEq(escrow.depositBalance(user1), depositAmount);
         assertEq(escrow.participants(0), user1);
         assertEq(escrow.totalInitialDeposits(), depositAmount);
         assertEq(escrow.getParticipantsCount(), 1);
@@ -164,17 +163,58 @@ contract EscrowTest is Test {
         escrow.deposit();
         vm.stopPrank();
 
-        assertEq(escrow.hasDeposited(user1), true);
-        assertEq(escrow.hasDeposited(user2), true);
-        assertEq(escrow.hasDeposited(user3), true);
-        assertEq(escrow.participantIndex(user1), 0);
-        assertEq(escrow.participantIndex(user2), 1);
-        assertEq(escrow.participantIndex(user3), 2);
+        assertEq(escrow.depositBalance(user1), depositAmount);
+        assertEq(escrow.depositBalance(user2), depositAmount);
+        assertEq(escrow.depositBalance(user3), depositAmount);
         assertEq(escrow.participants(0), user1);
         assertEq(escrow.participants(1), user2);
         assertEq(escrow.participants(2), user3);
         assertEq(escrow.totalInitialDeposits(), depositAmount * 3);
         assertEq(escrow.getParticipantsCount(), 3);
+    }
+
+    function testMultipleDepositsFromSameUser() public {
+        // User1 deposits 3 times
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount * 3);
+        escrow.deposit();
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), depositAmount * 3);
+        assertEq(escrow.participants(0), user1);
+        assertEq(escrow.totalInitialDeposits(), depositAmount * 3);
+        assertEq(escrow.getParticipantsCount(), 1); // Only 1 unique participant
+    }
+
+    function testMultipleDepositsFromMultipleUsers() public {
+        // User1 deposits twice
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount * 2);
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        // User2 deposits once
+        vm.startPrank(user2);
+        paymentToken.approve(address(escrow), depositAmount);
+        escrow.deposit();
+        vm.stopPrank();
+
+        // User3 deposits three times
+        vm.startPrank(user3);
+        paymentToken.approve(address(escrow), depositAmount * 3);
+        escrow.deposit();
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), depositAmount * 2);
+        assertEq(escrow.depositBalance(user2), depositAmount);
+        assertEq(escrow.depositBalance(user3), depositAmount * 3);
+        assertEq(escrow.totalInitialDeposits(), depositAmount * 6);
+        assertEq(escrow.getParticipantsCount(), 3); // 3 unique participants
     }
 
     function testDepositInsufficientAllowance() public {
@@ -246,7 +286,7 @@ contract EscrowTest is Test {
         escrow.withdraw();
         vm.stopPrank();
 
-        assertEq(escrow.hasDeposited(user1), false);
+        assertEq(escrow.depositBalance(user1), 0);
         assertEq(escrow.totalInitialDeposits(), 0);
         assertEq(escrow.getParticipantsCount(), 0);
         assertEq(paymentToken.balanceOf(user1), balanceBefore + depositAmount); // Back to original balance + deposit
@@ -274,20 +314,58 @@ contract EscrowTest is Test {
         escrow.withdraw();
         vm.stopPrank();
 
-        assertEq(escrow.hasDeposited(user1), true);
-        assertEq(escrow.hasDeposited(user2), false);
-        assertEq(escrow.hasDeposited(user3), true);
+        assertEq(escrow.depositBalance(user1), depositAmount);
+        assertEq(escrow.depositBalance(user2), 0);
+        assertEq(escrow.depositBalance(user3), depositAmount);
         assertEq(escrow.participants(0), user1);
         assertEq(escrow.participants(1), user3); // user3 moved to index 1
-        assertEq(escrow.participantIndex(user1), 0);
-        assertEq(escrow.participantIndex(user3), 1);
         assertEq(escrow.totalInitialDeposits(), depositAmount * 2);
         assertEq(escrow.getParticipantsCount(), 2);
     }
 
+    function testWithdrawMultipleDepositsFromSameUser() public {
+        // User1 deposits 3 times
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount * 3);
+        escrow.deposit();
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        uint256 balanceBefore = paymentToken.balanceOf(user1);
+
+        // User1 withdraws once
+        vm.startPrank(user1);
+        escrow.withdraw();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), depositAmount * 2);
+        assertEq(escrow.totalInitialDeposits(), depositAmount * 2);
+        assertEq(escrow.getParticipantsCount(), 1); // Still 1 unique participant
+        assertEq(paymentToken.balanceOf(user1), balanceBefore + depositAmount);
+
+        // User1 withdraws again
+        vm.startPrank(user1);
+        escrow.withdraw();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), depositAmount);
+        assertEq(escrow.totalInitialDeposits(), depositAmount);
+        assertEq(escrow.getParticipantsCount(), 1);
+
+        // User1 withdraws final deposit
+        vm.startPrank(user1);
+        escrow.withdraw();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), 0);
+        assertEq(escrow.totalInitialDeposits(), 0);
+        assertEq(escrow.getParticipantsCount(), 0); // Removed when balance reached 0
+    }
+
     function testWithdrawNotDeposited() public {
         vm.startPrank(user1);
-        vm.expectRevert("Not deposited");
+        vm.expectRevert("Insufficient balance");
         escrow.withdraw();
         vm.stopPrank();
     }
@@ -381,6 +459,11 @@ contract EscrowTest is Test {
         uint256 remainingForParticipants = totalDeposits - oracleFeeAmount; // 2850
 
         // Distribute payouts: user1 gets 50%, user2 gets 30%, user3 gets 20%
+        address[] memory addresses = new address[](3);
+        addresses[0] = user1;
+        addresses[1] = user2;
+        addresses[2] = user3;
+        
         uint256[] memory payouts = new uint256[](3);
         payouts[0] = 5000; // 50%
         payouts[1] = 3000; // 30%
@@ -396,7 +479,7 @@ contract EscrowTest is Test {
         uint256 balanceBeforeOracle = paymentToken.balanceOf(oracle);
 
         vm.prank(oracle);
-        escrow.distribute(payouts);
+        escrow.distribute(addresses, payouts);
 
         assertEq(uint256(escrow.state()), uint256(Escrow.EscrowState.SETTLED));
         assertEq(paymentToken.balanceOf(user1), balanceBefore1 + expectedPayout1);
@@ -410,13 +493,13 @@ contract EscrowTest is Test {
     function testDistributeNotOracle() public {
         vm.prank(user1);
         vm.expectRevert("Not oracle");
-        escrow.distribute(new uint256[](0));
+        escrow.distribute(new address[](0), new uint256[](0));
     }
 
     function testDistributeWhenNotInProgress() public {
         vm.prank(oracle);
         vm.expectRevert("Escrow not in progress");
-        escrow.distribute(new uint256[](0));
+        escrow.distribute(new address[](0), new uint256[](0));
     }
 
     function testDistributeInvalidPayoutsLength() public {
@@ -430,14 +513,17 @@ contract EscrowTest is Test {
         vm.prank(oracle);
         escrow.closeDeposits();
 
-        // Try to distribute with wrong length
+        // Try to distribute with mismatched array lengths
+        address[] memory addresses = new address[](1);
+        addresses[0] = user1;
+        
         uint256[] memory payouts = new uint256[](2); // Wrong length
         payouts[0] = 5000;
         payouts[1] = 5000;
 
         vm.prank(oracle);
-        vm.expectRevert("Invalid payouts length");
-        escrow.distribute(payouts);
+        vm.expectRevert("Array length mismatch");
+        escrow.distribute(addresses, payouts);
     }
 
     function testDistributeInvalidTotalBasisPoints() public {
@@ -452,12 +538,55 @@ contract EscrowTest is Test {
         escrow.closeDeposits();
 
         // Try to distribute with wrong total basis points
+        address[] memory addresses = new address[](1);
+        addresses[0] = user1;
+        
         uint256[] memory payouts = new uint256[](1);
         payouts[0] = 5000; // 50% instead of 100%
 
         vm.prank(oracle);
         vm.expectRevert("Total must be 10000 basis points");
-        escrow.distribute(payouts);
+        escrow.distribute(addresses, payouts);
+    }
+
+    function testDistributeEmptyArrays() public {
+        // First deposit
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount);
+        escrow.deposit();
+        vm.stopPrank();
+
+        // Close deposits
+        vm.prank(oracle);
+        escrow.closeDeposits();
+
+        // Try to distribute with empty arrays
+        vm.prank(oracle);
+        vm.expectRevert("Empty arrays");
+        escrow.distribute(new address[](0), new uint256[](0));
+    }
+
+    function testDistributeZeroAddress() public {
+        // First deposit
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount);
+        escrow.deposit();
+        vm.stopPrank();
+
+        // Close deposits
+        vm.prank(oracle);
+        escrow.closeDeposits();
+
+        // Try to distribute with zero address
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(0);
+        
+        uint256[] memory payouts = new uint256[](1);
+        payouts[0] = 10000;
+
+        vm.prank(oracle);
+        vm.expectRevert("Invalid address");
+        escrow.distribute(addresses, payouts);
     }
 
     function testDistributeWithZeroOracleFee() public {
@@ -482,13 +611,16 @@ contract EscrowTest is Test {
         zeroFeeEscrow.closeDeposits();
 
         // Distribute payouts
+        address[] memory addresses = new address[](1);
+        addresses[0] = user1;
+        
         uint256[] memory payouts = new uint256[](1);
         payouts[0] = 10000; // 100%
 
         uint256 balanceBefore = paymentToken.balanceOf(user1);
 
         vm.prank(oracle);
-        zeroFeeEscrow.distribute(payouts);
+        zeroFeeEscrow.distribute(addresses, payouts);
 
         // User should get full deposit back (no oracle fee)
         assertEq(paymentToken.balanceOf(user1), balanceBefore + depositAmount);
@@ -543,11 +675,14 @@ contract EscrowTest is Test {
         escrow.closeDeposits();
 
         // Distribute payouts
+        address[] memory addresses = new address[](1);
+        addresses[0] = user1;
+        
         uint256[] memory payouts = new uint256[](1);
         payouts[0] = 10000;
 
         vm.prank(oracle);
-        escrow.distribute(payouts);
+        escrow.distribute(addresses, payouts);
 
         // Try to cancel when settled
         vm.prank(oracle);
@@ -577,17 +712,50 @@ contract EscrowTest is Test {
         escrow.expiredEscrowWithdraw();
         vm.stopPrank();
 
-        assertEq(escrow.hasDeposited(user1), false);
+        assertEq(escrow.depositBalance(user1), 0);
         assertEq(escrow.totalInitialDeposits(), 0);
         assertEq(escrow.getParticipantsCount(), 0);
         assertEq(paymentToken.balanceOf(user1), balanceBefore + depositAmount);
+    }
+
+    function testExpiredEscrowWithdrawMultipleDeposits() public {
+        // User1 deposits 2 times
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount * 2);
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        // Fast forward past expiry
+        vm.warp(expiry + 1);
+
+        uint256 balanceBefore = paymentToken.balanceOf(user1);
+
+        // Withdraw first deposit after expiry
+        vm.startPrank(user1);
+        escrow.expiredEscrowWithdraw();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), depositAmount);
+        assertEq(escrow.totalInitialDeposits(), depositAmount);
+        assertEq(escrow.getParticipantsCount(), 1); // Still 1 unique participant
+        assertEq(paymentToken.balanceOf(user1), balanceBefore + depositAmount);
+
+        // Withdraw second deposit
+        vm.startPrank(user1);
+        escrow.expiredEscrowWithdraw();
+        vm.stopPrank();
+
+        assertEq(escrow.depositBalance(user1), 0);
+        assertEq(escrow.totalInitialDeposits(), 0);
+        assertEq(escrow.getParticipantsCount(), 0); // Removed when balance reached 0
     }
 
     function testExpiredEscrowWithdrawNotDeposited() public {
         vm.warp(expiry + 1);
         
         vm.startPrank(user1);
-        vm.expectRevert("Not deposited");
+        vm.expectRevert("Insufficient balance");
         escrow.expiredEscrowWithdraw();
         vm.stopPrank();
     }
@@ -666,6 +834,11 @@ contract EscrowTest is Test {
         escrow.closeDeposits();
 
         // Distribute payouts: user1 gets 60%, user2 gets 25%, user3 gets 15%
+        address[] memory addresses = new address[](3);
+        addresses[0] = user1;
+        addresses[1] = user2;
+        addresses[2] = user3;
+        
         uint256[] memory payouts = new uint256[](3);
         payouts[0] = 6000; // 60%
         payouts[1] = 2500; // 25%
@@ -685,7 +858,7 @@ contract EscrowTest is Test {
         uint256 balanceBeforeOracle = paymentToken.balanceOf(oracle);
 
         vm.prank(oracle);
-        escrow.distribute(payouts);
+        escrow.distribute(addresses, payouts);
 
         // Verify final state
         assertEq(uint256(escrow.state()), uint256(Escrow.EscrowState.SETTLED));
@@ -746,7 +919,7 @@ contract EscrowTest is Test {
         largeEscrow.deposit();
         vm.stopPrank();
 
-        assertEq(largeEscrow.hasDeposited(user1), true);
+        assertEq(largeEscrow.depositBalance(user1), largeDepositAmount);
         assertEq(largeEscrow.totalInitialDeposits(), largeDepositAmount);
         assertEq(largeEscrow.getParticipantsCount(), 1);
     }
@@ -762,11 +935,11 @@ contract EscrowTest is Test {
         vm.stopPrank();
 
         // If we get here without reverting, reentrancy protection is working
-        assertEq(escrow.hasDeposited(user1), true);
+        assertEq(escrow.depositBalance(user1), depositAmount);
     }
 
-    function testParticipantIndexManagement() public {
-        // Test that participant indices are managed correctly when participants withdraw
+    function testParticipantArrayManagement() public {
+        // Test that participants array is managed correctly when participants withdraw
 
         // All users deposit
         vm.startPrank(user1);
@@ -784,21 +957,69 @@ contract EscrowTest is Test {
         escrow.deposit();
         vm.stopPrank();
 
-        // Verify initial indices
-        assertEq(escrow.participantIndex(user1), 0);
-        assertEq(escrow.participantIndex(user2), 1);
-        assertEq(escrow.participantIndex(user3), 2);
+        // Verify initial state
+        assertEq(escrow.participants(0), user1);
+        assertEq(escrow.participants(1), user2);
+        assertEq(escrow.participants(2), user3);
+        assertEq(escrow.getParticipantsCount(), 3);
 
-        // User1 withdraws (should move user3 to index 0)
+        // User1 withdraws (should use swap and pop - user3 moves to index 0)
         vm.startPrank(user1);
         escrow.withdraw();
         vm.stopPrank();
 
-        // Verify updated indices - when user1 (index 0) withdraws, user3 (last participant) moves to index 0
-        assertEq(escrow.participantIndex(user3), 0);
-        assertEq(escrow.participantIndex(user2), 1);
+        // Verify updated state - when user1 (index 0) withdraws, user3 (last participant) moves to index 0
         assertEq(escrow.participants(0), user3);
         assertEq(escrow.participants(1), user2);
         assertEq(escrow.getParticipantsCount(), 2);
+        assertEq(escrow.depositBalance(user1), 0);
+        assertEq(escrow.depositBalance(user2), depositAmount);
+        assertEq(escrow.depositBalance(user3), depositAmount);
+    }
+
+    function testDistributeWithMultipleDepositsFromSameUser() public {
+        // User1 deposits twice
+        vm.startPrank(user1);
+        paymentToken.approve(address(escrow), depositAmount * 2);
+        escrow.deposit();
+        escrow.deposit();
+        vm.stopPrank();
+
+        // User2 deposits once
+        vm.startPrank(user2);
+        paymentToken.approve(address(escrow), depositAmount);
+        escrow.deposit();
+        vm.stopPrank();
+
+        // Close deposits
+        vm.prank(oracle);
+        escrow.closeDeposits();
+
+        // Distribute payouts: user1 gets 70% (for both deposits), user2 gets 30%
+        // This demonstrates how the same address can now get a single payout for multiple deposits
+        address[] memory addresses = new address[](2);
+        addresses[0] = user1;
+        addresses[1] = user2;
+        
+        uint256[] memory payouts = new uint256[](2);
+        payouts[0] = 7000; // 70% for user1 (both deposits combined)
+        payouts[1] = 3000; // 30% for user2
+
+        uint256 totalDeposits = depositAmount * 3;
+        uint256 oracleFeeAmount = (totalDeposits * oracleFee) / 10000;
+        uint256 remainingForParticipants = totalDeposits - oracleFeeAmount;
+
+        uint256 expectedPayout1 = (remainingForParticipants * 7000) / 10000;
+        uint256 expectedPayout2 = (remainingForParticipants * 3000) / 10000;
+
+        uint256 balanceBefore1 = paymentToken.balanceOf(user1);
+        uint256 balanceBefore2 = paymentToken.balanceOf(user2);
+
+        vm.prank(oracle);
+        escrow.distribute(addresses, payouts);
+
+        // User1 should get single payout for both deposits
+        assertEq(paymentToken.balanceOf(user1), balanceBefore1 + expectedPayout1);
+        assertEq(paymentToken.balanceOf(user2), balanceBefore2 + expectedPayout2);
     }
 }

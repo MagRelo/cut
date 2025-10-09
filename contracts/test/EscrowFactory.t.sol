@@ -344,7 +344,7 @@ contract EscrowFactoryTest is Test {
 
         // Verify escrow state
         assertEq(escrow.getParticipantsCount(), 1);
-        assertEq(escrow.hasDeposited(participant), true);
+        assertEq(escrow.depositBalance(participant), depositAmount);
         assertEq(escrow.totalInitialDeposits(), depositAmount);
 
         // Oracle closes deposits
@@ -352,11 +352,14 @@ contract EscrowFactoryTest is Test {
         escrow.closeDeposits();
 
         // Oracle distributes payouts
+        address[] memory addresses = new address[](1);
+        addresses[0] = participant;
+        
         uint256[] memory payouts = new uint256[](1);
         payouts[0] = 10000; // 100%
 
         vm.prank(oracle);
-        escrow.distribute(payouts);
+        escrow.distribute(addresses, payouts);
 
         // Verify escrow is settled
         assertEq(uint256(escrow.state()), uint256(Escrow.EscrowState.SETTLED));
