@@ -84,16 +84,6 @@ export const TournamentInfoCard: React.FC = () => {
               {/* nav links */}
               <div className="flex items-center gap-2 md:gap-4">
                 <Link
-                  to="/contests"
-                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/contests"
-                      ? "border-white bg-white/20"
-                      : "border-white/50"
-                  } rounded px-3 py-1 transition-colors flex items-center justify-center`}
-                >
-                  Contests
-                </Link>
-                <Link
                   to="/lineups"
                   className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                     location.pathname === "/lineups"
@@ -103,6 +93,18 @@ export const TournamentInfoCard: React.FC = () => {
                 >
                   Lineups
                 </Link>
+
+                <Link
+                  to="/contests"
+                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
+                    location.pathname === "/contests"
+                      ? "border-white bg-white/20"
+                      : "border-white/50"
+                  } rounded px-3 py-1 transition-colors flex items-center justify-center`}
+                >
+                  Contests
+                </Link>
+
                 <Link
                   to="/leaderboard"
                   className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
@@ -111,7 +113,7 @@ export const TournamentInfoCard: React.FC = () => {
                       : "border-white/50"
                   } rounded px-3 py-1 transition-colors flex items-center justify-center`}
                 >
-                  Leaderboards
+                  Leaders
                 </Link>
               </div>
 

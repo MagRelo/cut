@@ -1,18 +1,12 @@
-import React, { useState } from "react";
-import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import React from "react";
 import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/util/ErrorMessage";
 import { PageHeader } from "../components/util/PageHeader";
 import { PlayerWithTournamentData } from "../types/player";
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
 export const LeaderboardPage: React.FC = () => {
   const { currentTournament, players, isLoading, error } = useTournament();
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
   if (isLoading) {
     return (
@@ -38,18 +32,6 @@ export const LeaderboardPage: React.FC = () => {
     );
   }
 
-  // Sort players by tournamentData.total (higher is better)
-  const sortedPlayers = [...players].sort((a, b) => {
-    const totalA = a.tournamentData.total ?? -999;
-    const totalB = b.tournamentData.total ?? -999;
-    return totalB - totalA;
-  });
-
-  const formatScore = (score: number | undefined) => {
-    if (score === undefined || score === null) return "-";
-    return score.toString();
-  };
-
   const getPlayerDisplayName = (player: PlayerWithTournamentData) => {
     return (
       player.pga_displayName ||
@@ -59,180 +41,144 @@ export const LeaderboardPage: React.FC = () => {
     );
   };
 
+  // Helper function to get total fantasy points (including cut and bonus)
+  const getTotalFantasyPoints = (player: PlayerWithTournamentData) => {
+    const total = player.tournamentData.total ?? 0;
+    const cut = player.tournamentData.cut ?? 0;
+    const bonus = player.tournamentData.bonus ?? 0;
+    return total + cut + bonus;
+  };
+
+  // Get best single round score
+  const getBestRoundScore = (player: PlayerWithTournamentData) => {
+    const rounds = [
+      player.tournamentData.r1?.total,
+      player.tournamentData.r2?.total,
+      player.tournamentData.r3?.total,
+      player.tournamentData.r4?.total,
+    ].filter((r): r is number => r !== undefined && r !== null);
+    return rounds.length > 0 ? Math.max(...rounds) : 0;
+  };
+
+  // Sort players by different criteria
+  const highestScoringPlayers = [...players]
+    .sort((a, b) => getTotalFantasyPoints(b) - getTotalFantasyPoints(a))
+    .slice(0, 3);
+
+  const lowestScoringPlayers = [...players]
+    .filter((p) => getTotalFantasyPoints(p) > 0)
+    .sort((a, b) => getTotalFantasyPoints(a) - getTotalFantasyPoints(b))
+    .slice(0, 3);
+
+  const bestSingleRoundPlayers = [...players]
+    .sort((a, b) => getBestRoundScore(b) - getBestRoundScore(a))
+    .slice(0, 3);
+
+  // Render a leaderboard card
+  const renderLeaderboardCard = (
+    title: string,
+    playersList: PlayerWithTournamentData[],
+    scoreGetter: (player: PlayerWithTournamentData) => number
+  ) => (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-emerald-600 px-4 py-3">
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+      </div>
+      <div className="divide-y divide-gray-200">
+        {playersList.length === 0 ? (
+          <div className="px-4 py-6 text-center text-gray-500">
+            <p>No data available</p>
+          </div>
+        ) : (
+          playersList.map((player, index) => (
+            <div key={player.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 flex-1">
+                  {/* Rank Badge */}
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      index === 0
+                        ? "bg-yellow-400 text-yellow-900"
+                        : index === 1
+                        ? "bg-gray-300 text-gray-700"
+                        : "bg-orange-400 text-orange-900"
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+
+                  {/* Player Info */}
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    {player.pga_imageUrl ? (
+                      <img
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
+                        src={player.pga_imageUrl}
+                        alt={getPlayerDisplayName(player)}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center ring-2 ring-white">
+                        <span className="text-sm font-medium text-gray-600">
+                          {getPlayerDisplayName(player).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {getPlayerDisplayName(player)}
+                      </p>
+                      <p className="text-xs text-gray-500 flex items-center">
+                        {player.pga_countryFlag && (
+                          <span className="mr-1">{player.pga_countryFlag}</span>
+                        )}
+                        {player.pga_country}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score */}
+                <div className="ml-4 flex-shrink-0">
+                  <span className="text-lg font-bold text-emerald-600">{scoreGetter(player)}</span>
+                  <span className="text-xs text-gray-500 ml-1">pts</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <PageHeader title="Leaderboards" className="" />
+      <PageHeader title="Leaders" />
+
+      {/* Leaderboard Categories */}
+      <div className="space-y-4">
+        {renderLeaderboardCard(
+          "🏆 Highest Scoring Golfers",
+          highestScoringPlayers,
+          getTotalFantasyPoints
+        )}
+
+        {renderLeaderboardCard("⭐ Best Single Round", bestSingleRoundPlayers, getBestRoundScore)}
+
+        {renderLeaderboardCard(
+          "📉 Lowest Scoring Golfers",
+          lowestScoringPlayers,
+          getTotalFantasyPoints
+        )}
       </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
-          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Tournament
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Lineups
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              All-time
-            </Tab>
-          </TabList>
-          <div className="p-4">
-            <TabPanel>
-              {/* Tournament Status */}
-              {currentTournament && (
-                <p className="text-gray-500 font-display font-medium mb-4">
-                  {currentTournament.roundDisplay} - {currentTournament.roundStatusDisplay}
-                </p>
-              )}
-
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          POS
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Player
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                          R1
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                          R2
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                          R3
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                          R4
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                          Total
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Points
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {sortedPlayers.map((player) => (
-                        <tr key={player.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
-                            {player.tournamentData.leaderboardPosition || "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8">
-                                {player.pga_imageUrl ? (
-                                  <img
-                                    className="h-8 w-8 rounded-full object-cover"
-                                    src={player.pga_imageUrl}
-                                    alt={getPlayerDisplayName(player)}
-                                  />
-                                ) : (
-                                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                                    <span className="text-xs font-medium text-gray-600">
-                                      {getPlayerDisplayName(player).charAt(0).toUpperCase()}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {getPlayerDisplayName(player)}
-                                </div>
-                                <div className="flex items-center text-sm text-gray-500">
-                                  {player.pga_country && (
-                                    <span className="ml-1">{player.pga_country}</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 hidden sm:table-cell">
-                            {player.tournamentData.r1?.total !== undefined
-                              ? formatScore(player.tournamentData.r1.total)
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 hidden sm:table-cell">
-                            {player.tournamentData.r2?.total !== undefined
-                              ? formatScore(player.tournamentData.r2.total)
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 hidden sm:table-cell">
-                            {player.tournamentData.r3?.total !== undefined
-                              ? formatScore(player.tournamentData.r3.total)
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 hidden sm:table-cell">
-                            {player.tournamentData.r4?.total !== undefined
-                              ? formatScore(player.tournamentData.r4.total)
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900 hidden sm:table-cell">
-                            {player.tournamentData.total !== undefined
-                              ? formatScore(player.tournamentData.total)
-                              : "-"}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
-                            {player.tournamentData.leaderboardTotal || "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {sortedPlayers.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No players found for this tournament</p>
-                </div>
-              )}
-            </TabPanel>
-            <TabPanel>
-              <div className="text-center py-8">
-                <p className="text-gray-500">Lineups content coming soon</p>
-              </div>
-            </TabPanel>
-            <TabPanel>
-              <div className="text-center py-8">
-                <p className="text-gray-500">All-time leaderboards coming soon</p>
-              </div>
-            </TabPanel>
-          </div>
-        </TabGroup>
+      {/* Coming Soon - Lineup Leaderboards */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">Team Leaderboards</h3>
+          <p className="text-sm text-gray-500">Coming soon</p>
+        </div>
+        <div className="px-4 py-6 text-center text-gray-400">
+          <p className="text-sm">Highest Ever Team • Highest Average Team • Most Wins</p>
+        </div>
       </div>
     </div>
   );

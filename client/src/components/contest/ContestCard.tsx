@@ -16,7 +16,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-lg text-gray-700 font-semibold">{contest.name}</span>
+          <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
           <h3 className="text-lg text-gray-500">{contest.tournament?.name}</h3>
         </div>
         <CutAmountDisplay
@@ -32,9 +32,9 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-2xl text-gray-700 font-semibold">{contest.name}</span>
+          <span className="text-2xl text-gray-700 font-semibold font-display">{contest.name}</span>
           {/* <h3 className="text-lg text-gray-500">{contest.tournament?.name}</h3> */}
-          <h3 className="text-medium text-gray-500 mt-1">
+          <h3 className="text-sm font-sans text-gray-500 mt-1">
             {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
           </h3>
         </div>

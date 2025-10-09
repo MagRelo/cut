@@ -8,7 +8,6 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { JoinContest } from "../components/contest/JoinContest";
 import { LeaveContest } from "../components/contest/LeaveContest";
-import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
@@ -159,17 +158,95 @@ export const ContestLobby: React.FC = () => {
           </TabList>
           <div className="p-4">
             <TabPanel>
-              <div className="space-y-4">
-                {/* Lineups */}
-                {contest?.contestLineups?.map((contestLineup) => (
-                  <ContestLineupCard
-                    key={contestLineup.id}
-                    contestLineup={contestLineup}
-                    roundDisplay={contest?.tournament?.roundDisplay}
-                    tournamentStatus={contest?.tournament?.status}
-                  />
-                ))}
-              </div>
+              {(() => {
+                // Calculate total points for each lineup and sort by points
+                const lineupsWithPoints =
+                  contest?.contestLineups?.map((lineup) => {
+                    const totalPoints =
+                      lineup.tournamentLineup?.players?.reduce((sum, player) => {
+                        const playerTotal = player.tournamentData?.total || 0;
+                        const cut = player.tournamentData?.cut || 0;
+                        const bonus = player.tournamentData?.bonus || 0;
+                        return sum + playerTotal + cut + bonus;
+                      }, 0) || 0;
+
+                    return {
+                      ...lineup,
+                      totalPoints,
+                    };
+                  }) || [];
+
+                // Sort by points (highest first)
+                const sortedLineups = [...lineupsWithPoints].sort(
+                  (a, b) => b.totalPoints - a.totalPoints
+                );
+
+                if (sortedLineups.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No teams in this contest yet</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="overflow-hidden rounded-lg border border-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2"></th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Team
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Lineup
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Points
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {sortedLineups.map((lineup) => (
+                          <tr key={lineup.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="pl-4 pr-1 py-3 whitespace-nowrap">
+                              <div
+                                className="w-3 h-3 rounded-full border border-gray-300"
+                                style={{
+                                  backgroundColor:
+                                    (lineup.user?.settings?.color as string) || "#D3D3D3",
+                                }}
+                              />
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="text-md font-medium text-gray-800">
+                                {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center justify-center text-blue-600">
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                </svg>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                              <span className="text-sm font-bold text-gray-900">
+                                {lineup.totalPoints}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </TabPanel>
 
             {/* Players */}
@@ -411,7 +488,7 @@ export const ContestLobby: React.FC = () => {
                 {/* Payout Structure */}
                 {contest?.contestLineups && (
                   <div className="">
-                    <h3 className="text-sm font-medium text-gray-900 mb-2">Payout Structure</h3>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Payouts</h3>
                     <div className="bg-gray-50 rounded-lg p-3">
                       {(() => {
                         const participantCount = contest.contestLineups.length;
