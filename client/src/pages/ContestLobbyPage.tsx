@@ -79,7 +79,7 @@ export const ContestLobby: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <LoadingSpinner size="large" />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Lineups
+              Teams
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -141,7 +141,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Players
+              Golfers
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -474,7 +474,7 @@ export const ContestLobby: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">Data Oracle Fee:</span>
                       <span className="text-sm text-gray-600">
-                        {(contest.settings.oracleFee / 100).toFixed(1)}%
+                        {contest.settings.oracleFee / 100}%
                       </span>
                     </div>
                   )}
