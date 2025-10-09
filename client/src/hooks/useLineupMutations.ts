@@ -41,7 +41,7 @@ export function useCreateLineup() {
     },
 
     // Optimistic update: Add lineup to cache before server responds
-    onMutate: async ({ tournamentId, playerIds, name }) => {
+    onMutate: async ({ tournamentId, name }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
 
@@ -55,18 +55,13 @@ export function useCreateLineup() {
         const optimisticLineup: TournamentLineup = {
           id: `temp-${Date.now()}`,
           name: name || "New Lineup",
-          tournamentId,
-          userId: "",
           players: [], // Will be populated by server
-          score: 0,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as TournamentLineup;
+        };
 
-        queryClient.setQueryData<TournamentLineup[]>(
-          queryKeys.lineups.byTournament(tournamentId),
-          [...previousLineups, optimisticLineup]
-        );
+        queryClient.setQueryData<TournamentLineup[]>(queryKeys.lineups.byTournament(tournamentId), [
+          ...previousLineups,
+          optimisticLineup,
+        ]);
       }
 
       return { previousLineups, tournamentId };
@@ -84,11 +79,11 @@ export function useCreateLineup() {
     },
 
     // Always refetch after success
-    onSuccess: (data, { tournamentId }) => {
+    onSuccess: (_data, { tournamentId }) => {
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-      
+
       // Also invalidate contests that might include this lineup
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
@@ -116,15 +111,25 @@ export function useUpdateLineup() {
     },
 
     // Optimistic update: Update lineup in cache before server responds
-    onMutate: async ({ lineupId, playerIds, name }) => {
-      // Get the lineup to find its tournament ID
-      const lineupData = queryClient.getQueryData<TournamentLineup>(
-        queryKeys.lineups.byId(lineupId)
-      );
-      const tournamentId = lineupData?.tournamentId;
+    onMutate: async ({ lineupId, name }) => {
+      // Find tournament ID from the lineups cache
+      let tournamentId: string | undefined;
+      const allLineupQueries = queryClient.getQueriesData<TournamentLineup[]>({
+        queryKey: queryKeys.lineups.all,
+      });
+
+      for (const [, lineups] of allLineupQueries) {
+        if (lineups) {
+          const lineup = lineups.find((l) => l.id === lineupId);
+          if (lineup) {
+            // Extract tournament ID from query key or use a placeholder
+            tournamentId = "current"; // Will be updated by server response
+            break;
+          }
+        }
+      }
 
       if (!tournamentId) {
-        // If we don't know the tournament ID, we can't do optimistic updates
         return { previousLineups: undefined, previousLineup: undefined };
       }
 
@@ -136,9 +141,6 @@ export function useUpdateLineup() {
       const previousLineups = queryClient.getQueryData<TournamentLineup[]>(
         queryKeys.lineups.byTournament(tournamentId)
       );
-      const previousLineup = queryClient.getQueryData<TournamentLineup>(
-        queryKeys.lineups.byId(lineupId)
-      );
 
       // Optimistically update the lineup in the list
       if (previousLineups) {
@@ -149,7 +151,6 @@ export function useUpdateLineup() {
               ? {
                   ...lineup,
                   name: name || lineup.name,
-                  updatedAt: new Date(),
                   // Note: players will be updated by server response
                 }
               : lineup
@@ -157,20 +158,11 @@ export function useUpdateLineup() {
         );
       }
 
-      // Optimistically update the single lineup cache
-      if (previousLineup) {
-        queryClient.setQueryData<TournamentLineup>(queryKeys.lineups.byId(lineupId), {
-          ...previousLineup,
-          name: name || previousLineup.name,
-          updatedAt: new Date(),
-        });
-      }
-
-      return { previousLineups, previousLineup, tournamentId, lineupId };
+      return { previousLineups, tournamentId, lineupId };
     },
 
     // If mutation fails, rollback
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       console.error("Failed to update lineup:", err);
       if (context?.tournamentId && context?.previousLineups) {
         queryClient.setQueryData(
@@ -178,22 +170,13 @@ export function useUpdateLineup() {
           context.previousLineups
         );
       }
-      if (context?.lineupId && context?.previousLineup) {
-        queryClient.setQueryData(queryKeys.lineups.byId(context.lineupId), context.previousLineup);
-      }
     },
 
     // Always refetch after success
-    onSuccess: (data, { lineupId }) => {
-      const tournamentId = data.tournamentId;
-
-      // Update the specific lineup in cache
-      queryClient.setQueryData(queryKeys.lineups.byId(lineupId), data);
-
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
+    onSuccess: () => {
+      // Invalidate all lineup queries to ensure everything is in sync
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-      
+
       // Also invalidate contests that might include this lineup
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
@@ -224,4 +207,3 @@ export function useLineupActions() {
     isLoading: create.isPending || update.isPending,
   };
 }
-

@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { type TournamentLineup } from "../types/player";
-import { useLineupsQuery, useLineupQuery } from "../hooks/useLineupQueries";
+import { useLineupsQuery } from "../hooks/useLineupQueries";
 import { useCreateLineup, useUpdateLineup } from "../hooks/useLineupMutations";
 import { usePortoAuth } from "./PortoAuthContext";
 import { useTournament } from "./TournamentContext";
@@ -9,7 +9,8 @@ interface LineupContextData {
   lineups: TournamentLineup[];
   lineupError: string | null;
   isLoading: boolean;
-  getLineupById: (lineupId: string) => TournamentLineup | null;
+  getLineups: (tournamentId: string) => Promise<TournamentLineup[]>;
+  getLineupById: (lineupId: string) => Promise<TournamentLineup>;
   getLineupFromCache: (lineupId: string) => TournamentLineup | null;
   createLineup: (
     tournamentId: string,
@@ -17,7 +18,7 @@ interface LineupContextData {
     name?: string
   ) => Promise<TournamentLineup>;
   updateLineup: (lineupId: string, playerIds: string[], name?: string) => Promise<TournamentLineup>;
-  refetchLineups: () => void;
+  clearLineups: () => void;
 }
 
 const LineupContext = createContext<LineupContextData | undefined>(undefined);
@@ -44,7 +45,7 @@ export function useLineup() {
 export function LineupProvider({ children }: { children: ReactNode }) {
   const { user } = usePortoAuth();
   const { currentTournament } = useTournament();
-  
+
   // React Query handles all the complexity!
   const {
     data: lineups = [],
@@ -60,14 +61,30 @@ export function LineupProvider({ children }: { children: ReactNode }) {
   const createMutation = useCreateLineup();
   const updateMutation = useUpdateLineup();
 
+  // Get lineups (refetch current data)
+  const getLineups = async (_tournamentId: string): Promise<TournamentLineup[]> => {
+    const result = await refetch();
+    return result.data || [];
+  };
+
   // Helper function to get lineup from cache by ID
   const getLineupFromCache = (lineupId: string): TournamentLineup | null => {
     return lineups.find((lineup) => lineup.id === lineupId) || null;
   };
 
-  // Helper function to get lineup by ID (returns from cache, doesn't fetch)
-  const getLineupById = (lineupId: string): TournamentLineup | null => {
-    return getLineupFromCache(lineupId);
+  // Helper function to get lineup by ID (returns from cache)
+  const getLineupById = async (lineupId: string): Promise<TournamentLineup> => {
+    const lineup = getLineupFromCache(lineupId);
+    if (!lineup) {
+      throw new Error(`Lineup ${lineupId} not found`);
+    }
+    return lineup;
+  };
+
+  // Clear lineups (when user logs out)
+  const clearLineups = () => {
+    // React Query will automatically clear when user context changes
+    // This is a no-op but kept for API compatibility
   };
 
   // Create lineup wrapper that returns the created lineup
@@ -100,13 +117,18 @@ export function LineupProvider({ children }: { children: ReactNode }) {
 
   const contextValue: LineupContextData = {
     lineups,
-    lineupError: error ? (error instanceof Error ? error.message : "Failed to fetch lineups") : null,
+    lineupError: error
+      ? error instanceof Error
+        ? error.message
+        : "Failed to fetch lineups"
+      : null,
     isLoading,
+    getLineups,
     getLineupById,
     getLineupFromCache,
     createLineup,
     updateLineup,
-    refetchLineups: () => refetch(),
+    clearLineups,
   };
 
   return <LineupContext.Provider value={contextValue}>{children}</LineupContext.Provider>;
