@@ -13,10 +13,10 @@ import {
 } from "wagmi";
 
 import { Contest } from "src/types/contest";
-import { useContestApi } from "../../services/contestApi";
 import { useLineup } from "../../contexts/LineupContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { LineupSelectionModal } from "./LineupSelectionModal";
+import { useJoinContest } from "../../hooks/useContestMutations";
 
 // Import contract addresses and ABIs
 import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
@@ -26,7 +26,6 @@ import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 interface JoinContestProps {
   contest: Contest;
-  onSuccess: (contest: Contest) => void;
 }
 
 // Helper function to get status messages
@@ -65,10 +64,10 @@ const convertPlatformToPaymentTokens = (platformTokenAmount: bigint): bigint => 
   return parseUnits(humanReadableAmount, PAYMENT_TOKEN_DECIMALS);
 };
 
-export const JoinContest: React.FC<JoinContestProps> = ({ contest, onSuccess }) => {
+export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
   const navigate = useNavigate();
   const { lineups, getLineups } = useLineup();
-  const { addLineupToContest } = useContestApi();
+  const joinContest = useJoinContest();
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [submissionError, setSubmissionError] = React.useState<string | null>(null);
   const [pendingAction, setPendingAction] = React.useState<boolean>(false);
@@ -162,22 +161,21 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest, onSuccess }) 
     const handleBlockchainConfirmation = async () => {
       if (isConfirmed && pendingAction && selectedLineupId) {
         try {
-          // Add lineup to contest in backend
-          const updatedContest = await addLineupToContest(contest.id, {
+          // Add lineup to contest using React Query mutation
+          // This automatically updates the cache with optimistic updates!
+          await joinContest.mutateAsync({
+            contestId: contest.id,
             tournamentLineupId: selectedLineupId,
           });
-          await getLineups(contest.tournamentId); // Refresh lineups
 
-          // Refresh contest data with the updated contest
-          if (updatedContest) {
-            onSuccess(updatedContest);
-          }
+          await getLineups(contest.tournamentId); // Refresh lineups
           setPendingAction(false);
           setSelectedLineupId(null);
+          setServerError(null);
         } catch (error) {
-          console.error("Error updating contest:", error);
+          console.error("Error joining contest:", error);
           setServerError(
-            `Failed to update contest: ${error instanceof Error ? error.message : "Unknown error"}`
+            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`
           );
           setPendingAction(false);
         }
@@ -191,9 +189,8 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest, onSuccess }) 
     selectedLineupId,
     contest.id,
     contest.tournamentId,
-    addLineupToContest,
+    joinContest,
     getLineups,
-    onSuccess,
   ]);
 
   const handleJoinContest = async () => {

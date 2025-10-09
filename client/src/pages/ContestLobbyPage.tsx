@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useBalance, useChainId, useChains } from "wagmi";
-import { Contest } from "../types/contest";
-import { useContestApi } from "../services/contestApi";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
@@ -12,6 +10,7 @@ import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestLineupCard } from "../components/team/ContestLineupCard";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
+import { useContestQuery } from "../hooks/useContestQuery";
 
 type SortOption = "ownership" | "points" | "position" | "name" | "score";
 
@@ -38,10 +37,9 @@ function getPayoutStructure(participantCount: number) {
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
-  const { getContestById } = useContestApi();
-  const [contest, setContest] = useState<Contest | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // React Query - handles all fetching, caching, and refetching automatically!
+  const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
 
   // user
   const { user } = usePortoAuth();
@@ -66,34 +64,15 @@ export const ContestLobby: React.FC = () => {
     token: platformTokenAddress as `0x${string}`,
   });
 
-  // fetch contest
-  const fetchContest = useCallback(async () => {
-    if (!contestId) return;
-
-    try {
-      setIsLoading(true);
-      const contest = await getContestById(contestId);
-
-      // Validate that the contest is on the user's current chain
-      if (contest.chainId !== chainId) {
-        setError(
-          `This contest is on a different network. Expected chain ${contest.chainId}, but you're connected to chain ${chainId}.`
-        );
-        return;
-      }
-
-      setContest(contest);
-      setError(null);
-    } catch (err) {
-      setError(`Failed to load contest: ${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [contestId, getContestById, chainId]);
-
-  useEffect(() => {
-    fetchContest();
-  }, [fetchContest]);
+  // Chain validation
+  const error =
+    contest && contest.chainId !== chainId
+      ? `This contest is on a different network. Expected chain ${contest.chainId}, but you're connected to chain ${chainId}.`
+      : queryError
+      ? `Failed to load contest: ${
+          queryError instanceof Error ? queryError.message : "Unknown error"
+        }`
+      : null;
 
   if (isLoading) {
     return (
@@ -129,20 +108,12 @@ export const ContestLobby: React.FC = () => {
         {/* Actions */}
         {contest && contest?.tournament?.status !== "IN_PROGRESS" && !userInContest && (
           <div className="mb-4 px-4">
-            <JoinContest
-              key={`${contest?.id}-${contest?.contestLineups?.length}`}
-              contest={contest}
-              onSuccess={setContest}
-            />
+            <JoinContest contest={contest} />
           </div>
         )}
 
         {/* tabs */}
-        <TabGroup
-          key={`${contest?.id}-${contest?.contestLineups?.length}`}
-          selectedIndex={selectedIndex}
-          onChange={setSelectedIndex}
-        >
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -523,13 +494,7 @@ export const ContestLobby: React.FC = () => {
 
                 <hr className="my-2" />
 
-                {userInContest && (
-                  <LeaveContest
-                    key={`${contest?.id}-${contest?.contestLineups?.length}`}
-                    contest={contest}
-                    onSuccess={setContest}
-                  />
-                )}
+                {userInContest && <LeaveContest contest={contest} />}
               </div>
             </TabPanel>
           </div>

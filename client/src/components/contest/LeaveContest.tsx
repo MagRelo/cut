@@ -3,17 +3,16 @@ import { useSendCalls, useWaitForCallsStatus, useReadContract, useAccount } from
 import { Dialog } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
-import { useContestApi } from "../../services/contestApi";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useLeaveContest } from "../../hooks/useContestMutations";
 
 // Import contract ABIs
 import EscrowContract from "../../utils/contracts/Escrow.json";
 
 interface LeaveContestProps {
   contest: Contest;
-  onSuccess: (contest: Contest) => void;
 }
 
 // Helper function to get status messages
@@ -33,10 +32,10 @@ const getStatusMessages = (
   return defaultMessage;
 };
 
-export const LeaveContest: React.FC<LeaveContestProps> = ({ contest, onSuccess }) => {
+export const LeaveContest: React.FC<LeaveContestProps> = ({ contest }) => {
   const { user } = usePortoAuth();
   const { getLineups } = useLineup();
-  const { removeLineupFromContest } = useContestApi();
+  const leaveContest = useLeaveContest();
   const { address: userAddress } = useAccount();
 
   // Get all user's lineups in this contest
@@ -78,20 +77,21 @@ export const LeaveContest: React.FC<LeaveContestProps> = ({ contest, onSuccess }
     const handleBlockchainConfirmation = async () => {
       if (isConfirmed && pendingAction && selectedLineupId) {
         try {
-          // Remove lineup from contest in backend
-          const updatedContest = await removeLineupFromContest(contest.id, selectedLineupId);
-          await getLineups(contest.tournamentId); // Refresh lineups
+          // Remove lineup from contest using React Query mutation
+          // This automatically updates the cache with optimistic updates!
+          await leaveContest.mutateAsync({
+            contestId: contest.id,
+            contestLineupId: selectedLineupId,
+          });
 
-          // Refresh contest data with the updated contest
-          if (updatedContest) {
-            onSuccess(updatedContest);
-          }
+          await getLineups(contest.tournamentId); // Refresh lineups
           setPendingAction(false);
           setSelectedLineupId(null);
+          setServerError(null);
         } catch (error) {
-          console.error("Error updating contest:", error);
+          console.error("Error leaving contest:", error);
           setServerError(
-            `Failed to update contest: ${error instanceof Error ? error.message : "Unknown error"}`
+            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`
           );
           setPendingAction(false);
         }
@@ -105,9 +105,8 @@ export const LeaveContest: React.FC<LeaveContestProps> = ({ contest, onSuccess }
     selectedLineupId,
     contest.id,
     contest.tournamentId,
-    removeLineupFromContest,
+    leaveContest,
     getLineups,
-    onSuccess,
   ]);
 
   const handleButtonClick = () => {

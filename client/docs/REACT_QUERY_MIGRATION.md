@@ -115,11 +115,12 @@ This hierarchical structure allows:
 
 ## Next Steps (Future Migrations)
 
-### Phase 2: Contest Data
+### Phase 2: Contest Data ✅ COMPLETED
 
-- [ ] Create `useContestQuery` hook
-- [ ] Create `useContestMutations` (join/leave)
-- [ ] Update `ContestLobbyPage` to use queries
+- [x] Create `useContestQuery` hook
+- [x] Create `useContestMutations` (join/leave with optimistic updates)
+- [x] Update `ContestLobbyPage` to use queries
+- [x] Update `JoinContest` and `LeaveContest` to use mutations
 
 ### Phase 3: Lineup Data
 
