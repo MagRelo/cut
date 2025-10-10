@@ -7,11 +7,11 @@ import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { JoinContest } from "../components/contest/JoinContest";
-import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupModal } from "../components/lineup/LineupModal";
+import { LineupManagement } from "../components/contest/LineupManagement";
 import { type TournamentLineup } from "../types/player";
 import { type ContestLineup } from "../types/lineup";
 
@@ -46,7 +46,7 @@ export const ContestLobby: React.FC = () => {
   // user
   const { user } = usePortoAuth();
   const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
-  const userInContest = userContestLineup?.userId === user?.id;
+  const userInContest = Boolean(userContestLineup);
 
   // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -184,6 +184,19 @@ export const ContestLobby: React.FC = () => {
               }
             >
               GOLFERS
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-medium leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                )
+              }
+            >
+              LINEUPS
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -453,6 +466,19 @@ export const ContestLobby: React.FC = () => {
               })()}
             </TabPanel>
 
+            {/* Lineups */}
+            <TabPanel>
+              {isTournamentEditable ? (
+                <LineupManagement contest={contest} />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    Lineup management is disabled while the tournament is in progress.
+                  </p>
+                </div>
+              )}
+            </TabPanel>
+
             {/* Settings */}
             <TabPanel>
               <div className="flex flex-col gap-2">
@@ -546,11 +572,6 @@ export const ContestLobby: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                <hr className="my-2" />
-
-                {/* Leave Contest */}
-                {userInContest && isTournamentEditable && <LeaveContest contest={contest} />}
               </div>
             </TabPanel>
           </div>
