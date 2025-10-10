@@ -97,112 +97,111 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       {/* logo from Home page */}
-      <div className="flex items-center justify-center gap-3 mt-4 mb-6">
-        <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
-
-        <h1 className="text-6xl font-bold text-black">
+      <div className="flex items-center justify-center gap-2 mt-2 mb-4">
+        <img src="/logo-transparent.png" alt="Cut Logo" className="h-12" />
+        <h1 className="text-4xl font-bold text-black">
           the Cut
-          <div className="text-2xl font-bold text-gray-400 mb-3">Fantasy Golf</div>
+          <div className="text-lg font-bold text-gray-400 mb-1">Fantasy Golf</div>
         </h1>
       </div>
 
-      <div className="space-y-3">
-        {/* Real Money Section */}
-        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">💰</span>
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">Real Money Contests</h2>
-              <p className="text-xs text-gray-600">Base Mainnet</p>
-            </div>
-          </div>
-
-          <p className="text-gray-600 text-sm mb-3">Deposit USDC and compete for real stakes.</p>
-
-          {/* TOC checkbox for mainnet */}
-          <div className="flex items-center gap-2 mb-3">
-            <input
-              type="checkbox"
-              id="toc-mainnet"
-              checked={mainnetTocAccepted}
-              onChange={(e) => setMainnetTocAccepted(e.target.checked)}
-            />
-            <label htmlFor="toc-mainnet" className="text-sm text-gray-700">
-              I agree to the{" "}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Terms of Service
-              </a>
-            </label>
-          </div>
-
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
-            disabled={isConnecting || !mainnetTocAccepted}
-            onClick={() => handleConnect("mainnet")}
-            type="button"
-          >
-            {isConnecting ? "Connecting..." : "Connect"}
-          </button>
-        </div>
-
-        {/* Testing Section */}
-        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">🎮</span>
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">Testing & Practice</h2>
-              <p className="text-xs text-gray-600">Base Sepolia testnet</p>
-            </div>
-          </div>
-
-          <p className="text-gray-600 text-sm mb-3">
-            Practice with fake money and test features without any risk. Perfect for learning how to
-            play.
-          </p>
-
-          {/* TOC checkbox for testnet */}
-          <div className="flex items-center gap-2 mb-3">
-            <input
-              type="checkbox"
-              id="toc-testnet"
-              checked={testnetTocAccepted}
-              onChange={(e) => setTestnetTocAccepted(e.target.checked)}
-            />
-            <label htmlFor="toc-testnet" className="text-sm text-gray-700">
-              I agree to the{" "}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Terms of Service
-              </a>
-            </label>
-          </div>
-
-          <button
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
-            disabled={isConnecting || !testnetTocAccepted}
-            onClick={() => handleConnect("testnet")}
-            type="button"
-          >
-            {isConnecting ? "Connecting..." : "Connect"}
-          </button>
-        </div>
-      </div>
-
       {/* Connecting display */}
-      {isConnecting && (
+      {isConnecting ? (
         <div className="mt-4 text-sm text-center">
           <div className="flex items-center gap-2 w-full justify-center text-gray-600">
             <LoadingSpinnerSmall color={"green"} />
             {getStatusText()}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Real Money Section */}
+          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">💰</span>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Real Money Contests</h2>
+                <p className="text-xs text-gray-600">Base Mainnet</p>
+              </div>
+            </div>
+
+            <p className="text-gray-600 text-sm mb-3">Deposit USDC and compete for real stakes.</p>
+
+            {/* TOC checkbox for mainnet */}
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="toc-mainnet"
+                checked={mainnetTocAccepted}
+                onChange={(e) => setMainnetTocAccepted(e.target.checked)}
+              />
+              <label htmlFor="toc-mainnet" className="text-sm text-gray-700">
+                I agree to the{" "}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Terms of Service
+                </a>
+              </label>
+            </div>
+
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
+              disabled={isConnecting || !mainnetTocAccepted}
+              onClick={() => handleConnect("mainnet")}
+              type="button"
+            >
+              {isConnecting ? "Connecting..." : "Connect"}
+            </button>
+          </div>
+
+          {/* Testing Section */}
+          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🎮</span>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Testing & Practice</h2>
+                <p className="text-xs text-gray-600">Base Sepolia Testnet</p>
+              </div>
+            </div>
+
+            <p className="text-gray-600 text-sm mb-3">
+              Practice with fake money and test features without any risk. Perfect for learning how
+              to play.
+            </p>
+
+            {/* TOC checkbox for testnet */}
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="toc-testnet"
+                checked={testnetTocAccepted}
+                onChange={(e) => setTestnetTocAccepted(e.target.checked)}
+              />
+              <label htmlFor="toc-testnet" className="text-sm text-gray-700">
+                I agree to the{" "}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Terms of Service
+                </a>
+              </label>
+            </div>
+
+            <button
+              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 w-full"
+              disabled={isConnecting || !testnetTocAccepted}
+              onClick={() => handleConnect("testnet")}
+              type="button"
+            >
+              {isConnecting ? "Connecting..." : "Connect"}
+            </button>
           </div>
         </div>
       )}

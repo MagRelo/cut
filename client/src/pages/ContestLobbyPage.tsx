@@ -9,7 +9,6 @@ import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { JoinContest } from "../components/contest/JoinContest";
 import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestCard } from "../components/contest/ContestCard";
-import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
 
@@ -138,7 +137,7 @@ export const ContestLobby: React.FC = () => {
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-1.5 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
@@ -146,12 +145,12 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Teams
+              TEAMS
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-1.5 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
@@ -159,12 +158,12 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Golfers
+              GOLFERS
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-1.5 text-sm font-medium leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
@@ -172,7 +171,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Settings
+              SETTINGS
             </Tab>
           </TabList>
           <div className="p-4">
@@ -336,15 +335,92 @@ export const ContestLobby: React.FC = () => {
                 }
 
                 return (
-                  <div className="space-y-4">
-                    {/* Player Cards */}
-                    {playersData.map((playerData) => (
-                      <PlayerDisplayCard
-                        key={playerData.player.id}
-                        player={playerData.player}
-                        roundDisplay="R1"
-                      />
-                    ))}
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
+                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Name
+                          </th>
+                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            OWN%
+                          </th>
+                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            PTS
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {playersData.map((playerData) => {
+                          const player = playerData.player;
+                          const totalPoints =
+                            (player.tournamentData?.total || 0) +
+                            (player.tournamentData?.cut || 0) +
+                            (player.tournamentData?.bonus || 0);
+
+                          // Get hot/cold icon from current round
+                          const getCurrentRoundIcon = () => {
+                            const roundData = player.tournamentData?.r1;
+                            if (roundData && typeof roundData === "object" && "icon" in roundData) {
+                              return roundData.icon || "";
+                            }
+                            return "";
+                          };
+
+                          const icon = getCurrentRoundIcon();
+
+                          return (
+                            <tr key={player.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="pl-3 pr-1 py-3 whitespace-nowrap text-center">
+                                {icon && (
+                                  <span className="text-xl" title="Player status">
+                                    {icon}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-2 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-md font-medium text-gray-800">
+                                    {player.pga_displayName || "Unknown Player"}
+                                  </span>
+                                  <button
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    title="View scorecard (coming soon)"
+                                    disabled
+                                  >
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-2 py-3 whitespace-nowrap text-center">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {playerData.ownershipPercentage}%
+                                </span>
+                              </td>
+                              <td className="px-2 py-3 whitespace-nowrap text-center">
+                                <span className="text-sm font-bold text-gray-900">
+                                  {totalPoints}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 );
               })()}

@@ -56,6 +56,21 @@ export const LineupList: React.FC = () => {
     <div className="p-4">
       <PageHeader title="Lineups" className="mb-3" />
 
+      {/* not editable warning */}
+      {!isTournamentEditable && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow p-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-yellow-600 text-lg">⚠️</span>
+            <div className="text-lg font-semibold text-yellow-800 font-display">
+              Tournament in Progress
+            </div>
+          </div>
+          <div className="text-sm text-yellow-700">
+            <p className="mb-2">Lineups cannot be edited.</p>
+          </div>
+        </div>
+      )}
+
       {/* list of user lineups */}
       {lineups && lineups.length > 0 && (
         <div className="space-y-4 mb-6">
