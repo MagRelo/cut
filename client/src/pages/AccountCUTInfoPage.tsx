@@ -195,169 +195,153 @@ export function CUTInfoPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "CUT Token" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "CUT" }]}
         className="mb-3"
       />
-      <PageHeader title="CUT Token" className="mb-3" />
+      <PageHeader title="About CUT" className="mb-3" />
 
       {/* Chain Warnings */}
       <ChainWarning />
       <TestnetWarning />
 
-      {/* CUT Token Hero Card */}
-      <div className="relative bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl shadow-lg border border-emerald-200 overflow-hidden mb-6">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20"></div>
+      {/* CUT Token Info Card */}
+      <div className="bg-white rounded-lg shadow p-6 mb-4">
+        {/* Header with Logo and Title */}
+        <div className="flex items-center mb-4">
+          <img src="/logo-transparent.png" alt="CUT" className="h-16 mr-3" />
+          <h2 className="text-2xl font-bold text-gray-900">What is CUT?</h2>
         </div>
 
-        <div className="relative p-6">
-          {/* Header with Logo and Title */}
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-16 h-16 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center">
-              <img
-                src="/logo-transparent.png"
-                alt="CUT Token Logo"
-                className="w-12 h-12 object-contain"
-              />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 font-display mb-1">CUT</h1>
-              <p className="text-sm text-emerald-700 font-medium">ERC-20 token</p>
-            </div>
-          </div>
+        {/* Token Description */}
+        <div className="space-y-3 text-gray-700">
+          <p>
+            The CUT token is the native currency of the Cut platform. Each CUT is backed by and
+            convertible to USDC at a 1:1 ratio.
+          </p>
+          <p>USDC deposits are held in Compound to generate yield that funds platform rewards.</p>
+        </div>
+      </div>
 
-          {/* Token Description */}
-          <div className="p-2 mb-4">
-            <p className="text-emerald-900 leading-relaxed font-medium">
-              The CUT token is the native currency of the Cut platform. Each CUT is backed by and
-              convertible to USDC at a 1:1 ratio. USDC deposits are held in Compound III to generate
-              yield that funds platform rewards.
-            </p>
-          </div>
-
-          {/* Token Stats */}
-          <div className="mt-4 space-y-4">
-            {/* Token Section */}
-            <div>
-              <h3 className="text-sm font-semibold text-emerald-900 mb-2 px-1">CUT Token</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    ${totalAvailableBalanceLoading ? "..." : formattedTotalAvailableBalance}
-                  </div>
-                  <div className="text-xs text-gray-600">USDC Deposited</div>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
-                  </div>
-                  <div className="text-xs text-gray-600">CUT Minted</div>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">∞</div>
-                  <div className="text-xs text-gray-600">Max Supply</div>
-                </div>
+      {/* Token Stats */}
+      <div className="space-y-4 mb-4">
+        {/* Token Section */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">CUT Token</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                ${totalAvailableBalanceLoading ? "..." : formattedTotalAvailableBalance}
               </div>
+              <div className="text-sm text-gray-600 mt-1">USDC Deposited</div>
             </div>
 
-            {/* Deposits Section */}
-            <div>
-              <h3 className="text-sm font-semibold text-emerald-900 mb-2 px-1">
-                <a
-                  href="https://app.compound.finance/?market=usdc-basemainnet"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-900 hover:text-green-600 underline"
-                >
-                  Compound III
-                </a>{" "}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    {cUSDCUtilization === undefined ? "..." : `${formattedUtilization.toFixed(2)}%`}
-                  </div>
-                  <div className="text-xs text-gray-600">Utilization Rate</div>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
-                  </div>
-                  <div className="text-xs text-gray-600">Supply APY</div>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
-                  </div>
-                  <div className="text-xs text-gray-600">cUSDC Balance</div>
-                </div>
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
               </div>
+              <div className="text-sm text-gray-600 mt-1">CUT Minted</div>
             </div>
-          </div>
 
-          {/* Buy/Sell/Transfer Tabs */}
-          <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-lg border border-emerald-200/50">
-            <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-              <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-                <Tab
-                  className={({ selected }: { selected: boolean }) =>
-                    classNames(
-                      "w-full py-2 text-sm font-medium leading-5",
-                      "focus:outline-none",
-                      selected
-                        ? "border-b-2 border-green-600 text-green-700"
-                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
-                    )
-                  }
-                >
-                  Buy
-                </Tab>
-                <Tab
-                  className={({ selected }: { selected: boolean }) =>
-                    classNames(
-                      "w-full py-2 text-sm font-medium leading-5",
-                      "focus:outline-none",
-                      selected
-                        ? "border-b-2 border-green-600 text-green-700"
-                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
-                    )
-                  }
-                >
-                  Sell
-                </Tab>
-                <Tab
-                  className={({ selected }: { selected: boolean }) =>
-                    classNames(
-                      "w-full py-2 text-sm font-medium leading-5",
-                      "focus:outline-none",
-                      selected
-                        ? "border-b-2 border-green-600 text-green-700"
-                        : "text-gray-600 hover:border-emerald-300 hover:text-gray-800"
-                    )
-                  }
-                >
-                  Transfer
-                </Tab>
-              </TabList>
-              <div className="p-4">
-                <TabPanel>
-                  <Buy />
-                </TabPanel>
-                <TabPanel>
-                  <Sell />
-                </TabPanel>
-                <TabPanel>
-                  <Transfer />
-                </TabPanel>
-              </div>
-            </TabGroup>
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">∞</div>
+              <div className="text-sm text-gray-600 mt-1">Max Supply</div>
+            </div>
           </div>
         </div>
+
+        {/* Deposits Section */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <a
+              href="https://app.compound.finance/?market=usdc-basemainnet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Compound
+            </a>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {cUSDCUtilization === undefined ? "..." : `${formattedUtilization.toFixed(2)}%`}
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Utilization Rate</div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Supply APY</div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
+              </div>
+              <div className="text-sm text-gray-600 mt-1">cUSDC Balance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Buy/Sell/Transfer Tabs */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 mb-4">
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-2 text-sm font-medium leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-600 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800"
+                )
+              }
+            >
+              Buy
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-2 text-sm font-medium leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-600 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800"
+                )
+              }
+            >
+              Sell
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-2 text-sm font-medium leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-600 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800"
+                )
+              }
+            >
+              Transfer
+            </Tab>
+          </TabList>
+          <div className="p-4">
+            <TabPanel>
+              <Buy />
+            </TabPanel>
+            <TabPanel>
+              <Sell />
+            </TabPanel>
+            <TabPanel>
+              <Transfer />
+            </TabPanel>
+          </div>
+        </TabGroup>
       </div>
 
       {/* Contract Addresses */}

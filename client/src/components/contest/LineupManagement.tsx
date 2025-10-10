@@ -90,6 +90,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
+    data: statusData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
@@ -165,6 +166,18 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         return;
       }
 
+      // Check if the transaction actually succeeded
+      if (statusData?.status === "failure") {
+        setServerError("Blockchain transaction failed. Please try again.");
+        setPendingAction(null);
+        return;
+      }
+
+      // Only proceed if the transaction succeeded
+      if (statusData?.status !== "success") {
+        return;
+      }
+
       try {
         if (pendingAction.type === "join") {
           await joinContest.mutateAsync({
@@ -198,7 +211,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
     handleBlockchainConfirmation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfirmed, pendingAction, contestId, tournamentId]);
+  }, [isConfirmed, pendingAction, contestId, tournamentId, statusData?.status]);
 
   const handleJoinContest = async (lineupId: string) => {
     if (!hasEnoughBalance) {

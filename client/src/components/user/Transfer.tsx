@@ -15,7 +15,11 @@ export const Transfer = () => {
   const [amount, setAmount] = useState("");
 
   const { data, isPending, sendCalls, error } = useSendCalls();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForCallsStatus({
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    data: statusData,
+  } = useWaitForCallsStatus({
     id: data?.id,
   });
 
@@ -56,10 +60,7 @@ export const Transfer = () => {
     <>
       <div className="space-y-5">
         <div>
-          <h3 className="text-base font-semibold text-gray-800 mb-2">Transfer CUT Tokens</h3>
-          <p className="text-sm text-gray-600">
-            Send CUT directly to another wallet address. This action cannot be undone.
-          </p>
+          <h3 className="text-base font-semibold text-gray-800 mb-2">Transfer CUT</h3>
         </div>
 
         <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
@@ -109,16 +110,23 @@ export const Transfer = () => {
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
-          <div className="font-medium mb-1">
-            {isConfirmed ? "Transfer Confirmed" : "Transaction failed"}
-          </div>
+          <div className="font-medium mb-1">Transaction failed</div>
           <div className="text-red-600">{error.message}</div>
         </div>
       )}
 
-      {isConfirmed && !error && (
+      {isConfirmed && statusData?.status === "success" && (
         <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
           <div className="text-green-700 font-medium">Transfer completed successfully!</div>
+        </div>
+      )}
+
+      {isConfirmed && statusData?.status === "failure" && (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
+          <div className="font-medium mb-1">Transaction failed</div>
+          <div className="text-red-600">
+            The transaction was rejected or failed to execute. Please try again.
+          </div>
         </div>
       )}
     </>

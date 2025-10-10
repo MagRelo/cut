@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useChainId } from "wagmi";
 // import { Link } from "react-router-dom";
@@ -8,7 +8,8 @@ import { useChainId } from "wagmi";
 import { PageHeader } from "../components/util/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useTournament } from "../contexts/TournamentContext";
+import { useCurrentTournament } from "../hooks/useTournamentData";
+import { useContestsQuery } from "../hooks/useContestQuery";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -17,16 +18,17 @@ function classNames(...classes: string[]) {
 export const Contests: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const { user } = usePortoAuth();
-  const { contests: allContests, isLoading, error: tournamentError } = useTournament();
   const chainId = useChainId();
+  const { tournament } = useCurrentTournament();
 
-  // Filter contests by current chain ID
-  const contests = useMemo(() => {
-    if (!chainId) return [];
-    return allContests.filter((contest) => contest.chainId === chainId);
-  }, [allContests, chainId]);
+  // Fetch contests filtered by tournament and chain
+  const {
+    data: contests = [],
+    isLoading,
+    error: contestError,
+  } = useContestsQuery(tournament?.id, chainId);
 
-  const error = tournamentError ? "Failed to fetch contests" : null;
+  const error = contestError ? "Failed to fetch contests" : null;
 
   // Separate contests into user's contests and all contests
   const userContests = contests.filter((contest) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
@@ -35,6 +35,13 @@ export const Sell = () => {
 
   // Extract transaction hash from receipts when confirmed
   const transactionHash = isConfirmed && statusData?.receipts?.[0]?.transactionHash;
+
+  // log all statusData from debugging if failed
+  useEffect(() => {
+    if (statusData?.status === "failure") {
+      console.log("statusData", statusData);
+    }
+  }, [statusData]);
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
@@ -100,7 +107,7 @@ export const Sell = () => {
         <div>
           <h3 className="text-base font-semibold text-gray-800 mb-3">Sell CUT for USDC</h3>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
               <div className="text-lg font-semibold text-gray-800">
@@ -171,7 +178,7 @@ export const Sell = () => {
         </div>
       )}
 
-      {isConfirmed && (
+      {isConfirmed && statusData?.status === "success" && (
         <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
           <div className="text-green-700 font-medium mb-2">Transaction completed successfully!</div>
           {transactionHash &&
@@ -182,6 +189,15 @@ export const Sell = () => {
               "View Transaction",
               "text-green-600 hover:text-green-800 font-medium"
             )}
+        </div>
+      )}
+
+      {isConfirmed && statusData?.status === "failure" && (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
+          <div className="font-medium mb-1">Transaction failed</div>
+          <div className="text-red-600">
+            The transaction was rejected or failed to execute. Please try again.
+          </div>
         </div>
       )}
     </>

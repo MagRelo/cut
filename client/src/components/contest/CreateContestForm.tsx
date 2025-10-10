@@ -90,65 +90,80 @@ export const CreateContestForm = () => {
   // Effect to handle API call after blockchain confirmation
   useEffect(() => {
     const createContestInBackend = async () => {
-      if (isConfirmed && pendingContestData && sendCallsData?.id) {
-        setLoading(true);
-        try {
-          // Parse logs from the EscrowFactory address
-          const escrowFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
-            (log) => log.address.toLowerCase() === escrowFactoryAddress?.toLowerCase()
-          );
-          if (!escrowFactoryLogs?.length) {
-            console.log("Confirmation data:", confirmationData);
-            throw new Error("No logs found from EscrowFactory");
-          }
+      if (!isConfirmed || !pendingContestData || !sendCallsData?.id) {
+        return;
+      }
 
-          // Decode the logs using the ABI
-          const decodedLogs = escrowFactoryLogs
-            .map((log) => {
-              try {
-                const decoded = decodeEventLog({
-                  abi: EscrowFactory.abi,
-                  data: log.data,
-                  topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
-                });
-                return decoded;
-              } catch (error) {
-                console.error("Error decoding log:", error);
-                return null;
-              }
-            })
-            .filter(Boolean);
+      // Check if the transaction actually succeeded
+      if (confirmationData?.status === "failure") {
+        setError("Blockchain transaction failed. Please try again.");
+        setPendingContestData(null);
+        setLoading(false);
+        return;
+      }
 
-          // Get the escrow address from the logs
-          const escrowAddress = (decodedLogs[0]?.args as unknown as { escrow: string })?.escrow;
-          if (!escrowAddress) {
-            throw new Error("No escrow address found in logs");
-          }
+      // Only proceed if the transaction succeeded
+      if (confirmationData?.status !== "success") {
+        return;
+      }
 
-          // create contest in backend
-          const contest = await contestApi.createContest({
-            ...pendingContestData,
-            transactionId: sendCallsData?.id,
-            address: escrowAddress,
-          });
-
-          // Reset form after successful submission
-          setFormData(defaultFormData);
-          setPendingContestData(null);
-
-          // redirect to contest page
-          navigate(`/contest/${contest.id}`);
-        } catch (err) {
-          console.error("Error creating contest in backend:", err);
-          setError("Failed to create contest in backend");
-        } finally {
-          setLoading(false);
+      setLoading(true);
+      try {
+        // Parse logs from the EscrowFactory address
+        const escrowFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
+          (log) => log.address.toLowerCase() === escrowFactoryAddress?.toLowerCase()
+        );
+        if (!escrowFactoryLogs?.length) {
+          console.log("Confirmation data:", confirmationData);
+          throw new Error("No logs found from EscrowFactory");
         }
+
+        // Decode the logs using the ABI
+        const decodedLogs = escrowFactoryLogs
+          .map((log) => {
+            try {
+              const decoded = decodeEventLog({
+                abi: EscrowFactory.abi,
+                data: log.data,
+                topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
+              });
+              return decoded;
+            } catch (error) {
+              console.error("Error decoding log:", error);
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        // Get the escrow address from the logs
+        const escrowAddress = (decodedLogs[0]?.args as unknown as { escrow: string })?.escrow;
+        if (!escrowAddress) {
+          throw new Error("No escrow address found in logs");
+        }
+
+        // create contest in backend
+        const contest = await contestApi.createContest({
+          ...pendingContestData,
+          transactionId: sendCallsData?.id,
+          address: escrowAddress,
+        });
+
+        // Reset form after successful submission
+        setFormData(defaultFormData);
+        setPendingContestData(null);
+
+        // redirect to contest page
+        navigate(`/contest/${contest.id}`);
+      } catch (err) {
+        console.error("Error creating contest in backend:", err);
+        setError("Failed to create contest in backend");
+      } finally {
+        setLoading(false);
       }
     };
 
     createContestInBackend();
-  }, [isConfirmed, pendingContestData, sendCallsData?.id, contestApi]);
+  }, [isConfirmed, pendingContestData, sendCallsData?.id, contestApi, confirmationData?.status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

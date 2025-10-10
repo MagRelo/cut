@@ -89,6 +89,7 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
+    data: statusData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
@@ -168,6 +169,18 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
         return;
       }
 
+      // Check if the transaction actually succeeded
+      if (statusData?.status === "failure") {
+        setServerError("Blockchain transaction failed. Please try again.");
+        setPendingAction(false);
+        return;
+      }
+
+      // Only proceed if the transaction succeeded
+      if (statusData?.status !== "success") {
+        return;
+      }
+
       try {
         // Add lineup to contest using React Query mutation
         // This automatically updates the cache with optimistic updates!
@@ -194,7 +207,7 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
     // to prevent effect from re-running when these function references change
     // Using extracted primitive values (contestId, tournamentId) instead of contest object
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfirmed, pendingAction, selectedLineupId, contestId, tournamentId]);
+  }, [isConfirmed, pendingAction, selectedLineupId, contestId, tournamentId, statusData?.status]);
 
   const handleJoinContest = async () => {
     if (!hasEnoughBalance) {

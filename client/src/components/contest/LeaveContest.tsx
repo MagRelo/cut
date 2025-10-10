@@ -68,6 +68,7 @@ export const LeaveContest: React.FC<LeaveContestProps> = ({ contest }) => {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: confirmationError,
+    data: statusData,
   } = useWaitForCallsStatus({
     id: sendCallsData?.id,
   });
@@ -75,26 +76,40 @@ export const LeaveContest: React.FC<LeaveContestProps> = ({ contest }) => {
   // Effect to handle blockchain confirmation
   useEffect(() => {
     const handleBlockchainConfirmation = async () => {
-      if (isConfirmed && pendingAction && selectedLineupId) {
-        try {
-          // Remove lineup from contest using React Query mutation
-          // This automatically updates the cache with optimistic updates!
-          await leaveContest.mutateAsync({
-            contestId: contest.id,
-            contestLineupId: selectedLineupId,
-          });
+      if (!isConfirmed || !pendingAction || !selectedLineupId) {
+        return;
+      }
 
-          await getLineups(contest.tournamentId); // Refresh lineups
-          setPendingAction(false);
-          setSelectedLineupId(null);
-          setServerError(null);
-        } catch (error) {
-          console.error("Error leaving contest:", error);
-          setServerError(
-            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`
-          );
-          setPendingAction(false);
-        }
+      // Check if the transaction actually succeeded
+      if (statusData?.status === "failure") {
+        setServerError("Blockchain transaction failed. Please try again.");
+        setPendingAction(false);
+        return;
+      }
+
+      // Only proceed if the transaction succeeded
+      if (statusData?.status !== "success") {
+        return;
+      }
+
+      try {
+        // Remove lineup from contest using React Query mutation
+        // This automatically updates the cache with optimistic updates!
+        await leaveContest.mutateAsync({
+          contestId: contest.id,
+          contestLineupId: selectedLineupId,
+        });
+
+        await getLineups(contest.tournamentId); // Refresh lineups
+        setPendingAction(false);
+        setSelectedLineupId(null);
+        setServerError(null);
+      } catch (error) {
+        console.error("Error leaving contest:", error);
+        setServerError(
+          `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+        setPendingAction(false);
       }
     };
 
@@ -107,6 +122,7 @@ export const LeaveContest: React.FC<LeaveContestProps> = ({ contest }) => {
     contest.tournamentId,
     leaveContest,
     getLineups,
+    statusData?.status,
   ]);
 
   const handleButtonClick = () => {
