@@ -72,6 +72,10 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
   const [submissionError, setSubmissionError] = React.useState<string | null>(null);
   const [pendingAction, setPendingAction] = React.useState<boolean>(false);
 
+  // Extract primitive values to prevent re-renders when contest object reference changes
+  const contestId = contest.id;
+  const tournamentId = contest.tournamentId;
+
   // Wagmi functions
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
@@ -159,39 +163,38 @@ export const JoinContest: React.FC<JoinContestProps> = ({ contest }) => {
   // Effect to handle blockchain confirmation
   useEffect(() => {
     const handleBlockchainConfirmation = async () => {
-      if (isConfirmed && pendingAction && selectedLineupId) {
-        try {
-          // Add lineup to contest using React Query mutation
-          // This automatically updates the cache with optimistic updates!
-          await joinContest.mutateAsync({
-            contestId: contest.id,
-            tournamentLineupId: selectedLineupId,
-          });
+      // Only process if confirmed, we have a pending action, and a selected lineup
+      if (!isConfirmed || !pendingAction || !selectedLineupId) {
+        return;
+      }
 
-          await getLineups(contest.tournamentId); // Refresh lineups
-          setPendingAction(false);
-          setSelectedLineupId(null);
-          setServerError(null);
-        } catch (error) {
-          console.error("Error joining contest:", error);
-          setServerError(
-            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`
-          );
-          setPendingAction(false);
-        }
+      try {
+        // Add lineup to contest using React Query mutation
+        // This automatically updates the cache with optimistic updates!
+        await joinContest.mutateAsync({
+          contestId,
+          tournamentLineupId: selectedLineupId,
+        });
+
+        await getLineups(tournamentId); // Refresh lineups
+        setPendingAction(false);
+        setSelectedLineupId(null);
+        setServerError(null);
+      } catch (error) {
+        console.error("Error joining contest:", error);
+        setServerError(
+          `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+        setPendingAction(false);
       }
     };
 
     handleBlockchainConfirmation();
-  }, [
-    isConfirmed,
-    pendingAction,
-    selectedLineupId,
-    contest.id,
-    contest.tournamentId,
-    joinContest,
-    getLineups,
-  ]);
+    // Note: Intentionally omitting joinContest and getLineups from dependencies
+    // to prevent effect from re-running when these function references change
+    // Using extracted primitive values (contestId, tournamentId) instead of contest object
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfirmed, pendingAction, selectedLineupId, contestId, tournamentId]);
 
   const handleJoinContest = async () => {
     if (!hasEnoughBalance) {
