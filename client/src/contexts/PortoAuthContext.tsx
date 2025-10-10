@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { handleApiResponse, ApiError } from "../utils/apiError";
 
 interface PortoUser {
@@ -39,6 +40,7 @@ export function usePortoAuth() {
 export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId } = useAccount();
   const { switchChain } = useSwitchChain();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,11 +73,13 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // Clear any stored auth data on 401
           setUser(null);
+          // Clear all TanStack Query cache to prevent data leakage between users
+          queryClient.clear();
         }
         throw error;
       }
     },
-    [config]
+    [config, queryClient]
   );
 
   const updateUser = useCallback(
@@ -118,7 +122,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-  }, []);
+    // Clear all TanStack Query cache to prevent data leakage between users
+    queryClient.clear();
+  }, [queryClient]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -163,8 +169,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!address) {
       setUser(null);
+      // Clear all TanStack Query cache to prevent data leakage between users
+      queryClient.clear();
     }
-  }, [address]);
+  }, [address, queryClient]);
 
   const contextValue = useMemo(
     () => ({

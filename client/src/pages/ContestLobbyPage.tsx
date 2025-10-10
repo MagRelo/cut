@@ -9,10 +9,9 @@ import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { JoinContest } from "../components/contest/JoinContest";
 import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestCard } from "../components/contest/ContestCard";
+import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
-
-type SortOption = "ownership" | "points" | "position" | "name" | "score";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -49,9 +48,6 @@ export const ContestLobby: React.FC = () => {
 
   // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // player list state
-  const [sortBy, setSortBy] = useState<SortOption>("ownership");
 
   // blockchain data
   const chainId = useChainId();
@@ -218,14 +214,14 @@ export const ContestLobby: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2"></th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="pl-4 pr-1 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2"></th>
+                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Team
                           </th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Lineup
                           </th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Points
                           </th>
                         </tr>
@@ -242,12 +238,12 @@ export const ContestLobby: React.FC = () => {
                                 }}
                               />
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="text-md font-medium text-gray-800">
                                 {lineup.user?.name || lineup.user?.email || "Unknown User"}
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <div className="flex items-center justify-center text-blue-600">
                                 <svg
                                   className="w-5 h-5"
@@ -259,7 +255,7 @@ export const ContestLobby: React.FC = () => {
                                 </svg>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center">
                               <span className="text-sm font-bold text-gray-900">
                                 {lineup.totalPoints}
                               </span>
@@ -275,235 +271,83 @@ export const ContestLobby: React.FC = () => {
 
             {/* Players */}
             <TabPanel>
-              <div className="space-y-4">
-                {(() => {
-                  // Process players data for de-duplication and ownership calculation
-                  const processPlayersData = () => {
-                    if (!contest?.contestLineups) return [];
+              {(() => {
+                // Process players data for de-duplication and ownership calculation
+                const processPlayersData = () => {
+                  if (!contest?.contestLineups) return [];
 
-                    const playerMap = new Map();
-                    const totalLineups = contest.contestLineups.length;
+                  const playerMap = new Map();
+                  const totalLineups = contest.contestLineups.length;
 
-                    // Aggregate player data from all lineups
-                    contest.contestLineups.forEach((lineup) => {
-                      if (lineup.tournamentLineup?.players) {
-                        lineup.tournamentLineup.players.forEach((player) => {
-                          const playerId = player.id;
+                  // Aggregate player data from all lineups
+                  contest.contestLineups.forEach((lineup) => {
+                    if (lineup.tournamentLineup?.players) {
+                      lineup.tournamentLineup.players.forEach((player) => {
+                        const playerId = player.id;
 
-                          if (!playerMap.has(playerId)) {
-                            playerMap.set(playerId, {
-                              player: player,
-                              ownedByLineups: 0,
+                        if (!playerMap.has(playerId)) {
+                          playerMap.set(playerId, {
+                            player: {
+                              ...player,
                               ownershipPercentage: 0,
-                              totalScore: player.tournamentData?.total || 0,
-                              leaderboardPosition:
-                                player.tournamentData?.leaderboardPosition || "–",
-                              leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
-                            });
-                          }
-
-                          // Increment ownership count
-                          const playerData = playerMap.get(playerId);
-                          playerData.ownedByLineups += 1;
-                          playerData.ownershipPercentage = Math.round(
-                            (playerData.ownedByLineups / totalLineups) * 100
-                          );
-                        });
-                      }
-                    });
-
-                    // Convert map to array and sort based on current sort option
-                    return Array.from(playerMap.values()).sort((a, b) => {
-                      switch (sortBy) {
-                        case "ownership": {
-                          if (a.ownershipPercentage !== b.ownershipPercentage) {
-                            return b.ownershipPercentage - a.ownershipPercentage;
-                          }
-                          return b.totalScore - a.totalScore;
+                            },
+                            ownedByLineups: 0,
+                            ownershipPercentage: 0,
+                            totalScore: player.tournamentData?.total || 0,
+                            leaderboardPosition: player.tournamentData?.leaderboardPosition || "–",
+                            leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
+                          });
                         }
-                        case "points": {
-                          const aTotal =
-                            a.totalScore +
-                            (a.player.tournamentData?.cut || 0) +
-                            (a.player.tournamentData?.bonus || 0);
-                          const bTotal =
-                            b.totalScore +
-                            (b.player.tournamentData?.cut || 0) +
-                            (b.player.tournamentData?.bonus || 0);
-                          return bTotal - aTotal;
-                        }
-                        case "position": {
-                          const aPos =
-                            a.leaderboardPosition === "–"
-                              ? 999
-                              : parseInt(a.leaderboardPosition) || 999;
-                          const bPos =
-                            b.leaderboardPosition === "–"
-                              ? 999
-                              : parseInt(b.leaderboardPosition) || 999;
-                          return aPos - bPos;
-                        }
-                        case "name": {
-                          return (a.player.pga_displayName || "").localeCompare(
-                            b.player.pga_displayName || ""
-                          );
-                        }
-                        case "score": {
-                          const aScore = a.leaderboardTotal;
-                          const bScore = b.leaderboardTotal;
 
-                          // Handle special cases like "E" (even par)
-                          if (aScore === "E" && bScore === "E") return 0;
-                          if (aScore === "E") return -1;
-                          if (bScore === "E") return 1;
+                        // Increment ownership count
+                        const playerData = playerMap.get(playerId);
+                        playerData.ownedByLineups += 1;
+                        playerData.ownershipPercentage = Math.round(
+                          (playerData.ownedByLineups / totalLineups) * 100
+                        );
+                        // Update ownership in the player object as well
+                        playerData.player.ownershipPercentage = playerData.ownershipPercentage;
+                      });
+                    }
+                  });
 
-                          // Handle numeric scores (negative is better in golf)
-                          const aNum = parseFloat(aScore) || 999;
-                          const bNum = parseFloat(bScore) || 999;
-                          return aNum - bNum; // Lower scores first (better golf scores)
-                        }
-                        default:
-                          return 0;
-                      }
-                    });
-                  };
+                  // Convert map to array and sort by points (highest first)
+                  return Array.from(playerMap.values()).sort((a, b) => {
+                    const aTotal =
+                      a.totalScore +
+                      (a.player.tournamentData?.cut || 0) +
+                      (a.player.tournamentData?.bonus || 0);
+                    const bTotal =
+                      b.totalScore +
+                      (b.player.tournamentData?.cut || 0) +
+                      (b.player.tournamentData?.bonus || 0);
+                    return bTotal - aTotal;
+                  });
+                };
 
-                  const playersData = processPlayersData();
+                const playersData = processPlayersData();
 
-                  if (playersData.length === 0) {
-                    return (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No players found in this contest.</p>
-                      </div>
-                    );
-                  }
-
+                if (playersData.length === 0) {
                   return (
-                    <div className="space-y-4">
-                      {/* Header */}
-                      <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg border">
-                        <div className="flex-1">
-                          <button
-                            onClick={() => setSortBy("name")}
-                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
-                              sortBy === "name" ? "text-emerald-600" : "text-gray-900"
-                            }`}
-                          >
-                            Player
-                          </button>
-                        </div>
-                        <div className="w-16 text-center">
-                          <button
-                            onClick={() => setSortBy("ownership")}
-                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
-                              sortBy === "ownership" ? "text-emerald-600" : "text-gray-900"
-                            }`}
-                          >
-                            Own%
-                          </button>
-                        </div>
-                        <div className="w-16 text-center">
-                          <button
-                            onClick={() => setSortBy("position")}
-                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
-                              sortBy === "position" ? "text-emerald-600" : "text-gray-900"
-                            }`}
-                          >
-                            Pos
-                          </button>
-                        </div>
-                        <div className="w-16 text-center">
-                          <button
-                            onClick={() => setSortBy("score")}
-                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
-                              sortBy === "score" ? "text-emerald-600" : "text-gray-900"
-                            }`}
-                          >
-                            Score
-                          </button>
-                        </div>
-                        <div className="w-16 text-center">
-                          <button
-                            onClick={() => setSortBy("points")}
-                            className={`text-sm font-medium hover:text-emerald-600 transition-colors ${
-                              sortBy === "points" ? "text-emerald-600" : "text-gray-900"
-                            }`}
-                          >
-                            Points
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Player List */}
-                      {playersData.map((playerData) => (
-                        <div
-                          key={playerData.player.id}
-                          className="flex items-center justify-between py-3 px-4 bg-white rounded-lg border hover:bg-gray-50 transition-colors"
-                        >
-                          {/* Player Info */}
-                          <div className="flex-1 flex items-center space-x-3">
-                            {playerData.player.pga_imageUrl && (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
-                                src={playerData.player.pga_imageUrl}
-                                alt={playerData.player.pga_displayName || ""}
-                              />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {playerData.player.pga_displayName}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {playerData.player.pga_country && (
-                                  <span className="mr-1">{playerData.player.pga_countryFlag}</span>
-                                )}
-                                {playerData.player.pga_country}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Ownership Percentage */}
-                          <div className="w-16 text-center">
-                            <span className="text-sm font-medium text-emerald-600">
-                              {playerData.ownershipPercentage}%
-                            </span>
-                          </div>
-
-                          {/* Leaderboard Position */}
-                          <div className="w-16 text-center">
-                            <span className="text-sm font-medium text-gray-900">
-                              {playerData.leaderboardPosition}
-                            </span>
-                          </div>
-
-                          {/* Leaderboard Total */}
-                          <div className="w-16 text-center">
-                            <span
-                              className={`text-sm font-medium ${
-                                playerData.leaderboardTotal === "E" ||
-                                !playerData.leaderboardTotal?.toString().startsWith("-")
-                                  ? "text-gray-900"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {playerData.leaderboardTotal}
-                            </span>
-                          </div>
-
-                          {/* Fantasy Points */}
-                          <div className="w-16 text-center">
-                            <span className="text-sm font-bold text-gray-900">
-                              {playerData.totalScore +
-                                (playerData.player.tournamentData?.cut || 0) +
-                                (playerData.player.tournamentData?.bonus || 0)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No players found in this contest.</p>
                     </div>
                   );
-                })()}
-              </div>
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {/* Player Cards */}
+                    {playersData.map((playerData) => (
+                      <PlayerDisplayCard
+                        key={playerData.player.id}
+                        player={playerData.player}
+                        roundDisplay="R1"
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </TabPanel>
 
             {/* Settings */}

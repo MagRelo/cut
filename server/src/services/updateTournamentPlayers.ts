@@ -1,8 +1,8 @@
 // this service will run periodcally to keep the tournament player scores up to date
 
-import { prisma } from '../lib/prisma.js';
-import { fetchScorecard } from '../lib/pgaScorecard.js';
-import { getPgaLeaderboard } from '../lib/pgaLeaderboard.js';
+import { prisma } from "../lib/prisma.js";
+import { fetchScorecard } from "../lib/pgaScorecard.js";
+import { getPgaLeaderboard } from "../lib/pgaLeaderboard.js";
 
 // Process players in batches to avoid overwhelming the API
 const BATCH_SIZE = 10;
@@ -16,9 +16,7 @@ async function processPlayerBatch(
   const results = await Promise.all(
     players.map(async (tournamentPlayer) => {
       if (!tournamentPlayer.player.pga_pgaTourId) {
-        console.warn(
-          `- No PGA Tour ID found for player ${tournamentPlayer.player.id}`
-        );
+        console.warn(`- No PGA Tour ID found for player ${tournamentPlayer.player.id}`);
         return null;
       }
 
@@ -70,10 +68,7 @@ async function processPlayerBatch(
 
         return tournamentPlayer.playerId;
       } catch (error) {
-        console.error(
-          `- Error updating score for player ${tournamentPlayer.playerId}:`,
-          error
-        );
+        console.error(`- Error updating score for player ${tournamentPlayer.playerId}:`, error);
         return null;
       }
     })
@@ -89,20 +84,7 @@ export async function updateTournamentPlayerScores() {
     });
 
     if (!currentTournament) {
-      console.error(
-        'updateTournamentPlayerScores: No current tournament found'
-      );
-      return;
-    }
-
-    // only update scores for players when roundStatusDisplay is "In Progress" or "Complete"
-    if (
-      currentTournament.roundStatusDisplay !== 'In Progress' &&
-      currentTournament.roundStatusDisplay !== 'Complete'
-    ) {
-      console.log(
-        `updateTournamentPlayerScores: Skipping score update. ${currentTournament.name}: ${currentTournament.roundStatusDisplay}`
-      );
+      console.error("updateTournamentPlayerScores: No current tournament found");
       return;
     }
 
@@ -131,11 +113,7 @@ export async function updateTournamentPlayerScores() {
         )}`
       );
 
-      const batchResults = await processPlayerBatch(
-        batch,
-        currentTournament,
-        leaderboardPlayers
-      );
+      const batchResults = await processPlayerBatch(batch, currentTournament, leaderboardPlayers);
       updatedPlayerIds.push(...batchResults);
 
       // Add delay between batches to avoid rate limiting
@@ -148,7 +126,7 @@ export async function updateTournamentPlayerScores() {
       `- updateTournamentPlayerScores: Updated scores for ${updatedPlayerIds.length} players in '${currentTournament.name}'.`
     );
   } catch (error) {
-    console.error('Error in updateTournamentPlayerScores:', error);
+    console.error("Error in updateTournamentPlayerScores:", error);
     throw error;
   }
 }
@@ -157,11 +135,11 @@ export async function updateTournamentPlayerScores() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   updateTournamentPlayerScores()
     .then(() => {
-      console.log('Tournament player scores update completed');
+      console.log("Tournament player scores update completed");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Tournament player scores update failed:', error);
+      console.error("Tournament player scores update failed:", error);
       process.exit(1);
     });
 }
