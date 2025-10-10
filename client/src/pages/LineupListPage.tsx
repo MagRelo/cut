@@ -8,7 +8,7 @@ import { ErrorMessage } from "../components/util/ErrorMessage";
 // import { Share } from "../components/common/Share";
 
 import { PageHeader } from "../components/util/PageHeader";
-import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
+import { LineupCard } from "../components/lineup/LineupCard";
 
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading } = usePortoAuth();
@@ -75,41 +75,12 @@ export const LineupList: React.FC = () => {
       {lineups && lineups.length > 0 && (
         <div className="space-y-4 mb-6">
           {lineups.map((lineup) => (
-            <div key={lineup.id} className="bg-white rounded-lg shadow-md p-4">
-              {/* lineup header */}
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-600">
-                    {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                  </h3>
-                </div>
-                {isTournamentEditable && (
-                  <Link
-                    to={`/lineups/edit/${lineup.id}`}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-medium transition-colors"
-                  >
-                    Edit
-                  </Link>
-                )}
-              </div>
-
-              {/* Display players in the lineup */}
-              {lineup.players && lineup.players.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3">
-                  {lineup.players.map((player, index) => (
-                    <PlayerDisplayCard
-                      key={`${lineup.id}-player-${index}`}
-                      player={player}
-                      roundDisplay={currentTournament?.roundDisplay || ""}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  No players selected in this lineup
-                </div>
-              )}
-            </div>
+            <LineupCard
+              key={lineup.id}
+              lineup={lineup}
+              isEditable={isTournamentEditable}
+              roundDisplay={currentTournament?.roundDisplay || ""}
+            />
           ))}
         </div>
       )}

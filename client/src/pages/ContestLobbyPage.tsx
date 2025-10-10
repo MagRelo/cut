@@ -11,6 +11,9 @@ import { LeaveContest } from "../components/contest/LeaveContest";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
+import { LineupModal } from "../components/lineup/LineupModal";
+import { type TournamentLineup } from "../types/player";
+import { type ContestLineup } from "../types/lineup";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -47,6 +50,28 @@ export const ContestLobby: React.FC = () => {
 
   // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // lineup modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLineup, setSelectedLineup] = useState<{
+    lineup: TournamentLineup;
+    userName: string;
+  } | null>(null);
+
+  const openLineupModal = (contestLineup: ContestLineup) => {
+    if (contestLineup.tournamentLineup) {
+      setSelectedLineup({
+        lineup: contestLineup.tournamentLineup,
+        userName: contestLineup.user?.name || contestLineup.user?.email || "Unknown User",
+      });
+      setIsModalOpen(true);
+    }
+  };
+
+  const closeLineupModal = () => {
+    setIsModalOpen(false);
+    setSelectedLineup(null);
+  };
 
   // blockchain data
   const chainId = useChainId();
@@ -242,15 +267,21 @@ export const ContestLobby: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
-                              <div className="flex items-center justify-center text-blue-600">
-                                <svg
-                                  className="w-5 h-5"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                  xmlns="http://www.w3.org/2000/svg"
+                              <div className="flex items-center justify-center">
+                                <button
+                                  onClick={() => openLineupModal(lineup)}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded p-1"
+                                  title="View lineup"
                                 >
-                                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                </svg>
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                  </svg>
+                                </button>
                               </div>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap text-center">
@@ -525,6 +556,15 @@ export const ContestLobby: React.FC = () => {
           </div>
         </TabGroup>
       </div>
+
+      {/* Lineup Modal */}
+      <LineupModal
+        isOpen={isModalOpen}
+        onClose={closeLineupModal}
+        lineup={selectedLineup?.lineup || null}
+        roundDisplay={contest?.tournament?.roundDisplay || ""}
+        userName={selectedLineup?.userName}
+      />
     </div>
   );
 };
