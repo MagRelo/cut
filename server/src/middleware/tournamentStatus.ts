@@ -37,23 +37,21 @@ export const requireTournamentEditable = async (
       return;
     }
 
-    const tournamentStatus = currentTournament.roundStatusDisplay || "Unknown";
-    const isInProgressOrComplete =
-      tournamentStatus === "In Progress" || tournamentStatus === "Complete";
-
-    if (isInProgressOrComplete) {
-      console.log(`[MIDDLEWARE] Tournament status: ${tournamentStatus}, blocking user edits`);
+    if (currentTournament.status === "IN_PROGRESS") {
+      console.log(
+        `[MIDDLEWARE] Tournament status: ${currentTournament.status}, blocking user edits`
+      );
       return c.json(
         {
           error: "Tournament editing is not allowed",
-          message: `Cannot edit data while tournament is ${tournamentStatus.toLowerCase()}`,
-          tournamentStatus: tournamentStatus,
+          message: "Cannot edit data while tournament is in progress",
+          tournamentStatus: currentTournament.status,
         },
         403
       );
     }
 
-    // console.log(`[MIDDLEWARE] Tournament status: ${tournamentStatus}, allowing user edits`);
+    // console.log(`[MIDDLEWARE] Tournament status: ${currentTournament.status}, allowing user edits`);
     await next();
   } catch (error) {
     console.error("[MIDDLEWARE] Error checking tournament status:", error);

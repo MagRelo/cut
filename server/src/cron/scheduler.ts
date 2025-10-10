@@ -37,7 +37,7 @@ class CronScheduler {
     }
   }
 
-  private async shouldSkipPlayerUpdates(): Promise<boolean> {
+  private async shouldRunPlayerUpdates(): Promise<boolean> {
     try {
       const currentTournament = await prisma.tournament.findFirst({
         where: { manualActive: true },
@@ -46,23 +46,24 @@ class CronScheduler {
 
       if (!currentTournament) {
         console.log("[CRON] No tournament is active, skipping player updates");
-        return true;
+        return false;
       }
 
-      const shouldSkip =
-        currentTournament.roundStatusDisplay !== "In Progress" &&
-        currentTournament.roundStatusDisplay !== "Complete";
+      const shouldRun =
+        currentTournament.status === "IN_PROGRESS" &&
+        (currentTournament.roundStatusDisplay === "In Progress" ||
+          currentTournament.roundStatusDisplay === "Complete");
 
-      if (shouldSkip) {
+      if (!shouldRun) {
         console.log(
-          `[CRON] Tournament status: ${currentTournament.roundStatusDisplay}, skipping player updates`
+          `[CRON] Tournament status: ${currentTournament.status}, skipping player updates`
         );
       }
 
-      return shouldSkip;
+      return shouldRun;
     } catch (error) {
       console.error("[CRON] Error checking tournament status:", error);
-      return true; // Skip on error to be safe
+      return false; // Don't run on error to be safe
     }
   }
 
@@ -94,8 +95,8 @@ class CronScheduler {
 
     // Job 4: Update player scores every 5 minutes (with conditional logic)
     const updatePlayersJob = cron.schedule("*/5 * * * *", async () => {
-      const shouldSkip = await this.shouldSkipPlayerUpdates();
-      if (!shouldSkip) {
+      const shouldRun = await this.shouldRunPlayerUpdates();
+      if (shouldRun) {
         await this.executeWithErrorHandling(
           "Update Tournament Players",
           updateTournamentPlayerScores
@@ -106,8 +107,8 @@ class CronScheduler {
 
     // Job 5: Update contest lineups every 5 minutes (with conditional logic)
     const updateLineupsJob = cron.schedule("*/5 * * * *", async () => {
-      const shouldSkip = await this.shouldSkipPlayerUpdates();
-      if (!shouldSkip) {
+      const shouldRun = await this.shouldRunPlayerUpdates();
+      if (shouldRun) {
         await this.executeWithErrorHandling("Update Contest Lineups", updateContestLineups);
       }
     });

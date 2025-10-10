@@ -33,10 +33,8 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
   const { data, isLoading, error } = useTournamentData();
 
   // Check if tournament is editable (matches server middleware logic)
-  // Tournament is NOT editable when status is "In Progress" or "Complete"
-  const tournamentStatus = data?.tournament?.roundStatusDisplay || "Unknown";
-  const isTournamentEditable =
-    tournamentStatus !== "In Progress" && tournamentStatus !== "Complete";
+  // Tournament is NOT editable when status is "IN_PROGRESS"
+  const isTournamentEditable = data?.tournament?.status !== "IN_PROGRESS";
 
   const value: TournamentContextType = {
     currentTournament: data?.tournament ?? null,
