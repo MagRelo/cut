@@ -213,8 +213,7 @@ export const ContestLobby: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="pl-4 pr-1 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2"></th>
-                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Team
                           </th>
                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -228,18 +227,18 @@ export const ContestLobby: React.FC = () => {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {sortedLineups.map((lineup) => (
                           <tr key={lineup.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="pl-4 pr-1 py-3 whitespace-nowrap">
-                              <div
-                                className="w-3 h-3 rounded-full border border-gray-300"
-                                style={{
-                                  backgroundColor:
-                                    (lineup.user?.settings?.color as string) || "#D3D3D3",
-                                }}
-                              />
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
-                              <div className="text-md font-medium text-gray-800">
-                                {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                            <td className="pl-4 pr-2 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <div className="text-md font-medium text-gray-800">
+                                  {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                                </div>
+                                <div
+                                  className="w-3 h-3 rounded-full border border-gray-300"
+                                  style={{
+                                    backgroundColor:
+                                      (lineup.user?.settings?.color as string) || "#D3D3D3",
+                                  }}
+                                />
                               </div>
                             </td>
                             <td className="px-2 py-3 whitespace-nowrap">
@@ -339,8 +338,7 @@ export const ContestLobby: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
-                          <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Name
                           </th>
                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -372,20 +370,13 @@ export const ContestLobby: React.FC = () => {
 
                           return (
                             <tr key={player.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="pl-3 pr-1 py-3 whitespace-nowrap text-center">
-                                {icon && (
-                                  <span className="text-xl" title="Player status">
-                                    {icon}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-2 py-3 whitespace-nowrap">
+                              <td className="pl-4 pr-2 py-3 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <span className="text-md font-medium text-gray-800">
                                     {player.pga_displayName || "Unknown Player"}
                                   </span>
                                   <button
-                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    className="text-gray-500 hover:text-gray-800 transition-colors"
                                     title="View scorecard (coming soon)"
                                     disabled
                                   >
@@ -404,10 +395,15 @@ export const ContestLobby: React.FC = () => {
                                       />
                                     </svg>
                                   </button>
+                                  {icon && (
+                                    <span className="text-lg text-gray-400" title="Player status">
+                                      {icon}
+                                    </span>
+                                  )}
                                 </div>
                               </td>
                               <td className="px-2 py-3 whitespace-nowrap text-center">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm text-gray-700">
                                   {playerData.ownershipPercentage}%
                                 </span>
                               </td>
