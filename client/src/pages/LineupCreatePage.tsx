@@ -1,19 +1,19 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { PageHeader } from "../components/util/PageHeader";
+// import { PageHeader } from "../components/util/PageHeader";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
 import { TournamentLineupForm } from "../components/team/TournamentLineupForm";
-import { useLineup } from "../contexts/LineupContext";
+// import { useLineup } from "../contexts/LineupContext";
 
 const LineupCreatePage: React.FC = () => {
   const { lineupId } = useParams<{ lineupId: string }>();
   const isEditMode = Boolean(lineupId);
-  const { getLineupFromCache } = useLineup();
+  // const { getLineupFromCache } = useLineup();
 
   // Get lineup data for edit mode
-  const currentLineup = isEditMode ? getLineupFromCache(lineupId!) : null;
+  // const currentLineup = isEditMode ? getLineupFromCache(lineupId!) : null;
 
-  // Generate title based on mode
+  /*// Generate title based on mode
   const getPageTitle = () => {
     if (isEditMode && currentLineup) {
       const lineupName = currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}`;
@@ -23,7 +23,7 @@ const LineupCreatePage: React.FC = () => {
       return "Create Lineup";
     }
     return isEditMode ? "Edit Lineup" : "Create Lineup";
-  };
+  };*/
 
   return (
     <div className="space-y-2 p-4">
@@ -36,7 +36,7 @@ const LineupCreatePage: React.FC = () => {
           },
         ]}
       />
-      <PageHeader title={getPageTitle()} className="mb-3" />
+      {/* <PageHeader title={getPageTitle()} className="mb-3" /> */}
       <div className="bg-white rounded-lg shadow">
         <TournamentLineupForm lineupId={lineupId} />
       </div>

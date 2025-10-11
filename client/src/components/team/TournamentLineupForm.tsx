@@ -188,12 +188,19 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md pb-6">
-      {/* Header with Submit button */}
-      <div className="flex justify-end mb-4">
+      {/* Lineup header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-600">
+            {lineupId && currentLineup
+              ? currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}`
+              : nextLineupName}
+          </h3>
+        </div>
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded text-sm flex items-center gap-2"
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-2"
         >
           {isSubmitting ? (
             <>
@@ -201,17 +208,7 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
               Saving...
             </>
           ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              {lineupId ? "Update Lineup" : "Save Lineup"}
-            </>
+            <>{"Save"}</>
           )}
         </button>
       </div>
