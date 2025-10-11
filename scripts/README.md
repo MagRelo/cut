@@ -14,6 +14,20 @@ The deployment script automates the entire contract deployment process including
 4. **Configuration Updates** - Updates contract addresses in both client and server config files
 5. **Artifact Copying** - Copies contract ABIs to the server directory
 
+### Verification Script (`verify.js`)
+
+The verification script allows you to verify already-deployed contracts on the blockchain explorer. This is useful when:
+
+- Verification failed during initial deployment
+- You want to re-verify contracts after updates
+- You need to verify contracts that were deployed manually
+
+The script:
+
+1. **Loads Contract Addresses** - Reads addresses from existing config files
+2. **Verifies Contracts** - Submits contract source code to the blockchain explorer (Blockscout)
+3. **Reports Results** - Shows success/failure for each contract verification
+
 ### Sepolia Interaction Scripts (`sepolia/`)
 
 The sepolia directory contains scripts for interacting with deployed contracts on Base Sepolia testnet:
@@ -69,8 +83,20 @@ npm run deploy:contracts:base
 # Deploy contracts and then deploy the full application
 npm run deploy:full
 
-# Run the script directly
+# Run the deploy script directly
 node scripts/deploy.js [network]
+
+# Verify contracts on Sepolia (default)
+npm run verify:contracts
+
+# Verify contracts on Sepolia explicitly
+npm run verify:contracts:sepolia
+
+# Verify contracts on Base mainnet
+npm run verify:contracts:base
+
+# Run the verify script directly
+node scripts/verify.js [network]
 
 # Run sepolia interaction scripts
 cd scripts
@@ -179,6 +205,39 @@ The script provides colored console output with:
 🎉 Deployment completed successfully!
 ```
 
+### Verification Script Example
+
+```
+🔍 Starting contract verification on base_sepolia
+
+=== Loading contract addresses for base_sepolia ===
+✅ Loaded 5 contract addresses
+ℹ️ Contract addresses:
+  MockUSDC: 0x7150669d6aD21be53D2d71c09138D46381b90b5b
+  PlatformToken: 0x772c846Ac2BC1CF0733331e76912d90479c0481d
+  DepositManager: 0x14138DC74022AE1290132cd4945381e94aCE2A88
+  EscrowFactory: 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
+  MockCompound: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
+
+=== Verifying contracts on https://base-sepolia.blockscout.com ===
+ℹ️ Verifying MockUSDC at 0x7150669d6aD21be53D2d71c09138D46381b90b5b
+✅ Verified MockUSDC
+ℹ️ Verifying PlatformToken at 0x772c846Ac2BC1CF0733331e76912d90479c0481d
+✅ Verified PlatformToken
+ℹ️ Verifying DepositManager at 0x14138DC74022AE1290132cd4945381e94aCE2A88
+✅ Verified DepositManager
+ℹ️ Verifying EscrowFactory at 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
+✅ Verified EscrowFactory
+ℹ️ Verifying MockCompound at 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
+✅ Verified MockCompound
+
+=== Verification Summary ===
+ℹ️ Chain ID: 84532
+ℹ️ Explorer: https://sepolia.basescan.org
+✅ Successfully verified: 5 contract(s)
+✅ 🎉 Verification completed!
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -202,9 +261,18 @@ The script provides colored console output with:
 
    - Verification failures are logged as warnings and don't stop deployment
    - Check the explorer manually if verification fails
+   - You can use the `verify.js` script to retry verification separately
 
 5. **Permission Denied**
-   - Ensure the script is executable: `chmod +x scripts/deploy.js`
+
+   - Ensure the scripts are executable:
+     - `chmod +x scripts/deploy.js`
+     - `chmod +x scripts/verify.js`
+
+6. **Contract Addresses Not Found (verify.js)**
+   - Ensure contracts have been deployed first
+   - Check that the config files exist in `server/src/contracts/`
+   - Verify you're using the correct network argument
 
 ### Getting Help
 

@@ -32,7 +32,10 @@
     "deploy:contracts": "node scripts/deploy.js",
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
     "deploy:contracts:base": "node scripts/deploy.js base",
-    "deploy:full": "npm run deploy:contracts && npm run deploy"
+    "deploy:full": "npm run deploy:contracts && npm run deploy",
+    "verify:contracts": "node scripts/verify.js",
+    "verify:contracts:sepolia": "node scripts/verify.js sepolia",
+    "verify:contracts:base": "node scripts/verify.js base"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
