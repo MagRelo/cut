@@ -27,9 +27,9 @@ import ContractsPage from "./pages/ContractsPage";
 
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 
-import { TournamentInfoCard } from "./components/common/TournamentInfoCard";
-import { ProtectedRoute } from "./components/util/ProtectedRoute";
-import { Navigation } from "./components/Navigation";
+import { TournamentInfoCard } from "./components/tournament/TournamentInfoCard";
+import { ProtectedRoute } from "./components/common/ProtectedRoute";
+import { Navigation } from "./components/common/Navigation";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';

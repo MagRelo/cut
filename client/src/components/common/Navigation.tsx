@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 export const Navigation: React.FC = () => {
   const { user, isAdmin } = usePortoAuth();

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LoadingSpinner } from "./LoadingSpinner";
-import { ErrorMessage } from "../util/ErrorMessage";
+import { LoadingSpinner } from "../common/LoadingSpinner";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { useTournament } from "../../contexts/TournamentContext";
 import { CountdownTimer } from "./CountdownTimer";
 import { TournamentSummaryModal } from "./TournamentSummaryModal";

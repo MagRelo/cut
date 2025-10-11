@@ -5,7 +5,7 @@ import { useChainId } from "wagmi";
 
 // import { TournamentStatus } from "../types.new/tournament";
 
-import { PageHeader } from "../components/util/PageHeader";
+import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useCurrentTournament } from "../hooks/useTournamentData";

@@ -1,5 +1,5 @@
-import { PageHeader } from "../components/util/PageHeader";
-import { Breadcrumbs } from "../components/util/Breadcrumbs";
+import { PageHeader } from "../components/common/PageHeader";
+import { Breadcrumbs } from "../components/common/Breadcrumbs";
 
 export function USDCInfoPage() {
   return (

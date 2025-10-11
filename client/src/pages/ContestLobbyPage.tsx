@@ -4,7 +4,7 @@ import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useBalance, useChainId, useChains, useReadContract } from "wagmi";
 import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { Breadcrumbs } from "../components/util/Breadcrumbs";
+import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";

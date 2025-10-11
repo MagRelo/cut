@@ -4,10 +4,10 @@ import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useLineup } from "../contexts/LineupContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { ErrorMessage } from "../components/util/ErrorMessage";
+import { ErrorMessage } from "../components/common/ErrorMessage";
 // import { Share } from "../components/common/Share";
 
-import { PageHeader } from "../components/util/PageHeader";
+import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
 
 export const LineupList: React.FC = () => {

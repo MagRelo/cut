@@ -1,8 +1,8 @@
 import React from "react";
 import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { ErrorMessage } from "../components/util/ErrorMessage";
-import { PageHeader } from "../components/util/PageHeader";
+import { ErrorMessage } from "../components/common/ErrorMessage";
+import { PageHeader } from "../components/common/PageHeader";
 import { PlayerWithTournamentData } from "../types/player";
 
 export const LeaderboardPage: React.FC = () => {

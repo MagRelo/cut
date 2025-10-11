@@ -6,18 +6,18 @@ import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineup } from "../../contexts/LineupContext";
-import { ErrorMessage } from "../util/ErrorMessage";
+import { ErrorMessage } from "../common/ErrorMessage";
 
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import { PlayerSelectionCard } from "./PlayerSelectionCard";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 
 /**
- * TournamentLineupForm Component
+ * LineupForm Component
  *
  * Usage:
- * - Create mode: <TournamentLineupForm /> (no lineupId prop)
- * - Update mode: <TournamentLineupForm lineupId="existing-lineup-id" />
+ * - Create mode: <LineupForm /> (no lineupId prop)
+ * - Update mode: <LineupForm lineupId="existing-lineup-id" />
  *
  * The component automatically handles:
  * - Creating new lineups when no lineupId is provided
@@ -25,12 +25,12 @@ import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
  * - Fetching the appropriate lineup data
  * - Managing player selection and lineup updates
  */
-interface TournamentLineupFormProps {
+interface LineupFormProps {
   lineupId?: string; // If provided, we're in update mode. If not, we're in create mode
   onUpdateLineup?: (playerIds: string[]) => Promise<void>;
 }
 
-export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ lineupId }) => {
+export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   const navigate = useNavigate();
   const { loading: isAuthLoading } = usePortoAuth();
   const {

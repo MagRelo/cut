@@ -1,9 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-// import { PageHeader } from "../components/util/PageHeader";
-import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { TournamentLineupForm } from "../components/team/TournamentLineupForm";
-// import { useLineup } from "../contexts/LineupContext";
+import { Breadcrumbs } from "../components/common/Breadcrumbs";
+import { LineupForm } from "../components/lineup/LineupForm";
 
 const LineupCreatePage: React.FC = () => {
   const { lineupId } = useParams<{ lineupId: string }>();
@@ -38,7 +36,7 @@ const LineupCreatePage: React.FC = () => {
       />
       {/* <PageHeader title={getPageTitle()} className="mb-3" /> */}
       <div className="bg-white rounded-lg shadow">
-        <TournamentLineupForm lineupId={lineupId} />
+        <LineupForm lineupId={lineupId} />
       </div>
     </div>
   );

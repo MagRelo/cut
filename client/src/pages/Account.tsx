@@ -1,10 +1,10 @@
 import { useAccount, useDisconnect } from "wagmi";
 
-import { CopyToClipboard } from "../components/util/CopyToClipboard";
-import { NetworkStatus } from "../components/util/NetworkStatus";
-import { TestnetWarning } from "../components/util/ChainWarning";
+import { CopyToClipboard } from "../components/common/CopyToClipboard";
+import { NetworkStatus } from "../components/common/NetworkStatus";
+import { TestnetWarning } from "../components/common/ChainWarning";
 
-import { PageHeader } from "../components/util/PageHeader";
+import { PageHeader } from "../components/common/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 // import { usePortoAuth } from "../contexts/PortoAuthContext";
