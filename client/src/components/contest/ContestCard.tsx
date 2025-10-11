@@ -12,58 +12,38 @@ interface ContestCardProps {
 export const ContestCard = ({ contest }: ContestCardProps) => {
   const { isTournamentEditable, currentTournament } = useTournament();
 
-  const renderPreTournamentCard = () => (
-    <div className="flex items-center justify-between">
-      <div className="flex flex-col gap-2">
-        <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
-        <div className="flex items-center">
-          <div className="w-12 inline-flex justify-start">
-            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap">
-              ${contest.settings?.fee}
-            </span>
-          </div>
-          <span className="text-sm text-gray-500 ml-4">
-            Entries:{" "}
-            <span className="font-bold text-gray-700">{contest.contestLineups?.length}</span>
-          </span>
-        </div>
-      </div>
-      <CutAmountDisplay
-        amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
-        label="Pot"
-        logoPosition="right"
-      />
-    </div>
-  );
-
-  const renderInProgressCard = () => (
-    <div className="flex items-center justify-between">
-      <div>
-        <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
-
-        <div className="flex items-center">
-          <div className="w-12 inline-flex justify-start">
-            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap">
-              ${contest.settings?.fee}
-            </span>
-          </div>
-          <span className="text-sm font-sans text-gray-500 ml-4">
-            {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
-          </span>
-        </div>
-      </div>
-
-      <CutAmountDisplay
-        amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
-        label="Pot"
-        logoPosition="right"
-      />
-    </div>
-  );
-
   return (
     <Link to={`/contest/${contest.id}`}>
-      {isTournamentEditable ? renderPreTournamentCard() : renderInProgressCard()}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <div>
+            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap mr-2">
+              ${contest.settings?.fee}
+            </span>
+            <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
+          </div>
+
+          <div className="flex items-center">
+            <span className="text-sm text-gray-500">
+              {isTournamentEditable ? (
+                <>
+                  Entries:{" "}
+                  <span className="font-bold text-gray-700">{contest.contestLineups?.length}</span>
+                </>
+              ) : (
+                <span className="font-sans">
+                  {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+        <CutAmountDisplay
+          amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
+          label="Pot"
+          logoPosition="right"
+        />
+      </div>
     </Link>
   );
 };
