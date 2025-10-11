@@ -118,6 +118,7 @@ export const Buy = () => {
           <input
             id="buy-amount"
             type="number"
+            inputMode="decimal"
             value={buyAmount}
             onChange={(e) => setBuyAmount(e.target.value)}
             placeholder="0.00"
