@@ -216,9 +216,9 @@ export function CUTInfoPage() {
         <div className="space-y-3 text-gray-700">
           <p>
             The CUT token is the native currency of the Cut platform. Each CUT is backed by and
-            convertible to USDC at a 1:1 ratio.
+            convertible to USDC at a 1:1 ratio. USDC deposits are held in Compound to generate
+            yield.
           </p>
-          <p>USDC deposits are held in Compound to generate yield that funds platform rewards.</p>
         </div>
       </div>
 
