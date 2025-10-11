@@ -20,6 +20,8 @@ const NETWORKS = {
     chainId: 84532,
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL,
     explorerUrl: "https://sepolia.basescan.org",
+    blockscoutUrl: "https://base-sepolia.blockscout.com",
+    blockscoutApiUrl: "https://base-sepolia.blockscout.com/api",
     script: "Deploy_sepolia.s.sol",
     verifyChain: "base-sepolia",
   },
@@ -28,6 +30,8 @@ const NETWORKS = {
     chainId: 8453,
     rpcUrl: process.env.BASE_RPC_URL,
     explorerUrl: "https://basescan.org",
+    blockscoutUrl: "https://base.blockscout.com",
+    blockscoutApiUrl: "https://base.blockscout.com/api",
     script: "Deploy_base.s.sol",
     verifyChain: "base",
   },
@@ -220,7 +224,7 @@ function copyContractArtifacts() {
 }
 
 function verifyContracts(network, addresses) {
-  logStep(`Verifying contracts on ${network.explorerUrl}`);
+  logStep(`Verifying contracts on ${network.blockscoutUrl}`);
 
   const contractsDir = path.join(projectRoot, "contracts");
 
@@ -229,15 +233,24 @@ function verifyContracts(network, addresses) {
       try {
         logInfo(`Verifying ${contractName} at ${address}`);
 
+        // Determine contract path based on contract name
+        let contractPath = `src/${contractName}.sol`;
+        if (contractName === "MockUSDC" || contractName === "MockCompound") {
+          contractPath = `src/mocks/${contractName}.sol`;
+        }
+
         // Get constructor arguments if needed
         let constructorArgs = "";
         if (contractName === "DepositManager") {
           constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${
             addresses.MockUSDC || addresses.USDC
           } ${addresses.PlatformToken} ${addresses.MockCompound || addresses.CUSDC})`;
+        } else if (contractName === "MockCompound") {
+          constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
         }
 
-        const verifyCommand = `forge verify-contract ${address} src/${contractName}.sol:${contractName} --chain ${network.verifyChain} --etherscan-api-key ${process.env.BASESCAN_API_KEY} --verifier-url https://api.basescan.org/api ${constructorArgs}`;
+        // Use Blockscout verifier instead of deprecated Etherscan API V1
+        const verifyCommand = `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
 
         try {
           runCommand(verifyCommand, contractsDir);
@@ -255,7 +268,7 @@ function verifyContracts(network, addresses) {
 function checkEnvironment() {
   logStep("Checking environment variables");
 
-  const requiredVars = ["PRIVATE_KEY", "BASESCAN_API_KEY"];
+  const requiredVars = ["PRIVATE_KEY"];
 
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
