@@ -48,9 +48,9 @@ contract MockCompound {
         
         // Default: ~7% APR supply rate
         // APR of 7% = 0.07 per year
-        // Rate per second = 0.07 / 31536000 seconds = 0.000000002219619703199238
-        // In wei (18 decimals) = 2219619703199 wei/second
-        mockSupplyRate = 2219619703199;
+        // Rate per second = 0.07 / 31536000 seconds = 0.00000000221961970319...
+        // In wei (18 decimals) = 2219619703 wei/second
+        mockSupplyRate = 2219619703;
     }
     
     /**

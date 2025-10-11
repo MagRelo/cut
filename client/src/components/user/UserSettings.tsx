@@ -58,7 +58,7 @@ export function UserSettings() {
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Team Display</div>
+      <div className="text-lg font-semibold text-gray-700 mb-2 font-display">User Display</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">
@@ -118,7 +118,7 @@ export function UserSettings() {
 
         {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
 
-        <div className="mt-4 flex justify-center">
+        <div className="flex justify-center !mt-6">
           <button
             type="submit"
             disabled={isLoading || !hasChanges()}
