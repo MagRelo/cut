@@ -160,11 +160,8 @@ export const Sell = () => {
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
           <div className="font-medium mb-1">Transaction failed</div>
           <div className="text-red-600">
-            {transactionError instanceof Error
-              ? transactionError.message
-              : transactionError
-              ? String(transactionError)
-              : "The transaction was rejected or failed to execute. Please try again."}
+            {transactionError ||
+              "The transaction was rejected or failed to execute. Please try again."}
           </div>
         </div>
       )}

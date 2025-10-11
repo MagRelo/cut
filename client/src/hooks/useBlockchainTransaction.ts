@@ -37,6 +37,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [userFriendlyError, setUserFriendlyError] = useState<string | null>(null);
 
   // Handle transaction completion
   useEffect(() => {
@@ -48,6 +49,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       // Transaction failed
       if (statusData.status === "failure") {
         const errorMsg = "Blockchain transaction failed. Please try again.";
+        setUserFriendlyError(errorMsg);
         onError?.(errorMsg);
         setIsProcessing(false);
         onSettled?.();
@@ -58,6 +60,9 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       // Transaction succeeded
       if (statusData.status === "success") {
         try {
+          // Clear any previous errors
+          setUserFriendlyError(null);
+
           // Call the custom success handler
           await onSuccess?.(statusData);
 
@@ -66,6 +71,8 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
             queryKey: ["balance"],
           });
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          setUserFriendlyError(errorMsg);
           onError?.(error instanceof Error ? error : new Error(String(error)));
         } finally {
           setIsProcessing(false);
@@ -80,6 +87,8 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   // Handle send errors
   useEffect(() => {
     if (sendCallsError) {
+      const errorMsg = sendCallsError.message || "Transaction was rejected or failed to send.";
+      setUserFriendlyError(errorMsg);
       onError?.(sendCallsError);
       setIsProcessing(false);
       onSettled?.();
@@ -89,6 +98,8 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   // Handle confirmation errors
   useEffect(() => {
     if (confirmationError) {
+      const errorMsg = confirmationError.message || "Transaction confirmation failed.";
+      setUserFriendlyError(errorMsg);
       onError?.(confirmationError);
       setIsProcessing(false);
       onSettled?.();
@@ -98,9 +109,12 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   const execute = async (calls: TransactionCall[]) => {
     try {
       setIsProcessing(true);
+      setUserFriendlyError(null); // Clear previous errors
       await sendCalls({ calls });
     } catch (error) {
       console.error("Error executing blockchain transaction:", error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      setUserFriendlyError(errorMsg);
       onError?.(error instanceof Error ? error : new Error(String(error)));
       setIsProcessing(false);
       onSettled?.();
@@ -116,7 +130,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
     isFailed: isConfirmed && statusData?.status === "failure",
     transactionHash: statusData?.receipts?.[0]?.transactionHash,
     statusData,
-    error: sendCallsError || confirmationError,
+    error: userFriendlyError || sendCallsError?.message || confirmationError?.message,
     reset,
   };
 }

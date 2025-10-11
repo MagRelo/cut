@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { parseUnits } from "viem";
 import { useNavigate } from "react-router-dom";
 import { useBalance, useAccount, useChainId } from "wagmi";
 
@@ -49,7 +48,7 @@ export const CreateContestForm = () => {
     isConfirmed,
     isFailed,
     error: transactionError,
-    createCreateEscrowCalls,
+    createEscrowCalls,
   } = useCreateEscrow({
     onSuccess: async (statusData) => {
       if (!pendingContestData) return;
@@ -152,10 +151,14 @@ export const CreateContestForm = () => {
     });
 
     // Create and execute the escrow creation calls
-    const calls = createCreateEscrowCalls(
-      formData.settings?.fee ?? 10,
-      endTime,
-      import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
+    // Convert fee to bigint with 18 decimals (platform token)
+    const depositAmount = BigInt(Math.floor((formData.settings?.fee ?? 10) * 1e18));
+    const calls = createEscrowCalls(
+      depositAmount,
+      BigInt(endTime),
+      platformTokenAddress as string,
+      18, // Platform token decimals
+      import.meta.env.VITE_ORACLE_ADDRESS as string,
       formData.settings?.oracleFee ?? 500
     );
 
@@ -283,11 +286,8 @@ export const CreateContestForm = () => {
         {/* Transaction error */}
         {(transactionError || isFailed) && (
           <div>
-            {transactionError instanceof Error
-              ? transactionError.message
-              : transactionError
-              ? String(transactionError)
-              : "The transaction was rejected or failed to execute. Please try again."}
+            {transactionError ||
+              "The transaction was rejected or failed to execute. Please try again."}
           </div>
         )}
 

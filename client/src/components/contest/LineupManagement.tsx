@@ -402,11 +402,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
           {submissionError ||
             serverError ||
-            (transactionError instanceof Error
-              ? transactionError.message
-              : transactionError
-              ? String(transactionError)
-              : "The transaction was rejected or failed to execute. Please try again.")}
+            transactionError ||
+            "The transaction was rejected or failed to execute. Please try again."}
         </div>
       )}
     </div>
