@@ -1,39 +1,46 @@
 import { useState } from "react";
-import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import {
   useTokenSymbol,
   createTransactionLinkJSX,
   getContractAddress,
 } from "../../utils/blockchainUtils.tsx";
+import { useBuyTokens } from "../../hooks/useTokenOperations";
 
 export const Buy = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
 
   // Get contract addresses dynamically
-  const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // Buy form state
   const [buyAmount, setBuyAmount] = useState("");
   const [buyError, setBuyError] = useState<string | null>(null);
 
-  // Transaction state
-  const { data, isPending, sendCalls, error: sendError } = useSendCalls();
+  // Use centralized blockchain transaction hook
   const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    data: statusData, // This contains the receipts with transaction hashes
-  } = useWaitForCallsStatus({
-    id: data?.id,
+    execute,
+    isProcessing,
+    isSending,
+    isConfirmed,
+    isFailed,
+    transactionHash,
+    error: transactionError,
+    createBuyCalls,
+  } = useBuyTokens({
+    onSuccess: () => {
+      setBuyAmount("");
+      setBuyError(null);
+    },
+    // Don't set local error state - let the hook handle error display
+    onError: () => {
+      setBuyError(null); // Clear any existing local errors
+    },
   });
-
-  // Extract transaction hash from receipts when confirmed
-  const transactionHash = isConfirmed && statusData?.receipts?.[0]?.transactionHash;
 
   // Get USDC balance
   const { data: usdcBalance } = useBalance({
@@ -50,52 +57,20 @@ export const Buy = () => {
       return;
     }
 
-    try {
-      setBuyError(null);
+    setBuyError(null);
 
-      // Convert amount to USDC units (6 decimals)
-      const usdcAmount = parseUnits(buyAmount, 6);
+    // Convert amount to USDC units (6 decimals)
+    const usdcAmount = parseUnits(buyAmount, 6);
 
-      // Check if user has enough USDC
-      if (usdcBalance && usdcBalance.value < usdcAmount) {
-        setBuyError("Insufficient USDC balance");
-        return;
-      }
-
-      // Execute the buy transaction with approval
-      sendCalls({
-        calls: [
-          // First approve the DepositManager to spend USDC
-          {
-            abi: [
-              {
-                type: "function",
-                name: "approve",
-                inputs: [
-                  { name: "spender", type: "address" },
-                  { name: "value", type: "uint256" },
-                ],
-                outputs: [{ name: "", type: "bool" }],
-                stateMutability: "nonpayable",
-              },
-            ],
-            args: [depositManagerAddress as `0x${string}`, usdcAmount],
-            functionName: "approve",
-            to: paymentTokenAddress as `0x${string}`,
-          },
-          // Then buy CUT tokens with USDC (1:1 ratio)
-          {
-            abi: DepositManagerContract.abi,
-            args: [usdcAmount],
-            functionName: "depositUSDC",
-            to: depositManagerAddress as `0x${string}`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Error buying CUT tokens:", error);
-      setBuyError("Failed to buy CUT tokens");
+    // Check if user has enough USDC
+    if (usdcBalance && usdcBalance.value < usdcAmount) {
+      setBuyError("Insufficient USDC balance");
+      return;
     }
+
+    // Execute the buy transaction with approval
+    const calls = createBuyCalls(buyAmount);
+    await execute(calls);
   };
 
   // Calculate platform token amount (1:1 ratio)
@@ -109,8 +84,6 @@ export const Buy = () => {
     if (!balance || typeof balance !== "bigint") return "0.00";
     return Number(formatUnits(balance, decimals)).toFixed(2);
   };
-
-  const isProcessing = isPending || isConfirming;
 
   return (
     <>
@@ -176,7 +149,7 @@ export const Buy = () => {
           {isProcessing ? (
             <>
               <LoadingSpinnerSmall />
-              {isPending ? "Confirming..." : "Processing..."}
+              {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
             "Buy CUT Tokens"
@@ -185,14 +158,20 @@ export const Buy = () => {
       </div>
 
       {/* Transaction Status */}
-      {sendError && (
+      {(transactionError || isFailed) && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
           <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">{sendError.message}</div>
+          <div className="text-red-600">
+            {transactionError instanceof Error
+              ? transactionError.message
+              : transactionError
+              ? String(transactionError)
+              : "The transaction was rejected or failed to execute. Please try again."}
+          </div>
         </div>
       )}
 
-      {isConfirmed && statusData?.status === "success" && (
+      {isConfirmed && (
         <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
           <div className="text-green-700 font-medium mb-2">Transaction completed successfully!</div>
           {transactionHash &&
@@ -203,15 +182,6 @@ export const Buy = () => {
               "View Transaction",
               "text-green-600 hover:text-green-800 font-medium"
             )}
-        </div>
-      )}
-
-      {isConfirmed && statusData?.status === "failure" && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
-          <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">
-            The transaction was rejected or failed to execute. Please try again.
-          </div>
         </div>
       )}
     </>

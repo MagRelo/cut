@@ -188,6 +188,34 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md pb-6">
+      {/* Header with Submit button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-4 rounded text-sm flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              {lineupId ? "Update Lineup" : "Save Lineup"}
+            </>
+          )}
+        </button>
+      </div>
+
       <div className="flex flex-col gap-4">
         {/* lineup open */}
         {isEditingAllowed() && (
@@ -226,34 +254,6 @@ export const TournamentLineupForm: React.FC<TournamentLineupFormProps> = ({ line
             })}
           </div>
         )}
-      </div>
-
-      {/* Submit button for all lineups */}
-      <div className="mt-6 flex justify-center">
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-2 px-6 rounded-lg flex items-center gap-2"
-        >
-          {isSubmitting ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Saving...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              {lineupId ? "Update Lineup" : "Save Lineup"}
-            </>
-          )}
-        </button>
       </div>
 
       {/* player selection modal */}

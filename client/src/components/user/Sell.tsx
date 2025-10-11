@@ -1,21 +1,20 @@
-import { useEffect, useState } from "react";
-import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
+import { useState } from "react";
+import { useAccount, useBalance, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
-import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import {
   useTokenSymbol,
   createTransactionLinkJSX,
   getContractAddress,
 } from "../../utils/blockchainUtils.tsx";
+import { useSellTokens } from "../../hooks/useTokenOperations";
 
 export const Sell = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
 
   // Get contract addresses dynamically
-  const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
@@ -23,25 +22,26 @@ export const Sell = () => {
   const [sellAmount, setSellAmount] = useState("");
   const [sellError, setSellError] = useState<string | null>(null);
 
-  // Transaction state
-  const { data, isPending, sendCalls, error: sendError } = useSendCalls();
+  // Use centralized blockchain transaction hook
   const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    data: statusData, // This contains the receipts with transaction hashes
-  } = useWaitForCallsStatus({
-    id: data?.id,
+    execute,
+    isProcessing,
+    isSending,
+    isConfirmed,
+    isFailed,
+    transactionHash,
+    error: transactionError,
+    createSellCalls,
+  } = useSellTokens({
+    onSuccess: () => {
+      setSellAmount("");
+      setSellError(null);
+    },
+    // Don't set local error state - let the hook handle error display
+    onError: () => {
+      setSellError(null); // Clear any existing local errors
+    },
   });
-
-  // Extract transaction hash from receipts when confirmed
-  const transactionHash = isConfirmed && statusData?.receipts?.[0]?.transactionHash;
-
-  // log all statusData from debugging if failed
-  useEffect(() => {
-    if (statusData?.status === "failure") {
-      console.log("statusData", statusData);
-    }
-  }, [statusData]);
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
@@ -58,33 +58,20 @@ export const Sell = () => {
       return;
     }
 
-    try {
-      setSellError(null);
+    setSellError(null);
 
-      // Convert amount to platform token units (18 decimals)
-      const platformTokenAmount = parseUnits(sellAmount, 18);
+    // Convert amount to platform token units (18 decimals)
+    const platformTokenAmount = parseUnits(sellAmount, 18);
 
-      // Check if user has enough platform tokens
-      if (platformTokenBalance && platformTokenBalance.value < platformTokenAmount) {
-        setSellError("Insufficient platform token balance");
-        return;
-      }
-
-      // Execute the sell transaction
-      sendCalls({
-        calls: [
-          {
-            abi: DepositManagerContract.abi,
-            args: [platformTokenAmount],
-            functionName: "withdrawUSDC",
-            to: depositManagerAddress as `0x${string}`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Error selling CUT tokens:", error);
-      setSellError("Failed to sell CUT tokens");
+    // Check if user has enough platform tokens
+    if (platformTokenBalance && platformTokenBalance.value < platformTokenAmount) {
+      setSellError("Insufficient platform token balance");
+      return;
     }
+
+    // Execute the sell transaction
+    const calls = createSellCalls(sellAmount);
+    await execute(calls);
   };
 
   // Calculate payment token amount (1:1 ratio)
@@ -98,8 +85,6 @@ export const Sell = () => {
     if (!balance || typeof balance !== "bigint") return "0.00";
     return Number(formatUnits(balance, decimals)).toFixed(2);
   };
-
-  const isProcessing = isPending || isConfirming;
 
   return (
     <>
@@ -162,7 +147,7 @@ export const Sell = () => {
           {isProcessing ? (
             <>
               <LoadingSpinnerSmall />
-              {isPending ? "Confirming..." : "Processing..."}
+              {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
             "Sell CUT Tokens"
@@ -171,14 +156,20 @@ export const Sell = () => {
       </div>
 
       {/* Transaction Status */}
-      {sendError && (
+      {(transactionError || isFailed) && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
           <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">{sendError.message}</div>
+          <div className="text-red-600">
+            {transactionError instanceof Error
+              ? transactionError.message
+              : transactionError
+              ? String(transactionError)
+              : "The transaction was rejected or failed to execute. Please try again."}
+          </div>
         </div>
       )}
 
-      {isConfirmed && statusData?.status === "success" && (
+      {isConfirmed && (
         <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
           <div className="text-green-700 font-medium mb-2">Transaction completed successfully!</div>
           {transactionHash &&
@@ -189,15 +180,6 @@ export const Sell = () => {
               "View Transaction",
               "text-green-600 hover:text-green-800 font-medium"
             )}
-        </div>
-      )}
-
-      {isConfirmed && statusData?.status === "failure" && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
-          <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">
-            The transaction was rejected or failed to execute. Please try again.
-          </div>
         </div>
       )}
     </>

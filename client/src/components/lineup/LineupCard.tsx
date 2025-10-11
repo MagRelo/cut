@@ -11,7 +11,7 @@ interface LineupCardProps {
 
 export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable, roundDisplay }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <div className="">
       {/* lineup header */}
       <div className="flex justify-between items-start mb-3">
         <div>
@@ -22,7 +22,7 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable, roun
         {isEditable && (
           <Link
             to={`/lineups/edit/${lineup.id}`}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-medium transition-colors"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
           >
             Edit
           </Link>

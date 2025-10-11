@@ -49,7 +49,7 @@ export const LineupModal: React.FC<LineupModalProps> = ({
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-50 p-6 text-left align-middle shadow-xl transition-all">
                 <div className="flex justify-between items-start mb-4">
                   <Dialog.Title as="h3" className="text-2xl font-semibold leading-6 text-gray-900">
-                    {userName ? `${userName}'s Lineup` : "Lineup"}
+                    {userName}
                   </Dialog.Title>
                   <button
                     type="button"

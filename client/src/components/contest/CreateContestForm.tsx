@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
-import { decodeEventLog, parseUnits } from "viem";
+import { parseUnits } from "viem";
 import { useNavigate } from "react-router-dom";
-import { useBalance, useAccount, useSendCalls, useWaitForCallsStatus, useChainId } from "wagmi";
+import { useBalance, useAccount, useChainId } from "wagmi";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { type CreateContestInput } from "../../types/contest";
 import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useCreateEscrow } from "../../hooks/useEscrowOperations";
 
-// contracts
-import EscrowFactory from "../../utils/contracts/EscrowFactory.json";
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 // Helper function to get status messages
@@ -19,11 +18,11 @@ const getStatusMessages = (
   isBlockchainWaiting: boolean = false
 ): string => {
   if (isUserWaiting) {
-    return "Waiting for User...";
+    return "User confirmation...";
   }
 
   if (isBlockchainWaiting) {
-    return "Waiting for Blockchain...";
+    return "Network confirmation...";
   }
 
   return defaultMessage;
@@ -39,21 +38,55 @@ export const CreateContestForm = () => {
   const chainId = useChainId();
 
   // Get contract addresses dynamically
-  const escrowFactoryAddress = getContractAddress(chainId ?? 0, "escrowFactoryAddress");
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+
+  // Use centralized create escrow hook
   const {
-    sendCalls,
-    data: sendCallsData,
-    isPending: isSending,
-    error: sendCallsError,
-  } = useSendCalls();
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    error: confirmationError,
-    data: confirmationData,
-  } = useWaitForCallsStatus({
-    id: sendCallsData?.id,
+    execute,
+    isProcessing,
+    isSending,
+    isConfirming,
+    isConfirmed,
+    isFailed,
+    error: transactionError,
+    createCreateEscrowCalls,
+  } = useCreateEscrow({
+    onSuccess: async (statusData) => {
+      if (!pendingContestData) return;
+
+      setLoading(true);
+      try {
+        // Extract escrow address from the hook's parsed data
+        const escrowAddress = statusData.escrowAddress;
+        if (!escrowAddress) {
+          throw new Error("No escrow address found in transaction logs");
+        }
+
+        // Create contest in backend
+        const contest = await contestApi.createContest({
+          ...pendingContestData,
+          transactionId: statusData.receipts?.[0]?.transactionHash || "",
+          address: escrowAddress,
+        });
+
+        // Reset form after successful submission
+        setFormData(defaultFormData);
+        setPendingContestData(null);
+
+        // Redirect to contest page
+        navigate(`/contest/${contest.id}`);
+      } catch (err) {
+        console.error("Error creating contest in backend:", err);
+        setError("Failed to create contest in backend");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      setError("Blockchain transaction failed. Please try again.");
+      setPendingContestData(null);
+      setLoading(false);
+    },
   });
 
   // get & set platform token
@@ -87,144 +120,46 @@ export const CreateContestForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Effect to handle API call after blockchain confirmation
+  // Effect to handle pending contest data state
   useEffect(() => {
-    const createContestInBackend = async () => {
-      if (!isConfirmed || !pendingContestData || !sendCallsData?.id) {
-        return;
-      }
-
-      // Check if the transaction actually succeeded
-      if (confirmationData?.status === "failure") {
-        setError("Blockchain transaction failed. Please try again.");
-        setPendingContestData(null);
-        setLoading(false);
-        return;
-      }
-
-      // Only proceed if the transaction succeeded
-      if (confirmationData?.status !== "success") {
-        return;
-      }
-
-      setLoading(true);
-      try {
-        // Parse logs from the EscrowFactory address
-        const escrowFactoryLogs = confirmationData?.receipts?.[0]?.logs?.filter(
-          (log) => log.address.toLowerCase() === escrowFactoryAddress?.toLowerCase()
-        );
-        if (!escrowFactoryLogs?.length) {
-          console.log("Confirmation data:", confirmationData);
-          throw new Error("No logs found from EscrowFactory");
-        }
-
-        // Decode the logs using the ABI
-        const decodedLogs = escrowFactoryLogs
-          .map((log) => {
-            try {
-              const decoded = decodeEventLog({
-                abi: EscrowFactory.abi,
-                data: log.data,
-                topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
-              });
-              return decoded;
-            } catch (error) {
-              console.error("Error decoding log:", error);
-              return null;
-            }
-          })
-          .filter(Boolean);
-
-        // Get the escrow address from the logs
-        const escrowAddress = (decodedLogs[0]?.args as unknown as { escrow: string })?.escrow;
-        if (!escrowAddress) {
-          throw new Error("No escrow address found in logs");
-        }
-
-        // create contest in backend
-        const contest = await contestApi.createContest({
-          ...pendingContestData,
-          transactionId: sendCallsData?.id,
-          address: escrowAddress,
-        });
-
-        // Reset form after successful submission
-        setFormData(defaultFormData);
-        setPendingContestData(null);
-
-        // redirect to contest page
-        navigate(`/contest/${contest.id}`);
-      } catch (err) {
-        console.error("Error creating contest in backend:", err);
-        setError("Failed to create contest in backend");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    createContestInBackend();
-  }, [isConfirmed, pendingContestData, sendCallsData?.id, contestApi, confirmationData?.status]);
+    if (pendingContestData && isConfirmed) {
+      // The onSuccess callback in useCreateEscrow will handle the rest
+      setPendingContestData(null);
+    }
+  }, [pendingContestData, isConfirmed]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      setError(null);
+    setError(null);
 
-      // get tournament endTIme, add 7 days
-      const endTime =
-        new Date(currentTournament?.endDate ?? "").getTime() + 7 * 24 * 60 * 60 * 1000;
+    // Get tournament endTime, add 7 days
+    const endTime = new Date(currentTournament?.endDate ?? "").getTime() + 7 * 24 * 60 * 60 * 1000;
 
-      // Store the form data for later use in the API call
-      setPendingContestData({
-        ...formData,
-        endTime,
-        tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
-        chainId: chainId ?? 0, // Ensure chainId is preserved
-      });
+    // Store the form data for later use in the API call
+    setPendingContestData({
+      ...formData,
+      endTime,
+      tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
+      chainId: chainId ?? 0, // Ensure chainId is preserved
+    });
 
-      console.log("Initiating blockchain transaction with data:", {
-        name: formData.name,
-        depositAmount: parseUnits(
-          formData.settings?.fee?.toString() ?? "0",
-          18 // PlatformToken has 18 decimals
-        ),
-        endTime,
-        paymentToken: platformTokenAddress,
-        paymentTokenDecimals: 18,
-        oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-        oracleFee: formData.settings?.oracleFee ?? 500,
-        hasABI: !!EscrowFactory.abi,
-      });
+    console.log("Initiating blockchain transaction with data:", {
+      name: formData.name,
+      depositAmount: formData.settings?.fee?.toString() ?? "0",
+      endTime,
+      oracle: import.meta.env.VITE_ORACLE_ADDRESS,
+      oracleFee: formData.settings?.oracleFee ?? 500,
+    });
 
-      // Execute blockchain transaction
-      sendCalls({
-        calls: [
-          {
-            abi: EscrowFactory.abi,
-            args: [
-              parseUnits(
-                formData.settings?.fee?.toString() ?? "0",
-                18 // PlatformToken has 18 decimals
-              ),
-              BigInt(endTime),
-              platformTokenAddress as `0x${string}`,
-              18, // PlatformToken has 18 decimals
-              import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
-              formData.settings?.oracleFee ?? 500,
-            ],
-            functionName: "createEscrow",
-            to: escrowFactoryAddress as `0x${string}`,
-          },
-        ],
-      });
+    // Create and execute the escrow creation calls
+    const calls = createCreateEscrowCalls(
+      formData.settings?.fee ?? 10,
+      endTime,
+      import.meta.env.VITE_ORACLE_ADDRESS as `0x${string}`,
+      formData.settings?.oracleFee ?? 500
+    );
 
-      // console.log("Send calls result:", result);
-    } catch (err) {
-      console.error("Error initiating blockchain transaction:", err);
-      setError("Failed to initiate blockchain transaction");
-      setLoading(false);
-      setPendingContestData(null);
-    }
+    await execute(calls);
   };
 
   const handleChange = (
@@ -329,10 +264,10 @@ export const CreateContestForm = () => {
       <div>
         <button
           type="submit"
-          disabled={loading || isSending || isConfirming}
+          disabled={loading || isProcessing}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed mt-2"
         >
-          {loading || isSending || isConfirming ? (
+          {loading || isProcessing ? (
             <div className="flex items-center gap-2 w-full justify-center">
               <LoadingSpinnerSmall />
               {getStatusMessages("idle", isSending, isConfirming)}
@@ -345,19 +280,14 @@ export const CreateContestForm = () => {
 
       {/* Add status display */}
       <div className="mt-2 text-sm text-center text-red-500">
-        {/* Confirmation error */}
-        {confirmationError && (
+        {/* Transaction error */}
+        {(transactionError || isFailed) && (
           <div>
-            {(confirmationError as { shortMessage?: string; message: string }).shortMessage ||
-              confirmationError.message}
-          </div>
-        )}
-
-        {/* Send calls error */}
-        {sendCallsError && (
-          <div>
-            {(sendCallsError as { shortMessage?: string; message: string }).shortMessage ||
-              sendCallsError.message}
+            {transactionError instanceof Error
+              ? transactionError.message
+              : transactionError
+              ? String(transactionError)
+              : "The transaction was rejected or failed to execute. Please try again."}
           </div>
         )}
 

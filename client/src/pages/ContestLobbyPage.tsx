@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { useBalance, useChainId, useChains } from "wagmi";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useBalance, useChainId, useChains, useReadContract } from "wagmi";
 import { useTournament } from "../contexts/TournamentContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/util/Breadcrumbs";
-import { JoinContest } from "../components/contest/JoinContest";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
@@ -14,6 +12,7 @@ import { LineupModal } from "../components/lineup/LineupModal";
 import { LineupManagement } from "../components/contest/LineupManagement";
 import { type TournamentLineup } from "../types/player";
 import { type ContestLineup } from "../types/lineup";
+import EscrowContract from "../utils/contracts/Escrow.json";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -42,11 +41,6 @@ export const ContestLobby: React.FC = () => {
 
   // React Query - handles all fetching, caching, and refetching automatically!
   const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
-
-  // user
-  const { user } = usePortoAuth();
-  const userContestLineup = contest?.contestLineups?.find((lineup) => lineup.userId === user?.id);
-  const userInContest = Boolean(userContestLineup);
 
   // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -84,6 +78,17 @@ export const ContestLobby: React.FC = () => {
     address: platformTokenAddress as `0x${string}`,
     token: platformTokenAddress as `0x${string}`,
   });
+
+  // Get escrow contract details (including expiration)
+  const escrowDetails = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: EscrowContract.abi,
+    functionName: "details",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as [bigint, bigint] | undefined;
 
   // Chain validation
   const error =
@@ -149,16 +154,24 @@ export const ContestLobby: React.FC = () => {
         {/* header */}
         <ContestCard contest={contest} />
 
-        {/* Actions */}
-        {contest && isTournamentEditable && !userInContest && (
-          <div className="mb-4 px-4">
-            <JoinContest contest={contest} />
-          </div>
-        )}
-
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+            {isTournamentEditable && (
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  classNames(
+                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  )
+                }
+              >
+                MY LINEUPS
+              </Tab>
+            )}
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
@@ -170,8 +183,23 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              TEAMS
+              ENTRIES
             </Tab>
+            {!isTournamentEditable && (
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  classNames(
+                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  )
+                }
+              >
+                PLAYERS
+              </Tab>
+            )}
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
@@ -183,37 +211,18 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              GOLFERS
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-medium leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              LINEUPS
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-medium leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              SETTINGS
+              INFO
             </Tab>
           </TabList>
           <div className="p-4">
-            {/* Teams */}
+            {/* MY LINEUPS - Only shown when editable */}
+            {isTournamentEditable && (
+              <TabPanel>
+                <LineupManagement contest={contest} />
+              </TabPanel>
+            )}
+
+            {/* ENTRIES - Always shown */}
             <TabPanel>
               {(() => {
                 // Calculate total points for each lineup and sort by points
@@ -311,175 +320,169 @@ export const ContestLobby: React.FC = () => {
               })()}
             </TabPanel>
 
-            {/* Players */}
-            <TabPanel>
-              {(() => {
-                // Process players data for de-duplication and ownership calculation
-                const processPlayersData = () => {
-                  if (!contest?.contestLineups) return [];
+            {/* PLAYERS - Only shown when NOT editable */}
+            {!isTournamentEditable && (
+              <TabPanel>
+                {(() => {
+                  // Process players data for de-duplication and ownership calculation
+                  const processPlayersData = () => {
+                    if (!contest?.contestLineups) return [];
 
-                  const playerMap = new Map();
-                  const totalLineups = contest.contestLineups.length;
+                    const playerMap = new Map();
+                    const totalLineups = contest.contestLineups.length;
 
-                  // Aggregate player data from all lineups
-                  contest.contestLineups.forEach((lineup) => {
-                    if (lineup.tournamentLineup?.players) {
-                      lineup.tournamentLineup.players.forEach((player) => {
-                        const playerId = player.id;
+                    // Aggregate player data from all lineups
+                    contest.contestLineups.forEach((lineup) => {
+                      if (lineup.tournamentLineup?.players) {
+                        lineup.tournamentLineup.players.forEach((player) => {
+                          const playerId = player.id;
 
-                        if (!playerMap.has(playerId)) {
-                          playerMap.set(playerId, {
-                            player: {
-                              ...player,
+                          if (!playerMap.has(playerId)) {
+                            playerMap.set(playerId, {
+                              player: {
+                                ...player,
+                                ownershipPercentage: 0,
+                              },
+                              ownedByLineups: 0,
                               ownershipPercentage: 0,
-                            },
-                            ownedByLineups: 0,
-                            ownershipPercentage: 0,
-                            totalScore: player.tournamentData?.total || 0,
-                            leaderboardPosition: player.tournamentData?.leaderboardPosition || "–",
-                            leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
-                          });
-                        }
+                              totalScore: player.tournamentData?.total || 0,
+                              leaderboardPosition:
+                                player.tournamentData?.leaderboardPosition || "–",
+                              leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
+                            });
+                          }
 
-                        // Increment ownership count
-                        const playerData = playerMap.get(playerId);
-                        playerData.ownedByLineups += 1;
-                        playerData.ownershipPercentage = Math.round(
-                          (playerData.ownedByLineups / totalLineups) * 100
-                        );
-                        // Update ownership in the player object as well
-                        playerData.player.ownershipPercentage = playerData.ownershipPercentage;
-                      });
-                    }
-                  });
+                          // Increment ownership count
+                          const playerData = playerMap.get(playerId);
+                          playerData.ownedByLineups += 1;
+                          playerData.ownershipPercentage = Math.round(
+                            (playerData.ownedByLineups / totalLineups) * 100
+                          );
+                          // Update ownership in the player object as well
+                          playerData.player.ownershipPercentage = playerData.ownershipPercentage;
+                        });
+                      }
+                    });
 
-                  // Convert map to array and sort by points (highest first)
-                  return Array.from(playerMap.values()).sort((a, b) => {
-                    const aTotal =
-                      a.totalScore +
-                      (a.player.tournamentData?.cut || 0) +
-                      (a.player.tournamentData?.bonus || 0);
-                    const bTotal =
-                      b.totalScore +
-                      (b.player.tournamentData?.cut || 0) +
-                      (b.player.tournamentData?.bonus || 0);
-                    return bTotal - aTotal;
-                  });
-                };
+                    // Convert map to array and sort by points (highest first)
+                    return Array.from(playerMap.values()).sort((a, b) => {
+                      const aTotal =
+                        a.totalScore +
+                        (a.player.tournamentData?.cut || 0) +
+                        (a.player.tournamentData?.bonus || 0);
+                      const bTotal =
+                        b.totalScore +
+                        (b.player.tournamentData?.cut || 0) +
+                        (b.player.tournamentData?.bonus || 0);
+                      return bTotal - aTotal;
+                    });
+                  };
 
-                const playersData = processPlayersData();
+                  const playersData = processPlayersData();
 
-                if (playersData.length === 0) {
+                  if (playersData.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No players found in this contest.</p>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No players found in this contest.</p>
+                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              OWN%
+                            </th>
+                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              PTS
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {playersData.map((playerData) => {
+                            const player = playerData.player;
+                            const totalPoints =
+                              (player.tournamentData?.total || 0) +
+                              (player.tournamentData?.cut || 0) +
+                              (player.tournamentData?.bonus || 0);
+
+                            // Get hot/cold icon from current round
+                            const getCurrentRoundIcon = () => {
+                              const roundData = player.tournamentData?.r1;
+                              if (
+                                roundData &&
+                                typeof roundData === "object" &&
+                                "icon" in roundData
+                              ) {
+                                return roundData.icon || "";
+                              }
+                              return "";
+                            };
+
+                            const icon = getCurrentRoundIcon();
+
+                            return (
+                              <tr key={player.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="pl-4 pr-2 py-3 whitespace-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-800">
+                                      {player.pga_displayName || "Unknown Player"}
+                                    </span>
+                                    <button
+                                      className="text-gray-500 hover:text-gray-800 transition-colors"
+                                      title="View scorecard (coming soon)"
+                                      disabled
+                                    >
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        />
+                                      </svg>
+                                    </button>
+                                    {icon && (
+                                      <span className="text-lg text-gray-400" title="Player status">
+                                        {icon}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-2 py-3 whitespace-nowrap text-center">
+                                  <span className="text-sm text-gray-700">
+                                    {playerData.ownershipPercentage}%
+                                  </span>
+                                </td>
+                                <td className="px-2 py-3 whitespace-nowrap text-center">
+                                  <span className="text-sm font-bold text-gray-900">
+                                    {totalPoints}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   );
-                }
+                })()}
+              </TabPanel>
+            )}
 
-                return (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            OWN%
-                          </th>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            PTS
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {playersData.map((playerData) => {
-                          const player = playerData.player;
-                          const totalPoints =
-                            (player.tournamentData?.total || 0) +
-                            (player.tournamentData?.cut || 0) +
-                            (player.tournamentData?.bonus || 0);
-
-                          // Get hot/cold icon from current round
-                          const getCurrentRoundIcon = () => {
-                            const roundData = player.tournamentData?.r1;
-                            if (roundData && typeof roundData === "object" && "icon" in roundData) {
-                              return roundData.icon || "";
-                            }
-                            return "";
-                          };
-
-                          const icon = getCurrentRoundIcon();
-
-                          return (
-                            <tr key={player.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="pl-4 pr-2 py-3 whitespace-nowrap">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-md font-medium text-gray-800">
-                                    {player.pga_displayName || "Unknown Player"}
-                                  </span>
-                                  <button
-                                    className="text-gray-500 hover:text-gray-800 transition-colors"
-                                    title="View scorecard (coming soon)"
-                                    disabled
-                                  >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                      />
-                                    </svg>
-                                  </button>
-                                  {icon && (
-                                    <span className="text-lg text-gray-400" title="Player status">
-                                      {icon}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-2 py-3 whitespace-nowrap text-center">
-                                <span className="text-sm text-gray-700">
-                                  {playerData.ownershipPercentage}%
-                                </span>
-                              </td>
-                              <td className="px-2 py-3 whitespace-nowrap text-center">
-                                <span className="text-sm font-bold text-gray-900">
-                                  {totalPoints}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </TabPanel>
-
-            {/* Lineups */}
-            <TabPanel>
-              {isTournamentEditable ? (
-                <LineupManagement contest={contest} />
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">
-                    Lineup management is disabled while the tournament is in progress.
-                  </p>
-                </div>
-              )}
-            </TabPanel>
-
-            {/* Settings */}
+            {/* INFO */}
             <TabPanel>
               <div className="flex flex-col gap-2">
                 {/* Payout Structure */}
@@ -549,6 +552,16 @@ export const ContestLobby: React.FC = () => {
                       <span className="text-sm text-gray-600">Data Oracle Fee:</span>
                       <span className="text-sm text-gray-600">
                         {contest.settings.oracleFee / 100}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Expiration */}
+                  {escrowDetails && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Expires:</span>
+                      <span className="text-sm text-gray-600">
+                        {new Date(Number(escrowDetails[1])).toLocaleString()}
                       </span>
                     </div>
                   )}

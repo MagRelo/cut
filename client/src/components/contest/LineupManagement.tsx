@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
-import {
-  useBalance,
-  useAccount,
-  useSendCalls,
-  useWaitForCallsStatus,
-  useChainId,
-  useReadContract,
-} from "wagmi";
+import { useBalance, useAccount, useChainId, useReadContract } from "wagmi";
 import { Dialog } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
@@ -16,11 +9,10 @@ import { useLineup } from "../../contexts/LineupContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useJoinContest, useLeaveContest } from "../../hooks/useContestMutations";
+import { useEscrowDeposit, useEscrowWithdraw } from "../../hooks/useEscrowOperations";
 
-// Import contract addresses and ABIs
-import PlatformTokenContract from "../../utils/contracts/PlatformToken.json";
+// Import contract ABIs
 import EscrowContract from "../../utils/contracts/Escrow.json";
-import DepositManagerContract from "../../utils/contracts/DepositManager.json";
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 interface LineupManagementProps {
@@ -34,28 +26,23 @@ const getStatusMessages = (
   isBlockchainWaiting: boolean = false
 ): string => {
   if (isUserWaiting) {
-    return "Waiting for User...";
+    return "User confirmation...";
   }
 
   if (isBlockchainWaiting) {
-    return "Waiting for Blockchain...";
+    return "Network confirmation...";
   }
 
   return defaultMessage;
 };
 
-// Helper functions for decimal conversion
+// Helper functions for decimal conversion (kept for balance checking logic)
 const PAYMENT_TOKEN_DECIMALS = 6;
 const PLATFORM_TOKEN_DECIMALS = 18;
 
 const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
   const humanReadableAmount = formatUnits(paymentTokenAmount, PAYMENT_TOKEN_DECIMALS);
   return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
-};
-
-const convertPlatformToPaymentTokens = (platformTokenAmount: bigint): bigint => {
-  const humanReadableAmount = formatUnits(platformTokenAmount, PLATFORM_TOKEN_DECIMALS);
-  return parseUnits(humanReadableAmount, PAYMENT_TOKEN_DECIMALS);
 };
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
@@ -79,21 +66,87 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   // Wagmi functions
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
+
+  // Use centralized escrow hooks
   const {
-    sendCalls,
-    data: sendCallsData,
-    isPending: isSending,
-    error: sendCallsError,
-    reset: resetSendCalls,
-  } = useSendCalls();
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    error: confirmationError,
-    data: statusData,
-  } = useWaitForCallsStatus({
-    id: sendCallsData?.id,
+    execute: executeDeposit,
+    // isProcessing: isDepositProcessing,
+    isSending: isDepositSending,
+    isConfirming: isDepositConfirming,
+    isConfirmed: isDepositConfirmed,
+    isFailed: isDepositFailed,
+    error: depositError,
+    createDepositCalls,
+  } = useEscrowDeposit({
+    onSuccess: async () => {
+      if (pendingAction?.type === "join" && pendingAction?.lineupId) {
+        try {
+          await joinContest.mutateAsync({
+            contestId,
+            tournamentLineupId: pendingAction.lineupId,
+          });
+          await getLineups(tournamentId);
+          setPendingAction(null);
+          setServerError(null);
+        } catch (error) {
+          console.error("Error joining contest:", error);
+          setServerError(
+            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`
+          );
+          setPendingAction(null);
+        }
+      }
+    },
+    onError: () => {
+      setServerError("Blockchain transaction failed. Please try again.");
+      setPendingAction(null);
+    },
   });
+
+  const {
+    execute: executeWithdraw,
+    // isProcessing: isWithdrawProcessing,
+    isSending: isWithdrawSending,
+    isConfirming: isWithdrawConfirming,
+    isConfirmed: isWithdrawConfirmed,
+    isFailed: isWithdrawFailed,
+    error: withdrawError,
+    createWithdrawCalls,
+  } = useEscrowWithdraw({
+    onSuccess: async () => {
+      if (pendingAction?.type === "leave" && pendingAction?.lineupId) {
+        try {
+          const contestLineupId = enteredLineupsMap.get(pendingAction.lineupId);
+          if (contestLineupId) {
+            await leaveContest.mutateAsync({
+              contestId,
+              contestLineupId,
+            });
+          }
+          await getLineups(tournamentId);
+          setPendingAction(null);
+          setServerError(null);
+        } catch (error) {
+          console.error("Error leaving contest:", error);
+          setServerError(
+            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`
+          );
+          setPendingAction(null);
+        }
+      }
+    },
+    onError: () => {
+      setServerError("Blockchain transaction failed. Please try again.");
+      setPendingAction(null);
+    },
+  });
+
+  // Combined processing states
+  const isSending = isDepositSending || isWithdrawSending;
+  const isConfirming = isDepositConfirming || isWithdrawConfirming;
+  const isConfirmed = isDepositConfirmed || isWithdrawConfirmed;
+  const isFailed = isDepositFailed || isWithdrawFailed;
+  const transactionError = depositError || withdrawError;
 
   // Get the deposit amount from the escrow contract
   const escrowDetails = useReadContract({
@@ -159,59 +212,13 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     return map;
   }, [userContestLineups]);
 
-  // Effect to handle blockchain confirmation
+  // Effect to handle pending action state
   useEffect(() => {
-    const handleBlockchainConfirmation = async () => {
-      if (!isConfirmed || !pendingAction) {
-        return;
-      }
-
-      // Check if the transaction actually succeeded
-      if (statusData?.status === "failure") {
-        setServerError("Blockchain transaction failed. Please try again.");
-        setPendingAction(null);
-        return;
-      }
-
-      // Only proceed if the transaction succeeded
-      if (statusData?.status !== "success") {
-        return;
-      }
-
-      try {
-        if (pendingAction.type === "join") {
-          await joinContest.mutateAsync({
-            contestId,
-            tournamentLineupId: pendingAction.lineupId,
-          });
-        } else if (pendingAction.type === "leave") {
-          const contestLineupId = enteredLineupsMap.get(pendingAction.lineupId);
-          if (contestLineupId) {
-            await leaveContest.mutateAsync({
-              contestId,
-              contestLineupId,
-            });
-          }
-        }
-
-        await getLineups(tournamentId);
-        setPendingAction(null);
-        setServerError(null);
-        resetSendCalls();
-      } catch (error) {
-        console.error(`Error ${pendingAction.type}ing contest:`, error);
-        setServerError(
-          `Failed to ${pendingAction.type} contest: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-        setPendingAction(null);
-      }
-    };
-
-    handleBlockchainConfirmation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConfirmed, pendingAction, contestId, tournamentId, statusData?.status]);
+    if (pendingAction && isConfirmed) {
+      // The onSuccess callbacks in the hooks will handle the rest
+      setPendingAction(null);
+    }
+  }, [pendingAction, isConfirmed]);
 
   const handleJoinContest = async (lineupId: string) => {
     if (!hasEnoughBalance) {
@@ -229,104 +236,39 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       return;
     }
 
-    try {
-      setPendingAction({ type: "join", lineupId });
+    setPendingAction({ type: "join", lineupId });
+    setSubmissionError(null);
 
-      const depositAmount = escrowDetails[0];
-      const platformTokenAmount = platformTokenBalance?.value ?? 0n;
-      const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
+    const depositAmount = escrowDetails[0];
+    const platformTokenAmount = platformTokenBalance?.value ?? 0n;
+    const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
 
-      const platformTokensNeeded =
-        depositAmount > platformTokenAmount ? depositAmount - platformTokenAmount : 0n;
-      const paymentTokensNeeded = convertPlatformToPaymentTokens(platformTokensNeeded);
+    // Create and execute the deposit calls
+    const calls = createDepositCalls(
+      contest.address as string,
+      depositAmount,
+      platformTokenAmount,
+      paymentTokenAmount
+    );
 
-      const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress") ?? "";
-
-      const calls = [];
-
-      // If we need to swap payment tokens for platform tokens
-      if (platformTokensNeeded > 0n && paymentTokenAmount >= paymentTokensNeeded) {
-        calls.push({
-          abi: [
-            {
-              type: "function",
-              name: "approve",
-              inputs: [
-                { name: "spender", type: "address" },
-                { name: "value", type: "uint256" },
-              ],
-              outputs: [{ name: "", type: "bool" }],
-              stateMutability: "nonpayable",
-            },
-          ],
-          args: [depositManagerAddress as `0x${string}`, paymentTokensNeeded],
-          functionName: "approve",
-          to: paymentTokenAddress as `0x${string}`,
-        });
-
-        calls.push({
-          abi: DepositManagerContract.abi,
-          args: [paymentTokensNeeded],
-          functionName: "depositUSDC",
-          to: depositManagerAddress as `0x${string}`,
-        });
-      }
-
-      // Approve the escrow contract to spend platform tokens
-      calls.push({
-        abi: PlatformTokenContract.abi,
-        args: [contest.address as `0x${string}`, depositAmount],
-        functionName: "approve",
-        to: platformTokenAddress as `0x${string}`,
-      });
-
-      // Deposit to the escrow contract
-      calls.push({
-        abi: EscrowContract.abi,
-        args: [],
-        functionName: "deposit",
-        to: contest.address as `0x${string}`,
-      });
-
-      await sendCalls({ calls });
-    } catch (err) {
-      console.error("Error joining contest:", err);
-      setSubmissionError(
-        `Failed to join contest: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
-      setPendingAction(null);
-    }
+    await executeDeposit(calls);
   };
 
   const handleLeaveContest = async (lineupId: string) => {
-    try {
-      setPendingAction({ type: "leave", lineupId });
+    setPendingAction({ type: "leave", lineupId });
+    setSubmissionError(null);
 
-      if (!hasDeposited) {
-        setSubmissionError(
-          `You have not deposited to this contest. Your wallet address: ${userAddress}`
-        );
-        setPendingAction(null);
-        return;
-      }
-
-      await sendCalls({
-        calls: [
-          {
-            abi: EscrowContract.abi,
-            args: [],
-            functionName: "withdraw",
-            to: contest.address as `0x${string}`,
-          },
-        ],
-      });
-    } catch (err) {
-      console.error("Error leaving contest:", err);
+    if (!hasDeposited) {
       setSubmissionError(
-        `Failed to leave contest: ${err instanceof Error ? err.message : "Unknown error"}`
+        `You have not deposited to this contest. Your wallet address: ${userAddress}`
       );
       setPendingAction(null);
+      return;
     }
+
+    // Create and execute the withdraw calls
+    const calls = createWithdrawCalls(contest.address as string);
+    await executeWithdraw(calls);
   };
 
   return (
@@ -396,13 +338,12 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
                         )}
                       </div>
                       {lineup.players && lineup.players.length > 0 && (
-                        <div className="text-xs text-gray-600 mt-1">
-                          {lineup.players.map((player, idx) => (
-                            <span key={player.id}>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-600 mt-2">
+                          {lineup.players.map((player) => (
+                            <div key={player.id}>
                               {player.pga_displayName ||
                                 `${player.pga_firstName} ${player.pga_lastName}`}
-                              {idx < lineup.players.length - 1 && ", "}
-                            </span>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -457,13 +398,15 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       </div>
 
       {/* Error Display */}
-      {(submissionError || serverError || sendCallsError || confirmationError) && (
+      {(submissionError || serverError || transactionError || isFailed) && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
           {submissionError ||
             serverError ||
-            (sendCallsError as Error)?.message ||
-            (confirmationError as Error)?.message ||
-            "An error occurred"}
+            (transactionError instanceof Error
+              ? transactionError.message
+              : transactionError
+              ? String(transactionError)
+              : "The transaction was rejected or failed to execute. Please try again.")}
         </div>
       )}
     </div>

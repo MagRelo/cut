@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useSendCalls, useWaitForCallsStatus, useAccount, useBalance, useChainId } from "wagmi";
-import { formatUnits, parseEther } from "viem";
-import PlatformToken from "../../utils/contracts/PlatformToken.json";
+import { useAccount, useBalance, useChainId } from "wagmi";
+import { formatUnits } from "viem";
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
+import { useTransferTokens } from "../../hooks/useTokenOperations";
 
 export const Transfer = () => {
   const { address, isConnected } = useAccount();
@@ -14,13 +14,24 @@ export const Transfer = () => {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
 
-  const { data, isPending, sendCalls, error } = useSendCalls();
+  // Use centralized blockchain transaction hook
   const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    data: statusData,
-  } = useWaitForCallsStatus({
-    id: data?.id,
+    execute,
+    isProcessing,
+    isSending,
+    isConfirmed,
+    isFailed,
+    error: transactionError,
+    createTransferCalls,
+  } = useTransferTokens({
+    onSuccess: () => {
+      setRecipientAddress("");
+      setAmount("");
+    },
+    // Don't set local error state - let the hook handle error display
+    onError: () => {
+      // Clear any existing local errors - let hook handle display
+    },
   });
 
   const platformTokenBalance = useBalance({
@@ -33,22 +44,8 @@ export const Transfer = () => {
       return;
     }
 
-    try {
-      const calls = [
-        {
-          abi: PlatformToken.abi,
-          args: [recipientAddress, parseEther(amount)],
-          functionName: "transfer",
-          to: platformTokenAddress as `0x${string}`,
-        },
-      ];
-
-      sendCalls({
-        calls,
-      });
-    } catch (error) {
-      console.error("Error sending transfer:", error);
-    }
+    const calls = createTransferCalls(recipientAddress, amount);
+    await execute(calls);
   };
 
   // round balance to 2 decimal points
@@ -100,33 +97,30 @@ export const Transfer = () => {
 
           <button
             onClick={handleTransfer}
-            disabled={!recipientAddress || !amount || isPending || isConfirming}
+            disabled={!recipientAddress || !amount || isProcessing}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-sm hover:shadow-md disabled:shadow-none"
           >
-            {isPending ? "Check Wallet..." : isConfirming ? "Processing..." : "Transfer CUT"}
+            {isSending ? "Check Wallet..." : isProcessing ? "Processing..." : "Transfer CUT"}
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
-          <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">{error.message}</div>
-        </div>
-      )}
-
-      {isConfirmed && statusData?.status === "success" && (
-        <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
-          <div className="text-green-700 font-medium">Transfer completed successfully!</div>
-        </div>
-      )}
-
-      {isConfirmed && statusData?.status === "failure" && (
+      {(transactionError || isFailed) && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
           <div className="font-medium mb-1">Transaction failed</div>
           <div className="text-red-600">
-            The transaction was rejected or failed to execute. Please try again.
+            {transactionError instanceof Error
+              ? transactionError.message
+              : transactionError
+              ? String(transactionError)
+              : "The transaction was rejected or failed to execute. Please try again."}
           </div>
+        </div>
+      )}
+
+      {isConfirmed && (
+        <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+          <div className="text-green-700 font-medium">Transfer completed successfully!</div>
         </div>
       )}
     </>
