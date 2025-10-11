@@ -38,7 +38,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     <div className="flex items-center justify-between">
       <div>
         <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
-        <h3 className="text-sm font-sans text-gray-500 mt-1">
+        <h3 className="text-sm font-sans text-gray-500">
           {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
         </h3>
       </div>

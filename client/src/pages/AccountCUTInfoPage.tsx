@@ -5,7 +5,7 @@ import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/util/PageHeader.tsx";
 import { Breadcrumbs } from "../components/util/Breadcrumbs.tsx";
-import { ChainWarning, TestnetWarning } from "../components/util/ChainWarning.tsx";
+import { TestnetWarning } from "../components/util/ChainWarning.tsx";
 // import { TokenBalances } from "../components/user/TokenBalances";
 import { Buy } from "../components/user/Buy.tsx";
 import { Sell } from "../components/user/Sell.tsx";
@@ -200,10 +200,6 @@ export function CUTInfoPage() {
       />
       <PageHeader title="About CUT" className="mb-3" />
 
-      {/* Chain Warnings */}
-      <ChainWarning />
-      <TestnetWarning />
-
       {/* CUT Token Info Card */}
       <div className="bg-white rounded-lg shadow p-6 mb-4">
         {/* Header with Logo and Title */}
@@ -221,6 +217,8 @@ export function CUTInfoPage() {
           </p>
         </div>
       </div>
+
+      <TestnetWarning />
 
       {/* Token Stats */}
       <div className="space-y-4 mb-4">

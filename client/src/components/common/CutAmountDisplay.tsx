@@ -14,7 +14,7 @@ export const CutAmountDisplay = ({
   const logo = <img src="/logo-transparent.png" alt="cut-logo" className="h-10" />;
   const content = (
     <div className="flex flex-col items-center">
-      <div className="text-2xl font-semibold leading-tight">${amount}</div>
+      <div className="text-2xl font-bold leading-tight">${amount}</div>
       {label && (
         <div className="text-xs uppercase text-gray-400 font-semibold tracking-wider leading-none">
           {label}

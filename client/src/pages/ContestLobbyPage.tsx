@@ -220,7 +220,9 @@ export const ContestLobby: React.FC = () => {
             {/* MY LINEUPS - Only shown when editable */}
             {isTournamentEditable && (
               <TabPanel>
-                <LineupManagement contest={contest} />
+                <div className="p-4">
+                  <LineupManagement contest={contest} />
+                </div>
               </TabPanel>
             )}
 
@@ -267,7 +269,7 @@ export const ContestLobby: React.FC = () => {
                               Lineup
                             </th>
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Points
+                              PTS
                             </th>
                           </tr>
                         </thead>
@@ -304,7 +306,7 @@ export const ContestLobby: React.FC = () => {
                                 </div>
                               </td>
                               <td className="px-2 py-3 whitespace-nowrap text-center">
-                                <span className="text-sm font-bold text-gray-900">
+                                <span className="text-md font-bold text-gray-900">
                                   {lineup.totalPoints}
                                 </span>
                               </td>
