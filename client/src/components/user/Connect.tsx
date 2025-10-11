@@ -107,8 +107,8 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
 
       {/* Connecting display */}
       {isConnecting ? (
-        <div className="mt-4 text-sm text-center">
-          <div className="flex items-center gap-2 w-full justify-center text-gray-600">
+        <div className="mt-4 text-sm text-center min-h-10">
+          <div className="flex items-center gap-2 w-full justify-center text-gray-500 font-semibold font-display">
             <LoadingSpinnerSmall color={"green"} />
             {getStatusText()}
           </div>
