@@ -82,7 +82,7 @@ export const TournamentInfoCard: React.FC = () => {
           <div className="mt-5">
             <div className="flex flex-row items-center justify-between">
               {/* nav links */}
-              <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-4">
                 <Link
                   to="/lineups"
                   className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
@@ -105,7 +105,7 @@ export const TournamentInfoCard: React.FC = () => {
                   Contests
                 </Link>
 
-                <Link
+                {/* <Link
                   to="/leaderboard"
                   className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
                     location.pathname === "/leaderboard"
@@ -114,7 +114,7 @@ export const TournamentInfoCard: React.FC = () => {
                   } rounded px-3 py-1 transition-colors flex items-center justify-center`}
                 >
                   Leaders
-                </Link>
+                </Link> */}
               </div>
 
               {/* account */}
