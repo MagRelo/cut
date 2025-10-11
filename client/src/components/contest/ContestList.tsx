@@ -11,7 +11,8 @@ interface ContestListProps {
 export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[176px]">
+      <div className="text-center min-h-[80px] mt-4">
+        <p className="text-gray-400 font-semibold font-display mb-4">Searching for contests...</p>
         <LoadingSpinner />
       </div>
     );

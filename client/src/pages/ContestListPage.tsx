@@ -19,15 +19,17 @@ export const Contests: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const { user } = usePortoAuth();
   const chainId = useChainId();
-  const { tournament } = useCurrentTournament();
+  const { tournament, isLoading: isTournamentLoading } = useCurrentTournament();
 
   // Fetch contests filtered by tournament and chain
   const {
     data: contests = [],
-    isLoading,
+    isLoading: isContestsLoading,
     error: contestError,
   } = useContestsQuery(tournament?.id, chainId);
 
+  // Combine loading states - show loading if either query is loading
+  const isLoading = isTournamentLoading || isContestsLoading;
   const error = contestError ? "Failed to fetch contests" : null;
 
   // Sort contests by entry fee (highest first)
@@ -59,29 +61,7 @@ export const Contests: React.FC = () => {
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <PageHeader title="Contests" className="" />
-        {/* <Link
-          to="/contests/create"
-          className={`inline-block text-xs font-semibold px-4 py-2 rounded shadow transition-colors ml-4 whitespace-nowrap ${
-            currentTournament?.status === TournamentStatus.NOT_STARTED
-              ? "bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
-              : "bg-gray-300 text-gray-400 cursor-not-allowed"
-          }`}
-          onClick={(e) => {
-            if (currentTournament?.status !== TournamentStatus.NOT_STARTED) {
-              e.preventDefault();
-            }
-          }}
-          title={
-            currentTournament?.status !== TournamentStatus.NOT_STARTED
-              ? "Contests can only be created for upcoming tournaments"
-              : ""
-          }
-        >
-          New
-        </Link> */}
-      </div>
+      <PageHeader title="Contests" className="" />
 
       <div className="bg-white rounded-lg shadow">
         <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
