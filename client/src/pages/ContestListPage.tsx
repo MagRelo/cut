@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useChainId } from "wagmi";
 // import { Link } from "react-router-dom";
@@ -30,13 +30,24 @@ export const Contests: React.FC = () => {
 
   const error = contestError ? "Failed to fetch contests" : null;
 
-  // Separate contests into user's contests and all contests
-  const userContests = contests.filter((contest) => {
-    if (contest.contestLineups) {
-      return contest.contestLineups.some((lineup) => lineup.userId === user?.id);
-    }
-    return false;
-  });
+  // Sort contests by entry fee (highest first)
+  const sortedContests = useMemo(() => {
+    return [...contests].sort((a, b) => {
+      const feeA = a.settings?.fee ?? 0;
+      const feeB = b.settings?.fee ?? 0;
+      return feeB - feeA; // Descending order
+    });
+  }, [contests]);
+
+  // Separate contests into user's contests and all contests, then sort
+  const userContests = useMemo(() => {
+    return sortedContests.filter((contest) => {
+      if (contest.contestLineups) {
+        return contest.contestLineups.some((lineup) => lineup.userId === user?.id);
+      }
+      return false;
+    });
+  }, [sortedContests, user?.id]);
 
   // Update selected tab when data changes
   useEffect(() => {
@@ -105,7 +116,7 @@ export const Contests: React.FC = () => {
               <ContestList contests={userContests} loading={isLoading} error={error} />
             </TabPanel>
             <TabPanel>
-              <ContestList contests={contests} loading={isLoading} error={error} />
+              <ContestList contests={sortedContests} loading={isLoading} error={error} />
             </TabPanel>
           </div>
         </TabGroup>

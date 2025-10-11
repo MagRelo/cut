@@ -51,7 +51,6 @@ export const ContestLobby: React.FC = () => {
     lineup: TournamentLineup;
     userName: string;
   } | null>(null);
-
   const openLineupModal = (contestLineup: ContestLineup) => {
     if (contestLineup.tournamentLineup) {
       setSelectedLineup({
@@ -61,7 +60,6 @@ export const ContestLobby: React.FC = () => {
       setIsModalOpen(true);
     }
   };
-
   const closeLineupModal = () => {
     setIsModalOpen(false);
     setSelectedLineup(null);
