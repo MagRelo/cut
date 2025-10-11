@@ -66,10 +66,17 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
           // Call the custom success handler
           await onSuccess?.(statusData);
 
-          // Automatically refresh all balances after successful transaction
-          await queryClient.invalidateQueries({
-            queryKey: ["balance"],
-          });
+          // Automatically refresh all balances and contract reads after successful transaction
+          await Promise.all([
+            // Invalidate balance queries (wagmi useBalance hook)
+            queryClient.invalidateQueries({
+              queryKey: ["balance"],
+            }),
+            // Invalidate all contract read queries (wagmi useReadContract hook)
+            queryClient.invalidateQueries({
+              queryKey: ["readContract"],
+            }),
+          ]);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           setUserFriendlyError(errorMsg);

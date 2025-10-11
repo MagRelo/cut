@@ -151,7 +151,7 @@ contestRouter.get("/:id", requireAuth, async (c) => {
 });
 
 // Create new contest
-contestRouter.post("/", requireAuth, requireTournamentEditable, async (c) => {
+contestRouter.post("/", requireAuth, async (c) => {
   try {
     const body = await c.req.json();
 

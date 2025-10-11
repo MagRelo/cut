@@ -213,7 +213,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              INFO
+              SETTINGS
             </Tab>
           </TabList>
           <div className="">
@@ -549,7 +549,7 @@ export const ContestLobby: React.FC = () => {
                   {/* Oracle Fee */}
                   {contest?.settings?.oracleFee !== undefined && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Data Oracle Fee:</span>
+                      <span className="text-sm text-gray-600">Oracle Fee:</span>
                       <span className="text-sm text-gray-600">
                         {contest.settings.oracleFee / 100}%
                       </span>

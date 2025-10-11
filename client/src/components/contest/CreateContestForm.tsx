@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBalance, useAccount, useChainId } from "wagmi";
+import { decodeEventLog } from "viem";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { type CreateContestInput } from "../../types/contest";
 import { useContestApi } from "../../services/contestApi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateEscrow } from "../../hooks/useEscrowOperations";
+import EscrowFactoryContract from "../../utils/contracts/EscrowFactory.json";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
@@ -55,8 +57,48 @@ export const CreateContestForm = () => {
 
       setLoading(true);
       try {
-        // Extract escrow address from the hook's parsed data
-        const escrowAddress = statusData.escrowAddress;
+        // Extract escrow address from transaction logs
+        let escrowAddress: string | undefined;
+
+        // Get the escrow factory address to find relevant logs
+        const escrowFactoryAddress = getContractAddress(chainId ?? 0, "escrowFactoryAddress");
+
+        // Parse through receipts and logs to find EscrowCreated event
+        if (statusData.receipts && statusData.receipts.length > 0) {
+          for (const receipt of statusData.receipts) {
+            if (receipt.logs && receipt.logs.length > 0) {
+              for (const log of receipt.logs) {
+                // Check if this log is from the EscrowFactory
+                if (log.address?.toLowerCase() === escrowFactoryAddress?.toLowerCase()) {
+                  try {
+                    const decodedLog = decodeEventLog({
+                      abi: EscrowFactoryContract.abi,
+                      data: log.data,
+                      topics: log.topics,
+                    });
+
+                    // Check if this is the EscrowCreated event
+                    if (
+                      decodedLog.eventName === "EscrowCreated" &&
+                      decodedLog.args &&
+                      typeof decodedLog.args === "object" &&
+                      "escrow" in decodedLog.args
+                    ) {
+                      escrowAddress = decodedLog.args.escrow as string;
+                      console.log("Found escrow address:", escrowAddress);
+                      break;
+                    }
+                  } catch (decodeError) {
+                    // Skip logs that don't match the ABI
+                    console.debug("Could not decode log, skipping:", decodeError);
+                  }
+                }
+              }
+            }
+            if (escrowAddress) break;
+          }
+        }
+
         if (!escrowAddress) {
           throw new Error("No escrow address found in transaction logs");
         }

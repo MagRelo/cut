@@ -16,10 +16,12 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     <div className="flex items-center justify-between">
       <div className="flex flex-col gap-2">
         <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
-        <div>
-          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm w-14">
-            ${contest.settings?.fee}
-          </span>
+        <div className="flex items-center">
+          <div className="w-12 inline-flex justify-start">
+            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap">
+              ${contest.settings?.fee}
+            </span>
+          </div>
           <span className="text-sm text-gray-500 ml-4">
             Entries:{" "}
             <span className="font-bold text-gray-700">{contest.contestLineups?.length}</span>
@@ -38,9 +40,17 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     <div className="flex items-center justify-between">
       <div>
         <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
-        <h3 className="text-sm font-sans text-gray-500">
-          {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
-        </h3>
+
+        <div className="flex items-center">
+          <div className="w-12 inline-flex justify-start">
+            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap">
+              ${contest.settings?.fee}
+            </span>
+          </div>
+          <span className="text-sm font-sans text-gray-500 ml-4">
+            {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
+          </span>
+        </div>
       </div>
 
       <CutAmountDisplay

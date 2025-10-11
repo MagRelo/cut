@@ -55,10 +55,8 @@ export const Transfer = () => {
 
   return (
     <>
-      <div className="space-y-5">
-        <div>
-          <h3 className="text-base font-semibold text-gray-800 mb-2">Transfer CUT</h3>
-        </div>
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold text-gray-800 mb-3">Transfer CUT</h3>
 
         <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
           <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
