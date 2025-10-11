@@ -148,9 +148,11 @@ export const ContestLobby: React.FC = () => {
       />
 
       {/* contest lobby */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow pb-1">
         {/* header */}
-        <ContestCard contest={contest} />
+        <div className="px-4 pt-4 mb-3">
+          <ContestCard contest={contest} />
+        </div>
 
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
@@ -163,26 +165,13 @@ export const ContestLobby: React.FC = () => {
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
                   )
                 }
               >
                 MY LINEUPS
               </Tab>
             )}
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-medium leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              ENTRIES
-            </Tab>
             {!isTournamentEditable && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
@@ -191,7 +180,22 @@ export const ContestLobby: React.FC = () => {
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                  )
+                }
+              >
+                ENTRIES ({contest.contestLineups?.length})
+              </Tab>
+            )}
+            {!isTournamentEditable && (
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  classNames(
+                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
                   )
                 }
               >
@@ -205,14 +209,14 @@ export const ContestLobby: React.FC = () => {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
                 )
               }
             >
               INFO
             </Tab>
           </TabList>
-          <div className="p-4">
+          <div className="">
             {/* MY LINEUPS - Only shown when editable */}
             {isTournamentEditable && (
               <TabPanel>
@@ -220,103 +224,99 @@ export const ContestLobby: React.FC = () => {
               </TabPanel>
             )}
 
-            {/* ENTRIES - Always shown */}
-            <TabPanel>
-              {(() => {
-                // Calculate total points for each lineup and sort by points
-                const lineupsWithPoints =
-                  contest?.contestLineups?.map((lineup) => {
-                    const totalPoints =
-                      lineup.tournamentLineup?.players?.reduce((sum, player) => {
-                        const playerTotal = player.tournamentData?.total || 0;
-                        const cut = player.tournamentData?.cut || 0;
-                        const bonus = player.tournamentData?.bonus || 0;
-                        return sum + playerTotal + cut + bonus;
-                      }, 0) || 0;
+            {/* ENTRIES - Only shown when not editable */}
+            {!isTournamentEditable && (
+              <TabPanel>
+                {(() => {
+                  // Calculate total points for each lineup and sort by points
+                  const lineupsWithPoints =
+                    contest?.contestLineups?.map((lineup) => {
+                      const totalPoints =
+                        lineup.tournamentLineup?.players?.reduce((sum, player) => {
+                          const playerTotal = player.tournamentData?.total || 0;
+                          const cut = player.tournamentData?.cut || 0;
+                          const bonus = player.tournamentData?.bonus || 0;
+                          return sum + playerTotal + cut + bonus;
+                        }, 0) || 0;
 
-                    return {
-                      ...lineup,
-                      totalPoints,
-                    };
-                  }) || [];
+                      return {
+                        ...lineup,
+                        totalPoints,
+                      };
+                    }) || [];
 
-                // Sort by points (highest first)
-                const sortedLineups = [...lineupsWithPoints].sort(
-                  (a, b) => b.totalPoints - a.totalPoints
-                );
+                  // Sort by points (highest first)
+                  const sortedLineups = [...lineupsWithPoints].sort(
+                    (a, b) => b.totalPoints - a.totalPoints
+                  );
 
-                if (sortedLineups.length === 0) {
+                  if (sortedLineups.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No teams in this contest yet</p>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No teams in this contest yet</p>
+                    <div className="overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Lineup
+                            </th>
+                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Points
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {sortedLineups.map((lineup) => (
+                            <tr key={lineup.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="pl-4 pr-2 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-md font-medium text-gray-800">
+                                    {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                                  </div>
+                                  <button
+                                    onClick={() => openLineupModal(lineup)}
+                                    className="text-gray-400 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded p-1"
+                                    title="View lineup"
+                                  >
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                    </svg>
+                                  </button>
+
+                                  {/* <div
+                                    className="w-3 h-3 rounded-full border border-gray-300"
+                                    style={{
+                                      backgroundColor:
+                                        (lineup.user?.settings?.color as string) || "#D3D3D3",
+                                    }}
+                                  /> */}
+                                </div>
+                              </td>
+                              <td className="px-2 py-3 whitespace-nowrap text-center">
+                                <span className="text-sm font-bold text-gray-900">
+                                  {lineup.totalPoints}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   );
-                }
-
-                return (
-                  <div className="overflow-hidden rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Team
-                          </th>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Lineup
-                          </th>
-                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Points
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedLineups.map((lineup) => (
-                          <tr key={lineup.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="pl-4 pr-2 py-3 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <div className="text-md font-medium text-gray-800">
-                                  {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                                </div>
-                                <div
-                                  className="w-3 h-3 rounded-full border border-gray-300"
-                                  style={{
-                                    backgroundColor:
-                                      (lineup.user?.settings?.color as string) || "#D3D3D3",
-                                  }}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
-                              <div className="flex items-center justify-center">
-                                <button
-                                  onClick={() => openLineupModal(lineup)}
-                                  className="text-blue-600 hover:text-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded p-1"
-                                  title="View lineup"
-                                >
-                                  <svg
-                                    className="w-5 h-5"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-center">
-                              <span className="text-sm font-bold text-gray-900">
-                                {lineup.totalPoints}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </TabPanel>
+                })()}
+              </TabPanel>
+            )}
 
             {/* PLAYERS - Only shown when NOT editable */}
             {!isTournamentEditable && (
@@ -387,12 +387,12 @@ export const ContestLobby: React.FC = () => {
                   }
 
                   return (
-                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <div className="overflow-x-auto ">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Name
+                              Player
                             </th>
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                               OWN%
@@ -465,7 +465,7 @@ export const ContestLobby: React.FC = () => {
                                   </span>
                                 </td>
                                 <td className="px-2 py-3 whitespace-nowrap text-center">
-                                  <span className="text-sm font-bold text-gray-900">
+                                  <span className="text-sm font-semibold text-gray-900">
                                     {totalPoints}
                                   </span>
                                 </td>
@@ -482,7 +482,7 @@ export const ContestLobby: React.FC = () => {
 
             {/* INFO */}
             <TabPanel>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 p-4">
                 {/* Payout Structure */}
                 {contest?.contestLineups && (
                   <div className="">
@@ -564,16 +564,10 @@ export const ContestLobby: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Chain Name */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Chain:</span>
-                    <span className="text-sm text-gray-600">{chain?.name}</span>
-                  </div>
-
                   {/* Escrow Contract */}
                   {contest?.address && chainId && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Escrow Contract:</span>
+                      <span className="text-sm text-gray-600">Contract:</span>
                       {createExplorerLinkJSX(
                         contest.address,
                         chainId,
@@ -582,6 +576,12 @@ export const ContestLobby: React.FC = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Chain Name */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Chain:</span>
+                    <span className="text-sm text-gray-600">{chain?.name}</span>
+                  </div>
                 </div>
               </div>
             </TabPanel>
