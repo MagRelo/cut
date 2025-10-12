@@ -1,5 +1,5 @@
-import twilio from 'twilio';
-import dotenv from 'dotenv';
+import twilio from "twilio";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -9,7 +9,7 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
 if (!accountSid || !authToken || !twilioPhoneNumber) {
-  throw new Error('Missing required Twilio environment variables');
+  throw new Error("Missing required Twilio environment variables");
 }
 
 const twilioClient = twilio(accountSid, authToken);
@@ -26,21 +26,17 @@ interface SendSMSOptions {
  * @throws Error if the message fails to send
  */
 export async function sendSMS({ to, body }: SendSMSOptions): Promise<string> {
-  console.log('Sending SMS to:', to);
-
   try {
     const message = await twilioClient.messages.create({
       body,
       to,
-      from: twilioPhoneNumber,
+      from: twilioPhoneNumber!,
     });
-
-    console.log('SMS sent:', message.sid, message.status);
 
     return message.sid;
   } catch (error) {
-    console.error('Failed to send SMS:', error);
-    throw new Error('Failed to send SMS message');
+    console.error("Failed to send SMS:", error);
+    throw new Error("Failed to send SMS message");
   }
 }
 

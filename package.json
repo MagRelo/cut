@@ -4,28 +4,38 @@
   "description": "the Cut application",
   "type": "module",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "cd server/dist && node src/index.js",
     "client:dev": "npm run dev --workspace=client",
     "client:build": "npm run build --workspace=client",
     "client:lint": "npm run lint --workspace=client",
     "client:preview": "npm run preview --workspace=client",
     "server:dev": "npm run dev --workspace=server",
     "server:build": "npm run build --workspace=server",
-    "server:deploy": "npm run deploy --workspace=server",
+    "docker:build": "bash docker/build.sh",
+    "db:start": "docker compose -f docker/docker-compose.yml up -d",
+    "db:stop": "docker compose -f docker/docker-compose.yml down",
+    "db:logs": "docker compose -f docker/docker-compose.yml logs -f",
+    "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d && sleep 5 && npm run prisma:migrate && npm run prisma:seedPGA --workspace=server",
     "prisma:generate": "npm run prisma:generate --workspace=server",
     "prisma:migrate": "npm run prisma:migrate --workspace=server",
     "prisma:studio": "npm run prisma:studio --workspace=server",
     "prisma:seed": "npm run prisma:seed --workspace=server",
-    "db:start": "npm run db:start --workspace=server",
-    "db:stop": "npm run db:stop --workspace=server",
-    "db:logs": "npm run db:logs --workspace=server",
-    "db:reset": "npm run db:reset --workspace=server",
     "test": "npm run test --workspace=server",
     "test:coverage": "npm run test:coverage --workspace=server",
     "test:ui": "npm run test:ui --workspace=server",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "deploy": "npm run client:build && npm run server:build && npm run server:deploy",
-    "get-team-totals": "tsx server/scripts/getTeamTotals.ts"
+    "mint-tokens": "node scripts/sepolia/mintPaymentToken.js",
+    "deposit-usdc": "node scripts/sepolia/depositUSDC.js",
+    "base:deposit-usdc": "node scripts/base/depositUSDC.js",
+    "create-escrow": "node scripts/sepolia/createEscrow.js",
+    "deploy": "npm run client:build && npm run server:build && npm run docker:build",
+    "deploy:contracts": "node scripts/deploy.js",
+    "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
+    "deploy:contracts:base": "node scripts/deploy.js base",
+    "deploy:full": "npm run deploy:contracts && npm run deploy",
+    "verify:contracts": "node scripts/verify.js",
+    "verify:contracts:sepolia": "node scripts/verify.js sepolia",
+    "verify:contracts:base": "node scripts/verify.js base"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -35,6 +45,8 @@
     "server"
   ],
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1"
   }
 }

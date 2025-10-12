@@ -1,0 +1,16 @@
+Contracts 
+
+Purpose: This system will provide accounting for a fantasy sports platform. There are three main areas:
+1) the escrow system (EscrowFactory & Escrow), and 2) the platform token system (PlatformToken & DepositManager). 
+The third important area 3) is the integrations with existing contracts in the ecosystem to generate yield (this 
+integration needs to happen in the DepositManager).
+
+1) The Escrow System (see contracts EscrowFactory.sol & Escrow.sol - this is largely working as needed already)
+
+2) The Platform Token: the token should be a simple, standard ERC20-compliant token that 
+accepts USDC and mints/burn CUT. When USDC is deposited it is deposited into Compound Finance's V3 Comet contract (see /Users/mattlovan/Projects/personal/cut/contracts/docs/COMPOUND_V3_COMET_INTEGRATION.md). 
+When CUT is burned we will withdraw from compound if necessary). All conversions from CUT to USDC  should always be 1:1 - any accumulated yield or balance in the DepositManager should remain and not be distributed.
+
+
+
+

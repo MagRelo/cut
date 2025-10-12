@@ -1,538 +1,319 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { prisma } from '../lib/prisma.js';
-import { sendEmail } from '../lib/email.js';
-import { sendSMS } from '../lib/sms.js';
-import { authenticateToken } from '../middleware/auth.js';
-import {
-  Prisma,
-  User,
-  Team,
-  League,
-  LeagueTeam,
-  TeamPlayer,
-  Player,
-} from '@prisma/client';
-import { AuthUser } from '../middleware/auth.js';
+import { Hono } from "hono";
+import { setCookie } from "hono/cookie";
+import { prisma } from "../lib/prisma.js";
+import jwt from "jsonwebtoken";
+import { requireAuth } from "../middleware/auth.js";
+import { mintUSDCToUser } from "../services/mintUserTokens.js";
 
-type TeamWithLeague = Team & {
-  leagueTeams: (LeagueTeam & {
-    league: Pick<League, 'id' | 'name'>;
-  })[];
-  TeamPlayer: (TeamPlayer & {
-    Player: Player;
-  })[];
-};
+import { hashMessage } from "viem";
+import { generateSiweNonce, parseSiweMessage } from "viem/siwe";
 
-const router = express.Router();
+import { RelayActions, Porto } from "porto";
+import { RelayClient } from "porto/viem";
+const porto = Porto.create();
 
-// Validation schemas
-const contactSchema = z.object({
-  contact: z.string().refine(
-    (val) => {
-      // Check if it's a valid email or phone number
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      return emailRegex.test(val) || phoneRegex.test(val);
-    },
-    { message: 'Must be a valid email or phone number' }
-  ),
+const authRouter = new Hono();
+
+// SIWE Nonce endpoint (POST for Porto compatibility)
+authRouter.post("/siwe/nonce", (c) => {
+  // console.log("Generating SIWE nonce");
+  const response = {
+    nonce: generateSiweNonce(),
+  };
+  return c.json(response);
 });
 
-const verifySchema = z.object({
-  contact: z.string().refine(
-    (val) => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      return emailRegex.test(val) || phoneRegex.test(val);
-    },
-    { message: 'Must be a valid email or phone number' }
-  ),
-  code: z.string().length(6),
-  name: z.string().min(2).optional(),
-  anonymousGuid: z
-    .string()
-    .refine(
-      (val) => {
-        // Check if it's a valid UUID or CUID
-        const uuidRegex =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const cuidRegex = /^c[a-z0-9]{24}$/i;
-        return uuidRegex.test(val) || cuidRegex.test(val);
+// SIWE authentication endpoint
+authRouter.post("/siwe/verify", async (c) => {
+  try {
+    // Handle different body formats
+    let message, signature;
+
+    const body = await c.req.json().catch(() => null);
+
+    if (body && typeof body === "object") {
+      // Standard JSON body
+      ({ message, signature } = body);
+    } else {
+      // Try to parse as plain text
+      const textBody = await c.req.text().catch(() => null);
+      if (textBody) {
+        try {
+          const parsed = JSON.parse(textBody);
+          ({ message, signature } = parsed);
+        } catch (e) {
+          console.error("Failed to parse plain text body as JSON:", e);
+          return c.json({ error: "Invalid request body format" }, 400);
+        }
+      } else {
+        return c.json({ error: "Invalid request body" }, 400);
+      }
+    }
+
+    if (!message || !signature) {
+      return c.json({ error: "Message and signature are required" }, 400);
+    }
+
+    const { address, chainId } = parseSiweMessage(message);
+
+    // Verify the signature.
+    const client = RelayClient.fromPorto(porto, { chainId });
+    const valid = await RelayActions.verifySignature(client, {
+      address: address!,
+      digest: hashMessage(message),
+      signature,
+    });
+
+    // If the signature is invalid, we cannot authenticate the user
+    if (!valid) {
+      return c.json({ error: "Invalid signature" }, 401);
+    }
+
+    // Check if wallet exists
+    const existingWallet = await prisma.userWallet.findFirst({
+      where: {
+        publicKey: address!.toLowerCase(),
+        chainId: Number(chainId),
       },
-      { message: 'Invalid user ID format' }
-    )
-    .optional(),
-});
+      include: { user: true },
+    });
 
-const updateUserSchema = z.object({
-  name: z.string().min(2).optional(),
-  email: z.string().email().optional(),
-  phone: z
-    .string()
-    .regex(/^\+?[1-9]\d{1,14}$/)
-    .optional(),
-});
-
-// Update the userInclude type
-const userInclude = {
-  teams: {
-    include: {
-      leagueTeams: {
-        include: {
-          league: {
-            select: {
-              id: true,
-              name: true,
+    let user;
+    if (existingWallet) {
+      user = existingWallet.user;
+    } else {
+      // Create new user and wallet
+      user = await prisma.user.create({
+        data: {
+          name: `User ${address!.slice(0, 6)}`,
+          userType: "PUBLIC",
+          wallets: {
+            create: {
+              chainId: Number(chainId),
+              publicKey: address!.toLowerCase(),
+              isPrimary: true,
             },
           },
         },
-      },
-      TeamPlayer: {
-        include: {
-          Player: true,
-        },
-      },
-    },
-  },
-} satisfies Prisma.UserInclude;
+      });
 
-// Request verification code
-router.post('/request-verification', async (req, res) => {
-  try {
-    const { contact } = contactSchema.parse(req.body);
+      // Check if token minting is enabled and user is on Base Sepolia testnet
+      const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
+      const isBaseSepolia = Number(chainId) === 84532; // Base Sepolia chain ID
 
-    // Find user again without the expiration check
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: contact }, { phone: contact }],
-      },
+      if (isTokenMintingEnabled && isBaseSepolia) {
+        // Mint $1000 USDC(x) to new user on Base Sepolia testnet
+        try {
+          await mintUSDCToUser(address!.toLowerCase(), 1000);
+          console.log(
+            `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`
+          );
+        } catch (mintError) {
+          console.error("Failed to mint and transfer tokens to new user:", mintError);
+          // Don't fail the user creation if token minting fails
+        }
+      } else if (!isTokenMintingEnabled) {
+        console.log("Token minting is disabled. Skipping token transfer to new user.");
+      } else if (!isBaseSepolia) {
+        console.log(
+          `Token minting only available on Base Sepolia testnet. User connected to chain ${chainId}.`
+        );
+      }
+    }
+
+    // Generate a JWT token
+    const tokenPayload = {
+      userId: user.id,
+      address: address!.toLowerCase(),
+      chainId: Number(chainId),
+      userType: user.userType,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || "temporary-secret-key", {
+      expiresIn: "7d",
     });
 
-    // Check login attempts
-    if (user) {
-      const lastAttempt = user.lastLoginAt || new Date(0);
-      const hoursSinceLastAttempt =
-        (new Date().getTime() - lastAttempt.getTime()) / (1000 * 60 * 60);
+    setCookie(c, "auth", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    });
 
-      // If within 24 hours and already at 3 attempts
-      if (hoursSinceLastAttempt < 24 && (user.loginAttempts ?? 0) >= 3) {
-        return res.status(429).json({
-          error:
-            'Maximum verification code requests reached. Please try again later.',
-        });
-      }
-
-      // If more than 24 hours have passed, reset the counter
-      if (hoursSinceLastAttempt >= 24) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            loginAttempts: 0,
-            lastLoginAt: new Date(),
-          },
-        });
-      }
-    }
-
-    // Generate verification code
-    const verificationCode = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
-
-    if (user) {
-      // console.log('updating user', user.loginAttempts);
-      // Update existing user
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationCode,
-          verificationCodeExpiresAt: expiresAt,
-          loginAttempts: {
-            increment: 1,
-          },
-          lastLoginAt: new Date(),
-        },
-      });
-    } else {
-      console.log('creating user');
-      // Create new user
-      await prisma.user.create({
-        data: {
-          email: contact.includes('@') ? contact : null,
-          phone: !contact.includes('@') ? contact : null,
-          name: 'User', // Will be updated during registration
-          verificationCode,
-          verificationCodeExpiresAt: expiresAt,
-          loginAttempts: 1,
-          lastLoginAt: new Date(),
-        },
-      });
-    }
-
-    // Send verification code
-    if (contact.includes('@')) {
-      await sendEmail({
-        to: contact,
-        subject: 'Your Verification Code',
-        html: `
-          <h1>Your Verification Code</h1>
-          <p>Your verification code is: <strong>${verificationCode}</strong></p>
-          <p>This code will expire in 60 minutes.</p>
-          <p>If you didn't request this code, you can safely ignore this email.</p>
-        `,
-      });
-      console.log(
-        `Email verification code for ${contact}: ${verificationCode}`
-      );
-    } else {
-      await sendSMS({
-        to: contact,
-        body: `Your verification code is: ${verificationCode}. This code will expire in 60 minutes.`,
-      });
-      console.log(`SMS verification code for ${contact}: ${verificationCode}`);
-    }
-
-    res.json({ success: true });
+    // Return success response
+    return c.json({
+      success: true,
+      message: "Authenticated",
+      user: {
+        id: user.id,
+        name: user.name,
+        userType: user.userType,
+        address: address!.toLowerCase(),
+        chainId: Number(chainId),
+      },
+      token,
+    });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
-    console.error('Request verification error:', error);
-    res.status(500).json({ error: 'Failed to request verification' });
+    console.error("Error in SIWE authentication:", error);
+    return c.json({ error: "Failed to authenticate with SIWE" }, 500);
   }
 });
 
-// Verify and login/register
-router.post('/verify', async (req, res) => {
+// SIWE Logout endpoint
+authRouter.post("/siwe/logout", async (c) => {
   try {
-    const { contact, code, name, anonymousGuid } = verifySchema.parse(req.body);
+    // For JWT-based auth, we don't need to do anything server-side
+    // The client should remove the token from localStorage
+    // But we can log the logout for audit purposes
+    // console.log(`User ${req.user!.userId} logged out via SIWE`);
 
-    //
-    // 1) Validate Code
-    //
+    return c.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Error during SIWE logout:", error);
+    return c.json({ error: "Failed to logout" }, 500);
+  }
+});
 
-    // Find user by contact
-    const user = await prisma.user.findFirst({
+// Get current user information
+authRouter.get("/me", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+
+    // get active tournament
+    const activeTournament = await prisma.tournament.findFirst({
       where: {
-        OR: [{ email: contact }, { phone: contact }],
+        manualActive: true,
       },
     });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Check if code is valid and not expired
-    if (
-      user.verificationCode !== code ||
-      !user.verificationCodeExpiresAt ||
-      user.verificationCodeExpiresAt < new Date()
-    ) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid or expired verification code' });
-    }
-
-    // Reset login attempts on successful verification
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        loginAttempts: 0,
-        lastLoginAt: null,
-        name,
-        isVerified: true,
-        verificationCode: null,
-        verificationCodeExpiresAt: null,
-      },
-    });
-
-    //
-    // 2) Transfer All associated data to new user
-    //
-
-    // Transfer teams from anonymous user if anonymousGuid is provided
-    if (anonymousGuid) {
-      // Find all teams owned by the anonymous user
-      const anonymousTeams = await prisma.team.findMany({
-        where: { userId: anonymousGuid },
-        include: {
-          leagueTeams: true,
-        },
-      });
-
-      // Check if the new user already has a team
-      const existingTeam = await prisma.team.findUnique({
-        where: { userId: user.id },
-      });
-
-      // Only transfer teams if user has no existing team
-      if (!existingTeam && anonymousTeams.length > 0) {
-        // Transfer the first anonymous team
-        await prisma.team.update({
-          where: { id: anonymousTeams[0].id },
-          data: { userId: user.id },
-        });
-
-        // Delete any remaining anonymous teams
-        for (let i = 1; i < anonymousTeams.length; i++) {
-          await prisma.team.delete({
-            where: { id: anonymousTeams[i].id },
-          });
-        }
-
-        // Transfer league commissioner role if anonymous user is a commissioner
-        const leagues = await prisma.league.findMany({
-          where: { commissionerId: anonymousGuid },
-        });
-
-        // Update commissioner for each league
-        for (const league of leagues) {
-          await prisma.league.update({
-            where: { id: league.id },
-            data: { commissionerId: user.id },
-          });
-        }
-
-        // Transfer league memberships
-        const memberships = await prisma.leagueMembership.findMany({
-          where: { userId: anonymousGuid },
-        });
-
-        // Update memberships to new user
-        for (const membership of memberships) {
-          await prisma.leagueMembership.update({
-            where: { id: membership.id },
-            data: { userId: user.id },
-          });
-        }
-
-        // Transfer order logs
-        const orderLogs = await prisma.userOrderLog.findMany({
-          where: { userId: anonymousGuid },
-        });
-
-        // Update order logs to new user
-        for (const orderLog of orderLogs) {
-          await prisma.userOrderLog.update({
-            where: { id: orderLog.id },
-            data: { userId: user.id },
-          });
-        }
-
-        // Transfer timeline entries to the new user's team
-        if (anonymousTeams.length > 0) {
-          await prisma.timelineEntry.updateMany({
-            where: {
-              teamId: {
-                in: anonymousTeams.map((team) => team.id),
+    // Get user's data including tournament lineups and groups
+    const userData = await prisma.user.findUnique({
+      where: { id: user.userId },
+      include: {
+        ...(activeTournament?.id && {
+          tournamentLineups: {
+            where: { tournamentId: activeTournament.id },
+            include: {
+              players: {
+                include: {
+                  tournamentPlayer: {
+                    include: {
+                      player: true,
+                    },
+                  },
+                },
               },
             },
-            data: {
-              teamId: anonymousTeams[0].id, // Use the first team that was transferred
-            },
-          });
-        }
-
-        // delete the anonymous user
-        await prisma.user.delete({
-          where: { id: anonymousGuid },
-        });
-      }
-    }
-
-    //
-    // 3) Generate JWT Token
-    //
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '180d' }
-    );
-
-    // Get user with teams
-    const userWithTeams = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: userInclude,
+          },
+        }),
+        userGroups: {
+          include: {
+            userGroup: true,
+          },
+        },
+      },
     });
 
-    let teams: any[] = [];
-    if (userWithTeams?.teams) {
-      const team = userWithTeams.teams as unknown as TeamWithLeague;
-      teams = team.leagueTeams.map((lt) => ({
-        id: team.id,
-        name: team.name,
-        color: team.color,
-        leagueId: lt.league.id,
-        leagueName: lt.league.name,
-        players: team.TeamPlayer.map((tp) => ({
-          id: tp.id,
-          teamId: tp.teamId,
-          playerId: tp.playerId,
-          active: tp.active,
-          player: tp.Player,
-        })),
-      }));
+    if (!userData) {
+      return c.json({ error: "User not found" }, 404);
     }
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
-      userType: user.userType,
-      token,
-      teams,
-    });
+    // filter out user info that is not needed
+    const { tournamentLineups = [], userGroups, ...userInfo } = userData;
+    // Format tournamentLineups to match TournamentLineup type
+    const formattedLineups = tournamentLineups.map((lineup: any) => ({
+      id: lineup.id,
+      players: lineup.players.map((lineupPlayer: any) => ({
+        ...lineupPlayer.tournamentPlayer.player,
+        tournamentId: lineup.tournamentId,
+        tournamentData: {
+          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
+          r1: lineupPlayer.tournamentPlayer.r1,
+          r2: lineupPlayer.tournamentPlayer.r2,
+          r3: lineupPlayer.tournamentPlayer.r3,
+          r4: lineupPlayer.tournamentPlayer.r4,
+          cut: lineupPlayer.tournamentPlayer.cut,
+          bonus: lineupPlayer.tournamentPlayer.bonus,
+          total: lineupPlayer.tournamentPlayer.total,
+          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
+        },
+      })),
+    }));
+
+    const response = {
+      id: userInfo.id,
+      name: userInfo.name,
+      userType: userInfo.userType,
+      settings: userInfo.settings,
+      phone: userInfo.phone,
+      email: userInfo.email,
+      isVerified: userInfo.isVerified,
+      tournamentLineups: formattedLineups,
+      userGroups,
+      walletAddress: user.address,
+      chainId: user.chainId,
+    };
+
+    return c.json(response);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
-    console.error('Verification error:', error);
-    res.status(500).json({ error: 'Failed to verify code' });
-  }
-});
-
-// Get current user route
-router.get('/me', authenticateToken, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: userInclude,
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    let teams: any[] = [];
-    if (user.teams) {
-      const team = user.teams as unknown as TeamWithLeague;
-      teams = team.leagueTeams.map((lt) => ({
-        id: team.id,
-        name: team.name,
-        color: team.color,
-        leagueId: lt.league.id,
-        leagueName: lt.league.name,
-        players: team.TeamPlayer.map((tp) => ({
-          id: tp.id,
-          teamId: tp.teamId,
-          playerId: tp.playerId,
-          active: tp.active,
-          player: tp.Player,
-        })),
-      }));
-    }
-
-    return res.json({
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
-      userType: user.userType,
-      teams,
-      settings: user.settings,
-    });
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching user:", error);
+    return c.json({ error: "Failed to fetch user information" }, 500);
   }
 });
 
 // Update user route
-router.put('/update', authenticateToken, async (req, res) => {
+authRouter.put("/update", requireAuth, async (c) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
+    const { name } = await c.req.json();
+    const user = c.get("user");
+
+    if (!name) {
+      return c.json({ error: "Name is required" }, 400);
     }
 
-    const validatedData = updateUserSchema.parse(req.body);
-
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: validatedData,
-      include: userInclude,
+    const updatedUser = await prisma.user.update({
+      where: { id: user.userId },
+      data: { name },
     });
 
-    let teams: any[] = [];
-    if (user.teams) {
-      const team = user.teams as unknown as TeamWithLeague;
-      teams = team.leagueTeams.map((lt) => ({
-        id: team.id,
-        name: team.name,
-        color: team.color,
-        leagueId: lt.league.id,
-        leagueName: lt.league.name,
-        players: team.TeamPlayer.map((tp) => ({
-          id: tp.id,
-          teamId: tp.teamId,
-          playerId: tp.playerId,
-          active: tp.active,
-          player: tp.Player,
-        })),
-      }));
-    }
-
-    res.json({
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
-      userType: user.userType,
-      teams,
+    return c.json({
+      success: true,
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        userType: updatedUser.userType,
+      },
     });
   } catch (error) {
-    console.error('Update user error:', error);
-    res.status(400).json({ message: 'Failed to update user' });
+    console.error("Error updating user:", error);
+    return c.json({ error: "Failed to update user information" }, 500);
   }
 });
 
-// Update user settings route
-router.put('/settings', authenticateToken, async (req, res) => {
+// Update settings route
+authRouter.put("/settings", requireAuth, async (c) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-    // Accept any JSON object for settings
-    const settings = req.body;
-    if (typeof settings !== 'object' || settings === null) {
-      return res.status(400).json({ error: 'Invalid settings object' });
-    }
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { settings },
-      select: { settings: true },
+    const user = c.get("user");
+    const settings = await c.req.json();
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.userId },
+      data: {
+        settings,
+      },
     });
-    res.json({ settings: user.settings });
+
+    return c.json({
+      success: true,
+      settings: updatedUser.settings,
+    });
   } catch (error) {
-    console.error('Update user settings error:', error);
-    res.status(500).json({ error: 'Failed to update user settings' });
+    console.error("Error updating settings:", error);
+    return c.json({ error: "Failed to update user settings" }, 500);
   }
 });
 
-// Logout route
-router.post('/logout', authenticateToken, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    // In a JWT-based system, we don't need to do much server-side
-    // as the token is stored client-side. But we can add any cleanup here if needed.
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: 'Failed to logout' });
-  }
-});
-
-export default router;
+export default authRouter;

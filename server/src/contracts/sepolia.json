@@ -1,0 +1,7 @@
+{
+  "paymentTokenAddress": "0x78D7e60760009Bb8D22836e075678F3d835cF561",
+  "platformTokenAddress": "0x26FA9b0f43082924577618179D3aC722b908FA76",
+  "depositManagerAddress": "0xD7a9424A98c8bE711dc90A363282243FcD45DBFc",
+  "escrowFactoryAddress": "0xB3777608E18e88F8dBdF7e9df08db17f3F88Cf16",
+  "mockCTokenAddress": "0x12ffBBe72f71f1204e0643cC8bf579D8Da2A6396"
+}

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 // Prevent multiple instances of Prisma Client in development
 declare global {
@@ -7,37 +7,49 @@ declare global {
 
 // Helper to safely append connection parameters
 function appendConnectionParams(url: string): string {
-  const separator = url.includes('?') ? '&' : '?';
-  // More conservative settings for remote databases
-  return `${url}${separator}connection_limit=3&pool_timeout=20&connect_timeout=10`;
+  const separator = url.includes("?") ? "&" : "?";
+  // Hardcoded connection limits for development stability
+  return `${url}${separator}connection_limit=5&pool_timeout=20&connect_timeout=10&socket_timeout=10`;
 }
 
-const prisma =
-  global.prisma ||
-  new PrismaClient({
-    log: ['error', 'warn'],
-    // Configure connection limits through environment variables
-    datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ''),
-  });
+let prismaInstance: PrismaClient | undefined;
 
-if (process.env.NODE_ENV === 'development') {
-  global.prisma = prisma;
+export function getPrisma() {
+  if (!prismaInstance) {
+    prismaInstance =
+      global.prisma ||
+      new PrismaClient({
+        datasourceUrl: appendConnectionParams(process.env.DATABASE_URL || ""),
+      });
+
+    if (process.env.NODE_ENV === "development") {
+      global.prisma = prismaInstance;
+    }
+  }
+  return prismaInstance;
 }
 
-export { prisma };
+// Graceful shutdown handler
+async function gracefulShutdown() {
+  if (prismaInstance) {
+    await prismaInstance.$disconnect();
+    prismaInstance = undefined;
+    global.prisma = undefined;
+  }
+}
 
 // Handle cleanup on app termination
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+process.on("beforeExit", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+
+// Export a proxy that will lazy initialize the client
+export const prisma = new Proxy({} as PrismaClient, {
+  get: (_target, prop) => {
+    const client = getPrisma();
+    return client[prop as keyof PrismaClient];
+  },
 });
 
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// Export cleanup function for manual use
+export { gracefulShutdown };

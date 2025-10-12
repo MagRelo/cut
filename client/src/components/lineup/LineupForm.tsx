@@ -1,0 +1,266 @@
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
+
+import { useTournament } from "../../contexts/TournamentContext";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useLineup } from "../../contexts/LineupContext";
+import { ErrorMessage } from "../common/ErrorMessage";
+
+import { PlayerSelectionModal } from "./PlayerSelectionModal";
+import { PlayerSelectionCard } from "./PlayerSelectionCard";
+import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+
+/**
+ * LineupForm Component
+ *
+ * Usage:
+ * - Create mode: <LineupForm /> (no lineupId prop)
+ * - Update mode: <LineupForm lineupId="existing-lineup-id" />
+ *
+ * The component automatically handles:
+ * - Creating new lineups when no lineupId is provided
+ * - Updating existing lineups when lineupId is provided
+ * - Fetching the appropriate lineup data
+ * - Managing player selection and lineup updates
+ */
+interface LineupFormProps {
+  lineupId?: string; // If provided, we're in update mode. If not, we're in create mode
+  onUpdateLineup?: (playerIds: string[]) => Promise<void>;
+}
+
+export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
+  const navigate = useNavigate();
+  const { loading: isAuthLoading } = usePortoAuth();
+  const {
+    players: fieldPlayers,
+    currentTournament,
+    isLoading: isTournamentLoading,
+  } = useTournament();
+
+  const {
+    getLineupById,
+    getLineupFromCache,
+    createLineup,
+    updateLineup,
+    lineupError,
+    lineups,
+    getLineups,
+  } = useLineup();
+
+  // Local State
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
+  const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
+  const [draftPlayers, setDraftPlayers] = useState<Array<PlayerWithTournamentData | null>>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize draft players with current lineup when in edit mode
+  useEffect(() => {
+    if (lineupId && currentLineup) {
+      setDraftPlayers(currentLineup.players || []);
+    }
+  }, [lineupId, currentLineup]);
+
+  // Helper function to get the next lineup number
+  const getNextLineupNumber = useCallback(() => {
+    // Simply use the array length + 1 for the next number
+    const nextNumber = lineups.length + 1;
+    return nextNumber;
+  }, [lineups]);
+
+  // Get the next lineup name for display
+  const nextLineupName = useMemo(() => {
+    return `Lineup #${getNextLineupNumber()}`;
+  }, [getNextLineupNumber]);
+
+  useEffect(() => {
+    const fetchLineup = async () => {
+      if (!isAuthLoading && currentTournament?.id && lineupId) {
+        // First try to get from cache
+        const cachedLineup = getLineupFromCache(lineupId);
+        if (cachedLineup) {
+          setCurrentLineup(cachedLineup);
+          return;
+        }
+
+        // If not in cache, fetch from API
+        try {
+          const lineup = await getLineupById(lineupId);
+          setCurrentLineup(lineup);
+        } catch (error) {
+          console.error("Failed to fetch lineup:", error);
+        }
+      }
+    };
+
+    fetchLineup();
+  }, [currentTournament?.id, isAuthLoading, getLineupById, getLineupFromCache, lineupId]);
+
+  // Load lineups when creating a new lineup to ensure we have the latest data
+  useEffect(() => {
+    const loadLineups = async () => {
+      if (!isAuthLoading && currentTournament?.id && !lineupId && lineups.length === 0) {
+        try {
+          console.log("Loading lineups for new lineup creation...");
+          await getLineups(currentTournament.id);
+        } catch (error) {
+          console.error("Failed to load lineups:", error);
+        }
+      }
+    };
+
+    loadLineups();
+  }, [currentTournament?.id, isAuthLoading, lineupId, lineups.length, getLineups]);
+
+  const handlePlayerSelect = (playerId: string | null) => {
+    if (selectedPlayerIndex === null) return;
+
+    const newDraftPlayers = [...draftPlayers];
+
+    if (playerId) {
+      const selectedPlayer = fieldPlayers?.find((p) => p.id === playerId);
+      if (selectedPlayer) {
+        newDraftPlayers[selectedPlayerIndex] = selectedPlayer;
+      }
+    } else {
+      // Remove player from this slot by splicing
+      newDraftPlayers.splice(selectedPlayerIndex, 1);
+    }
+
+    setDraftPlayers(newDraftPlayers);
+    setSelectedPlayerIndex(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!currentTournament?.id) return;
+
+    const playerIds = draftPlayers
+      .filter((p): p is PlayerWithTournamentData => p !== null)
+      .map((p) => p.id);
+
+    if (playerIds.length === 0) {
+      console.error("No players selected");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (lineupId) {
+        // Update existing lineup
+        await updateLineup(lineupId, playerIds);
+      } else {
+        // Create new lineup
+        await createLineup(currentTournament.id, playerIds, nextLineupName);
+      }
+
+      // Navigate to lineup list after successful save
+      navigate("/lineups");
+    } catch (error) {
+      console.error("Failed to save lineup:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isEditingAllowed = (): boolean => {
+    return true;
+    // return !currentTournament || currentTournament.status === "NOT_STARTED";
+  };
+
+  const handleCardClick = (index: number) => {
+    if (isEditingAllowed()) {
+      setSelectedPlayerIndex(index);
+    }
+  };
+
+  if (isAuthLoading || isTournamentLoading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (lineupError) {
+    return (
+      <div className="p-4">
+        <ErrorMessage message={lineupError} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md pb-6">
+      {/* Lineup header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-600">
+            {lineupId && currentLineup
+              ? currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}`
+              : nextLineupName}
+          </h3>
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Saving...
+            </>
+          ) : (
+            <>{"Save"}</>
+          )}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {/* lineup open */}
+        {isEditingAllowed() && (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <PlayerSelectionCard
+                key={`slot-${index}`}
+                player={draftPlayers[index] || null}
+                isSelected={false}
+                onClick={() => handleCardClick(index)}
+                iconType="pencil"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* lineup closed */}
+        {!isEditingAllowed() && (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 4 }).map((_, index) => {
+              const player = currentLineup?.players[index];
+              return player ? (
+                <PlayerDisplayCard
+                  key={`slot-${index}`}
+                  player={player}
+                  roundDisplay={currentTournament?.roundDisplay || ""}
+                />
+              ) : (
+                <div
+                  key={`slot-${index}`}
+                  className="h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400"
+                >
+                  Empty Slot
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* player selection modal */}
+      <PlayerSelectionModal
+        isOpen={selectedPlayerIndex !== null}
+        onClose={() => setSelectedPlayerIndex(null)}
+        onSelect={handlePlayerSelect}
+        availablePlayers={fieldPlayers || []}
+        selectedPlayers={draftPlayers.filter((p) => p !== null).map((p) => p!.id)}
+      />
+    </div>
+  );
+};

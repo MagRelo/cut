@@ -1,0 +1,24 @@
+{
+  "name": "cut-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for Cut project",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "mint": "node sepolia/mintPaymentToken.js",
+    "create-escrow": "node sepolia/createEscrow.js",
+    "deposit-usdc": "node sepolia/depositUSDC.js",
+    "deposit-usdc-base": "node base/depositUSDC.js"
+  },
+  "dependencies": {
+    "ethers": "^6.8.1",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "ethereum",
+    "contracts",
+    "testing"
+  ],
+  "author": "",
+  "license": "MIT"
+}

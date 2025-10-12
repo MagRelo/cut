@@ -1,103 +1,58 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useMemo,
-} from 'react';
-import { type Tournament } from '../types/league';
-import { type TournamentPlayer } from '../types/player';
-import { useTournamentApi } from '../services/tournamentApi';
+import { createContext, useContext, ReactNode } from "react";
+import { type Tournament } from "../types/tournament";
+import { type PlayerWithTournamentData } from "../types/player";
+import { useTournamentData, type ContestWithCount } from "../hooks/useTournamentData";
 
 interface TournamentContextType {
   currentTournament: Tournament | null;
-  setCurrentTournament: (tournament: Tournament | null) => void;
-  players: TournamentPlayer[];
+  players: PlayerWithTournamentData[];
+  contests: ContestWithCount[];
   isLoading: boolean;
   error: Error | null;
+  isTournamentEditable: boolean;
 }
 
-const TournamentContext = createContext<TournamentContextType | undefined>(
-  undefined
-);
+const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 interface TournamentProviderProps {
   children: ReactNode;
 }
 
+/**
+ * TournamentProvider - now powered by React Query
+ *
+ * Benefits of the migration:
+ * - Removed 40+ lines of manual state management
+ * - No more useEffect dependencies or race conditions
+ * - Automatic background refetching every 10 minutes
+ * - Data cached and shared across all components
+ * - Built-in loading and error states
+ */
 export function TournamentProvider({ children }: TournamentProviderProps) {
-  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(
-    null
-  );
-  const [players, setPlayers] = useState<TournamentPlayer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  // React Query handles all the complexity!
+  const { data, isLoading, error } = useTournamentData();
 
-  const tournamentApi = useTournamentApi();
+  // Check if tournament is editable (matches server middleware logic)
+  // Tournament is NOT editable when status is "IN_PROGRESS" or "COMPLETED"
+  const isTournamentEditable =
+    data?.tournament?.status !== "IN_PROGRESS" && data?.tournament?.status !== "COMPLETED";
 
-  useEffect(() => {
-    let isMounted = true;
+  const value: TournamentContextType = {
+    currentTournament: data?.tournament ?? null,
+    players: data?.players ?? [],
+    contests: data?.contests ?? [],
+    isLoading,
+    error: error as Error | null,
+    isTournamentEditable,
+  };
 
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Fetch current tournament and players in parallel
-        const [tournament, tournamentPlayers] = await Promise.all([
-          tournamentApi.getCurrentTournament(),
-          tournamentApi.getTournamentField(),
-        ]);
-
-        if (isMounted) {
-          setCurrentTournament(tournament);
-          setPlayers(tournamentPlayers);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err
-              : new Error('Failed to fetch tournament data')
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [tournamentApi]);
-
-  const value = useMemo(
-    () => ({
-      currentTournament,
-      setCurrentTournament,
-      players,
-      isLoading,
-      error,
-    }),
-    [currentTournament, players, isLoading, error]
-  );
-
-  return (
-    <TournamentContext.Provider value={value}>
-      {children}
-    </TournamentContext.Provider>
-  );
+  return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
 }
 
 export function useTournament() {
   const context = useContext(TournamentContext);
   if (context === undefined) {
-    throw new Error('useTournament must be used within a TournamentProvider');
+    throw new Error("useTournament must be used within a TournamentProvider");
   }
   return context;
 }

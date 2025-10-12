@@ -1,114 +1,60 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma.js';
-import { Prisma, User, Team, League } from '@prisma/client';
-import { UnauthorizedError } from '../utils/errors.js';
+import { Context, Next } from "hono";
+import { getCookie } from "hono/cookie";
+import jwt from "jsonwebtoken";
 
-interface JwtPayload {
-  userId: string;
+// Extend Hono's context to include user information
+declare module "hono" {
+  interface ContextVariableMap {
+    user: {
+      userId: string;
+      address: string;
+      chainId: number;
+      userType: string;
+    };
+  }
 }
 
-export type AuthTeam = {
-  id: string;
-  name: string;
-  leagueId: string;
-  leagueName: string;
-};
-
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-  userType: string;
-  teams: AuthTeam[];
-};
-
-type TeamWithLeague = Team & {
-  leagueTeams: Array<{
-    league: {
-      id: string;
-      name: string;
-    };
-  }>;
-};
-
-type UserWithTeams = User & {
-  teams: TeamWithLeague | null;
-};
-
-// Helper type for routes that require authentication
-export type AuthHandler = (
-  req: Request & { user: AuthUser }, // Ensure user exists for authenticated routes
-  res: Response,
-  next: NextFunction
-) => Promise<void> | void;
-
-export const authenticateToken = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Check for token in Authorization header first
+    let token: string | undefined;
+
+    const authHeader = c.req.header("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
+
+    // If no token in header, check for cookie
+    if (!token) {
+      token = getCookie(c, "auth");
+    }
 
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      return c.json({ error: "No token provided" }, 401);
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as JwtPayload;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "temporary-secret-key") as {
+        userId: string;
+        address: string;
+        chainId: number;
+        userType: string;
+      };
 
-    const userInclude = {
-      teams: {
-        include: {
-          leagueTeams: {
-            include: {
-              league: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    } satisfies Prisma.UserInclude;
+      // Add user information to context
+      c.set("user", {
+        userId: decoded.userId,
+        address: decoded.address,
+        chainId: decoded.chainId,
+        userType: decoded.userType,
+      });
 
-    const user = (await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      include: userInclude,
-    })) as UserWithTeams | null;
-
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      await next();
+    } catch (error) {
+      return c.json({ error: "Invalid token" }, 401);
     }
-
-    const authUser: AuthUser = {
-      id: user.id,
-      email: user.email || '',
-      name: user.name,
-      userType: user.userType,
-      teams: user.teams
-        ? (user.teams.leagueTeams || []).map((lt) => ({
-            id: user.teams!.id,
-            name: user.teams!.name,
-            leagueId: lt.league.id,
-            leagueName: lt.league.name,
-          }))
-        : [],
-    };
-
-    (req as any).user = authUser;
-    next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    console.error('Authentication error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Auth middleware error:", error);
+    return c.json({ error: "Authentication failed" }, 500);
   }
 };

@@ -1,20 +1,14 @@
 import {
   scorecardResponseSchema,
-  type Player,
-  type Hole,
-  type Nine,
   type RoundScore,
-  type ScorecardData,
   type FormattedHoles,
-  type Round,
-  type Scorecard,
-} from '../schemas/scorecard.js';
+} from "../schemas/scorecard.js";
 
-const PGA_API_KEY = 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
-const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
+const PGA_API_KEY = "da2-gsrx5bibzbb4njvhl7t37wqyl4";
+const PGA_API_URL = "https://orchestrator.pgatour.com/graphql";
 
 function calculateStableford(par: number, score: string): number | null {
-  if (score === '-') return null;
+  if (score === "-") return null;
 
   const numericScore = parseInt(score);
   if (isNaN(numericScore)) return null;
@@ -39,10 +33,7 @@ function calculateStableford(par: number, score: string): number | null {
   }
 }
 
-function formatHoles(
-  roundScores: RoundScore[],
-  roundNumber: number
-): FormattedHoles | null {
+function formatHoles(roundScores: RoundScore[], roundNumber: number): FormattedHoles | null {
   const round = roundScores.find((item) => item.roundNumber === roundNumber);
   if (!round) return null;
 
@@ -51,15 +42,13 @@ function formatHoles(
   }
 
   const allHoles = [...round.firstNine.holes, ...round.secondNine.holes];
-  const total = typeof round.total === 'number' ? round.total : 0;
+  const total = typeof round.total === "number" ? round.total : 0;
 
   return {
     round: roundNumber,
     par: allHoles.map((h) => h.par),
-    scores: allHoles.map((h) =>
-      h.score === '-' || !h.score ? null : parseInt(h.score)
-    ),
-    stableford: allHoles.map((h) => calculateStableford(h.par, h.score || '-')),
+    scores: allHoles.map((h) => (h.score === "-" || !h.score ? null : parseInt(h.score))),
+    stableford: allHoles.map((h) => calculateStableford(h.par, h.score || "-")),
     total,
   };
 }
@@ -75,15 +64,15 @@ function calculateHolesRemainingRatio(holes: FormattedHoles): number {
 
 function calculateRoundIcon(holes: FormattedHoles): string {
   const holesPlayed = holes.stableford.filter((score) => score !== null).length;
-  if (holesPlayed < 4) return '';
+  if (holesPlayed < 4) return "";
 
   const roundScore = calculateRoundTotal(holes);
   const ratio = calculateHolesRemainingRatio(holes);
   const adjustedScore = roundScore / ratio;
 
-  if (adjustedScore > 11) return '🔥';
-  if (adjustedScore < 0) return '❄️';
-  return '';
+  if (adjustedScore > 11) return "🔥";
+  if (adjustedScore < 0) return "❄️";
+  return "";
 }
 
 async function fetchScorecardData(playerId: string, tournamentId: string) {
@@ -119,10 +108,10 @@ async function fetchScorecardData(playerId: string, tournamentId: string) {
   }
 `;
   const response = await fetch(PGA_API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'X-API-Key': PGA_API_KEY,
-      'Content-Type': 'application/json',
+      "X-API-Key": PGA_API_KEY,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ query }),
   });
@@ -154,10 +143,7 @@ export async function fetchScorecard(
     const data = await fetchScorecardData(playerId, tournamentId);
 
     const validatedData = scorecardResponseSchema.parse(data);
-    if (
-      !validatedData.data?.scorecardV2 ||
-      !validatedData.data.scorecardV2.player
-    ) {
+    if (!validatedData.data?.scorecardV2 || !validatedData.data.scorecardV2.player) {
       return null;
     }
     const pgaScorecard = validatedData.data.scorecardV2;
@@ -185,7 +171,7 @@ export async function fetchScorecard(
           },
           total: 0,
           ratio: 0,
-          icon: '',
+          icon: "",
         };
         return;
       }
@@ -199,16 +185,11 @@ export async function fetchScorecard(
     });
 
     // Calculate total stableford score
-    const stablefordTotal = Object.values(rounds).reduce(
-      (acc, round) => acc + round.total,
-      0
-    );
+    const stablefordTotal = Object.values(rounds).reduce((acc, round) => acc + round.total, 0);
 
     const result = {
       playerId,
-      playerName: `${pgaScorecard.player!.lastName}, ${
-        pgaScorecard.player!.firstName
-      }`,
+      playerName: `${pgaScorecard.player!.lastName}, ${pgaScorecard.player!.firstName}`,
       tournamentId,
       tournamentName: pgaScorecard.tournamentName,
       ...rounds,
@@ -228,9 +209,9 @@ export async function fetchScorecard(
     };
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Error fetching scorecard:', error.message);
+      console.error("Error fetching scorecard:", error.message);
     } else {
-      console.error('Unknown error:', error);
+      console.error("Unknown error:", error);
     }
     return null;
   }

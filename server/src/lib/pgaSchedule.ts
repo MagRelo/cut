@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 interface PGATournament {
   id: string;
   tournamentName: string;
@@ -17,8 +15,8 @@ interface PGAScheduleResponse {
   };
 }
 
-const PGA_SCHEDULE_URL = 'https://orchestrator.pgatour.com/graphql';
-const PGA_API_KEY = process.env.PGA_API_KEY || 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
+const PGA_SCHEDULE_URL = "https://orchestrator.pgatour.com/graphql";
+const PGA_API_KEY = process.env.PGA_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
 
 /**
  * Fetches the PGA Tour schedule and returns a flat list of upcoming tournaments.
@@ -41,20 +39,24 @@ export async function fetchPgaSchedule() {
       }
     `;
 
-    const response = await axios.post<PGAScheduleResponse>(
-      PGA_SCHEDULE_URL,
-      { query },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': PGA_API_KEY,
-        },
-      }
-    );
+    const response = await fetch(PGA_SCHEDULE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": PGA_API_KEY,
+      },
+      body: JSON.stringify({ query }),
+    });
 
-    const upcoming = response.data?.data?.schedule?.upcoming;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PGA schedule: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as PGAScheduleResponse;
+
+    const upcoming = data?.data?.schedule?.upcoming;
     if (!Array.isArray(upcoming)) {
-      throw new Error('Invalid schedule data format');
+      throw new Error("Invalid schedule data format");
     }
 
     // Flatten tournaments into a single list

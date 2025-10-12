@@ -1,80 +1,46 @@
-import { Request, Response, NextFunction } from 'express';
-import { ZodError } from 'zod';
-import {
-  ValidationError,
-  NotFoundError,
-  UnauthorizedError,
-} from '../utils/errors.js';
+import { Context } from "hono";
 
-// Custom error class for API errors
-export class ApiError extends Error {
-  constructor(
-    public statusCode: number,
-    public message: string,
-    public isOperational = true
-  ) {
-    super(message);
-    Object.setPrototypeOf(this, ApiError.prototype);
-  }
-}
+export const errorHandler = (error: Error, c: Context) => {
+  console.error("Error:", error);
 
-// Error handler middleware
-export const errorHandler = (
-  err: Error | ApiError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  // Log error for debugging
-  console.error('Error:', {
-    name: err.name,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    path: req.path,
-    method: req.method,
-  });
+  // Default error status and message
+  let status = 500;
+  let message = "Internal Server Error";
 
-  // Handle API errors
-  if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
-      status: 'error',
-      message: err.message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    });
+  // Handle specific error types
+  if (error.name === "ValidationError") {
+    status = 400;
+    message = error.message;
+  } else if (error.name === "UnauthorizedError") {
+    status = 401;
+    message = "Unauthorized";
+  } else if (error.name === "ForbiddenError") {
+    status = 403;
+    message = "Forbidden";
+  } else if (error.name === "NotFoundError") {
+    status = 404;
+    message = "Not Found";
   }
 
-  // Handle validation errors (e.g., from express-validator)
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Validation Error',
-      errors: err.message,
-    });
-  }
-
-  // Handle JWT errors (if we add authentication later)
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      status: 'error',
-      message: 'Invalid token',
-    });
-  }
-
-  // Handle unknown errors
-  return res.status(500).json({
-    status: 'error',
-    message:
-      process.env.NODE_ENV === 'production'
-        ? 'Internal Server Error'
-        : err.message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
+  return c.json(
+    {
+      error: {
+        message,
+        status,
+      },
+    },
+    status as any
+  );
 };
 
-// 404 handler middleware
-export const notFoundHandler = (req: Request, res: Response) => {
-  res.status(404).json({
-    status: 'error',
-    message: `Route ${req.originalUrl} not found`,
-  });
+export const notFoundHandler = (c: Context) => {
+  return c.json(
+    {
+      error: {
+        message: "Not Found",
+        status: 404,
+      },
+    },
+    404
+  );
 };

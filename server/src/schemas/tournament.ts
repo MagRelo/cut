@@ -17,6 +17,7 @@ const tournamentBaseSchema = {
   city: z.string().min(2, 'City name must be at least 2 characters'),
   state: z.string().min(2, 'State name must be at least 2 characters'),
   timezone: z.string(),
+  venue: z.any().optional(), // JSON type
   purse: z.number().positive('Purse must be positive').optional(),
   status: z.enum([
     TournamentStatus.UPCOMING,
@@ -26,8 +27,11 @@ const tournamentBaseSchema = {
   roundStatusDisplay: z.string().optional(),
   roundDisplay: z.string().optional(),
   currentRound: z.number().int().optional(),
-  weather: z.any().optional(), // Using any for JSON type
+  weather: z.any().optional(), // JSON type
   beautyImage: z.string().optional(),
+  cutLine: z.string().optional(),
+  cutRound: z.string().optional(),
+  manualActive: z.boolean().default(false),
 };
 
 // Schema for updating a tournament
@@ -55,43 +59,75 @@ export type TournamentIdParam = z.infer<typeof tournamentIdSchema>;
 // Types for PGA Tour data
 export type TournamentPlayer = {
   id: string;
-  pgaTourId: string;
-  position: number;
-  scoringData: {
-    r1Score?: number;
-    r2Score?: number;
-    r3Score?: number;
-    r4Score?: number;
-    totalScore?: number;
-  };
-  status: string;
-  earnings?: number;
-  fedExPoints?: number;
-  imageUrl?: string | null;
-  displayName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  shortName?: string | null;
-  country?: string | null;
-  countryFlag?: string | null;
-  age?: number | null;
-  isActive: boolean;
-  inField: boolean;
+  tournamentId: string;
+  playerId: string;
+  leaderboardPosition: string | null;
+  r1: any | null;
+  r2: any | null;
+  r3: any | null;
+  r4: any | null;
+  cut: number | null;
+  bonus: number | null;
+  total: number | null;
+  leaderboardTotal: string | null;
   createdAt: Date;
   updatedAt: Date;
-  lastSyncedAt?: Date | null;
+  player: {
+    id: string;
+    pga_pgaTourId: string | null;
+    pga_imageUrl: string | null;
+    pga_displayName: string | null;
+    pga_firstName: string | null;
+    pga_lastName: string | null;
+    pga_shortName: string | null;
+    pga_country: string | null;
+    pga_countryFlag: string | null;
+    pga_age: number | null;
+    isActive: boolean;
+    inField: boolean;
+  };
 };
 
-export type PGATourLeaderboard = {
+export type TournamentLineup = {
+  id: string;
+  userId: string;
   tournamentId: string;
-  status: keyof typeof TournamentStatus;
-  players: TournamentPlayer[];
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  players: TournamentLineupPlayer[];
 };
 
-export type PGATourScorecard = {
-  r1Score?: number;
-  r2Score?: number;
-  r3Score?: number;
-  r4Score?: number;
-  totalScore?: number;
+export type TournamentLineupPlayer = {
+  id: string;
+  tournamentLineupId: string;
+  tournamentPlayerId: string;
+  createdAt: Date;
+  tournamentPlayer: TournamentPlayer;
+};
+
+export type Contest = {
+  id: string;
+  name: string;
+  description: string | null;
+  tournamentId: string;
+  userGroupId: string;
+  startDate: Date;
+  endDate: Date;
+  status: string;
+  settings: any | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ContestLineup = {
+  id: string;
+  contestId: string;
+  tournamentLineupId: string;
+  userId: string;
+  status: string;
+  score: number | null;
+  position: number | null;
+  createdAt: Date;
+  updatedAt: Date;
 };

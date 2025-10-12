@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScoreDisplay, StablefordDisplay } from '../player/ScoreDisplays';
+import { ScoreDisplay, StablefordDisplay } from '../player/PlayerScorecard';
 
 // Dummy data for 7 holes
 const dummyPars = [5, 3, 4, 4, 5];

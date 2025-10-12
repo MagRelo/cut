@@ -1,33 +1,37 @@
 ---
 description: database design, implementation, and documentation
-globs: 
+globs:
 alwaysApply: false
 ---
+
 # Database Documentation
 
 ## Core Concepts
 
 The database is designed around these key concepts:
+
 1. Players exist independently of teams or leagues. Players will be loaded and refreshed from external data so players should only be linked to teams through the TeamPlayer table.
 2. Users can join multiple leagues
 3. Users can create a single team for each league they have joined. Users cannot have more than one team per league.
 4. Teams can draft any player. Each player can only be used once per team per league, ie, multiple teams within a league can use the same player, but each player can only be selected once (no duplicates on a single team). The same player can be on multiple teams across different leagues
 
-
 ## Entity Relationships
 
 ### Players and Teams
+
 - Players are independent entities representing PGA Tour golfers
 - Players can be drafted to multiple teams across different leagues
 - The TeamPlayer junction table manages these many-to-many relationships
 - A player doesn't need to be on any team to exist in the system
 
 ### Users and Leagues
+
 - Users can join multiple leagues through LeagueMembership
 - Users can be commissioners of leagues they create
 - Users can create and manage exactly one team within each leagues they've joined
 
 ### Teams and Leagues
+
 - Teams must belong to exactly one league
 - Teams can draft players up to their league's roster size limit
 - Multiple teams can draft the same player
@@ -35,6 +39,7 @@ The database is designed around these key concepts:
 ## Database Tables
 
 1. **Player**
+
    - Purpose: Central repository for all PGA Tour player information
    - Independent entity not tied to any teams or leagues
    - Fields: id, pgaTourId (unique), name, imageUrl, hometown, age
@@ -42,6 +47,7 @@ The database is designed around these key concepts:
    - Note: Players exist whether or not they're on any teams
 
 2. **TeamPlayer**
+
    - Purpose: Manages the many-to-many relationship between Teams and Players
    - Tracks which players are on which teams
    - Fields: id, teamId, playerId, addedAt, active
@@ -50,49 +56,56 @@ The database is designed around these key concepts:
    - Note: The 'active' field allows for tracking current vs historical roster spots
 
 3. **Team**
+
    - Purpose: Represents a collection of players within a league
    - Fields: id, name, leagueId, createdAt, updatedAt
    - Relations: league, players (through TeamPlayer), users
    - Note: Teams can only exist within a league
 
 4. **League**
+
    - Purpose: Organizes teams and competition structure
    - Fields: id, name, description, isPrivate, maxTeams, commissionerId
    - Relations: commissioner, members, teams, settings
    - Note: Controls the rules and structure of the competition
 
 5. **LeagueSettings**
+
    - Purpose: Configures league-specific rules
    - Fields: id, rosterSize, weeklyStarters, scoringType, draftDate, seasonDates
    - Relations: league (one-to-one)
    - Note: Each league has exactly one settings record
 
 6. **LeagueMembership**
+
    - Purpose: Tracks user participation in leagues
    - Fields: id, userId, leagueId, role, joinedAt
    - Relations: user, league
    - Note: Users must be members to create teams
 
 7. **Tournament**
+
    - Purpose: Tracks PGA Tour tournaments
    - Fields: id, name, dates, course, purse, status
    - Relations: players (through TournamentPlayer)
    - Note: Independent of leagues/teams, represents actual PGA events
 
 8. **TournamentPlayer**
+
    - Purpose: Tracks player performance in tournaments
    - Fields: id, scores, position, earnings, etc.
    - Relations: tournament, player
    - Note: Contains actual tournament performance data
 
 9. **User**
+
    - Purpose: Manages user accounts and authentication
    - Fields: id, email, password, name, emailVerified
    - Relations: team, ownedLeagues, leagueMemberships, orderLogs
    - Note: Users can participate in multiple leagues
 
 10. **UserOrderLog**
-    - Purpose: Tracks Hyperliquid trading activity
+    - Purpose: Tracks user trading activity
     - Fields: id, orderType, asset, amount, price, status
     - Relations: user
     - Note: Maintains history of trading actions
@@ -102,6 +115,7 @@ The database is designed around these key concepts:
 The seeding process follows these steps:
 
 1. PGA Tour Data Import:
+
    - Fetch current tournament and player data using scrapePGATourData()
    - Create Player records for all PGA Tour players
    - This establishes the base player pool
