@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+import { PlayerScorecard } from "../player/PlayerScorecard";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
 
@@ -162,10 +162,10 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
         <Dialog as="div" className="relative z-50" onClose={closePlayerModal}>
           <TransitionChild
             as={Fragment}
-            enter="ease-out duration-300"
+            enter="ease-out duration-150"
             enterFrom="opacity-0"
             enterTo="opacity-100"
-            leave="ease-in duration-200"
+            leave="ease-in duration-100"
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
@@ -176,31 +176,42 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
             <div className="flex min-h-full items-center justify-center p-4 text-center">
               <TransitionChild
                 as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
+                enter="ease-out duration-150"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
               >
                 <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all">
                   {/* Header Section */}
-                  <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-white">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <DialogTitle
-                          as="h3"
-                          className="text-2xl font-semibold leading-6 text-gray-900"
-                        >
-                          {selectedPlayer?.pga_displayName || "Player Details"}
-                        </DialogTitle>
-                        <p className="text-sm text-gray-500 mt-1 font-medium text-left">
-                          {contest?.tournament?.name}
-                        </p>
+                  <div className="px-4 sm:px-6 py-4 bg-white">
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        {selectedPlayer?.pga_imageUrl && (
+                          <img
+                            className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                            src={selectedPlayer.pga_imageUrl}
+                            alt={selectedPlayer.pga_displayName || ""}
+                          />
+                        )}
+                        <div>
+                          <DialogTitle
+                            as="h3"
+                            className="text-2xl font-semibold leading-6 text-gray-900"
+                          >
+                            {selectedPlayer?.pga_displayName || "Player Details"}
+                          </DialogTitle>
+                          {selectedPlayer?.pga_country && (
+                            <p className="text-sm text-gray-500 mt-1 text-left">
+                              {selectedPlayer.pga_country}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <button
                         type="button"
-                        className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                        className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors flex-shrink-0"
                         onClick={closePlayerModal}
                       >
                         <span className="sr-only">Close</span>
@@ -222,10 +233,45 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                   </div>
 
                   {/* Content Section */}
-                  <div className="px-4 sm:px-6 py-4 max-h-[70vh] overflow-y-auto bg-gray-50">
+                  <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
                     {selectedPlayer && (
-                      <div className="bg-white rounded-lg shadow-sm">
-                        <PlayerDisplayCard
+                      <div className="overflow-hidden shadow-sm border-l border-r border-b border-gray-300">
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-b border-gray-300">
+                          <div className="px-3 py-2 text-center">
+                            <div className="text-lg font-bold text-gray-900">
+                              {selectedPlayer.tournamentData?.leaderboardPosition || "–"}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
+                              Position
+                            </div>
+                          </div>
+                          <div className="px-3 py-2 text-center">
+                            <div
+                              className={`text-lg font-bold ${
+                                selectedPlayer.tournamentData?.leaderboardTotal?.startsWith("-")
+                                  ? "text-red-600"
+                                  : "text-gray-900"
+                              }`}
+                            >
+                              {selectedPlayer.tournamentData?.leaderboardTotal || "–"}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
+                              Score
+                            </div>
+                          </div>
+                          <div className="px-3 py-2 text-center">
+                            <div className="text-lg font-bold text-gray-900">
+                              {(selectedPlayer.tournamentData?.total || 0) +
+                                (selectedPlayer.tournamentData?.cut || 0) +
+                                (selectedPlayer.tournamentData?.bonus || 0)}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
+                              Points
+                            </div>
+                          </div>
+                        </div>
+                        <PlayerScorecard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}
                         />
