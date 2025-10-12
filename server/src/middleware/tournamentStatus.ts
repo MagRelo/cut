@@ -2,7 +2,7 @@ import { Context, Next } from "hono";
 import { prisma } from "../lib/prisma.js";
 
 /**
- * Middleware that prevents user data editing when tournament is in progress or complete
+ * Middleware that prevents user data editing when tournament is IN_PROGRESS or COMPLETED
  * This is the opposite of the cron scheduler's shouldSkipPlayerUpdates logic
  *
  * Usage examples:
@@ -37,14 +37,14 @@ export const requireTournamentEditable = async (
       return;
     }
 
-    if (currentTournament.status === "IN_PROGRESS") {
+    if (currentTournament.status === "IN_PROGRESS" || currentTournament.status === "COMPLETED") {
       console.log(
         `[MIDDLEWARE] Tournament status: ${currentTournament.status}, blocking user edits`
       );
       return c.json(
         {
           error: "Tournament editing is not allowed",
-          message: "Cannot edit data while tournament is in progress",
+          message: "Cannot edit data while tournament is in progress or completed",
           tournamentStatus: currentTournament.status,
         },
         403
