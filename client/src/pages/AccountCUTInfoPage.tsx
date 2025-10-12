@@ -291,7 +291,7 @@ export function CUTInfoPage() {
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-2 text-sm font-display leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
@@ -304,7 +304,7 @@ export function CUTInfoPage() {
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-2 text-sm font-display leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
@@ -317,7 +317,7 @@ export function CUTInfoPage() {
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-2 text-sm font-medium leading-5",
+                  "w-full py-2 text-sm font-display leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"

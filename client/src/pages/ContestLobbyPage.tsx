@@ -140,7 +140,7 @@ export const ContestLobby: React.FC = () => {
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
-                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "w-full py-1.5 text-sm font-display leading-5",
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
@@ -155,7 +155,7 @@ export const ContestLobby: React.FC = () => {
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
-                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "w-full py-1.5 text-sm font-display leading-5",
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
@@ -163,14 +163,14 @@ export const ContestLobby: React.FC = () => {
                   )
                 }
               >
-                ENTRIES ({contest.contestLineups?.length})
+                Entries ({contest.contestLineups?.length})
               </Tab>
             )}
             {!isTournamentEditable && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
-                    "w-full py-1.5 text-sm font-medium leading-5",
+                    "w-full py-1.5 text-sm font-display leading-5",
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
@@ -178,13 +178,13 @@ export const ContestLobby: React.FC = () => {
                   )
                 }
               >
-                PLAYERS
+                Players
               </Tab>
             )}
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
-                  "w-full py-1.5 text-sm font-medium leading-5",
+                  "w-full py-1.5 text-sm font-display leading-5",
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
@@ -192,7 +192,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              SETTINGS
+              Settings
             </Tab>
           </TabList>
           <div className="">

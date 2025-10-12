@@ -23,7 +23,11 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   }
 
   if (contests.length === 0) {
-    return <div>No contests found</div>;
+    return (
+      <div className="text-center my-8">
+        <p className="text-gray-400 font-semibold font-display">No contests found</p>
+      </div>
+    );
   }
 
   return (
