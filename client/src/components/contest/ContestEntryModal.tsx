@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { LineupCard } from "../lineup/LineupCard";
+import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import { type TournamentLineup } from "../../types/player";
 
 interface ContestEntryModalProps {
@@ -9,7 +9,6 @@ interface ContestEntryModalProps {
   lineup: TournamentLineup | null;
   roundDisplay: string;
   userName?: string;
-  tournamentName?: string;
 }
 
 export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
@@ -18,7 +17,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   lineup,
   roundDisplay,
   userName,
-  tournamentName,
 }) => {
   if (!lineup) return null;
 
@@ -27,10 +25,10 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <TransitionChild
           as={Fragment}
-          enter="ease-out duration-300"
+          enter="ease-out duration-150"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in duration-200"
+          leave="ease-in duration-100"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
@@ -41,12 +39,12 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <TransitionChild
               as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+              enter="ease-out duration-150"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-100"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
             >
               <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all">
                 {/* Header Section */}
@@ -60,7 +58,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         {userName}
                       </DialogTitle>
                       <p className="text-sm text-gray-500 mt-1 font-medium text-left">
-                        {tournamentName}
+                        {lineup.name}
                       </p>
                     </div>
                     <button
@@ -88,8 +86,14 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
                 {/* Content Section */}
                 <div className="px-4 sm:px-6 py-4 max-h-[70vh] overflow-y-auto bg-gray-50">
-                  <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm p-3">
-                    <LineupCard lineup={lineup} isEditable={false} roundDisplay={roundDisplay} />
+                  <div className="space-y-3">
+                    {lineup.players.map((player) => (
+                      <PlayerDisplayCard
+                        key={player.id}
+                        player={player}
+                        roundDisplay={roundDisplay}
+                      />
+                    ))}
                   </div>
                 </div>
               </DialogPanel>

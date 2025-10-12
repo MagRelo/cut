@@ -211,7 +211,6 @@ export const ContestLobby: React.FC = () => {
                 <ContestEntryList
                   contestLineups={contest?.contestLineups}
                   roundDisplay={contest?.tournament?.roundDisplay}
-                  tournamentName={contest?.tournament?.name}
                 />
               </TabPanel>
             )}

@@ -5,14 +5,9 @@ import { ContestEntryModal } from "./ContestEntryModal";
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
-  tournamentName?: string;
 }
 
-export const ContestEntryList = ({
-  contestLineups,
-  roundDisplay,
-  tournamentName,
-}: ContestEntryListProps) => {
+export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryListProps) => {
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
@@ -135,7 +130,6 @@ export const ContestEntryList = ({
         lineup={selectedLineup?.tournamentLineup || null}
         roundDisplay={roundDisplay || ""}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
-        tournamentName={tournamentName}
       />
     </>
   );
