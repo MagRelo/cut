@@ -32,7 +32,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
         {contests.map((contest) => (
           <div
             key={contest.id}
-            className="border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow px-4 py-3"
+            className="border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
           >
             <ContestCard contest={contest} />
           </div>

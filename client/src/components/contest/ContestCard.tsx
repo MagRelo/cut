@@ -1,7 +1,5 @@
 import { type Contest } from "../../types/contest";
 import { Link } from "react-router-dom";
-import { CutAmountDisplay } from "../common/CutAmountDisplay";
-
 import { useTournament } from "../../contexts/TournamentContext";
 
 interface ContestCardProps {
@@ -11,38 +9,49 @@ interface ContestCardProps {
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
   const { isTournamentEditable, currentTournament } = useTournament();
+  const potAmount = contest.settings?.fee * (contest.contestLineups?.length ?? 0);
+  const entryCount = contest.contestLineups?.length ?? 0;
 
   return (
     <Link to={`/contest/${contest.id}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <div>
-            <span className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm whitespace-nowrap mr-2">
-              ${contest.settings?.fee}
-            </span>
-            <span className="text-lg text-gray-700 font-semibold font-display">{contest.name}</span>
+      <div className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200">
+        <div className="flex items-center justify-between gap-2.5">
+          {/* Left Section - Entry Fee Badge */}
+          <div className="flex-shrink-0">
+            <div className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-gradient-to-br from-green-50 to-emerald-50 border border-green-500">
+              <span className="text-base font-bold text-green-700">${contest.settings?.fee}</span>
+            </div>
           </div>
 
-          <div className="flex items-center">
-            <span className="text-sm text-gray-500">
+          {/* Middle Section - Contest Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
+              {contest.name}
+            </h3>
+            <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
               {isTournamentEditable ? (
                 <>
-                  Entries:{" "}
-                  <span className="font-bold text-gray-700">{contest.contestLineups?.length}</span>
+                  {entryCount} {entryCount === 1 ? "Entry" : "Entries"}
                 </>
               ) : (
-                <span className="font-sans">
+                <>
                   {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
-                </span>
+                </>
               )}
-            </span>
+            </p>
+          </div>
+
+          {/* Right Section - Prize Pool */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="text-right">
+              <div className="text-lg font-bold text-gray-900 leading-none">${potAmount}</div>
+              <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                POT
+              </div>
+            </div>
+            <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
           </div>
         </div>
-        <CutAmountDisplay
-          amount={contest.settings?.fee * (contest.contestLineups?.length ?? 0)}
-          label="Pot"
-          logoPosition="right"
-        />
       </div>
     </Link>
   );

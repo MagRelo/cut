@@ -150,7 +150,7 @@ export const ContestLobby: React.FC = () => {
       {/* contest lobby */}
       <div className="bg-white rounded-lg shadow pb-1">
         {/* header */}
-        <div className="px-4 pt-4 mb-3">
+        <div className="p-2 mb-3">
           <ContestCard contest={contest} />
         </div>
 
