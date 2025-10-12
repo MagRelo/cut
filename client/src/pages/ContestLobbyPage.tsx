@@ -8,10 +8,8 @@ import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 import { ContestCard } from "../components/contest/ContestCard";
 import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUtils.tsx";
 import { useContestQuery } from "../hooks/useContestQuery";
-import { LineupModal } from "../components/lineup/LineupModal";
 import { LineupManagement } from "../components/contest/LineupManagement";
-import { type TournamentLineup } from "../types/player";
-import { type ContestLineup } from "../types/lineup";
+import { ContestEntryList } from "../components/contest/ContestEntryList";
 import EscrowContract from "../utils/contracts/Escrow.json";
 
 function classNames(...classes: string[]) {
@@ -44,26 +42,6 @@ export const ContestLobby: React.FC = () => {
 
   // tabs
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // lineup modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedLineup, setSelectedLineup] = useState<{
-    lineup: TournamentLineup;
-    userName: string;
-  } | null>(null);
-  const openLineupModal = (contestLineup: ContestLineup) => {
-    if (contestLineup.tournamentLineup) {
-      setSelectedLineup({
-        lineup: contestLineup.tournamentLineup,
-        userName: contestLineup.user?.name || contestLineup.user?.email || "Unknown User",
-      });
-      setIsModalOpen(true);
-    }
-  };
-  const closeLineupModal = () => {
-    setIsModalOpen(false);
-    setSelectedLineup(null);
-  };
 
   // blockchain data
   const chainId = useChainId();
@@ -150,7 +128,7 @@ export const ContestLobby: React.FC = () => {
       {/* contest lobby */}
       <div className="bg-white rounded-lg shadow pb-1">
         {/* header */}
-        <div className="p-2 mb-3">
+        <div className="p-2 mt-1">
           <ContestCard contest={contest} />
         </div>
 
@@ -229,94 +207,10 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES - Only shown when not editable */}
             {!isTournamentEditable && (
               <TabPanel>
-                {(() => {
-                  // Calculate total points for each lineup and sort by points
-                  const lineupsWithPoints =
-                    contest?.contestLineups?.map((lineup) => {
-                      const totalPoints =
-                        lineup.tournamentLineup?.players?.reduce((sum, player) => {
-                          const playerTotal = player.tournamentData?.total || 0;
-                          const cut = player.tournamentData?.cut || 0;
-                          const bonus = player.tournamentData?.bonus || 0;
-                          return sum + playerTotal + cut + bonus;
-                        }, 0) || 0;
-
-                      return {
-                        ...lineup,
-                        totalPoints,
-                      };
-                    }) || [];
-
-                  // Sort by points (highest first)
-                  const sortedLineups = [...lineupsWithPoints].sort(
-                    (a, b) => b.totalPoints - a.totalPoints
-                  );
-
-                  if (sortedLineups.length === 0) {
-                    return (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No teams in this contest yet</p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Lineup
-                            </th>
-                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              PTS
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {sortedLineups.map((lineup) => (
-                            <tr key={lineup.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="pl-4 pr-2 py-3 whitespace-nowrap">
-                                <div className="flex items-center gap-2">
-                                  <div className="text-md font-medium text-gray-800">
-                                    {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                                  </div>
-                                  <button
-                                    onClick={() => openLineupModal(lineup)}
-                                    className="text-gray-400 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded p-1"
-                                    title="View lineup"
-                                  >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="currentColor"
-                                      viewBox="0 0 20 20"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                    </svg>
-                                  </button>
-
-                                  {/* <div
-                                    className="w-3 h-3 rounded-full border border-gray-300"
-                                    style={{
-                                      backgroundColor:
-                                        (lineup.user?.settings?.color as string) || "#D3D3D3",
-                                    }}
-                                  /> */}
-                                </div>
-                              </td>
-                              <td className="px-2 py-3 whitespace-nowrap text-center">
-                                <span className="text-md font-bold text-gray-900">
-                                  {lineup.totalPoints}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
+                <ContestEntryList
+                  contestLineups={contest?.contestLineups}
+                  roundDisplay={contest?.tournament?.roundDisplay}
+                />
               </TabPanel>
             )}
 
@@ -389,93 +283,66 @@ export const ContestLobby: React.FC = () => {
                   }
 
                   return (
-                    <div className="overflow-x-auto ">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="pl-4 pr-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Player
-                            </th>
-                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              OWN%
-                            </th>
-                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              PTS
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {playersData.map((playerData) => {
-                            const player = playerData.player;
-                            const totalPoints =
-                              (player.tournamentData?.total || 0) +
-                              (player.tournamentData?.cut || 0) +
-                              (player.tournamentData?.bonus || 0);
+                    <div className="space-y-2 px-4 mt-2">
+                      {playersData.map((playerData) => {
+                        const player = playerData.player;
+                        const totalPoints =
+                          (player.tournamentData?.total || 0) +
+                          (player.tournamentData?.cut || 0) +
+                          (player.tournamentData?.bonus || 0);
 
-                            // Get hot/cold icon from current round
-                            const getCurrentRoundIcon = () => {
-                              const roundData = player.tournamentData?.r1;
-                              if (
-                                roundData &&
-                                typeof roundData === "object" &&
-                                "icon" in roundData
-                              ) {
-                                return roundData.icon || "";
-                              }
-                              return "";
-                            };
+                        // Get hot/cold icon from current round
+                        const getCurrentRoundIcon = () => {
+                          const roundData = player.tournamentData?.r1;
+                          if (roundData && typeof roundData === "object" && "icon" in roundData) {
+                            return roundData.icon || "";
+                          }
+                          return "";
+                        };
 
-                            const icon = getCurrentRoundIcon();
+                        const icon = getCurrentRoundIcon();
 
-                            return (
-                              <tr key={player.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="pl-4 pr-2 py-3 whitespace-nowrap">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-800">
-                                      {player.pga_displayName || "Unknown Player"}
-                                    </span>
-                                    <button
-                                      className="text-gray-500 hover:text-gray-800 transition-colors"
-                                      title="View scorecard (coming soon)"
-                                      disabled
-                                    >
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                      </svg>
-                                    </button>
-                                    {icon && (
-                                      <span className="text-lg text-gray-400" title="Player status">
-                                        {icon}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-2 py-3 whitespace-nowrap text-center">
-                                  <span className="text-sm text-gray-700">
-                                    {playerData.ownershipPercentage}%
+                        return (
+                          <div
+                            key={player.id}
+                            className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              {/* Left - Player Info */}
+                              <div className="flex-1 min-w-0 flex items-center gap-2">
+                                <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                                  {player.pga_displayName || "Unknown Player"}
+                                </div>
+                                {icon && (
+                                  <span className="text-base flex-shrink-0" title="Player status">
+                                    {icon}
                                   </span>
-                                </td>
-                                <td className="px-2 py-3 whitespace-nowrap text-center">
-                                  <span className="text-sm font-semibold text-gray-900">
-                                    {totalPoints}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                )}
+                              </div>
+
+                              {/* Middle - Ownership */}
+                              <div className="flex-shrink-0 text-right min-w-[3rem]">
+                                <div className="text-sm font-bold text-gray-700 leading-none">
+                                  {playerData.ownershipPercentage}%
+                                </div>
+                                <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                                  OWN
+                                </div>
+                              </div>
+
+                              {/* Right - Points */}
+                              <div className="flex-shrink-0 text-right min-w-[3rem]">
+                                <div className="text-lg font-bold text-gray-900 leading-none">
+                                  {totalPoints}
+                                </div>
+                                <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                                  PTS
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })()}
@@ -590,15 +457,6 @@ export const ContestLobby: React.FC = () => {
           </div>
         </TabGroup>
       </div>
-
-      {/* Lineup Modal */}
-      <LineupModal
-        isOpen={isModalOpen}
-        onClose={closeLineupModal}
-        lineup={selectedLineup?.lineup || null}
-        roundDisplay={contest?.tournament?.roundDisplay || ""}
-        userName={selectedLineup?.userName}
-      />
     </div>
   );
 };

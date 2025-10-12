@@ -3,7 +3,7 @@ import { useReadContract, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader.tsx";
+// import { PageHeader } from "../components/common/PageHeader.tsx";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 import { TestnetWarning } from "../components/common/ChainWarning.tsx";
 // import { TokenBalances } from "../components/user/TokenBalances";
@@ -198,18 +198,18 @@ export function CUTInfoPage() {
         items={[{ label: "Account", path: "/account" }, { label: "CUT" }]}
         className="mb-3"
       />
-      <PageHeader title="About CUT" className="mb-3" />
+      {/* <PageHeader title="About CUT" className="mb-3" /> */}
 
       {/* CUT Token Info Card */}
       <div className="bg-white rounded-lg shadow p-6 mb-4">
         {/* Header with Logo and Title */}
-        <div className="flex items-center mb-4">
-          <img src="/logo-transparent.png" alt="CUT" className="h-16 mr-3" />
-          <h2 className="text-2xl font-bold text-gray-900">What is CUT?</h2>
+        <div className="flex items-center mb-2">
+          <img src="/logo-transparent.png" alt="CUT" className="h-12 mr-2" />
+          <h2 className="text-2xl font-bold text-gray-900 font-display">What is CUT?</h2>
         </div>
 
         {/* Token Description */}
-        <div className="space-y-3 text-gray-700">
+        <div className="text-md text-gray-700">
           <p>
             The CUT token is the native currency of the Cut platform. Each CUT is backed by and
             convertible to USDC at a 1:1 ratio. USDC deposits are held in Compound to generate

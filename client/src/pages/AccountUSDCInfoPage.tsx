@@ -1,4 +1,4 @@
-import { PageHeader } from "../components/common/PageHeader";
+// import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 
 export function USDCInfoPage() {
@@ -8,7 +8,7 @@ export function USDCInfoPage() {
         items={[{ label: "Account", path: "/account" }, { label: "USDC" }]}
         className="mb-3"
       />
-      <PageHeader title="About USDC" className="mb-3" />
+      {/* <PageHeader title="About USDC" className="mb-3" /> */}
 
       <div className="space-y-4">
         {/* What is USDC */}

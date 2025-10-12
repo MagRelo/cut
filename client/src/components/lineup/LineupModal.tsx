@@ -46,9 +46,9 @@ export const LineupModal: React.FC<LineupModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-50 p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex justify-between items-start mb-4">
-                  <Dialog.Title as="h3" className="text-2xl font-semibold leading-6 text-gray-900">
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-50 px-4 py-5 text-left align-middle shadow-xl transition-all">
+                <div className="flex justify-between items-start">
+                  <Dialog.Title as="h3" className="text-2xl font-semibold leading-6 text-gray-800">
                     {userName}
                   </Dialog.Title>
                   <button
@@ -69,7 +69,7 @@ export const LineupModal: React.FC<LineupModalProps> = ({
                   </button>
                 </div>
 
-                <div className="mt-4">
+                <div className="">
                   <LineupCard lineup={lineup} isEditable={false} roundDisplay={roundDisplay} />
                 </div>
               </Dialog.Panel>

@@ -42,7 +42,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           </div>
 
           {/* Right Section - Prize Pool */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900 leading-none">${potAmount}</div>
               <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">

@@ -85,7 +85,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-600 truncate">
+              <div className="text-lg font-semibold text-gray-800 truncate">
                 {player.pga_displayName || ""}
                 {/* optionally add the round icon of the current round */}
                 {currentRound?.round && currentRound.data.icon !== "" && (
