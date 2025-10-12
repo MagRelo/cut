@@ -40,13 +40,13 @@ The sepolia directory contains scripts for interacting with deployed contracts o
 
 ### Environment Variables
 
-Copy `env.example` to `.env` in the project root and fill in your actual values:
+Copy `env.example` to `.env` in the `contracts/` directory and fill in your actual values:
 
 ```bash
-cp env.example .env
+cp contracts/env.example contracts/.env
 ```
 
-Required variables in `.env`:
+Required variables in `contracts/.env`:
 
 ```bash
 # Required for all deployments
@@ -245,7 +245,7 @@ The script provides colored console output with:
 1. **Missing Environment Variables**
 
    - Ensure all required environment variables are set
-   - Check that the `.env` file is in the project root
+   - Check that the `.env` file is in the `contracts/` directory
 
 2. **Insufficient Funds**
 
@@ -285,7 +285,7 @@ If you encounter issues:
 
 ## Security Notes
 
-- Never commit your `.env` file to version control
+- Never commit your `contracts/.env` file to version control
 - Keep your private key secure and never share it
 - Use a dedicated deployment wallet, not your main wallet
 - Test deployments on Sepolia before deploying to mainnet

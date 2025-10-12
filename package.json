@@ -45,8 +45,6 @@
     "server"
   ],
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "dotenv": "^16.4.5",
-    "ethers": "^6.11.1"
+    "concurrently": "^8.2.2"
   }
 }
