@@ -48,6 +48,10 @@ export const ContestEntryList = ({
   // Sort by points (highest first)
   const sortedLineups = [...lineupsWithPoints].sort((a, b) => b.totalPoints - a.totalPoints);
 
+  // Determine how many positions are "in the money"
+  const totalEntries = sortedLineups.length;
+  const paidPositions = totalEntries < 10 ? 1 : 3;
+
   if (sortedLineups.length === 0) {
     return (
       <div className="text-center py-8">
@@ -59,64 +63,69 @@ export const ContestEntryList = ({
   return (
     <>
       <div className="space-y-2 px-4 mt-2">
-        {sortedLineups.map((lineup, index) => (
-          <div
-            key={lineup.id}
-            className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200 cursor-pointer"
-            onClick={() => openLineupModal(lineup)}
-          >
-            <div className="flex items-center justify-between gap-3">
-              {/* Left - Rank */}
-              <div className="flex-shrink-0 w-8">
-                <div
-                  className={`text-center font-bold ${
-                    index === 0
-                      ? "text-yellow-600 text-lg"
-                      : index === 1
-                      ? "text-gray-400 text-base"
-                      : index === 2
-                      ? "text-orange-600 text-base"
-                      : "text-gray-400 text-sm"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-              </div>
+        {sortedLineups.map((lineup, index) => {
+          const isInTheMoney = index < paidPositions;
 
-              {/* Middle - User Info */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                  {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                </div>
-              </div>
-
-              {/* Right - Points */}
-              <div className="flex-shrink-0 flex items-center gap-2">
-                <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900 leading-none">
-                    {lineup.totalPoints}
-                  </div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                    PTS
+          return (
+            <div
+              key={lineup.id}
+              className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200 cursor-pointer"
+              onClick={() => openLineupModal(lineup)}
+            >
+              <div className="flex items-center justify-between gap-3">
+                {/* Left - Rank */}
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div
+                      className={`text-center font-bold text-xs rounded-full w-7 h-7 flex items-center justify-center ${
+                        isInTheMoney ? "text-green-700 border border-green-600" : "text-gray-500"
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                    {isInTheMoney && (
+                      <div className="absolute -top-0.5 -left-0.5 text-[10px] text-green-600 font-bold bg-white rounded-full w-3 text-center">
+                        $
+                      </div>
+                    )}
                   </div>
                 </div>
-                <svg
-                  className="w-4 h-4 text-gray-400 flex-shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+
+                {/* Middle - User Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                    {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                  </div>
+                </div>
+
+                {/* Right - Points */}
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900 leading-none">
+                      {lineup.totalPoints}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                      PTS
+                    </div>
+                  </div>
+                  <svg
+                    className="w-4 h-4 text-gray-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Lineup Modal */}
