@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
-import { LineupModal } from "../lineup/LineupModal";
+import { ContestEntryModal } from "./ContestEntryModal";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
@@ -128,8 +128,8 @@ export const ContestEntryList = ({
         })}
       </div>
 
-      {/* Lineup Modal */}
-      <LineupModal
+      {/* Contest Entry Modal */}
+      <ContestEntryModal
         isOpen={isModalOpen}
         onClose={closeLineupModal}
         lineup={selectedLineup?.tournamentLineup || null}

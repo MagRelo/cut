@@ -1,9 +1,9 @@
 import React, { Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { LineupCard } from "./LineupCard";
+import { LineupCard } from "../lineup/LineupCard";
 import { type TournamentLineup } from "../../types/player";
 
-interface LineupModalProps {
+interface ContestEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   lineup: TournamentLineup | null;
@@ -12,7 +12,7 @@ interface LineupModalProps {
   tournamentName?: string;
 }
 
-export const LineupModal: React.FC<LineupModalProps> = ({
+export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   isOpen,
   onClose,
   lineup,
