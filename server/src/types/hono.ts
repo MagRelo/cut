@@ -63,7 +63,9 @@ export interface Env {
   PAYMENT_TOKEN_ADDRESS: string;
   ESCROW_FACTORY_ADDRESS: string;
   TREASURY_ADDRESS: string;
-  SENDGRID_API_KEY: string;
+  MAILERSEND_API_KEY: string;
+  MAILERSEND_FROM_EMAIL: string;
+  MAILERSEND_FROM_NAME: string;
   TWILIO_ACCOUNT_SID: string;
   TWILIO_AUTH_TOKEN: string;
   TWILIO_PHONE_NUMBER: string;
