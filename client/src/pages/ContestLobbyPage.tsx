@@ -10,6 +10,7 @@ import { createExplorerLinkJSX, getContractAddress } from "../utils/blockchainUt
 import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
+import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import EscrowContract from "../utils/contracts/Escrow.json";
 
 function classNames(...classes: string[]) {
@@ -210,6 +211,7 @@ export const ContestLobby: React.FC = () => {
                 <ContestEntryList
                   contestLineups={contest?.contestLineups}
                   roundDisplay={contest?.tournament?.roundDisplay}
+                  tournamentName={contest?.tournament?.name}
                 />
               </TabPanel>
             )}
@@ -217,135 +219,10 @@ export const ContestLobby: React.FC = () => {
             {/* PLAYERS - Only shown when NOT editable */}
             {!isTournamentEditable && (
               <TabPanel>
-                {(() => {
-                  // Process players data for de-duplication and ownership calculation
-                  const processPlayersData = () => {
-                    if (!contest?.contestLineups) return [];
-
-                    const playerMap = new Map();
-                    const totalLineups = contest.contestLineups.length;
-
-                    // Aggregate player data from all lineups
-                    contest.contestLineups.forEach((lineup) => {
-                      if (lineup.tournamentLineup?.players) {
-                        lineup.tournamentLineup.players.forEach((player) => {
-                          const playerId = player.id;
-
-                          if (!playerMap.has(playerId)) {
-                            playerMap.set(playerId, {
-                              player: {
-                                ...player,
-                                ownershipPercentage: 0,
-                              },
-                              ownedByLineups: 0,
-                              ownershipPercentage: 0,
-                              totalScore: player.tournamentData?.total || 0,
-                              leaderboardPosition:
-                                player.tournamentData?.leaderboardPosition || "–",
-                              leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
-                            });
-                          }
-
-                          // Increment ownership count
-                          const playerData = playerMap.get(playerId);
-                          playerData.ownedByLineups += 1;
-                          playerData.ownershipPercentage = Math.round(
-                            (playerData.ownedByLineups / totalLineups) * 100
-                          );
-                          // Update ownership in the player object as well
-                          playerData.player.ownershipPercentage = playerData.ownershipPercentage;
-                        });
-                      }
-                    });
-
-                    // Convert map to array and sort by points (highest first)
-                    return Array.from(playerMap.values()).sort((a, b) => {
-                      const aTotal =
-                        a.totalScore +
-                        (a.player.tournamentData?.cut || 0) +
-                        (a.player.tournamentData?.bonus || 0);
-                      const bTotal =
-                        b.totalScore +
-                        (b.player.tournamentData?.cut || 0) +
-                        (b.player.tournamentData?.bonus || 0);
-                      return bTotal - aTotal;
-                    });
-                  };
-
-                  const playersData = processPlayersData();
-
-                  if (playersData.length === 0) {
-                    return (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No players found in this contest.</p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="space-y-2 px-4 mt-2">
-                      {playersData.map((playerData) => {
-                        const player = playerData.player;
-                        const totalPoints =
-                          (player.tournamentData?.total || 0) +
-                          (player.tournamentData?.cut || 0) +
-                          (player.tournamentData?.bonus || 0);
-
-                        // Get hot/cold icon from current round
-                        const getCurrentRoundIcon = () => {
-                          const roundData = player.tournamentData?.r1;
-                          if (roundData && typeof roundData === "object" && "icon" in roundData) {
-                            return roundData.icon || "";
-                          }
-                          return "";
-                        };
-
-                        const icon = getCurrentRoundIcon();
-
-                        return (
-                          <div
-                            key={player.id}
-                            className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              {/* Left - Player Info */}
-                              <div className="flex-1 min-w-0 flex items-center gap-2">
-                                <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                                  {player.pga_displayName || "Unknown Player"}
-                                </div>
-                                {icon && (
-                                  <span className="text-base flex-shrink-0" title="Player status">
-                                    {icon}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Middle - Ownership */}
-                              <div className="flex-shrink-0 text-right min-w-[3rem]">
-                                <div className="text-sm font-bold text-gray-700 leading-none">
-                                  {playerData.ownershipPercentage}%
-                                </div>
-                                <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                                  OWN
-                                </div>
-                              </div>
-
-                              {/* Right - Points */}
-                              <div className="flex-shrink-0 text-right min-w-[3rem]">
-                                <div className="text-lg font-bold text-gray-900 leading-none">
-                                  {totalPoints}
-                                </div>
-                                <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                                  PTS
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                <ContestPlayerList
+                  contest={contest}
+                  roundDisplay={contest?.tournament?.roundDisplay}
+                />
               </TabPanel>
             )}
 

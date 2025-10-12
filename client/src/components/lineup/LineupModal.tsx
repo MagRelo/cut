@@ -9,6 +9,7 @@ interface LineupModalProps {
   lineup: TournamentLineup | null;
   roundDisplay: string;
   userName?: string;
+  tournamentName?: string;
 }
 
 export const LineupModal: React.FC<LineupModalProps> = ({
@@ -17,6 +18,7 @@ export const LineupModal: React.FC<LineupModalProps> = ({
   lineup,
   roundDisplay,
   userName,
+  tournamentName,
 }) => {
   if (!lineup) return null;
 
@@ -46,31 +48,49 @@ export const LineupModal: React.FC<LineupModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gray-100 px-4 py-5 text-left align-middle shadow-xl transition-all">
-                <div className="flex justify-between items-start">
-                  <DialogTitle as="h3" className="text-2xl font-semibold leading-6 text-gray-800">
-                    {userName}
-                  </DialogTitle>
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                    onClick={onClose}
-                  >
-                    <span className="sr-only">Close</span>
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                      stroke="currentColor"
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all">
+                {/* Header Section */}
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-white">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <DialogTitle
+                        as="h3"
+                        className="text-2xl font-semibold leading-6 text-gray-900"
+                      >
+                        {userName}
+                      </DialogTitle>
+                      <p className="text-sm text-gray-500 mt-1 font-medium text-left">
+                        {tournamentName}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                      onClick={onClose}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                      <span className="sr-only">Close</span>
+                      <svg
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="">
-                  <LineupCard lineup={lineup} isEditable={false} roundDisplay={roundDisplay} />
+                {/* Content Section */}
+                <div className="px-4 sm:px-6 py-4 max-h-[70vh] overflow-y-auto bg-gray-50">
+                  <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm p-3">
+                    <LineupCard lineup={lineup} isEditable={false} roundDisplay={roundDisplay} />
+                  </div>
                 </div>
               </DialogPanel>
             </TransitionChild>
