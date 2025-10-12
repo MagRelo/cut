@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useBalance, useAccount, useChainId, useReadContract } from "wagmi";
-import { Dialog } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
 import { useLineup } from "../../contexts/LineupContext";
@@ -281,11 +281,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md w-full bg-white rounded-xl shadow-lg">
+          <DialogPanel className="mx-auto max-w-md w-full bg-white rounded-xl shadow-lg">
             <div className="p-6">
-              <Dialog.Title className="text-lg font-semibold text-red-600 mb-2">
-                Warning
-              </Dialog.Title>
+              <DialogTitle className="text-lg font-semibold text-red-600 mb-2">Warning</DialogTitle>
               <div className="text-gray-800 mb-4">{warningModal.message}</div>
               <button
                 onClick={() => setWarningModal({ open: false, message: "" })}
@@ -294,7 +292,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
                 Close
               </button>
             </div>
-          </Dialog.Panel>
+          </DialogPanel>
         </div>
       </Dialog>
 

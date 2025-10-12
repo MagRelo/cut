@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import { PlayerSelectionCard } from "./PlayerSelectionCard";
 
@@ -77,11 +77,11 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-xl shadow-lg">
+        <DialogPanel className="mx-auto max-w-4xl w-full bg-white rounded-xl shadow-lg">
           <div className="p-4 sm:p-6">
-            <Dialog.Title className="text-2xl font-semibold text-gray-900 mb-2">
+            <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
               Select a Golfer
-            </Dialog.Title>
+            </DialogTitle>
 
             {/* Player Grid and Controls */}
             <div className="border border-gray-300 rounded-lg overflow-hidden">
@@ -162,7 +162,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               </button>
             </div>
           </div>
-        </Dialog.Panel>
+        </DialogPanel>
       </div>
     </Dialog>
   );
