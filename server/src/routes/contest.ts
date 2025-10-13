@@ -7,7 +7,7 @@ import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 const contestRouter = new Hono();
 
 // Get contests by tournament ID and chainId
-contestRouter.get("/", requireAuth, async (c) => {
+contestRouter.get("/", async (c) => {
   try {
     const tournamentId = c.req.query("tournamentId");
     const chainId = c.req.query("chainId");
@@ -15,7 +15,7 @@ contestRouter.get("/", requireAuth, async (c) => {
     // Validate query parameters
     const validation = contestQuerySchema.safeParse({
       tournamentId,
-      chainId: chainId ? parseInt(chainId) : undefined,
+      chainId: chainId ? parseInt(chainId) : 8453, // Default to Base mainnet
     });
 
     if (!validation.success) {
@@ -66,7 +66,7 @@ contestRouter.get("/", requireAuth, async (c) => {
 });
 
 // Get contest by ID
-contestRouter.get("/:id", requireAuth, async (c) => {
+contestRouter.get("/:id", async (c) => {
   try {
     const contestId = c.req.param("id");
 

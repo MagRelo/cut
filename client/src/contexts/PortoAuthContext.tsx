@@ -126,6 +126,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
     queryClient.removeQueries({ queryKey: ["lineups"] });
     queryClient.removeQueries({ queryKey: ["contests"] });
+    // Clear auth cookie
+    document.cookie = "cutAuthToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }, [queryClient]);
 
   useEffect(() => {
@@ -173,7 +175,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
       queryClient.removeQueries({ queryKey: ["lineups"] });
-      queryClient.removeQueries({ queryKey: ["contests"] });
+      // queryClient.removeQueries({ queryKey: ["contests"] });
+
+      // clear cookies
+      document.cookie = "cutAuthToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
   }, [address, queryClient]);
 

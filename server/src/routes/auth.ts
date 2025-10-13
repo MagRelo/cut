@@ -133,7 +133,7 @@ authRouter.post("/siwe/verify", async (c) => {
       expiresIn: "7d",
     });
 
-    setCookie(c, "auth", token, {
+    setCookie(c, "cutAuthToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",

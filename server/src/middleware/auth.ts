@@ -26,7 +26,7 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
 
     // If no token in header, check for cookie
     if (!token) {
-      token = getCookie(c, "auth");
+      token = getCookie(c, "cutAuthToken");
     }
 
     if (!token) {
