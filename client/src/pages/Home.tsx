@@ -8,18 +8,62 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-10 pb-10">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 mb-3" style={{ marginLeft: "-20px" }}>
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
         <h1 className="text-6xl font-bold text-black">
           the Cut
           {/* <small className="text-sm text-gray-500 block">Fantasy Golf</small> */}
-          <div className="text-2xl font-bold text-gray-400 mb-3">Fantasy Golf</div>
+          <div className="text-2xl font-bold text-gray-400">Fantasy Golf</div>
         </h1>
       </div>
 
-      {/* <h4 className="text-2xl font-bold text-gray-800 mb-3">Fantasy Golf</h4> */}
-      {/* <h4 className="text-2xl font-bold text-emerald-600 mb-2">(with fantasy golf)</h4> */}
+      {/* Features */}
+      <div className="mt-1 mb-6 max-w-84 font-display max-w-sm">
+        <h3
+          className="text-xl font-medium italic text-green-600 text-center mb-3"
+          style={{ fontFamily: "serif" }}
+        >
+          ~ as always ~
+        </h3>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
+          <span className="hover:text-emerald-600 transition-colors">Live Updates</span>
+          <span className="text-gray-500">•</span>
+          <span className="hover:text-emerald-600 transition-colors">Stableford Scoring</span>
+        </div>
+
+        <h3
+          className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
+          style={{ fontFamily: "serif" }}
+        >
+          ~ and now featuring ~
+        </h3>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
+          <span className="hover:text-emerald-600 transition-colors">Crypto Payments</span>
+          <span className="text-gray-500">•</span>
+          <span className="hover:text-emerald-600 transition-colors">Passkey Wallets</span>
+          <span className="text-gray-500">•</span>
+          <span className="hover:text-emerald-600 transition-colors">SIWE</span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
+          <span className="hover:text-emerald-600 transition-colors">Gasless Transactions</span>
+          <span className="text-gray-500">•</span>
+          <span className="hover:text-emerald-600 transition-colors">Bundled Transactions</span>
+        </div>
+        <h3
+          className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
+          style={{ fontFamily: "serif" }}
+        >
+          ~ with special thanks to ~
+        </h3>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
+          <span className="hover:text-emerald-600 transition-colors">USDC Payments</span>
+          <span className="text-gray-500">•</span>
+          <span className="hover:text-emerald-600 transition-colors">Compound Yield</span>
+        </div>
+      </div>
 
       <hr className="w-full border-gray-200 my-8" />
       {/* Instructions */}
@@ -79,12 +123,12 @@ export const Home: React.FC = () => {
 
       <div className="flex flex-row items-center justify-center gap-12 mt-4">
         <div className="flex flex-col items-center">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">create a lineup</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">join a contest</h3>
           <Link
-            to="/lineups"
-            className="inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+            to="/contests"
+            className="inline-flex items-center px-4 py-2 text-base font-medium text-white shadow-md transition bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 font-display"
           >
-            My Lineups
+            View Contests
           </Link>
         </div>
       </div>
