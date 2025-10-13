@@ -89,8 +89,8 @@ export function MintingUserFundsPanel() {
     <div
       className={`rounded-lg p-4 mb-6 ${
         hasFundsArrived
-          ? "bg-green-50 border border-green-200"
-          : "bg-blue-50 border border-blue-200"
+          ? "bg-green-50 border border-green-500"
+          : "bg-blue-50 border border-blue-500"
       }`}
     >
       <div className="flex items-start justify-between">
@@ -104,7 +104,7 @@ export function MintingUserFundsPanel() {
             {hasFundsArrived ? (
               <>
                 <h3 className="text-sm font-semibold text-green-800 mb-1">Funds Received! 🎉</h3>
-                <p className="text-sm text-green-700">
+                <p className="text-sm text-green-800">
                   You now have $1,000 USDC(x) and can participate in contests.
                 </p>
               </>

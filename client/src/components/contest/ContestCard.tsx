@@ -8,7 +8,7 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  const { isTournamentEditable, currentTournament } = useTournament();
+  const { isTournamentEditable, tournamentStatusDisplay } = useTournament();
   const potAmount = contest.settings?.fee * (contest.contestLineups?.length ?? 0);
   const entryCount = contest.contestLineups?.length ?? 0;
 
@@ -34,9 +34,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
                   {entryCount} {entryCount === 1 ? "Entry" : "Entries"}
                 </>
               ) : (
-                <>
-                  {currentTournament?.roundDisplay} - {currentTournament?.roundStatusDisplay}
-                </>
+                <>{tournamentStatusDisplay}</>
               )}
             </p>
           </div>
