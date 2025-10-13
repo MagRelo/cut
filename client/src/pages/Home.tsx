@@ -1,12 +1,12 @@
 import React from "react";
-import { Connect } from "../components/user/Connect";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+// import { Connect } from "../components/user/Connect";
+// import { usePortoAuth } from "../contexts/PortoAuthContext";
 // import { Link } from "react-router-dom";
 
 // import InfoScorecard from "../components/common/InfoScorecard";
 
 export const Home: React.FC = () => {
-  const { user } = usePortoAuth();
+  // const { user } = usePortoAuth();
 
   return (
     <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-8 pb-8">
@@ -29,12 +29,12 @@ export const Home: React.FC = () => {
           ~ featuring ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span>PGA Tour Data</span>
+          <span>Stableford Scoring</span>
           <span className="text-gray-500">•</span>
           <span>Live Updates</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
-          <span>Stableford Scoring</span>
+          <span>Weekly Contests</span>
         </div>
 
         <h3
@@ -48,13 +48,16 @@ export const Home: React.FC = () => {
           <span className="text-gray-500">•</span>
           <span>SIWE</span>
           <span className="text-gray-500">•</span>
-          <span>Automated DeFi Yield</span>
+          <span>Stablecoin Payments</span>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
-          <span>Bundled Transactions</span>
-          <span className="text-gray-500">•</span>
           <span>Sponsored Transactions</span>
+          <span className="text-gray-500">•</span>
+          <span>Bundled Transactions</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
+          <span>Automated DeFi Yield</span>
         </div>
 
         <h3
@@ -73,7 +76,7 @@ export const Home: React.FC = () => {
           <span>USDC (Payments)</span>
         </div>
       </div>
-
+      {/* 
       {!user && (
         <>
           <hr className="w-full border-gray-200 my-8" />
@@ -82,7 +85,7 @@ export const Home: React.FC = () => {
           </div>
           <Connect />
         </>
-      )}
+      )} */}
 
       {/* <hr className="w-full border-gray-200 my-8" /> */}
       {/* Instructions */}

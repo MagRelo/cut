@@ -56,7 +56,7 @@ const WalletInfo = ({
     <div className="flex justify-center">
       {!!address && (
         <button
-          className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-medium min-w-fit mx-auto block"
+          className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-display min-w-fit mx-auto block"
           disabled={!address}
           onClick={() => {
             disconnect();

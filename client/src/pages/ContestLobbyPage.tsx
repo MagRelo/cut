@@ -76,7 +76,9 @@ export const ContestLobby: React.FC = () => {
       <div className="space-y-2 p-4">
         <div>
           {/* breadcrumbs */}
-          <p className="text-gray-500 text-sm text-display">Loading Contest...</p>
+          <Breadcrumbs
+            items={[{ label: "Contests", path: "/contests/" }, { label: "Loading Contest..." }]}
+          />
         </div>
 
         <div className="bg-white rounded-lg shadow">

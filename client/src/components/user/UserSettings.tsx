@@ -122,7 +122,7 @@ export function UserSettings() {
           <button
             type="submit"
             disabled={isLoading || !hasChanges()}
-            className="min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+            className="min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-semibold font-display py-2 px-4 rounded disabled:opacity-50"
           >
             {isLoading ? "Saving..." : "Save Settings"}
           </button>
