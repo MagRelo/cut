@@ -29,7 +29,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 
 import { TournamentInfoCard } from "./components/tournament/TournamentInfoCard";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
-import { Navigation } from "./components/common/Navigation";
+import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
@@ -68,14 +68,7 @@ export const App: React.FC = () => {
                           <Route path="/cut" element={<CUTInfoPage />} />
 
                           {/* Contests */}
-                          <Route
-                            path="/contests"
-                            element={
-                              <ProtectedRoute>
-                                <Contests />
-                              </ProtectedRoute>
-                            }
-                          />
+                          <Route path="/contests" element={<Contests />} />
                           <Route
                             path="/contests/create"
                             element={
@@ -84,14 +77,7 @@ export const App: React.FC = () => {
                               </ProtectedRoute>
                             }
                           />
-                          <Route
-                            path="/contest/:id"
-                            element={
-                              <ProtectedRoute>
-                                <ContestLobby />
-                              </ProtectedRoute>
-                            }
-                          />
+                          <Route path="/contest/:id" element={<ContestLobby />} />
 
                           {/* Lineups */}
                           <Route path="/lineups/create" element={<LineupCreatePage />} />
@@ -118,7 +104,7 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <Navigation />
+                  <Footer />
                 </div>
               </Router>
             </LineupProvider>

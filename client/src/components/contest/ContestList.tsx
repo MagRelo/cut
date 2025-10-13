@@ -19,7 +19,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return <div className="text-red-500 font-display text-sm text-center">{error}</div>;
   }
 
   if (contests.length === 0) {

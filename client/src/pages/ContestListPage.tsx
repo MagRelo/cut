@@ -30,7 +30,8 @@ export const Contests: React.FC = () => {
 
   // Combine loading states - show loading if either query is loading
   const isLoading = isTournamentLoading || isContestsLoading;
-  const error = contestError ? "Failed to fetch contests" : null;
+  // const error = contestError ? "Failed to fetch contests" : null;
+  const error = contestError?.message ?? null;
 
   // Sort contests by entry fee (highest first)
   const sortedContests = useMemo(() => {

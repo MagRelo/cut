@@ -1,14 +1,13 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { useTournament } from "../../contexts/TournamentContext";
 import { CountdownTimer } from "./CountdownTimer";
 import { TournamentSummaryModal } from "./TournamentSummaryModal";
+import { Navigation } from "../common/Navigation";
 
 export const TournamentInfoCard: React.FC = () => {
   const { currentTournament, isLoading, error } = useTournament();
-  const location = useLocation();
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   if (isLoading) {
@@ -80,67 +79,7 @@ export const TournamentInfoCard: React.FC = () => {
 
           {/* links to team and leagues */}
           <div className="mt-5">
-            <div className="flex flex-row items-center justify-between">
-              {/* nav links */}
-              <div className="flex items-center gap-4">
-                <Link
-                  to="/lineups"
-                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/lineups"
-                      ? "border-white bg-white/20"
-                      : "border-white/50"
-                  } rounded px-3 py-1 transition-colors flex items-center justify-center`}
-                >
-                  Lineups
-                </Link>
-
-                <Link
-                  to="/contests"
-                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/contests"
-                      ? "border-white bg-white/20"
-                      : "border-white/50"
-                  } rounded px-3 py-1 transition-colors flex items-center justify-center`}
-                >
-                  Contests
-                </Link>
-
-                {/* <Link
-                  to="/leaderboard"
-                  className={`flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                    location.pathname === "/leaderboard"
-                      ? "border-white bg-white/20"
-                      : "border-white/50"
-                  } rounded px-3 py-1 transition-colors flex items-center justify-center`}
-                >
-                  Leaders
-                </Link> */}
-              </div>
-
-              {/* account */}
-              <Link
-                to="/account"
-                className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-                  location.pathname === "/account" ? "border-white bg-white/20" : "border-white/50"
-                } rounded-full transition-colors flex items-center justify-center`}
-                style={{ width: "31px", height: "31px" }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </Link>
-            </div>
+            <Navigation />
           </div>
         </div>
       </div>

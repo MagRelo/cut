@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
+import { useTournament } from "../../contexts/TournamentContext";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
@@ -8,11 +9,15 @@ interface ContestEntryListProps {
 }
 
 export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryListProps) => {
+  const { isTournamentEditable } = useTournament();
+
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
+    if (isTournamentEditable) return; // Don't open modal if tournament is still editable
+
     if (contestLineup.tournamentLineup) {
       setSelectedLineup(contestLineup);
       setIsModalOpen(true);
@@ -64,7 +69,11 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
           return (
             <div
               key={lineup.id}
-              className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200 cursor-pointer"
+              className={`bg-white rounded-lg p-3 transition-all duration-200 ${
+                isTournamentEditable
+                  ? "cursor-default opacity-80"
+                  : "hover:shadow-sm cursor-pointer"
+              }`}
               onClick={() => openLineupModal(lineup)}
             >
               <div className="flex items-center justify-between gap-3">
@@ -103,19 +112,21 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                       PTS
                     </div>
                   </div>
-                  <svg
-                    className="w-4 h-4 text-gray-400 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  {!isTournamentEditable && (
+                    <svg
+                      className="w-4 h-4 text-gray-400 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  )}
                 </div>
               </div>
             </div>

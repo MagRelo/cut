@@ -28,6 +28,19 @@ export function ConnectPage() {
 
   return (
     <div className="p-4">
+      {/* logo from Home page */}
+      {/* <div className="flex items-center justify-center gap-2 mt-2 mb-4">
+        <img src="/logo-transparent.png" alt="Cut Logo" className="h-12" />
+        <h1 className="text-4xl font-bold text-black">
+          the Cut
+          <div className="text-lg font-bold text-gray-400 mb-1">Fantasy Golf</div>
+        </h1>
+      </div> */}
+
+      <div>
+        <h2 className="text-4xl font-bold text-gray-400 mb-6">Connect</h2>
+      </div>
+
       <Connect onSuccess={handleConnectSuccess} />
     </div>
   );

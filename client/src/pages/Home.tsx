@@ -1,14 +1,16 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Connect } from "../components/user/Connect";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
+// import { Link } from "react-router-dom";
 
-import InfoScorecard from "../components/common/InfoScorecard";
+// import InfoScorecard from "../components/common/InfoScorecard";
 
 export const Home: React.FC = () => {
-  // const { openInstructions } = useAuth();
+  const { user } = usePortoAuth();
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-10 pb-10">
-      <div className="flex items-center gap-3 mb-3" style={{ marginLeft: "-20px" }}>
+    <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-8 pb-8">
+      <div className="flex items-center gap-3 pb-2 mb-2" style={{ marginLeft: "-20px" }}>
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
         <h1 className="text-6xl font-bold text-black">
@@ -19,61 +21,78 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Features */}
-      <div className="mt-1 mb-6 max-w-84 font-display max-w-sm">
+      <div className="mt-4 mb-6 max-w-84 font-display max-w-sm">
         <h3
           className="text-xl font-medium italic text-green-600 text-center mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ as always ~
+          ~ featuring ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span className="hover:text-emerald-600 transition-colors">Live Updates</span>
+          <span>PGA Tour Data</span>
           <span className="text-gray-500">•</span>
-          <span className="hover:text-emerald-600 transition-colors">Stableford Scoring</span>
+          <span>Live Updates</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
+          <span>Stableford Scoring</span>
         </div>
 
         <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ and now featuring ~
+          ~ with elite crypto ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span className="hover:text-emerald-600 transition-colors">Crypto Payments</span>
+          <span>Passkey Wallets</span>
           <span className="text-gray-500">•</span>
-          <span className="hover:text-emerald-600 transition-colors">Passkey Wallets</span>
+          <span>SIWE</span>
           <span className="text-gray-500">•</span>
-          <span className="hover:text-emerald-600 transition-colors">SIWE</span>
+          <span>Automated DeFi Yield</span>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
-          <span className="hover:text-emerald-600 transition-colors">Gasless Transactions</span>
+          <span>Bundled Transactions</span>
           <span className="text-gray-500">•</span>
-          <span className="hover:text-emerald-600 transition-colors">Bundled Transactions</span>
+          <span>Sponsored Transactions</span>
         </div>
+
         <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ with special thanks to ~
+          ~ special thanks to ~
         </h3>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span className="hover:text-emerald-600 transition-colors">USDC Payments</span>
+          <span>Porto (Wallet)</span>
           <span className="text-gray-500">•</span>
-          <span className="hover:text-emerald-600 transition-colors">Compound Yield</span>
+          <span>Compound (Yield)</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
+          <span>USDC (Payments)</span>
         </div>
       </div>
 
-      <hr className="w-full border-gray-200 my-8" />
+      {!user && (
+        <>
+          <hr className="w-full border-gray-200 my-8" />
+          <div>
+            <h2 className="text-4xl font-bold text-gray-400 mb-6">connect</h2>
+          </div>
+          <Connect />
+        </>
+      )}
+
+      {/* <hr className="w-full border-gray-200 my-8" /> */}
       {/* Instructions */}
 
       {/* How to play */}
-      <div>
+      {/* <div>
         <h2 className="text-4xl font-bold text-gray-400 mb-6">how to play</h2>
-      </div>
+      </div> */}
 
-      <div className="flex flex-col items-center text-center gap-8 mt-4">
+      {/* <div className="flex flex-col items-center text-center gap-8 mt-4">
         <div>
           <h3 className="text-2xl font-bold text-gray-800 mb-2">create lineups</h3>
           <p className="text-gray-700 max-w-xs">
@@ -102,22 +121,12 @@ export const Home: React.FC = () => {
             <InfoScorecard />
           </div>
         </div>
+      </div> */}
 
-        {/* 
-        <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">throw it in the group chat</h3>
-          <p className="text-gray-700 max-w-xs">
-            <span className="text-lg font-display font-bold">the Cut</span> gives you the
-            ingredients—now let the boys cook. Fresh action every week to keep the conversation
-            popping.
-          </p>
-        </div> */}
-      </div>
+      {/* <hr className="w-full border-gray-200 mt-12 mb-8" /> */}
 
-      <hr className="w-full border-gray-200 mt-12 mb-8" />
-
-      {/* How to play */}
-      <div>
+      {/* Get Started */}
+      {/* <div>
         <h2 className="text-4xl font-bold text-gray-400 mb-6">get started</h2>
       </div>
 
@@ -131,7 +140,7 @@ export const Home: React.FC = () => {
             View Contests
           </Link>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
