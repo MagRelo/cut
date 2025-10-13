@@ -15,7 +15,7 @@ contestRouter.get("/", async (c) => {
     // Validate query parameters
     const validation = contestQuerySchema.safeParse({
       tournamentId,
-      chainId: chainId ? parseInt(chainId) : 8453, // Default to Base mainnet
+      chainId: chainId ? parseInt(chainId) : 84532, // Default to Base Sepolia
     });
 
     if (!validation.success) {

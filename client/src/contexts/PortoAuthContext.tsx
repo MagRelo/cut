@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain, useDisconnect } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { handleApiResponse, ApiError } from "../utils/apiError";
 
@@ -40,6 +40,7 @@ export function usePortoAuth() {
 export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId } = useAccount();
   const { switchChain } = useSwitchChain();
+  const { disconnect } = useDisconnect();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,11 +72,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         return await handleApiResponse<T>(response);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          // Clear any stored auth data on 401
+          // Clear all user data on 401 (unauthorized)
           setUser(null);
-          // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
-          queryClient.removeQueries({ queryKey: ["lineups"] });
-          queryClient.removeQueries({ queryKey: ["contests"] });
+          queryClient.clear();
         }
         throw error;
       }
@@ -121,14 +120,33 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user?.userType === "ADMIN");
   }, [user]);
 
-  const logout = useCallback(() => {
+  /**
+   * Completely clear all user data, auth state, and cached data
+   * Used both for manual logout and when wallet disconnects
+   */
+  const clearAllUserData = useCallback(() => {
+    // Clear user state
     setUser(null);
-    // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
-    queryClient.removeQueries({ queryKey: ["lineups"] });
-    queryClient.removeQueries({ queryKey: ["contests"] });
-    // Clear auth cookie
-    document.cookie = "cutAuthToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-  }, [queryClient]);
+
+    // Clear ALL React Query cache (tournaments, contests, lineups, players, scores, balance, etc.)
+    queryClient.clear();
+
+    // Clear all cookies (including auth token)
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      // Clear for current path
+      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      // Clear for root
+      document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    });
+
+    // Disconnect wagmi wallet
+    disconnect();
+  }, [queryClient, disconnect]);
+
+  const logout = useCallback(() => {
+    clearAllUserData();
+  }, [clearAllUserData]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -171,16 +189,11 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
   // Clear user data when wallet disconnects
   useEffect(() => {
-    if (!address) {
-      setUser(null);
-      // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
-      queryClient.removeQueries({ queryKey: ["lineups"] });
-      // queryClient.removeQueries({ queryKey: ["contests"] });
-
-      // clear cookies
-      document.cookie = "cutAuthToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    if (!address && user) {
+      // Only clear if we had a user (prevents clearing on initial load)
+      clearAllUserData();
     }
-  }, [address, queryClient]);
+  }, [address, user, clearAllUserData]);
 
   const contextValue = useMemo(
     () => ({

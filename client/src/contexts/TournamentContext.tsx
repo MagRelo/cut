@@ -10,6 +10,7 @@ interface TournamentContextType {
   isLoading: boolean;
   error: Error | null;
   isTournamentEditable: boolean;
+  tournamentStatusDisplay: string;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -37,6 +38,12 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
   const isTournamentEditable =
     data?.tournament?.status !== "IN_PROGRESS" && data?.tournament?.status !== "COMPLETED";
 
+  // tournamentStatus
+  const tournamentStatusDisplay = data?.tournament?.status
+    ?.split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+
   const value: TournamentContextType = {
     currentTournament: data?.tournament ?? null,
     players: data?.players ?? [],
@@ -44,6 +51,7 @@ export function TournamentProvider({ children }: TournamentProviderProps) {
     isLoading,
     error: error as Error | null,
     isTournamentEditable,
+    tournamentStatusDisplay: tournamentStatusDisplay ?? "",
   };
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;

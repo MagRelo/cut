@@ -16,6 +16,7 @@ export const LineupList: React.FC = () => {
     isLoading: isTournamentLoading,
     currentTournament,
     isTournamentEditable,
+    tournamentStatusDisplay,
   } = useTournament();
   const { lineups, lineupError, getLineups } = useLineup();
 
@@ -62,7 +63,7 @@ export const LineupList: React.FC = () => {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-yellow-600 text-lg">⚠️</span>
             <div className="text-lg font-semibold text-yellow-800 font-display">
-              Tournament in Progress
+              Tournament {tournamentStatusDisplay}
             </div>
           </div>
           <div className="text-sm text-yellow-700">

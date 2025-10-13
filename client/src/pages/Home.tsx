@@ -41,7 +41,7 @@ export const Home: React.FC = () => {
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ with elite crypto ~
+          ~ with sensible crypto ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
           <span>Passkey Wallets</span>

@@ -1,4 +1,4 @@
-import { useAccount, useDisconnect } from "wagmi";
+import { useAccount } from "wagmi";
 
 import { CopyToClipboard } from "../components/common/CopyToClipboard";
 import { NetworkStatus } from "../components/common/NetworkStatus";
@@ -7,7 +7,7 @@ import { TestnetWarning } from "../components/common/ChainWarning";
 import { PageHeader } from "../components/common/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
-// import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 // Wallet Info Component (below tabs)
 const WalletInfo = ({
@@ -70,9 +70,8 @@ const WalletInfo = ({
 );
 
 export function UserPage() {
-  // const { user } = usePortoAuth();
+  const { logout } = usePortoAuth();
   const { address } = useAccount();
-  const { disconnect } = useDisconnect();
 
   return (
     <div className="p-4">
@@ -88,7 +87,7 @@ export function UserPage() {
       <UserSettings />
 
       {/* Wallet Information - Below tabs */}
-      <WalletInfo address={address} disconnect={disconnect} />
+      <WalletInfo address={address} disconnect={logout} />
     </div>
   );
 }
