@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { useBalance, useChainId, useChains, useReadContract } from "wagmi";
+import { useBalance, useChains, useReadContract } from "wagmi";
+// import { base } from "wagmi/chains";
 import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -47,8 +48,8 @@ export const ContestLobby: React.FC = () => {
   // tabs - default to Entries tab (index 1 when editable, index 0 when not)
   const [selectedIndex, setSelectedIndex] = useState(isTournamentEditable ? 1 : 0);
 
-  // blockchain data
-  const chainId = useChainId();
+  // Use the contest's stored chainId (fallback to Base mainnet if contest not loaded yet)
+  const chainId = contest?.chainId;
   const chains = useChains();
   const chain = chains.find((c: { id: number }) => c.id === chainId);
 
@@ -70,16 +71,6 @@ export const ContestLobby: React.FC = () => {
     },
   }).data as [bigint, bigint] | undefined;
 
-  // Chain validation
-  const error =
-    contest && contest.chainId !== chainId
-      ? `This contest is on a different network. Expected chain ${contest.chainId}, but you're connected to chain ${chainId}.`
-      : queryError
-      ? `Failed to load contest: ${
-          queryError instanceof Error ? queryError.message : "Unknown error"
-        }`
-      : null;
-
   if (isLoading) {
     return (
       <div className="space-y-2 p-4">
@@ -97,7 +88,7 @@ export const ContestLobby: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (queryError) {
     return (
       <div className="space-y-2 p-4">
         <div>
@@ -108,7 +99,7 @@ export const ContestLobby: React.FC = () => {
         <div className="bg-white rounded-lg shadow min-h-[176px]">
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <p className="text-lg font-medium text-gray-800 mb-2">Unable to load contest</p>
-            <p className="text-sm text-gray-500">{error}</p>
+            <p className="text-sm text-gray-500">{queryError.message}</p>
           </div>
         </div>
       </div>

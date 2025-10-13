@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { useChainId } from "wagmi";
-// import { Link } from "react-router-dom";
-
-// import { TournamentStatus } from "../types.new/tournament";
-
+import { useAccount } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
@@ -18,7 +15,9 @@ function classNames(...classes: string[]) {
 export const Contests: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const { user } = usePortoAuth();
-  const chainId = useChainId();
+  const { chainId: connectedChainId } = useAccount();
+  const chainId = connectedChainId ?? baseSepolia.id;
+
   const { tournament, isLoading: isTournamentLoading } = useCurrentTournament();
 
   // Fetch contests filtered by tournament and chain
