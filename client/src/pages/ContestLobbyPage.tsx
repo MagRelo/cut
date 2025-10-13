@@ -113,7 +113,7 @@ export const ContestLobby: React.FC = () => {
   }
 
   if (!contest) {
-    return <div className="space-y-2 p-4">Contest not found</div>;
+    return <div className="space-y-2 p-4 font-display">Contest not found</div>;
   }
 
   return (
