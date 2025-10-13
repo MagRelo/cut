@@ -15,6 +15,8 @@ interface PortoUser {
   token: string;
   chainId: number;
   walletAddress: string;
+  pendingTokenMint?: boolean;
+  createdAt?: string;
 }
 
 interface PortoAuthContextData {

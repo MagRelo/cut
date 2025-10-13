@@ -79,6 +79,8 @@ authRouter.post("/siwe/verify", async (c) => {
     });
 
     let user;
+    let pendingTokenMint = false;
+
     if (existingWallet) {
       user = existingWallet.user;
     } else {
@@ -103,6 +105,7 @@ authRouter.post("/siwe/verify", async (c) => {
 
       if (isTokenMintingEnabled && isBaseSepolia) {
         // Mint $1000 USDC(x) to new user on Base Sepolia testnet
+        pendingTokenMint = true;
         try {
           await mintUSDCToUser(address!.toLowerCase(), 1000);
           console.log(
@@ -150,6 +153,7 @@ authRouter.post("/siwe/verify", async (c) => {
         userType: user.userType,
         address: address!.toLowerCase(),
         chainId: Number(chainId),
+        pendingTokenMint,
       },
       token,
     });
@@ -251,6 +255,7 @@ authRouter.get("/me", requireAuth, async (c) => {
       phone: userInfo.phone,
       email: userInfo.email,
       isVerified: userInfo.isVerified,
+      createdAt: userInfo.createdAt,
       tournamentLineups: formattedLineups,
       userGroups,
       walletAddress: user.address,

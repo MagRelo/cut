@@ -7,6 +7,7 @@ import { TestnetWarning } from "../components/common/ChainWarning";
 import { PageHeader } from "../components/common/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
+import { MintingUserFundsPanel } from "../components/user/MintingUserFundsPanel";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 // Wallet Info Component (below tabs)
@@ -79,6 +80,9 @@ export function UserPage() {
 
       {/* Testnet Warning */}
       <TestnetWarning />
+
+      {/* Minting Funds Panel */}
+      <MintingUserFundsPanel />
 
       {/* Token Balances */}
       <TokenBalances showManageLink={false} showCutTokenLink={true} showUsdcLink={true} />
