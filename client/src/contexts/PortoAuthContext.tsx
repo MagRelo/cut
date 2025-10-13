@@ -73,8 +73,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // Clear any stored auth data on 401
           setUser(null);
-          // Clear all TanStack Query cache to prevent data leakage between users
-          queryClient.clear();
+          // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
+          queryClient.removeQueries({ queryKey: ["lineups"] });
+          queryClient.removeQueries({ queryKey: ["contests"] });
         }
         throw error;
       }
@@ -122,8 +123,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    // Clear all TanStack Query cache to prevent data leakage between users
-    queryClient.clear();
+    // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
+    queryClient.removeQueries({ queryKey: ["lineups"] });
+    queryClient.removeQueries({ queryKey: ["contests"] });
   }, [queryClient]);
 
   useEffect(() => {
@@ -169,8 +171,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!address) {
       setUser(null);
-      // Clear all TanStack Query cache to prevent data leakage between users
-      queryClient.clear();
+      // Clear only user-specific data (lineups, contests) but preserve public data (tournaments)
+      queryClient.removeQueries({ queryKey: ["lineups"] });
+      queryClient.removeQueries({ queryKey: ["contests"] });
     }
   }, [address, queryClient]);
 
