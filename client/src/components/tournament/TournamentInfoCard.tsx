@@ -1,14 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { useTournament } from "../../contexts/TournamentContext";
 import { CountdownTimer } from "./CountdownTimer";
-import { TournamentSummaryModal } from "./TournamentSummaryModal";
 import { Navigation } from "../common/Navigation";
 
 export const TournamentInfoCard: React.FC = () => {
   const { currentTournament, isLoading, error } = useTournament();
-  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -49,10 +47,7 @@ export const TournamentInfoCard: React.FC = () => {
         <div className="relative p-4 text-white">
           {/* tournament name */}
           <div className="flex justify-between items-center mt-1">
-            <h1
-              onClick={() => setIsSummaryModalOpen(true)}
-              className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
-            >
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
               {currentTournament.name}
             </h1>
           </div>
@@ -83,12 +78,6 @@ export const TournamentInfoCard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Tournament Summary Modal */}
-      <TournamentSummaryModal
-        isOpen={isSummaryModalOpen}
-        onClose={() => setIsSummaryModalOpen(false)}
-      />
     </>
   );
 };

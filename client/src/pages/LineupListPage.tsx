@@ -9,6 +9,7 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
+import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading } = usePortoAuth();
@@ -56,6 +57,9 @@ export const LineupList: React.FC = () => {
   return (
     <div className="p-4">
       <PageHeader title="Lineups" className="mb-3" />
+
+      {/* Tournament Info Panel - only show when editable */}
+      {isTournamentEditable && <TournamentInfoPanel />}
 
       {/* list of user lineups */}
       {lineups && lineups.length > 0 && (
