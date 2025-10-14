@@ -287,7 +287,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                   {/* Content Section */}
                   <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
                     {selectedPlayer && (
-                      <div className="overflow-hidden shadow-sm border-l border-r border-b border-gray-300">
+                      <div className="overflow-hidden shadow-sm border-l border-r border-b border-gray-300 rounded-sm">
                         {/* Stats Grid */}
                         <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-b border-gray-300">
                           <div className="px-3 py-2 text-center">
@@ -324,14 +324,60 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                           </div>
                         </div>
 
-                        <PlayerScorecard
-                          player={selectedPlayer}
-                          roundDisplay={roundDisplay || "R1"}
-                        />
+                        {/* Bonus Grid */}
+                        <div className="grid grid-cols-2 divide-x divide-gray-300 bg-white border-b border-gray-300">
+                          <div className="px-3 py-2 text-center">
+                            <div
+                              className={`text-lg font-bold h-7 flex items-center justify-center ${
+                                selectedPlayer.tournamentData?.cut &&
+                                selectedPlayer.tournamentData.cut > 0
+                                  ? "text-green-600"
+                                  : "text-gray-900"
+                              }`}
+                            >
+                              {selectedPlayer.tournamentData?.cut &&
+                              selectedPlayer.tournamentData.cut > 0
+                                ? `+${selectedPlayer.tournamentData.cut}`
+                                : selectedPlayer.tournamentData?.cut === 0
+                                ? ""
+                                : "–"}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
+                              Cut Bonus
+                            </div>
+                          </div>
+                          <div className="px-3 py-2 text-center">
+                            <div
+                              className={`text-lg font-bold h-7 flex items-center justify-center ${
+                                selectedPlayer.tournamentData?.bonus &&
+                                selectedPlayer.tournamentData.bonus > 0
+                                  ? "text-green-600"
+                                  : "text-gray-900"
+                              }`}
+                            >
+                              {selectedPlayer.tournamentData?.bonus &&
+                              selectedPlayer.tournamentData.bonus > 0
+                                ? `+${selectedPlayer.tournamentData.bonus}`
+                                : selectedPlayer.tournamentData?.bonus === 0
+                                ? ""
+                                : "–"}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
+                              Position Bonus
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="">
+                          <PlayerScorecard
+                            player={selectedPlayer}
+                            roundDisplay={roundDisplay || "R1"}
+                          />
+                        </div>
 
                         {/* Lineups Section */}
                         {selectedPlayerLineups.length > 0 && (
-                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+                          <div className="bg-white px-4 py-3">
                             <h4 className="text-xs uppercase text-gray-500 font-semibold tracking-wide mb-2">
                               In {selectedPlayerLineups.length}{" "}
                               {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}

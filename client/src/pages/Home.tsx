@@ -36,8 +36,6 @@ export const Home: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Stableford Scoring</span>
-          <span className="text-gray-500">•</span>
-          <span>Private Groups</span>
         </div>
 
         {/* with sensible crypto */}

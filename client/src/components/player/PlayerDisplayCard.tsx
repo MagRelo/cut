@@ -41,7 +41,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
   return (
     <div
       onClick={() => setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id)}
-      className="bg-white overflow-hidden border border-gray-200 rounded-lg"
+      className="bg-white overflow-hidden border border-gray-200 rounded-sm"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -52,7 +52,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
       aria-label={expandedPlayerId === player.id ? "Hide scorecard" : "Show scorecard"}
     >
       {/* Top Row */}
-      <div className="px-4 py-3 border-b border-gray-200">
+      <div className="px-4 py-3">
         <div className="flex items-center space-x-4">
           {/* Player Image */}
           {player.pga_imageUrl && (
@@ -109,7 +109,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
 
       {/* Bottom Row */}
       {currentRound ? (
-        <div className="p-1 bg-gray-50">
+        <div className="p-2 bg-white">
           <div className="flex items-center justify-between gap-x-4 px-3">
             {/* TEAM button */}
             <div className="flex items-center text-sm text-gray-500 text-left whitespace-nowrap">
@@ -150,26 +150,26 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
             {/* Bonuses */}
             <div className="flex items-center flex-1 justify-end gap-x-4">
               {/* Cut Bonus */}
-              <div className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center">
+              <div className="flex items-center text-sm whitespace-nowrap justify-center">
                 <Label>CUT</Label>
                 <span
-                  className={`font-bold ml-1.5 ${
+                  className={`font-bold w-8 text-center ${
                     (player.tournamentData.cut || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
-                  {(player.tournamentData.cut || 0) > 0 ? player.tournamentData.cut : "–"}
+                  {(player.tournamentData.cut || 0) > 0 ? `+${player.tournamentData.cut}` : ""}
                 </span>
               </div>
 
               {/* Position Bonus */}
-              <div className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center">
+              <div className="flex items-center text-sm whitespace-nowrap justify-center">
                 <Label>POS</Label>
                 <span
-                  className={`font-bold ml-1.5 ${
+                  className={`font-bold w-7 text-center ${
                     (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
-                  {(player.tournamentData.bonus || 0) > 0 ? player.tournamentData.bonus : "–"}
+                  {(player.tournamentData.bonus || 0) > 0 ? `+${player.tournamentData.bonus}` : ""}
                 </span>
               </div>
             </div>
@@ -177,7 +177,10 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
 
           {/* Expanded Scorecard Section */}
           {expandedPlayerId === player.id && (
-            <div className="mt-2  shadow-sm" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="mt-2 border border-gray-300 rounded-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
               <PlayerScorecard player={player} roundDisplay={currentRound.round} />
             </div>
           )}
