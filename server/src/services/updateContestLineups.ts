@@ -40,6 +40,10 @@ export async function updateContestLineups() {
         const player = lineupPlayer.tournamentPlayer;
         return sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0);
       }, 0);
+
+      // Update the in-memory object with the new score
+      contestLineup.score = totalScore;
+
       return prisma.contestLineup.update({
         where: {
           id: contestLineup.id,
