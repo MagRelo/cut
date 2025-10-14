@@ -37,9 +37,6 @@
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "workspaces": [
     "client",
     "server"
