@@ -165,11 +165,28 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 </div>
 
                 {/* Right - Points */}
-                <div className="flex-shrink-0 text-right min-w-[3rem]">
-                  <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                    PTS
+                <div className="flex-shrink-0 flex items-center gap-1">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900 leading-none">
+                      {totalPoints}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                      PTS
+                    </div>
                   </div>
+                  <svg
+                    className="w-4 h-4 text-gray-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </div>
               </div>
             </button>
