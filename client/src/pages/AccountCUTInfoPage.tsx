@@ -5,7 +5,7 @@ import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { useSearchParams } from "react-router-dom";
 // import { PageHeader } from "../components/common/PageHeader.tsx";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
-import { TestnetWarning } from "../components/common/ChainWarning.tsx";
+// import { TestnetWarning } from "../components/common/ChainWarning.tsx";
 // import { TokenBalances } from "../components/user/TokenBalances";
 import { Buy } from "../components/user/Buy.tsx";
 import { Sell } from "../components/user/Sell.tsx";
@@ -50,21 +50,6 @@ export function CUTInfoPage() {
   const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-
-  // Get total USDC balance (contract + Compound)
-  const { data: totalAvailableBalance, isLoading: totalAvailableBalanceLoading } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "getTotalAvailableBalance",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
-
-  // Format total available balance for display
-  const formattedTotalAvailableBalance = totalAvailableBalance
-    ? Number(formatUnits(totalAvailableBalance as bigint, 6)).toFixed(2)
-    : "0.00";
 
   // Get USDC balance in Compound
   const { data: compoundUSDCBalance, isLoading: compoundUSDCBalanceLoading } = useReadContract({
@@ -172,21 +157,6 @@ export function CUTInfoPage() {
 
   const formattedSupplyAPR = calculateAPR(cUSDCSupplyRate as bigint | undefined);
 
-  // Calculate utilization percentage
-  const calculateUtilizationPercentage = (utilization: bigint | undefined): number => {
-    if (!utilization) return 0;
-
-    // Utilization is typically returned as a fraction with 18 decimals
-    // Convert to percentage: (utilization / 10^18) * 100
-    const utilizationNum = Number(utilization);
-    const weiPerEtherNum = Number(weiPerEther);
-    return (utilizationNum / weiPerEtherNum) * 100;
-  };
-
-  const formattedUtilization = calculateUtilizationPercentage(
-    cUSDCUtilization as bigint | undefined
-  );
-
   // Debug logging (remove when confirmed working)
   // console.log("📊 APR Calculations:");
   // console.log("formattedSupplyAPR:", formattedSupplyAPR);
@@ -209,77 +179,34 @@ export function CUTInfoPage() {
         </div>
 
         {/* Token Description */}
-        <div className="text-md text-gray-700  font-display">
+        <div className="text-md text-gray-700 font-display mb-4">
           <p>
-            The CUT token is the native currency of the Cut platform. Each CUT is backed by and
-            convertible to USDC at a 1:1 ratio. USDC deposits are held in Compound to generate
-            yield.
+            CUT is the native currency of the Cut platform. Each CUT is backed by and convertible to
+            USDC at a 1:1 ratio. USDC deposits are held in Compound to generate yield.
           </p>
         </div>
-      </div>
 
-      <TestnetWarning />
-
-      {/* Token Stats */}
-      <div className="space-y-4 mb-4">
-        {/* Token Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">CUT Token</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                ${totalAvailableBalanceLoading ? "..." : formattedTotalAvailableBalance}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">USDC Deposited</div>
+        {/* Token Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="border border-gray-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">
+              {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
             </div>
-
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">CUT Minted</div>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">∞</div>
-              <div className="text-sm text-gray-600 mt-1">Max Supply</div>
-            </div>
+            <div className="text-sm text-gray-600 mt-1">CUT Minted</div>
           </div>
-        </div>
 
-        {/* Deposits Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            <a
-              href="https://app.compound.finance/?market=usdc-basemainnet"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Compound
-            </a>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {cUSDCUtilization === undefined ? "..." : `${formattedUtilization.toFixed(2)}%`}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">Utilization Rate</div>
+          <div className="border border-gray-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">
+              {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
             </div>
+            <div className="text-sm text-gray-600 mt-1">Supply APY</div>
+          </div>
 
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">Supply APY</div>
+          <div className="border border-gray-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">
+              {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
             </div>
-
-            <div className="border border-gray-200 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
-              </div>
-              <div className="text-sm text-gray-600 mt-1">cUSDC Balance</div>
-            </div>
+            <div className="text-sm text-gray-600 mt-1">cUSDC Balance</div>
           </div>
         </div>
       </div>
