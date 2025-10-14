@@ -145,7 +145,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                     {Object.entries(payoutStructure).map(([position, percentage]) => {
                       return (
                         <div key={position} className="flex justify-between text-sm">
-                          <span className="text-gray-700">
+                          <span className="text-gray-700 font-display">
                             {position === "1"
                               ? "1st Place"
                               : position === "2"
@@ -167,7 +167,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       )}
 
       {/* Contest Settings */}
-      <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Escrow Status</h3>
+      <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Escrow Contract</h3>
       <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3">
         <div className="flex flex-col gap-1.5 font-mono text-xs">
           {/* Contract Status */}

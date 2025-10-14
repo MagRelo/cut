@@ -36,6 +36,8 @@ export const Home: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Stableford Scoring</span>
+          <span className="text-gray-500">•</span>
+          <span>Private Groups</span>
         </div>
 
         {/* with sensible crypto */}
@@ -43,7 +45,7 @@ export const Home: React.FC = () => {
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ with sensible crypto ~
+          ~ sensible crypto ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
           <span>Passkey Wallets</span>
@@ -66,16 +68,16 @@ export const Home: React.FC = () => {
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ and special thanks to ~
+          ~ with special thanks to ~
         </h3>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
           <span>Porto (Wallet)</span>
           <span className="text-gray-500">•</span>
-          <span>Compound (Yield)</span>
+          <span>USDC (Payments)</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
-          <span>USDC (Payments)</span>
+          <span>Compound (Yield)</span>
         </div>
       </div>
       {/* 

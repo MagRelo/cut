@@ -230,18 +230,63 @@ export const CreateContestForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto p-4">
       <div className="space-y-2">
-        <label htmlFor="name" className="block font-medium">
-          Contest Name
+        <label className="block font-medium">
+          Contest End (
+          {currentTournament?.endDate
+            ? new Date(currentTournament.endDate).toLocaleString()
+            : "Not available"}
+          )
         </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full p-2 border rounded-md"
-        />
+        <div className="p-2 bg-gray-100 rounded-md text-sm">
+          {currentTournament?.endDate
+            ? new Date(
+                new Date(currentTournament.endDate).getTime() + 7 * 24 * 60 * 60 * 1000
+              ).toLocaleString()
+            : "Tournament not selected"}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block font-medium">Oracle Address</label>
+        <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
+          {import.meta.env.VITE_ORACLE_ADDRESS || "Not configured"}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="settings.oracleFee" className="block font-medium">
+          Oracle Fee (basis points)
+        </label>
+        <div className="relative">
+          <input
+            type="number"
+            id="settings.oracleFee"
+            name="settings.oracleFee"
+            value={formData.settings?.oracleFee ?? 500}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                settings: {
+                  fee: prev.settings?.fee ?? 0,
+                  contestType: prev.settings?.contestType ?? "PUBLIC",
+                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
+                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
+                  chainId: prev.settings?.chainId ?? 0,
+                  oracleFee: Number(e.target.value),
+                },
+              }));
+            }}
+            min="0"
+            max="10000"
+            step="1"
+            required
+            className="w-full p-2 border rounded-md pr-12"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+            bp
+          </div>
+        </div>
+        <div className="text-sm text-gray-600">Oracle fee in basis points (100 = 1%)</div>
       </div>
 
       <div className="space-y-2">
@@ -279,41 +324,18 @@ export const CreateContestForm = () => {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="settings.oracleFee" className="block font-medium">
-          Oracle Fee (basis points)
+        <label htmlFor="name" className="block font-medium">
+          Contest Name
         </label>
-        <div className="relative">
-          <input
-            type="number"
-            id="settings.oracleFee"
-            name="settings.oracleFee"
-            value={formData.settings?.oracleFee ?? 500}
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                settings: {
-                  fee: prev.settings?.fee ?? 0,
-                  contestType: prev.settings?.contestType ?? "PUBLIC",
-                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
-                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
-                  chainId: prev.settings?.chainId ?? 0,
-                  oracleFee: Number(e.target.value),
-                },
-              }));
-            }}
-            min="0"
-            max="10000"
-            step="1"
-            required
-            className="w-full p-2 border rounded-md pr-12"
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            bp
-          </div>
-        </div>
-        <div className="text-sm text-gray-600">
-          Oracle fee in basis points (100 = 1%). Default: 500 (5%)
-        </div>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          className="w-full p-2 border rounded-md"
+        />
       </div>
 
       <div>

@@ -93,7 +93,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
   if (playersData.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No players found in this contest.</p>
+        <p className="text-gray-500 font-display">No players found in this contest.</p>
       </div>
     );
   }
