@@ -133,7 +133,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       {/* Payout Structure */}
       {contest?.contestLineups && (
         <div className="">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Payouts</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-2">Payout Distribution</h3>
           <div className="bg-gray-50 rounded-lg p-3">
             {(() => {
               const participantCount = contest.contestLineups.length;
@@ -167,7 +167,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       )}
 
       {/* Contest Settings */}
-      <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Contract Details</h3>
+      <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Escrow Status</h3>
       <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3">
         <div className="flex flex-col gap-1.5 font-mono text-xs">
           {/* Contract Status */}

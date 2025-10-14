@@ -207,7 +207,7 @@ export const CreateContestForm = () => {
     const depositAmount = BigInt(Math.floor((formData.settings?.fee ?? 10) * 1e18));
     const calls = createEscrowCalls(
       depositAmount,
-      BigInt(endTime),
+      BigInt(Math.floor(endTime / 1000)), // Convert milliseconds to seconds for Solidity
       platformTokenAddress as string,
       18, // Platform token decimals
       import.meta.env.VITE_ORACLE_ADDRESS as string,
