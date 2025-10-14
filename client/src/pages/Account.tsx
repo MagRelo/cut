@@ -24,6 +24,25 @@ const WalletInfo = ({
 
     {/* Wallet Info Grid */}
     <div className="space-y-3">
+      {/* Address */}
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+        <span className="text-sm font-medium text-gray-700">ADDRESS</span>
+        <div className="flex justify-end text-gray-600">
+          <CopyToClipboard
+            text={address || ""}
+            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+          />
+        </div>
+      </div>
+
+      {/* Network */}
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+        <span className="text-sm font-medium text-gray-700">NETWORK</span>
+        <div className="flex justify-end">
+          <NetworkStatus />
+        </div>
+      </div>
+
       {/* Wallet Provider */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
         <span className="text-sm font-medium text-gray-700">WALLET</span>
@@ -39,25 +58,6 @@ const WalletInfo = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </a>
-        </div>
-      </div>
-
-      {/* Address */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700">ADDRESS</span>
-        <div className="flex justify-end">
-          <CopyToClipboard
-            text={address || ""}
-            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-          />
-        </div>
-      </div>
-
-      {/* Network */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700">NETWORK</span>
-        <div className="flex justify-end">
-          <NetworkStatus />
         </div>
       </div>
     </div>
