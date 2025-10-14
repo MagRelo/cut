@@ -23,7 +23,6 @@
     "service:update-tournament": "tsx src/services/updateTournament.ts",
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
-    "service:close-contest": "tsx src/services/closeContest.ts",
     "service:close-escrow": "tsx src/services/closeEscrowDeposits.ts",
     "service:distribute-contest": "tsx src/services/distribute/distributeContest.ts"
   },

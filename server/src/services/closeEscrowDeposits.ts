@@ -39,12 +39,17 @@ function getWalletClient(chainId: number) {
 
 export async function closeEscrowDeposits() {
   try {
-    // Get all open contests with tournaments in progress
+    // Get all open contests with tournaments in progress or completed
     const contests = await prisma.contest.findMany({
       where: {
         status: 'OPEN',
+        chainId: {
+          in: [8453, 84532], // Base and Base Sepolia
+        },
         tournament: {
-          status: 'IN_PROGRESS',
+          status: {
+            in: ['IN_PROGRESS', 'COMPLETED'],
+          },
         },
       },
       include: {
@@ -52,7 +57,7 @@ export async function closeEscrowDeposits() {
       },
     });
 
-        console.log(`Found ${contests.length} open contests with tournaments in progress`);
+    console.log(`Found ${contests.length} open contests with tournaments in progress or completed`);
 
     for (const contest of contests) {
       console.log(`Closing escrow deposits for ${contest.name} (Chain ID: ${contest.chainId})`);
