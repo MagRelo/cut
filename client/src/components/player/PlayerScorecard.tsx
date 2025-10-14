@@ -241,7 +241,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
     <div className={`bg-gray-100`}>
       {/* Round selector */}
       {availableRounds.length > 1 && (
-        <div className="bg-gray-200">
+        <div className="bg-gray-50">
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -259,7 +259,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
                         ${
                           isActive
                             ? "bg-gray-100 text-green-700 border-green-500 shadow-sm"
-                            : "bg-gray-100 text-gray-500 hover:bg-white border-gray-300"
+                            : "bg-gray-100 text-gray-500 hover:bg-white border-gray-400"
                         }
                       `}
                     >

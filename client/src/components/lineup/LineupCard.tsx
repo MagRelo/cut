@@ -32,13 +32,25 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable, roun
       {/* Display players in the lineup */}
       {lineup.players && lineup.players.length > 0 ? (
         <div className="grid grid-cols-1 gap-3">
-          {lineup.players.map((player, index) => (
-            <PlayerDisplayCard
-              key={`${lineup.id}-player-${index}`}
-              player={player}
-              roundDisplay={roundDisplay}
-            />
-          ))}
+          {[...lineup.players]
+            .sort((a, b) => {
+              const aTotal =
+                (a.tournamentData?.total || 0) +
+                (a.tournamentData?.cut || 0) +
+                (a.tournamentData?.bonus || 0);
+              const bTotal =
+                (b.tournamentData?.total || 0) +
+                (b.tournamentData?.cut || 0) +
+                (b.tournamentData?.bonus || 0);
+              return bTotal - aTotal;
+            })
+            .map((player, index) => (
+              <PlayerDisplayCard
+                key={`${lineup.id}-player-${index}`}
+                player={player}
+                roundDisplay={roundDisplay}
+              />
+            ))}
         </div>
       ) : (
         <div className="text-center py-4 text-gray-500">No players selected in this lineup</div>

@@ -87,13 +87,25 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 {/* Content Section */}
                 <div className="px-4 sm:px-6 py-4 max-h-[70vh] overflow-y-auto bg-gray-50">
                   <div className="space-y-3">
-                    {lineup.players.map((player) => (
-                      <PlayerDisplayCard
-                        key={player.id}
-                        player={player}
-                        roundDisplay={roundDisplay}
-                      />
-                    ))}
+                    {[...lineup.players]
+                      .sort((a, b) => {
+                        const aTotal =
+                          (a.tournamentData?.total || 0) +
+                          (a.tournamentData?.cut || 0) +
+                          (a.tournamentData?.bonus || 0);
+                        const bTotal =
+                          (b.tournamentData?.total || 0) +
+                          (b.tournamentData?.cut || 0) +
+                          (b.tournamentData?.bonus || 0);
+                        return bTotal - aTotal;
+                      })
+                      .map((player) => (
+                        <PlayerDisplayCard
+                          key={player.id}
+                          player={player}
+                          roundDisplay={roundDisplay}
+                        />
+                      ))}
                   </div>
                 </div>
               </DialogPanel>

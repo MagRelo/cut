@@ -340,7 +340,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                               {selectedPlayerLineups.map((lineup, index) => (
                                 <div
                                   key={index}
-                                  className="flex items-center justify-between bg-white rounded px-3 py-2 text-sm"
+                                  className="flex items-center justify-between bg-white border border-gray-300 rounded px-3 py-2 text-sm"
                                 >
                                   <span className="font-medium text-gray-900">
                                     {lineup.userName}
