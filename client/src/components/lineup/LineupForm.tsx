@@ -10,7 +10,6 @@ import { ErrorMessage } from "../common/ErrorMessage";
 
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import { PlayerSelectionCard } from "./PlayerSelectionCard";
-import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 
 /**
  * LineupForm Component
@@ -163,15 +162,8 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     }
   };
 
-  const isEditingAllowed = (): boolean => {
-    return true;
-    // return !currentTournament || currentTournament.status === "NOT_STARTED";
-  };
-
   const handleCardClick = (index: number) => {
-    if (isEditingAllowed()) {
-      setSelectedPlayerIndex(index);
-    }
+    setSelectedPlayerIndex(index);
   };
 
   if (isAuthLoading || isTournamentLoading) {
@@ -214,43 +206,15 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* lineup open */}
-        {isEditingAllowed() && (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <PlayerSelectionCard
-                key={`slot-${index}`}
-                player={draftPlayers[index] || null}
-                isSelected={false}
-                onClick={() => handleCardClick(index)}
-                iconType="pencil"
-              />
-            ))}
-          </div>
-        )}
-
-        {/* lineup closed */}
-        {!isEditingAllowed() && (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: 4 }).map((_, index) => {
-              const player = currentLineup?.players[index];
-              return player ? (
-                <PlayerDisplayCard
-                  key={`slot-${index}`}
-                  player={player}
-                  roundDisplay={currentTournament?.roundDisplay || ""}
-                />
-              ) : (
-                <div
-                  key={`slot-${index}`}
-                  className="h-24 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400"
-                >
-                  Empty Slot
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {Array.from({ length: 4 }).map((_, index) => (
+          <PlayerSelectionCard
+            key={`slot-${index}`}
+            player={draftPlayers[index] || null}
+            isSelected={false}
+            onClick={() => handleCardClick(index)}
+            iconType="pencil"
+          />
+        ))}
       </div>
 
       {/* player selection modal */}

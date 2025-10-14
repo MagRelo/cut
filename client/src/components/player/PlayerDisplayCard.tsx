@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { PlayerWithTournamentData, RoundData, TournamentPlayerData } from "../../types/player";
+import type { PlayerWithTournamentData, TournamentPlayerData } from "../../types/player";
 import { PlayerScorecard } from "./PlayerScorecard";
 
 interface PlayerCardsProps {
@@ -36,26 +36,6 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
     return null;
   };
 
-  const calculateScoreToPar = (roundData: RoundData): string => {
-    if (roundData.ratio === 0) return "-";
-
-    const totalScore = roundData?.holes?.scores.reduce(
-      (sum: number, score: number | null) => sum + (score || 0),
-      0
-    );
-
-    const totalPar = roundData?.holes?.scores.reduce(
-      (sum: number, score: number | null, index: number) =>
-        score !== null ? sum + (roundData.holes?.par[index] || 0) : sum,
-      0
-    );
-
-    const scoreToPar = totalScore && totalPar ? totalScore - totalPar : 0;
-
-    if (scoreToPar === 0) return "E";
-    return scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
-  };
-
   const currentRound = getCurrentRound(player);
 
   return (
@@ -74,6 +54,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
       {/* Top Row */}
       <div className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-center space-x-4">
+          {/* Player Image */}
           {player.pga_imageUrl && (
             <div className="flex-shrink-0">
               <img
@@ -83,49 +64,44 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               />
             </div>
           )}
+
+          {/* Player Name and Position/Score stacked */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-800 truncate">
-                {player.pga_displayName || ""}
-                {/* optionally add the round icon of the current round */}
-                {currentRound?.round && currentRound.data.icon !== "" && (
-                  <span className="text-xl text-gray-600 font-bold ml-2">
-                    {currentRound.data.icon}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center">
-                <span className="text-xl text-gray-600 font-bold ml-1">
-                  {(player.tournamentData.total || 0) +
-                    (player.tournamentData.cut || 0) +
-                    (player.tournamentData.bonus || 0)}
+            <div className="text-lg font-semibold text-gray-800 truncate leading-tight text-left">
+              {player.pga_displayName || ""}
+              {/* optionally add the round icon of the current round */}
+              {currentRound?.round && currentRound.data.icon !== "" && (
+                <span className="text-xl text-gray-600 font-bold ml-2">
+                  {currentRound.data.icon}
                 </span>
-              </div>
+              )}
             </div>
+            <div className="text-sm text-gray-700 font-bold flex items-center gap-1 mt-1">
+              <span className="min-w-[20px]">
+                {player.tournamentData.leaderboardPosition || "–"}
+              </span>
+              <span className="text-gray-300">|</span>
+              <span
+                className={
+                  player.tournamentData.leaderboardTotal?.startsWith("-")
+                    ? "text-red-600 font-medium"
+                    : ""
+                }
+              >
+                {player.tournamentData.leaderboardTotal || "E"}
+              </span>
+            </div>
+          </div>
 
-            {/* Position*/}
-            <div className="flex items-center space-x-6 mt-1">
-              <div className="text-sm text-gray-500">
-                <Label>POS</Label>
-                <span className="font-bold text-gray-600 ml-1">
-                  {player.tournamentData.leaderboardPosition || "–"}
-                </span>
-              </div>
-
-              {/* Total */}
-              <div className="text-sm text-gray-500 flex items-center">
-                <Label>TOT</Label>
-                <span
-                  className={`font-bold ml-1 ${
-                    player.tournamentData.leaderboardTotal === "E" ||
-                    !player.tournamentData.leaderboardTotal?.startsWith("-")
-                      ? "text-gray-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {player.tournamentData.leaderboardTotal || "–"}
-                </span>
-              </div>
+          {/* Points */}
+          <div className="text-right flex-shrink-0">
+            <div className="text-3xl font-bold text-gray-900 leading-none">
+              {(player.tournamentData.total || 0) +
+                (player.tournamentData.cut || 0) +
+                (player.tournamentData.bonus || 0)}
+            </div>
+            <div className="text-xs uppercase text-gray-500 font-semibold tracking-wide leading-none mt-1">
+              PTS
             </div>
           </div>
         </div>
@@ -155,44 +131,25 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               <Label>CARD</Label>
             </div>
 
-            {/* RND */}
-            <div className="text-sm text-gray-500 text-left whitespace-nowrap flex items-center">
-              <Label>{currentRound.round}</Label>{" "}
-              <span className="font-bold text-gray-600 ml-2">
-                {currentRound.data.holes?.scores ? calculateScoreToPar(currentRound.data) : "-"}
-              </span>
-            </div>
+            {/* Round Points */}
+            <div className="flex items-center flex-1 justify-evenly">
+              {["r1", "r2", "r3", "r4"].map((roundKey, index) => {
+                const roundData =
+                  player.tournamentData[roundKey as keyof typeof player.tournamentData];
+                const hasData = roundData && typeof roundData === "object" && "total" in roundData;
 
-            {/* PTS */}
-            <div className="text-sm text-gray-500 text-left whitespace-nowrap flex items-center">
-              <Label>PTS</Label>{" "}
-              <span className="font-bold text-gray-600 ml-2">{currentRound.data.total}</span>
-            </div>
-
-            {/* % */}
-            <div className="text-sm text-gray-500 flex-1 min-w-0 text-center py-1 flex items-center">
-              <Label className="text-xs font-bold text-gray-400 mr-2 -mt-px">%</Label>
-              <div className="w-full h-2 bg-gray-200 rounded-full relative">
-                <div
-                  className="h-2 bg-emerald-600/70 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${
-                      player.tournamentData.leaderboardPosition === "CUT" ||
-                      player.tournamentData.leaderboardPosition === "DQ"
-                        ? 100
-                        : Math.round((currentRound.data.ratio || 0) * 100)
-                    }%`,
-                  }}
-                  aria-label="Round completion"
-                />
-                <span className="sr-only">
-                  {player.tournamentData.leaderboardPosition === "CUT" ||
-                  player.tournamentData.leaderboardPosition === "DQ"
-                    ? 100
-                    : Math.round((currentRound.data.ratio || 0) * 100)}
-                  % complete
-                </span>
-              </div>
+                return (
+                  <div
+                    key={roundKey}
+                    className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center"
+                  >
+                    <Label>R{index + 1}</Label>
+                    <span className="font-bold text-gray-500 ml-1.5">
+                      {hasData ? roundData.total || 0 : "–"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

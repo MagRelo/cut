@@ -19,54 +19,66 @@ const WalletInfo = ({
   disconnect: () => void;
 }) => (
   <div className="bg-white rounded-lg shadow p-4 mt-4">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold text-gray-900">Connected Wallet</h3>
-    </div>
+    {/* Header */}
+    <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Connected Wallet</div>
 
+    {/* Wallet Info Grid */}
     <div className="space-y-3">
-      {/* Wallet */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600 font-medium">Wallet:</span>
-        <a
-          href={`https://id.porto.sh/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800"
-        >
-          Porto Wallet →
-        </a>
+      {/* Wallet Provider */}
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+        <span className="text-sm font-medium text-gray-700">WALLET</span>
+        <div className="flex justify-end">
+          <a
+            href={`https://id.porto.sh/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-700 text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          >
+            Porto Wallet
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
       </div>
 
       {/* Address */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600 font-medium">Address:</span>
-        <CopyToClipboard
-          text={address || ""}
-          displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-        />
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+        <span className="text-sm font-medium text-gray-700">ADDRESS</span>
+        <div className="flex justify-end">
+          <CopyToClipboard
+            text={address || ""}
+            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+          />
+        </div>
       </div>
 
       {/* Network */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600 font-medium">Network:</span>
-        <NetworkStatus />
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+        <span className="text-sm font-medium text-gray-700">NETWORK</span>
+        <div className="flex justify-end">
+          <NetworkStatus />
+        </div>
       </div>
     </div>
 
-    <hr className="my-4" />
-    <div className="flex justify-center">
-      {!!address && (
-        <button
-          className="bg-gray-50 py-1 px-4 rounded disabled:opacity-50 border border-gray-300 text-gray-500 font-display min-w-fit mx-auto block"
-          disabled={!address}
-          onClick={() => {
-            disconnect();
-          }}
-        >
-          Sign out
-        </button>
-      )}
-    </div>
+    {/* Sign Out Button */}
+    {!!address && (
+      <>
+        <hr className="my-4 border-gray-200" />
+        <div className="flex justify-center">
+          <button
+            className="min-w-[120px] bg-white hover:bg-gray-50 text-gray-600 font-display py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50"
+            disabled={!address}
+            onClick={() => {
+              disconnect();
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </>
+    )}
   </div>
 );
 
