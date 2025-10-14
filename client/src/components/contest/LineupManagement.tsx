@@ -156,14 +156,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     args: [],
   }).data as [bigint, bigint] | undefined;
 
-  // Check if the user has deposited to this escrow contract
-  const { data: hasDeposited } = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "hasDeposited",
-    args: [userAddress],
-  });
-
   // Get token balances
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
   const { data: platformTokenBalance } = useBalance({
@@ -257,14 +249,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   const handleLeaveContest = async (lineupId: string) => {
     setPendingAction({ type: "leave", lineupId });
     setSubmissionError(null);
-
-    if (!hasDeposited) {
-      setSubmissionError(
-        `You have not deposited to this contest. Your wallet address: ${userAddress}`
-      );
-      setPendingAction(null);
-      return;
-    }
 
     // Create and execute the withdraw calls
     const calls = createWithdrawCalls(contest.address as string);

@@ -10,18 +10,19 @@ export const Home: React.FC = () => {
 
   return (
     <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-8 pb-8">
+      {/* Logo */}
       <div className="flex items-center gap-3 pb-2 mb-2" style={{ marginLeft: "-20px" }}>
         <img src="/logo-transparent.png" alt="Cut Logo" className="h-20" />
 
         <h1 className="text-6xl font-bold text-black">
           the Cut
-          {/* <small className="text-sm text-gray-500 block">Fantasy Golf</small> */}
           <div className="text-2xl font-bold text-gray-400">Fantasy Golf</div>
         </h1>
       </div>
 
       {/* Features */}
-      <div className="mt-4 mb-6 max-w-84 font-display max-w-sm">
+      <div className="mt-2 mb-6 max-w-84 font-display max-w-sm">
+        {/* featuring */}
         <h3
           className="text-xl font-medium italic text-green-600 text-center mb-3"
           style={{ fontFamily: "serif" }}
@@ -37,6 +38,7 @@ export const Home: React.FC = () => {
           <span>Weekly Contests</span>
         </div>
 
+        {/* with sensible crypto */}
         <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
@@ -50,7 +52,6 @@ export const Home: React.FC = () => {
           <span className="text-gray-500">•</span>
           <span>Stablecoin Payments</span>
         </div>
-
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Sponsored Transactions</span>
           <span className="text-gray-500">•</span>
@@ -60,6 +61,7 @@ export const Home: React.FC = () => {
           <span>Automated DeFi Yield</span>
         </div>
 
+        {/* special thanks to */}
         <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}

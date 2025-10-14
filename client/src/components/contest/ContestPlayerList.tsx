@@ -95,7 +95,10 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
 
           // Get hot/cold icon from current round
           const getCurrentRoundIcon = () => {
-            const roundData = player.tournamentData?.r1;
+            // Convert roundDisplay (e.g., "R1", "R2") to lowercase key (e.g., "r1", "r2")
+            const roundKey = roundDisplay?.toLowerCase() || "r1";
+            const roundData =
+              player.tournamentData?.[roundKey as keyof typeof player.tournamentData];
             if (roundData && typeof roundData === "object" && "icon" in roundData) {
               return roundData.icon || "";
             }
