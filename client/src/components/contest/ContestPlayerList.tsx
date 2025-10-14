@@ -126,15 +126,32 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 )}
 
                 {/* Left - Player Info */}
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                    {player.pga_displayName || "Unknown Player"}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                      {player.pga_displayName || "Unknown Player"}
+                    </div>
+                    {icon && (
+                      <span className="text-base flex-shrink-0" title="Player status">
+                        {icon}
+                      </span>
+                    )}
                   </div>
-                  {icon && (
-                    <span className="text-base flex-shrink-0" title="Player status">
-                      {icon}
+                  <div className="text-xs text-gray-700 font-bold mt-0.5 flex items-center gap-1">
+                    <span className="min-w-[20px]">
+                      {player.tournamentData?.leaderboardPosition || "–"}
                     </span>
-                  )}
+                    <span className="text-gray-300">|</span>
+                    <span
+                      className={
+                        player.tournamentData?.leaderboardTotal?.startsWith("-")
+                          ? "text-red-600 font-medium"
+                          : ""
+                      }
+                    >
+                      {player.tournamentData?.leaderboardTotal || "E"}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Middle - Ownership */}
