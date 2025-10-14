@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type Contest } from "../types/contest";
+import { type Contest, type CreateContestInput } from "../types/contest";
 import { type ContestLineup } from "../types/lineup";
 
 interface JoinContestParams {
@@ -12,6 +12,42 @@ interface JoinContestParams {
 interface LeaveContestParams {
   contestId: string;
   contestLineupId: string;
+}
+
+/**
+ * Mutation hook for creating a contest
+ *
+ * Features:
+ * - Automatic cache invalidation on success
+ * - Error handling
+ * - Better UX with instant feedback
+ */
+export function useCreateContest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: CreateContestInput) => {
+      return await apiClient.post<Contest>("/contests", params);
+    },
+
+    // Always refetch after success to ensure data is in sync
+    onSuccess: (_data, variables) => {
+      // Invalidate all contest queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
+
+      // Invalidate tournament-specific contest queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.contests.byTournament(variables.tournamentId, variables.chainId),
+      });
+
+      // Also invalidate tournament data as it includes contest counts
+      queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.active() });
+    },
+
+    onError: (err) => {
+      console.error("Failed to create contest:", err);
+    },
+  });
 }
 
 /**
@@ -154,11 +190,14 @@ export function useLeaveContest() {
 }
 
 /**
- * Combined hook that provides both join and leave mutations
+ * Combined hook that provides create, join, and leave mutations
  *
  * Usage:
  * ```typescript
- * const { join, leave } = useContestActions();
+ * const { create, join, leave } = useContestActions();
+ *
+ * // Create contest
+ * create.mutate({ name: "My Contest", tournamentId: "123", ... });
  *
  * // Join contest
  * join.mutate({ contestId: "123", tournamentLineupId: "456" });
@@ -168,12 +207,14 @@ export function useLeaveContest() {
  * ```
  */
 export function useContestActions() {
+  const create = useCreateContest();
   const join = useJoinContest();
   const leave = useLeaveContest();
 
   return {
+    create,
     join,
     leave,
-    isLoading: join.isPending || leave.isPending,
+    isLoading: create.isPending || join.isPending || leave.isPending,
   };
 }

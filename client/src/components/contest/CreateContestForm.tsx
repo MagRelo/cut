@@ -5,7 +5,7 @@ import { decodeEventLog } from "viem";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { type CreateContestInput } from "../../types/contest";
-import { useContestApi } from "../../services/contestApi";
+import { useCreateContest } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateEscrow } from "../../hooks/useEscrowOperations";
 import EscrowFactoryContract from "../../utils/contracts/EscrowFactory.json";
@@ -32,7 +32,7 @@ const getStatusMessages = (
 export const CreateContestForm = () => {
   const navigate = useNavigate();
   const { currentTournament } = useTournament();
-  const contestApi = useContestApi();
+  const createContestMutation = useCreateContest();
 
   // wagmi functions
   const { address: userAddress } = useAccount();
@@ -103,23 +103,33 @@ export const CreateContestForm = () => {
           throw new Error("No escrow address found in transaction logs");
         }
 
-        // Create contest in backend
-        const contest = await contestApi.createContest({
-          ...pendingContestData,
-          transactionId: statusData.receipts?.[0]?.transactionHash || "",
-          address: escrowAddress,
-        });
+        // Create contest in backend using mutation
+        createContestMutation.mutate(
+          {
+            ...pendingContestData,
+            transactionId: statusData.receipts?.[0]?.transactionHash || "",
+            address: escrowAddress,
+          },
+          {
+            onSuccess: (contest) => {
+              // Reset form after successful submission
+              setFormData(defaultFormData);
+              setPendingContestData(null);
+              setLoading(false);
 
-        // Reset form after successful submission
-        setFormData(defaultFormData);
-        setPendingContestData(null);
-
-        // Redirect to contest page
-        navigate(`/contest/${contest.id}`);
+              // Redirect to contest page
+              navigate(`/contest/${contest.id}`);
+            },
+            onError: (err) => {
+              console.error("Error creating contest in backend:", err);
+              setError("Failed to create contest in backend");
+              setLoading(false);
+            },
+          }
+        );
       } catch (err) {
-        console.error("Error creating contest in backend:", err);
-        setError("Failed to create contest in backend");
-      } finally {
+        console.error("Error processing transaction:", err);
+        setError("Failed to process transaction");
         setLoading(false);
       }
     },
