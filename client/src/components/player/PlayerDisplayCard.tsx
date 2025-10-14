@@ -113,8 +113,25 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
           <div className="flex items-center justify-between gap-x-4 px-3">
             {/* TEAM button */}
             <div className="flex items-center text-sm text-gray-500 text-left whitespace-nowrap">
+              {/* Scorecard icon */}
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform duration-200 mr-1 ${
+                className="w-4 h-4 text-gray-400 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+
+              <Label>SCORECARD</Label>
+              {/* Expand/collapse chevron */}
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                   expandedPlayerId === player.id ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -128,28 +145,33 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
-              <Label>CARD</Label>
             </div>
 
-            {/* Round Points */}
-            <div className="flex items-center flex-1 justify-evenly">
-              {["r1", "r2", "r3", "r4"].map((roundKey, index) => {
-                const roundData =
-                  player.tournamentData[roundKey as keyof typeof player.tournamentData];
-                const hasData = roundData && typeof roundData === "object" && "total" in roundData;
+            {/* Bonuses */}
+            <div className="flex items-center flex-1 justify-end gap-x-4">
+              {/* Cut Bonus */}
+              <div className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center">
+                <Label>CUT</Label>
+                <span
+                  className={`font-bold ml-1.5 ${
+                    (player.tournamentData.cut || 0) > 0 ? "text-green-600" : "text-gray-500"
+                  }`}
+                >
+                  {(player.tournamentData.cut || 0) > 0 ? player.tournamentData.cut : "–"}
+                </span>
+              </div>
 
-                return (
-                  <div
-                    key={roundKey}
-                    className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center"
-                  >
-                    <Label>R{index + 1}</Label>
-                    <span className="font-bold text-gray-500 ml-1.5">
-                      {hasData ? roundData.total || 0 : "–"}
-                    </span>
-                  </div>
-                );
-              })}
+              {/* Position Bonus */}
+              <div className="flex items-center text-sm whitespace-nowrap min-w-[3.5rem] justify-center">
+                <Label>POS</Label>
+                <span
+                  className={`font-bold ml-1.5 ${
+                    (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-500"
+                  }`}
+                >
+                  {(player.tournamentData.bonus || 0) > 0 ? player.tournamentData.bonus : "–"}
+                </span>
+              </div>
             </div>
           </div>
 

@@ -30,12 +30,12 @@ export const Home: React.FC = () => {
           ~ featuring ~
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span>Stableford Scoring</span>
+          <span>Weekly Contests</span>
           <span className="text-gray-500">•</span>
           <span>Live Updates</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
-          <span>Weekly Contests</span>
+          <span>Stableford Scoring</span>
         </div>
 
         {/* with sensible crypto */}
@@ -66,7 +66,7 @@ export const Home: React.FC = () => {
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
-          ~ special thanks to ~
+          ~ and special thanks to ~
         </h3>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
