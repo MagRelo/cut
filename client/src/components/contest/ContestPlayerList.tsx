@@ -13,15 +13,23 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
   // player modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
+  const [selectedPlayerLineups, setSelectedPlayerLineups] = useState<
+    Array<{ userName: string; lineupName: string }>
+  >([]);
 
-  const openPlayerModal = (player: PlayerWithTournamentData) => {
+  const openPlayerModal = (
+    player: PlayerWithTournamentData,
+    lineups: Array<{ userName: string; lineupName: string }>
+  ) => {
     setSelectedPlayer(player);
+    setSelectedPlayerLineups(lineups);
     setIsModalOpen(true);
   };
 
   const closePlayerModal = () => {
     setIsModalOpen(false);
     setSelectedPlayer(null);
+    setSelectedPlayerLineups([]);
   };
 
   // Process players data for de-duplication and ownership calculation
@@ -48,6 +56,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
               totalScore: player.tournamentData?.total || 0,
               leaderboardPosition: player.tournamentData?.leaderboardPosition || "–",
               leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
+              lineups: [], // Array to store lineup info
             });
           }
 
@@ -59,6 +68,12 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
           );
           // Update ownership in the player object as well
           playerData.player.ownershipPercentage = playerData.ownershipPercentage;
+
+          // Track which lineups this player is in
+          playerData.lineups.push({
+            userName: lineup.user?.name || "Unknown User",
+            lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
+          });
         });
       }
     });
@@ -110,7 +125,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
           return (
             <button
               key={player.id}
-              onClick={() => openPlayerModal(player)}
+              onClick={() => openPlayerModal(player, playerData.lineups)}
               className="w-full bg-white rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left cursor-pointer"
             >
               <div className="flex items-center justify-between gap-3">
@@ -308,10 +323,34 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                             </div>
                           </div>
                         </div>
+
                         <PlayerScorecard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}
                         />
+
+                        {/* Lineups Section */}
+                        {selectedPlayerLineups.length > 0 && (
+                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-300">
+                            <h4 className="text-xs uppercase text-gray-500 font-semibold tracking-wide mb-2">
+                              In {selectedPlayerLineups.length}{" "}
+                              {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}
+                            </h4>
+                            <div className="space-y-1.5">
+                              {selectedPlayerLineups.map((lineup, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-white rounded px-3 py-2 text-sm"
+                                >
+                                  <span className="font-medium text-gray-900">
+                                    {lineup.userName}
+                                  </span>
+                                  <span className="text-gray-600">{lineup.lineupName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

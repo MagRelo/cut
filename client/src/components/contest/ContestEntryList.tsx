@@ -28,25 +28,10 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
     setIsModalOpen(false);
     setSelectedLineup(null);
   };
-  // Calculate total points for each lineup and sort by points
-  const lineupsWithPoints =
-    contestLineups?.map((lineup) => {
-      const totalPoints =
-        lineup.tournamentLineup?.players?.reduce((sum, player) => {
-          const playerTotal = player.tournamentData?.total || 0;
-          const cut = player.tournamentData?.cut || 0;
-          const bonus = player.tournamentData?.bonus || 0;
-          return sum + playerTotal + cut + bonus;
-        }, 0) || 0;
-
-      return {
-        ...lineup,
-        totalPoints,
-      };
-    }) || [];
-
-  // Sort by points (highest first)
-  const sortedLineups = [...lineupsWithPoints].sort((a, b) => b.totalPoints - a.totalPoints);
+  // Use stored scores and sort by position (already calculated by backend)
+  const sortedLineups = contestLineups
+    ? [...contestLineups].sort((a, b) => (a.position || 0) - (b.position || 0))
+    : [];
 
   // Determine how many positions are "in the money"
   const totalEntries = sortedLineups.length;
@@ -55,7 +40,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
   if (sortedLineups.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No teams in this contest yet</p>
+        <p className="text-gray-500 font-display">No teams in this contest yet</p>
       </div>
     );
   }
@@ -63,8 +48,8 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
   return (
     <>
       <div className="space-y-2 px-4 mt-2">
-        {sortedLineups.map((lineup, index) => {
-          const isInTheMoney = index < paidPositions;
+        {sortedLineups.map((lineup) => {
+          const isInTheMoney = (lineup.position || 0) <= paidPositions;
 
           return (
             <div
@@ -85,7 +70,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                         isInTheMoney ? "text-green-700 border border-green-600" : "text-gray-500"
                       }`}
                     >
-                      {index + 1}
+                      {lineup.position || 0}
                     </div>
                     {isInTheMoney && (
                       <div className="absolute -top-0.5 -left-0.5 text-[10px] text-green-600 font-bold bg-white rounded-full w-3 text-center">
@@ -106,7 +91,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                 <div className="flex-shrink-0 flex items-center gap-2">
                   <div className="text-right">
                     <div className="text-lg font-bold text-gray-900 leading-none">
-                      {lineup.totalPoints}
+                      {lineup.score || 0}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
                       PTS
