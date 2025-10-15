@@ -63,7 +63,7 @@ export const Contests: React.FC = () => {
     <div className="space-y-4 p-4">
       <PageHeader title="Contests" className="" />
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-sm shadow">
         <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab

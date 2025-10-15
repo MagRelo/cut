@@ -121,7 +121,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
       <ContestEntryModal
         isOpen={isModalOpen}
         onClose={closeLineupModal}
-        lineup={selectedLineup?.tournamentLineup || null}
+        lineup={selectedLineup || null}
         roundDisplay={roundDisplay || ""}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
       />

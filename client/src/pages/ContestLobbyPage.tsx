@@ -115,7 +115,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Entries ({contest.contestLineups?.length})
+              Lineups ({contest.contestLineups?.length})
             </Tab>
             {!isTournamentEditable && (
               <Tab

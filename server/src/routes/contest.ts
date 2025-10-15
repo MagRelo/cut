@@ -58,7 +58,36 @@ contestRouter.get("/", async (c) => {
         },
       },
     });
-    return c.json(contests);
+
+    // Format the contests data to transform player structure
+    const formattedContests = contests.map((contest) => ({
+      ...contest,
+      contestLineups: contest.contestLineups.map((lineup) => ({
+        ...lineup,
+        tournamentLineup: lineup.tournamentLineup
+          ? {
+              ...lineup.tournamentLineup,
+              players: lineup.tournamentLineup.players.map((playerData) => ({
+                ...playerData.tournamentPlayer.player,
+                tournamentId: validTournamentId,
+                tournamentData: {
+                  leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
+                  r1: playerData.tournamentPlayer.r1,
+                  r2: playerData.tournamentPlayer.r2,
+                  r3: playerData.tournamentPlayer.r3,
+                  r4: playerData.tournamentPlayer.r4,
+                  cut: playerData.tournamentPlayer.cut,
+                  bonus: playerData.tournamentPlayer.bonus,
+                  total: playerData.tournamentPlayer.total,
+                  leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
+                },
+              })),
+            }
+          : null,
+      })),
+    }));
+
+    return c.json(formattedContests);
   } catch (error) {
     console.error("Error fetching contests:", error);
     return c.json({ error: "Failed to fetch contests" }, 500);

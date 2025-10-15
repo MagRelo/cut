@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import type { PlayerWithTournamentData, TournamentPlayerData } from "../../types/player";
 import { PlayerScorecard } from "./PlayerScorecard";
 
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
   roundDisplay: string;
-  defaultOpen?: boolean;
 }
 
 interface LabelProps {
@@ -16,21 +15,13 @@ interface LabelProps {
 const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
   // <span className={`text-sm font-medium text-gray-700 pr-1 ${className}`}>{children}</span>
   <span
-    className={`text-xs uppercase text-slate-600 font-medium tracking-wide leading-none pr-1 ${className}`}
+    className={`text-xs uppercase text-slate-600 font-medium tracking-wide leading-none ${className}`}
   >
     {children}
   </span>
 );
 
-export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
-  player,
-  roundDisplay,
-  defaultOpen = false,
-}) => {
-  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(
-    defaultOpen ? player.id : null
-  );
-
+export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDisplay }) => {
   const getCurrentRound = (player: PlayerWithTournamentData) => {
     if (!player?.tournamentData) return null;
 
@@ -51,18 +42,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   const currentRound = getCurrentRound(player);
 
   return (
-    <div
-      onClick={() => setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id)}
-      className="bg-white overflow-hidden border border-slate-300 rounded-sm"
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id);
-        }
-      }}
-      aria-label={expandedPlayerId === player.id ? "Hide scorecard" : "Show scorecard"}
-    >
+    <div className="bg-white overflow-hidden border border-slate-300 rounded-sm">
       <div className="p-4 pb-2">
         {/* Top Row */}
         <div className="flex items-center space-x-4">
@@ -126,79 +106,77 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
 
         {/* Bottom Row */}
         <div className="mt-3 border-t border-slate-300">
-          <div className="flex items-center justify-between gap-x-4 p-1 pt-3">
-            {/* Cut Bonus and Position Bonus */}
-            <div className="flex items-center flex-1 justify-start gap-x-4">
+          <div className="flex items-center justify-between gap-x-2 pt-2">
+            {/* Round Scores and Bonuses */}
+            <div className="flex items-center flex-1 justify-around gap-x-3">
+              {/* R1 */}
+              <div className="text-center">
+                <div className="font-bold text-base text-gray-700">
+                  {player.tournamentData.r1?.total !== undefined
+                    ? player.tournamentData.r1.total
+                    : "–"}
+                </div>
+                <Label>R1</Label>
+              </div>
+
+              {/* R2 */}
+              <div className="text-center">
+                <div className="font-bold text-base text-gray-700">
+                  {player.tournamentData.r2?.total !== undefined
+                    ? player.tournamentData.r2.total
+                    : "–"}
+                </div>
+                <Label>R2</Label>
+              </div>
+
               {/* Cut Bonus */}
-              <div className="flex items-center gap-1 leading-none">
+              <div className="text-center">
+                <div className="font-bold text-base text-gray-700">
+                  {player.tournamentData.cut !== undefined ? player.tournamentData.cut : "–"}
+                </div>
                 <Label>CUT</Label>
-                <span
-                  className={`font-bold w-6 text-left text-sm ${
-                    (player.tournamentData.cut || 0) > 0 ? "text-green-600" : "text-gray-500"
-                  }`}
-                >
-                  {(player.tournamentData.cut || 0) > 0 ? `+${player.tournamentData.cut}` : ""}
-                </span>
+              </div>
+
+              {/* R3 */}
+              <div className="text-center">
+                <div className="font-bold text-base text-gray-700">
+                  {player.tournamentData.r3?.total !== undefined
+                    ? player.tournamentData.r3.total
+                    : "–"}
+                </div>
+                <Label>R3</Label>
+              </div>
+
+              {/* R4 */}
+              <div className="text-center">
+                <div className="font-bold text-base text-gray-700">
+                  {player.tournamentData.r4?.total !== undefined
+                    ? player.tournamentData.r4.total
+                    : "–"}
+                </div>
+                <Label>R4</Label>
               </div>
 
               {/* Position Bonus */}
-              <div className="flex items-center gap-1 text-sm leading-none">
-                <Label>POS</Label>
-                <span
-                  className={`font-bold w-6 text-left ${
-                    (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-500"
+              <div className="text-center">
+                <div
+                  className={`font-bold text-base ${
+                    (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-700"
                   }`}
                 >
-                  {(player.tournamentData.bonus || 0) > 0 ? `+${player.tournamentData.bonus}` : ""}
-                </span>
+                  {player.tournamentData.bonus !== undefined ? player.tournamentData.bonus : "–"}
+                </div>
+                <Label>POS</Label>
               </div>
-            </div>
-
-            {/* Scorecard button */}
-            <div className="flex items-center text-sm text-gray-500 text-left whitespace-nowrap">
-              {/* Scorecard icon */}
-              <svg
-                className="w-4 h-4 text-slate-500 mr-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-
-              <Label>SCORECARD</Label>
-              {/* Expand/collapse chevron */}
-              <svg
-                className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
-                  expandedPlayerId === player.id ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Expanded Scorecard Section */}
-      {expandedPlayerId === player.id && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
-        </div>
-      )}
+      {/* Scorecard Section */}
+      <div>
+        <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
+      </div>
     </div>
   );
 };

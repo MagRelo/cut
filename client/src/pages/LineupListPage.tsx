@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
@@ -14,9 +14,10 @@ import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
+import type { ContestLineup } from "../types/lineup";
 
 export const LineupList: React.FC = () => {
-  const { loading: isAuthLoading } = usePortoAuth();
+  const { loading: isAuthLoading, user } = usePortoAuth();
   const {
     isLoading: isTournamentLoading,
     currentTournament,
@@ -29,6 +30,22 @@ export const LineupList: React.FC = () => {
   const { chainId: connectedChainId } = useAccount();
   const chainId = connectedChainId ?? baseSepolia.id;
   const { data: contests = [] } = useContestsQuery(currentTournament?.id, chainId);
+
+  // Extract user's contest lineups from all contests
+  const userContestLineups = useMemo(() => {
+    if (!user?.id) return [];
+
+    const contestLineups: ContestLineup[] = [];
+    contests.forEach((contest) => {
+      contest.contestLineups?.forEach((contestLineup) => {
+        if (contestLineup.userId === user.id) {
+          contestLineups.push(contestLineup);
+        }
+      });
+    });
+
+    return contestLineups;
+  }, [contests, user?.id]);
 
   // Function to get contests for a specific lineup
   const getContestsForLineup = (lineupId: string) => {
@@ -88,27 +105,43 @@ export const LineupList: React.FC = () => {
       {isTournamentEditable && <TournamentInfoPanel />}
 
       {/* list of user lineups */}
-      {lineups && lineups.length > 0 && (
-        <div className="space-y-4 mb-6">
-          {lineups.map((lineup) => (
-            <div key={lineup.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
-              {isTournamentEditable ? (
-                <LineupCard
-                  lineup={lineup}
-                  isEditable={isTournamentEditable}
-                  roundDisplay={currentTournament?.roundDisplay || ""}
-                />
-              ) : (
-                <LineupContestCard
-                  lineup={lineup}
-                  roundDisplay={currentTournament?.roundDisplay || ""}
-                  contests={getContestsForLineup(lineup.id)}
-                />
-              )}
+      {isTournamentEditable
+        ? // When editable, show TournamentLineup cards
+          lineups &&
+          lineups.length > 0 && (
+            <div className="space-y-4 mb-6">
+              {lineups.map((lineup) => (
+                <div
+                  key={lineup.id}
+                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
+                >
+                  <LineupCard
+                    lineup={lineup}
+                    isEditable={isTournamentEditable}
+                    roundDisplay={currentTournament?.roundDisplay || ""}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )
+        : // When not editable, show ContestLineup cards
+          userContestLineups &&
+          userContestLineups.length > 0 && (
+            <div className="space-y-4 mb-6">
+              {userContestLineups.map((contestLineup) => (
+                <div
+                  key={contestLineup.id}
+                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
+                >
+                  <LineupContestCard
+                    lineup={contestLineup}
+                    roundDisplay={currentTournament?.roundDisplay || ""}
+                    contests={getContestsForLineup(contestLineup.tournamentLineupId)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
       {/* not editable warning */}
       {!isTournamentEditable && (

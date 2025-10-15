@@ -1,12 +1,13 @@
 import React, { Fragment } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
-import { type TournamentLineup } from "../../types/player";
+import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
+import { EntryHeader } from "./EntryHeader";
+import { type ContestLineup } from "../../types/lineup";
 
 interface ContestEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  lineup: TournamentLineup | null;
+  lineup: ContestLineup | null;
   roundDisplay: string;
   userName?: string;
 }
@@ -19,6 +20,16 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   userName,
 }) => {
   if (!lineup) return null;
+
+  // Calculate total points for the lineup
+  const totalPoints = lineup.tournamentLineup?.players.reduce((sum, player) => {
+    return (
+      sum +
+      (player.tournamentData?.total || 0) +
+      (player.tournamentData?.cut || 0) +
+      (player.tournamentData?.bonus || 0)
+    );
+  }, 0);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -46,48 +57,22 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm  bg-slate-100 shadow-xl transition-all py-3">
-                {/* Header Section */}
-                <div className="px-4 sm:px-6 pt-3 pb-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <DialogTitle
-                        as="h3"
-                        className="text-2xl font-semibold leading-6 text-gray-900"
-                      >
-                        {userName}
-                      </DialogTitle>
-                      <p className="text-md text-slate-700 mt-1 font-medium text-left font-display">
-                        {lineup.name}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
-                      onClick={onClose}
-                    >
-                      <span className="sr-only">Close</span>
-                      <svg
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm  bg-gray-100 transition-all p-2">
                 {/* Content Section */}
-                <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto">
+                <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
+                  {/* Header */}
+                  <div className="px-4 sm:px-6 py-3 border-b border-slate-300 mb-2">
+                    <EntryHeader
+                      userName={userName}
+                      lineupName={lineup.tournamentLineup?.name}
+                      totalPoints={totalPoints || 0}
+                      position={lineup.position}
+                      isInTheMoney={lineup.position <= 3}
+                    />
+                  </div>
+
                   <div className="space-y-2">
-                    {[...lineup.players]
+                    {[...(lineup.tournamentLineup?.players || [])]
                       .sort((a, b) => {
                         const aTotal =
                           (a.tournamentData?.total || 0) +
@@ -100,10 +85,11 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         return bTotal - aTotal;
                       })
                       .map((player) => (
-                        <PlayerDisplayCard
+                        <PlayerDisplayRow
                           key={player.id}
                           player={player}
                           roundDisplay={roundDisplay}
+                          showArrow={false}
                         />
                       ))}
                   </div>

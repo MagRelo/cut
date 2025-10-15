@@ -2,8 +2,11 @@ import React, { Fragment, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
-import type { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
+import { EntryHeader } from "../contest/EntryHeader";
+import type { PlayerWithTournamentData } from "../../types/player";
+import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 
 interface ContestInfo {
@@ -12,7 +15,7 @@ interface ContestInfo {
 }
 
 interface LineupContestCardProps {
-  lineup: TournamentLineup;
+  lineup: ContestLineup;
   roundDisplay: string;
   contests?: ContestInfo[];
 }
@@ -44,7 +47,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   };
 
   // Calculate total points for the lineup
-  const totalPoints = lineup.players.reduce((sum, player) => {
+  const totalPoints = lineup.tournamentLineup?.players.reduce((sum, player) => {
     return (
       sum +
       (player.tournamentData?.total || 0) +
@@ -54,7 +57,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   }, 0);
 
   // Sort players by total points (descending)
-  const sortedPlayers = [...lineup.players].sort((a, b) => {
+  const sortedPlayers = [...(lineup.tournamentLineup?.players || [])].sort((a, b) => {
     const aTotal =
       (a.tournamentData?.total || 0) +
       (a.tournamentData?.cut || 0) +
@@ -66,31 +69,17 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     return bTotal - aTotal;
   });
 
-  // Get hot/cold icon from current round
-  const getCurrentRoundIcon = (player: PlayerWithTournamentData) => {
-    const roundKey = roundDisplay?.toLowerCase() || "r1";
-    const roundData = player.tournamentData?.[roundKey as keyof typeof player.tournamentData];
-    if (roundData && typeof roundData === "object" && "icon" in roundData) {
-      return roundData.icon || "";
-    }
-    return "";
-  };
-
   return (
     <div className="">
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-700">
-            {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-          </h3>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-gray-900 leading-none">{totalPoints}</div>
-          <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-            POINTS
-          </div>
-        </div>
+      <div className="mb-3">
+        <EntryHeader
+          userName={lineup.user?.name || lineup.user?.email || "Unknown User"}
+          lineupName={lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
+          totalPoints={totalPoints || 0}
+          position={lineup.position}
+          isInTheMoney={lineup.position <= 3}
+        />
       </div>
 
       {/* Tabs */}
@@ -107,7 +96,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               )
             }
           >
-            Players ({lineup.players.length})
+            Players ({lineup.tournamentLineup?.players.length || 0})
           </Tab>
           <Tab
             className={({ selected }: { selected: boolean }) =>
@@ -128,93 +117,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           {/* PLAYERS TAB */}
           <TabPanel>
             <div className="space-y-2 mt-3">
-              {sortedPlayers.map((player) => {
-                const totalPlayerPoints =
-                  (player.tournamentData?.total || 0) +
-                  (player.tournamentData?.cut || 0) +
-                  (player.tournamentData?.bonus || 0);
-                const icon = getCurrentRoundIcon(player);
-
-                return (
-                  <button
-                    key={player.id}
-                    onClick={() => openPlayerModal(player)}
-                    className="w-full bg-white rounded-lg p-3 text-left cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      {/* Profile Picture */}
-                      {player.pga_imageUrl && (
-                        <div className="flex-shrink-0">
-                          <img
-                            className="h-10 w-10 rounded-full object-cover"
-                            src={player.pga_imageUrl}
-                            alt={player.pga_displayName || ""}
-                          />
-                        </div>
-                      )}
-
-                      {/* Left - Player Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                            {player.pga_lastName && player.pga_firstName
-                              ? `${player.pga_lastName}, ${player.pga_firstName}`
-                              : player.pga_displayName || ""}
-                          </div>
-                          {icon && (
-                            <span className="text-base flex-shrink-0" title="Player status">
-                              {icon}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Leaderboard Position and Total */}
-                        <div className="text-xs text-gray-700 font-bold flex items-center gap-2 mt-0.5">
-                          <span className="min-w-[20px] text-center">
-                            {player.tournamentData.leaderboardPosition || "–"}
-                          </span>
-                          <span className="text-gray-300 font-medium">|</span>
-                          <span
-                            className={`min-w-[20px] text-center
-                          ${
-                            player.tournamentData.leaderboardTotal?.startsWith("-")
-                              ? "text-red-600 font-medium"
-                              : ""
-                          }`}
-                          >
-                            {player.tournamentData.leaderboardTotal || "E"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right - Points */}
-                      <div className="flex-shrink-0 flex items-center gap-2">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900 leading-none">
-                            {totalPlayerPoints}
-                          </div>
-                          <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                            PTS
-                          </div>
-                        </div>
-                        <svg
-                          className="w-4 h-4 text-gray-400 flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+              {sortedPlayers.map((player) => (
+                <PlayerDisplayRow
+                  key={player.id}
+                  player={player}
+                  roundDisplay={roundDisplay}
+                  onClick={() => openPlayerModal(player)}
+                />
+              ))}
             </div>
           </TabPanel>
 
@@ -315,41 +225,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-slate-100 shadow-xl transition-all py-1">
-                  {/* Header Section */}
-                  <div className="px-4 sm:px-6 py-3">
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors flex-shrink-0"
-                        onClick={closePlayerModal}
-                      >
-                        <span className="sr-only">Close</span>
-                        <svg
-                          className="h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
+                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-slate-100 shadow-xl transition-all">
                   {/* Content Section */}
-                  <div className="max-h-[70vh] overflow-y-auto px-2 pb-4">
+                  <div className="max-h-[70vh] overflow-y-auto p-2">
                     {selectedPlayer && (
                       <div className="overflow-hidden">
                         <PlayerDisplayCard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}
-                          defaultOpen={true}
                         />
                       </div>
                     )}
