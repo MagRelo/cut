@@ -240,7 +240,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-gray-100 shadow-xl transition-all py-1">
+                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-gray-100 shadow-xl transition-all py-1">
                   {/* Header Section */}
                   <div className="px-4 sm:px-6 py-3">
                     <div className="flex justify-end">
@@ -284,7 +284,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                               In {selectedPlayerLineups.length}{" "}
                               {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}
                             </h4>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
                               {selectedPlayerLineups.map((lineup, index) => (
                                 <div
                                   key={index}
