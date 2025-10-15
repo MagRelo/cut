@@ -1,4 +1,5 @@
 import React from "react";
+import { PositionBadge } from "./PositionBadge";
 
 interface EntryHeaderProps {
   position?: number;
@@ -29,20 +30,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
       {/* Left - Rank (optional) */}
       {position !== undefined && (
         <div className="flex-shrink-0">
-          <div className="relative">
-            <div
-              className={`text-center font-bold text-xs rounded-full w-7 h-7 flex items-center justify-center ${
-                isInTheMoney ? "text-green-700 border border-green-600" : "text-gray-500"
-              }`}
-            >
-              {position || 0}
-            </div>
-            {isInTheMoney && (
-              <div className="absolute -top-0.5 -left-0.5 text-[10px] text-green-600 font-bold bg-white rounded-full w-3 text-center">
-                $
-              </div>
-            )}
-          </div>
+          <PositionBadge position={position} isInTheMoney={isInTheMoney} />
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
 import { EntryHeader } from "../contest/EntryHeader";
+import { PositionBadge } from "../contest/PositionBadge";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
@@ -137,50 +138,19 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   const isInTheMoney =
                     contestInfo.position > 0 && contestInfo.position <= paidPositions;
 
-                  // Get ordinal suffix for position
-                  const getOrdinalSuffix = (num: number) => {
-                    const j = num % 10;
-                    const k = num % 100;
-                    if (j === 1 && k !== 11) return "st";
-                    if (j === 2 && k !== 12) return "nd";
-                    if (j === 3 && k !== 13) return "rd";
-                    return "th";
-                  };
-
                   return (
                     <div key={contestInfo.contest.id} className="flex items-center gap-3">
+                      {/* Position Badge */}
+                      <div className="flex-shrink-0">
+                        <PositionBadge
+                          position={contestInfo.position}
+                          isInTheMoney={isInTheMoney}
+                        />
+                      </div>
+
                       {/* Contest Card */}
                       <div className="flex-1 border bg-white rounded-sm">
                         <ContestCard contest={contestInfo.contest} />
-                      </div>
-
-                      {/* Position Badge */}
-                      <div className="flex-shrink-0">
-                        <div className="relative">
-                          <div
-                            className={`text-center font-bold rounded-full w-10 h-10 flex items-center justify-center ${
-                              isInTheMoney
-                                ? "text-green-700 border-2 border-green-600 bg-white text-lg"
-                                : "text-gray-500 bg-white text-base"
-                            }`}
-                          >
-                            {contestInfo.position > 0 ? (
-                              <span>
-                                {contestInfo.position}
-                                <sup className="text-xs">
-                                  {getOrdinalSuffix(contestInfo.position)}
-                                </sup>
-                              </span>
-                            ) : (
-                              "–"
-                            )}
-                          </div>
-                          {isInTheMoney && (
-                            <div className="absolute -top-0.5 -left-0.5 text-xs text-green-600 font-bold bg-white rounded-full w-4 h-4 flex items-center justify-center">
-                              $
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
                   );

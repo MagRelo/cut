@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
+import { PositionBadge } from "./PositionBadge";
 import { useTournament } from "../../contexts/TournamentContext";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
@@ -10,6 +12,7 @@ interface ContestEntryListProps {
 
 export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryListProps) => {
   const { isTournamentEditable } = useTournament();
+  const { user } = usePortoAuth();
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,6 +31,18 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
     setIsModalOpen(false);
     setSelectedLineup(null);
   };
+
+  // Function to determine row background color
+  const getRowBackgroundColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
+    if (isCurrentUser && isInTheMoney) {
+      return "bg-green-50"; // Green for current user in the money
+    }
+    if (isCurrentUser) {
+      return "bg-slate-100"; // Gray for current user not in the money
+    }
+    return "bg-white"; // White for other users
+  };
+
   // Use stored scores and sort by position (already calculated by backend)
   const sortedLineups = contestLineups
     ? [...contestLineups].sort((a, b) => (a.position || 0) - (b.position || 0))
@@ -50,11 +65,12 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
       <div className="space-y-2 px-4 mt-2">
         {sortedLineups.map((lineup) => {
           const isInTheMoney = (lineup.position || 0) <= paidPositions;
+          const isCurrentUser = lineup.userId === user?.id;
 
           return (
             <div
               key={lineup.id}
-              className={`bg-white rounded-lg p-3 ${
+              className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 ${
                 isTournamentEditable ? "cursor-default opacity-80" : "cursor-pointer"
               }`}
               onClick={() => openLineupModal(lineup)}
@@ -62,20 +78,11 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
               <div className="flex items-center justify-between gap-3">
                 {/* Left - Rank */}
                 <div className="flex-shrink-0">
-                  <div className="relative">
-                    <div
-                      className={`text-center font-bold text-xs rounded-full w-7 h-7 flex items-center justify-center ${
-                        isInTheMoney ? "text-green-700 border border-green-600" : "text-gray-500"
-                      }`}
-                    >
-                      {lineup.position || 0}
-                    </div>
-                    {isInTheMoney && (
-                      <div className="absolute -top-0.5 -left-0.5 text-[10px] text-green-600 font-bold bg-white rounded-full w-3 text-center">
-                        $
-                      </div>
-                    )}
-                  </div>
+                  <PositionBadge
+                    position={lineup.position || 0}
+                    isInTheMoney={isInTheMoney}
+                    isUser={isCurrentUser}
+                  />
                 </div>
 
                 {/* Middle - User Info */}

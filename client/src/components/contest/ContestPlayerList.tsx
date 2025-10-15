@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
 
@@ -11,6 +12,8 @@ interface ContestPlayerListProps {
 }
 
 export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListProps) => {
+  const { user } = usePortoAuth();
+
   // player modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
@@ -58,6 +61,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
               leaderboardPosition: player.tournamentData?.leaderboardPosition || "–",
               leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
               lineups: [], // Array to store lineup info
+              isOwnedByCurrentUser: false,
             });
           }
 
@@ -69,6 +73,11 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
           );
           // Update ownership in the player object as well
           playerData.player.ownershipPercentage = playerData.ownershipPercentage;
+
+          // Check if current user owns this player
+          if (lineup.userId === user?.id) {
+            playerData.isOwnedByCurrentUser = true;
+          }
 
           // Track which lineups this player is in
           playerData.lineups.push({
@@ -109,6 +118,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
             roundDisplay={roundDisplay || "R1"}
             onClick={() => openPlayerModal(playerData.player, playerData.lineups)}
             ownershipPercentage={playerData.ownershipPercentage}
+            isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
           />
         ))}
       </div>
@@ -173,7 +183,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                         <PlayerDisplayCard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}
-                          defaultOpen={true}
                         />
 
                         {/* Lineups Section */}

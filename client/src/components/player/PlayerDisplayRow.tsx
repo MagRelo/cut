@@ -7,6 +7,7 @@ interface PlayerDisplayRowProps {
   onClick?: () => void;
   ownershipPercentage?: number;
   showArrow?: boolean;
+  isOwnedByCurrentUser?: boolean;
 }
 
 export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
@@ -15,6 +16,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   onClick,
   ownershipPercentage,
   showArrow = true,
+  isOwnedByCurrentUser = false,
 }) => {
   // Calculate total points
   const totalPoints =
@@ -64,9 +66,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
         {/* Leaderboard Position and Total */}
         <div className="text-xs text-gray-700 font-bold flex items-center gap-2 mt-0.5">
-          <span className="min-w-[20px] text-center">
-            {player.tournamentData?.leaderboardPosition || "–"}
-          </span>
+          <span className="min-w-[20px]">{player.tournamentData?.leaderboardPosition || "–"}</span>
           <span className="text-gray-300 font-medium">|</span>
           <span
             className={`min-w-[20px] text-center
@@ -113,13 +113,18 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     </div>
   );
 
+  const bgColor = isOwnedByCurrentUser ? "bg-slate-100" : "bg-white";
+
   if (onClick) {
     return (
-      <button onClick={onClick} className="w-full bg-white rounded-lg p-3 text-left cursor-pointer">
+      <button
+        onClick={onClick}
+        className={`w-full ${bgColor} rounded-sm p-3 text-left cursor-pointer`}
+      >
         {content}
       </button>
     );
   }
 
-  return <div className="w-full bg-white rounded-lg p-3">{content}</div>;
+  return <div className={`w-full ${bgColor} rounded-lg p-3`}>{content}</div>;
 };

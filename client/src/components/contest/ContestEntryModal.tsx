@@ -61,7 +61,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 {/* Content Section */}
                 <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
                   {/* Header */}
-                  <div className="px-4 sm:px-6 py-3 border-b border-slate-300 mb-2">
+                  <div className="pr-3 pl-3 sm:px-6 py-3 border-b border-slate-300 mb-2">
                     <EntryHeader
                       userName={userName}
                       lineupName={lineup.tournamentLineup?.name}
