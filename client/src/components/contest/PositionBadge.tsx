@@ -1,7 +1,8 @@
 interface PositionBadgeProps {
   position: number;
   isInTheMoney: boolean;
-  isUser: boolean;
+  isUser?: boolean;
+  showBorder?: boolean;
 }
 
 const getOrdinalSuffix = (num: number): string => {
@@ -13,14 +14,21 @@ const getOrdinalSuffix = (num: number): string => {
   return "th";
 };
 
-export const PositionBadge = ({ position, isInTheMoney, isUser }: PositionBadgeProps) => {
+export const PositionBadge = ({
+  position,
+  isInTheMoney,
+  isUser = false,
+  showBorder = false,
+}: PositionBadgeProps) => {
   const ordinalSuffix = getOrdinalSuffix(position || 0);
 
   return (
     <div className="relative">
       <div
         className={`text-center font-bold rounded-full w-10 h-10 flex items-center justify-center text-sm ${
-          isInTheMoney
+          showBorder
+            ? "text-gray-700 border border-gray-400 bg-white"
+            : isInTheMoney
             ? "text-green-700 border border-green-600 bg-white"
             : "text-gray-700 border border-white bg-white"
         }`}

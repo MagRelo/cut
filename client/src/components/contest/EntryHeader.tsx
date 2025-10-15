@@ -30,7 +30,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
       {/* Left - Rank (optional) */}
       {position !== undefined && (
         <div className="flex-shrink-0">
-          <PositionBadge position={position} isInTheMoney={isInTheMoney} />
+          <PositionBadge position={position} isInTheMoney={isInTheMoney} showBorder={true} />
         </div>
       )}
 
