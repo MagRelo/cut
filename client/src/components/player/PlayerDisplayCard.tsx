@@ -52,7 +52,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
       aria-label={expandedPlayerId === player.id ? "Hide scorecard" : "Show scorecard"}
     >
       {/* Top Row */}
-      <div className="px-4 py-3">
+      <div className="px-4 pt-5 pb-3">
         <div className="flex items-center space-x-4">
           {/* Player Image */}
           {player.pga_imageUrl && (
@@ -105,13 +105,10 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Row */}
-      {currentRound ? (
-        <div className="p-2 bg-white">
-          <div className="flex items-center justify-between gap-x-4 px-3">
-            {/* TEAM button */}
+        <div className="mt-3">
+          <div className="flex items-center justify-between gap-x-4">
+            {/* Scorecard button */}
             <div className="flex items-center text-sm text-gray-500 text-left whitespace-nowrap">
               {/* Scorecard icon */}
               <svg
@@ -147,13 +144,13 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               </svg>
             </div>
 
-            {/* Bonuses */}
+            {/* Cut Bonus and Position Bonus */}
             <div className="flex items-center flex-1 justify-end gap-x-4">
               {/* Cut Bonus */}
-              <div className="flex items-center text-sm whitespace-nowrap justify-center">
+              <div className="flex items-center gap-1 text-sm">
                 <Label>CUT</Label>
                 <span
-                  className={`font-bold w-8 text-center ${
+                  className={`font-bold w-6 text-left ${
                     (player.tournamentData.cut || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
@@ -162,10 +159,10 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               </div>
 
               {/* Position Bonus */}
-              <div className="flex items-center text-sm whitespace-nowrap justify-center">
+              <div className="flex items-center gap-1 text-sm">
                 <Label>POS</Label>
                 <span
-                  className={`font-bold w-7 text-center ${
+                  className={`font-bold w-6 text-left ${
                     (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
@@ -181,11 +178,11 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               className="mt-2 border border-gray-300 rounded-sm"
               onClick={(e) => e.stopPropagation()}
             >
-              <PlayerScorecard player={player} roundDisplay={currentRound.round} />
+              <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
             </div>
           )}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 };

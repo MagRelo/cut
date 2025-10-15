@@ -167,8 +167,8 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       )}
 
       {/* Contest Settings */}
-      <h3 className="text-sm font-medium text-gray-900 mb-2 mt-4">Escrow Contract</h3>
-      <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3">
+      <h3 className="text-sm font-medium text-gray-900 mt-4">Escrow Contract</h3>
+      <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[220px]">
         <div className="flex flex-col gap-1.5 font-mono text-xs">
           {/* Contract Status */}
           <div className="flex items-center gap-2">
