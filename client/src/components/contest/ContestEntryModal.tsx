@@ -46,7 +46,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md  bg-gray-100 shadow-xl transition-all py-3">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md  bg-slate-100 shadow-xl transition-all py-3">
                 {/* Header Section */}
                 <div className="px-4 sm:px-6 pt-3 pb-1">
                   <div className="flex justify-between items-start">
@@ -57,7 +57,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       >
                         {userName}
                       </DialogTitle>
-                      <p className="text-md text-gray-700 mt-1 font-medium text-left font-display">
+                      <p className="text-md text-slate-700 mt-1 font-medium text-left font-display">
                         {lineup.name}
                       </p>
                     </div>
@@ -85,7 +85,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 </div>
 
                 {/* Content Section */}
-                <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-gray-100">
+                <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto">
                   <div className="space-y-2">
                     {[...lineup.players]
                       .sort((a, b) => {

@@ -53,7 +53,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   return (
     <div
       onClick={() => setExpandedPlayerId(expandedPlayerId === player.id ? null : player.id)}
-      className="bg-white overflow-hidden border border-gray-200 rounded-sm"
+      className="bg-white overflow-hidden border border-gray-300 rounded-sm"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -195,7 +195,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
 
       {/* Expanded Scorecard Section */}
       {expandedPlayerId === player.id && (
-        <div className="border-t border-gray-300" onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()}>
           <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
         </div>
       )}

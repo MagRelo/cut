@@ -126,7 +126,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
             <button
               key={player.id}
               onClick={() => openPlayerModal(player, playerData.lineups)}
-              className="w-full bg-white rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left cursor-pointer"
+              className="w-full bg-white rounded-lg p-3 text-left cursor-pointer"
             >
               <div className="flex items-center justify-between gap-3">
                 {/* Profile Picture */}
@@ -240,13 +240,13 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-gray-100 shadow-xl transition-all py-1">
+                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-slate-100 shadow-xl transition-all py-1">
                   {/* Header Section */}
                   <div className="px-4 sm:px-6 py-3">
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors flex-shrink-0"
+                        className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors flex-shrink-0"
                         onClick={closePlayerModal}
                       >
                         <span className="sr-only">Close</span>

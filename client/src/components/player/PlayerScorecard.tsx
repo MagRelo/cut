@@ -238,7 +238,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   };
 
   return (
-    <div className={`bg-gray-100 border-b border-r border-l border-gray-300`}>
+    <div className={`bg-gray-100 `}>
       {/* <p className='text-sm text-gray-500 px-4 py-2'>
         {player.player.pga_displayName}
       </p> */}
@@ -266,7 +266,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
         <div className="bg-white">
           <div className="flex items-center justify-between px-3 py-2 pt-3">
             <div className="flex items-center space-x-2">
-              <span className="text-xs uppercase text-gray-600 font-thin tracking-wide mr-1">
+              <span className="text-xs uppercase text-slate-600 font-thin tracking-wide mr-1">
                 Round
               </span>
               <div className="flex space-x-2">
@@ -280,8 +280,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
                         px-1.5 py-0.5 text-xs font-thin font-display border rounded-sm transition-colors min-w-[1.75rem]
                         ${
                           isActive
-                            ? "bg-blue-50 text-blue-600 border-blue-300 shadow-sm"
-                            : "bg-gray-50 text-gray-500 hover:bg-white border-gray-300"
+                            ? "bg-slate-100 text-slate-600 border-slate-400 shadow-sm"
+                            : "bg-slate-50 text-slate-500 hover:bg-white border-slate-300"
                         }
                       `}
                     >

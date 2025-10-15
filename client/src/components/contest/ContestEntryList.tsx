@@ -54,10 +54,8 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
           return (
             <div
               key={lineup.id}
-              className={`bg-white rounded-lg p-3 transition-all duration-200 ${
-                isTournamentEditable
-                  ? "cursor-default opacity-80"
-                  : "hover:shadow-sm cursor-pointer"
+              className={`bg-white rounded-lg p-3 ${
+                isTournamentEditable ? "cursor-default opacity-80" : "cursor-pointer"
               }`}
               onClick={() => openLineupModal(lineup)}
             >
