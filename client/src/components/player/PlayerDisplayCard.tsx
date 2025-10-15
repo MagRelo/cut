@@ -51,8 +51,8 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
       }}
       aria-label={expandedPlayerId === player.id ? "Hide scorecard" : "Show scorecard"}
     >
-      {/* Top Row */}
-      <div className="px-4 pt-5 pb-3">
+      <div className="p-4 pb-2">
+        {/* Top Row */}
         <div className="flex items-center space-x-4">
           {/* Player Image */}
           {player.pga_imageUrl && (
@@ -106,7 +106,8 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
           </div>
         </div>
 
-        <div className="mt-3">
+        {/* Bottom Row */}
+        <div className="mt-2">
           <div className="flex items-center justify-between gap-x-4">
             {/* Scorecard button */}
             <div className="flex items-center text-sm text-gray-500 text-left whitespace-nowrap">
@@ -150,7 +151,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               <div className="flex items-center gap-1 text-sm">
                 <Label>CUT</Label>
                 <span
-                  className={`font-bold w-6 text-left ${
+                  className={`font-bold w-7 text-left ${
                     (player.tournamentData.cut || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
@@ -162,7 +163,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               <div className="flex items-center gap-1 text-sm">
                 <Label>POS</Label>
                 <span
-                  className={`font-bold w-6 text-left ${
+                  className={`font-bold w-7 text-left ${
                     (player.tournamentData.bonus || 0) > 0 ? "text-green-600" : "text-gray-500"
                   }`}
                 >
@@ -171,18 +172,15 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               </div>
             </div>
           </div>
-
-          {/* Expanded Scorecard Section */}
-          {expandedPlayerId === player.id && (
-            <div
-              className="mt-2 border border-gray-300 rounded-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Expanded Scorecard Section */}
+      {expandedPlayerId === player.id && (
+        <div className="border-t border-gray-300" onClick={(e) => e.stopPropagation()}>
+          <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
+        </div>
+      )}
     </div>
   );
 };

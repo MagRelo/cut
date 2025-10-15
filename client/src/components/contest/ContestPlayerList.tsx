@@ -309,7 +309,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                     {selectedPlayer && (
                       <div className="overflow-hidden shadow-sm border-l border-r border-b border-gray-300 rounded-sm">
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-b border-gray-300 mb-1">
+                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-b border-gray-300">
                           <div className="px-3 py-2 text-center">
                             <div
                               className={`text-lg font-bold h-7 flex items-center justify-center ${
