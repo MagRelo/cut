@@ -1,14 +1,18 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAccount } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useLineup } from "../contexts/LineupContext";
+import { useContestsQuery } from "../hooks/useContestQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 // import { Share } from "../components/common/Share";
 
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
+import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 
 export const LineupList: React.FC = () => {
@@ -20,6 +24,28 @@ export const LineupList: React.FC = () => {
     tournamentStatusDisplay,
   } = useTournament();
   const { lineups, lineupError, getLineups } = useLineup();
+
+  // Get chain ID and fetch contests with full contestLineups data
+  const { chainId: connectedChainId } = useAccount();
+  const chainId = connectedChainId ?? baseSepolia.id;
+  const { data: contests = [] } = useContestsQuery(currentTournament?.id, chainId);
+
+  // Function to get contests for a specific lineup
+  const getContestsForLineup = (lineupId: string) => {
+    return contests
+      .filter((contest) =>
+        contest.contestLineups?.some((lineup) => lineup.tournamentLineupId === lineupId)
+      )
+      .map((contest) => {
+        const lineupEntry = contest.contestLineups?.find(
+          (lineup) => lineup.tournamentLineupId === lineupId
+        );
+        return {
+          contest: contest,
+          position: lineupEntry?.position || 0,
+        };
+      });
+  };
 
   useEffect(() => {
     const fetchLineups = async () => {
@@ -66,11 +92,19 @@ export const LineupList: React.FC = () => {
         <div className="space-y-4 mb-6">
           {lineups.map((lineup) => (
             <div key={lineup.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
-              <LineupCard
-                lineup={lineup}
-                isEditable={isTournamentEditable}
-                roundDisplay={currentTournament?.roundDisplay || ""}
-              />
+              {isTournamentEditable ? (
+                <LineupCard
+                  lineup={lineup}
+                  isEditable={isTournamentEditable}
+                  roundDisplay={currentTournament?.roundDisplay || ""}
+                />
+              ) : (
+                <LineupContestCard
+                  lineup={lineup}
+                  roundDisplay={currentTournament?.roundDisplay || ""}
+                  contests={getContestsForLineup(lineup.id)}
+                />
+              )}
             </div>
           ))}
         </div>
