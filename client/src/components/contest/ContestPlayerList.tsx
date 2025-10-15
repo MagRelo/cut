@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { PlayerScorecard } from "../player/PlayerScorecard";
+import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
 
@@ -16,16 +16,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
   const [selectedPlayerLineups, setSelectedPlayerLineups] = useState<
     Array<{ userName: string; lineupName: string }>
   >([]);
-
-  // Format player name as "Last, First"
-  const formatPlayerName = (displayName: string | null | undefined): string => {
-    if (!displayName) return "Unknown Player";
-    const parts = displayName.trim().split(" ");
-    if (parts.length === 1) return displayName;
-    const lastName = parts[parts.length - 1];
-    const firstName = parts.slice(0, -1).join(" ");
-    return `${lastName}, ${firstName}`;
-  };
 
   const openPlayerModal = (
     player: PlayerWithTournamentData,
@@ -154,7 +144,9 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                      {formatPlayerName(player.pga_displayName)}
+                      {player.pga_lastName && player.pga_firstName
+                        ? `${player.pga_lastName}, ${player.pga_firstName}`
+                        : player.pga_displayName || ""}
                     </div>
                     {icon && (
                       <span className="text-base flex-shrink-0" title="Player status">
@@ -248,45 +240,10 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white shadow-xl transition-all py-1">
+                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-gray-100 shadow-xl transition-all py-1">
                   {/* Header Section */}
-                  <div className="px-4 sm:px-6 py-4 bg-white">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="flex items-center gap-3">
-                        {selectedPlayer?.pga_imageUrl && (
-                          <img
-                            className="h-12 w-12 rounded-full object-cover flex-shrink-0"
-                            src={selectedPlayer.pga_imageUrl}
-                            alt={selectedPlayer.pga_displayName || ""}
-                          />
-                        )}
-                        <div>
-                          <DialogTitle
-                            as="h3"
-                            className="text-2xl font-semibold leading-6 text-gray-900"
-                          >
-                            {formatPlayerName(selectedPlayer?.pga_displayName)}
-                          </DialogTitle>
-
-                          {/* Leaderboard Position and Total */}
-                          <div className="text-sm text-gray-700 font-bold flex items-center gap-2 mt-1">
-                            <span className="min-w-[1rem] text-center">
-                              {selectedPlayer?.tournamentData.leaderboardPosition || "–"}
-                            </span>
-                            <span className="text-gray-300">|</span>
-                            <span
-                              className={`min-w-[1.25rem] text-center font-thin
-                  ${
-                    selectedPlayer?.tournamentData.leaderboardTotal?.startsWith("-")
-                      ? "text-red-600"
-                      : ""
-                  }`}
-                            >
-                              {selectedPlayer?.tournamentData.leaderboardTotal || "E"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                  <div className="px-4 sm:px-6 py-3">
+                    <div className="flex justify-end">
                       <button
                         type="button"
                         className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors flex-shrink-0"
@@ -314,70 +271,15 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                   <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
                     {selectedPlayer && (
                       <div className="overflow-hidden">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-l border-r border-gray-300">
-                          <div className="px-3 py-2 text-center">
-                            <div
-                              className={`text-lg font-bold h-7 flex items-center justify-center ${
-                                selectedPlayer.tournamentData?.cut &&
-                                selectedPlayer.tournamentData.cut > 0
-                                  ? "text-green-600"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {selectedPlayer.tournamentData?.cut &&
-                              selectedPlayer.tournamentData.cut > 0
-                                ? `+${selectedPlayer.tournamentData.cut}`
-                                : selectedPlayer.tournamentData?.cut === 0
-                                ? ""
-                                : "–"}
-                            </div>
-                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
-                              Cut Bonus
-                            </div>
-                          </div>
-                          <div className="px-3 py-2 text-center">
-                            <div
-                              className={`text-lg font-bold h-7 flex items-center justify-center ${
-                                selectedPlayer.tournamentData?.bonus &&
-                                selectedPlayer.tournamentData.bonus > 0
-                                  ? "text-green-600"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {selectedPlayer.tournamentData?.bonus &&
-                              selectedPlayer.tournamentData.bonus > 0
-                                ? `+${selectedPlayer.tournamentData.bonus}`
-                                : selectedPlayer.tournamentData?.bonus === 0
-                                ? ""
-                                : "–"}
-                            </div>
-                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
-                              Position Bonus
-                            </div>
-                          </div>
-                          <div className="px-3 py-2 text-center">
-                            <div className="text-lg font-bold text-gray-900">
-                              {(selectedPlayer.tournamentData?.total || 0) +
-                                (selectedPlayer.tournamentData?.cut || 0) +
-                                (selectedPlayer.tournamentData?.bonus || 0)}
-                            </div>
-                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide mt-0.5">
-                              Points
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="">
-                          <PlayerScorecard
-                            player={selectedPlayer}
-                            roundDisplay={roundDisplay || "R1"}
-                          />
-                        </div>
+                        <PlayerDisplayCard
+                          player={selectedPlayer}
+                          roundDisplay={roundDisplay || "R1"}
+                          defaultOpen={true}
+                        />
 
                         {/* Lineups Section */}
                         {selectedPlayerLineups.length > 0 && (
-                          <div className="bg-white px-4 py-3 mt-3 font-display">
+                          <div className="px-4 py-3 mt-3 font-display">
                             <h4 className="text-xs uppercase text-slate-600 font-thin tracking-wide border-b border-slate-300 pb-1 mb-2">
                               In {selectedPlayerLineups.length}{" "}
                               {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}
@@ -386,7 +288,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                               {selectedPlayerLineups.map((lineup, index) => (
                                 <div
                                   key={index}
-                                  className="flex items-center justify-center gap-2 bg-white px-3 py-1 text-sm"
+                                  className="flex items-center justify-center gap-2 px-3 py-1 text-sm"
                                 >
                                   <span className="font-medium text-gray-900">
                                     {lineup.userName}

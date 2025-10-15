@@ -5,6 +5,7 @@ import { PlayerScorecard } from "./PlayerScorecard";
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
   roundDisplay: string;
+  defaultOpen?: boolean;
 }
 
 interface LabelProps {
@@ -21,8 +22,14 @@ const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
   </span>
 );
 
-export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDisplay }) => {
-  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
+export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
+  player,
+  roundDisplay,
+  defaultOpen = false,
+}) => {
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(
+    defaultOpen ? player.id : null
+  );
 
   const getCurrentRound = (player: PlayerWithTournamentData) => {
     if (!player?.tournamentData) return null;
