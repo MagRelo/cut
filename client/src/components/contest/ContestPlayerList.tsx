@@ -162,19 +162,22 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-700 font-bold mt-0.5 flex items-center gap-1">
-                    <span className="min-w-[20px]">
-                      {player.tournamentData?.leaderboardPosition || "–"}
+
+                  {/* Leaderboard Position and Total */}
+                  <div className="text-xs text-gray-700 font-bold flex items-center gap-2 mt-0.5">
+                    <span className="min-w-[20px] text-center">
+                      {player.tournamentData.leaderboardPosition || "–"}
                     </span>
-                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-300 font-medium">|</span>
                     <span
-                      className={
-                        player.tournamentData?.leaderboardTotal?.startsWith("-")
-                          ? "text-red-600 font-medium"
-                          : ""
-                      }
+                      className={`min-w-[20px] text-center
+                  ${
+                    player.tournamentData.leaderboardTotal?.startsWith("-")
+                      ? "text-red-600 font-medium"
+                      : ""
+                  }`}
                     >
-                      {player.tournamentData?.leaderboardTotal || "E"}
+                      {player.tournamentData.leaderboardTotal || "E"}
                     </span>
                   </div>
                 </div>
@@ -190,7 +193,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 </div>
 
                 {/* Right - Points */}
-                <div className="flex-shrink-0 flex items-center gap-1">
+                <div className="flex-shrink-0 flex items-center gap-2">
                   <div className="text-right">
                     <div className="text-lg font-bold text-gray-900 leading-none">
                       {totalPoints}
@@ -264,19 +267,22 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                           >
                             {formatPlayerName(selectedPlayer?.pga_displayName)}
                           </DialogTitle>
-                          <div className="text-sm text-gray-700 font-bold mt-1 flex items-center gap-1">
-                            <span className="min-w-[20px]">
-                              {selectedPlayer?.tournamentData?.leaderboardPosition || "–"}
+
+                          {/* Leaderboard Position and Total */}
+                          <div className="text-sm text-gray-700 font-bold flex items-center gap-2 mt-1">
+                            <span className="min-w-[1rem] text-center">
+                              {selectedPlayer?.tournamentData.leaderboardPosition || "–"}
                             </span>
                             <span className="text-gray-300">|</span>
                             <span
-                              className={
-                                selectedPlayer?.tournamentData?.leaderboardTotal?.startsWith("-")
-                                  ? "text-red-600 font-medium"
-                                  : ""
-                              }
+                              className={`min-w-[1.25rem] text-center font-thin
+                  ${
+                    selectedPlayer?.tournamentData.leaderboardTotal?.startsWith("-")
+                      ? "text-red-600"
+                      : ""
+                  }`}
                             >
-                              {selectedPlayer?.tournamentData?.leaderboardTotal || "E"}
+                              {selectedPlayer?.tournamentData.leaderboardTotal || "E"}
                             </span>
                           </div>
                         </div>
@@ -307,9 +313,9 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                   {/* Content Section */}
                   <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
                     {selectedPlayer && (
-                      <div className="overflow-hidden shadow-sm border-l border-r border-b border-gray-300 rounded-sm">
+                      <div className="overflow-hidden">
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-b border-gray-300">
+                        <div className="grid grid-cols-3 divide-x divide-gray-300 bg-white border-t border-l border-r border-gray-300">
                           <div className="px-3 py-2 text-center">
                             <div
                               className={`text-lg font-bold h-7 flex items-center justify-center ${
@@ -371,8 +377,8 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
 
                         {/* Lineups Section */}
                         {selectedPlayerLineups.length > 0 && (
-                          <div className="bg-white px-4 py-3 mt-2 font-display">
-                            <h4 className="text-xs uppercase text-gray-500 font-semibold tracking-wide border-b border-gray-300 pb-1 mb-2">
+                          <div className="bg-white px-4 py-3 mt-3 font-display">
+                            <h4 className="text-xs uppercase text-slate-600 font-thin tracking-wide border-b border-slate-300 pb-1 mb-2">
                               In {selectedPlayerLineups.length}{" "}
                               {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}
                             </h4>
@@ -385,7 +391,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                                   <span className="font-medium text-gray-900">
                                     {lineup.userName}
                                   </span>
-                                  <span className="text-gray-300">•</span>
+                                  <span className="text-gray-600">•</span>
                                   <span className="text-gray-700">{lineup.lineupName}</span>
                                 </div>
                               ))}

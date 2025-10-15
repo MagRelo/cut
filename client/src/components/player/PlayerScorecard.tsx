@@ -181,7 +181,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
       .reduce((sum: number, score: number) => sum + score, 0);
 
     return (
-      <tr className="border-t border-gray-200 bg-white">
+      <tr className="border-t border-gray-200 bg-gray-50">
         <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
           Score
         </td>
@@ -210,7 +210,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   const renderStableford = () => {
     if (!roundData?.holes?.stableford?.length) return null;
     return (
-      <tr className="border-t border-gray-200 bg-gray-50">
+      <tr className="border-t border-gray-200 bg-white">
         <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
           Stableford
         </td>
@@ -238,44 +238,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   };
 
   return (
-    <div className={`bg-gray-100`}>
-      {/* Round selector */}
-      {availableRounds.length > 1 && (
-        <div className="bg-white">
-          <div className="flex items-center justify-between px-3 py-2 pt-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-400 uppercase">Round</span>
-              <div className="flex space-x-2">
-                {availableRounds.map((round) => {
-                  const isActive = selectedRound === round;
-                  return (
-                    <button
-                      key={round}
-                      onClick={() => setSelectedRound(round)}
-                      className={`
-                        px-1.5 py-0.5 text-xs font-bold border rounded transition-colors min-w-[1.75rem]
-                        ${
-                          isActive
-                            ? "bg-gray-50 text-blue-600 border-blue-400 shadow-sm"
-                            : "bg-gray-50 text-gray-500 hover:bg-white border-gray-300"
-                        }
-                      `}
-                    >
-                      {round}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {roundData?.ratio !== undefined && roundData.ratio < 1 && (
-              <span className="text-xs font-bold text-gray-400">
-                {Math.round(roundData.ratio * 18)} holes completed
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
+    <div className={`bg-gray-100 border-b border-r border-l border-gray-300`}>
       {/* <p className='text-sm text-gray-500 px-4 py-2'>
         {player.player.pga_displayName}
       </p> */}
@@ -297,6 +260,45 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
           </div>
         )}
       </div>
+
+      {/* Round selector */}
+      {availableRounds.length > 1 && (
+        <div className="bg-white">
+          <div className="flex items-center justify-between px-3 py-2 pt-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs uppercase text-gray-600 font-thin tracking-wide mr-1">
+                Round
+              </span>
+              <div className="flex space-x-2">
+                {availableRounds.map((round) => {
+                  const isActive = selectedRound === round;
+                  return (
+                    <button
+                      key={round}
+                      onClick={() => setSelectedRound(round)}
+                      className={`
+                        px-1.5 py-0.5 text-xs font-thin font-display border rounded-sm transition-colors min-w-[1.75rem]
+                        ${
+                          isActive
+                            ? "bg-blue-50 text-blue-600 border-blue-300 shadow-sm"
+                            : "bg-gray-50 text-gray-500 hover:bg-white border-gray-300"
+                        }
+                      `}
+                    >
+                      {round}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {roundData?.ratio !== undefined && roundData.ratio < 1 && (
+              <span className="text-xs font-bold text-gray-400">
+                {Math.round(roundData.ratio * 18)} holes completed
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
