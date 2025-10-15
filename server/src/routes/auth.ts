@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import jwt from "jsonwebtoken";
 import { requireAuth } from "../middleware/auth.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
+import { transformLineupPlayer } from "../utils/playerTransform.js";
 
 import { hashMessage } from "viem";
 import { generateSiweNonce, parseSiweMessage } from "viem/siwe";
@@ -197,22 +198,22 @@ authRouter.get("/me", requireAuth, async (c) => {
     const userData = await prisma.user.findUnique({
       where: { id: user.userId },
       include: {
-        ...(activeTournament?.id && {
-          tournamentLineups: {
-            where: { tournamentId: activeTournament.id },
-            include: {
-              players: {
-                include: {
-                  tournamentPlayer: {
-                    include: {
-                      player: true,
+        tournamentLineups: activeTournament?.id
+          ? {
+              where: { tournamentId: activeTournament.id },
+              include: {
+                players: {
+                  include: {
+                    tournamentPlayer: {
+                      include: {
+                        player: true,
+                      },
                     },
                   },
                 },
               },
-            },
-          },
-        }),
+            }
+          : false,
         userGroups: {
           include: {
             userGroup: true,
@@ -226,25 +227,13 @@ authRouter.get("/me", requireAuth, async (c) => {
     }
 
     // filter out user info that is not needed
-    const { tournamentLineups = [], userGroups, ...userInfo } = userData;
+    const { tournamentLineups, userGroups, ...userInfo } = userData;
     // Format tournamentLineups to match TournamentLineup type
-    const formattedLineups = tournamentLineups.map((lineup: any) => ({
+    const formattedLineups = (tournamentLineups || []).map((lineup: any) => ({
       id: lineup.id,
-      players: lineup.players.map((lineupPlayer: any) => ({
-        ...lineupPlayer.tournamentPlayer.player,
-        tournamentId: lineup.tournamentId,
-        tournamentData: {
-          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
-          r1: lineupPlayer.tournamentPlayer.r1,
-          r2: lineupPlayer.tournamentPlayer.r2,
-          r3: lineupPlayer.tournamentPlayer.r3,
-          r4: lineupPlayer.tournamentPlayer.r4,
-          cut: lineupPlayer.tournamentPlayer.cut,
-          bonus: lineupPlayer.tournamentPlayer.bonus,
-          total: lineupPlayer.tournamentPlayer.total,
-          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
-        },
-      })),
+      players: lineup.players.map((lineupPlayer: any) =>
+        transformLineupPlayer(lineupPlayer, lineup.tournamentId)
+      ),
     }));
 
     const response = {

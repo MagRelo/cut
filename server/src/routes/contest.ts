@@ -3,6 +3,8 @@ import { prisma } from "../lib/prisma.js";
 import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
+import { contestLineupsInclude } from "../utils/prismaIncludes.js";
+import { transformLineupPlayer } from "../utils/playerTransform.js";
 
 const contestRouter = new Hono();
 
@@ -38,24 +40,7 @@ contestRouter.get("/", async (c) => {
       include: {
         tournament: true,
         userGroup: true,
-        contestLineups: {
-          include: {
-            user: true,
-            tournamentLineup: {
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        contestLineups: contestLineupsInclude,
       },
     });
 
@@ -67,21 +52,9 @@ contestRouter.get("/", async (c) => {
         tournamentLineup: lineup.tournamentLineup
           ? {
               ...lineup.tournamentLineup,
-              players: lineup.tournamentLineup.players.map((playerData) => ({
-                ...playerData.tournamentPlayer.player,
-                tournamentId: validTournamentId,
-                tournamentData: {
-                  leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
-                  r1: playerData.tournamentPlayer.r1,
-                  r2: playerData.tournamentPlayer.r2,
-                  r3: playerData.tournamentPlayer.r3,
-                  r4: playerData.tournamentPlayer.r4,
-                  cut: playerData.tournamentPlayer.cut,
-                  bonus: playerData.tournamentPlayer.bonus,
-                  total: playerData.tournamentPlayer.total,
-                  leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
-                },
-              })),
+              players: lineup.tournamentLineup.players.map((playerData) =>
+                transformLineupPlayer(playerData, validTournamentId)
+              ),
             }
           : null,
       })),
@@ -121,24 +94,7 @@ contestRouter.get("/:id", async (c) => {
             contestLineups: true,
           },
         },
-        contestLineups: {
-          include: {
-            user: true,
-            tournamentLineup: {
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        contestLineups: contestLineupsInclude,
       },
     });
 
@@ -146,28 +102,16 @@ contestRouter.get("/:id", async (c) => {
       return c.json({ error: "Contest not found" }, 404);
     }
 
-    // format the contest.contestLineups.tournamentLineup.players
+    // Format the contest.contestLineups.tournamentLineup.players
     const formattedContest = {
       ...contest,
       contestLineups: contest.contestLineups.map((lineup) => ({
         ...lineup,
         tournamentLineup: {
           ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData) => ({
-            ...playerData.tournamentPlayer.player,
-            tournamentId: contest.tournamentId,
-            tournamentData: {
-              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
-              r1: playerData.tournamentPlayer.r1,
-              r2: playerData.tournamentPlayer.r2,
-              r3: playerData.tournamentPlayer.r3,
-              r4: playerData.tournamentPlayer.r4,
-              cut: playerData.tournamentPlayer.cut,
-              bonus: playerData.tournamentPlayer.bonus,
-              total: playerData.tournamentPlayer.total,
-              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
-            },
-          })),
+          players: lineup.tournamentLineup.players.map((playerData) =>
+            transformLineupPlayer(playerData, contest.tournamentId)
+          ),
         },
       })),
     };
@@ -282,24 +226,7 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
         updatedAt: true,
         tournament: true,
         userGroup: true,
-        contestLineups: {
-          include: {
-            user: true,
-            tournamentLineup: {
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        contestLineups: contestLineupsInclude,
       },
     });
 
@@ -314,21 +241,9 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
         ...lineup,
         tournamentLineup: {
           ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData) => ({
-            ...playerData.tournamentPlayer.player,
-            tournamentId: contest.tournamentId,
-            tournamentData: {
-              leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
-              r1: playerData.tournamentPlayer.r1,
-              r2: playerData.tournamentPlayer.r2,
-              r3: playerData.tournamentPlayer.r3,
-              r4: playerData.tournamentPlayer.r4,
-              cut: playerData.tournamentPlayer.cut,
-              bonus: playerData.tournamentPlayer.bonus,
-              total: playerData.tournamentPlayer.total,
-              leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
-            },
-          })),
+          players: lineup.tournamentLineup.players.map((playerData) =>
+            transformLineupPlayer(playerData, contest.tournamentId)
+          ),
         },
       })),
     };
@@ -392,24 +307,7 @@ contestRouter.delete(
           updatedAt: true,
           tournament: true,
           userGroup: true,
-          contestLineups: {
-            include: {
-              user: true,
-              tournamentLineup: {
-                include: {
-                  players: {
-                    include: {
-                      tournamentPlayer: {
-                        include: {
-                          player: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          contestLineups: contestLineupsInclude,
         },
       });
 
@@ -424,21 +322,9 @@ contestRouter.delete(
           ...lineup,
           tournamentLineup: {
             ...lineup.tournamentLineup,
-            players: lineup.tournamentLineup.players.map((playerData) => ({
-              ...playerData.tournamentPlayer.player,
-              tournamentId: contest.tournamentId,
-              tournamentData: {
-                leaderboardPosition: playerData.tournamentPlayer.leaderboardPosition,
-                r1: playerData.tournamentPlayer.r1,
-                r2: playerData.tournamentPlayer.r2,
-                r3: playerData.tournamentPlayer.r3,
-                r4: playerData.tournamentPlayer.r4,
-                cut: playerData.tournamentPlayer.cut,
-                bonus: playerData.tournamentPlayer.bonus,
-                total: playerData.tournamentPlayer.total,
-                leaderboardTotal: playerData.tournamentPlayer.leaderboardTotal,
-              },
-            })),
+            players: lineup.tournamentLineup.players.map((playerData) =>
+              transformLineupPlayer(playerData, contest.tournamentId)
+            ),
           },
         })),
       };

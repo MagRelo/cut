@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
+import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIncludes.js";
+import { transformLineupPlayer } from "../utils/playerTransform.js";
 
 const lineupRouter = new Hono();
 
@@ -58,11 +60,7 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
             tournamentPlayerId: tournamentPlayer.id,
           },
           include: {
-            tournamentPlayer: {
-              include: {
-                player: true,
-              },
-            },
+            tournamentPlayer: tournamentPlayerInclude,
           },
         });
       })
@@ -72,21 +70,9 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
     const formattedLineup = {
       id: tournamentLineup.id,
       name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer) => ({
-        ...lineupPlayer.tournamentPlayer.player,
-        tournamentId,
-        tournamentData: {
-          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
-          r1: lineupPlayer.tournamentPlayer.r1,
-          r2: lineupPlayer.tournamentPlayer.r2,
-          r3: lineupPlayer.tournamentPlayer.r3,
-          r4: lineupPlayer.tournamentPlayer.r4,
-          cut: lineupPlayer.tournamentPlayer.cut,
-          bonus: lineupPlayer.tournamentPlayer.bonus,
-          total: lineupPlayer.tournamentPlayer.total,
-          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
-        },
-      })),
+      players: lineupEntries.map((lineupPlayer) =>
+        transformLineupPlayer(lineupPlayer, tournamentId)
+      ),
     };
 
     return c.json({ lineups: [formattedLineup] });
@@ -160,11 +146,7 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
             tournamentPlayerId: tournamentPlayer.id,
           },
           include: {
-            tournamentPlayer: {
-              include: {
-                player: true,
-              },
-            },
+            tournamentPlayer: tournamentPlayerInclude,
           },
         });
       })
@@ -174,21 +156,9 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
     const formattedLineup = {
       id: tournamentLineup.id,
       name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer) => ({
-        ...lineupPlayer.tournamentPlayer.player,
-        tournamentId: tournamentLineup.tournamentId,
-        tournamentData: {
-          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
-          r1: lineupPlayer.tournamentPlayer.r1,
-          r2: lineupPlayer.tournamentPlayer.r2,
-          r3: lineupPlayer.tournamentPlayer.r3,
-          r4: lineupPlayer.tournamentPlayer.r4,
-          cut: lineupPlayer.tournamentPlayer.cut,
-          bonus: lineupPlayer.tournamentPlayer.bonus,
-          total: lineupPlayer.tournamentPlayer.total,
-          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
-        },
-      })),
+      players: lineupEntries.map((lineupPlayer) =>
+        transformLineupPlayer(lineupPlayer, tournamentLineup.tournamentId)
+      ),
     };
 
     return c.json({ lineups: [formattedLineup] });
@@ -209,17 +179,7 @@ lineupRouter.get("/lineup/:lineupId", requireAuth, async (c) => {
         id: lineupId,
         userId: user.userId,
       },
-      include: {
-        players: {
-          include: {
-            tournamentPlayer: {
-              include: {
-                player: true,
-              },
-            },
-          },
-        },
-      },
+      include: lineupPlayersInclude,
     });
 
     if (!lineup) {
@@ -230,21 +190,9 @@ lineupRouter.get("/lineup/:lineupId", requireAuth, async (c) => {
     const formattedLineup = {
       id: lineup.id,
       name: lineup.name,
-      players: lineup.players.map((lineupPlayer) => ({
-        ...lineupPlayer.tournamentPlayer.player,
-        tournamentId: lineup.tournamentId,
-        tournamentData: {
-          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
-          r1: lineupPlayer.tournamentPlayer.r1,
-          r2: lineupPlayer.tournamentPlayer.r2,
-          r3: lineupPlayer.tournamentPlayer.r3,
-          r4: lineupPlayer.tournamentPlayer.r4,
-          cut: lineupPlayer.tournamentPlayer.cut,
-          bonus: lineupPlayer.tournamentPlayer.bonus,
-          total: lineupPlayer.tournamentPlayer.total,
-          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
-        },
-      })),
+      players: lineup.players.map((lineupPlayer) =>
+        transformLineupPlayer(lineupPlayer, lineup.tournamentId)
+      ),
     };
 
     return c.json({ lineups: [formattedLineup] });
@@ -262,38 +210,16 @@ lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
   try {
     const lineups = await prisma.tournamentLineup.findMany({
       where: { tournamentId, userId: user.userId },
-      include: {
-        players: {
-          include: {
-            tournamentPlayer: {
-              include: {
-                player: true,
-              },
-            },
-          },
-        },
-      },
+      include: lineupPlayersInclude,
     });
 
     // Transform the data into TournamentLineup type
     const formattedLineups = lineups.map((lineup) => ({
       id: lineup.id,
       name: lineup.name,
-      players: lineup.players.map((lineupPlayer) => ({
-        ...lineupPlayer.tournamentPlayer.player,
-        tournamentId,
-        tournamentData: {
-          leaderboardPosition: lineupPlayer.tournamentPlayer.leaderboardPosition,
-          r1: lineupPlayer.tournamentPlayer.r1,
-          r2: lineupPlayer.tournamentPlayer.r2,
-          r3: lineupPlayer.tournamentPlayer.r3,
-          r4: lineupPlayer.tournamentPlayer.r4,
-          cut: lineupPlayer.tournamentPlayer.cut,
-          bonus: lineupPlayer.tournamentPlayer.bonus,
-          total: lineupPlayer.tournamentPlayer.total,
-          leaderboardTotal: lineupPlayer.tournamentPlayer.leaderboardTotal,
-        },
-      })),
+      players: lineup.players.map((lineupPlayer) =>
+        transformLineupPlayer(lineupPlayer, tournamentId)
+      ),
     }));
 
     return c.json({ lineups: formattedLineups });
