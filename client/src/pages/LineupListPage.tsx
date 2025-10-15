@@ -65,7 +65,7 @@ export const LineupList: React.FC = () => {
       {lineups && lineups.length > 0 && (
         <div className="space-y-4 mb-6">
           {lineups.map((lineup) => (
-            <div key={lineup.id} className="rounded-lg border border-gray-200 bg-white p-4 pb-6">
+            <div key={lineup.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
               <LineupCard
                 lineup={lineup}
                 isEditable={isTournamentEditable}

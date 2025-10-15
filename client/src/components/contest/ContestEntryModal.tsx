@@ -46,7 +46,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md  bg-slate-100 shadow-xl transition-all py-3">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm  bg-slate-100 shadow-xl transition-all py-3">
                 {/* Header Section */}
                 <div className="px-4 sm:px-6 pt-3 pb-1">
                   <div className="flex justify-between items-start">

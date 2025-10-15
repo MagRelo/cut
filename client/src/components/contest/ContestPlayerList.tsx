@@ -268,7 +268,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                   </div>
 
                   {/* Content Section */}
-                  <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
+                  <div className="max-h-[70vh] overflow-y-auto px-2 pb-4">
                     {selectedPlayer && (
                       <div className="overflow-hidden">
                         <PlayerDisplayCard
