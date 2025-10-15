@@ -67,7 +67,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       lineupName={lineup.tournamentLineup?.name}
                       totalPoints={totalPoints || 0}
                       position={lineup.position}
-                      isInTheMoney={lineup.position <= 3}
+                      isInTheMoney={lineup.position <= 1}
                     />
                   </div>
 

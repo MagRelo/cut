@@ -77,8 +77,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           userName={lineup.user?.name || lineup.user?.email || "Unknown User"}
           lineupName={lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
           totalPoints={totalPoints || 0}
-          position={lineup.position}
-          isInTheMoney={lineup.position <= 3}
         />
       </div>
 
@@ -152,7 +150,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   return (
                     <div key={contestInfo.contest.id} className="flex items-center gap-3">
                       {/* Contest Card */}
-                      <div className="flex-1 border bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex-1 border bg-white rounded-sm">
                         <ContestCard contest={contestInfo.contest} />
                       </div>
 
