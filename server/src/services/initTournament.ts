@@ -14,6 +14,69 @@ function chunk<T>(array: T[], size: number): T[][] {
   return chunks;
 }
 
+/**
+ * Parses PGA Tour displayDate and timezone to extract start and end dates
+ * @param displayDate - Format: "Oct 23 - 26, 2025" or "Dec 30, 2024 - Jan 2, 2025"
+ * @param _timezone - IANA timezone string (e.g., "America/Denver") - reserved for future timezone handling
+ * @param _seasonYear - Year of the tournament season - reserved for future use
+ * @returns Object with startDate and endDate as Date objects
+ */
+function parseTournamentDates(
+  displayDate: string,
+  _timezone: string,
+  _seasonYear: number
+): { startDate: Date; endDate: Date } | null {
+  try {
+    // Match pattern: "Month Day - Day, Year" or "Month Day, Year - Month Day, Year"
+    const singleMonthPattern = /^(\w+)\s+(\d+)\s*-\s*(\d+),\s*(\d{4})$/;
+    const multiMonthPattern = /^(\w+)\s+(\d+),?\s+(\d{4})\s*-\s*(\w+)\s+(\d+),?\s+(\d{4})$/;
+
+    let startDate: Date;
+    let endDate: Date;
+
+    // Try single month pattern first (e.g., "Oct 23 - 26, 2025")
+    const singleMatch = displayDate.match(singleMonthPattern);
+    if (singleMatch) {
+      const [, month, startDay, endDay, year] = singleMatch;
+
+      // Parse start date
+      const startDateStr = `${month} ${startDay}, ${year}`;
+      startDate = new Date(startDateStr);
+
+      // Parse end date
+      const endDateStr = `${month} ${endDay}, ${year}`;
+      endDate = new Date(endDateStr);
+
+      // Set to start of day in tournament timezone (assuming tournaments start at midnight)
+      // Note: For more precise timezone handling, we'd need a library like date-fns-tz
+      return { startDate, endDate };
+    }
+
+    // Try multi-month pattern (e.g., "Dec 30, 2024 - Jan 2, 2025")
+    const multiMatch = displayDate.match(multiMonthPattern);
+    if (multiMatch) {
+      const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
+
+      // Parse start date
+      const startDateStr = `${startMonth} ${startDay}, ${startYear}`;
+      startDate = new Date(startDateStr);
+
+      // Parse end date
+      const endDateStr = `${endMonth} ${endDay}, ${endYear}`;
+      endDate = new Date(endDateStr);
+
+      return { startDate, endDate };
+    }
+
+    // If no pattern matches, log warning and return null
+    console.warn(`Could not parse displayDate: "${displayDate}"`);
+    return null;
+  } catch (error) {
+    console.error(`Error parsing tournament dates:`, error);
+    return null;
+  }
+}
+
 export async function initTournament(pgaTourId: string) {
   try {
     // get the tournament
@@ -28,22 +91,45 @@ export async function initTournament(pgaTourId: string) {
 
     // update tournament meta-data from PGA
     const tournamentData = await getTournament(pgaTourId);
+
+    // Parse start and end dates from displayDate
+    const parsedDates = parseTournamentDates(
+      tournamentData.displayDate,
+      tournamentData.timezone,
+      tournamentData.seasonYear
+    );
+
+    const updateData: any = {
+      status: tournamentData.tournamentStatus,
+      roundStatusDisplay: tournamentData.roundStatusDisplay,
+      roundDisplay: tournamentData.roundDisplay,
+      currentRound: tournamentData.currentRound,
+      weather: tournamentData.weather as any,
+      beautyImage: tournamentData.beautyImage,
+      ...(tournamentData.courses?.[0]?.courseName && {
+        course: tournamentData.courses[0].courseName,
+      }),
+      city: tournamentData.city,
+      state: tournamentData.state,
+      timezone: tournamentData.timezone,
+    };
+
+    // Add parsed dates if available
+    if (parsedDates) {
+      updateData.startDate = parsedDates.startDate;
+      updateData.endDate = parsedDates.endDate;
+      console.log(
+        `- initTournament: Parsed dates - Start: ${parsedDates.startDate.toISOString()}, End: ${parsedDates.endDate.toISOString()}`
+      );
+    } else {
+      console.warn(
+        `- initTournament: Could not parse dates from displayDate: "${tournamentData.displayDate}"`
+      );
+    }
+
     await prisma.tournament.update({
       where: { id: tournament.id },
-      data: {
-        status: tournamentData.tournamentStatus,
-        roundStatusDisplay: tournamentData.roundStatusDisplay,
-        roundDisplay: tournamentData.roundDisplay,
-        currentRound: tournamentData.currentRound,
-        weather: tournamentData.weather as any,
-        beautyImage: tournamentData.beautyImage,
-        ...(tournamentData.courses?.[0]?.courseName && {
-          course: tournamentData.courses[0].courseName,
-        }),
-        city: tournamentData.city,
-        state: tournamentData.state,
-        timezone: tournamentData.timezone,
-      },
+      data: updateData,
     });
     console.log(`- initTournament: Updated tournament data.`);
 
