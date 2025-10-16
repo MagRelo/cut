@@ -59,7 +59,7 @@ export function TokenBalances({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div className="bg-white rounded-sm shadow p-4 mb-4">
       {/* Balance Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>

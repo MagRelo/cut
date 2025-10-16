@@ -197,7 +197,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   {/* Content Section */}
                   <div className="max-h-[70vh] overflow-y-auto p-2">
                     {selectedPlayer && (
-                      <div className="overflow-hidden">
+                      <div className="overflow-hidden border border-gray-300 rounded-sm">
                         <PlayerDisplayCard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}

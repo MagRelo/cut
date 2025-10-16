@@ -12,7 +12,7 @@ export function USDCInfoPage() {
 
       <div className="space-y-4">
         {/* What is USDC */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-sm shadow p-6">
           <div className="flex items-center mb-4">
             <img src="/usd-coin-usdc-logo.svg" alt="USDC" className="w-12 h-12 mr-3" />
             <h2 className="text-2xl font-bold text-gray-900">What is USDC?</h2>
@@ -32,7 +32,7 @@ export function USDCInfoPage() {
         </div>
 
         {/* How to Get USDC */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-sm shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">How to Get USDC</h2>
 
           <div className="space-y-4">
@@ -153,7 +153,7 @@ export function USDCInfoPage() {
         </div>
 
         {/* Important Notes */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-3">⚠️ Important Notes</h2>
           <ul className="space-y-2 text-gray-700">
             <li className="flex items-start">
@@ -182,7 +182,7 @@ export function USDCInfoPage() {
         </div>
 
         {/* Helpful Resources */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-sm shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Helpful Resources</h2>
           <div className="space-y-2">
             <a

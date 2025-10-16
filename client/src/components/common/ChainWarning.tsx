@@ -11,7 +11,7 @@ export function ChainWarning() {
   }
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg shadow p-4 mb-4">
+    <div className="bg-red-50 border border-red-200 rounded-sm shadow p-4 mb-4">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-red-600 text-lg">⚠️</span>
         <div className="text-lg font-semibold text-red-800 font-display">Unsupported Network</div>
@@ -37,7 +37,7 @@ export function TestnetWarning() {
   }
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-4 mb-4">
+    <div className="bg-orange-50 border border-orange-200 rounded-sm shadow p-4 mb-4">
       <div className="text-lg font-semibold text-orange-700 font-display mb-2">
         <span className="pr-1">🎮</span> You're in Testing Mode
       </div>
@@ -56,7 +56,7 @@ export function RealMoneyWarning() {
   }
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
+    <div className="bg-blue-50 border border-blue-200 rounded-sm shadow p-4 mb-4">
       <div className="text-lg font-semibold text-blue-800 font-display mb-2">
         💡 Funding Your Account
       </div>
@@ -79,7 +79,7 @@ export function RealMoneyWarning() {
                 <span className="text-xs text-gray-500 mt-1 inline-block">(click to copy)</span>
               </div>
             }
-            className="bg-gray-100 border border-blue-500 rounded-lg p-3 block w-full hover:bg-gray-200 transition-colors text-center"
+            className="bg-gray-100 border border-blue-500 rounded-sm p-3 block w-full hover:bg-gray-200 transition-colors text-center"
           />
         </div>
       </div>

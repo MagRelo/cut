@@ -1,10 +1,24 @@
 import { Fragment, useState } from "react";
-import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import {
+  Dialog,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+  Tab,
+  TabGroup,
+  TabList,
+  TabPanel,
+  TabPanels,
+} from "@headlessui/react";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
+
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 interface ContestPlayerListProps {
   contest?: Contest;
@@ -150,65 +164,77 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                 leaveTo="opacity-0"
               >
                 <DialogPanel className="w-full max-w-2xl transform overflow-hidden transition-all py-1">
-                  {/* Header Section */}
-                  {/* <div className="px-4 sm:px-6 py-3">
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors flex-shrink-0"
-                        onClick={closePlayerModal}
-                      >
-                        <span className="sr-only">Close</span>
-                        <svg
-                          className="h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div> */}
-
                   {/* Content Section */}
-                  <div className="max-h-[70vh] overflow-y-auto p-2 bg-slate-50 rounded-sm">
+                  <div className="bg-gray-100 shadow p-2 ">
                     {selectedPlayer && (
-                      <div className="overflow-hidden">
-                        <PlayerDisplayCard
-                          player={selectedPlayer}
-                          roundDisplay={roundDisplay || "R1"}
-                        />
+                      <TabGroup className="border border-gray-300 rounded-sm">
+                        <TabList className="flex space-x-1 border-b border-gray-200 px-4 bg-white rounded-t-sm">
+                          <Tab
+                            className={({ selected }: { selected: boolean }) =>
+                              classNames(
+                                "w-full py-2 text-sm font-display leading-5",
+                                "focus:outline-none",
+                                selected
+                                  ? "border-b-2 border-blue-600 text-blue-700"
+                                  : "text-gray-600 hover:text-gray-800"
+                              )
+                            }
+                          >
+                            Player
+                          </Tab>
+                          <Tab
+                            className={({ selected }: { selected: boolean }) =>
+                              classNames(
+                                "w-full py-2 text-sm font-display leading-5",
+                                "focus:outline-none",
+                                selected
+                                  ? "border-b-2 border-blue-600 text-blue-700"
+                                  : "text-gray-600 hover:text-gray-800"
+                              )
+                            }
+                          >
+                            Lineups ({selectedPlayerLineups.length})
+                          </Tab>
+                        </TabList>
 
-                        {/* Lineups Section */}
-                        {selectedPlayerLineups.length > 0 && (
-                          <div className="px-4 py-3 mt-3 font-display">
-                            <h4 className="text-xs uppercase text-slate-600 font-thin tracking-wide border-b border-slate-300 pb-1 mb-2">
-                              In {selectedPlayerLineups.length}{" "}
-                              {selectedPlayerLineups.length === 1 ? "Lineup" : "Lineups"}
-                            </h4>
-                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                              {selectedPlayerLineups.map((lineup, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-center gap-2 px-3 py-1 text-sm"
-                                >
-                                  <span className="font-medium text-gray-900">
-                                    {lineup.userName}
-                                  </span>
-                                  <span className="text-gray-600">•</span>
-                                  <span className="text-gray-700">{lineup.lineupName}</span>
-                                </div>
-                              ))}
+                        <TabPanels>
+                          <TabPanel>
+                            <div className="h-[334px] overflow-y-auto bg-slate-50">
+                              <PlayerDisplayCard
+                                player={selectedPlayer}
+                                roundDisplay={roundDisplay || "R1"}
+                              />
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          </TabPanel>
+
+                          <TabPanel>
+                            <div className="h-[334px] overflow-y-auto bg-slate-50">
+                              {selectedPlayerLineups.length > 0 ? (
+                                <div className="px-4 py-3 font-display">
+                                  <div className="space-y-1.5">
+                                    {selectedPlayerLineups.map((lineup, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-center gap-2 px-3 py-1 text-sm"
+                                      >
+                                        <span className="font-medium text-gray-900">
+                                          {lineup.userName}
+                                        </span>
+                                        <span className="text-gray-600">•</span>
+                                        <span className="text-gray-700">{lineup.lineupName}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-8">
+                                  <p className="text-gray-500 font-display">No lineups found.</p>
+                                </div>
+                              )}
+                            </div>
+                          </TabPanel>
+                        </TabPanels>
+                      </TabGroup>
                     )}
                   </div>
                 </DialogPanel>

@@ -171,7 +171,7 @@ export function CUTInfoPage() {
       {/* <PageHeader title="About CUT" className="mb-3" /> */}
 
       {/* CUT Token Info Card */}
-      <div className="bg-white rounded-lg shadow p-6 mb-4">
+      <div className="bg-white rounded-sm shadow p-6 mb-4">
         {/* Header with Logo and Title */}
         <div className="flex items-center mb-2">
           <img src="/logo-transparent.png" alt="CUT" className="h-12 mr-2" />
@@ -188,21 +188,21 @@ export function CUTInfoPage() {
 
         {/* Token Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="border border-gray-200 rounded-lg p-4 text-center">
+          <div className="border border-gray-200 rounded-sm p-4 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
             </div>
             <div className="text-sm text-gray-600 mt-1">CUT Minted</div>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4 text-center">
+          <div className="border border-gray-200 rounded-sm p-4 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
             </div>
             <div className="text-sm text-gray-600 mt-1">Supply APY</div>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4 text-center">
+          <div className="border border-gray-200 rounded-sm p-4 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
             </div>
@@ -212,7 +212,7 @@ export function CUTInfoPage() {
       </div>
 
       {/* Buy/Sell/Transfer Tabs */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 mb-4">
+      <div className="bg-white rounded-sm shadow border border-gray-200 mb-4">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
@@ -270,7 +270,7 @@ export function CUTInfoPage() {
       </div>
 
       {/* Contract Addresses */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow p-4 mb-4">
+      <div className="bg-white border border-gray-200 rounded-sm shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Contract Addresses
         </div>

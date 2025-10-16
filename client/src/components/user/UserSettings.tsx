@@ -57,7 +57,7 @@ export function UserSettings() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div className="bg-white rounded-sm shadow p-4 mb-4">
       <div className="text-lg font-semibold text-gray-700 mb-2 font-display">User Display</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,7 +71,7 @@ export function UserSettings() {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Enter your name"
             />
           </div>

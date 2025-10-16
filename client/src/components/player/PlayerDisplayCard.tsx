@@ -39,7 +39,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
   const currentRound = getCurrentRound(player);
 
   return (
-    <div className="bg-white overflow-hidden border border-slate-300 rounded-sm">
+    <div className="bg-white overflow-hidden">
       <div className="p-4 pb-2">
         {/* Top Row */}
         <div className="flex items-center space-x-4">

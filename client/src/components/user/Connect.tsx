@@ -94,7 +94,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
       {/* Connecting display */}
       {isConnecting ? (
         <div className="p-8 text-center">
@@ -113,7 +113,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
 
           <div className="p-6 pt-4 space-y-4">
             {/* Single TOC checkbox */}
-            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-sm border border-gray-200">
               <input
                 type="checkbox"
                 id="toc"
@@ -137,7 +137,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
             {/* Network Options */}
             <div className="space-y-3">
               {/* Real Money Section */}
-              <div className="group border-2 border-gray-200 rounded-lg hover:border-slate-300 transition-colors">
+              <div className="group border-2 border-gray-200 rounded-sm hover:border-slate-300 transition-colors">
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -157,7 +157,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                   </div>
 
                   <button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     disabled={isConnecting || !tocAccepted}
                     onClick={() => handleConnect("mainnet")}
                     type="button"
@@ -168,7 +168,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
               </div>
 
               {/* Testing Section */}
-              <div className="group border-2 border-gray-200 rounded-lg hover:border-slate-300 transition-colors">
+              <div className="group border-2 border-gray-200 rounded-sm hover:border-slate-300 transition-colors">
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -188,7 +188,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                   </div>
 
                   <button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     disabled={isConnecting || !tocAccepted}
                     onClick={() => handleConnect("testnet")}
                     type="button"

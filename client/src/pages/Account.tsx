@@ -18,7 +18,7 @@ const WalletInfo = ({
   address: string | undefined;
   disconnect: () => void;
 }) => (
-  <div className="bg-white rounded-lg shadow p-4 mt-4">
+  <div className="bg-white rounded-sm shadow p-4 mt-4">
     {/* Header */}
     <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Connected Wallet</div>
 
