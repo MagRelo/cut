@@ -101,7 +101,10 @@ export async function distributeContest() {
           client: walletClient
         });
 
-        // Get escrow state from blockchain
+        // Get escrow state and pool info from blockchain
+        let poolSizeInUnits: bigint | undefined;
+        let tokenDecimals: number | undefined;
+        
         try {
           const escrowState = await escrowContract.read.state!() as bigint;
           console.log(`Escrow state for ${contest.address}: ${Number(escrowState)} (0=OPEN, 1=IN_PROGRESS, 2=SETTLED, 3=CANCELLED)`);
@@ -111,6 +114,10 @@ export async function distributeContest() {
             await updateContestToError(contest.id, `Contest in DB is IN_PROGRESS but blockchain state is ${Number(escrowState)} (expected 1)`);
             continue;
           }
+          
+          // Read pool size and token decimals for payout calculation
+          poolSizeInUnits = await escrowContract.read.totalInitialDeposits!() as bigint;
+          tokenDecimals = await escrowContract.read.paymentTokenDecimals!() as number;
         } catch (error) {
           console.error(`Error reading escrow state for ${contest.address}:`, error);
           await updateContestToError(contest.id, `Failed to read escrow state: ${error instanceof Error ? error.message : String(error)}`);
@@ -124,7 +131,12 @@ export async function distributeContest() {
         }
 
         // Calculate payouts based on scores
-        const payoutResult = await calculatePayouts(contest.contestLineups, contest.chainId);
+        const payoutResult = await calculatePayouts(
+          contest.contestLineups, 
+          contest.chainId,
+          poolSizeInUnits,
+          tokenDecimals
+        );
 
         // Validate total basis points equals 10000
         const totalBasisPoints = payoutResult.payoutBasisPoints.reduce((sum, payout) => sum + payout, 0);
@@ -230,7 +242,9 @@ function getWalletAddress(user: any, chainId: number): string {
 
 export async function calculatePayouts(
   lineups: any[],
-  chainId: number
+  chainId: number,
+  poolSizeInUnits?: bigint,
+  tokenDecimals?: number
 ): Promise<{ 
   addresses: string[]; 
   payoutBasisPoints: number[];
@@ -251,6 +265,23 @@ export async function calculatePayouts(
 
   if (validLineups.length === 0) {
     throw new Error('Data integrity error: No valid lineups found');
+  }
+
+  // Calculate minimum basis point increment that equals 1 cent ($0.01)
+  // For USDC (6 decimals): 1 cent = 10,000 units = 10^(6-2) units
+  // minBPIncrement = (1_cent_in_units / pool_units) * 10000
+  let minBPIncrement = 1; // Default to 1 basis point
+  
+  if (poolSizeInUnits && tokenDecimals !== undefined && poolSizeInUnits > 0n) {
+    // Calculate 1 cent in token units: 10^(decimals - 2)
+    const oneCentInUnits = BigInt(10 ** Math.max(0, tokenDecimals - 2));
+    
+    // Calculate basis points that equal 1 cent: (oneCent / pool) * 10000
+    // Use ceiling to ensure we round UP to at least 1 cent
+    const bpForOneCent = (oneCentInUnits * 10000n) / poolSizeInUnits;
+    minBPIncrement = Math.max(1, Number(bpForOneCent));
+    
+    console.log(`Payout rounding: ${minBPIncrement} BP = $0.01 (pool: ${poolSizeInUnits} units, decimals: ${tokenDecimals})`);
   }
 
   // Sort lineups by score (descending - highest score wins)
@@ -298,21 +329,23 @@ export async function calculatePayouts(
     }
 
     // Calculate base payout per player and remainder (even if 0)
-    // Floor to nearest 100 basis points (1 cent) to avoid fractions
-    const basePayoutPerPlayer = pooledPayout > 0 ? Math.floor(Math.floor(pooledPayout / tieCount) / 100) * 100 : 0;
+    // Round to nearest minBPIncrement (ensures whole cent increments)
+    const basePayoutPerPlayer = pooledPayout > 0 
+      ? Math.floor(Math.floor(pooledPayout / tieCount) / minBPIncrement) * minBPIncrement 
+      : 0;
     const totalBaseForGroup = basePayoutPerPlayer * tieCount;
     const remainderBasisPoints = pooledPayout - totalBaseForGroup;
     
-    // Distribute remainder in 100 basis point increments (1 cent each)
-    const remainderPayouts = Math.floor(remainderBasisPoints / 100);
+    // Distribute remainder in minBPIncrement increments (1 cent each)
+    const remainderPayouts = Math.floor(remainderBasisPoints / minBPIncrement);
 
     // Process each tied lineup
     for (let j = 0; j < tiedLineups.length; j++) {
       const lineup = tiedLineups[j];
       
       // Calculate payout for this player (including remainder distribution)
-      // Each remainder payout is 100 basis points (1 cent)
-      const payout = basePayoutPerPlayer + (j < remainderPayouts ? 100 : 0);
+      // Each remainder payout is minBPIncrement (1 cent worth)
+      const payout = basePayoutPerPlayer + (j < remainderPayouts ? minBPIncrement : 0);
 
       // Get wallet address for this user (will throw if not found)
       const walletAddress = getWalletAddress(lineup.user, chainId);
@@ -342,9 +375,9 @@ export async function calculatePayouts(
   // add it to the first winner to ensure total = 10000
   if (totalDistributed < 10000 && payoutBasisPoints.length > 0) {
     const dust = 10000 - totalDistributed;
-    payoutBasisPoints[0] += dust;
+    payoutBasisPoints[0]! += dust;
     // Update the detailed results for the first winner
-    if (detailedResults.length > 0 && detailedResults[0].payoutBasisPoints > 0) {
+    if (detailedResults.length > 0 && detailedResults[0] && detailedResults[0].payoutBasisPoints > 0) {
       detailedResults[0].payoutBasisPoints += dust;
     }
   }

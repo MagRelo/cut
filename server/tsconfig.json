@@ -5,7 +5,7 @@
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "lib": ["ES2020"],
-    "types": ["node", "vitest/globals"],
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./",
     "strict": true,
