@@ -270,6 +270,7 @@ export async function calculatePayouts(
   // Process lineups by score groups (ties)
   let currentPosition = 1; // 1-based position
   let i = 0;
+  let totalDistributed = 0; // Track total basis points distributed
 
   while (i < sortedLineups.length) {
     const currentScore = sortedLineups[i].score;
@@ -297,15 +298,21 @@ export async function calculatePayouts(
     }
 
     // Calculate base payout per player and remainder (even if 0)
-    const basePayoutPerPlayer = pooledPayout > 0 ? Math.floor(pooledPayout / tieCount) : 0;
-    const remainder = pooledPayout > 0 ? pooledPayout % tieCount : 0;
+    // Floor to nearest 100 basis points (1 cent) to avoid fractions
+    const basePayoutPerPlayer = pooledPayout > 0 ? Math.floor(Math.floor(pooledPayout / tieCount) / 100) * 100 : 0;
+    const totalBaseForGroup = basePayoutPerPlayer * tieCount;
+    const remainderBasisPoints = pooledPayout - totalBaseForGroup;
+    
+    // Distribute remainder in 100 basis point increments (1 cent each)
+    const remainderPayouts = Math.floor(remainderBasisPoints / 100);
 
     // Process each tied lineup
     for (let j = 0; j < tiedLineups.length; j++) {
       const lineup = tiedLineups[j];
       
       // Calculate payout for this player (including remainder distribution)
-      const payout = basePayoutPerPlayer + (j < remainder ? 1 : 0);
+      // Each remainder payout is 100 basis points (1 cent)
+      const payout = basePayoutPerPlayer + (j < remainderPayouts ? 100 : 0);
 
       // Get wallet address for this user (will throw if not found)
       const walletAddress = getWalletAddress(lineup.user, chainId);
@@ -314,6 +321,7 @@ export async function calculatePayouts(
       if (payout > 0) {
         addresses.push(walletAddress);
         payoutBasisPoints.push(payout);
+        totalDistributed += payout;
       }
 
       // Add to detailed results for all players
@@ -328,6 +336,17 @@ export async function calculatePayouts(
 
     // Move to next position group
     currentPosition += tieCount;
+  }
+
+  // If we have any dust (undistributed basis points due to rounding), 
+  // add it to the first winner to ensure total = 10000
+  if (totalDistributed < 10000 && payoutBasisPoints.length > 0) {
+    const dust = 10000 - totalDistributed;
+    payoutBasisPoints[0] += dust;
+    // Update the detailed results for the first winner
+    if (detailedResults.length > 0 && detailedResults[0].payoutBasisPoints > 0) {
+      detailedResults[0].payoutBasisPoints += dust;
+    }
   }
 
   return { addresses, payoutBasisPoints, detailedResults };
