@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PlatformToken.sol";
@@ -45,6 +46,8 @@ interface ICErc20 {
  * @custom:security This contract uses OpenZeppelin's ReentrancyGuard and Ownable for security
  */
 contract DepositManager is ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
+    
     /// @notice The USDC token contract
     IERC20 public immutable usdcToken;
     
@@ -140,8 +143,8 @@ contract DepositManager is ReentrancyGuard, Ownable {
         // Try to deposit USDC to Compound for yield generation
         // If it fails, USDC remains in the contract as a fallback
         if (!cUSDC.isSupplyPaused()) {
-            // Approve USDC for Compound
-            usdcToken.approve(address(cUSDC), amount);
+            // Approve USDC for Compound using forceApprove to prevent race condition
+            usdcToken.forceApprove(address(cUSDC), amount);
             
             try cUSDC.supply(address(usdcToken), amount) {
                 // Compound deposit successful

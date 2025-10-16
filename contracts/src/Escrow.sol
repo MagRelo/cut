@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
@@ -27,6 +28,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @custom:security This contract uses OpenZeppelin's ReentrancyGuard for security
  */
 contract Escrow is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    
     /// @notice Maximum number of participants allowed (gas optimization for distribute function)
     uint256 public constant MAX_PARTICIPANTS = 2000;
     
@@ -164,7 +167,7 @@ contract Escrow is ReentrancyGuard {
             isParticipant[msg.sender] = true;
         }
 
-        paymentToken.transferFrom(msg.sender, address(this), details.depositAmount);
+        paymentToken.safeTransferFrom(msg.sender, address(this), details.depositAmount);
         
         // Track deposits
         totalInitialDeposits += details.depositAmount;
@@ -207,7 +210,7 @@ contract Escrow is ReentrancyGuard {
         }
 
         // Refund deposit amount
-        paymentToken.transfer(msg.sender, details.depositAmount);
+        paymentToken.safeTransfer(msg.sender, details.depositAmount);
 
         emit EscrowWithdrawn(msg.sender);
     }
@@ -278,14 +281,14 @@ contract Escrow is ReentrancyGuard {
         // Transfer payouts to addresses (interactions)
         for (uint256 i = 0; i < calculatedPayouts.length; i++) {
             if (calculatedPayouts[i] > 0) {
-                paymentToken.transfer(_addresses[i], calculatedPayouts[i]);
+                paymentToken.safeTransfer(_addresses[i], calculatedPayouts[i]);
             }
         }
 
         // Transfer oracle fee and any remaining funds to oracle, including dust amounts
         uint256 remainingBalance = paymentToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            paymentToken.transfer(oracle, remainingBalance);
+            paymentToken.safeTransfer(oracle, remainingBalance);
         }
 
         // Emit distribution event (after interactions)
@@ -308,7 +311,7 @@ contract Escrow is ReentrancyGuard {
      * 
      * Emits an {EscrowCancelled} event
      */
-    function cancelAndRefund() external onlyOracle {
+    function cancelAndRefund() external onlyOracle nonReentrant {
         require(state == EscrowState.OPEN || state == EscrowState.IN_PROGRESS, "Escrow not in cancellable state");
         
         // Refund all participants their full balance
@@ -316,7 +319,7 @@ contract Escrow is ReentrancyGuard {
             address participant = participants[i];
             uint256 balance = depositBalance[participant];
             if (balance > 0) {
-                paymentToken.transfer(participant, balance);
+                paymentToken.safeTransfer(participant, balance);
                 depositBalance[participant] = 0;
                 isParticipant[participant] = false;
             }
@@ -367,7 +370,7 @@ contract Escrow is ReentrancyGuard {
         }
 
         // Refund deposit amount
-        paymentToken.transfer(msg.sender, details.depositAmount);
+        paymentToken.safeTransfer(msg.sender, details.depositAmount);
 
         emit ExpiredEscrowWithdraw(msg.sender, details.depositAmount);
     }
