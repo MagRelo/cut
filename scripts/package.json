@@ -8,7 +8,8 @@
     "mint": "node sepolia/mintPaymentToken.js",
     "create-escrow": "node sepolia/createEscrow.js",
     "deposit-usdc": "node sepolia/depositUSDC.js",
-    "deposit-usdc-base": "node base/depositUSDC.js"
+    "deposit-usdc-base": "node base/depositUSDC.js",
+    "emergency-withdraw-base": "node base/emergencyWithdrawAll.js"
   },
   "dependencies": {
     "ethers": "^6.8.1",
