@@ -8,9 +8,16 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  const { isTournamentEditable, tournamentStatusDisplay } = useTournament();
+  const { isTournamentEditable } = useTournament();
   const potAmount = contest.settings?.fee * (contest.contestLineups?.length ?? 0);
   const entryCount = contest.contestLineups?.length ?? 0;
+
+  const formatStatus = (status: string) => {
+    return status
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
 
   return (
     <Link to={`/contest/${contest.id}`}>
@@ -34,7 +41,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
                   {entryCount} {entryCount === 1 ? "Entry" : "Entries"}
                 </>
               ) : (
-                <>{tournamentStatusDisplay}</>
+                <>{formatStatus(contest.status)}</>
               )}
             </p>
           </div>

@@ -26,10 +26,10 @@ export const PositionBadge = ({
     <div className="relative">
       <div
         className={`text-center font-bold rounded-full w-10 h-10 flex items-center justify-center text-sm ${
-          showBorder
-            ? "text-gray-700 border border-gray-400 bg-white"
-            : isInTheMoney
+          isInTheMoney
             ? "text-green-700 border border-green-600 bg-white"
+            : showBorder
+            ? "text-gray-700 border border-gray-400 bg-white"
             : "text-gray-700 border border-white bg-white"
         }`}
       >

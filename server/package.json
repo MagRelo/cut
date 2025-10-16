@@ -24,7 +24,7 @@
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:close-escrow": "tsx src/services/closeEscrowDeposits.ts",
-    "service:distribute-contest": "tsx src/services/distribute/distributeContest.ts"
+    "service:distribute-contest": "tsx src/services/distributeContest.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",

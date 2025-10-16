@@ -52,7 +52,12 @@ export async function distributeContest() {
         tournament: true,
         contestLineups: {
           include: {
-            user: true,
+            user: {
+              include: {
+                wallets: true,
+              },
+            },
+            tournamentLineup: true,
           },
           orderBy: {
             score: 'desc',
@@ -66,6 +71,13 @@ export async function distributeContest() {
       console.log('No contests found or invalid contests data');
       return;
     }
+
+    if (contests.length === 0) {
+      console.log('No contests ready for distribution (looking for contests with status=IN_PROGRESS and tournament.status=COMPLETED)');
+      return;
+    }
+
+    console.log(`Found ${contests.length} contest(s) ready for distribution`);
 
     for (const contest of contests) {
       try {
@@ -105,62 +117,35 @@ export async function distributeContest() {
           continue;
         }
 
-        // Get the participants count from the escrowContract        
-        let participantsCount: bigint;
-        try {
-          participantsCount = await escrowContract.read.getParticipantsCount!() as bigint;
-          if (Number(participantsCount) === 0) {
-            await updateContestToError(contest.id, 'No participants found in escrow');
-            continue;
-          }
-        } catch (error) {
-          console.error(`Error reading participants count for ${contest.address}:`, error);
-          await updateContestToError(contest.id, `Failed to read participants count: ${error instanceof Error ? error.message : String(error)}`);
-          continue;
-        }
-
-        // Get participants array by iterating through the count
-        const participants: string[] = [];
-        try {
-          for (let i = 0; i < Number(participantsCount); i++) {
-            const participant = await escrowContract.read.participants!([BigInt(i)]) as string;
-            if (participant) {
-              participants.push(participant as string);
-            }
-          }
-        } catch (error) {
-          console.error(`Error reading participants for ${contest.address}:`, error);
-          await updateContestToError(contest.id, `Failed to read participants: ${error instanceof Error ? error.message : String(error)}`);
-          continue;
-        }
-
-        if (!participants || !Array.isArray(participants)) {
-          await updateContestToError(contest.id, 'Invalid participants data from blockchain');
-          continue;
-        }
-
-        // Check for data integrity: if there are participants, there should be lineups
-        if (participants.length > 0 && (!contest.contestLineups || contest.contestLineups.length === 0)) {
-          await updateContestToError(contest.id, 'Data integrity error: Contest has participants but no lineups');
+        // Validate we have lineups to process
+        if (!contest.contestLineups || contest.contestLineups.length === 0) {
+          await updateContestToError(contest.id, 'No lineups found for contest');
           continue;
         }
 
         // Calculate payouts based on scores
-        const payouts = await calculatePayouts(
-          contest.contestLineups || [],
-          participants
-        );
+        const payoutResult = await calculatePayouts(contest.contestLineups, contest.chainId);
 
-        // Validate payouts array
-        if (!Array.isArray(payouts) || payouts.length !== participants.length) {
-          await updateContestToError(contest.id, 'Invalid payouts calculation - array mismatch');
+        // Validate total basis points equals 10000
+        const totalBasisPoints = payoutResult.payoutBasisPoints.reduce((sum, payout) => sum + payout, 0);
+        if (totalBasisPoints !== 10000) {
+          await updateContestToError(contest.id, `Invalid total basis points: ${totalBasisPoints} (expected 10000)`);
           continue;
         }
+
+        // Validate we have winners
+        if (payoutResult.addresses.length === 0) {
+          await updateContestToError(contest.id, 'No winners to distribute to');
+          continue;
+        }
+
+        const addresses = payoutResult.addresses as `0x${string}`[];
+        const payoutBasisPoints = payoutResult.payoutBasisPoints.map(bp => BigInt(bp));
 
         // Distribute prizes on blockchain
         let hash: string;
         try {
-          hash = await escrowContract.write.distribute!([payouts]) as string;
+          hash = await escrowContract.write.distribute!([addresses, payoutBasisPoints]) as string;
         } catch (error) {
           console.error(`Error distributing for ${contest.address}:`, error);
           await updateContestToError(contest.id, `Failed to distribute: ${error instanceof Error ? error.message : String(error)}`);
@@ -172,14 +157,20 @@ export async function distributeContest() {
           where: { id: contest.id },
           data: {
             status: 'SETTLED',
-            results: { payouts, participants, distributeTx: { hash } },
+            results: JSON.parse(JSON.stringify({ 
+              addresses: payoutResult.addresses,
+              payoutBasisPoints: payoutResult.payoutBasisPoints,
+              detailedResults: payoutResult.detailedResults,
+              distributeTx: { hash } 
+            })),
           },
         });
 
         console.log(`✅ Successfully distributed and settled contest: ${contest.id} - ${contest.name}`);
         console.log(`   - Chain ID: ${contest.chainId}`);
-        console.log(`   - Participants: ${participants.length}`);
-        console.log(`   - Total payout distributed: ${payouts.reduce((sum, payout) => sum + payout, 0)}`);
+        console.log(`   - Winners: ${addresses.length}`);
+        console.log(`   - Total entries: ${contest.contestLineups.length}`);
+        console.log(`   - Total payout distributed: ${payoutResult.payoutBasisPoints.reduce((sum, payout) => sum + payout, 0)} basis points`);
         console.log(`   - Transaction hash: ${hash}`);
       } catch (contestError) {
         console.error(`Error processing contest ${contest?.id}:`, contestError);
@@ -214,75 +205,132 @@ async function updateContestToError(contestId: string | undefined, errorReason: 
   }
 }
 
+export interface DetailedResult {
+  username: string;
+  lineupName: string;
+  position: number;
+  score: number;
+  payoutBasisPoints: number;
+}
+
+// Helper function to get wallet address for a user based on contest chain
+function getWalletAddress(user: any, chainId: number): string {
+  if (!user?.wallets || !Array.isArray(user.wallets) || user.wallets.length === 0) {
+    throw new Error(`User ${user?.name || user?.id || 'Unknown'} has no wallets`);
+  }
+
+  // Find wallet for the specific chain
+  const chainWallet = user.wallets.find((w: any) => w.chainId === chainId);
+  if (!chainWallet?.publicKey) {
+    throw new Error(`User ${user?.name || user?.id || 'Unknown'} has no wallet for chainId ${chainId}`);
+  }
+
+  return chainWallet.publicKey;
+}
+
 export async function calculatePayouts(
   lineups: any[],
-  participants: string[]
-): Promise<number[]> {
-  // Initialize payouts array with zeros
-  const payouts = new Array(participants.length).fill(0);
-
-  // Group lineups by position to handle ties
-  const positionGroups = new Map<string, any[]>();
-  
+  chainId: number
+): Promise<{ 
+  addresses: string[]; 
+  payoutBasisPoints: number[];
+  detailedResults: DetailedResult[];
+}> {
   // Validate lineups data integrity
   const validLineups = lineups.filter((lineup) => {
-    if (!lineup?.position) {
-      throw new Error('Data integrity error: Lineup missing position field');
-    }
     if (!lineup?.user) {
       throw new Error('Data integrity error: Lineup missing user field');
     }
-    if (!lineup?.user?.walletAddress) {
-      throw new Error('Data integrity error: Lineup missing walletAddress');
+    if (lineup?.score === undefined || lineup?.score === null) {
+      throw new Error('Data integrity error: Lineup missing score field');
     }
+    // Validate wallet exists for this chain (will throw if not found)
+    getWalletAddress(lineup.user, chainId);
     return true;
   });
 
-  // Check if there are any valid lineups with position "1"
-  const hasWinner = validLineups.some(lineup => lineup.position === "1");
-  if (!hasWinner) {
-    throw new Error('Data integrity error: No lineup found with position "1" (winner)');
+  if (validLineups.length === 0) {
+    throw new Error('Data integrity error: No valid lineups found');
   }
-  
-  validLineups.forEach((lineup) => {
-    const position = lineup.position;
-    if (!positionGroups.has(position)) {
-      positionGroups.set(position, []);
-    }
-    positionGroups.get(position)!.push(lineup);
-  });
 
-  // Define payout structure based on participant count
-  const isLargeContest = participants.length >= 10;
+  // Sort lineups by score (descending - highest score wins)
+  const sortedLineups = [...validLineups].sort((a, b) => b.score - a.score);
+
+  // Define payout structure based on total lineup count
+  const isLargeContest = validLineups.length >= 10;
   const payoutStructure = isLargeContest 
-    ? { '1': 7000, '2': 2000, '3': 1000 } // 70%, 20%, 10% for large contests
-    : { '1': 10000 }; // 100% for small contests
+    ? [7000, 2000, 1000] // 70%, 20%, 10% for large contests (positions 1, 2, 3)
+    : [10000]; // 100% for small contests (position 1 only)
 
-  // Process each position and split payouts among tied participants
-  for (const [position, tiedLineups] of positionGroups) {
-    const payoutPercentage = payoutStructure[position as keyof typeof payoutStructure];
-    if (payoutPercentage === undefined) continue;
+  // Result arrays
+  const addresses: string[] = [];
+  const payoutBasisPoints: number[] = [];
+  const detailedResults: DetailedResult[] = [];
 
-    // Calculate split amount per tied participant
-    const splitAmount = Math.floor(payoutPercentage / tiedLineups.length);
-    
-    // Distribute split amount to each tied participant
-    for (const lineup of tiedLineups) {
-      const participantIndex = participants.findIndex(
-        (participant) => participant.toLowerCase() === lineup.user.walletAddress.toLowerCase()
-      );
-      
-      if (participantIndex === -1) {
-        throw new Error(
-          `${position === '1' ? 'Winner' : position === '2' ? 'Second place' : position === '3' ? 'Third place' : `${position} place`} with wallet address ${lineup.user.walletAddress} is not found in participants list`
-        );
-      }
-      
-      payouts[participantIndex] = splitAmount;
+  // Process lineups by score groups (ties)
+  let currentPosition = 1; // 1-based position
+  let i = 0;
+
+  while (i < sortedLineups.length) {
+    const currentScore = sortedLineups[i].score;
+    const tiedLineups: any[] = [];
+
+    // Collect all lineups with the same score
+    while (i < sortedLineups.length && sortedLineups[i].score === currentScore) {
+      tiedLineups.push(sortedLineups[i]);
+      i++;
     }
+
+    const tieCount = tiedLineups.length;
+
+    // Calculate pooled payout for the positions this tied group occupies
+    // If tie extends beyond payout positions, pool only available positions
+    let pooledPayout = 0;
+    for (let pos = currentPosition; pos < currentPosition + tieCount; pos++) {
+      const posIndex = pos - 1; // Convert to 0-based index
+      if (posIndex < payoutStructure.length) {
+        const positionPayout = payoutStructure[posIndex];
+        if (positionPayout !== undefined) {
+          pooledPayout += positionPayout;
+        }
+      }
+    }
+
+    // Calculate base payout per player and remainder (even if 0)
+    const basePayoutPerPlayer = pooledPayout > 0 ? Math.floor(pooledPayout / tieCount) : 0;
+    const remainder = pooledPayout > 0 ? pooledPayout % tieCount : 0;
+
+    // Process each tied lineup
+    for (let j = 0; j < tiedLineups.length; j++) {
+      const lineup = tiedLineups[j];
+      
+      // Calculate payout for this player (including remainder distribution)
+      const payout = basePayoutPerPlayer + (j < remainder ? 1 : 0);
+
+      // Get wallet address for this user (will throw if not found)
+      const walletAddress = getWalletAddress(lineup.user, chainId);
+
+      // Add to winners arrays if they receive a payout
+      if (payout > 0) {
+        addresses.push(walletAddress);
+        payoutBasisPoints.push(payout);
+      }
+
+      // Add to detailed results for all players
+      detailedResults.push({
+        username: lineup.user?.name || 'Unknown',
+        lineupName: lineup.tournamentLineup?.name || 'Unnamed Lineup',
+        position: currentPosition,
+        score: currentScore,
+        payoutBasisPoints: payout,
+      });
+    }
+
+    // Move to next position group
+    currentPosition += tieCount;
   }
 
-  return payouts;
+  return { addresses, payoutBasisPoints, detailedResults };
 }
 
 // Main execution block

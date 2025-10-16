@@ -35,6 +35,9 @@ export interface Contest {
   _count?: {
     contestLineups: number;
   };
+  results?: {
+    detailedResults: DetailedResult[];
+  };
 }
 
 // Optional: Create a type for creating a new contest
@@ -48,4 +51,12 @@ export interface CreateContestInput {
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;
+}
+
+export interface DetailedResult {
+  username: string;
+  lineupName: string;
+  position: number;
+  score: number;
+  payoutBasisPoints: number;
 }

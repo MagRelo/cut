@@ -1,7 +1,7 @@
 import React from "react";
 import { useBalance, useChains, useReadContract } from "wagmi";
 import { createExplorerLinkJSX, getContractAddress } from "../../utils/blockchainUtils";
-import type { Contest } from "../../types/contest";
+import type { Contest, DetailedResult } from "../../types/contest";
 import EscrowContract from "../../utils/contracts/Escrow.json";
 
 interface ContestSettingsProps {
@@ -72,17 +72,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  // Get participants count from contract
-  const participantsCount = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "getParticipantsCount",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   // Get total deposits from contract
   const totalDeposits = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -104,6 +93,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       enabled: !!contest?.address,
     },
   }).data as `0x${string}` | undefined;
+
+  // Get contract balance
+  const { data: contractBalance } = useBalance({
+    address: contest?.address as `0x${string}`,
+    token: platformTokenAddress as `0x${string}`,
+    query: {
+      enabled: !!contest?.address && !!platformTokenAddress,
+    },
+  });
 
   // Map contract state number to readable string
   const getStatusLabel = (state: number | undefined) => {
@@ -130,8 +128,8 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   return (
     <div className="flex flex-col gap-2 p-4">
-      {/* Payout Structure */}
-      {contest?.contestLineups && (
+      {/* Payout Distribution - Only show when NOT settled */}
+      {contest?.contestLineups && contest.status !== "SETTLED" && (
         <div className="">
           <h3 className="text-sm font-medium text-gray-900 mb-2">Payout Distribution</h3>
           <div className="bg-gray-50 rounded-lg p-3">
@@ -166,8 +164,75 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
         </div>
       )}
 
+      {/* Settlement Details - Only show when SETTLED */}
+      {contest.status === "SETTLED" && (
+        <>
+          <h3 className="text-sm font-medium text-gray-900">Results</h3>
+          {contest.results?.detailedResults ? (
+            <div className="space-y-2 mt-2">
+              {contest.results.detailedResults
+                .filter((result: DetailedResult) => result.payoutBasisPoints > 0)
+                .map((result: DetailedResult, index: number) => {
+                  return (
+                    <div
+                      key={`${result.username}-${index}`}
+                      className="bg-green-50 rounded-sm p-3 border border-gray-200"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        {/* Left - Position */}
+                        <div className="flex-shrink-0 w-8">
+                          <div className="text-lg font-bold text-gray-900">{result.position}</div>
+                        </div>
+
+                        {/* Middle - User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                            {result.username}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate leading-tight mt-0.5">
+                            {result.lineupName}
+                          </div>
+                        </div>
+
+                        {/* Right - Score & Payout */}
+                        <div className="flex-shrink-0 flex items-center gap-4">
+                          {/* Score */}
+                          {/* <div className="text-right">
+                            <div className="text-lg font-bold text-gray-900 leading-none">
+                              {result.score}
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                              PTS
+                            </div>
+                          </div> */}
+
+                          {/* Payout */}
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600 leading-none">
+                              {(result.payoutBasisPoints / 100).toFixed(1)}%
+                            </div>
+                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                              PAYOUT
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[100px] flex items-center justify-center">
+              <p className="text-gray-500 text-sm">No settlement results available</p>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Contest Settings */}
       <h3 className="text-sm font-medium text-gray-900 mt-4">Escrow Contract</h3>
+
+      {/* Contract details */}
       <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[220px]">
         <div className="flex flex-col gap-1.5 font-mono text-xs">
           {/* Contract Status */}
@@ -189,14 +254,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             </div>
           )}
 
-          {/* Participants */}
-          {participantsCount !== undefined && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Participants:</span>
-              <span className="text-gray-900">{Number(participantsCount)}</span>
-            </div>
-          )}
-
           {/* Total Deposits */}
           {totalDeposits !== undefined && (
             <div className="flex items-center gap-2">
@@ -204,6 +261,17 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               <span className="text-gray-900">
                 {Number(totalDeposits) / Math.pow(10, platformToken?.decimals || 6)}{" "}
                 {platformToken?.symbol}
+              </span>
+            </div>
+          )}
+
+          {/* Contract Balance */}
+          {contractBalance !== undefined && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Contract Balance:</span>
+              <span className="text-gray-900">
+                {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
+                {contractBalance.symbol}
               </span>
             </div>
           )}
