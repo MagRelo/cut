@@ -1,24 +1,24 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Enum for tournament status
 export const TournamentStatus = {
-  UPCOMING: 'UPCOMING',
-  IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETED: 'COMPLETED',
+  UPCOMING: "UPCOMING",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
 } as const;
 
 // Base schema for tournament fields
 const tournamentBaseSchema = {
   pgaTourId: z.string(),
-  name: z.string().min(2, 'Tournament name must be at least 2 characters'),
-  startDate: z.string().datetime('Invalid start date'),
-  endDate: z.string().datetime('Invalid end date'),
-  course: z.string().min(2, 'Course name must be at least 2 characters'),
-  city: z.string().min(2, 'City name must be at least 2 characters'),
-  state: z.string().min(2, 'State name must be at least 2 characters'),
+  name: z.string().min(2, "Tournament name must be at least 2 characters"),
+  startDate: z.string().datetime("Invalid start date"),
+  endDate: z.string().datetime("Invalid end date"),
+  course: z.string().min(2, "Course name must be at least 2 characters"),
+  city: z.string().min(2, "City name must be at least 2 characters"),
+  state: z.string().min(2, "State name must be at least 2 characters"),
   timezone: z.string(),
   venue: z.any().optional(), // JSON type
-  purse: z.number().positive('Purse must be positive').optional(),
+  purse: z.number().positive("Purse must be positive").optional(),
   status: z.enum([
     TournamentStatus.UPCOMING,
     TournamentStatus.IN_PROGRESS,
@@ -45,11 +45,11 @@ export const updateTournamentSchema = z
       return new Date(data.startDate) < new Date(data.endDate);
     }
     return true;
-  }, 'End date must be after start date');
+  }, "End date must be after start date");
 
 // Schema for tournament ID parameter
 export const tournamentIdSchema = z.object({
-  id: z.string().cuid('Invalid tournament ID'),
+  id: z.string().cuid("Invalid tournament ID"),
 });
 
 // Types derived from schemas
@@ -112,10 +112,12 @@ export type Contest = {
   description: string | null;
   tournamentId: string;
   userGroupId: string;
-  startDate: Date;
-  endDate: Date;
+  endTime: Date;
+  address: string;
+  chainId: number;
   status: string;
   settings: any | null;
+  results: any | null;
   createdAt: Date;
   updatedAt: Date;
 };

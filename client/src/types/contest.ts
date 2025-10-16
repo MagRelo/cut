@@ -20,12 +20,11 @@ export interface Contest {
   description: string | null;
   tournamentId: string;
   userGroupId: string;
-  startDate: Date;
-  endDate: Date;
+  endTime: Date;
   status: ContestStatus;
   settings: ContestSettings;
   transactionId?: string;
-  address?: string;
+  address: string;
   chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   createdAt: Date;
   updatedAt: Date;

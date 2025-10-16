@@ -63,7 +63,7 @@ export const TournamentInfoCard: React.FC = () => {
           <div className="text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
             {currentTournament.status === "NOT_STARTED" ? (
               <p className="text-sm font-medium tracking-wide">
-                Starting: <CountdownTimer targetDate={currentTournament.endDate} />
+                Starting: <CountdownTimer targetDate={currentTournament.startDate} />
               </p>
             ) : (
               <p className="text-sm font-medium tracking-wide">

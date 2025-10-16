@@ -151,12 +151,16 @@ export interface Lineup {
 
 export interface Contest {
   id: string;
-  tournamentId: string;
   name: string;
-  entryFee: number;
-  maxParticipants: number;
-  prizePool: number;
+  description: string | null;
+  tournamentId: string;
+  userGroupId: string | null;
+  endTime: Date;
+  address: string;
+  chainId: number;
   status: string;
+  settings: any | null;
+  results: any | null;
   createdAt: Date;
   updatedAt: Date;
 }
