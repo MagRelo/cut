@@ -6,22 +6,6 @@ import { LineupForm } from "../components/lineup/LineupForm";
 const LineupCreatePage: React.FC = () => {
   const { lineupId } = useParams<{ lineupId: string }>();
   const isEditMode = Boolean(lineupId);
-  // const { getLineupFromCache } = useLineup();
-
-  // Get lineup data for edit mode
-  // const currentLineup = isEditMode ? getLineupFromCache(lineupId!) : null;
-
-  /*// Generate title based on mode
-  const getPageTitle = () => {
-    if (isEditMode && currentLineup) {
-      const lineupName = currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}`;
-      return `Edit ${lineupName}`;
-    } else if (!isEditMode) {
-      // For create mode, we'll use a generic title since we don't know the name yet
-      return "Create Lineup";
-    }
-    return isEditMode ? "Edit Lineup" : "Create Lineup";
-  };*/
 
   return (
     <div className="space-y-2 p-4">
@@ -34,8 +18,7 @@ const LineupCreatePage: React.FC = () => {
           },
         ]}
       />
-      {/* <PageHeader title={getPageTitle()} className="mb-3" /> */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-sm shadow">
         <LineupForm lineupId={lineupId} />
       </div>
     </div>

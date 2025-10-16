@@ -12,26 +12,27 @@ export const TournamentInfoPanel: React.FC = () => {
 
   return (
     <>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-4 mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-blue-600 text-lg">ℹ️</span>
-          <div className="text-lg font-semibold text-blue-800 font-display">
-            Tournament Information
+      <button
+        onClick={() => setIsSummaryModalOpen(true)}
+        className="w-full bg-emerald-50 border border-emerald-300 rounded-sm shadow p-4 hover:bg-emerald-100 hover:border-emerald-300 transition-colors cursor-pointer text-left"
+      >
+        <div className="flex items-center gap-1 mb-2">
+          <div
+            className="h-8 w-8 bg-contain bg-no-repeat bg-center"
+            style={{ backgroundImage: "url(/logo-transparent.png)" }}
+            aria-label="CUT logo"
+          />
+          <div className="text-2xl font-semibold text-emerald-800 font-display">
+            {currentTournament.name}
           </div>
         </div>
-        <div className="text-sm text-blue-700">
-          <p className="mb-2">
+        <div className="text-sm text-emerald-700">
+          <p>
             Learn more about {currentTournament.name}, including favorites, key storylines, and
             tournament history.
           </p>
-          <button
-            onClick={() => setIsSummaryModalOpen(true)}
-            className="text-blue-600 hover:text-blue-800 font-medium underline"
-          >
-            View Tournament Details
-          </button>
         </div>
-      </div>
+      </button>
 
       {/* Tournament Summary Modal */}
       <TournamentSummaryModal

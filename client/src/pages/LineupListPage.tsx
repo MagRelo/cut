@@ -98,8 +98,8 @@ export const LineupList: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <PageHeader title="Lineups" className="mb-3" />
+    <div className="p-4 space-y-4">
+      <PageHeader title="Lineups" />
 
       {/* Tournament Info Panel - only show when editable */}
       {isTournamentEditable && <TournamentInfoPanel />}
@@ -109,7 +109,7 @@ export const LineupList: React.FC = () => {
         ? // When editable, show TournamentLineup cards
           lineups &&
           lineups.length > 0 && (
-            <div className="space-y-4 mb-6">
+            <div>
               {lineups.map((lineup) => (
                 <div
                   key={lineup.id}
@@ -127,7 +127,7 @@ export const LineupList: React.FC = () => {
         : // When not editable, show ContestLineup cards
           userContestLineups &&
           userContestLineups.length > 0 && (
-            <div className="space-y-4 mb-6">
+            <div>
               {userContestLineups.map((contestLineup) => (
                 <div
                   key={contestLineup.id}
@@ -145,7 +145,7 @@ export const LineupList: React.FC = () => {
 
       {/* not editable warning */}
       {!isTournamentEditable && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow p-4 mb-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-sm shadow p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-yellow-600 text-lg">⚠️</span>
             <div className="text-lg font-semibold text-yellow-800 font-display">
@@ -160,26 +160,12 @@ export const LineupList: React.FC = () => {
 
       {/* Create/Add Lineup Button */}
       {isTournamentEditable && (
-        <div className="text-center mt-6">
+        <div className="text-center">
           <Link
             to="/lineups/create"
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center gap-1 min-w-fit justify-center"
+            className="w-full px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-300 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 block text-center uppercase font-display rounded-sm"
           >
-            Add Lineup
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
+            + Add Lineup
           </Link>
         </div>
       )}

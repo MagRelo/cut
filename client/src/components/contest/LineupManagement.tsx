@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useBalance, useAccount, useChainId, useReadContract } from "wagmi";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
@@ -46,7 +46,6 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 };
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
-  const navigate = useNavigate();
   const { lineups, getLineups } = useLineup();
   const { user } = usePortoAuth();
   const joinContest = useJoinContest();
@@ -280,117 +279,98 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         </div>
       </Dialog>
 
-      <div className="">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">My Lineups</h3>
+      <h3 className="text-sm font-medium text-gray-900">My Lineups</h3>
 
-        {lineups.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-gray-500 mb-3">No lineups found for this tournament.</p>
-            <button
-              onClick={() => navigate("/lineups/create")}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              Create New Lineup
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {lineups.map((lineup) => {
-              const isEntered = enteredLineupsMap.has(lineup.id);
-              const isPending = pendingAction?.lineupId === lineup.id;
-              const isProcessing = isPending && (isSending || isConfirming);
+      {lineups.map((lineup) => {
+        const isEntered = enteredLineupsMap.has(lineup.id);
+        const isPending = pendingAction?.lineupId === lineup.id;
+        const isProcessing = isPending && (isSending || isConfirming);
 
-              return (
-                <div
-                  key={lineup.id}
-                  className={`border rounded-lg p-3 ${
-                    isEntered ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900">
-                          {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                        </h4>
-                        {isEntered && (
-                          <div className="flex items-center gap-1">
-                            <svg
-                              className="w-4 h-4 text-green-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <span className="text-xs font-medium text-green-600">
-                              Lineup Entered
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {lineup.players && lineup.players.length > 0 && (
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-600 mt-2">
-                          {lineup.players.map((player) => (
-                            <div key={player.id}>
-                              {player.pga_displayName ||
-                                `${player.pga_firstName} ${player.pga_lastName}`}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+        return (
+          <div
+            key={lineup.id}
+            className={`border rounded-lg p-3 ${
+              isEntered ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-gray-900">
+                    {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
+                  </h4>
+                  {isEntered && (
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4 text-green-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-xs font-medium text-green-600">Lineup Entered</span>
                     </div>
-                  </div>
-
-                  <div className="mt-3">
-                    {isEntered ? (
-                      <button
-                        onClick={() => handleLeaveContest(lineup.id)}
-                        disabled={isProcessing}
-                        className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isProcessing ? (
-                          <div className="flex items-center gap-2 justify-center">
-                            <LoadingSpinnerSmall />
-                            {getStatusMessages("idle", isSending, isConfirming)}
-                          </div>
-                        ) : (
-                          "Leave Contest"
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleJoinContest(lineup.id)}
-                        disabled={isProcessing}
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isProcessing ? (
-                          <div className="flex items-center gap-2 justify-center">
-                            <LoadingSpinnerSmall />
-                            {getStatusMessages("idle", isSending, isConfirming)}
-                          </div>
-                        ) : (
-                          `Join Contest - $${contest.settings?.fee || 0}`
-                        )}
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
-              );
-            })}
+                {lineup.players && lineup.players.length > 0 && (
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-600 mt-2">
+                    {lineup.players.map((player) => (
+                      <div key={player.id}>
+                        {player.pga_displayName || `${player.pga_firstName} ${player.pga_lastName}`}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <button
-              onClick={() => navigate("/lineups/create")}
-              className="w-full mt-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              + Create New Lineup
-            </button>
+            <div className="mt-3">
+              {isEntered ? (
+                <button
+                  onClick={() => handleLeaveContest(lineup.id)}
+                  disabled={isProcessing}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isProcessing ? (
+                    <div className="flex items-center gap-2 justify-center">
+                      <LoadingSpinnerSmall />
+                      {getStatusMessages("idle", isSending, isConfirming)}
+                    </div>
+                  ) : (
+                    "Leave Contest"
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleJoinContest(lineup.id)}
+                  disabled={isProcessing}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isProcessing ? (
+                    <div className="flex items-center gap-2 justify-center">
+                      <LoadingSpinnerSmall />
+                      {getStatusMessages("idle", isSending, isConfirming)}
+                    </div>
+                  ) : (
+                    `Join Contest - $${contest.settings?.fee || 0}`
+                  )}
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })}
+
+      <Link
+        to="/lineups/create"
+        className="w-full px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 block text-center uppercase font-display rounded-sm"
+      >
+        + Add Lineup
+      </Link>
 
       {/* Error Display */}
       {(submissionError || serverError || transactionError || isFailed) && (
