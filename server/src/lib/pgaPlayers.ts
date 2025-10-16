@@ -1,6 +1,6 @@
 import { playerDirectoryResponseSchema, type PGAPlayer } from "../schemas/pgaTour.js";
 
-const PGA_TOUR_API_KEY = process.env.PGA_TOUR_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
+const PGA_API_KEY = process.env.PGA_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
 const PGA_TOUR_GRAPHQL_URL = "https://orchestrator.pgatour.com/graphql";
 
 const PLAYER_DIRECTORY_QUERY = {
@@ -34,7 +34,7 @@ export async function fetchPGATourPlayers(): Promise<PGAPlayer[]> {
     const response = await fetch(PGA_TOUR_GRAPHQL_URL, {
       method: "POST",
       headers: {
-        "X-API-Key": PGA_TOUR_API_KEY,
+        "X-API-Key": PGA_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(PLAYER_DIRECTORY_QUERY),

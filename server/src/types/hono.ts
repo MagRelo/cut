@@ -57,7 +57,8 @@ export interface Env {
   DATABASE_URL: string;
   JWT_SECRET: string;
   ALLOWED_ORIGINS: string;
-  RPC_URL: string;
+  BASE_RPC_URL: string;
+  BASE_SEPOLIA_RPC_URL: string;
   ORACLE_PRIVATE_KEY: string;
   PLATFORM_TOKEN_ADDRESS: string;
   PAYMENT_TOKEN_ADDRESS: string;
