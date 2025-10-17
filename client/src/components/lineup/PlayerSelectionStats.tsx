@@ -96,7 +96,7 @@ export const PlayerStats: React.FC<PlayerStatsProps> = ({
         {showImage && player.pga_imageUrl && (
           <div className="flex-shrink-0">
             <img
-              className="h-14 w-14 rounded-full object-cover ring-2 ring-white"
+              className="h-14 w-14 rounded-full object-cover"
               src={player.pga_imageUrl}
               alt={player.pga_displayName || ""}
             />

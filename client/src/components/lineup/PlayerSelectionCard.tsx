@@ -29,8 +29,8 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
   return (
     <button
       onClick={handleClick}
-      className={`w-full px-4 py-3 rounded-lg border transition-all relative ${
-        isSelected ? "bg-gray-200 border-gray-300" : "bg-white border-gray-300 shadow-md"
+      className={`w-full px-4 py-3 rounded-md border transition-all relative ${
+        isSelected ? "bg-gray-100 border-gray-300" : "bg-white border-gray-300 shadow-md"
       }`}
     >
       {iconType && (

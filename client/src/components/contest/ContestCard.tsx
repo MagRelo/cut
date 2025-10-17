@@ -21,7 +21,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
   return (
     <Link to={`/contest/${contest.id}`}>
-      <div className="bg-white rounded-lg p-3 hover:shadow-sm transition-all duration-200">
+      <div className="bg-white rounded-lg p-3">
         <div className="flex items-center justify-between gap-2.5">
           {/* Left Section - Entry Fee Badge */}
           <div className="flex-shrink-0">

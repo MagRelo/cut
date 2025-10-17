@@ -1,15 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+import { PlayerSelectionCard } from "./PlayerSelectionCard";
 import { type TournamentLineup } from "../../types/player";
 
 interface LineupCardProps {
   lineup: TournamentLineup;
   isEditable: boolean;
-  roundDisplay: string;
 }
 
-export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable, roundDisplay }) => {
+export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable }) => {
   return (
     <div className="">
       {/* lineup header */}
@@ -45,10 +44,11 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable, roun
               return bTotal - aTotal;
             })
             .map((player, index) => (
-              <PlayerDisplayCard
+              <PlayerSelectionCard
                 key={`${lineup.id}-player-${index}`}
                 player={player}
-                roundDisplay={roundDisplay}
+                isSelected={false}
+                onClick={() => {}}
               />
             ))}
         </div>

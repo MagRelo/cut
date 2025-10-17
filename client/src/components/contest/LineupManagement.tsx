@@ -264,7 +264,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-md w-full bg-white rounded-xl shadow-lg">
+          <DialogPanel className="mx-auto max-w-md w-full bg-white rounded-sm shadow-lg">
             <div className="p-6">
               <DialogTitle className="text-lg font-semibold text-red-600 mb-2">Warning</DialogTitle>
               <div className="text-gray-800 mb-4">{warningModal.message}</div>
@@ -289,7 +289,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         return (
           <div
             key={lineup.id}
-            className={`border rounded-lg p-3 ${
+            className={`border rounded-sm p-3 ${
               isEntered ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
             }`}
           >

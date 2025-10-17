@@ -113,13 +113,9 @@ export const LineupList: React.FC = () => {
               {lineups.map((lineup) => (
                 <div
                   key={lineup.id}
-                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
+                  className="rounded-md border border-gray-200 bg-white p-4 pb-6"
                 >
-                  <LineupCard
-                    lineup={lineup}
-                    isEditable={isTournamentEditable}
-                    roundDisplay={currentTournament?.roundDisplay || ""}
-                  />
+                  <LineupCard lineup={lineup} isEditable={isTournamentEditable} />
                 </div>
               ))}
             </div>
