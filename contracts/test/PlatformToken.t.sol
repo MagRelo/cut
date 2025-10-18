@@ -29,7 +29,7 @@ contract PlatformTokenTest is Test {
         // Deploy mock contracts
         usdcToken = new MockUSDC();
         mockCompound = new MockCompound(address(usdcToken));
-        platformToken = new PlatformToken();
+        platformToken = new PlatformToken("Cut Platform Token", "CUT");
         depositManager = new DepositManager(
             address(usdcToken),
             address(platformToken),
@@ -116,7 +116,7 @@ contract PlatformTokenTest is Test {
 
     function testMintWhenDepositManagerNotSet() public {
         // Deploy new token without setting depositManager
-        PlatformToken newToken = new PlatformToken();
+        PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
         
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
@@ -208,7 +208,7 @@ contract PlatformTokenTest is Test {
 
     function testBurnWhenDepositManagerNotSet() public {
         // Deploy new token without setting depositManager
-        PlatformToken newToken = new PlatformToken();
+        PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
         
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
@@ -502,7 +502,7 @@ contract PlatformTokenTest is Test {
     // ============ REVERT SCENARIOS ============
 
     function testRevertOnDepositManagerNotSet() public {
-        PlatformToken newToken = new PlatformToken();
+        PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
         
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");

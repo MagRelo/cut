@@ -39,10 +39,12 @@ contract PlatformToken is ERC20, Ownable {
     event DepositManagerBurn(address indexed from, uint256 amount);
 
     /**
-     * @dev Constructor initializes the ERC20 token with name "Cut Platform Token" and symbol "CUT"
+     * @dev Constructor initializes the ERC20 token with custom name and symbol
      * Sets the deployer as the owner of the contract
+     * @param name The name of the token (defaults to "Cut Platform Token" if empty)
+     * @param symbol The symbol of the token (defaults to "CUT" if empty)
      */
-    constructor() ERC20("Cut Platform Token", "CUT") Ownable(msg.sender) {}
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) Ownable(msg.sender) {}
 
     /**
      * @dev Modifier to restrict function access to only the DepositManager contract

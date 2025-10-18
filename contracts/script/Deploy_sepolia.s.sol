@@ -21,8 +21,8 @@ contract DeploySepolia is Script {
         MockCompound mockCompound = new MockCompound(address(mockUSDC));
         console2.log("MockCompound deployed to:", address(mockCompound));
 
-        // Deploy PlatformToken
-        PlatformToken platformToken = new PlatformToken();
+        // Deploy PlatformToken with xCUT name and symbol
+        PlatformToken platformToken = new PlatformToken("xCUT", "xCUT");
         console2.log("PlatformToken deployed to:", address(platformToken));
 
         // Deploy DepositManager with mock contracts

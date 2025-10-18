@@ -12,7 +12,7 @@ contract DeployBase is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy platform token
-        PlatformToken platformToken = new PlatformToken();
+        PlatformToken platformToken = new PlatformToken("Cut Platform Token", "CUT");
         console2.log("PlatformToken deployed to:", address(platformToken));
 
         // Deploy DepositManager with real USDC and cUSDC

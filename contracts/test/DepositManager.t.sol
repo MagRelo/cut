@@ -30,7 +30,7 @@ contract DepositManagerTest is Test {
         // Deploy mock contracts
         usdcToken = new MockUSDC();
         mockCompound = new MockCompound(address(usdcToken));
-        platformToken = new PlatformToken();
+        platformToken = new PlatformToken("Cut Platform Token", "CUT");
         depositManager = new DepositManager(
             address(usdcToken),
             address(platformToken),

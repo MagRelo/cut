@@ -11,7 +11,7 @@ contract DeployScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy PlatformToken
-        PlatformToken platformToken = new PlatformToken();
+        PlatformToken platformToken = new PlatformToken("Cut Platform Token", "CUT");
         console.log("PlatformToken deployed at:", address(platformToken));
 
         // Deploy DepositManager
