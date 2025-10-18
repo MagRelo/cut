@@ -113,7 +113,7 @@ export const LineupList: React.FC = () => {
               {lineups.map((lineup) => (
                 <div
                   key={lineup.id}
-                  className="rounded-md border border-gray-200 bg-white p-4 pb-6"
+                  className="rounded-md border border-gray-200 bg-white p-4 pb-6 mt-4"
                 >
                   <LineupCard lineup={lineup} isEditable={isTournamentEditable} />
                 </div>
@@ -127,7 +127,7 @@ export const LineupList: React.FC = () => {
               {userContestLineups.map((contestLineup) => (
                 <div
                   key={contestLineup.id}
-                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
+                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6 mt-4"
                 >
                   <LineupContestCard
                     lineup={contestLineup}
@@ -140,15 +140,15 @@ export const LineupList: React.FC = () => {
           )}
 
       {/* not editable warning */}
-      {!isTournamentEditable && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-sm shadow p-4">
+      {!isTournamentEditable && userContestLineups && userContestLineups.length === 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-sm shadow p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-600 text-lg">⚠️</span>
-            <div className="text-lg font-semibold text-yellow-800 font-display">
+            <span className="text-gray-600 text-lg">⚠️</span>
+            <div className="text-lg font-semibold text-gray-800 font-display">
               Tournament {tournamentStatusDisplay}
             </div>
           </div>
-          <div className="text-sm text-yellow-700">
+          <div className="text-sm text-gray-700">
             <p className="mb-2">Lineups cannot be edited.</p>
           </div>
         </div>

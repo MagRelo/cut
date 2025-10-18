@@ -126,5 +126,5 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     );
   }
 
-  return <div className={`w-full ${bgColor} rounded-lg p-3`}>{content}</div>;
+  return <div className={`w-full ${bgColor} p-3 mb-1`}>{content}</div>;
 };

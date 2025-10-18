@@ -124,7 +124,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
 
   return (
     <>
-      <div className="space-y-2 px-3 mt-2">
+      <div className="px-2 mt-3">
         {playersData.map((playerData) => (
           <PlayerDisplayRow
             key={playerData.player.id}

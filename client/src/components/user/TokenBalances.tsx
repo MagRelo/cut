@@ -73,7 +73,7 @@ export function TokenBalances({
       </div>
 
       {/* Token Breakdown */}
-      <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center">
+      <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center font-display">
         {/* CUT Token */}
         <CutLogo />
         <div className="text-sm text-gray-600 font-semibold">
@@ -87,7 +87,7 @@ export function TokenBalances({
             </Link>
           )}
         </div>
-        <div className="text-sm font-semibold text-gray-700 text-right">
+        <div className="text-sm font-semibold text-gray-700 text-right font-sans">
           ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
         </div>
 
@@ -104,7 +104,7 @@ export function TokenBalances({
             </Link>
           )}
         </div>
-        <div className="text-sm font-semibold text-gray-700 text-right">
+        <div className="text-sm font-semibold text-gray-700 text-right font-sans">
           ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}
         </div>
       </div>

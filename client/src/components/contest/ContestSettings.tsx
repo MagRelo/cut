@@ -1,8 +1,9 @@
 import React from "react";
-import { useBalance, useChains, useReadContract } from "wagmi";
+import { useBalance, useReadContract } from "wagmi";
 import { createExplorerLinkJSX, getContractAddress } from "../../utils/blockchainUtils";
 import type { Contest, DetailedResult } from "../../types/contest";
 import EscrowContract from "../../utils/contracts/Escrow.json";
+import { PositionBadge } from "./PositionBadge";
 
 interface ContestSettingsProps {
   contest: Contest;
@@ -28,8 +29,6 @@ function getPayoutStructure(participantCount: number) {
 export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => {
   // Use the contest's stored chainId
   const chainId = contest?.chainId;
-  const chains = useChains();
-  const chain = chains.find((c: { id: number }) => c.id === chainId);
 
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
 
@@ -66,17 +65,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     address: contest?.address as `0x${string}`,
     abi: EscrowContract.abi,
     functionName: "oracleFee",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  // Get total deposits from contract
-  const totalDeposits = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "totalInitialDeposits",
     args: [],
     query: {
       enabled: !!contest?.address,
@@ -127,7 +115,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   };
 
   return (
-    <div className="flex flex-col gap-2 p-4">
+    <div className="flex flex-col gap-4 p-4">
       {/* Payout Distribution - Only show when NOT settled */}
       {contest?.contestLineups && contest.status !== "SETTLED" && (
         <div className="">
@@ -166,7 +154,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
       {/* Settlement Details - Only show when SETTLED */}
       {contest.status === "SETTLED" && (
-        <>
+        <div>
           <h3 className="text-sm font-medium text-gray-900">Results</h3>
           {contest.results?.detailedResults ? (
             <div className="space-y-2 mt-2">
@@ -176,13 +164,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   return (
                     <div
                       key={`${result.username}-${index}`}
-                      className="bg-green-50 rounded-sm p-3 border border-gray-200"
+                      className="bg-green-50 rounded-sm p-3 border border-green-400"
                     >
                       <div className="flex items-center justify-between gap-3">
                         {/* Left - Position */}
-                        <div className="flex-shrink-0 w-8">
-                          <div className="text-lg font-bold text-gray-900">{result.position}</div>
-                        </div>
+                        <PositionBadge
+                          position={result.position}
+                          isInTheMoney={true}
+                          isUser={true}
+                        />
 
                         {/* Middle - User Info */}
                         <div className="flex-1 min-w-0">
@@ -196,23 +186,38 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
                         {/* Right - Score & Payout */}
                         <div className="flex-shrink-0 flex items-center gap-4">
-                          {/* Score */}
-                          {/* <div className="text-right">
-                            <div className="text-lg font-bold text-gray-900 leading-none">
-                              {result.score}
-                            </div>
-                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                              PTS
-                            </div>
-                          </div> */}
-
                           {/* Payout */}
                           <div className="text-right">
                             <div className="text-lg font-bold text-green-600 leading-none">
-                              {(result.payoutBasisPoints / 100).toFixed(1)}%
+                              {/* Calculate payout amount */}
+                              {(() => {
+                                if (!escrowDetails || !contractOracleFee || !platformToken)
+                                  return "...";
+
+                                // Calculate total pot from entry fee * number of participants
+                                const entryFee = Number(escrowDetails[0]);
+                                const participantCount = contest.contestLineups?.length || 0;
+                                const totalPot = entryFee * participantCount;
+
+                                // Calculate oracle fee amount
+                                const oracleFeeAmount =
+                                  (totalPot * Number(contractOracleFee)) / 10000;
+
+                                // Net pot after oracle fee
+                                const netPot = totalPot - oracleFeeAmount;
+
+                                // Calculate payout for this position
+                                const payoutAmount = (netPot * result.payoutBasisPoints) / 10000;
+
+                                // Convert to display value
+                                const displayValue =
+                                  payoutAmount / Math.pow(10, platformToken.decimals);
+
+                                return `$${displayValue.toFixed(2)}`;
+                              })()}
                             </div>
                             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                              PAYOUT
+                              {result.payoutBasisPoints / 100}%
                             </div>
                           </div>
                         </div>
@@ -226,106 +231,91 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               <p className="text-gray-500 text-sm">No settlement results available</p>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* Contest Settings */}
-      <h3 className="text-sm font-medium text-gray-900 mt-4">Escrow Contract</h3>
+      {/* Contest Contract Details */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">Escrow Contract</h3>
 
-      {/* Contract details */}
-      <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[220px]">
-        <div className="flex flex-col gap-1.5 font-mono text-xs">
-          {/* Contract Status */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">Contract State:</span>
-            <span className={`${getStatusColor(contractState)}`}>
-              {getStatusLabel(contractState)}
-            </span>
+        {/* Contract panel */}
+        <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
+          <div className="flex flex-col gap-1.5 font-mono text-xs">
+            {/* Contract Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Contract State:</span>
+              <span className={`${getStatusColor(contractState)}`}>
+                {getStatusLabel(contractState)}
+              </span>
+            </div>
+
+            {/* Deposit Amount */}
+            {escrowDetails && escrowDetails[0] && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Entry Fee:</span>
+                <span className="text-gray-900">
+                  {Number(escrowDetails[0]) / Math.pow(10, platformToken?.decimals || 6)}{" "}
+                  {platformToken?.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Contract Balance */}
+            {contractBalance !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Contract Balance:</span>
+                <span className="text-gray-900">
+                  {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
+                  {contractBalance.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Oracle Fee */}
+            {contractOracleFee !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Oracle Fee:</span>
+                <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
+              </div>
+            )}
+
+            {/* Oracle Address */}
+            {oracleAddress && chainId && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Oracle:</span>
+                {createExplorerLinkJSX(
+                  oracleAddress,
+                  chainId,
+                  `${oracleAddress?.slice(0, 6)}...${oracleAddress?.slice(-4)}`,
+                  "text-blue-600 hover:text-blue-800 underline"
+                )}
+              </div>
+            )}
+
+            {/* Expiration */}
+            {escrowDetails && escrowDetails[1] && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Expires:</span>
+                <span className="text-gray-900">
+                  {new Date(Number(escrowDetails[1]) * 1000).toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
-
-          {/* Deposit Amount */}
-          {escrowDetails && escrowDetails[0] && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Deposit Amount:</span>
-              <span className="text-gray-900">
-                {Number(escrowDetails[0]) / Math.pow(10, platformToken?.decimals || 6)}{" "}
-                {platformToken?.symbol}
-              </span>
-            </div>
-          )}
-
-          {/* Total Deposits */}
-          {totalDeposits !== undefined && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Total Deposits:</span>
-              <span className="text-gray-900">
-                {Number(totalDeposits) / Math.pow(10, platformToken?.decimals || 6)}{" "}
-                {platformToken?.symbol}
-              </span>
-            </div>
-          )}
-
-          {/* Contract Balance */}
-          {contractBalance !== undefined && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Contract Balance:</span>
-              <span className="text-gray-900">
-                {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
-                {contractBalance.symbol}
-              </span>
-            </div>
-          )}
-
-          {/* Oracle Fee */}
-          {contractOracleFee !== undefined && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Oracle Fee:</span>
-              <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
-            </div>
-          )}
-
-          {/* Oracle Address */}
-          {oracleAddress && chainId && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Oracle:</span>
-              {createExplorerLinkJSX(
-                oracleAddress,
-                chainId,
-                "View on Explorer",
-                "text-blue-600 hover:text-blue-800 underline"
-              )}
-            </div>
-          )}
-
-          {/* Expiration */}
-          {escrowDetails && escrowDetails[1] && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Expires:</span>
-              <span className="text-gray-900">
-                {new Date(Number(escrowDetails[1]) * 1000).toLocaleString()}
-              </span>
-            </div>
-          )}
-
-          {/* Chain Name */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">Chain:</span>
-            <span className="text-gray-900">{chain?.name}</span>
-          </div>
-
-          {/* Escrow Contract */}
-          {contest?.address && chainId && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Contract:</span>
-              {createExplorerLinkJSX(
-                contest.address,
-                chainId,
-                "View on Explorer",
-                "text-blue-600 hover:text-blue-800 underline"
-              )}
-            </div>
-          )}
         </div>
+
+        {/* Escrow Contract */}
+        {contest?.address && chainId && (
+          <div className="flex items-center gap-2 font-display text-sm">
+            {/* <span className="text-gray-600">Contract:</span> */}
+            {createExplorerLinkJSX(
+              contest.address,
+              chainId,
+              "View Contract on Explorer",
+              "text-blue-600 hover:text-blue-800 underline"
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

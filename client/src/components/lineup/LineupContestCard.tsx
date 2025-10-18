@@ -9,6 +9,7 @@ import { PositionBadge } from "../contest/PositionBadge";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
+import { useTournament } from "../../contexts/TournamentContext";
 
 interface ContestInfo {
   contest: Contest;
@@ -30,6 +31,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   roundDisplay,
   contests = [],
 }) => {
+  const { isTournamentEditable } = useTournament();
   // Tab state
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -115,7 +117,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         <div className="">
           {/* PLAYERS TAB */}
           <TabPanel>
-            <div className="space-y-2 mt-3">
+            <div className="px-2 mt-2">
               {sortedPlayers.map((player) => (
                 <PlayerDisplayRow
                   key={player.id}
@@ -129,7 +131,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
           {/* CONTESTS TAB */}
           <TabPanel>
-            <div className="space-y-2 mt-4 pb-2">
+            <div className="px-2 mt-3 pb-2">
               {contests.length > 0 ? (
                 contests.map((contestInfo) => {
                   // Determine if position is "in the money"
@@ -145,6 +147,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                         <PositionBadge
                           position={contestInfo.position}
                           isInTheMoney={isInTheMoney}
+                          showBorder={true}
+                          isTournamentEditable={isTournamentEditable}
                         />
                       </div>
 

@@ -23,11 +23,6 @@ export function USDCInfoPage() {
               Each USDC token is backed by one dollar held in reserve, making it a stable and
               reliable digital currency for transactions.
             </p>
-            <p>
-              USDC is issued by Circle and is widely used across DeFi platforms, crypto exchanges,
-              and payment applications. It combines the benefits of cryptocurrency (fast
-              transactions, global accessibility) with the stability of the US dollar.
-            </p>
           </div>
         </div>
 

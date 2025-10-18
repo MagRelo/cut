@@ -280,8 +280,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
                         px-1.5 py-0.5 text-xs font-thin font-display border rounded-sm transition-colors min-w-[1.75rem]
                         ${
                           isActive
-                            ? "bg-slate-100 text-slate-600 border-slate-400 shadow-sm"
-                            : "bg-slate-50 text-slate-500 hover:bg-white border-slate-300"
+                            ? "bg-gray-50 text-blue-600 border-blue-400 shadow-sm"
+                            : "bg-gray-50 text-gray-500 border-gray-300"
                         }
                       `}
                     >

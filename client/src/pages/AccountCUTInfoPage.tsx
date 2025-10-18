@@ -181,28 +181,35 @@ export function CUTInfoPage() {
         {/* Token Description */}
         <div className="text-md text-gray-700 font-display mb-4">
           <p>
-            CUT is the native currency of the Cut platform. Each CUT is backed by and convertible to
-            USDC at a 1:1 ratio. USDC deposits are held in Compound to generate yield.
+            CUT is the currency of the Cut platform. Each CUT is backed by and convertible to USDC
+            at a 1:1 ratio. USDC deposits are held in Compound to generate yield.
           </p>
         </div>
 
         {/* Token Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="border border-gray-200 rounded-sm p-4 text-center">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="border border-gray-200 rounded-sm p-3 text-center">
+            <div className="text-2xl font-bold text-gray-900">
+              ${platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">USDC Deposited</div>
+          </div>
+
+          <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
             </div>
             <div className="text-sm text-gray-600 mt-1">CUT Minted</div>
           </div>
 
-          <div className="border border-gray-200 rounded-sm p-4 text-center">
+          <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
             </div>
             <div className="text-sm text-gray-600 mt-1">Supply APY</div>
           </div>
 
-          <div className="border border-gray-200 rounded-sm p-4 text-center">
+          <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
               {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
             </div>

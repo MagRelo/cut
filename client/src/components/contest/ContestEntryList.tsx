@@ -34,7 +34,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
 
   // Function to determine row background color
   const getRowBackgroundColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
-    if (isCurrentUser && isInTheMoney) {
+    if (isCurrentUser && isInTheMoney && !isTournamentEditable) {
       return "bg-green-50"; // Green for current user in the money
     }
     if (isCurrentUser) {
@@ -62,7 +62,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
 
   return (
     <>
-      <div className="space-y-2 px-4 mt-2">
+      <div className="px-2 mt-3">
         {sortedLineups.map((lineup) => {
           const isInTheMoney = (lineup.position || 0) <= paidPositions;
           const isCurrentUser = lineup.userId === user?.id;
@@ -82,6 +82,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                     position={lineup.position || 0}
                     isInTheMoney={isInTheMoney}
                     isUser={isCurrentUser}
+                    isTournamentEditable={isTournamentEditable}
                   />
                 </div>
 
@@ -90,6 +91,15 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                   <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
                     {lineup.user?.name || lineup.user?.email || "Unknown User"}
                   </div>
+
+                  {!isTournamentEditable && (
+                    <div className="text-xs text-gray-500 truncate">
+                      {lineup.tournamentLineup?.players
+                        ?.map((p) => p.pga_lastName)
+                        .filter(Boolean)
+                        .join(", ") || ""}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right - Points */}
