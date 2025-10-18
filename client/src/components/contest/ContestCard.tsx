@@ -1,6 +1,5 @@
 import { type Contest } from "../../types/contest";
 import { Link } from "react-router-dom";
-import { useTournament } from "../../contexts/TournamentContext";
 
 interface ContestCardProps {
   contest: Contest;
@@ -8,9 +7,7 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  const { isTournamentEditable } = useTournament();
   const potAmount = contest.settings?.fee * (contest.contestLineups?.length ?? 0);
-  const entryCount = contest.contestLineups?.length ?? 0;
 
   const formatStatus = (status: string) => {
     return status
@@ -36,13 +33,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
               {contest.name}
             </h3>
             <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
-              {isTournamentEditable ? (
-                <>
-                  {entryCount} {entryCount === 1 ? "Entry" : "Entries"}
-                </>
-              ) : (
-                <>{formatStatus(contest.status)}</>
-              )}
+              <span className="font-semibold">{formatStatus(contest.status)}</span>
             </p>
           </div>
 
