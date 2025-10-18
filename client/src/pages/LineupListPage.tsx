@@ -13,7 +13,7 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
-// import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
+import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 import type { ContestLineup } from "../types/lineup";
 
 export const LineupList: React.FC = () => {
@@ -100,9 +100,8 @@ export const LineupList: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <PageHeader title="Lineups" />
-
       {/* Tournament Info Panel - only show when editable */}
-      {/* {isTournamentEditable && <TournamentInfoPanel />} */}
+      {isTournamentEditable && <TournamentInfoPanel />}
 
       {/* list of user lineups */}
       {isTournamentEditable
