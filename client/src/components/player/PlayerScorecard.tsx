@@ -117,7 +117,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className="bg-gray-200">
-      <th className="px-3 py-2 text-left text-xs font-bold font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
+      <th className="sticky left-0 z-10 bg-gray-200 px-3 py-2 text-left text-xs font-bold font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
         Round {selectedRound}
       </th>
       {Array.from({ length: 18 }, (_, i) => (
@@ -145,8 +145,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
       .map((_, i) => roundData.holes?.par?.[i] ?? null);
 
     return (
-      <tr className="border-t border-gray-200">
-        <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
+      <tr className="border-t border-gray-200 bg-gray-50">
+        <td className="sticky left-0 z-10 bg-gray-50 px-3 py-2 text-left text-xs font-medium font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
           Par
         </td>
         {pars.map((par: number | null, i: number) => (
@@ -182,7 +182,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
 
     return (
       <tr className="border-t border-gray-200 bg-gray-50">
-        <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
+        <td className="sticky left-0 z-10 bg-gray-50 px-3 py-2 text-left text-xs font-medium font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
           Score
         </td>
         {roundData.holes.scores.map((score: number | null, i: number) => {
@@ -210,8 +210,8 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   const renderStableford = () => {
     if (!roundData?.holes?.stableford?.length) return null;
     return (
-      <tr className="border-t border-gray-200 bg-white">
-        <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
+      <tr className="border-t border-gray-200 bg-gray-50">
+        <td className="sticky left-0 z-10 bg-gray-50 px-3 py-2 text-left text-xs font-medium font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
           Stableford
         </td>
         {roundData.holes.stableford.map((points: number | null, i: number) => {
@@ -280,7 +280,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
                         px-1.5 py-0.5 text-xs font-thin font-display border rounded-sm transition-colors min-w-[1.75rem]
                         ${
                           isActive
-                            ? "bg-gray-50 text-blue-600 border-blue-400 shadow-sm"
+                            ? "bg-gray-50 text-blue-600 border-blue-600 shadow-sm font-semibold"
                             : "bg-gray-50 text-gray-500 border-gray-300"
                         }
                       `}
