@@ -117,7 +117,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         <div className="">
           {/* PLAYERS TAB */}
           <TabPanel>
-            <div className="px-2 mt-2">
+            <div className="mt-2">
               {sortedPlayers.map((player) => (
                 <PlayerDisplayRow
                   key={player.id}
