@@ -159,7 +159,7 @@ export const LineupList: React.FC = () => {
         <div className="text-center">
           <Link
             to="/lineups/create"
-            className="w-full px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-300 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 block text-center uppercase font-display rounded-sm"
+            className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold font-display rounded block text-center uppercase"
           >
             + Add Lineup
           </Link>

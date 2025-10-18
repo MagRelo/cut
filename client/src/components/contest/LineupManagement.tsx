@@ -365,12 +365,14 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         );
       })}
 
-      <Link
-        to="/lineups/create"
-        className="w-full px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 block text-center uppercase font-display rounded-sm"
-      >
-        + Add Lineup
-      </Link>
+      {lineups.length === 0 && (
+        <Link
+          to="/lineups/create"
+          className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold font-display rounded block text-center uppercase"
+        >
+          + Add Lineup
+        </Link>
+      )}
 
       {/* Error Display */}
       {(submissionError || serverError || transactionError || isFailed) && (
