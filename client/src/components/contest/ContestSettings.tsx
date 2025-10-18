@@ -188,7 +188,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                         <div className="flex-shrink-0 flex items-center gap-4">
                           {/* Payout */}
                           <div className="text-right">
-                            <div className="text-lg font-bold text-green-600 leading-none">
+                            <div className="text-lg font-bold text-green-700 leading-none">
                               {/* Calculate payout amount */}
                               {(() => {
                                 if (!escrowDetails || !contractOracleFee || !platformToken)
