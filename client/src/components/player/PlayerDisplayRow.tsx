@@ -117,10 +117,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
   if (onClick) {
     return (
-      <button
-        onClick={onClick}
-        className={`w-full ${bgColor} rounded-sm p-3 text-left cursor-pointer`}
-      >
+      <button onClick={onClick} className={`w-full ${bgColor} p-3 mb-1 text-left cursor-pointer`}>
         {content}
       </button>
     );

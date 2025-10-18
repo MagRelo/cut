@@ -70,7 +70,10 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
           return (
             <div
               key={lineup.id}
-              className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 ${
+              className={`${getRowBackgroundColor(
+                isCurrentUser,
+                isInTheMoney
+              )} rounded-sm p-3 mb-1 ${
                 isTournamentEditable ? "cursor-default opacity-80" : "cursor-pointer"
               }`}
               onClick={() => openLineupModal(lineup)}
@@ -95,7 +98,10 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                   {!isTournamentEditable && (
                     <div className="text-xs text-gray-500 truncate">
                       {lineup.tournamentLineup?.players
-                        ?.map((p) => p.pga_lastName)
+                        ?.sort(
+                          (a, b) => (b.tournamentData?.total || 0) - (a.tournamentData?.total || 0)
+                        )
+                        .map((p) => p.pga_lastName)
                         .filter(Boolean)
                         .join(", ") || ""}
                     </div>
