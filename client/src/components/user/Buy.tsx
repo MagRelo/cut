@@ -16,6 +16,7 @@ export const Buy = () => {
 
   // Get contract addresses dynamically
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
+  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
   // Buy form state
   const [buyAmount, setBuyAmount] = useState("");
@@ -50,6 +51,16 @@ export const Buy = () => {
 
   // Get payment token symbol
   const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
+
+  // Get platform token symbol
+  const { data: platformTokenSymbol } = useTokenSymbol(platformTokenAddress as string);
+
+  const handleMaxBuy = () => {
+    if (usdcBalance) {
+      const maxAmount = formatUnits(usdcBalance.value, 6);
+      setBuyAmount(maxAmount);
+    }
+  };
 
   const handleBuy = async () => {
     if (!isConnected || !buyAmount) {
@@ -115,22 +126,32 @@ export const Buy = () => {
           <label htmlFor="buy-amount" className="block text-sm font-medium text-gray-700 mb-2">
             Amount ({paymentTokenSymbol || "USDC"})
           </label>
-          <input
-            id="buy-amount"
-            type="number"
-            inputMode="decimal"
-            value={buyAmount}
-            onChange={(e) => setBuyAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-            disabled={isProcessing}
-          />
+          <div className="relative">
+            <input
+              id="buy-amount"
+              type="number"
+              inputMode="decimal"
+              value={buyAmount}
+              onChange={(e) => setBuyAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-4 py-2.5 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              disabled={isProcessing}
+            />
+            <button
+              type="button"
+              onClick={handleMaxBuy}
+              disabled={isProcessing}
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              MAX
+            </button>
+          </div>
           {buyAmount && (
             <div className="text-sm text-gray-600 mt-2 flex items-center gap-1">
               <span className="text-gray-500">→</span>
               You will receive{" "}
               <span className="font-semibold text-green-700">
-                {calculatePlatformTokenAmount()} CUT
+                {calculatePlatformTokenAmount()} {platformTokenSymbol || "CUT"}
               </span>
             </div>
           )}
@@ -153,7 +174,7 @@ export const Buy = () => {
               {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Buy CUT Tokens"
+            `Buy ${platformTokenSymbol || "CUT"}`
           )}
         </button>
       </div>

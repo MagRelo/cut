@@ -9,7 +9,8 @@ import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 // import { TokenBalances } from "../components/user/TokenBalances";
 import { Buy } from "../components/user/Buy.tsx";
 import { Sell } from "../components/user/Sell.tsx";
-import { Transfer } from "../components/user/Transfer.tsx";
+import { Send } from "../components/user/Send.tsx";
+import { Receive } from "../components/user/Receive.tsx";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 import cUSDCContract from "../utils/contracts/cUSDC.json";
@@ -36,7 +37,8 @@ export function CUTInfoPage() {
       const tabMap: { [key: string]: number } = {
         buy: 0,
         sell: 1,
-        transfer: 2,
+        send: 2,
+        receive: 3,
       };
 
       const tabIndex = tabMap[tab.toLowerCase()];
@@ -218,7 +220,7 @@ export function CUTInfoPage() {
         </div>
       </div>
 
-      {/* Buy/Sell/Transfer Tabs */}
+      {/* Buy/Sell/Send/Receive Tabs */}
       <div className="bg-white rounded-sm shadow border border-gray-200 mb-4">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
@@ -259,7 +261,20 @@ export function CUTInfoPage() {
                 )
               }
             >
-              Transfer
+              Receive
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-2 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-600 text-blue-700"
+                    : "text-gray-600 hover:text-gray-800"
+                )
+              }
+            >
+              Send
             </Tab>
           </TabList>
           <div className="p-4">
@@ -270,7 +285,10 @@ export function CUTInfoPage() {
               <Sell />
             </TabPanel>
             <TabPanel>
-              <Transfer />
+              <Receive />
+            </TabPanel>
+            <TabPanel>
+              <Send />
             </TabPanel>
           </div>
         </TabGroup>

@@ -88,24 +88,33 @@ export function useSellTokens(options?: UseBlockchainTransactionOptions) {
   };
 }
 
+interface UseTransferTokensOptions extends UseBlockchainTransactionOptions {
+  tokenAddress?: string;
+  tokenDecimals?: number;
+}
+
 /**
- * Hook for transferring platform tokens (CUT) to another address
+ * Hook for transferring tokens (CUT or USDC) to another address
  */
-export function useTransferTokens(options?: UseBlockchainTransactionOptions) {
+export function useTransferTokens(options?: UseTransferTokensOptions) {
   const chainId = useChainId();
   const transaction = useBlockchainTransaction(options);
 
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
+  // Use provided token address/decimals or default to platform token
+  const tokenAddress = options?.tokenAddress || platformTokenAddress;
+  const tokenDecimals = options?.tokenDecimals ?? 18;
+
   const createTransferCalls = (recipient: string, amount: string) => {
-    const platformTokenAmount = parseUnits(amount, 18); // Platform token has 18 decimals
+    const tokenAmount = parseUnits(amount, tokenDecimals);
 
     return [
       {
         abi: PlatformTokenContract.abi,
-        args: [recipient, platformTokenAmount],
+        args: [recipient, tokenAmount],
         functionName: "transfer",
-        to: platformTokenAddress as `0x${string}`,
+        to: tokenAddress as `0x${string}`,
       },
     ];
   };

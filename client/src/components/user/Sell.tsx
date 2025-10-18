@@ -52,6 +52,13 @@ export const Sell = () => {
     token: platformTokenAddress as `0x${string}`,
   });
 
+  const handleMaxSell = () => {
+    if (platformTokenBalance) {
+      const maxAmount = formatUnits(platformTokenBalance.value, 18);
+      setSellAmount(maxAmount);
+    }
+  };
+
   const handleSell = async () => {
     if (!isConnected || !sellAmount) {
       setSellError("Please enter an amount");
@@ -115,16 +122,26 @@ export const Sell = () => {
           <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
             Amount (CUT)
           </label>
-          <input
-            id="sell-amount"
-            type="number"
-            inputMode="decimal"
-            value={sellAmount}
-            onChange={(e) => setSellAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-            disabled={isProcessing}
-          />
+          <div className="relative">
+            <input
+              id="sell-amount"
+              type="number"
+              inputMode="decimal"
+              value={sellAmount}
+              onChange={(e) => setSellAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-4 py-2.5 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              disabled={isProcessing}
+            />
+            <button
+              type="button"
+              onClick={handleMaxSell}
+              disabled={isProcessing}
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              MAX
+            </button>
+          </div>
           {sellAmount && (
             <div className="text-sm text-gray-600 mt-2 flex items-center gap-1">
               <span className="text-gray-500">→</span>
@@ -153,7 +170,7 @@ export const Sell = () => {
               {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Sell CUT Tokens"
+            `Sell ${platformTokenBalance?.symbol || "CUT"}`
           )}
         </button>
       </div>
