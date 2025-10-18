@@ -236,7 +236,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
       {/* Contest Contract Details */}
       <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Escrow Contract</h3>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">Contest Escrow Contract</h3>
 
         {/* Contract panel */}
         <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
@@ -311,7 +311,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {createExplorerLinkJSX(
               contest.address,
               chainId,
-              "View Contract on Explorer",
+              "View Contract on Explorer →",
               "text-blue-600 hover:text-blue-800 underline"
             )}
           </div>
