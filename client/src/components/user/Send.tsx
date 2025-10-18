@@ -122,7 +122,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
                 type="button"
                 onClick={handleMaxSend}
                 disabled={isProcessing}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-gray-700 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 MAX
               </button>
