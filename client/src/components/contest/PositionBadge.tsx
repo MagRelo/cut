@@ -22,7 +22,7 @@ export const PositionBadge = ({
   showBorder = false,
   isTournamentEditable = false,
 }: PositionBadgeProps) => {
-  const ordinalSuffix = getOrdinalSuffix(position || 0);
+  const ordinalSuffix = getOrdinalSuffix(position || 1);
 
   return (
     <div className="relative">
@@ -36,7 +36,7 @@ export const PositionBadge = ({
         }`}
       >
         <span>
-          {position || 0}
+          {position || 1}
           <sup className="text-[9px]">{ordinalSuffix}</sup>
         </span>
       </div>
