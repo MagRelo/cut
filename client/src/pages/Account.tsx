@@ -26,18 +26,18 @@ const WalletInfo = ({
     <div className="space-y-3">
       {/* Address */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700">ADDRESS</span>
-        <div className="flex justify-end text-gray-600">
+        <span className="text-sm font-medium text-gray-700 font-display">Address</span>
+        <div className="flex justify-end text-gray-600 text-sm">
           <CopyToClipboard
             text={address || ""}
-            displayText={`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+            displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
           />
         </div>
       </div>
 
       {/* Network */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700">NETWORK</span>
+        <span className="text-sm font-medium text-gray-700 font-display">Network</span>
         <div className="flex justify-end">
           <NetworkStatus />
         </div>
@@ -45,7 +45,7 @@ const WalletInfo = ({
 
       {/* Wallet Provider */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700">WALLET</span>
+        <span className="text-sm font-medium text-gray-700 font-display">Wallet</span>
         <div className="flex justify-end">
           <a
             href={`https://id.porto.sh/`}
