@@ -51,13 +51,21 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
   const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
-  const [draftPlayers, setDraftPlayers] = useState<Array<PlayerWithTournamentData | null>>([]);
+  const [draftPlayers, setDraftPlayers] = useState<Array<PlayerWithTournamentData | null>>(
+    Array.from({ length: 4 }, () => null)
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize draft players with current lineup when in edit mode
   useEffect(() => {
     if (lineupId && currentLineup) {
-      setDraftPlayers(currentLineup.players || []);
+      const players = currentLineup.players || [];
+      // Ensure we always have exactly 4 slots
+      const paddedPlayers: Array<PlayerWithTournamentData | null> = [...players];
+      while (paddedPlayers.length < 4) {
+        paddedPlayers.push(null);
+      }
+      setDraftPlayers(paddedPlayers.slice(0, 4));
     }
   }, [lineupId, currentLineup]);
 
@@ -223,7 +231,9 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
         onClose={() => setSelectedPlayerIndex(null)}
         onSelect={handlePlayerSelect}
         availablePlayers={fieldPlayers || []}
-        selectedPlayers={draftPlayers.filter((p) => p !== null).map((p) => p!.id)}
+        selectedPlayers={draftPlayers
+          .filter((p): p is PlayerWithTournamentData => p != null)
+          .map((p) => p.id)}
       />
     </div>
   );
