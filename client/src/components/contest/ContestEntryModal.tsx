@@ -71,7 +71,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div>
                     {[...(lineup.tournamentLineup?.players || [])]
                       .sort((a, b) => {
                         const aTotal =
