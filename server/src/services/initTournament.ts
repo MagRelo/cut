@@ -4,6 +4,8 @@ import { prisma } from "../lib/prisma.js";
 import { getTournament } from "../lib/pgaTournament.js";
 import { getActivePlayers } from "../lib/pgaField.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
+import { fromZonedTime } from "date-fns-tz";
+import { parse } from "date-fns";
 
 // Helper function to chunk arrays for processing large datasets
 function chunk<T>(array: T[], size: number): T[][] {
@@ -15,15 +17,15 @@ function chunk<T>(array: T[], size: number): T[][] {
 }
 
 /**
- * Parses PGA Tour displayDate and timezone to extract start and end dates
+ * Parses PGA Tour displayDate and timezone to extract start and end dates with times
  * @param displayDate - Format: "Oct 23 - 26, 2025" or "Dec 30, 2024 - Jan 2, 2025"
- * @param _timezone - IANA timezone string (e.g., "America/Denver") - reserved for future timezone handling
+ * @param timezone - IANA timezone string (e.g., "America/Denver") for the tournament location
  * @param _seasonYear - Year of the tournament season - reserved for future use
- * @returns Object with startDate and endDate as Date objects
+ * @returns Object with startDate (8AM local time converted to UTC) and endDate (6PM local time converted to UTC)
  */
 function parseTournamentDates(
   displayDate: string,
-  _timezone: string,
+  timezone: string,
   _seasonYear: number
 ): { startDate: Date; endDate: Date } | null {
   try {
@@ -31,46 +33,57 @@ function parseTournamentDates(
     const singleMonthPattern = /^(\w+)\s+(\d+)\s*-\s*(\d+),\s*(\d{4})$/;
     const multiMonthPattern = /^(\w+)\s+(\d+),?\s+(\d{4})\s*-\s*(\w+)\s+(\d+),?\s+(\d{4})$/;
 
-    let startDate: Date;
-    let endDate: Date;
+    let startDateStr: string;
+    let endDateStr: string;
 
     // Try single month pattern first (e.g., "Oct 23 - 26, 2025")
     const singleMatch = displayDate.match(singleMonthPattern);
     if (singleMatch) {
       const [, month, startDay, endDay, year] = singleMatch;
-
-      // Parse start date
-      const startDateStr = `${month} ${startDay}, ${year}`;
-      startDate = new Date(startDateStr);
-
-      // Parse end date
-      const endDateStr = `${month} ${endDay}, ${year}`;
-      endDate = new Date(endDateStr);
-
-      // Set to start of day in tournament timezone (assuming tournaments start at midnight)
-      // Note: For more precise timezone handling, we'd need a library like date-fns-tz
-      return { startDate, endDate };
+      startDateStr = `${month} ${startDay}, ${year}`;
+      endDateStr = `${month} ${endDay}, ${year}`;
+    } else {
+      // Try multi-month pattern (e.g., "Dec 30, 2024 - Jan 2, 2025")
+      const multiMatch = displayDate.match(multiMonthPattern);
+      if (multiMatch) {
+        const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
+        startDateStr = `${startMonth} ${startDay}, ${startYear}`;
+        endDateStr = `${endMonth} ${endDay}, ${endYear}`;
+      } else {
+        // If no pattern matches, log warning and return null
+        console.warn(`Could not parse displayDate: "${displayDate}"`);
+        return null;
+      }
     }
 
-    // Try multi-month pattern (e.g., "Dec 30, 2024 - Jan 2, 2025")
-    const multiMatch = displayDate.match(multiMonthPattern);
-    if (multiMatch) {
-      const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
+    // Create start date at 8AM in the tournament's local timezone
+    // Parse the date and extract components to create a "naive" date
+    const startParsed = parse(startDateStr, "MMM d, yyyy", new Date());
+    const startNaive = new Date(
+      startParsed.getFullYear(),
+      startParsed.getMonth(),
+      startParsed.getDate(),
+      8,
+      0,
+      0,
+      0
+    );
+    const startDate = fromZonedTime(startNaive, timezone);
 
-      // Parse start date
-      const startDateStr = `${startMonth} ${startDay}, ${startYear}`;
-      startDate = new Date(startDateStr);
+    // Create end date at 6PM in the tournament's local timezone
+    const endParsed = parse(endDateStr, "MMM d, yyyy", new Date());
+    const endNaive = new Date(
+      endParsed.getFullYear(),
+      endParsed.getMonth(),
+      endParsed.getDate(),
+      18,
+      0,
+      0,
+      0
+    );
+    const endDate = fromZonedTime(endNaive, timezone);
 
-      // Parse end date
-      const endDateStr = `${endMonth} ${endDay}, ${endYear}`;
-      endDate = new Date(endDateStr);
-
-      return { startDate, endDate };
-    }
-
-    // If no pattern matches, log warning and return null
-    console.warn(`Could not parse displayDate: "${displayDate}"`);
-    return null;
+    return { startDate, endDate };
   } catch (error) {
     console.error(`Error parsing tournament dates:`, error);
     return null;
