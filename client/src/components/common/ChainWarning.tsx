@@ -73,6 +73,7 @@ export function RealMoneyWarning() {
         <div className="text-center font-medium text-sm pt-4 pb-3">
           <CopyToClipboard
             text={address || ""}
+            truncated={false}
             displayText={
               <div className="text-center w-full">
                 <p className="text-xs font-mono text-blue-700 break-all text-center">{address}</p>

@@ -30,6 +30,10 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
     );
   }
 
+  // Format address with chain information using EIP-681 standard
+  // Format: ethereum:<address>@<chainId>
+  const qrCodeValue = `ethereum:${address}@${chainId}`;
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold text-gray-800 mb-3">Receive {displaySymbol}</h3>
@@ -41,7 +45,7 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
       {/* QR Code */}
       <div className="flex justify-center py-4">
         <div className="p-4 bg-white rounded-lg border-2 border-gray-200 shadow-sm">
-          <QRCodeSVG value={address} size={140} />
+          <QRCodeSVG value={qrCodeValue} size={140} />
         </div>
       </div>
 
@@ -50,6 +54,7 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
         <div className="text-xs font-medium text-gray-600 mb-2">Your Wallet Address</div>
         <CopyToClipboard
           text={address}
+          truncated={false}
           displayText={
             <div className="w-full">
               <p className="font-mono text-sm text-gray-800 break-all">{address}</p>
@@ -79,7 +84,8 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Important</p>
             <p>
-              Make sure the sender is on the same network. Only send tokens from trusted sources.
+              Make sure the sender is on the correct network. Only accept tokens from trusted
+              sources.
             </p>
           </div>
         </div>

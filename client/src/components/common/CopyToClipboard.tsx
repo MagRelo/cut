@@ -2,11 +2,17 @@ import { useState } from "react";
 
 interface CopyToClipboardProps {
   text: string;
-  displayText?: string | React.ReactNode;
+  truncated?: boolean; // Default true - show truncated format
+  displayText?: React.ReactNode; // Optional custom display (keeps flexibility)
   className?: string;
 }
 
-export function CopyToClipboard({ text, displayText, className = "" }: CopyToClipboardProps) {
+export function CopyToClipboard({
+  text,
+  truncated = true,
+  displayText,
+  className = "",
+}: CopyToClipboardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -19,10 +25,28 @@ export function CopyToClipboard({ text, displayText, className = "" }: CopyToCli
     }
   };
 
+  // Wallet icon
+  const walletIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4 flex-shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+      />
+    </svg>
+  );
+
   const copyIcon = copied ? (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4 text-green-500"
+      className="h-4 w-4 text-green-500 flex-shrink-0"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -32,7 +56,7 @@ export function CopyToClipboard({ text, displayText, className = "" }: CopyToCli
   ) : (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4"
+      className="h-4 w-4 flex-shrink-0"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -46,22 +70,44 @@ export function CopyToClipboard({ text, displayText, className = "" }: CopyToCli
     </svg>
   );
 
+  // If custom displayText is provided, use it
+  if (displayText) {
+    return (
+      <button
+        onClick={handleCopy}
+        className={`inline-flex items-center gap-1 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
+        title="Click to copy"
+      >
+        {displayText}
+        {copyIcon}
+      </button>
+    );
+  }
+
+  // Default rendering based on truncated prop
+  const truncatedAddress = text ? `${text.slice(0, 6)}...${text.slice(-6)}` : "";
+
   return (
     <button
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
+      className={`inline-flex items-center gap-2 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
       title="Click to copy"
     >
-      {typeof displayText === "string" ? (
+      {walletIcon}
+      {truncated ? (
+        // Truncated view - inline with icon
         <>
-          <span>{displayText}</span>
+          <span className="font-mono text-xs">{truncatedAddress}</span>
           {copyIcon}
         </>
       ) : (
-        <>
-          {displayText || <span>{text}</span>}
-          {copyIcon}
-        </>
+        // Full address view - multi-line layout
+        <div className="flex flex-col items-start gap-1 w-full">
+          <span className="font-mono text-sm text-gray-800 break-all w-full">{text}</span>
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            Click to copy address {copyIcon}
+          </span>
+        </div>
       )}
     </button>
   );
