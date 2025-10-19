@@ -49,47 +49,7 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
         </div>
       </div>
 
-      {/* Address Display with Copy */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 rounded-lg border border-gray-200/50">
-        <div className="text-xs font-medium text-gray-600 mb-2">Your Wallet Address</div>
-        <CopyToClipboard
-          text={address}
-          truncated={false}
-          displayText={
-            <div className="w-full">
-              <p className="font-mono text-sm text-gray-800 break-all">{address}</p>
-              <span className="text-xs text-gray-500 mt-2 inline-block">Click to copy address</span>
-            </div>
-          }
-          className="w-full text-left hover:bg-gray-100 p-3 rounded-lg transition-colors"
-        />
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex gap-2">
-          <svg
-            className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div className="text-sm text-blue-800">
-            <p className="font-medium mb-1">Important</p>
-            <p>
-              Make sure the sender is on the correct network. Only accept tokens from trusted
-              sources.
-            </p>
-          </div>
-        </div>
-      </div>
+      <CopyToClipboard text={address} truncated={false} />
     </div>
   );
 };
