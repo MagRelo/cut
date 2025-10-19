@@ -27,7 +27,7 @@ export function USDCInfoPage() {
             <img src="/usd-coin-usdc-logo.svg" alt="USDC" className="w-12 h-12 mr-3" />
             <h2 className="text-2xl font-bold text-gray-900">What is USDC?</h2>
           </div>
-          <div className="space-y-3 text-gray-700">
+          <div className="text-sm text-gray-700">
             <p>
               USD Coin (USDC) is a digital stablecoin that is pegged to the United States dollar.
               Each USDC token is backed by one dollar held in reserve, making it a stable and

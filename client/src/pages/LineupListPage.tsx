@@ -138,17 +138,17 @@ export const LineupList: React.FC = () => {
             </div>
           )}
 
-      {/* not editable warning */}
+      {/* tournament in progress message */}
       {!isTournamentEditable && userContestLineups && userContestLineups.length === 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-sm shadow p-4">
+        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-gray-600 text-lg">⚠️</span>
-            <div className="text-lg font-semibold text-gray-800 font-display">
-              Tournament {tournamentStatusDisplay}
+            <span className="text-gray-600 text-lg">🏌️</span>
+            <div className="text-lg font-semibold text-gray-900 font-display">
+              Tournament {tournamentStatusDisplay}!
             </div>
           </div>
-          <div className="text-sm text-gray-700">
-            <p className="mb-2">Lineups cannot be edited.</p>
+          <div className="text-sm text-gray-600">
+            <p className="mb-2">Check back when the next tournament opens to create your lineup.</p>
           </div>
         </div>
       )}

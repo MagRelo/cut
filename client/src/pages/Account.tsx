@@ -27,7 +27,7 @@ const WalletInfo = ({
       {/* Address */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
         <span className="text-sm font-medium text-gray-700 font-display">Address</span>
-        <div className="flex justify-end text-gray-600 text-sm">
+        <div className="flex justify-end text-gray-600 text-sm font-semibold">
           <CopyToClipboard
             text={address || ""}
             displayText={`${address?.slice(0, 6)}...${address?.slice(-6)}`}
