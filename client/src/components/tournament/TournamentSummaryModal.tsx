@@ -36,28 +36,35 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">
-                        Tom Kim and Sahith Theegala:
-                      </span>{" "}
-                      Among the early betting favorites for the tournament.
+                      <span className="font-semibold text-gray-900">Alex Noren (+1400):</span>{" "}
+                      Highest-ranked player in the field and current betting favorite. Known for
+                      precision short game and consistency in windy or firm desert conditions.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Justin Rose:</span> Appears near
-                      the top tier of contenders.
+                      <span className="font-semibold text-gray-900">Jason Day (+1600):</span> Former
+                      Major winner with several solid FedEx Cup Fall finishes. His controlled iron
+                      play and experience on firm courses make him a strong contender.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Harris English:</span> Also
-                      among the top-tier favorites.
+                      <span className="font-semibold text-gray-900">Billy Horschel (+1800):</span>{" "}
+                      Veteran competitor trending upward with multiple top-20 fall results. His
+                      accuracy and patience fit Black Desert's strategic layout.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Matt McCarty:</span> Defending
-                      champion and one of the favorites to repeat.
+                      <span className="font-semibold text-gray-900">Maverick McNealy (+2000):</span>{" "}
+                      Excellent putter and known birdie-maker, often thrives on wide fairways like
+                      those in Ivins, Utah. Viewed as a sleeper-to-favorite bet range this week.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">
-                        Nick Hardy and Lee Hodges:
-                      </span>{" "}
-                      Longshots gaining interest, both top-10 finishers last year.
+                      <span className="font-semibold text-gray-900">Kurt Kitayama (+2200):</span>{" "}
+                      Long hitter who performs well in altitude-adjusted settings. His aggressive
+                      playstyle could pay off if desert winds stay calm.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">Matt McCarty (+2500):</span>{" "}
+                      Defending champion after dominating the event in 2024. His familiarity with
+                      the Black Desert layout gives him a statistical edge despite less overall Tour
+                      experience.
                     </li>
                   </ul>
                 </div>

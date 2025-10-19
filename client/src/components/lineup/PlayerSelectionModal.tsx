@@ -22,7 +22,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   selectedPlayers,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>("fedex");
+  const [sortField, setSortField] = useState<SortField>("owgr");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const handleClose = () => {

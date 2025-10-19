@@ -13,7 +13,6 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
-import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 import type { ContestLineup } from "../types/lineup";
 
 export const LineupList: React.FC = () => {
@@ -100,8 +99,6 @@ export const LineupList: React.FC = () => {
   return (
     <div className="p-4 space-y-4">
       <PageHeader title="Lineups" />
-      {/* Tournament Info Panel - only show when editable */}
-      {isTournamentEditable && <TournamentInfoPanel />}
 
       {/* list of user lineups */}
       {isTournamentEditable
@@ -158,7 +155,7 @@ export const LineupList: React.FC = () => {
         <div className="text-center">
           <Link
             to="/lineups/create"
-            className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold font-display rounded block text-center uppercase"
+            className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-display py-2 px-4 rounded border border-blue-500 transition-colors"
           >
             + Add Lineup
           </Link>
