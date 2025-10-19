@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-const PGA_API_KEY = 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
-const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
+const PGA_API_KEY = "da2-gsrx5bibzbb4njvhl7t37wqyl4";
+const PGA_API_URL = "https://orchestrator.pgatour.com/graphql";
 
 // Schema for the player profile data
 const playerProfileSchema = z.object({
@@ -13,22 +13,20 @@ const playerProfileSchema = z.object({
     firstName: z.string(),
     lastName: z.string(),
   }),
-  standings: z.object({
-    id: z.string(),
-    logo: z.string(),
-    logoDark: z.string(),
-    title: z.string(),
-    description: z.string(),
-    total: z.string(),
-    totalLabel: z.string(),
-    rank: z.string(),
-    rankLogo: z.string().nullable(),
-    rankLogoDark: z.string().nullable(),
-    owgr: z.string(),
-    webview: z.string().nullable(),
-    webviewBrowserControls: z.boolean().nullable(),
-    detailCopy: z.string().nullable(),
-  }),
+  profileStandings: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string(),
+      total: z.string(),
+      totalLabel: z.string(),
+      rank: z.string(),
+      owgr: z.string().nullable(),
+      webview: z.string().nullable(),
+      webviewBrowserControls: z.boolean().nullable(),
+      detailCopy: z.string().nullable(),
+    })
+  ),
   performance: z.array(
     z.object({
       tour: z.string(),
@@ -51,27 +49,6 @@ const playerProfileSchema = z.object({
       description: z.string().nullable(),
     })
   ),
-  fedexFallStandings: z.object({
-    id: z.string(),
-    logo: z.string(),
-    logoDark: z.string(),
-    title: z.string(),
-    description: z.string(),
-    total: z.string(),
-    totalLabel: z.string(),
-    rank: z.string(),
-    rankLogo: z.string().nullable(),
-    rankLogoDark: z.string().nullable(),
-    totals: z.array(
-      z.object({
-        total: z.string(),
-        totalLabel: z.string(),
-      })
-    ),
-    webview: z.string().nullable(),
-    webviewBrowserControls: z.boolean().nullable(),
-    detailCopy: z.string().nullable(),
-  }),
 });
 
 const playerProfileResponseSchema = z.object({
@@ -82,10 +59,7 @@ const playerProfileResponseSchema = z.object({
 
 type PlayerProfileData = z.infer<typeof playerProfileSchema>;
 
-async function fetchPlayerProfileData(
-  playerId: string,
-  currentTour = 'R'
-): Promise<any> {
+async function fetchPlayerProfileData(playerId: string, currentTour = "R"): Promise<any> {
   const query = `
     query PlayerProfileOverview($playerId: ID!, $currentTour: TourCode) {
       playerProfileOverview(playerId: $playerId, currentTour: $currentTour) {
@@ -97,17 +71,13 @@ async function fetchPlayerProfileData(
           firstName
           lastName
         }
-        standings {
+        profileStandings {
           id
-          logo
-          logoDark
           title
           description
           total
           totalLabel
           rank
-          rankLogo
-          rankLogoDark
           owgr
           webview
           webviewBrowserControls
@@ -129,42 +99,23 @@ async function fetchPlayerProfileData(
           value
           description
         }
-        fedexFallStandings {
-          id
-          logo
-          logoDark
-          title
-          description
-          total
-          totalLabel
-          rank
-          rankLogo
-          rankLogoDark
-          totals {
-            total
-            totalLabel
-          }
-          webview
-          webviewBrowserControls
-          detailCopy
-        }
       }
     }
   `;
 
   const response = await fetch(PGA_API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'X-API-Key': PGA_API_KEY,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Origin: 'https://www.pgatour.com',
-      Referer: 'https://www.pgatour.com/',
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      "X-API-Key": PGA_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Origin: "https://www.pgatour.com",
+      Referer: "https://www.pgatour.com/",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     },
     body: JSON.stringify({
-      operationName: 'PlayerProfileOverview',
+      operationName: "PlayerProfileOverview",
       variables: {
         playerId,
         currentTour,
@@ -192,14 +143,11 @@ async function fetchPlayerProfileData(
 
   if (data.errors) {
     console.error(`API error for player ${playerId}:`, data.errors);
-    throw new Error(`API error: ${data.errors[0]?.message || 'Unknown error'}`);
+    throw new Error(`API error: ${data.errors[0]?.message || "Unknown error"}`);
   }
 
   if (!data.data?.playerProfileOverview) {
-    console.error(
-      `No profile data returned for player ${playerId}. Full response:`,
-      data
-    );
+    console.error(`No profile data returned for player ${playerId}. Full response:`, data);
   }
 
   return data;
@@ -210,24 +158,20 @@ export async function getPlayerProfileOverview(
   currentTour?: string
 ): Promise<PlayerProfileData | null> {
   if (!playerId) {
-    console.error('No player ID provided');
+    console.error("No player ID provided");
     return null;
   }
 
   try {
     const data = await fetchPlayerProfileData(playerId, currentTour);
 
-    if (!data || typeof data !== 'object') {
-      console.error(
-        `Invalid data structure returned from API for player ${playerId}`
-      );
+    if (!data || typeof data !== "object") {
+      console.error(`Invalid data structure returned from API for player ${playerId}`);
       return null;
     }
 
-    if (!('data' in data)) {
-      console.error(
-        `Missing 'data' field in API response for player ${playerId}`
-      );
+    if (!("data" in data)) {
+      console.error(`Missing 'data' field in API response for player ${playerId}`);
       return null;
     }
 
@@ -244,23 +188,18 @@ export async function getPlayerProfileOverview(
       if (validationError instanceof z.ZodError) {
         console.error(`Validation error for player ${playerId}:`, {
           errors: validationError.errors.map((err) => ({
-            path: err.path.join('.'),
+            path: err.path.join("."),
             message: err.message,
           })),
         });
       } else {
-        console.error(
-          `Validation error for player ${playerId}:`,
-          validationError
-        );
+        console.error(`Validation error for player ${playerId}:`, validationError);
       }
       return null;
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.error(
-        `Error fetching player profile for ${playerId}: ${error.message}`
-      );
+      console.error(`Error fetching player profile for ${playerId}: ${error.message}`);
     } else {
       console.error(`Unknown error for player ${playerId}`);
     }

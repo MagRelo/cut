@@ -195,7 +195,9 @@ export async function initTournament(pgaTourId: string) {
               data: {
                 pga_performance: {
                   performance: playerProfile.profile?.performance,
-                  standings: playerProfile.profile?.standings,
+                  standings: playerProfile.profile?.profileStandings?.find(
+                    (s) => s.title === "FedExCup Standings"
+                  ),
                 },
               },
             })

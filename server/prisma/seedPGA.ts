@@ -190,7 +190,9 @@ async function main() {
             data: {
               pga_performance: {
                 performance: playerProfile.performance,
-                standings: playerProfile.standings,
+                standings: playerProfile.profileStandings?.find(
+                  (s) => s.title === "FedExCup Standings"
+                ),
               },
             },
           });
