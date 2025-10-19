@@ -16,7 +16,7 @@ export const themeOverrides = {
 };
 
 const portoConnector = porto({
-  // feeToken: "EXP",
+  feeToken: "USDC",
   merchantUrl: import.meta.env.VITE_API_URL + "/porto/sponsor",
   authUrl: {
     nonce: import.meta.env.VITE_API_URL + "/auth/siwe/nonce",
