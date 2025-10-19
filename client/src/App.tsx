@@ -32,6 +32,7 @@ import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
+import { AdminPage } from "./pages/AdminPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
@@ -100,6 +101,9 @@ export const App: React.FC = () => {
 
                           {/* Leaderboard */}
                           <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+                          {/* Admin */}
+                          <Route path="/admin" element={<AdminPage />} />
                         </Routes>
                       </div>
                     </div>
