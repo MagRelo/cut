@@ -29,7 +29,7 @@ export function ConnectPage() {
 
   return (
     <div className="space-y-4 p-4">
-      <PageHeader title="Connect" />
+      <PageHeader title="Sign in" />
 
       <Connect onSuccess={handleConnectSuccess} />
     </div>

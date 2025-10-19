@@ -26,6 +26,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
 
@@ -105,14 +106,16 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </div>
       ) : (
         <div>
-          {/* Header */}
-          {/* <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">Connect to the Cut</h3>
-            <p className="text-sm text-gray-500 mt-1">Choose your network to get started</p>
-          </div> */}
+          <div className="p-6 space-y-5">
+            {/* Main Content */}
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-semibold text-gray-900">Sign in to the Cut</h3>
+              {/* <p className="text-sm text-gray-600">
+                Sign in to compete in real money fantasy golf contests
+              </p> */}
+            </div>
 
-          <div className="p-6 pt-4 space-y-4">
-            {/* Single TOC checkbox */}
+            {/* TOC checkbox */}
             <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-sm border border-gray-200">
               <input
                 type="checkbox"
@@ -134,69 +137,61 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
               </label>
             </div>
 
-            {/* Network Options */}
-            <div className="space-y-3">
-              {/* Real Money Section */}
-              <div className="group border-2 border-gray-200 rounded-sm hover:border-slate-300 transition-colors">
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-base font-semibold text-gray-900">
-                          Real Money Contests
-                        </h4>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          Live
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-2">Base Mainnet</p>
-                      <p className="text-sm text-gray-600">
-                        Deposit USDC and compete for real stakes
-                      </p>
-                    </div>
+            {/* Primary Mainnet Connect Button */}
+            <button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md text-lg"
+              disabled={isConnecting || !tocAccepted}
+              onClick={() => handleConnect("mainnet")}
+              type="button"
+            >
+              Sign in
+            </button>
+
+            {/* Advanced Options Toggle */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 mx-auto"
+                type="button"
+              >
+                <span>Test Mode</span>
+                <svg
+                  className={`w-3 h-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* Testnet Option (Collapsible) */}
+              {showAdvanced && (
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                      Testnet
+                    </span>
+                    <span className="text-xs font-medium text-gray-700">Base Sepolia</span>
                   </div>
-
+                  <p className="text-xs text-gray-600 mb-3">
+                    Practice with test tokens without any risk. For testing purposes only.
+                  </p>
                   <button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={isConnecting || !tocAccepted}
-                    onClick={() => handleConnect("mainnet")}
-                    type="button"
-                  >
-                    Connect
-                  </button>
-                </div>
-              </div>
-
-              {/* Testing Section */}
-              <div className="group border-2 border-gray-200 rounded-sm hover:border-slate-300 transition-colors">
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-base font-semibold text-gray-900">
-                          Testing & Practice
-                        </h4>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                          Testnet
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-2">Base Sepolia</p>
-                      <p className="text-sm text-gray-600">
-                        Practice with test tokens without any risk
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                     disabled={isConnecting || !tocAccepted}
                     onClick={() => handleConnect("testnet")}
                     type="button"
                   >
-                    Connect
+                    Connect to Testnet
                   </button>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
