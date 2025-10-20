@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount, useChainId } from "wagmi";
+import { useChainId } from "wagmi";
 import { decodeEventLog } from "viem";
 
 import { useTournament } from "../../contexts/TournamentContext";
@@ -37,7 +37,7 @@ export const CreateContestForm = () => {
   const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
 
   // wagmi functions
-  const { address: userAddress } = useAccount();
+  // const { address: userAddress } = useAccount();
   const chainId = useChainId();
 
   // Use centralized create escrow hook

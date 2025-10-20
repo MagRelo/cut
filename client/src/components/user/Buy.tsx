@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -9,6 +9,7 @@ import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 export const Buy = () => {
   const { isConnected } = useAccount();
+  const chainId = useChainId();
   const { paymentTokenBalance, paymentTokenSymbol, platformTokenSymbol } = usePortoAuth();
 
   // Buy form state

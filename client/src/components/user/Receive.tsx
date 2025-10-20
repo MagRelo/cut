@@ -49,7 +49,9 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
         </div>
       </div>
 
-      <CopyToClipboard text={address} truncated={false} />
+      <div className="border border-gray-200 rounded-md p-2 text-center">
+        <CopyToClipboard text={address} truncated={false} />
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -9,6 +9,7 @@ import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 export const Sell = () => {
   const { isConnected } = useAccount();
+  const chainId = useChainId();
   const { platformTokenBalance, paymentTokenSymbol } = usePortoAuth();
 
   // Sell form state
@@ -154,7 +155,7 @@ export const Sell = () => {
               {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            `Sell ${platformTokenBalance?.symbol || "CUT"}`
+            "Sell CUT"
           )}
         </button>
       </div>

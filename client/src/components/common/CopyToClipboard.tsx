@@ -72,7 +72,7 @@ export function CopyToClipboard({
   return (
     <button
       onClick={handleCopy}
-      className={`inline-flex border border-gray-200 rounded-md px-2 pt-4 pb-3 items-center gap-2 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
+      className={`inline-flex items-center gap-2 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
       title="Click to copy"
     >
       {truncated ? (
@@ -83,7 +83,7 @@ export function CopyToClipboard({
         </>
       ) : (
         // Full address view - multi-line layout
-        <div className="flex flex-col items-center justify-center gap-1 w-full">
+        <div className="flex flex-col items-center justify-center gap-2 w-full">
           <span className="font-mono font-medium text-xs text-gray-700 break-all w-full">
             {text}
           </span>
