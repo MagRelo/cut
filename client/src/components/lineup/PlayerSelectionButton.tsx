@@ -43,7 +43,7 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
       }`}
     >
       {iconType && (
-        <div className="absolute top-3 right-3 p-1 rounded-md border border-emerald-500">
+        <div className="absolute top-3 right-3 p-1 rounded-md border border-emerald-600 bg-white">
           <svg
             className="w-4 h-4 text-emerald-500"
             fill="none"

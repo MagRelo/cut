@@ -152,7 +152,7 @@ export const LineupList: React.FC = () => {
 
       {/* Create/Add Lineup Button */}
       {isTournamentEditable && (
-        <div className="text-center">
+        <div className="text-center pt-4">
           <Link
             to="/lineups/create"
             className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-display py-2 px-4 rounded border border-blue-500 transition-colors"
