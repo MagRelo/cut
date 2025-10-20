@@ -19,18 +19,18 @@ export const Contests: React.FC = () => {
 
   // Single query fetches both tournament and contests - no duplicate requests!
   const { data, isLoading, error: fetchError } = useTournamentData();
-  const tournament = data?.tournament ?? null;
-  const allContests = data?.contests ?? [];
+  // const tournament = data?.tournament ?? null;
+  const allContests = data?.contests;
   const error = fetchError?.message ?? null;
 
   // Filter contests by chain ID client-side
   const contests = useMemo(() => {
-    return allContests.filter((contest) => contest.chainId === chainId);
+    return allContests?.filter((contest) => contest.chainId === chainId) ?? [];
   }, [allContests, chainId]);
 
   // Sort contests by entry fee (highest first)
   const sortedContests = useMemo(() => {
-    return [...contests].sort((a, b) => {
+    return [...contests]?.sort((a, b) => {
       const feeA = a.settings?.fee ?? 0;
       const feeB = b.settings?.fee ?? 0;
       return feeB - feeA; // Descending order
@@ -39,7 +39,7 @@ export const Contests: React.FC = () => {
 
   // Separate contests into user's contests and all contests, then sort
   const userContests = useMemo(() => {
-    return sortedContests.filter((contest) => {
+    return sortedContests?.filter((contest) => {
       if (contest.contestLineups) {
         return contest.contestLineups.some((lineup) => lineup.userId === user?.id);
       }
