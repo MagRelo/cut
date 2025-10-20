@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
-import { useBalance, useAccount, useChainId, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
@@ -13,7 +13,6 @@ import { useEscrowDeposit, useEscrowWithdraw } from "../../hooks/useEscrowOperat
 
 // Import contract ABIs
 import EscrowContract from "../../utils/contracts/Escrow.json";
-import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
 interface LineupManagementProps {
   contest: Contest;
@@ -47,7 +46,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
   const { lineups, getLineups } = useLineup();
-  const { user } = usePortoAuth();
+  const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
 
@@ -61,10 +60,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   // Extract primitive values to prevent re-renders
   const contestId = contest.id;
   const tournamentId = contest.tournamentId;
-
-  // Wagmi functions
-  const { address: userAddress } = useAccount();
-  const chainId = useChainId();
 
   // Use centralized escrow hooks
   const {
@@ -155,21 +150,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     args: [],
   }).data as [bigint, bigint] | undefined;
 
-  // Get token balances
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
-  const { data: platformTokenBalance } = useBalance({
-    address: userAddress as `0x${string}`,
-    token: platformTokenAddress as `0x${string}`,
-    chainId: chainId ?? 0,
-  });
-
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress") ?? "";
-  const { data: paymentTokenBalance } = useBalance({
-    address: userAddress as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}`,
-    chainId: chainId ?? 0,
-  });
-
   // Modals
   const [warningModal, setWarningModal] = useState<{
     open: boolean;
@@ -181,8 +161,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     if (!escrowDetails) return false;
 
     const depositAmount = escrowDetails[0];
-    const platformTokenAmount = platformTokenBalance?.value ?? 0n;
-    const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
+    const platformTokenAmount = platformTokenBalance ?? 0n;
+    const paymentTokenAmount = paymentTokenBalance ?? 0n;
     const paymentTokenAsPlatformTokens = convertPaymentToPlatformTokens(paymentTokenAmount);
     const totalAvailableBalance = platformTokenAmount + paymentTokenAsPlatformTokens;
 
@@ -231,8 +211,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     setSubmissionError(null);
 
     const depositAmount = escrowDetails[0];
-    const platformTokenAmount = platformTokenBalance?.value ?? 0n;
-    const paymentTokenAmount = paymentTokenBalance?.value ?? 0n;
+    const platformTokenAmount = platformTokenBalance ?? 0n;
+    const paymentTokenAmount = paymentTokenBalance ?? 0n;
 
     // Create and execute the deposit calls
     const calls = createDepositCalls(

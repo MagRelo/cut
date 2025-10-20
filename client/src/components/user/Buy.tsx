@@ -1,22 +1,15 @@
 import { useState } from "react";
-import { useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import {
-  useTokenSymbol,
-  createTransactionLinkJSX,
-  getContractAddress,
-} from "../../utils/blockchainUtils.tsx";
+import { createTransactionLinkJSX } from "../../utils/blockchainUtils.tsx";
 import { useBuyTokens } from "../../hooks/useTokenOperations";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 export const Buy = () => {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-
-  // Get contract addresses dynamically
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+  const { isConnected } = useAccount();
+  const { paymentTokenBalance, paymentTokenSymbol, platformTokenSymbol } = usePortoAuth();
 
   // Buy form state
   const [buyAmount, setBuyAmount] = useState("");
@@ -43,21 +36,9 @@ export const Buy = () => {
     },
   });
 
-  // Get USDC balance
-  const { data: usdcBalance } = useBalance({
-    address,
-    token: paymentTokenAddress as `0x${string}`,
-  });
-
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
-
-  // Get platform token symbol
-  const { data: platformTokenSymbol } = useTokenSymbol(platformTokenAddress as string);
-
   const handleMaxBuy = () => {
-    if (usdcBalance) {
-      const maxAmount = formatUnits(usdcBalance.value, 6);
+    if (paymentTokenBalance) {
+      const maxAmount = formatUnits(paymentTokenBalance, 6);
       setBuyAmount(maxAmount);
     }
   };
@@ -74,7 +55,7 @@ export const Buy = () => {
     const usdcAmount = parseUnits(buyAmount, 6);
 
     // Check if user has enough USDC
-    if (usdcBalance && usdcBalance.value < usdcAmount) {
+    if (paymentTokenBalance && paymentTokenBalance < usdcAmount) {
       setBuyError("Insufficient USDC balance");
       return;
     }
@@ -109,7 +90,7 @@ export const Buy = () => {
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
               <div className="text-lg font-semibold text-gray-800">
-                ${formattedBalance(usdcBalance?.value ?? 0n, 6)}
+                ${formattedBalance(paymentTokenBalance ?? 0n, 6)}
               </div>
               <div className="text-xs text-gray-500">{paymentTokenSymbol || "USDC"}</div>
             </div>

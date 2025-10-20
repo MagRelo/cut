@@ -1,8 +1,6 @@
-import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
-
-import { getContractAddress, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 // Logo components using CSS background images (cached by browser)
 const CutLogo = () => (
@@ -32,26 +30,7 @@ export function TokenBalances({
   showCutTokenLink = false,
   showUsdcLink = false,
 }: TokenBalancesProps) {
-  const { address, chainId } = useAccount();
-
-  // Get contract addresses for current chain
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-
-  // platformTokenAddress balance
-  const { data: platformTokenBalance } = useBalance({
-    address: address,
-    token: platformTokenAddress as `0x${string}`,
-  });
-
-  // paymentTokenAddress balance
-  const { data: paymentTokenBalance } = useBalance({
-    address: address,
-    token: paymentTokenAddress as `0x${string}`,
-  });
-
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
+  const { platformTokenBalance, paymentTokenBalance, paymentTokenSymbol } = usePortoAuth();
 
   // round balance to 2 decimal points for payment tokens (6 decimals)
   const formattedPaymentBalance = (balance: bigint) => {
@@ -66,8 +45,8 @@ export function TokenBalances({
         <div className="text-xl font-semibold text-gray-900 font-display">
           $
           {(
-            Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)) +
-            Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6))
+            Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
+            Number(formatUnits(paymentTokenBalance ?? 0n, 6))
           ).toFixed(2)}
         </div>
       </div>
@@ -88,7 +67,7 @@ export function TokenBalances({
           )}
         </div>
         <div className="text-sm font-semibold text-gray-700 text-right font-sans">
-          ${Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)).toFixed(2)}
+          ${Number(formatUnits(platformTokenBalance ?? 0n, 18)).toFixed(2)}
         </div>
 
         {/* Payment Token */}
@@ -105,7 +84,7 @@ export function TokenBalances({
           )}
         </div>
         <div className="text-sm font-semibold text-gray-700 text-right font-sans">
-          ${formattedPaymentBalance(paymentTokenBalance?.value ?? 0n)}
+          ${formattedPaymentBalance(paymentTokenBalance ?? 0n)}
         </div>
       </div>
 

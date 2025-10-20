@@ -1,34 +1,16 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
-import { getContractAddress } from "../../utils/blockchainUtils";
 
 export const Navigation: React.FC = () => {
-  const { user } = usePortoAuth();
+  const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const location = useLocation();
-  const { address, chainId } = useAccount();
-
-  // Get contract addresses for current chain
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-
-  // Get balances
-  const { data: platformTokenBalance } = useBalance({
-    address: address,
-    token: platformTokenAddress as `0x${string}`,
-  });
-
-  const { data: paymentTokenBalance } = useBalance({
-    address: address,
-    token: paymentTokenAddress as `0x${string}`,
-  });
 
   // Calculate total balance
   const totalBalance = (
-    Number(formatUnits(platformTokenBalance?.value ?? 0n, 18)) +
-    Number(formatUnits(paymentTokenBalance?.value ?? 0n, 6))
+    Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
+    Number(formatUnits(paymentTokenBalance ?? 0n, 6))
   ).toFixed(2);
 
   const getLinkClassName = (path: string) => {

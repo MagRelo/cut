@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
-import { useAccount, useSwitchChain, useDisconnect } from "wagmi";
+import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
+import { erc20Abi } from "viem";
 import { handleApiResponse, ApiError } from "../utils/apiError";
+import { getContractAddress } from "../utils/blockchainUtils";
 
 interface PortoUser {
   id: string;
@@ -27,6 +29,16 @@ interface PortoAuthContextData {
   logout: () => void;
   isAdmin: () => boolean;
   getCurrentUser: () => PortoUser | null;
+  // Token balance and metadata
+  platformTokenBalance: bigint | undefined;
+  paymentTokenBalance: bigint | undefined;
+  platformTokenAddress: string | null;
+  paymentTokenAddress: string | null;
+  paymentTokenSymbol: string | undefined;
+  paymentTokenDecimals: number | undefined;
+  platformTokenSymbol: string | undefined;
+  platformTokenDecimals: number | undefined;
+  balancesLoading: boolean;
 }
 
 const PortoAuthContext = createContext<PortoAuthContextData | undefined>(undefined);
@@ -46,6 +58,70 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Get contract addresses for current chain
+  const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
+  const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
+
+  // Fetch platform token balance with 30-second polling
+  const { data: platformTokenBalanceData, isLoading: platformBalanceLoading } = useBalance({
+    address: address,
+    token: platformTokenAddress as `0x${string}`,
+    query: {
+      enabled: !!address && !!platformTokenAddress,
+      refetchInterval: 30000, // 30 seconds
+    },
+  });
+
+  // Fetch payment token balance with 30-second polling
+  const { data: paymentTokenBalanceData, isLoading: paymentBalanceLoading } = useBalance({
+    address: address,
+    token: paymentTokenAddress as `0x${string}`,
+    query: {
+      enabled: !!address && !!paymentTokenAddress,
+      refetchInterval: 30000, // 30 seconds
+    },
+  });
+
+  // Fetch payment token metadata
+  const { data: paymentTokenSymbol } = useReadContract({
+    address: paymentTokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "symbol",
+    query: {
+      enabled: !!paymentTokenAddress,
+    },
+  });
+
+  const { data: paymentTokenDecimals } = useReadContract({
+    address: paymentTokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: {
+      enabled: !!paymentTokenAddress,
+    },
+  });
+
+  // Fetch platform token metadata
+  const { data: platformTokenSymbol } = useReadContract({
+    address: platformTokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "symbol",
+    query: {
+      enabled: !!platformTokenAddress,
+    },
+  });
+
+  const { data: platformTokenDecimals } = useReadContract({
+    address: platformTokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: {
+      enabled: !!platformTokenAddress,
+    },
+  });
+
+  const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
 
   const config = useMemo(
     () => ({
@@ -206,8 +282,35 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       isAdmin,
       getCurrentUser,
+      // Token balance and metadata
+      platformTokenBalance: platformTokenBalanceData?.value,
+      paymentTokenBalance: paymentTokenBalanceData?.value,
+      platformTokenAddress,
+      paymentTokenAddress,
+      paymentTokenSymbol: paymentTokenSymbol as string | undefined,
+      paymentTokenDecimals: paymentTokenDecimals as number | undefined,
+      platformTokenSymbol: platformTokenSymbol as string | undefined,
+      platformTokenDecimals: platformTokenDecimals as number | undefined,
+      balancesLoading,
     }),
-    [user, loading, updateUser, updateUserSettings, logout, isAdmin, getCurrentUser]
+    [
+      user,
+      loading,
+      updateUser,
+      updateUserSettings,
+      logout,
+      isAdmin,
+      getCurrentUser,
+      platformTokenBalanceData?.value,
+      paymentTokenBalanceData?.value,
+      platformTokenAddress,
+      paymentTokenAddress,
+      paymentTokenSymbol,
+      paymentTokenDecimals,
+      platformTokenSymbol,
+      platformTokenDecimals,
+      balancesLoading,
+    ]
   );
 
   return <PortoAuthContext.Provider value={contextValue}>{children}</PortoAuthContext.Provider>;

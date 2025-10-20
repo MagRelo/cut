@@ -1,22 +1,15 @@
 import { useState } from "react";
-import { useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import {
-  useTokenSymbol,
-  createTransactionLinkJSX,
-  getContractAddress,
-} from "../../utils/blockchainUtils.tsx";
+import { createTransactionLinkJSX } from "../../utils/blockchainUtils.tsx";
 import { useSellTokens } from "../../hooks/useTokenOperations";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 export const Sell = () => {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
-
-  // Get contract addresses dynamically
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+  const { isConnected } = useAccount();
+  const { platformTokenBalance, paymentTokenSymbol } = usePortoAuth();
 
   // Sell form state
   const [sellAmount, setSellAmount] = useState("");
@@ -43,18 +36,9 @@ export const Sell = () => {
     },
   });
 
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
-
-  // Get platform token balance
-  const { data: platformTokenBalance } = useBalance({
-    address,
-    token: platformTokenAddress as `0x${string}`,
-  });
-
   const handleMaxSell = () => {
     if (platformTokenBalance) {
-      const maxAmount = formatUnits(platformTokenBalance.value, 18);
+      const maxAmount = formatUnits(platformTokenBalance, 18);
       setSellAmount(maxAmount);
     }
   };
@@ -71,7 +55,7 @@ export const Sell = () => {
     const platformTokenAmount = parseUnits(sellAmount, 18);
 
     // Check if user has enough platform tokens
-    if (platformTokenBalance && platformTokenBalance.value < platformTokenAmount) {
+    if (platformTokenBalance && platformTokenBalance < platformTokenAmount) {
       setSellError("Insufficient platform token balance");
       return;
     }
@@ -105,7 +89,7 @@ export const Sell = () => {
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
               <div className="text-lg font-semibold text-gray-800">
-                {formattedBalance(platformTokenBalance?.value ?? 0n, 18)}
+                {formattedBalance(platformTokenBalance ?? 0n, 18)}
               </div>
               <div className="text-xs text-gray-500">CUT</div>
             </div>

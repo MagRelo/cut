@@ -1,28 +1,30 @@
 import { useState } from "react";
-import { useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { getContractAddress, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
 import { useTransferTokens } from "../../hooks/useTokenOperations";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 interface SendProps {
   tokenName?: "CUT" | "USDC";
 }
 
 export const Send = ({ tokenName = "CUT" }: SendProps) => {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
+  const { isConnected } = useAccount();
+  const {
+    platformTokenBalance,
+    paymentTokenBalance,
+    platformTokenAddress,
+    paymentTokenAddress,
+    platformTokenSymbol,
+    paymentTokenSymbol,
+  } = usePortoAuth();
 
-  // Get contract addresses dynamically based on token type
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-
-  // Select the appropriate token address and decimals based on tokenName
+  // Select the appropriate token address, balance, decimals, and symbol based on tokenName
   const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
+  const tokenBalance = tokenName === "USDC" ? paymentTokenBalance : platformTokenBalance;
   const tokenDecimals = tokenName === "USDC" ? 6 : 18;
-
-  // Get token symbol from contract
-  const { data: tokenSymbol } = useTokenSymbol(tokenAddress as string);
+  const tokenSymbol = tokenName === "USDC" ? paymentTokenSymbol : platformTokenSymbol;
 
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -49,14 +51,9 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     },
   });
 
-  const tokenBalance = useBalance({
-    address,
-    token: tokenAddress as `0x${string}`,
-  });
-
   const handleMaxSend = () => {
-    if (tokenBalance.data) {
-      const maxAmount = formatUnits(tokenBalance.data.value, tokenDecimals);
+    if (tokenBalance) {
+      const maxAmount = formatUnits(tokenBalance, tokenDecimals);
       setAmount(maxAmount);
     }
   };
@@ -75,7 +72,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     return Number(formatUnits(balance, tokenDecimals)).toFixed(2);
   };
 
-  const displaySymbol = tokenSymbol || tokenBalance.data?.symbol || tokenName;
+  const displaySymbol = tokenSymbol || tokenName;
 
   return (
     <>
@@ -85,7 +82,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
         <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
           <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
           <div className="text-lg font-semibold text-gray-800">
-            {formattedBalance(tokenBalance.data?.value ?? 0n)}
+            {formattedBalance(tokenBalance ?? 0n)}
           </div>
           <div className="text-xs text-gray-500">{displaySymbol}</div>
         </div>
@@ -113,7 +110,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
                 type="number"
                 value={amount}
                 step="0.01"
-                max={formattedBalance(tokenBalance.data?.value ?? 0n)}
+                max={formattedBalance(tokenBalance ?? 0n)}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 className="w-full px-4 py-2.5 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useBalance, useAccount, useChainId } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { decodeEventLog } from "viem";
 
 import { useTournament } from "../../contexts/TournamentContext";
@@ -9,6 +9,7 @@ import { useCreateContest } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateEscrow } from "../../hooks/useEscrowOperations";
 import EscrowFactoryContract from "../../utils/contracts/EscrowFactory.json";
+import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
@@ -33,13 +34,11 @@ export const CreateContestForm = () => {
   const navigate = useNavigate();
   const { currentTournament } = useTournament();
   const createContestMutation = useCreateContest();
+  const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
 
   // wagmi functions
   const { address: userAddress } = useAccount();
   const chainId = useChainId();
-
-  // Get contract addresses dynamically
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
   // Use centralized create escrow hook
   const {
@@ -140,13 +139,6 @@ export const CreateContestForm = () => {
     },
   });
 
-  // get & set platform token
-  const { data: platformTokenBalance } = useBalance({
-    address: userAddress as `0x${string}`,
-    token: platformTokenAddress as `0x${string}`,
-    chainId: chainId ?? 0,
-  });
-
   // Form management
   const defaultFormData: CreateContestInput = {
     name: "",
@@ -160,7 +152,7 @@ export const CreateContestForm = () => {
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
       platformTokenAddress: platformTokenAddress as `0x${string}`,
-      platformTokenSymbol: platformTokenBalance?.symbol ?? "",
+      platformTokenSymbol: platformTokenSymbol ?? "",
       oracleFee: 500, // Default 5% oracle fee (500 basis points)
     },
     description: undefined,
@@ -318,7 +310,7 @@ export const CreateContestForm = () => {
             className="w-full p-2 border rounded-md pr-12"
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            {platformTokenBalance?.symbol}
+            {platformTokenSymbol}
           </div>
         </div>
       </div>
