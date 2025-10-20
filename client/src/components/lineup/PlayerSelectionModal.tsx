@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import type { PlayerWithTournamentData } from "../../types/player";
-import { PlayerSelectionCard } from "./PlayerSelectionCard";
+import { PlayerSelectionButton } from "./PlayerSelectionButton";
 
 interface PlayerSelectionModalProps {
   isOpen: boolean;
@@ -86,15 +86,19 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             {/* Player Grid and Controls */}
             <div className="border border-gray-300 rounded-sm overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-200 p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
-                {filteredPlayers.map((player) => (
-                  <PlayerSelectionCard
-                    key={player.id}
-                    player={player}
-                    isSelected={selectedPlayers.includes(player.id)}
-                    onClick={() => onSelect(player.id)}
-                    iconType={selectedPlayers.includes(player.id) ? "check" : undefined}
-                  />
-                ))}
+                {filteredPlayers.map((player) => {
+                  const isAlreadySelected = selectedPlayers.includes(player.id);
+                  return (
+                    <PlayerSelectionButton
+                      key={player.id}
+                      player={player}
+                      isSelected={isAlreadySelected}
+                      onClick={() => onSelect(player.id)}
+                      iconType={isAlreadySelected ? "check" : undefined}
+                      disabled={isAlreadySelected}
+                    />
+                  );
+                })}
               </div>
 
               {/* Search and Sort Controls */}

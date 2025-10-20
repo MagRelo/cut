@@ -44,12 +44,12 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable }) =>
               return bTotal - aTotal;
             })
             .map((player, index) => (
-              <PlayerSelectionCard
+              <div
                 key={`${lineup.id}-player-${index}`}
-                player={player}
-                isSelected={false}
-                onClick={() => {}}
-              />
+                className="px-4 py-3 rounded-md border bg-white border-gray-300 shadow-sm"
+              >
+                <PlayerSelectionCard player={player} />
+              </div>
             ))}
         </div>
       ) : (

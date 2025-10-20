@@ -9,7 +9,7 @@ import { useLineup } from "../../contexts/LineupContext";
 import { ErrorMessage } from "../common/ErrorMessage";
 
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
-import { PlayerSelectionCard } from "./PlayerSelectionCard";
+import { PlayerSelectionButton } from "./PlayerSelectionButton";
 
 /**
  * LineupForm Component
@@ -215,7 +215,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
 
       <div className="flex flex-col gap-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <PlayerSelectionCard
+          <PlayerSelectionButton
             key={`slot-${index}`}
             player={draftPlayers[index] || null}
             isSelected={false}
