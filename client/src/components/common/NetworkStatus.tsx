@@ -31,7 +31,7 @@ export function NetworkStatus({ className = "" }: NetworkStatusProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* <span className="text-lg">{getNetworkIcon()}</span> */}
-      <div className="flex flex-col">
+      <div className="flex flex-col font-display">
         <div className={`text-sm font-medium ${isTestnet ? "text-orange-600" : "text-gray-700"}`}>
           {getNetworkLabel()}
         </div>

@@ -20,7 +20,7 @@ const WalletInfo = ({
 }) => (
   <div className="bg-white rounded-sm shadow p-4 mt-4">
     {/* Header */}
-    <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Connected Wallet</div>
+    <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Account Information</div>
 
     {/* Wallet Info Grid */}
     <div className="space-y-3">
@@ -41,8 +41,8 @@ const WalletInfo = ({
       </div>
 
       {/* Wallet Provider */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700 font-display">Wallet</span>
+      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center font-display">
+        <span className="text-sm font-medium text-gray-700 ">Wallet</span>
         <div className="flex justify-end">
           <a
             href={`https://id.porto.sh/`}
