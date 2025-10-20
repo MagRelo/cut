@@ -33,6 +33,7 @@ import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
+import { FAQPage } from "./pages/FAQPage";
 import { AdminPage } from "./pages/AdminPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
+                          <Route path="/faq" element={<FAQPage />} />
                           <Route path="/connect" element={<ConnectPage />} />
                           <Route path="/contracts" element={<ContractsPage />} />
                           <Route

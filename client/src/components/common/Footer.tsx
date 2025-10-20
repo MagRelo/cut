@@ -21,6 +21,22 @@ export const Footer: React.FC = () => {
             </Link>
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              to="/faq"
+              className={`text-sm font-medium ${
+                isActive("/faq") ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              FAQ
+            </Link>
+            <Link
+              to="/terms"
+              className={`text-sm font-medium ${
+                isActive("/terms") ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Terms
+            </Link>
             {user && isAdmin() && (
               <Link
                 to="/admin"
