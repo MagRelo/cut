@@ -109,10 +109,16 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
           <div className="p-6 space-y-5">
             {/* Main Content */}
             <div className="text-center space-y-2">
-              <h3 className="text-2xl font-semibold text-gray-900">Sign in to the Cut</h3>
-              {/* <p className="text-sm text-gray-600">
-                Sign in to compete in real money fantasy golf contests
-              </p> */}
+              <div
+                className="flex items-center gap-3 justify-center"
+                style={{ marginLeft: "-20px" }}
+              >
+                <img src="/logo-transparent.png" alt="Cut Logo" className="h-16" />
+                <div className="text-left">
+                  <h1 className="text-4xl font-bold text-black font-display">the Cut</h1>
+                  <div className="text-lg font-bold text-gray-400 font-display">Fantasy Golf</div>
+                </div>
+              </div>
             </div>
 
             {/* TOC checkbox */}
