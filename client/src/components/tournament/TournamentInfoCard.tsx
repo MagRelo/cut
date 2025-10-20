@@ -1,17 +1,32 @@
 import React from "react";
-import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ErrorMessage } from "../common/ErrorMessage";
-import { useTournament } from "../../contexts/TournamentContext";
+import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { CountdownTimer } from "./CountdownTimer";
 import { Navigation } from "../common/Navigation";
 
 export const TournamentInfoCard: React.FC = () => {
-  const { currentTournament, isLoading, error } = useTournament();
+  // Use lightweight metadata endpoint instead of full tournament data
+  // This loads ~10x faster since it doesn't fetch all players and contests
+  const { data, isLoading, error } = useTournamentMetadata();
+  const currentTournament = data?.tournament;
 
   if (isLoading) {
     return (
-      <div className="relative overflow-hidden p-4 min-h-[176px] flex items-center justify-center border-b border-gray-300 bg-slate-700">
-        <LoadingSpinner />
+      <div className="relative overflow-hidden min-h-[176px] border-b border-gray-300 bg-slate-700 animate-pulse">
+        <div className="relative p-4">
+          {/* Tournament name skeleton */}
+          <div className="h-9 bg-gray-600 rounded w-3/4 mb-2"></div>
+          {/* Course skeleton */}
+          <div className="h-6 bg-gray-600 rounded w-1/2 mb-2"></div>
+          {/* Status skeleton */}
+          <div className="h-5 bg-gray-600 rounded w-1/3 mb-5"></div>
+          {/* Navigation skeleton */}
+          <div className="flex gap-2">
+            <div className="h-10 bg-gray-600 rounded w-24"></div>
+            <div className="h-10 bg-gray-600 rounded w-24"></div>
+            <div className="h-10 bg-gray-600 rounded w-24"></div>
+          </div>
+        </div>
       </div>
     );
   }

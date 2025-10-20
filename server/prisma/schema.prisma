@@ -144,6 +144,7 @@ model Tournament {
   @@index([pgaTourId])
   @@index([status])
   @@index([startDate])
+  @@index([manualActive])
 }
 
 model TournamentPlayer {

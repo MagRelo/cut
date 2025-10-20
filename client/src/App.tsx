@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import { WagmiProvider } from "wagmi";
@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
+import { prefetchTournamentMetadata } from "./hooks/useTournamentData";
 // import { config } from "./wagmi-base";
 
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
@@ -36,6 +37,12 @@ import { AdminPage } from "./pages/AdminPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
+  // Prefetch lightweight tournament metadata for instant TournamentInfoCard load
+  // Full data (with players) loads lazily when needed by other components
+  useEffect(() => {
+    prefetchTournamentMetadata(queryClient);
+  }, []);
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
