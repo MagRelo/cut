@@ -40,9 +40,9 @@ export const App: React.FC = () => {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <PortoAuthProvider>
-          <TournamentProvider>
-            <LineupProvider>
-              <Router>
+          <Router>
+            <TournamentProvider>
+              <LineupProvider>
                 <div className="min-h-screen bg-gray-100 flex flex-col">
                   {/* TODO: Remove this when we're ready to go live */}
                   {/* <MaintenanceOverlay /> */}
@@ -110,9 +110,9 @@ export const App: React.FC = () => {
                   </div>
                   <Footer />
                 </div>
-              </Router>
-            </LineupProvider>
-          </TournamentProvider>
+              </LineupProvider>
+            </TournamentProvider>
+          </Router>
         </PortoAuthProvider>
         {/* React Query DevTools - only loads in development */}
         <ReactQueryDevtools initialIsOpen={false} />
