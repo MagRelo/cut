@@ -6,7 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
-import { prefetchTournamentMetadata } from "./hooks/useTournamentData";
+import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useTournamentData";
 // import { config } from "./wagmi-base";
 
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
@@ -37,10 +37,13 @@ import { AdminPage } from "./pages/AdminPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
-  // Prefetch lightweight tournament metadata for instant TournamentInfoCard load
-  // Full data (with players) loads lazily when needed by other components
+  // Prefetch tournament data on app initialization for faster page loads
+  // This runs in the background and caches data before components mount
   useEffect(() => {
+    // Prefetch metadata first (fastest, for header)
     prefetchTournamentMetadata(queryClient);
+    // Then prefetch full data (includes contests, players) in background
+    prefetchTournamentData(queryClient);
   }, []);
 
   return (

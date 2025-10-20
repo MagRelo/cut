@@ -5,8 +5,7 @@ import { baseSepolia } from "wagmi/chains";
 import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useCurrentTournament } from "../hooks/useTournamentData";
-import { useContestsQuery } from "../hooks/useContestQuery";
+import { useTournamentData } from "../hooks/useTournamentData";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -18,19 +17,16 @@ export const Contests: React.FC = () => {
   const { chainId: connectedChainId } = useAccount();
   const chainId = connectedChainId ?? baseSepolia.id;
 
-  const { tournament, isLoading: isTournamentLoading } = useCurrentTournament();
+  // Single query fetches both tournament and contests - no duplicate requests!
+  const { data, isLoading, error: fetchError } = useTournamentData();
+  const tournament = data?.tournament ?? null;
+  const allContests = data?.contests ?? [];
+  const error = fetchError?.message ?? null;
 
-  // Fetch contests filtered by tournament and chain
-  const {
-    data: contests = [],
-    isLoading: isContestsLoading,
-    error: contestError,
-  } = useContestsQuery(tournament?.id, chainId);
-
-  // Combine loading states - show loading if either query is loading
-  const isLoading = isTournamentLoading || isContestsLoading;
-  // const error = contestError ? "Failed to fetch contests" : null;
-  const error = contestError?.message ?? null;
+  // Filter contests by chain ID client-side
+  const contests = useMemo(() => {
+    return allContests.filter((contest) => contest.chainId === chainId);
+  }, [allContests, chainId]);
 
   // Sort contests by entry fee (highest first)
   const sortedContests = useMemo(() => {
