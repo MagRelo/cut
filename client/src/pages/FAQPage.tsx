@@ -357,14 +357,6 @@ export const FAQPage: React.FC = () => {
                 How to Get USDC
               </Link>
             </li>
-            <li>
-              <a
-                href="mailto:mattlovan+cut@gmail.com"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Contact Support: mattlovan+cut@gmail.com
-              </a>
-            </li>
           </ul>
         </div>
       </div>
