@@ -7,9 +7,31 @@ export const FAQPage: React.FC = () => {
     <div className="p-4">
       <PageHeader title="FAQ" className="mb-3" />
 
+      {/* Quick Navigation */}
+      <div className="bg-white rounded-sm shadow p-4 mb-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2 font-display">Jump to Section</h3>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>
+            <a href="#gameplay" className="text-blue-600 hover:underline">
+              Gameplay
+            </a>
+          </li>
+          <li>
+            <a href="#account" className="text-blue-600 hover:underline">
+              Account & Wallet
+            </a>
+          </li>
+          <li>
+            <a href="#contracts" className="text-blue-600 hover:underline">
+              Smart Contracts
+            </a>
+          </li>
+        </ul>
+      </div>
+
       <div className="space-y-4">
         {/* Gameplay Section */}
-        <div className="bg-white rounded-sm shadow p-6">
+        <div id="gameplay" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Gameplay</h2>
 
           <div className="space-y-4">
@@ -122,7 +144,7 @@ export const FAQPage: React.FC = () => {
         </div>
 
         {/* Account Section */}
-        <div className="bg-white rounded-sm shadow p-6">
+        <div id="account" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Account & Wallet</h2>
 
           <div className="space-y-4">
@@ -224,7 +246,7 @@ export const FAQPage: React.FC = () => {
         </div>
 
         {/* Contracts Section */}
-        <div className="bg-white rounded-sm shadow p-6">
+        <div id="contracts" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Smart Contracts</h2>
 
           <div className="space-y-4">
