@@ -39,8 +39,8 @@ export const FAQPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">How does scoring work?</h3>
               <p className="text-gray-700 mb-2">
-                We use a Modified Stableford scoring system where players earn points based on their
-                performance on each hole:
+                The Cut uses a Modified Stableford scoring system where players earn points based on
+                their performance on each hole:
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>Hole-in-one: +10 points</li>
