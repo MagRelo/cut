@@ -14,7 +14,7 @@ export const TournamentInfoPanel: React.FC = () => {
     <>
       <button
         onClick={() => setIsSummaryModalOpen(true)}
-        className="w-full bg-white border border-gray-200 rounded-md p-3 hover:bg-gray-100 hover:border-gray-300 transition-all cursor-pointer text-left group"
+        className="w-full bg-white border border-gray-200 rounded-md p-3 text-left group"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">

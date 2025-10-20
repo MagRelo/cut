@@ -4,7 +4,7 @@ import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { CountdownTimer } from "./CountdownTimer";
 import { Navigation } from "../common/Navigation";
 
-export const TournamentInfoCard: React.FC = () => {
+export const TournamentHeaderPanel: React.FC = () => {
   // Use lightweight metadata endpoint instead of full tournament data
   // This loads ~10x faster since it doesn't fetch all players and contests
   const { data, isLoading, error } = useTournamentMetadata();

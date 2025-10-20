@@ -28,7 +28,7 @@ import ContractsPage from "./pages/ContractsPage";
 
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 
-import { TournamentInfoCard } from "./components/tournament/TournamentInfoCard";
+import { TournamentHeaderPanel } from "./components/tournament/TournamentHeaderPanel";
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
@@ -56,9 +56,7 @@ export const App: React.FC = () => {
                   <div className="flex flex-col flex-grow">
                     <div className="container mx-auto md:py-8">
                       <div className="max-w-2xl mx-auto">
-                        <div>
-                          <TournamentInfoCard />
-                        </div>
+                        <TournamentHeaderPanel />
                         <Routes>
                           <Route path="/" element={<Home />} />
                           <Route path="/terms" element={<TermsOfService />} />
