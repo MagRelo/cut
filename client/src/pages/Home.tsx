@@ -47,8 +47,8 @@ export const Home: React.FC = () => {
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
           <span>Passkey Wallets</span>
-          <span className="text-gray-500">•</span>
-          <span>SIWE</span>
+          {/* <span className="text-gray-500">•</span>
+          <span>SIWE</span> */}
           <span className="text-gray-500">•</span>
           <span>Stablecoin Payments</span>
         </div>

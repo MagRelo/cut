@@ -75,9 +75,9 @@ export const TournamentHeaderPanel: React.FC = () => {
           )}
 
           {/* round display */}
-          <div className="text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
+          <div className="text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] mt-1">
             {currentTournament.status === "NOT_STARTED" ? (
-              <p className="text-sm font-medium tracking-wide">
+              <p className="text-sm font-medium tracking-wide font-display">
                 Starting: <CountdownTimer targetDate={currentTournament.startDate} />
               </p>
             ) : (
@@ -88,7 +88,7 @@ export const TournamentHeaderPanel: React.FC = () => {
           </div>
 
           {/* links to team and leagues */}
-          <div className="mt-5">
+          <div className="mt-4">
             <Navigation />
           </div>
         </div>
