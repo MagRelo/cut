@@ -185,3 +185,138 @@ The script includes error handling for:
 
 🎉 Successfully performed emergency withdrawal of 6000.0 USDC to 0x...
 ```
+
+## cancelEscrow.js
+
+Cancels an escrow contract and refunds all participants on Base network. This script is designed to handle emergency situations where an escrow needs to be cancelled and all deposits returned.
+
+### Prerequisites
+
+1. **Oracle Wallet**: You must be the oracle for the escrow contract
+2. **Valid Escrow State**: Escrow must be in OPEN or IN_PROGRESS state
+3. **Environment Variables**: Set up your `.env` file in the `contracts/` directory with:
+
+   ```bash
+   PRIVATE_KEY=your_private_key_here  # Must be the oracle's private key
+   BASE_RPC_URL=https://mainnet.base.org  # or your preferred Base RPC
+   ESCROW_ADDRESS=0x...  # The address of the escrow contract to cancel
+   ```
+
+### Usage
+
+```bash
+cd scripts/base
+node cancelEscrow.js
+```
+
+### What the Script Does
+
+1. **Connects to Base Network**: Uses your configured RPC URL
+2. **Fetches Escrow Details**: Gets current state, participants, deposits, etc.
+3. **Verifies Authorization**: Ensures you are the oracle for this escrow
+4. **Checks State**: Verifies escrow is in a cancellable state (OPEN or IN_PROGRESS)
+5. **Cancels and Refunds**: Calls cancelAndRefund() to refund all participants
+6. **Shows Results**: Displays balances and transaction details
+
+### Escrow States
+
+- **OPEN**: Deposits are being accepted
+- **IN_PROGRESS**: Deposits closed, waiting for distribution
+- **SETTLED**: Payouts have been distributed (cannot cancel)
+- **CANCELLED**: Escrow has been cancelled (cannot cancel again)
+
+### Error Handling
+
+The script includes comprehensive error handling for:
+
+- **Not Oracle**: You're not authorized to cancel this escrow
+- **Invalid State**: Escrow cannot be cancelled in current state (SETTLED or CANCELLED)
+- **Network connection issues**
+- **Transaction failures**
+- **Contract interaction errors**
+
+### Security Notes
+
+⚠️ **WARNING: This action is irreversible**
+
+- **Oracle Only**: Only the oracle can cancel the escrow
+- **Refunds All**: This will refund ALL participants their full deposit balance
+- **Cannot Undo**: Once cancelled, the escrow cannot be reopened
+- **Gas Fees**: You'll need ETH for gas fees on Base network (scales with participant count)
+- **Dynamic Gas**: Gas limit automatically adjusts based on number of participants
+
+### Example Output
+
+```
+🔗 Connected to network: base
+👛 Wallet address: 0x...
+📋 Escrow address: 0x...
+
+📊 Fetching escrow details...
+
+🔍 Escrow Information:
+  Current state: IN_PROGRESS
+  Oracle address: 0x...
+  Payment token: 0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913
+  Total deposits: 10000.0
+  Participants count: 50
+  Deposit amount: 200.0
+  Expiry: 12/31/2024, 11:59:59 PM
+  Token symbol: USDC
+
+✅ Wallet is authorized to cancel this escrow
+
+💰 Escrow contract balance before: 10000.0 USDC
+
+⚠️ IMPORTANT: This will cancel the escrow and refund all participants!
+  Total amount to be refunded: 10000.0 USDC
+  Number of participants to refund: 50
+
+🚫 Cancelling escrow and refunding participants...
+⏳ Sending transaction...
+📝 Transaction hash: 0x...
+⏳ Waiting for transaction confirmation...
+✅ Transaction confirmed in block: 12345678
+⛽ Gas used: 3500000
+
+📊 Fetching updated escrow details...
+
+📈 Results:
+  New state: CANCELLED
+  Total deposits after: 0.0 USDC
+  Participants count after: 0
+  Escrow contract balance after: 0.0 USDC
+
+💸 Total refunded: 10000.0 USDC
+
+🎉 Successfully cancelled escrow and refunded all 50 participants!
+
+📋 Transaction events:
+  - EscrowCancelled
+```
+
+### Troubleshooting
+
+**Not Authorized**:
+
+- Ensure you're using the oracle's private key
+- Verify the ESCROW_ADDRESS is correct
+- Check that you're connected to the correct network
+
+**Invalid State**:
+
+- Check the current escrow state
+- Cannot cancel if already SETTLED or CANCELLED
+- Wait for appropriate state if needed
+
+**Transaction Failures**:
+
+- Check your ETH balance for gas fees
+- Verify escrow address is correct
+- Ensure escrow has sufficient token balance for refunds
+
+**Network Issues**:
+
+- Try a different RPC URL
+- Check your internet connection
+- Verify the Base network is operational
