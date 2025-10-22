@@ -18,12 +18,15 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     paymentTokenAddress,
     platformTokenSymbol,
     paymentTokenSymbol,
+    platformTokenDecimals,
+    paymentTokenDecimals,
   } = usePortoAuth();
 
   // Select the appropriate token address, balance, decimals, and symbol based on tokenName
   const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
   const tokenBalance = tokenName === "USDC" ? paymentTokenBalance : platformTokenBalance;
-  const tokenDecimals = tokenName === "USDC" ? 6 : 18;
+  const tokenDecimals =
+    tokenName === "USDC" ? paymentTokenDecimals ?? 6 : platformTokenDecimals ?? 18;
   const tokenSymbol = tokenName === "USDC" ? paymentTokenSymbol : platformTokenSymbol;
 
   const [recipientAddress, setRecipientAddress] = useState("");
