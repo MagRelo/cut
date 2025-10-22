@@ -9,7 +9,8 @@
     "create-escrow": "node sepolia/createEscrow.js",
     "deposit-usdc": "node sepolia/depositUSDC.js",
     "deposit-usdc-base": "node base/depositUSDC.js",
-    "emergency-withdraw-base": "node base/emergencyWithdrawAll.js"
+    "emergency-withdraw-base": "node base/emergencyWithdrawAll.js",
+    "check-balance-base": "node base/checkPlatformTokenBalance.js"
   },
   "dependencies": {
     "ethers": "^6.8.1",

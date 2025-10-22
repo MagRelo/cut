@@ -36,6 +36,17 @@ The sepolia directory contains scripts for interacting with deployed contracts o
 - `depositUSDC.js` - Deposits USDC into the DepositManager to receive CUT tokens
 - `mintPaymentToken.js` - Mints PaymentToken (Mock USDC) to a specified address
 
+### Base Interaction Scripts (`base/`)
+
+The base directory contains scripts for interacting with deployed contracts on Base mainnet:
+
+- `depositUSDC.js` - Deposits real USDC into the DepositManager to receive CUT tokens
+- `checkPlatformTokenBalance.js` - Checks PlatformToken (CUT) balances and token distribution
+- `emergencyWithdrawAll.js` - Emergency withdrawal of all USDC (owner only)
+- `cancelEscrow.js` - Cancels an escrow and refunds all participants (oracle only)
+
+See the [Base Scripts README](./base/README.md) for detailed documentation on each script.
+
 ## Prerequisites
 
 ### Environment Variables
@@ -103,6 +114,12 @@ cd scripts
 npm run mint                    # Mint payment tokens
 npm run create-escrow          # Create an escrow
 npm run deposit-usdc           # Deposit USDC to get CUT tokens
+
+# Run base interaction scripts
+cd scripts
+npm run deposit-usdc-base      # Deposit real USDC to get CUT tokens
+npm run check-balance-base     # Check PlatformToken balances
+npm run emergency-withdraw-base # Emergency withdraw (owner only)
 ```
 
 ### Network Options

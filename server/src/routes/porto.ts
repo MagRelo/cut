@@ -130,6 +130,7 @@ const porto = Router().route(
     key: merchantKey as `0x${string}`,
     sponsor: async (_request: any) => {
       const isSponsored = await isSponsoredContract(_request);
+      // console.log("isSponsored", isSponsored);
       return isSponsored;
     },
   })

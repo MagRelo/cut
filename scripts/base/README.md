@@ -186,6 +186,142 @@ The script includes error handling for:
 🎉 Successfully performed emergency withdrawal of 6000.0 USDC to 0x...
 ```
 
+## checkPlatformTokenBalance.js
+
+Checks PlatformToken (CUT) balances and displays comprehensive information about token distribution on Base network.
+
+### Prerequisites
+
+1. **Environment Variables**: Set up your `.env` file in the `contracts/` directory with:
+
+   ```bash
+   PRIVATE_KEY=your_private_key_here
+   BASE_RPC_URL=https://mainnet.base.org  # or your preferred Base RPC
+   USE_LATEST_DEPLOYMENT=true  # Use latest deployment addresses
+   CHECK_ADDRESSES=0x...,0x...,0x...  # Optional: comma-separated list of addresses to check
+   ```
+
+   Or set specific contract addresses:
+
+   ```bash
+   PLATFORM_TOKEN_ADDRESS=0x...
+   DEPOSIT_MANAGER_ADDRESS=0x...  # Optional: for additional info
+   USDC_ADDRESS=0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913  # Base USDC
+   ```
+
+### Usage
+
+```bash
+cd scripts/base
+node checkPlatformTokenBalance.js
+```
+
+### What the Script Shows
+
+1. **Token Information**:
+
+   - Token name, symbol, and decimals
+   - Total supply
+   - Contract address
+   - Owner and DepositManager addresses
+
+2. **Wallet Balance**:
+
+   - Your connected wallet's CUT balance
+   - Percentage of total supply
+
+3. **Additional Addresses** (if provided):
+
+   - Balances for specific addresses
+   - Percentage of total supply for each
+
+4. **DepositManager Information** (if available):
+
+   - USDC in DepositManager contract
+   - USDC in Compound V3
+   - Total available USDC backing
+   - Backing ratio (USDC backing vs CUT supply)
+
+5. **Distribution Summary**:
+   - DepositManager holdings
+   - Your wallet holdings
+   - Circulating supply
+
+### Example Output
+
+```
+📋 Using addresses from latest deployment:
+  DepositManager: 0x...
+  USDC: 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913
+  PlatformToken: 0x...
+
+🔗 Connected to network: base
+👛 Wallet address: 0x...
+
+================================================================================
+
+📊 PLATFORM TOKEN INFORMATION
+================================================================================
+  Token Name: Cut Platform Token
+  Token Symbol: CUT
+  Decimals: 18
+  Contract Address: 0x...
+  Owner: 0x...
+  DepositManager: 0x...
+  🎯 Total Supply: 10000.0 CUT
+
+💰 WALLET BALANCE
+================================================================================
+  Address: 0x...
+  Balance: 100.5 CUT
+  Percentage of Total Supply: 1.0050%
+
+🏦 DEPOSIT MANAGER INFORMATION
+================================================================================
+  Address: 0x...
+  💵 USDC in DepositManager: 5000.0 USDC
+  💵 USDC in Compound: 5000.0 USDC
+  💵 Total Available USDC: 10000.0 USDC
+
+  📊 Backing Ratio:
+    10000.0 USDC backing 10000.0 CUT
+    Ratio: 100.00%
+    ✅ Fully backed!
+
+📈 DISTRIBUTION SUMMARY
+================================================================================
+  DepositManager: 9500.0 CUT (95.00%)
+  Your Wallet: 100.5 CUT (1.01%)
+
+  🔄 Circulating Supply: 500.0 CUT (5.00%)
+
+================================================================================
+✅ Balance check completed successfully!
+================================================================================
+```
+
+### Checking Multiple Addresses
+
+To check balances for multiple addresses, set the `CHECK_ADDRESSES` environment variable:
+
+```bash
+CHECK_ADDRESSES=0xAddress1,0xAddress2,0xAddress3 node checkPlatformTokenBalance.js
+```
+
+### Use Cases
+
+- **Portfolio Tracking**: Monitor your CUT token holdings
+- **Distribution Analysis**: See how tokens are distributed
+- **Backing Verification**: Verify USDC backing ratio
+- **Multi-Address Monitoring**: Check balances for multiple wallets
+- **Health Check**: Ensure the token system is properly backed
+
+### Security Notes
+
+- **Read-Only**: This script only reads data, no transactions are executed
+- **No Gas Fees**: Since this only queries data, you don't need ETH for gas
+- **Private Key**: Still required for wallet connection, but no transactions are signed
+
 ## cancelEscrow.js
 
 Cancels an escrow contract and refunds all participants on Base network. This script is designed to handle emergency situations where an escrow needs to be cancelled and all deposits returned.
