@@ -249,6 +249,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setUser(response);
+
+        // Invalidate all queries when auth refreshes to ensure fresh data with new auth context
+        queryClient.invalidateQueries();
       } catch (error) {
         console.error("Auth check failed:", error);
         if (
@@ -263,7 +266,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, [address, request, currentChainId, switchChain]);
+  }, [address, request, currentChainId, switchChain, queryClient]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
