@@ -451,7 +451,7 @@ function claimPredictionPayout(uint256 outcomeId) external
 #### Oracle Functions
 
 ```solidity
-// Start contest (closes contestant registration, opens betting)
+// Start contest (closes contestant registration, betting continues)
 function startContest() external onlyOracle
 // Requirements: state == OPEN, has contestants
 
