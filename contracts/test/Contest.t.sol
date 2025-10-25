@@ -58,9 +58,9 @@ contract ContestTest is Test {
         // ============ Phase 2: Oracle Starts Contest ============
         
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
-        assertEq(uint256(contest.state()), uint256(Contest.ContestState.IN_PROGRESS));
+        assertEq(uint256(contest.state()), uint256(Contest.ContestState.ACTIVE));
         
         // ============ Phase 3: Spectators Bet ============
         
@@ -135,7 +135,6 @@ contract ContestTest is Test {
         // User B bettors (winners) should get ALL spectator collateral ($850)
         address firstWinner = address(uint160(100));
         uint256 winnerBalanceBefore = usdc.balanceOf(firstWinner);
-        uint256 winnerTokens = contest.balanceOf(firstWinner, 1);
         
         vm.prank(firstWinner);
         contest.claimPredictionPayout(1);
@@ -169,7 +168,7 @@ contract ContestTest is Test {
         vm.stopPrank();
         
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
         // Spectator bets on User B
         usdc.mint(spectator1, 100e6);
@@ -206,7 +205,7 @@ contract ContestTest is Test {
         contest.joinContest();
         
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
         // First bettor on User B
         usdc.mint(spectator1, 100e6);
@@ -230,7 +229,7 @@ contract ContestTest is Test {
         assertLt(tokens2, tokens1, "LMSR should increase price");
     }
     
-    function testCloseBetting() public {
+    function testLockBetting() public {
         // Setup contest
         usdc.mint(userA, CONTESTANT_DEPOSIT);
         vm.prank(userA);
@@ -245,10 +244,10 @@ contract ContestTest is Test {
         contest.joinContest();
         
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
-        // Betting should be open
-        assertTrue(contest.bettingOpen());
+        // Contest should be ACTIVE
+        assertEq(uint256(contest.state()), uint256(Contest.ContestState.ACTIVE));
         
         // Spectator can bet
         usdc.mint(spectator1, 100e6);
@@ -257,23 +256,23 @@ contract ContestTest is Test {
         vm.prank(spectator1);
         contest.addPrediction(0, 100e6);
         
-        // Oracle closes betting (e.g., final round starts)
+        // Oracle locks betting (e.g., final round starts)
         vm.prank(oracle);
-        contest.closeBetting();
+        contest.lockBetting();
         
-        assertFalse(contest.bettingOpen());
+        assertEq(uint256(contest.state()), uint256(Contest.ContestState.LOCKED));
         
         // New bets should fail
         usdc.mint(spectator2, 100e6);
         vm.prank(spectator2);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator2);
-        vm.expectRevert("Betting closed");
+        vm.expectRevert("Betting not available");
         contest.addPrediction(1, 100e6);
         
         // Withdrawals should also fail
         vm.prank(spectator1);
-        vm.expectRevert("Betting closed - cannot withdraw");
+        vm.expectRevert("Cannot withdraw - betting locked or settled");
         contest.withdrawPrediction(0, 10e6);
     }
     
@@ -339,7 +338,7 @@ contract ContestTest is Test {
         
         // Start contest
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
         // Spectators bet
         usdc.mint(spectator1, 100e6);
@@ -389,7 +388,7 @@ contract ContestTest is Test {
         contest.joinContest();
         
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
         // Spectator bets
         usdc.mint(spectator1, 100e6);
@@ -434,7 +433,7 @@ contract ContestTest is Test {
         
         // Oracle starts contest
         vm.prank(oracle);
-        contest.startContest();
+        contest.activateContest();
         
         // Spectators bet
         usdc.mint(spectator1, 100e6);
@@ -476,5 +475,358 @@ contract ContestTest is Test {
         contest.claimPredictionPayout(1);
         assertGt(usdc.balanceOf(spectator1), 0);
     }
+    
+    function testForceCloseBasic() public {
+        // Setup: 3 contestants enter
+        address[3] memory users = [userA, userB, userC];
+        for (uint i = 0; i < users.length; i++) {
+            usdc.mint(users[i], CONTESTANT_DEPOSIT);
+            vm.startPrank(users[i]);
+            usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+            contest.joinContest();
+            vm.stopPrank();
+        }
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // 3 spectators bet on different contestants
+        address[3] memory spectators = [spectator1, spectator2, address(20)];
+        for (uint i = 0; i < spectators.length; i++) {
+            usdc.mint(spectators[i], 100e6);
+            vm.startPrank(spectators[i]);
+            usdc.approve(address(contest), 100e6);
+            contest.addPrediction(i, 100e6); // Each bets on different contestant
+            vm.stopPrank();
+        }
+        
+        // Settle contest - userB wins
+        address[] memory winners = new address[](3);
+        winners[0] = userB;
+        winners[1] = userA;
+        winners[2] = userC;
+        
+        uint256[] memory payouts = new uint256[](3);
+        payouts[0] = 6000;
+        payouts[1] = 3000;
+        payouts[2] = 1000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // Should not be able to force close immediately
+        vm.prank(oracle);
+        vm.expectRevert("Expiry not reached");
+        contest.forceClose();
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        // Record balances before forceClose
+        uint256 userABefore = usdc.balanceOf(userA);
+        uint256 userBBefore = usdc.balanceOf(userB);
+        uint256 userCBefore = usdc.balanceOf(userC);
+        uint256 spec2Before = usdc.balanceOf(spectator2); // spec2 bet on userB (winner)
+        
+        // Oracle calls forceClose
+        vm.prank(oracle);
+        contest.forceClose();
+        
+        // Verify state is CLOSED
+        assertEq(uint256(contest.state()), uint256(Contest.ContestState.CLOSED));
+        
+        // Verify all contestants received payouts
+        assertGt(usdc.balanceOf(userA) - userABefore, 0, "UserA should receive payout");
+        assertGt(usdc.balanceOf(userB) - userBBefore, 0, "UserB should receive payout");
+        assertGt(usdc.balanceOf(userC) - userCBefore, 0, "UserC should receive payout");
+        
+        // Verify spectator winner received payout
+        assertGt(usdc.balanceOf(spectator2) - spec2Before, 0, "Winning spectator should receive payout");
+    }
+    
+    function testForceCloseOnlyOracle() public {
+        // Setup and settle contest
+        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        contest.joinContest();
+        
+        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        contest.joinContest();
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        address[] memory winners = new address[](2);
+        winners[0] = userA;
+        winners[1] = userB;
+        
+        uint256[] memory payouts = new uint256[](2);
+        payouts[0] = 7000;
+        payouts[1] = 3000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        // Non-oracle cannot call forceClose
+        vm.prank(userA);
+        vm.expectRevert("Not oracle");
+        contest.forceClose();
+    }
+    
+    function testForceCloseMixedClaims() public {
+        // Test where some users claim and some don't
+        
+        address[3] memory users = [userA, userB, userC];
+        for (uint i = 0; i < users.length; i++) {
+            usdc.mint(users[i], CONTESTANT_DEPOSIT);
+            vm.startPrank(users[i]);
+            usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+            contest.joinContest();
+            vm.stopPrank();
+        }
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // 3 spectators bet on userB
+        for (uint i = 0; i < 3; i++) {
+            address spectator = address(uint160(100 + i));
+            usdc.mint(spectator, 100e6);
+            vm.startPrank(spectator);
+            usdc.approve(address(contest), 100e6);
+            contest.addPrediction(1, 100e6);
+            vm.stopPrank();
+        }
+        
+        // Settle
+        address[] memory winners = new address[](3);
+        winners[0] = userB;
+        winners[1] = userA;
+        winners[2] = userC;
+        
+        uint256[] memory payouts = new uint256[](3);
+        payouts[0] = 6000;
+        payouts[1] = 3000;
+        payouts[2] = 1000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // UserB claims (others don't)
+        vm.prank(userB);
+        contest.claimContestPayout();
+        
+        // First spectator claims (others don't)
+        address firstSpec = address(uint160(100));
+        vm.prank(firstSpec);
+        contest.claimPredictionPayout(1);
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        // Record balances
+        uint256 userABefore = usdc.balanceOf(userA);
+        uint256 userBBefore = usdc.balanceOf(userB);
+        uint256 userCBefore = usdc.balanceOf(userC);
+        uint256 spec2Before = usdc.balanceOf(address(uint160(101)));
+        uint256 spec3Before = usdc.balanceOf(address(uint160(102)));
+        
+        // ForceClose
+        vm.prank(oracle);
+        contest.forceClose();
+        
+        // UserA and UserC should receive payouts (they didn't claim)
+        assertGt(usdc.balanceOf(userA) - userABefore, 0, "UserA should receive unclaimed payout");
+        assertGt(usdc.balanceOf(userC) - userCBefore, 0, "UserC should receive unclaimed payout");
+        
+        // UserB should NOT receive more (already claimed)
+        assertEq(usdc.balanceOf(userB), userBBefore, "UserB already claimed, no more payout");
+        
+        // Spectators 2 and 3 should receive payouts (they didn't claim)
+        assertGt(usdc.balanceOf(address(uint160(101))) - spec2Before, 0, "Spec2 should receive payout");
+        assertGt(usdc.balanceOf(address(uint160(102))) - spec3Before, 0, "Spec3 should receive payout");
+    }
+    
+    function testForceCloseWinnerTakeAll() public {
+        // Test that only winning spectators get paid
+        
+        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        contest.joinContest();
+        
+        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        contest.joinContest();
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // Spectator1 bets on winner (userB)
+        usdc.mint(spectator1, 100e6);
+        vm.prank(spectator1);
+        usdc.approve(address(contest), 100e6);
+        vm.prank(spectator1);
+        contest.addPrediction(1, 100e6);
+        
+        // Spectator2 bets on loser (userA)
+        usdc.mint(spectator2, 100e6);
+        vm.prank(spectator2);
+        usdc.approve(address(contest), 100e6);
+        vm.prank(spectator2);
+        contest.addPrediction(0, 100e6);
+        
+        // UserB wins
+        address[] memory winners = new address[](2);
+        winners[0] = userB;
+        winners[1] = userA;
+        
+        uint256[] memory payouts = new uint256[](2);
+        payouts[0] = 7000;
+        payouts[1] = 3000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        uint256 spec1Before = usdc.balanceOf(spectator1);
+        uint256 spec2Before = usdc.balanceOf(spectator2);
+        
+        // ForceClose
+        vm.prank(oracle);
+        contest.forceClose();
+        
+        // Winner gets payout
+        assertGt(usdc.balanceOf(spectator1) - spec1Before, 0, "Winner should get payout");
+        
+        // Loser gets nothing
+        assertEq(usdc.balanceOf(spectator2), spec2Before, "Loser gets nothing");
+    }
+    
+    function testForceCloseNotSettled() public {
+        // Cannot forceClose if not settled
+        
+        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        contest.joinContest();
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        // Should fail - not settled yet
+        vm.prank(oracle);
+        vm.expectRevert("Contest not settled");
+        contest.forceClose();
+    }
+    
+    function testCannotCancelAfterSettled() public {
+        // Test that cancel cannot be called after settlement
+        
+        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        contest.joinContest();
+        
+        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userB);
+        contest.joinContest();
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        address[] memory winners = new address[](2);
+        winners[0] = userA;
+        winners[1] = userB;
+        
+        uint256[] memory payouts = new uint256[](2);
+        payouts[0] = 6000;
+        payouts[1] = 4000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // Try to cancel after settlement - should fail
+        vm.prank(oracle);
+        vm.expectRevert("Contest settled - cannot cancel");
+        contest.cancel();
+        
+        // Fast forward past expiry and forceClose
+        vm.warp(block.timestamp + EXPIRY + 1);
+        vm.prank(oracle);
+        contest.forceClose();
+        
+        // Try to cancel after CLOSED - should also fail
+        vm.prank(oracle);
+        vm.expectRevert("Contest settled - cannot cancel");
+        contest.cancel();
+    }
+    
+    function testForceCloseEmitsEvent() public {
+        // Test event emission
+        
+        address[2] memory users = [userA, userB];
+        for (uint i = 0; i < users.length; i++) {
+            usdc.mint(users[i], CONTESTANT_DEPOSIT);
+            vm.startPrank(users[i]);
+            usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+            contest.joinContest();
+            vm.stopPrank();
+        }
+        
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // 1 spectator bets
+        usdc.mint(spectator1, 100e6);
+        vm.prank(spectator1);
+        usdc.approve(address(contest), 100e6);
+        vm.prank(spectator1);
+        contest.addPrediction(0, 100e6);
+        
+        // Settle
+        address[] memory winners = new address[](2);
+        winners[0] = userA;
+        winners[1] = userB;
+        
+        uint256[] memory payouts = new uint256[](2);
+        payouts[0] = 7000;
+        payouts[1] = 3000;
+        
+        vm.prank(oracle);
+        contest.distribute(winners, payouts);
+        
+        // Fast forward past expiry
+        vm.warp(block.timestamp + EXPIRY + 1);
+        
+        // Expect event
+        vm.expectEmit(false, false, false, false);
+        emit ContestForceClosed(2, 1, block.timestamp);
+        
+        vm.prank(oracle);
+        contest.forceClose();
+    }
+    
+    event ContestForceClosed(uint256 contestantsPaid, uint256 spectatorsPaid, uint256 timestamp);
 }
 

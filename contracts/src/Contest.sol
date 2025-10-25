@@ -60,12 +60,14 @@ contract Contest is ERC1155, ReentrancyGuard {
     uint256 public constant PRICE_PRECISION = 1e6;
     
     /// @notice Current state of the contest
-    enum ContestState { OPEN, IN_PROGRESS, SETTLED, CANCELLED }
+    /// OPEN: Contestants join, spectators bet (early betting)
+    /// ACTIVE: Contestants locked in, spectators still betting
+    /// LOCKED: Betting closed, contest finishing
+    /// SETTLED: Results in, users claim
+    /// CLOSED: Force distributed
+    /// CANCELLED: Contest cancelled, refunds available
+    enum ContestState { OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED }
     ContestState public state;
-    
-    /// @notice Flag to control betting availability during IN_PROGRESS
-    /// @dev Oracle can close betting before contest ends to prevent last-second bets
-    bool public bettingOpen;
     
     // ============ Layer 1: Contestant Data ============
     
@@ -82,6 +84,12 @@ contract Contest is ERC1155, ReentrancyGuard {
     mapping(address => uint256) public finalContestantPayouts;
     
     // ============ Layer 2: Spectator Data ============
+    
+    /// @notice Array of spectator addresses (for forceClose iteration)
+    address[] public spectators;
+    
+    /// @notice Mapping to check if address is a spectator
+    mapping(address => bool) public isSpectator;
     
     /// @notice Track net position for each outcome (for LMSR pricing and total supply)
     mapping(uint256 => int256) public netPosition;
@@ -110,14 +118,15 @@ contract Contest is ERC1155, ReentrancyGuard {
     // ============ Events ============
     
     event ContestantDeposited(address indexed contestant);
-    event ContestStarted();
-    event BettingClosed();
+    event ContestActivated();
+    event BettingLocked();
     event SpectatorDeposited(address indexed spectator, uint256 indexed outcomeId, uint256 amount, uint256 tokensReceived);
     event SpectatorWithdrew(address indexed spectator, uint256 amount);
     event ContestSettled(address[] winners, uint256[] payouts);
     event ContestantPayoutClaimed(address indexed contestant, uint256 amount);
     event SpectatorPayoutRedeemed(address indexed spectator, uint256 indexed outcomeId, uint256 payout);
     event ContestCancelled();
+    event ContestForceClosed(uint256 contestantsPaid, uint256 spectatorsPaid, uint256 timestamp);
     
     /// @notice Modifier to restrict functions to only the oracle
     modifier onlyOracle() {
@@ -214,32 +223,30 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Oracle starts the contest (closes contestant registration, opens betting)
+     * @notice Oracle activates the contest (closes contestant registration, betting continues)
      */
-    function startContest() external onlyOracle {
+    function activateContest() external onlyOracle {
         require(state == ContestState.OPEN, "Contest already started");
         require(contestants.length > 0, "No contestants");
         
-        state = ContestState.IN_PROGRESS;
-        bettingOpen = true; // Enable betting
+        state = ContestState.ACTIVE;
         
-        emit ContestStarted();
+        emit ContestActivated();
     }
     
     /**
-     * @notice Oracle closes betting before contest ends
+     * @notice Oracle locks betting before contest ends
      * @dev Prevents last-second bets when outcome is nearly certain
      * 
-     * Use case: Close betting when final round starts, before results are known
+     * Use case: Lock betting when final round starts, before results are known
      * This prevents unfair late bets and potential race conditions
      */
-    function closeBetting() external onlyOracle {
-        require(state == ContestState.IN_PROGRESS, "Contest not in progress");
-        require(bettingOpen, "Betting already closed");
+    function lockBetting() external onlyOracle {
+        require(state == ContestState.ACTIVE, "Contest not active");
         
-        bettingOpen = false;
+        state = ContestState.LOCKED;
         
-        emit BettingClosed();
+        emit BettingLocked();
     }
     
     // ============ Layer 2: Spectator Functions ============
@@ -273,15 +280,17 @@ contract Contest is ERC1155, ReentrancyGuard {
      */
     function addPrediction(uint256 outcomeId, uint256 amount) external nonReentrant {
         require(
-            state == ContestState.OPEN || state == ContestState.IN_PROGRESS, 
+            state == ContestState.OPEN || state == ContestState.ACTIVE, 
             "Betting not available"
-        );
-        require(
-            state == ContestState.OPEN || bettingOpen, 
-            "Betting closed"
         );
         require(outcomeId < contestants.length, "Invalid outcome");
         require(amount > 0, "Amount must be > 0");
+        
+        // Track new spectators (for forceClose iteration)
+        if (!isSpectator[msg.sender]) {
+            spectators.push(msg.sender);
+            isSpectator[msg.sender] = true;
+        }
         
         // Calculate entry fee (held until settlement)
         uint256 entryFee = (amount * SPECTATOR_ENTRY_FEE_BPS) / BPS_DENOMINATOR;
@@ -323,21 +332,16 @@ contract Contest is ERC1155, ReentrancyGuard {
      * 
      * @dev Works in:
      * - OPEN state (during registration)
-     * - IN_PROGRESS with bettingOpen (before betting closes)
+     * - ACTIVE state (before betting locks)
      * - CANCELLED state (full refund anytime)
      */
     function withdrawPrediction(uint256 outcomeId, uint256 tokenAmount) external nonReentrant {
         require(
             state == ContestState.OPEN || 
-            state == ContestState.IN_PROGRESS || 
+            state == ContestState.ACTIVE || 
             state == ContestState.CANCELLED,
-            "Cannot withdraw from settled contest"
+            "Cannot withdraw - betting locked or settled"
         );
-        
-        // If IN_PROGRESS, betting must still be open (unless CANCELLED)
-        if (state == ContestState.IN_PROGRESS) {
-            require(bettingOpen, "Betting closed - cannot withdraw");
-        }
         
         require(outcomeId < contestants.length, "Invalid outcome");
         require(tokenAmount > 0, "Amount must be > 0");
@@ -381,7 +385,10 @@ contract Contest is ERC1155, ReentrancyGuard {
         address[] calldata winners,
         uint256[] calldata payoutBps
     ) external onlyOracle nonReentrant {
-        require(state == ContestState.IN_PROGRESS, "Contest not in progress");
+        require(
+            state == ContestState.ACTIVE || state == ContestState.LOCKED, 
+            "Contest not active or locked"
+        );
         require(winners.length == contestants.length, "Winners length mismatch");
         require(payoutBps.length == contestants.length, "Payouts length mismatch");
         
@@ -407,7 +414,6 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Step 2: Apply oracle fee to ENTIRE pool
         uint256 oracleFee = (totalPool * oracleFeeBps) / BPS_DENOMINATOR;
-        uint256 afterOracleFee = totalPool - oracleFee;
         
         // Step 3: Calculate Layer 1 prize pool (after oracle fee)
         uint256 layer1PoolAfterFee = ((totalContestantDeposits + accumulatedPrizeBonus) * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
@@ -424,8 +430,6 @@ contract Contest is ERC1155, ReentrancyGuard {
         }
         
         // Step 6: Distribute Layer 2 contestant bonuses (after oracle fee)
-        uint256 bonusPoolAfterFee = (totalBonuses * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
-        
         for (uint256 i = 0; i < contestants.length; i++) {
             address contestant = contestants[i];
             uint256 bonus = contestantBonuses[contestant];
@@ -513,9 +517,10 @@ contract Contest is ERC1155, ReentrancyGuard {
     
     /**
      * @notice Oracle cancels contest, enables refunds
+     * @dev Cannot cancel after settlement - settlement is final
      */
     function cancel() external onlyOracle {
-        require(state != ContestState.SETTLED, "Already settled");
+        require(state != ContestState.SETTLED && state != ContestState.CLOSED, "Contest settled - cannot cancel");
         state = ContestState.CANCELLED;
         emit ContestCancelled();
     }
@@ -525,9 +530,60 @@ contract Contest is ERC1155, ReentrancyGuard {
      */
     function cancelExpired() external {
         require(block.timestamp >= expiryTimestamp, "Not expired");
-        require(state != ContestState.SETTLED, "Already settled");
+        require(state != ContestState.SETTLED && state != ContestState.CLOSED, "Already settled");
         state = ContestState.CANCELLED;
         emit ContestCancelled();
+    }
+    
+    /**
+     * @notice Force close contest and push all unclaimed winnings to users
+     * @dev Can only be called after expiryTimestamp has passed
+     * 
+     * This function distributes all unclaimed winnings to their rightful owners:
+     * - Pushes unclaimed contestant payouts
+     * - Pushes unclaimed spectator payouts (winners only)
+     * 
+     * Use case: Users forgot to claim or lost access to accounts.
+     * After expiry, oracle can force distribution to prevent funds being locked forever.
+     */
+    function forceClose() external onlyOracle nonReentrant {
+        require(state == ContestState.SETTLED, "Contest not settled");
+        require(block.timestamp >= expiryTimestamp, "Expiry not reached");
+        
+        uint256 contestantsPaid = 0;
+        uint256 spectatorsPaid = 0;
+        
+        // Push unclaimed contestant payouts
+        for (uint256 i = 0; i < contestants.length; i++) {
+            address contestant = contestants[i];
+            uint256 payout = finalContestantPayouts[contestant];
+            if (payout > 0) {
+                finalContestantPayouts[contestant] = 0;
+                paymentToken.safeTransfer(contestant, payout);
+                contestantsPaid++;
+            }
+        }
+        
+        // Push unclaimed spectator payouts (winners only)
+        uint256 totalSupply = uint256(netPosition[spectatorWinningOutcome]);
+        
+        if (totalSupply > 0) {
+            for (uint256 i = 0; i < spectators.length; i++) {
+                address spectator = spectators[i];
+                uint256 balance = balanceOf(spectator, spectatorWinningOutcome);
+                if (balance > 0) {
+                    _burn(spectator, spectatorWinningOutcome, balance);
+                    uint256 payout = (balance * totalSpectatorCollateral) / totalSupply;
+                    if (payout > 0) {
+                        paymentToken.safeTransfer(spectator, payout);
+                        spectatorsPaid++;
+                    }
+                }
+            }
+        }
+        
+        state = ContestState.CLOSED;
+        emit ContestForceClosed(contestantsPaid, spectatorsPaid, block.timestamp);
     }
     
     // ============ View Functions ============
@@ -539,6 +595,15 @@ contract Contest is ERC1155, ReentrancyGuard {
     function getContestantAtIndex(uint256 index) external view returns (address) {
         require(index < contestants.length, "Invalid index");
         return contestants[index];
+    }
+    
+    function getSpectatorsCount() external view returns (uint256) {
+        return spectators.length;
+    }
+    
+    function getSpectatorAtIndex(uint256 index) external view returns (address) {
+        require(index < spectators.length, "Invalid index");
+        return spectators[index];
     }
 }
 

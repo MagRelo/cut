@@ -57,7 +57,7 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 ### Phase 1: OPEN - Contestant Registration & Early Betting
 
 **State:** `ContestState.OPEN`  
-**Betting:** Available! (early betting enabled)
+**Betting:** ✅ Available (early betting enabled)
 
 | Actor           | Can Do                 | Function                         |
 | --------------- | ---------------------- | -------------------------------- |
@@ -66,17 +66,17 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 | **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
 | **Spectators**  | Add prediction         | `addPrediction(id, amount)`      |
 | **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
-| **Oracle**      | Start contest          | `startContest()`                 |
+| **Oracle**      | Activate contest       | `activateContest()`              |
 | **Anyone**      | Cancel if expired      | `cancelExpired()`                |
 
-**State transition:** Oracle calls `startContest()` → `IN_PROGRESS` + `bettingOpen = true`
+**State transition:** Oracle calls `activateContest()` → `ACTIVE`
 
 ---
 
-### Phase 2: IN_PROGRESS (Betting Open) - Active Betting
+### Phase 2: ACTIVE - Contest Running, Betting Open
 
-**State:** `ContestState.IN_PROGRESS`  
-**Betting:** `bettingOpen = true`
+**State:** `ContestState.ACTIVE`  
+**Betting:** ✅ Available
 
 | Actor           | Can Do                 | Function                         |
 | --------------- | ---------------------- | -------------------------------- |
@@ -84,17 +84,18 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 | **Spectators**  | Add predictions (LMSR) | `addPrediction(id, amount)`      |
 | **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
 | **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
-| **Oracle**      | Close betting window   | `closeBetting()`                 |
+| **Oracle**      | Lock betting window    | `lockBetting()`                  |
 | **Oracle**      | Cancel contest         | `cancel()`                       |
+| **Oracle**      | Settle (if not locked) | `distribute(winners, payouts)`   |
 
-**State transition:** Oracle calls `closeBetting()` → `bettingOpen = false`
+**State transition:** Oracle calls `lockBetting()` → `LOCKED`
 
 ---
 
-### Phase 3: IN_PROGRESS (Betting Closed) - Contest Finishing
+### Phase 3: LOCKED - Contest Finishing, Betting Closed
 
-**State:** `ContestState.IN_PROGRESS`  
-**Betting:** `bettingOpen = false`
+**State:** `ContestState.LOCKED`  
+**Betting:** ❌ Closed
 
 | Actor           | Can Do                 | Function                           |
 | --------------- | ---------------------- | ---------------------------------- |
@@ -104,9 +105,11 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 | **Spectators**  | ❌ Cannot withdraw     | -                                  |
 | **Oracle**      | Settle contest         | `distribute(winners[], payouts[])` |
 
-**Purpose:** Contest is finishing, outcome not yet certain, but betting window closed to prevent last-second unfair bets.
+**Purpose:** Contest is finishing, outcome not yet certain, but betting locked to prevent last-second unfair bets.
 
-**State transition:** Oracle calls `distribute()` → `SETTLED` + `spectatorMarketResolved = true`
+**Note:** This phase is optional - oracle can call `distribute()` directly from ACTIVE state.
+
+**State transition:** Oracle calls `distribute()` → `SETTLED`
 
 ---
 
@@ -122,9 +125,33 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 | **Spectators**  | Check final prices                                   | `calculateOutcomePrice(id)` |
 | **Spectators**  | Claim prediction payout                              | `claimPredictionPayout(id)` |
 | **Spectators**  | Winners get payout, losers get 0                     | Same function               |
-| **Oracle**      | ❌ No more actions                                   | -                           |
+| **Oracle**      | Force close after expiry (see Phase 5)               | `forceClose()`              |
 
-**Terminal state:** Contest complete, users claim whenever convenient.
+**State transition:** Oracle calls `forceClose()` (after expiry) → `CLOSED`
+
+---
+
+### Phase 5: CLOSED - Force Distribution (After Expiry)
+
+**State:** `ContestState.CLOSED`  
+**Trigger:** Oracle calls `forceClose()` after contest expiry
+
+| Actor         | Can Do                          | Function |
+| ------------- | ------------------------------- | -------- |
+| **All Users** | Already received forced payouts | -        |
+| **Oracle**    | ❌ No more actions              | -        |
+
+**Purpose:** Prevent funds from being locked forever if users forget to claim.
+
+**How it works:**
+
+- After expiry timestamp, oracle can call `forceClose()`
+- Automatically pushes all unclaimed payouts to users
+- Contestants receive their unclaimed prizes
+- Winning spectators receive their unclaimed winnings
+- Losing spectators get nothing (winner-take-all already determined)
+
+**Terminal state:** Contest fully closed, all funds distributed.
 
 ---
 
@@ -143,8 +170,8 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 
 **How to get to CANCELLED:**
 
-- Oracle calls `cancel()` (anytime before SETTLED)
-- Anyone calls `cancelExpired()` (after expiry timestamp)
+- Oracle calls `cancel()` (anytime before SETTLED - settlement is final!)
+- Anyone calls `cancelExpired()` (after expiry timestamp, if not settled)
 
 **Refund guarantee:**
 
@@ -165,49 +192,50 @@ Example:
 ```
                     OPEN
                      │
-                     │ Contestants deposit
-                     │ Spectators can bet! (early betting)
+                     │ Contestants join
+                     │ Spectators bet (early betting!)
                      │ Spectators can withdraw
                      │
-                     │ Oracle: startContest()
-                     │ Sets: state = IN_PROGRESS, bettingOpen = true
+                     │ Oracle: activateContest()
                      ▼
-          ┌─────────────────────┐
-          │    IN_PROGRESS      │
-          │  (bettingOpen=true) │
-          │                     │
-          │ Spectators bet      │
-          │ Spectators withdraw │
-          └──────────┬──────────┘
+                  ACTIVE
                      │
-                     │ Oracle: closeBetting()
-                     │ Sets: bettingOpen = false
+                     │ Spectators continue betting
+                     │ Spectators can withdraw
+                     │
+                     │ Oracle: lockBetting() [OPTIONAL]
                      ▼
-          ┌─────────────────────┐
-          │    IN_PROGRESS      │
-          │ (bettingOpen=false) │
-          │                     │
-          │ Contest finishing   │
-          │ No more bets        │
-          └──────────┬──────────┘
+                  LOCKED
+                     │
+                     │ Contest finishing
+                     │ No more bets/withdrawals
                      │
                      │ Oracle: distribute(...)
+                     │ (Can also call from ACTIVE)
                      │ Pays Layer 1 prizes
                      │ Pays Layer 2 bonuses
-                     │ Resolves spectator market
                      ▼
                   SETTLED
                      │
                      │ Users claim
                      │ whenever ready
+                     │
+                     │ (After expiry)
+                     │ Oracle: forceClose()
+                     │ Pushes unclaimed payouts
+                     ▼
+                  CLOSED
+                     │
+                     │ All funds distributed
                      ▼
                   (done)
 
-        (Alternative path from any state)
+        (Alternative path from OPEN/ACTIVE only)
                      │
                      │ Oracle: cancel()
                      │ OR
                      │ Anyone: cancelExpired()
+                     │ (Cannot cancel after LOCKED/SETTLED)
                      ▼
                  CANCELLED
                      │
@@ -451,17 +479,31 @@ function claimPredictionPayout(uint256 outcomeId) external
 #### Oracle Functions
 
 ```solidity
-// Start contest (closes contestant registration, betting continues)
-function startContest() external onlyOracle
+// Activate contest (closes contestant registration, betting continues)
+function activateContest() external onlyOracle
 // Requirements: state == OPEN, has contestants
+
+// Lock betting window (prevent last-second bets) [OPTIONAL]
+function lockBetting() external onlyOracle
+// Requirements: state == ACTIVE
 
 // Settle contest (ONE call does everything!)
 function distribute(
     address[] calldata winners,
     uint256[] calldata payoutBps
 ) external onlyOracle
-// Requirements: state == IN_PROGRESS
+// Requirements: state == ACTIVE or state == LOCKED
 // Does: Pays Layer 1 prizes + bonuses, resolves Layer 2 market
+
+// Cancel contest (enables refunds)
+function cancel() external onlyOracle
+// Requirements: state != SETTLED and state != CLOSED
+// Note: Cannot cancel after settlement - settlement is final
+
+// Force close and push unclaimed payouts (after expiry)
+function forceClose() external onlyOracle
+// Requirements: state == SETTLED, block.timestamp >= expiryTimestamp
+// Does: Pushes all unclaimed contestant and spectator payouts
 ```
 
 ### ContestFactory.sol
@@ -589,7 +631,13 @@ forge test -vvv
 **Current test status:**
 
 ```
-✅ Contest.t.sol: 4/4 passing
+✅ Contest.t.sol: 15 tests including:
+   - Full contest flow
+   - Early betting
+   - LMSR pricing
+   - Betting window control
+   - Cancellation & refunds
+   - Force close (7 tests)
 ✅ ContestFactory.t.sol: 2/2 passing
 ✅ PlatformToken.t.sol: All passing
 ✅ DepositManager.t.sol: All passing
@@ -714,25 +762,31 @@ Contest States:
 
 OPEN
   ↓ contestants joinContest()
-  ↓ oracle startContest() → sets bettingOpen = true
+  ↓ spectators addPrediction() (early betting!)
+  ↓ oracle activateContest()
 
-IN_PROGRESS (bettingOpen = true)
-  ↓ spectators addPrediction()
+ACTIVE
+  ↓ spectators addPrediction() (betting continues)
   ↓ (optional) spectators withdraw()
-  ↓ oracle closeBetting() → sets bettingOpen = false
+  ↓ (optional) oracle lockBetting()
 
-IN_PROGRESS (bettingOpen = false)
-  ↓ contest finishes (no more bets allowed)
+LOCKED [OPTIONAL]
+  ↓ contest finishes (no more bets/withdrawals)
   ↓ oracle distribute()
 
 SETTLED
   ↓ contestants claimContestantPayout()
   ↓ spectators claimPredictionPayout()
+  ↓ (after expiry) oracle forceClose()
 
-(OR)
+CLOSED
+  ↓ all unclaimed funds pushed to users
+  ↓ contest fully closed
+
+(OR - from OPEN/ACTIVE only)
 
 CANCELLED
-  ↓ refunds available
+  ↓ refunds available (cannot cancel after LOCKED/SETTLED)
 ```
 
 ## 🎯 Quick Reference
@@ -756,12 +810,13 @@ CANCELLED
 
 ### For Oracle
 
-| Want to...                    | Call...                        | When...                       |
-| ----------------------------- | ------------------------------ | ----------------------------- |
-| Start contest                 | `startContest()`               | After contestants join        |
-| Close betting (prevent races) | `closeBetting()`               | Before contest finishes       |
-| Settle everything             | `distribute(winners, payouts)` | After contest finishes        |
-| Cancel                        | `cancel()`                     | If contest needs cancellation |
+| Want to...                   | Call...                        | When...                        |
+| ---------------------------- | ------------------------------ | ------------------------------ |
+| Activate contest             | `activateContest()`            | After contestants join         |
+| Lock betting (prevent races) | `lockBetting()`                | Before contest finishes        |
+| Settle everything            | `distribute(winners, payouts)` | After contest finishes         |
+| Cancel                       | `cancel()`                     | If contest needs cancellation  |
+| Force close and pay everyone | `forceClose()`                 | After expiry (if users forgot) |
 
 ## 📄 License
 
