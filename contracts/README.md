@@ -1,200 +1,772 @@
-# Bet the Cut Smart Contracts
+# Bet the Cut - Smart Contracts
 
-This directory contains the smart contracts for the Bet the Cut platform, implementing a simplified token system with yield generation through Compound V3 Comet.
+Complete fantasy golf contest and prediction market system built on Solidity.
 
-## Contract Architecture
+## 🎯 Architecture
 
-### Core Contracts
+```
+┌─────────────────────────────────────────┐
+│         Platform Layer (USDC)           │
+│                                         │
+│  PlatformToken           DepositManager │
+│  (CUT token)             (USDC ↔ CUT)  │
+└──────────────┬──────────────────────────┘
+               │ Users get CUT tokens
+               ▼
+┌─────────────────────────────────────────┐
+│         Contest Layer (CUT)             │
+│                                         │
+│  ContestFactory          Contest        │
+│  (Creates contests)      (All-in-one!)  │
+└─────────────────────────────────────────┘
+```
 
-1. **PlatformToken.sol** - A simple ERC20 token (CUT) that can be minted and burned by the DepositManager
-2. **DepositManager.sol** - Manages USDC deposits, CUT token minting/burning, and yield generation through Compound V3
+## 📦 Contracts
 
-### Key Design Principles
+### Platform Layer
 
-- **1:1 Conversion**: USDC to CUT tokens maintain a 1:1 ratio
-- **Yield Retention**: All yield generated through Compound V3 stays in the DepositManager contract
-- **No User Yield Distribution**: Users only get back their original deposit amount, yield is retained by the platform
-- **Compound V3 Integration**: Uses Compound V3 Comet for yield generation
-- **Simplified Design**: No complex tracking variables, just direct 1:1 conversions
+**`PlatformToken.sol`** - ERC20 CUT token
 
-## Contract Functions
+- Minted 1:1 when users deposit USDC
+- Burned 1:1 when users withdraw USDC
+- Only DepositManager can mint/burn
 
-### PlatformToken
+**`DepositManager.sol`** - USDC gateway + yield generation
 
-- `mint(address to, uint256 amount)` - Mint CUT tokens (only callable by DepositManager)
-- `burn(address from, uint256 amount)` - Burn CUT tokens (only callable by DepositManager)
-- `setDepositManager(address _depositManager)` - Set the DepositManager address (only callable by owner)
+- Users deposit USDC → receive CUT tokens
+- Supplies USDC to Compound V3 for yield
+- Yield stays with platform (not distributed to users)
+- Users can withdraw USDC anytime (1:1 redemption)
 
-### DepositManager
+### Contest Layer
 
-#### User Functions
+**`Contest.sol`** - Combined contestant competition + spectator betting
 
-- `depositUSDC(uint256 amount)` - Deposit USDC and receive CUT tokens (1:1 ratio)
-- `withdrawUSDC(uint256 platformTokenAmount)` - Burn CUT tokens and receive USDC back (1:1 ratio)
-- `withdrawAll()` - Withdraw all CUT tokens for USDC
+- **Layer 1:** Contestants deposit CUT and compete for prizes
+- **Layer 2:** Spectators bet CUT on contestants with LMSR pricing
+- **Settlement:** ONE oracle call distributes both layers
 
-#### View Functions
+**`ContestFactory.sol`** - Creates Contest instances
 
-- `getTokenManagerUSDCBalance()` - Get USDC balance in the contract
-- `getCompoundUSDCBalance()` - Get USDC balance in Compound V3
-- `getTotalAvailableBalance()` - Get total USDC available (contract + Compound)
+- Standardized contest deployment
+- Registry of all contests
+- Each contest has unique parameters
 
-#### Admin Functions
+## 📅 Contest Lifecycle
 
-- `balanceSupply(address to)` - Withdraw excess USDC (yield) while ensuring token supply is backed (only owner)
-- `emergencyWithdrawAll(address to)` - Emergency withdraw all available USDC (only owner)
+### Phase 1: OPEN - Contestant Registration & Early Betting
 
-## Decimal Handling
+**State:** `ContestState.OPEN`  
+**Betting:** Available! (early betting enabled)
 
-- **USDC**: 6 decimals
-- **CUT Token**: 18 decimals
-- **Conversion**: 1 USDC = 1 CUT token (with decimal conversion: `amount * 1e12`)
+| Actor           | Can Do                 | Function                         |
+| --------------- | ---------------------- | -------------------------------- |
+| **Contestants** | Join contest           | `joinContest()`                  |
+| **Contestants** | Leave contest          | `leaveContest()`                 |
+| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
+| **Spectators**  | Add prediction         | `addPrediction(id, amount)`      |
+| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
+| **Oracle**      | Start contest          | `startContest()`                 |
+| **Anyone**      | Cancel if expired      | `cancelExpired()`                |
 
-## Yield Generation
+**State transition:** Oracle calls `startContest()` → `IN_PROGRESS` + `bettingOpen = true`
 
-1. Users deposit USDC into the DepositManager
-2. USDC is automatically supplied to Compound V3 Comet for yield generation
-3. Yield accumulates in the Compound V3 position
-4. Users can only withdraw their original deposit amount (1:1 ratio)
-5. All yield remains in the DepositManager contract for platform use
+---
 
-## Simplified Design
+### Phase 2: IN_PROGRESS (Betting Open) - Active Betting
 
-The contracts use a **minimalist approach**:
+**State:** `ContestState.IN_PROGRESS`  
+**Betting:** `bettingOpen = true`
 
-- **No tracking variables**: No `totalUSDCBalance` or `totalPlatformTokensMinted`
-- **Direct 1:1 conversion**: Users get exactly 1 CUT token per 1 USDC deposited
-- **Simple withdrawal**: Users get back exactly their original deposit amount
-- **Yield retention**: All Compound V3 yield stays in the contract for platform use
+| Actor           | Can Do                 | Function                         |
+| --------------- | ---------------------- | -------------------------------- |
+| **Contestants** | ❌ Cannot join/leave   | -                                |
+| **Spectators**  | Add predictions (LMSR) | `addPrediction(id, amount)`      |
+| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
+| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
+| **Oracle**      | Close betting window   | `closeBetting()`                 |
+| **Oracle**      | Cancel contest         | `cancel()`                       |
 
-### Why This Design?
+**State transition:** Oracle calls `closeBetting()` → `bettingOpen = false`
 
-- **Simplicity**: No complex accounting or yield distribution logic
-- **Security**: Fewer state variables mean fewer attack vectors
-- **Gas efficiency**: Minimal storage operations
-- **Transparency**: Clear 1:1 relationship between USDC and CUT tokens
+---
 
-## Security Features
+### Phase 3: IN_PROGRESS (Betting Closed) - Contest Finishing
 
-- **Reentrancy Protection**: All external functions use `nonReentrant` modifier
-- **Pause Checks**: Respects Compound V3 pause states
-- **Access Control**: Only DepositManager can mint/burn CUT tokens
-- **Emergency Functions**: Owner can withdraw funds in emergency situations
-- **Input Validation**: Comprehensive parameter checking
-- **Return Value Checks**: All external calls validated
+**State:** `ContestState.IN_PROGRESS`  
+**Betting:** `bettingOpen = false`
 
-## Testing
+| Actor           | Can Do                 | Function                           |
+| --------------- | ---------------------- | ---------------------------------- |
+| **Contestants** | ❌ Waiting for results | -                                  |
+| **Spectators**  | Check prices (locked)  | `calculateOutcomePrice(id)`        |
+| **Spectators**  | ❌ Cannot bet          | -                                  |
+| **Spectators**  | ❌ Cannot withdraw     | -                                  |
+| **Oracle**      | Settle contest         | `distribute(winners[], payouts[])` |
 
-✅ **All tests passing!** Run the test suite:
+**Purpose:** Contest is finishing, outcome not yet certain, but betting window closed to prevent last-second unfair bets.
+
+**State transition:** Oracle calls `distribute()` → `SETTLED` + `spectatorMarketResolved = true`
+
+---
+
+### Phase 4: SETTLED - Claiming
+
+**State:** `ContestState.SETTLED`  
+**Betting:** Closed
+
+| Actor           | Can Do                                               | Function                    |
+| --------------- | ---------------------------------------------------- | --------------------------- |
+| **Contestants** | Claim contest payout                                 | `claimContestPayout()`      |
+| **Contestants** | (Can claim multiple times if made multiple deposits) | Same function               |
+| **Spectators**  | Check final prices                                   | `calculateOutcomePrice(id)` |
+| **Spectators**  | Claim prediction payout                              | `claimPredictionPayout(id)` |
+| **Spectators**  | Winners get payout, losers get 0                     | Same function               |
+| **Oracle**      | ❌ No more actions                                   | -                           |
+
+**Terminal state:** Contest complete, users claim whenever convenient.
+
+---
+
+### (Alternative) CANCELLED - Refunds
+
+**State:** `ContestState.CANCELLED`
+
+| Actor           | Can Do                                 | Function                         |
+| --------------- | -------------------------------------- | -------------------------------- |
+| **Contestants** | Get full refund (100% of deposit)      | `leaveContest()`                 |
+| **Spectators**  | Check prices (locked)                  | `calculateOutcomePrice(id)`      |
+| **Spectators**  | Get full refund (100% including fees!) | `withdrawPrediction(id, tokens)` |
+| **Oracle**      | ❌ No more actions                     | -                                |
+
+**Terminal state:** Contest cancelled, all deposits refunded.
+
+**How to get to CANCELLED:**
+
+- Oracle calls `cancel()` (anytime before SETTLED)
+- Anyone calls `cancelExpired()` (after expiry timestamp)
+
+**Refund guarantee:**
+
+```
+Contestants: Get back full contestantDepositAmount
+Spectators: Get back 100% of what they deposited (including entry fees!)
+
+Example:
+- Spectator deposited 100 CUT
+- Entry fee was 15 CUT
+- If cancelled: Get back full 100 CUT ✅
+```
+
+---
+
+## 🔄 State Transition Diagram
+
+```
+                    OPEN
+                     │
+                     │ Contestants deposit
+                     │ Spectators can bet! (early betting)
+                     │ Spectators can withdraw
+                     │
+                     │ Oracle: startContest()
+                     │ Sets: state = IN_PROGRESS, bettingOpen = true
+                     ▼
+          ┌─────────────────────┐
+          │    IN_PROGRESS      │
+          │  (bettingOpen=true) │
+          │                     │
+          │ Spectators bet      │
+          │ Spectators withdraw │
+          └──────────┬──────────┘
+                     │
+                     │ Oracle: closeBetting()
+                     │ Sets: bettingOpen = false
+                     ▼
+          ┌─────────────────────┐
+          │    IN_PROGRESS      │
+          │ (bettingOpen=false) │
+          │                     │
+          │ Contest finishing   │
+          │ No more bets        │
+          └──────────┬──────────┘
+                     │
+                     │ Oracle: distribute(...)
+                     │ Pays Layer 1 prizes
+                     │ Pays Layer 2 bonuses
+                     │ Resolves spectator market
+                     ▼
+                  SETTLED
+                     │
+                     │ Users claim
+                     │ whenever ready
+                     ▼
+                  (done)
+
+        (Alternative path from any state)
+                     │
+                     │ Oracle: cancel()
+                     │ OR
+                     │ Anyone: cancelExpired()
+                     ▼
+                 CANCELLED
+                     │
+                     │ All refunds
+                     ▼
+                  (done)
+```
+
+## 🎮 How It Works
+
+### Full User Flow
+
+```
+1. User deposits USDC
+   ├─ DepositManager.depositUSDC(100 USDC)
+   └─ Receives: 100 CUT tokens
+
+2. User enters contest as contestant
+   ├─ Contest.joinContest() with 100 CUT
+   └─ Competes for prizes
+
+   OR
+
+   User adds prediction as spectator
+   ├─ Contest.addPrediction(contestantId, 50 CUT)
+   └─ Receives tokens at LMSR price
+
+3. Contest settles
+   ├─ Oracle calls Contest.distribute(winners, payouts)
+   └─ ONE call settles everything!
+
+4. Users claim
+   ├─ Contestants: Contest.claimContestPayout()
+   ├─ Spectators: Contest.claimPredictionPayout(outcomeId)
+   └─ Receive CUT tokens
+
+5. Convert back to USDC
+   ├─ DepositManager.withdrawUSDC(100 CUT)
+   └─ Receives: 100 USDC
+```
+
+## 💰 Economic Model
+
+### Example: 3 contestants, 10 spectators
+
+**Phase 1: Contestants Enter**
+
+```
+User A deposits: 100 CUT
+User B deposits: 100 CUT
+User C deposits: 100 CUT
+─────────────────────────
+Layer 1 pool: 300 CUT
+```
+
+**Phase 2: Spectators Bet**
+
+```
+5 people bet 100 CUT on User B = 500 CUT (50% of volume)
+3 people bet 100 CUT on User A = 300 CUT (30% of volume)
+2 people bet 100 CUT on User C = 200 CUT (20% of volume)
+─────────────────────────────────────────
+Total spectator deposits: 1,000 CUT
+
+Entry fees (15%): 150 CUT
+├─ Prize bonus: 75 CUT → augments Layer 1 pool
+└─ Contestant bonuses: 75 CUT → split by betting volume
+    ├─ User B: 37.50 CUT (50% of betting volume) ← Based on popularity!
+    ├─ User A: 22.50 CUT (30% of betting volume)
+    └─ User C: 15 CUT (20% of betting volume)
+
+Spectator collateral: 850 CUT (backs tokens)
+```
+
+**Phase 3: ONE Oracle Call Settles**
+
+```solidity
+contest.distribute(
+    [userB, userA, userC],  // Winners in order
+    [6000, 3000, 1000]      // 60%, 30%, 10%
+)
+```
+
+**What happens:**
+
+1. Calculate total pool:
+
+   - Contestant deposits: 300 CUT
+   - Prize bonus: 75 CUT
+   - Contestant bonuses: 75 CUT
+   - **Total: 450 CUT**
+
+2. Apply oracle fee (1%) to ENTIRE pool:
+
+   - Oracle fee: 4.50 CUT
+   - **After fee: 445.50 CUT**
+
+3. Distribute Layer 1 prizes (from 375 - 1% = 371.25 CUT):
+
+   - User B: 222.75 CUT (60% ← Oracle sets based on PERFORMANCE)
+   - User A: 111.38 CUT (30% ← Oracle sets)
+   - User C: 37.13 CUT (10% ← Oracle sets)
+
+4. Distribute Layer 2 bonuses (from 75 - 1% = 74.25 CUT):
+
+   - User B: 37.13 CUT (50% ← Based on BETTING VOLUME)
+   - User A: 22.28 CUT (30% ← Based on volume)
+   - User C: 14.85 CUT (20% ← Based on volume)
+
+   ⚠️ Note: Layer 1 (performance) and Layer 2 (popularity) are independent!
+   An unpopular winner gets big Layer 1 prize (60%) but small Layer 2 bonus (20%).
+
+5. Set Layer 2 winner: User B (100%), others (0%)
+
+**Phase 4: Users Claim**
+
+Layer 1 (Contestants):
+
+```
+User B claims: 222.75 + 37.13 = 259.88 CUT total (160% ROI!)
+User A claims: 111.38 + 22.28 = 133.66 CUT (34% ROI)
+User C claims: 37.13 + 14.85 = 51.98 CUT (-48% but got bonuses!)
+
+Note: Oracle fee (1%) applied to both prizes AND bonuses
+```
+
+Layer 2 (Spectators):
+
+```
+User B bettors (winners):
+├─ Hold ~515 tokens total
+├─ Redeem for: 850 CUT (all collateral!)
+├─ Invested: 500 CUT
+└─ Profit: +350 CUT (+70% ROI for picking winner!)
+
+User A bettors: 0 CUT (winner-take-all)
+User C bettors: 0 CUT (winner-take-all)
+```
+
+## 🔧 Key Features
+
+### LMSR Dynamic Pricing
+
+Spectator betting uses Logarithmic Market Scoring Rule:
+
+```solidity
+price = basePrice + (demand × demandSensitivity) / liquidityParameter
+```
+
+**Result:**
+
+- Popular contestants = expensive (fewer tokens per CUT)
+- Unpopular contestants = cheap (more tokens per CUT)
+- Early bettors get better prices
+- Market discovers true odds
+
+### Winner-Take-All
+
+Layer 2 spectators use winner-take-all (different from Layer 1):
+
+```
+Layer 1 (Contestants): Proportional (60%, 30%, 10%)
+Layer 2 (Spectators): Winner-take-all (100%, 0%, 0%)
+```
+
+**Why?** Higher stakes = more excitement for spectators!
+
+### Deferred Fee Distribution
+
+Entry fees held until settlement, enabling free withdrawals:
+
+```
+addPrediction(contestantId, 100 CUT)
+├─ 85 CUT → collateral (backs tokens)
+└─ 15 CUT → fees (held, not sent yet)
+
+withdraw() before settlement
+└─ Get back: 100 CUT (full refund!)
+
+distribute() at settlement
+├─ Send 75 CUT to prize pool
+└─ Send 75 CUT to contestants
+```
+
+### No Swaps (Security)
+
+Swaps disabled to prevent arbitrage:
+
+```
+❌ BAD (if swaps were enabled):
+1. Deposit on cheap contestant ($0.92/token)
+2. Swap 1:1 to expensive contestant ($1.40/token)
+3. Instant 52% profit (exploit!)
+
+✅ GOOD (current):
+1. addPrediction() directly on desired contestant
+2. No swaps allowed
+3. Arbitrage impossible
+```
+
+## 📖 API Reference
+
+### Contest.sol
+
+#### Contestant Functions
+
+```solidity
+// Join contest
+function joinContest() external
+// Requirements: state == OPEN, exact contestantDepositAmount
+
+// Leave contest before start
+function leaveContest() external
+// Requirements: state == OPEN or CANCELLED, already joined
+
+// Claim prize after settlement
+function claimContestPayout() external
+// Requirements: state == SETTLED, has payout
+```
+
+#### Spectator Functions
+
+```solidity
+// Add prediction on a contestant (LMSR pricing)
+function addPrediction(uint256 outcomeId, uint256 amount) external
+// Requirements: state == OPEN or IN_PROGRESS (with bettingOpen)
+// Returns: ERC1155 tokens representing prediction
+// Price: Dynamic based on demand (LMSR)
+
+// Withdraw prediction before settlement (100% refund!)
+function withdrawPrediction(uint256 outcomeId, uint256 tokenAmount) external
+// Requirements: state == OPEN, IN_PROGRESS (with bettingOpen), or CANCELLED
+// Returns: Full original deposit (including entry fee)
+
+// Claim prediction winnings after settlement
+function claimPredictionPayout(uint256 outcomeId) external
+// Requirements: state == SETTLED
+// Payout: Winner-take-all (100% to winners, 0% to losers)
+```
+
+#### Oracle Functions
+
+```solidity
+// Start contest (closes contestant registration, opens betting)
+function startContest() external onlyOracle
+// Requirements: state == OPEN, has contestants
+
+// Settle contest (ONE call does everything!)
+function distribute(
+    address[] calldata winners,
+    uint256[] calldata payoutBps
+) external onlyOracle
+// Requirements: state == IN_PROGRESS
+// Does: Pays Layer 1 prizes + bonuses, resolves Layer 2 market
+```
+
+### ContestFactory.sol
+
+```solidity
+// Create new contest
+function createContest(
+    address paymentToken,     // PlatformToken address
+    address oracle,
+    uint256 contestantDepositAmount,
+    uint256 oracleFee,       // Basis points (max 1000 = 10%)
+    uint256 expiry,
+    uint256 liquidityParameter,
+    uint256 demandSensitivity
+) external returns (address)
+
+// Get all contests
+function getContests() external view returns (address[])
+
+// Get count
+function getContestCount() external view returns (uint256)
+```
+
+## 🚀 Deployment
+
+### 1. Deploy Platform (Once)
+
+```solidity
+// Deploy CUT token
+PlatformToken cut = new PlatformToken("Cut", "CUT");
+
+// Deploy USDC manager
+DepositManager dm = new DepositManager(
+    usdcAddress,
+    address(cut),
+    cUSDCAddress  // Compound V3 comet
+);
+
+// Connect them
+cut.setDepositManager(address(dm));
+```
+
+### 2. Deploy ContestFactory (Once)
+
+```solidity
+ContestFactory factory = new ContestFactory();
+```
+
+### 3. Create Contests (Many Times)
+
+```solidity
+address contest = factory.createContest(
+    address(cut),         // paymentToken
+    oracleAddress,
+    100e18,              // 100 CUT per contestant
+    100,                 // 1% oracle fee
+    block.timestamp + 7 days,
+    1000e18,             // LMSR liquidity
+    500                  // LMSR sensitivity (5%)
+);
+```
+
+## 📊 Example Usage
+
+### TypeScript/ethers.js
+
+```typescript
+import { ethers } from "ethers";
+
+// 1. User deposits USDC for CUT tokens
+await depositManager.depositUSDC(ethers.parseUnits("1000", 6)); // 1000 USDC
+// User now has 1000 CUT
+
+// 2. Create a contest
+const contest = await contestFactory.createContest(
+  platformTokenAddress,
+  oracleAddress,
+  ethers.parseEther("100"), // 100 CUT per contestant
+  100, // 1% fee
+  Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days
+  ethers.parseEther("1000"), // Liquidity
+  500 // Sensitivity
+);
+
+// 3. Contestants join
+await cutToken.approve(contest, ethers.parseEther("100"));
+await contest.joinContest();
+
+// 4. Oracle starts
+await contest.startContest();
+
+// 5. Spectators add predictions
+await cutToken.approve(contest, ethers.parseEther("50"));
+await contest.addPrediction(1, ethers.parseEther("50")); // Predict contestant #1 wins
+
+// 6. Oracle settles (ONE CALL!)
+await contest.distribute(
+  [winner1, winner2, winner3],
+  [6000, 3000, 1000] // 60%, 30%, 10%
+);
+
+// 7. Claim prizes
+await contest.claimContestPayout(); // Contestants
+await contest.claimPredictionPayout(1); // Spectators
+
+// 8. Convert CUT back to USDC
+await depositManager.withdrawUSDC(ethers.parseEther("150"));
+// User receives 150 USDC
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+forge test
+
+# Run specific test suite
+forge test --match-path "test/Contest.t.sol"
+forge test --match-path "test/ContestFactory.t.sol"
+
+# Verbose output
+forge test -vvv
+```
+
+**Current test status:**
+
+```
+✅ Contest.t.sol: 4/4 passing
+✅ ContestFactory.t.sol: 2/2 passing
+✅ PlatformToken.t.sol: All passing
+✅ DepositManager.t.sol: All passing
+
+Total: 100% passing
+```
+
+## 🔐 Security Features
+
+✅ **No arbitrage** - Swaps disabled, LMSR only on entry  
+✅ **Reentrancy protection** - All external calls guarded  
+✅ **Oracle control** - Only oracle can settle contests  
+✅ **Deferred fees** - Users can withdraw with full refunds  
+✅ **Winner-take-all** - All collateral goes to winners  
+✅ **State validation** - Proper state checks throughout
+
+## 📈 Economics
+
+### Contestant Earnings
+
+```
+Base prize: From contestant deposits
+Bonus prize: From spectator entry fees (7.5%)
+Volume bonus: From spectator betting volume (7.5%)
+
+Oracle fee: Applied to ALL contestant earnings (prizes + bonuses)
+
+Total earnings: (Contest winnings + popularity bonuses) × (1 - oracleFee%)
+```
+
+**Oracle Fee Application:**
+
+```
+Total pool going to contestants:
+├─ Contestant deposits: 300 CUT
+├─ Prize bonus (7.5% of spectator deposits): 75 CUT
+└─ Volume bonuses (7.5% of spectator deposits): 75 CUT
+    Total: 450 CUT
+
+Oracle takes fee from ENTIRE pool:
+├─ Oracle fee (1% of 450): 4.50 CUT
+└─ Contestants receive: 445.50 CUT
+
+Distribution (TWO INDEPENDENT calculations):
+├─ Layer 1 prizes: 371.25 CUT split by oracle's payoutBps[] ← Performance!
+└─ Layer 2 bonuses: 74.25 CUT split by betting volume ← Popularity!
+
+These percentages can differ! Layer 1 = skill, Layer 2 = popularity.
+```
+
+**Example:** User B wins with high betting volume
+
+```
+Contest prize: 222.75 CUT (60% of augmented pool, after 1% oracle fee)
+Volume bonus: 37.13 CUT (from being popular, after 1% oracle fee)
+Total: 259.88 CUT on 100 CUT deposit = 160% ROI!
+
+Oracle fee applies to ALL contestant earnings (prizes + bonuses)
+```
+
+### Spectator Earnings
+
+```
+Bet amount: 100 CUT
+Entry fee: 15 CUT (non-refundable after settlement)
+Collateral: 85 CUT (backing)
+Tokens: 85 / LMSR_price
+
+If bet on winner:
+  Payout = (your tokens / total winning tokens) × total collateral
+
+If bet on loser:
+  Payout = 0 (winner-take-all!)
+```
+
+**Example:** Picking the winner
+
+```
+Invested: 100 CUT
+Entry fee: -15 CUT
+Collateral: 85 CUT
+
+If win (hold 515/850 of tokens):
+  Receive: (your % of winning tokens) × 850 CUT
+  Potential: +42% ROI if others also bet on winner
+```
+
+## 🛠️ Development
+
+### Build
+
+```bash
+forge build
+```
+
+### Test
 
 ```bash
 forge test
-```
-
-### Test Coverage
-
-- **PlatformToken.t.sol**: 15 tests covering minting, burning, and access control
-- **DepositManager.t.sol**: 24 tests covering deposits, withdrawals, yield accumulation, and admin functions
-
-### Test Features
-
-- **Mock Contracts**: Uses MockUSDC and MockCompound for isolated testing
-- **Yield Simulation**: MockCompound can simulate yield generation for testing
-- **Edge Cases**: Tests cover zero amounts, insufficient balances, and pause states
-- **Admin Functions**: Tests owner-only functions and access control
-
-## Deployment
-
-### Environment Variables
-
-Set these environment variables before deployment:
-
-```bash
-export PRIVATE_KEY="your_private_key"
-export USDC_TOKEN_ADDRESS="usdc_token_address"
-export CUSDC_ADDRESS="compound_v3_cusdc_address"
+forge test -vvv  # Verbose
+forge test --match-test testFullFlow -vvvv  # Very verbose
 ```
 
 ### Deploy
 
 ```bash
-forge script script/Deploy.s.sol --rpc-url <rpc_url> --broadcast
+# Set environment variables
+cp .env.example .env
+# Edit .env with your values
+
+# Deploy to testnet
+forge script script/Deploy_sepolia.s.sol --rpc-url sepolia --broadcast
+
+# Deploy to mainnet
+forge script script/Deploy_base.s.sol --rpc-url base --broadcast
 ```
 
-## Network Addresses
+## 📝 State Machine
 
-### Base Mainnet
+```
+Contest States:
 
-- **USDC**: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-- **Compound V3 Comet**: 0xb125E6687d4313864e53df431d5425969c15Eb2F
+OPEN
+  ↓ contestants joinContest()
+  ↓ oracle startContest() → sets bettingOpen = true
 
-### Base Sepolia (Testnet)
+IN_PROGRESS (bettingOpen = true)
+  ↓ spectators addPrediction()
+  ↓ (optional) spectators withdraw()
+  ↓ oracle closeBetting() → sets bettingOpen = false
 
-- **USDC**: [Set appropriate testnet address]
-- **Compound V3 Comet**: [Set appropriate testnet address]
+IN_PROGRESS (bettingOpen = false)
+  ↓ contest finishes (no more bets allowed)
+  ↓ oracle distribute()
 
-## Integration with Compound V3
+SETTLED
+  ↓ contestants claimContestantPayout()
+  ↓ spectators claimPredictionPayout()
 
-The DepositManager integrates with Compound V3 Comet for yield generation:
+(OR)
 
-- **Supply**: Automatically supplies USDC to Compound V3 when users deposit
-- **Withdraw**: Withdraws from Compound V3 when users withdraw their deposits
-- **Yield Tracking**: Yield accumulates in Compound V3 position
-- **Pause Handling**: Respects Compound V3 pause states for supply and withdraw operations
-
-### Key Integration Points
-
-```solidity
-// Compound V3 interface
-interface ICErc20 {
-    function supply(address asset, uint256 amount) external;
-    function withdraw(address asset, uint256 amount) external;
-    function balanceOf(address owner) external view returns (uint256);
-    function totalSupply() external view returns (uint256);
-    function isSupplyPaused() external view returns (bool);
-    function isWithdrawPaused() external view returns (bool);
-}
+CANCELLED
+  ↓ refunds available
 ```
 
-For detailed integration information, see `docs/COMPOUND_V3_COMET_INTEGRATION.md`.
+## 🎯 Quick Reference
 
-## Contract Specifications
+### For Contestants
 
-The contracts implement the specifications outlined in `contract_spec.txt`:
+| Want to...         | Call...                |
+| ------------------ | ---------------------- |
+| Join contest       | `joinContest()`        |
+| Leave before start | `leaveContest()`       |
+| Claim prize        | `claimContestPayout()` |
 
-1. **Escrow System**: Separate from this token system (see EscrowFactory.sol and Escrow.sol)
-2. **Platform Token System**: Simple ERC20 with 1:1 USDC conversion
-3. **Yield Integration**: Compound V3 Comet integration for yield generation
+### For Spectators
 
-## Recent Updates
+| Want to...          | Call...                          |
+| ------------------- | -------------------------------- |
+| Add prediction      | `addPrediction(id, amount)`      |
+| Withdraw prediction | `withdrawPrediction(id, tokens)` |
+| Claim winnings      | `claimPredictionPayout(id)`      |
+| Check price         | `calculateOutcomePrice(id)`      |
 
-### Testing Improvements
+### For Oracle
 
-- ✅ Fixed ownership issues in test setup
-- ✅ Added proper MockCompound integration for yield simulation
-- ✅ All 39 tests now passing
-- ✅ Comprehensive test coverage for all contract functions
+| Want to...                    | Call...                        | When...                       |
+| ----------------------------- | ------------------------------ | ----------------------------- |
+| Start contest                 | `startContest()`               | After contestants join        |
+| Close betting (prevent races) | `closeBetting()`               | Before contest finishes       |
+| Settle everything             | `distribute(winners, payouts)` | After contest finishes        |
+| Cancel                        | `cancel()`                     | If contest needs cancellation |
 
-### Contract Features
+## 📄 License
 
-- ✅ Simplified 1:1 USDC to CUT token conversion
-- ✅ Automatic Compound V3 integration for yield generation
-- ✅ Yield retention by platform (no user distribution)
-- ✅ Emergency withdrawal capabilities
-- ✅ Comprehensive pause state handling
+MIT
 
-## Security Best Practices
+## 👨‍💻 Author
 
-For detailed information about security implementations, see `SECURITY_BEST_PRACTICES.md`.
-
-## License
-
-MIT License
-
-to do:
-
-- handle multiple entries in escrow contract
-
-ideas:
-
-- reformat as option contract - everyone buys no shares against everyone else
+MagRelo
