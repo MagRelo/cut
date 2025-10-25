@@ -70,6 +70,9 @@ contract Escrow is ReentrancyGuard {
     /// @notice Mapping to track if an address is in the participants array
     mapping(address => bool) private isParticipant;
 
+    /// @notice Mapping to store final payout amounts for each address after distribution
+    mapping(address => uint256) public finalPayouts;
+
     /// @notice Emitted when a participant deposits into the escrow
     /// @param participant The address of the participant who deposited
     event EscrowDeposited(address indexed participant);
@@ -273,6 +276,8 @@ contract Escrow is ReentrancyGuard {
             // Use higher precision intermediate calculation to avoid precision loss
             uint256 payout = (remainingForParticipants * _payoutBasisPoints[i]) / 10000;
             calculatedPayouts[i] = payout;
+            // Store final payout for external contracts to read
+            finalPayouts[_addresses[i]] = payout;
         }
 
         // Update state (effects)
@@ -381,5 +386,19 @@ contract Escrow is ReentrancyGuard {
      */
     function getParticipantsCount() external view returns (uint256) {
         return participants.length;
+    }
+
+    /**
+     * @notice Gets final payout amounts for multiple addresses
+     * @dev Used by external contracts (e.g., PredictionMarket) to read distribution results
+     * @param _addresses Array of addresses to query
+     * @return payouts Array of payout amounts corresponding to each address
+     */
+    function getFinalPayouts(address[] calldata _addresses) external view returns (uint256[] memory) {
+        uint256[] memory payouts = new uint256[](_addresses.length);
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            payouts[i] = finalPayouts[_addresses[i]];
+        }
+        return payouts;
     }
 } 
