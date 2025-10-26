@@ -2,6 +2,28 @@
 
 Complete fantasy golf contest and prediction market system built on Solidity.
 
+## 🎮 Key Features
+
+### Multiple Entries Per User
+
+Users can join the same contest multiple times with different entries (lineups). Each entry has a unique ID from your database and competes independently.
+
+### Spectator Protection
+
+When an entry withdraws, all spectators who predicted on that entry automatically receive 100% refunds (including fees). No manual action needed!
+
+### Entry-Based Architecture
+
+Everything works with entry IDs, not user addresses. This enables multiple entries per user and cleaner tracking.
+
+**Benefits:**
+
+- 🎯 One user can have multiple entries in same contest
+- 🔐 Each entry ID is unique (from your database)
+- 💰 Settle with only winners - no zeros needed
+- 🎁 Automatic refunds when entries withdraw
+- 📊 ERC1155 token ID = entry ID (clean mapping)
+
 ## 📦 Contracts
 
 ### Token Layer
@@ -38,14 +60,14 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 **State:** `ContestState.OPEN`  
 **Predictions:** ✅ Available (early predictions enabled)
 
-| Actor           | Can Do                 | Function                         |
-| --------------- | ---------------------- | -------------------------------- |
-| **Contestants** | Join contest           | `joinContest()`                  |
-| **Contestants** | Leave contest          | `leaveContest()`                 |
-| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
-| **Spectators**  | Add prediction         | `addPrediction(id, amount)`      |
-| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
-| **Oracle**      | Activate contest       | `activateContest()`              |
+| Actor           | Can Do                                  | Function                              |
+| --------------- | --------------------------------------- | ------------------------------------- |
+| **Contestants** | Join contest with entry ID              | `joinContest(entryId)`                |
+| **Contestants** | Leave contest (auto-refunds spectators) | `leaveContest(entryId)`               |
+| **Spectators**  | Check prices                            | `calculateEntryPrice(entryId)`        |
+| **Spectators**  | Add prediction                          | `addPrediction(entryId, amount)`      |
+| **Spectators**  | Withdraw (100% refund)                  | `withdrawPrediction(entryId, tokens)` |
+| **Oracle**      | Activate contest                        | `activateContest()`                   |
 
 **State transition:** Oracle calls `activateContest()` → `ACTIVE`
 
@@ -56,15 +78,15 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 **State:** `ContestState.ACTIVE`  
 **Predictions:** ✅ Available
 
-| Actor           | Can Do                 | Function                          |
-| --------------- | ---------------------- | --------------------------------- |
-| **Contestants** | ❌ Cannot join/leave   | -                                 |
-| **Spectators**  | Add predictions (LMSR) | `addPrediction(id, amount)`       |
-| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)`  |
-| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`       |
-| **Oracle**      | Close predictions      | `closePredictions()`              |
-| **Oracle**      | Cancel contest         | `cancelContest()`                 |
-| **Oracle**      | Settle (if not locked) | `settleContest(winners, payouts)` |
+| Actor           | Can Do                 | Function                                 |
+| --------------- | ---------------------- | ---------------------------------------- |
+| **Contestants** | ❌ Cannot join/leave   | -                                        |
+| **Spectators**  | Add predictions (LMSR) | `addPrediction(entryId, amount)`         |
+| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(entryId, tokens)`    |
+| **Spectators**  | Check prices           | `calculateEntryPrice(entryId)`           |
+| **Oracle**      | Close predictions      | `closePredictions()`                     |
+| **Oracle**      | Cancel contest         | `cancelContest()`                        |
+| **Oracle**      | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
 **State transition:** Oracle calls `closePredictions()` → `LOCKED`
 
@@ -75,13 +97,13 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 **State:** `ContestState.LOCKED`  
 **Predictions:** ❌ Closed
 
-| Actor           | Can Do                 | Function                              |
-| --------------- | ---------------------- | ------------------------------------- |
-| **Contestants** | ❌ Waiting for results | -                                     |
-| **Spectators**  | Check prices (locked)  | `calculateOutcomePrice(id)`           |
-| **Spectators**  | ❌ Cannot predict      | -                                     |
-| **Spectators**  | ❌ Cannot withdraw     | -                                     |
-| **Oracle**      | Settle contest         | `settleContest(winners[], payouts[])` |
+| Actor           | Can Do                 | Function                                     |
+| --------------- | ---------------------- | -------------------------------------------- |
+| **Contestants** | ❌ Waiting for results | -                                            |
+| **Spectators**  | Check prices (locked)  | `calculateEntryPrice(entryId)`               |
+| **Spectators**  | ❌ Cannot predict      | -                                            |
+| **Spectators**  | ❌ Cannot withdraw     | -                                            |
+| **Oracle**      | Settle contest         | `settleContest(winningEntries[], payouts[])` |
 
 **Purpose:** Contest is finishing, outcome not yet certain, but predictions locked to prevent last-second unfair predictions.
 
@@ -96,14 +118,14 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 **State:** `ContestState.SETTLED`  
 **Predictions:** Closed
 
-| Actor           | Can Do                                               | Function                     |
-| --------------- | ---------------------------------------------------- | ---------------------------- |
-| **Contestants** | Claim contest payout                                 | `claimContestPayout()`       |
-| **Contestants** | (Can claim multiple times if made multiple deposits) | Same function                |
-| **Spectators**  | Check final prices                                   | `calculateOutcomePrice(id)`  |
-| **Spectators**  | Claim prediction payout                              | `claimPredictionPayout(id)`  |
-| **Spectators**  | Winners get payout, losers get 0                     | Same function                |
-| **Oracle**      | Distribute after expiry (see Phase 5)                | `distributeExpiredContest()` |
+| Actor           | Can Do                                | Function                         |
+| --------------- | ------------------------------------- | -------------------------------- |
+| **Contestants** | Claim single entry payout             | `claimEntryPayout(entryId)`      |
+| **Contestants** | Claim all entries at once             | `claimAllEntryPayouts()`         |
+| **Spectators**  | Check final prices                    | `calculateEntryPrice(entryId)`   |
+| **Spectators**  | Claim prediction payout               | `claimPredictionPayout(entryId)` |
+| **Spectators**  | Winners get payout, losers get 0      | Same function                    |
+| **Oracle**      | Distribute after expiry (see Phase 5) | `distributeExpiredContest()`     |
 
 **State transition:** Oracle calls `distributeExpiredContest()` (after expiry) → `CLOSED`
 
@@ -137,12 +159,12 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 
 **State:** `ContestState.CANCELLED`
 
-| Actor           | Can Do                                 | Function                         |
-| --------------- | -------------------------------------- | -------------------------------- |
-| **Contestants** | Get full refund (100% of deposit)      | `leaveContest()`                 |
-| **Spectators**  | Check prices (locked)                  | `calculateOutcomePrice(id)`      |
-| **Spectators**  | Get full refund (100% including fees!) | `withdrawPrediction(id, tokens)` |
-| **Oracle**      | ❌ No more actions                     | -                                |
+| Actor           | Can Do                                 | Function                              |
+| --------------- | -------------------------------------- | ------------------------------------- |
+| **Contestants** | Get full refund (100% of deposit)      | `leaveContest(entryId)`               |
+| **Spectators**  | Check prices (locked)                  | `calculateEntryPrice(entryId)`        |
+| **Spectators**  | Get full refund (100% including fees!) | `withdrawPrediction(entryId, tokens)` |
+| **Oracle**      | ❌ No more actions                     | -                                     |
 
 **Terminal state:** Contest cancelled, all deposits refunded.
 
@@ -232,22 +254,23 @@ Example:
    └─ Receives: 100 CUT tokens
 
 2. User enters contest as contestant
-   ├─ Contest.joinContest() with 100 CUT
+   ├─ Backend generates entryId: 12345
+   ├─ Contest.joinContest(12345) with 100 CUT
    └─ Competes for prizes
 
    OR
 
    User adds prediction as spectator
-   ├─ Contest.addPrediction(contestantId, 50 CUT)
-   └─ Receives tokens at LMSR price
+   ├─ Contest.addPrediction(entryId, 50 CUT)
+   └─ Receives ERC1155 tokens at LMSR price
 
 3. Contest settles
-   ├─ Oracle calls Contest.distribute(winners, payouts)
-   └─ ONE call settles everything!
+   ├─ Oracle calls Contest.settleContest(winningEntries, payouts)
+   └─ ONE call settles everything! (only winners needed)
 
 4. Users claim
-   ├─ Contestants: Contest.claimContestPayout()
-   ├─ Spectators: Contest.claimPredictionPayout(outcomeId)
+   ├─ Contestants: Contest.claimEntryPayout(entryId) or claimAllEntryPayouts()
+   ├─ Spectators: Contest.claimPredictionPayout(entryId)
    └─ Receive CUT tokens
 
 5. Convert back to USDC
@@ -292,9 +315,10 @@ Spectator collateral: 850 CUT (backs tokens)
 
 ```solidity
 contest.settleContest(
-    [userB, userA, userC],  // Winners in order
-    [6000, 3000, 1000]      // 60%, 30%, 10%
+    [entryB, entryA, entryC],  // Winning entry IDs (only non-zero payouts)
+    [6000, 3000, 1000]          // 60%, 30%, 10%
 )
+// Note: Only pass entries that receive payouts - no zeros needed!
 ```
 
 **What happens:**
@@ -421,36 +445,47 @@ Swaps disabled to prevent arbitrage:
 #### Contestant Functions
 
 ```solidity
-// Join contest
-function joinContest() external
-// Requirements: state == OPEN, exact contestantDepositAmount
+// Join contest with unique entry ID
+function joinContest(uint256 entryId) external
+// Requirements: state == OPEN, exact contestantDepositAmount, entryId not used
+// Note: Entry ID must be unique (typically generated by your database)
 
-// Leave contest before start
-function leaveContest() external
-// Requirements: state == OPEN or CANCELLED, already joined
+// Leave contest before start (automatically refunds spectators!)
+function leaveContest(uint256 entryId) external
+// Requirements: state == OPEN or CANCELLED, owns entry
+// Note: All spectators who predicted on this entry get 100% refunds
 
-// Claim prize after settlement
-function claimContestPayout() external
-// Requirements: state == SETTLED, has payout
+// Claim single entry prize after settlement
+function claimEntryPayout(uint256 entryId) external
+// Requirements: state == SETTLED, owns entry, has payout
+
+// Claim all entry prizes at once (convenience function)
+function claimAllEntryPayouts() external
+// Requirements: state == SETTLED, has at least one payout
+// Note: Claims all entries owned by msg.sender in one transaction
 ```
 
 #### Spectator Functions
 
 ```solidity
-// Add prediction on a contestant (LMSR pricing)
-function addPrediction(uint256 outcomeId, uint256 amount) external
-// Requirements: state == OPEN or ACTIVE
-// Returns: ERC1155 tokens representing prediction
+// Add prediction on an entry (LMSR pricing)
+function addPrediction(uint256 entryId, uint256 amount) external
+// Requirements: state == OPEN or ACTIVE, entry exists and not withdrawn
+// Returns: ERC1155 tokens (token ID = entry ID)
 // Price: Dynamic based on demand (LMSR)
 
 // Withdraw prediction before settlement (100% refund!)
-function withdrawPrediction(uint256 outcomeId, uint256 tokenAmount) external
+function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external
 // Requirements: state == OPEN, ACTIVE, or CANCELLED
 // Returns: Full original deposit (including entry fee)
 
+// Check current LMSR price for an entry
+function calculateEntryPrice(uint256 entryId) public view returns (uint256)
+// Returns: Current price per token (increases with demand)
+
 // Claim prediction winnings after settlement
-function claimPredictionPayout(uint256 outcomeId) external
-// Requirements: state == SETTLED
+function claimPredictionPayout(uint256 entryId) external
+// Requirements: state == SETTLED, holds tokens for entryId
 // Payout: Winner-take-all (100% to winners, 0% to losers)
 ```
 
@@ -467,11 +502,14 @@ function closePredictions() external onlyOracle
 
 // Settle contest (ONE call does everything!)
 function settleContest(
-    address[] calldata winners,
+    uint256[] calldata winningEntries,
     uint256[] calldata payoutBps
 ) external onlyOracle
 // Requirements: state == ACTIVE or state == LOCKED
+// Note: Only include entries with payouts > 0 (no zeros needed!)
+// Note: First entry in array = winner for spectator market
 // Does: Pays Layer 1 prizes + bonuses, resolves Layer 2 market
+// Example: settleContest([entry1, entry2], [6000, 4000]) - entries not listed get 0%
 
 // Cancel contest (enables refunds)
 function cancelContest() external onlyOracle
@@ -566,26 +604,31 @@ const contest = await contestFactory.createContest(
   500 // Sensitivity
 );
 
-// 3. Contestants join
+// 3. Contestants join with entry IDs
+const entryId = 12345; // From your database
 await cutToken.approve(contest, ethers.parseEther("100"));
-await contest.joinContest();
+await contest.joinContest(entryId);
 
 // 4. Oracle activates
 await contest.activateContest();
 
-// 5. Spectators add predictions
+// 5. Spectators add predictions (using entry IDs directly!)
 await cutToken.approve(contest, ethers.parseEther("50"));
-await contest.addPrediction(1, ethers.parseEther("50")); // Predict contestant #1 wins
+await contest.addPrediction(entryId, ethers.parseEther("50")); // Predict on entryId
 
-// 6. Oracle settles (ONE CALL!)
+// 6. Oracle settles (ONE CALL! Only winners needed!)
 await contest.settleContest(
-  [winner1, winner2, winner3],
+  [entry1, entry2, entry3], // Winning entry IDs (no zeros!)
   [6000, 3000, 1000] // 60%, 30%, 10%
 );
 
 // 7. Claim prizes
-await contest.claimContestPayout(); // Contestants
-await contest.claimPredictionPayout(1); // Spectators
+await contest.claimEntryPayout(entryId); // Single entry
+// OR
+await contest.claimAllEntryPayouts(); // All entries at once
+
+// Spectators claim
+await contest.claimPredictionPayout(entryId);
 
 // 8. Convert CUT back to USDC
 await depositManager.withdrawUSDC(ethers.parseEther("150"));
@@ -739,22 +782,22 @@ forge script script/Deploy_base.s.sol --rpc-url base --broadcast
 Contest States:
 
 OPEN
-  ↓ contestants joinContest()
-  ↓ spectators addPrediction() (early predictions!)
+  ↓ contestants joinContest(entryId)
+  ↓ spectators addPrediction(entryId, amount) (early predictions!)
   ↓ oracle activateContest()
 
 ACTIVE
-  ↓ spectators addPrediction() (predictions continue)
-  ↓ (optional) spectators withdraw()
+  ↓ spectators addPrediction(entryId, amount) (predictions continue)
+  ↓ (optional) spectators withdrawPrediction(entryId, tokens)
   ↓ (optional) oracle closePredictions()
 
 LOCKED [OPTIONAL]
   ↓ contest finishes (no more predictions/withdrawals)
-  ↓ oracle settleContest()
+  ↓ oracle settleContest(winningEntries, payouts)
 
 SETTLED
-  ↓ contestants claimContestantPayout()
-  ↓ spectators claimPredictionPayout()
+  ↓ contestants claimEntryPayout(entryId) or claimAllEntryPayouts()
+  ↓ spectators claimPredictionPayout(entryId)
   ↓ (after expiry) oracle distributeExpiredContest()
 
 CLOSED
@@ -765,36 +808,41 @@ CLOSED
 
 CANCELLED
   ↓ refunds available (cannot cancel after LOCKED/SETTLED)
+  ↓ contestants leaveContest(entryId)
+  ↓ spectators withdrawPrediction(entryId, tokens)
 ```
 
 ## 🎯 Quick Reference
 
 ### For Contestants
 
-| Want to...         | Call...                |
-| ------------------ | ---------------------- |
-| Join contest       | `joinContest()`        |
-| Leave before start | `leaveContest()`       |
-| Claim prize        | `claimContestPayout()` |
+| Want to...         | Call...                     |
+| ------------------ | --------------------------- |
+| Join contest       | `joinContest(entryId)`      |
+| Leave before start | `leaveContest(entryId)`     |
+| Claim single prize | `claimEntryPayout(entryId)` |
+| Claim all prizes   | `claimAllEntryPayouts()`    |
 
 ### For Spectators
 
-| Want to...          | Call...                          |
-| ------------------- | -------------------------------- |
-| Add prediction      | `addPrediction(id, amount)`      |
-| Withdraw prediction | `withdrawPrediction(id, tokens)` |
-| Claim winnings      | `claimPredictionPayout(id)`      |
-| Check price         | `calculateOutcomePrice(id)`      |
+| Want to...          | Call...                               |
+| ------------------- | ------------------------------------- |
+| Add prediction      | `addPrediction(entryId, amount)`      |
+| Withdraw prediction | `withdrawPrediction(entryId, tokens)` |
+| Claim winnings      | `claimPredictionPayout(entryId)`      |
+| Check price         | `calculateEntryPrice(entryId)`        |
 
 ### For Oracle
 
-| Want to...                     | Call...                           | When...                        |
-| ------------------------------ | --------------------------------- | ------------------------------ |
-| Activate contest               | `activateContest()`               | After contestants join         |
-| Close predictions              | `closePredictions()`              | Before contest finishes        |
-| Settle everything              | `settleContest(winners, payouts)` | After contest finishes         |
-| Cancel                         | `cancelContest()`                 | If contest needs cancellation  |
-| Distribute unclaimed (expired) | `distributeExpiredContest()`      | After expiry (if users forgot) |
+| Want to...                     | Call...                                  | When...                        |
+| ------------------------------ | ---------------------------------------- | ------------------------------ |
+| Activate contest               | `activateContest()`                      | After contestants join         |
+| Close predictions              | `closePredictions()`                     | Before contest finishes        |
+| Settle everything              | `settleContest(winningEntries, payouts)` | After contest finishes         |
+| Cancel                         | `cancelContest()`                        | If contest needs cancellation  |
+| Distribute unclaimed (expired) | `distributeExpiredContest()`             | After expiry (if users forgot) |
+
+**Note:** `settleContest()` only requires winning entries - no need to include zeros!
 
 ## 📄 License
 

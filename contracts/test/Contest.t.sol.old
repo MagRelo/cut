@@ -20,6 +20,11 @@ contract ContestTest is Test {
     address public spectator1 = address(10);
     address public spectator2 = address(11);
     
+    // Entry IDs for testing
+    uint256 public constant ENTRY_A = 1000;
+    uint256 public constant ENTRY_B = 1001;
+    uint256 public constant ENTRY_C = 1002;
+    
     uint256 public constant CONTESTANT_DEPOSIT = 100e6;
     uint256 public constant ORACLE_FEE = 100; // 1%
     uint256 public constant LIQUIDITY = 1000e6;
