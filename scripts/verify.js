@@ -112,7 +112,7 @@ function loadContractAddresses(network) {
     MockUSDC: config.paymentTokenAddress,
     PlatformToken: config.platformTokenAddress,
     DepositManager: config.depositManagerAddress,
-    EscrowFactory: config.escrowFactoryAddress,
+    ContestFactory: config.contestFactoryAddress,
     MockCompound: config.mockCTokenAddress,
   };
 

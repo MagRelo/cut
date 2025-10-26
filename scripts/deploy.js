@@ -133,7 +133,7 @@ function updateConfigFiles(network, addresses) {
     paymentTokenAddress: addresses.MockUSDC || addresses.USDC,
     platformTokenAddress: addresses.PlatformToken,
     depositManagerAddress: addresses.DepositManager,
-    escrowFactoryAddress: addresses.EscrowFactory,
+    contestFactoryAddress: addresses.ContestFactory,
     mockCTokenAddress: addresses.MockCompound,
   };
 
@@ -181,8 +181,8 @@ function copyContractArtifacts() {
   // List of contracts to copy artifacts for
   const contractsToCopy = [
     "DepositManager",
-    "EscrowFactory",
-    "Escrow",
+    "ContestFactory",
+    "Contest",
     "PlatformToken",
     "MockUSDC",
     "MockCompound",
