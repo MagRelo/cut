@@ -184,7 +184,7 @@ contestRouter.post("/", requireAuth, async (c) => {
 // Add lineup to contest
 contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async (c) => {
   try {
-    const { tournamentLineupId } = await c.req.json();
+    const { tournamentLineupId, entryId } = await c.req.json();
     const user = c.get("user");
     const contestId = c.req.param("id");
 
@@ -200,11 +200,17 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
       return c.json({ error: "This lineup has already been added to this contest" }, 400);
     }
 
+    // Validate entryId if provided
+    if (entryId && typeof entryId !== "string") {
+      return c.json({ error: "Invalid entryId format" }, 400);
+    }
+
     await prisma.contestLineup.create({
       data: {
         contestId: contestId,
         tournamentLineupId,
         userId: user.userId,
+        entryId: entryId || null,
         status: "ACTIVE",
       },
     });

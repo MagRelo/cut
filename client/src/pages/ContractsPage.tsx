@@ -39,10 +39,10 @@ const ContractsPage: React.FC = () => {
         blockExplorerUrl: getExplorerUrl(config.depositManagerAddress, networkChainId) ?? undefined,
       },
       {
-        name: "Escrow Factory",
-        address: config.escrowFactoryAddress,
-        description: "Factory contract for creating escrow contracts",
-        blockExplorerUrl: getExplorerUrl(config.escrowFactoryAddress, networkChainId) ?? undefined,
+        name: "Contest Factory",
+        address: config.contestFactoryAddress,
+        description: "Factory contract for creating contest contracts",
+        blockExplorerUrl: getExplorerUrl(config.contestFactoryAddress, networkChainId) ?? undefined,
       },
     ];
 

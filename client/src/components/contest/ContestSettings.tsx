@@ -2,7 +2,7 @@ import React from "react";
 import { useBalance, useReadContract } from "wagmi";
 import { createExplorerLinkJSX, getContractAddress } from "../../utils/blockchainUtils";
 import type { Contest, DetailedResult } from "../../types/contest";
-import EscrowContract from "../../utils/contracts/Escrow.json";
+import ContestContract from "../../utils/contracts/Contest.json";
 import { PositionBadge } from "./PositionBadge";
 
 interface ContestSettingsProps {
@@ -38,21 +38,32 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     token: platformTokenAddress as `0x${string}`,
   });
 
-  // Get escrow contract details (depositAmount and expiry)
-  const escrowDetails = useReadContract({
+  // Get contestant deposit amount from contract
+  const contestantDepositAmount = useReadContract({
     address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "details",
+    abi: ContestContract.abi,
+    functionName: "contestantDepositAmount",
     args: [],
     query: {
       enabled: !!contest?.address,
     },
-  }).data as [bigint, bigint] | undefined;
+  }).data as bigint | undefined;
 
-  // Get escrow contract state
+  // Get expiry timestamp from contract
+  const expiryTimestamp = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "expiryTimestamp",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  // Get contract state
   const contractState = useReadContract({
     address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
+    abi: ContestContract.abi,
     functionName: "state",
     args: [],
     query: {
@@ -63,8 +74,8 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   // Get oracle fee from contract
   const contractOracleFee = useReadContract({
     address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "oracleFee",
+    abi: ContestContract.abi,
+    functionName: "oracleFeeBps",
     args: [],
     query: {
       enabled: !!contest?.address,
@@ -74,7 +85,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   // Get oracle address from contract
   const oracleAddress = useReadContract({
     address: contest?.address as `0x${string}`,
-    abi: EscrowContract.abi,
+    abi: ContestContract.abi,
     functionName: "oracle",
     args: [],
     query: {
@@ -191,11 +202,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                             <div className="text-lg font-bold text-green-700 leading-none">
                               {/* Calculate payout amount */}
                               {(() => {
-                                if (!escrowDetails || !contractOracleFee || !platformToken)
+                                if (
+                                  !contestantDepositAmount ||
+                                  !contractOracleFee ||
+                                  !platformToken
+                                )
                                   return "...";
 
                                 // Calculate total pot from entry fee * number of participants
-                                const entryFee = Number(escrowDetails[0]);
+                                const entryFee = Number(contestantDepositAmount);
                                 const participantCount = contest.contestLineups?.length || 0;
                                 const totalPot = entryFee * participantCount;
 
@@ -250,11 +265,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             </div>
 
             {/* Deposit Amount */}
-            {escrowDetails && escrowDetails[0] && (
+            {contestantDepositAmount && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Entry Fee:</span>
                 <span className="text-gray-900">
-                  {Number(escrowDetails[0]) / Math.pow(10, platformToken?.decimals || 6)}{" "}
+                  {Number(contestantDepositAmount) / Math.pow(10, platformToken?.decimals || 6)}{" "}
                   {platformToken?.symbol}
                 </span>
               </div>
@@ -293,11 +308,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )}
 
             {/* Expiration */}
-            {escrowDetails && escrowDetails[1] && (
+            {expiryTimestamp && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Expires:</span>
                 <span className="text-gray-900">
-                  {new Date(Number(escrowDetails[1]) * 1000).toLocaleString()}
+                  {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
                 </span>
               </div>
             )}

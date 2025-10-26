@@ -5,10 +5,10 @@ import { decodeEventLog } from "viem";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { type CreateContestInput } from "../../types/contest";
-import { useCreateContest } from "../../hooks/useContestMutations";
+import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useCreateEscrow } from "../../hooks/useEscrowOperations";
-import EscrowFactoryContract from "../../utils/contracts/EscrowFactory.json";
+import { useCreateContest } from "../../hooks/useContestFactory";
+import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
@@ -33,14 +33,14 @@ const getStatusMessages = (
 export const CreateContestForm = () => {
   const navigate = useNavigate();
   const { currentTournament } = useTournament();
-  const createContestMutation = useCreateContest();
+  const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
 
   // wagmi functions
-  // const { address: userAddress } = useAccount();
+  // const { address: userAddress} = useAccount();
   const chainId = useChainId();
 
-  // Use centralized create escrow hook
+  // Use Contest creation hook
   const {
     execute,
     isProcessing,
@@ -49,42 +49,42 @@ export const CreateContestForm = () => {
     isConfirmed,
     isFailed,
     error: transactionError,
-    createEscrowCalls,
-  } = useCreateEscrow({
+    createContestCalls,
+  } = useCreateContest({
     onSuccess: async (statusData) => {
       if (!pendingContestData) return;
 
       setLoading(true);
       try {
-        // Extract escrow address from transaction logs
-        let escrowAddress: string | undefined;
+        // Extract contest address from transaction logs
+        let contestAddress: string | undefined;
 
-        // Get the escrow factory address to find relevant logs
-        const escrowFactoryAddress = getContractAddress(chainId ?? 0, "escrowFactoryAddress");
+        // Get the contest factory address to find relevant logs
+        const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
 
-        // Parse through receipts and logs to find EscrowCreated event
+        // Parse through receipts and logs to find ContestCreated event
         if (statusData.receipts && statusData.receipts.length > 0) {
           for (const receipt of statusData.receipts) {
             if (receipt.logs && receipt.logs.length > 0) {
               for (const log of receipt.logs) {
-                // Check if this log is from the EscrowFactory
-                if (log.address?.toLowerCase() === escrowFactoryAddress?.toLowerCase()) {
+                // Check if this log is from the ContestFactory
+                if (log.address?.toLowerCase() === contestFactoryAddress?.toLowerCase()) {
                   try {
                     const decodedLog = decodeEventLog({
-                      abi: EscrowFactoryContract.abi,
+                      abi: ContestFactoryContract.abi,
                       data: log.data,
                       topics: log.topics,
                     });
 
-                    // Check if this is the EscrowCreated event
+                    // Check if this is the ContestCreated event
                     if (
-                      decodedLog.eventName === "EscrowCreated" &&
+                      decodedLog.eventName === "ContestCreated" &&
                       decodedLog.args &&
                       typeof decodedLog.args === "object" &&
-                      "escrow" in decodedLog.args
+                      "contest" in decodedLog.args
                     ) {
-                      escrowAddress = decodedLog.args.escrow as string;
-                      console.log("Found escrow address:", escrowAddress);
+                      contestAddress = decodedLog.args.contest as string;
+                      console.log("Found contest address:", contestAddress);
                       break;
                     }
                   } catch (decodeError) {
@@ -94,12 +94,12 @@ export const CreateContestForm = () => {
                 }
               }
             }
-            if (escrowAddress) break;
+            if (contestAddress) break;
           }
         }
 
-        if (!escrowAddress) {
-          throw new Error("No escrow address found in transaction logs");
+        if (!contestAddress) {
+          throw new Error("No contest address found in transaction logs");
         }
 
         // Create contest in backend using mutation
@@ -107,7 +107,7 @@ export const CreateContestForm = () => {
           {
             ...pendingContestData,
             transactionId: statusData.receipts?.[0]?.transactionHash || "",
-            address: escrowAddress,
+            address: contestAddress,
           },
           {
             onSuccess: (contest) => {
@@ -166,7 +166,7 @@ export const CreateContestForm = () => {
   // Effect to handle pending contest data state
   useEffect(() => {
     if (pendingContestData && isConfirmed) {
-      // The onSuccess callback in useCreateEscrow will handle the rest
+      // The onSuccess callback in useCreateContest will handle the rest
       setPendingContestData(null);
     }
   }, [pendingContestData, isConfirmed]);
@@ -194,16 +194,17 @@ export const CreateContestForm = () => {
       oracleFee: formData.settings?.oracleFee ?? 500,
     });
 
-    // Create and execute the escrow creation calls
+    // Create and execute the contest creation calls
     // Convert fee to bigint with 18 decimals (platform token)
     const depositAmount = BigInt(Math.floor((formData.settings?.fee ?? 10) * 1e18));
-    const calls = createEscrowCalls(
-      depositAmount,
-      BigInt(Math.floor(endTime / 1000)), // Convert milliseconds to seconds for Solidity
-      platformTokenAddress as string,
-      18, // Platform token decimals
-      import.meta.env.VITE_ORACLE_ADDRESS as string,
-      formData.settings?.oracleFee ?? 500
+    const calls = createContestCalls(
+      platformTokenAddress as string, // paymentToken
+      import.meta.env.VITE_ORACLE_ADDRESS as string, // oracle
+      depositAmount, // contestantDepositAmount
+      formData.settings?.oracleFee ?? 500, // oracleFee in bps
+      BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
+      1000000n, // liquidityParameter
+      100 // demandSensitivity in bps
     );
 
     await execute(calls);

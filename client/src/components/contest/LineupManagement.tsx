@@ -9,10 +9,14 @@ import { useLineup } from "../../contexts/LineupContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useJoinContest, useLeaveContest } from "../../hooks/useContestMutations";
-import { useEscrowDeposit, useEscrowWithdraw } from "../../hooks/useEscrowOperations";
+import {
+  useJoinContest as useJoinContestBlockchain,
+  useLeaveContest as useLeaveContestBlockchain,
+} from "../../hooks/useContestantOperations";
+import { generateEntryId } from "../../utils/entryIdUtils";
 
 // Import contract ABIs
-import EscrowContract from "../../utils/contracts/Escrow.json";
+import ContestContract from "../../utils/contracts/Contest.json";
 
 interface LineupManagementProps {
   contest: Contest;
@@ -55,29 +59,31 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   const [pendingAction, setPendingAction] = useState<{
     type: "join" | "leave";
     lineupId: string;
+    entryId?: string;
   } | null>(null);
 
   // Extract primitive values to prevent re-renders
   const contestId = contest.id;
   const tournamentId = contest.tournamentId;
 
-  // Use centralized escrow hooks
+  // Use Contest blockchain hooks
   const {
-    execute: executeDeposit,
-    // isProcessing: isDepositProcessing,
-    isSending: isDepositSending,
-    isConfirming: isDepositConfirming,
-    isConfirmed: isDepositConfirmed,
-    isFailed: isDepositFailed,
-    error: depositError,
-    createDepositCalls,
-  } = useEscrowDeposit({
+    execute: executeJoinBlockchain,
+    // isProcessing: isJoinProcessing,
+    isSending: isJoinSending,
+    isConfirming: isJoinConfirming,
+    isConfirmed: isJoinConfirmed,
+    isFailed: isJoinFailed,
+    error: joinError,
+    createJoinContestCalls,
+  } = useJoinContestBlockchain({
     onSuccess: async () => {
-      if (pendingAction?.type === "join" && pendingAction?.lineupId) {
+      if (pendingAction?.type === "join" && pendingAction?.lineupId && pendingAction?.entryId) {
         try {
           await joinContest.mutateAsync({
             contestId,
             tournamentLineupId: pendingAction.lineupId,
+            entryId: pendingAction.entryId,
           });
           await getLineups(tournamentId);
           setPendingAction(null);
@@ -98,15 +104,15 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   });
 
   const {
-    execute: executeWithdraw,
-    // isProcessing: isWithdrawProcessing,
-    isSending: isWithdrawSending,
-    isConfirming: isWithdrawConfirming,
-    isConfirmed: isWithdrawConfirmed,
-    isFailed: isWithdrawFailed,
-    error: withdrawError,
-    createWithdrawCalls,
-  } = useEscrowWithdraw({
+    execute: executeLeaveBlockchain,
+    // isProcessing: isLeaveProcessing,
+    isSending: isLeaveSending,
+    isConfirming: isLeaveConfirming,
+    isConfirmed: isLeaveConfirmed,
+    isFailed: isLeaveFailed,
+    error: leaveError,
+    createLeaveContestCalls,
+  } = useLeaveContestBlockchain({
     onSuccess: async () => {
       if (pendingAction?.type === "leave" && pendingAction?.lineupId) {
         try {
@@ -136,19 +142,19 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   });
 
   // Combined processing states
-  const isSending = isDepositSending || isWithdrawSending;
-  const isConfirming = isDepositConfirming || isWithdrawConfirming;
-  const isConfirmed = isDepositConfirmed || isWithdrawConfirmed;
-  const isFailed = isDepositFailed || isWithdrawFailed;
-  const transactionError = depositError || withdrawError;
+  const isSending = isJoinSending || isLeaveSending;
+  const isConfirming = isJoinConfirming || isLeaveConfirming;
+  const isConfirmed = isJoinConfirmed || isLeaveConfirmed;
+  const isFailed = isJoinFailed || isLeaveFailed;
+  const transactionError = joinError || leaveError;
 
-  // Get the deposit amount from the escrow contract
-  const escrowDetails = useReadContract({
+  // Get the deposit amount from the contest contract
+  const contestantDepositAmount = useReadContract({
     address: contest.address as `0x${string}`,
-    abi: EscrowContract.abi,
-    functionName: "details",
+    abi: ContestContract.abi,
+    functionName: "contestantDepositAmount",
     args: [],
-  }).data as [bigint, bigint] | undefined;
+  }).data as bigint | undefined;
 
   // Modals
   const [warningModal, setWarningModal] = useState<{
@@ -158,16 +164,15 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
   // Helper: check if user has enough balance
   const hasEnoughBalance = useMemo(() => {
-    if (!escrowDetails) return false;
+    if (!contestantDepositAmount) return false;
 
-    const depositAmount = escrowDetails[0];
     const platformTokenAmount = platformTokenBalance ?? 0n;
     const paymentTokenAmount = paymentTokenBalance ?? 0n;
     const paymentTokenAsPlatformTokens = convertPaymentToPlatformTokens(paymentTokenAmount);
     const totalAvailableBalance = platformTokenAmount + paymentTokenAsPlatformTokens;
 
-    return totalAvailableBalance >= depositAmount;
-  }, [platformTokenBalance, paymentTokenBalance, escrowDetails]);
+    return totalAvailableBalance >= contestantDepositAmount;
+  }, [platformTokenBalance, paymentTokenBalance, contestantDepositAmount]);
 
   // Get user's contest lineups
   const userContestLineups = useMemo(() => {
@@ -202,36 +207,50 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       return;
     }
 
-    if (!escrowDetails) {
+    if (!contestantDepositAmount) {
       setSubmissionError("Unable to read contest details from blockchain");
       return;
     }
 
-    setPendingAction({ type: "join", lineupId });
+    // Generate deterministic entryId
+    const entryId = generateEntryId(contest.address, lineupId);
+
+    setPendingAction({ type: "join", lineupId, entryId: entryId.toString() });
     setSubmissionError(null);
 
-    const depositAmount = escrowDetails[0];
     const platformTokenAmount = platformTokenBalance ?? 0n;
     const paymentTokenAmount = paymentTokenBalance ?? 0n;
 
-    // Create and execute the deposit calls
-    const calls = createDepositCalls(
+    // Create and execute the join contest calls
+    const calls = createJoinContestCalls(
       contest.address as string,
-      depositAmount,
+      entryId,
+      contestantDepositAmount,
       platformTokenAmount,
       paymentTokenAmount
     );
 
-    await executeDeposit(calls);
+    await executeJoinBlockchain(calls);
   };
 
   const handleLeaveContest = async (lineupId: string) => {
     setPendingAction({ type: "leave", lineupId });
     setSubmissionError(null);
 
-    // Create and execute the withdraw calls
-    const calls = createWithdrawCalls(contest.address as string);
-    await executeWithdraw(calls);
+    // Find the contest lineup to get the entryId
+    const contestLineup = contest.contestLineups?.find(
+      (cl) => cl.tournamentLineupId === lineupId && cl.userId === user?.id
+    );
+
+    if (!contestLineup?.entryId) {
+      setSubmissionError("Entry ID not found. Cannot leave contest.");
+      return;
+    }
+
+    // Create and execute the leave contest calls
+    const calls = createLeaveContestCalls(contest.address as string, Number(contestLineup.entryId));
+
+    await executeLeaveBlockchain(calls);
   };
 
   return (

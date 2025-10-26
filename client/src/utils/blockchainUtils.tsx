@@ -11,7 +11,7 @@ export interface ContractConfig {
   paymentTokenAddress: string;
   platformTokenAddress: string;
   depositManagerAddress: string;
-  escrowFactoryAddress: string;
+  contestFactoryAddress: string;
   mockCTokenAddress?: string; // Only available on testnet
 }
 

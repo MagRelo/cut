@@ -7,6 +7,7 @@ import { type ContestLineup } from "../types/lineup";
 interface JoinContestParams {
   contestId: string;
   tournamentLineupId: string;
+  entryId?: string; // Blockchain entry ID
 }
 
 interface LeaveContestParams {
@@ -63,9 +64,10 @@ export function useJoinContest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ contestId, tournamentLineupId }: JoinContestParams) => {
+    mutationFn: async ({ contestId, tournamentLineupId, entryId }: JoinContestParams) => {
       return await apiClient.post<Contest>(`/contests/${contestId}/lineups`, {
         tournamentLineupId,
+        entryId,
       });
     },
 

@@ -252,6 +252,7 @@ model ContestLineup {
   contestId         String
   tournamentLineupId String
   userId            String
+  entryId           String?          // Blockchain entry ID (uint256 as string)
   status            String
   score             Int?
   position          Int?
@@ -264,6 +265,7 @@ model ContestLineup {
   user              User             @relation(fields: [userId], references: [id])
 
   @@unique([contestId, tournamentLineupId])
+  @@unique([contestId, entryId])
   @@index([contestId])
   @@index([userId])
   @@index([status])
