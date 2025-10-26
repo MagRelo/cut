@@ -163,6 +163,11 @@ export const CreateContestForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get parameters from environment variables
+  const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
+  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "1000000";
+  const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
+
   // Effect to handle pending contest data state
   useEffect(() => {
     if (pendingContestData && isConfirmed) {
@@ -191,7 +196,9 @@ export const CreateContestForm = () => {
       depositAmount: formData.settings?.fee?.toString() ?? "0",
       endTime,
       oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-      oracleFee: formData.settings?.oracleFee ?? 500,
+      oracleFee,
+      liquidityParameter,
+      demandSensitivity,
     });
 
     // Create and execute the contest creation calls
@@ -201,10 +208,10 @@ export const CreateContestForm = () => {
       platformTokenAddress as string, // paymentToken
       import.meta.env.VITE_ORACLE_ADDRESS as string, // oracle
       depositAmount, // contestantDepositAmount
-      formData.settings?.oracleFee ?? 500, // oracleFee in bps
+      oracleFee, // oracleFee in bps
       BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
-      1000000n, // liquidityParameter
-      100 // demandSensitivity in bps
+      BigInt(liquidityParameter), // liquidityParameter
+      demandSensitivity // demandSensitivity in bps
     );
 
     await execute(calls);
@@ -221,114 +228,116 @@ export const CreateContestForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto p-4">
-      <div className="space-y-2">
-        <label className="block font-medium">
-          Contest End (
-          {currentTournament?.endDate
-            ? new Date(currentTournament.endDate).toLocaleString()
-            : "Not available"}
-          )
-        </label>
-        <div className="p-2 bg-gray-100 rounded-md text-sm">
-          {currentTournament?.endDate
-            ? new Date(
-                new Date(currentTournament.endDate).getTime() + 7 * 24 * 60 * 60 * 1000
-              ).toLocaleString()
-            : "Tournament not selected"}
-        </div>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto p-4">
+      {/* Editable Section */}
+      <div className="space-y-4 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+        <h3 className="text-lg font-semibold text-blue-900">Editable Parameters</h3>
 
-      <div className="space-y-2">
-        <label className="block font-medium">Oracle Address</label>
-        <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
-          {import.meta.env.VITE_ORACLE_ADDRESS || "Not configured"}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="settings.oracleFee" className="block font-medium">
-          Oracle Fee (basis points)
-        </label>
-        <div className="relative">
+        <div className="space-y-2">
+          <label htmlFor="name" className="block font-medium">
+            Contest Name
+          </label>
           <input
-            type="number"
-            id="settings.oracleFee"
-            name="settings.oracleFee"
-            value={formData.settings?.oracleFee ?? 500}
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                settings: {
-                  fee: prev.settings?.fee ?? 0,
-                  contestType: prev.settings?.contestType ?? "PUBLIC",
-                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
-                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
-                  chainId: prev.settings?.chainId ?? 0,
-                  oracleFee: Number(e.target.value),
-                },
-              }));
-            }}
-            min="0"
-            max="10000"
-            step="1"
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
             required
-            className="w-full p-2 border rounded-md pr-12"
+            className="w-full p-2 border rounded-md"
           />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            bp
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="settings.fee" className="block font-medium">
+            Entry Fee (Contestant Deposit Amount)
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              id="settings.fee"
+              name="settings.fee"
+              value={formData.settings?.fee ?? 0}
+              onChange={(e) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  settings: {
+                    ...prev.settings,
+                    fee: Number(e.target.value),
+                    contestType: prev.settings?.contestType ?? "PUBLIC",
+                    platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
+                    platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
+                    chainId: prev.settings?.chainId ?? 0,
+                  },
+                }));
+              }}
+              min="0"
+              step="0.01"
+              required
+              className="w-full p-2 border rounded-md pr-12"
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+              {platformTokenSymbol}
+            </div>
           </div>
         </div>
-        <div className="text-sm text-gray-600">Oracle fee in basis points (100 = 1%)</div>
-      </div>
 
-      <div className="space-y-2">
-        <label htmlFor="settings.fee" className="block font-medium">
-          Entry Fee
-        </label>
-        <div className="relative">
-          <input
-            type="number"
-            id="settings.fee"
-            name="settings.fee"
-            value={formData.settings?.fee ?? 0}
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                settings: {
-                  fee: Number(e.target.value),
-                  contestType: prev.settings?.contestType ?? "PUBLIC",
-                  platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
-                  platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
-                  chainId: prev.settings?.chainId ?? 0,
-                  oracleFee: prev.settings?.oracleFee ?? 500,
-                },
-              }));
-            }}
-            min="0"
-            step="0.01"
-            required
-            className="w-full p-2 border rounded-md pr-12"
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-            {platformTokenSymbol}
+        <div className="space-y-2">
+          <label className="block font-medium">Contest Expiry</label>
+          <div className="p-2 bg-white border rounded-md text-sm">
+            {currentTournament?.endDate
+              ? new Date(
+                  new Date(currentTournament.endDate).getTime() + 7 * 24 * 60 * 60 * 1000
+                ).toLocaleString()
+              : "Tournament not selected"}
+          </div>
+          <div className="text-sm text-gray-600">
+            Based on tournament end:{" "}
+            {currentTournament?.endDate
+              ? new Date(currentTournament.endDate).toLocaleString()
+              : "Not available"}{" "}
+            + 7 days
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="name" className="block font-medium">
-          Contest Name
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          className="w-full p-2 border rounded-md"
-        />
+      {/* Read-Only Parameters Section */}
+      <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-900">Contract Parameters (Read-Only)</h3>
+
+        <div className="space-y-2">
+          <label className="block font-medium">Payment Token Address</label>
+          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
+            {platformTokenAddress || "Not configured"}
+          </div>
+          <div className="text-sm text-gray-600">Symbol: {platformTokenSymbol}</div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block font-medium">Oracle Address</label>
+          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
+            {import.meta.env.VITE_ORACLE_ADDRESS || "Not configured"}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block font-medium">Oracle Fee</label>
+          <div className="p-2 bg-gray-100 rounded-md">
+            {oracleFee} basis points ({(oracleFee / 100).toFixed(2)}%)
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block font-medium">Liquidity Parameter</label>
+          <div className="p-2 bg-gray-100 rounded-md font-mono">{liquidityParameter}</div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block font-medium">Demand Sensitivity</label>
+          <div className="p-2 bg-gray-100 rounded-md">
+            {demandSensitivity} basis points ({(demandSensitivity / 100).toFixed(2)}%)
+          </div>
+        </div>
       </div>
 
       <div>
