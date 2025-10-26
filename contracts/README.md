@@ -1,111 +1,192 @@
-# the Cut - Smart Contracts
+# Competition + Prediction Market Infrastructure
 
-Complete fantasy golf contest and prediction market system built on Solidity.
+Universal smart contract system for **skill-based competitions with integrated prediction markets.**
 
-## 🎮 Key Features
+Build prediction markets on top of any competition where:
 
-### Multiple Entries Per User
+- **Competitors** deposit entry fees and compete for prizes
+- **Spectators** predict on competitors using dynamic LMSR pricing
+- **Oracle** settles both layers in a single transaction
+- **Everyone** benefits from automated, trustless prize distribution
 
-Users can join the same contest multiple times with different entries (lineups). Each entry has a unique ID from your database and competes independently.
+**Use Cases:** Fantasy sports • Gaming tournaments • Trading competitions • Content creator battles • Skill-based challenges • Any measurable competition
 
-### Spectator Protection
+## ⚡ What This Infrastructure Enables
 
-When an entry withdraws, all spectators who predicted on that entry automatically receive 100% refunds (including fees). No manual action needed!
+### 🎯 Engage Spectators Financially
 
-### Entry-Based Architecture
+Transform passive viewers into active participants with skin in the game:
 
-Everything works with entry IDs, not user addresses. This enables multiple entries per user and cleaner tracking.
+- **Prediction Markets:** Spectators predict on competitors using dynamic LMSR pricing
+- **Real Stakes:** Put money behind predictions - winners take all collateral
+- **Price Discovery:** Market-driven odds reveal true competitor rankings
+- **Early Advantage:** First predictors get better prices (incentivizes early engagement)
+- **Safe Withdrawals:** 100% refunds before settlement (no lock-in risk)
 
-**Benefits:**
+### ⚡ Instant, Trustless Settlement
 
-- 🎯 One user can have multiple entries in same contest
-- 🔐 Each entry ID is unique (from your database)
-- 💰 Settle with only winners - no zeros needed
-- 🎁 Automatic refunds when entries withdraw
-- 📊 ERC1155 token ID = entry ID (clean mapping)
+No manual calculations, no disputes, no delays:
+
+- **One Transaction Settles Everything:** Single oracle call distributes both competition prizes AND prediction market payouts
+- **Two-Layer Economy:** Layer 1 (competition) + Layer 2 (predictions) unified in one smart contract
+- **No Trusted Intermediary:** Smart contracts hold all funds - no platform custodian risk
+- **Automated Bonuses:** Popular competitors automatically earn extra rewards from prediction volume
+- **Force Distribution:** After expiry, unclaimed funds auto-pushed to winners (never locked forever)
+
+### 🔒 Secure & Verifiable
+
+All actions transparent and tamper-proof on-chain:
+
+- **Immutable Rules:** Competition parameters locked at deployment
+- **Verifiable Deposits:** All stakes visible on-chain
+- **Audit Trail:** Every prediction, withdrawal, and claim recorded permanently
+- **Reentrancy Protected:** OpenZeppelin security standards throughout
+- **Arbitrage-Proof:** No token swaps allowed - prevents market manipulation
+- **Refund Guarantees:** Automatic 100% refunds on entry withdrawals (spectators protected)
+
+### 🎮 Flexible Architecture
+
+Works with any competition format you can imagine:
+
+- **Entry-Based:** One user can have multiple entries (strategies, lineups, teams)
+- **Any Scoring System:** Your oracle reports results - contracts handle payouts
+- **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
+- **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
+- **Yield Generation:** Idle USDC earns Compound V3 yield for platform treasury
+- **Custom Branding:** Deploy tokens with your platform's name and symbol
+
+### 💰 Aligned Incentives
+
+Smart fee structure benefits all participants:
+
+- **Spectator Fees Augment Prizes:** 7.5% goes to competition prize pool (bigger prizes!)
+- **Popularity Bonuses:** 7.5% distributed to competitors based on prediction volume
+- **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure
+- **No Hidden Costs:** All fees transparent and enforced by smart contract
+- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals)
+
+## 🌍 Competition Examples
+
+This infrastructure is **competition-agnostic** - it works with any format that has measurable outcomes:
+
+### Fantasy Sports
+
+- **Golf:** Users draft golfers, compete based on tournament results
+- **Football:** Weekly fantasy lineups compete for prizes
+- **Basketball:** Season-long leagues with weekly scoring
+
+### Gaming & Esports
+
+- **Battle Royale:** Tournament brackets with elimination rounds
+- **MOBA:** Team-based competitions with ranking systems
+- **Speedrunning:** Best completion times across multiple runs
+
+### Trading & Finance
+
+- **Paper Trading:** Simulated portfolio competitions
+- **Prediction Markets:** Forecast outcomes with real stakes
+- **Trading Contests:** Highest returns over set periods
+
+### Creator Economy
+
+- **Streaming:** View count competitions between streamers
+- **Content:** Engagement metrics (likes, shares, comments)
+- **Challenges:** Achievement-based creator battles
+
+### Custom Formats
+
+- Any competition with:
+  - ✅ Multiple independent entries
+  - ✅ Measurable outcomes
+  - ✅ Ranked results (or binary win/loss)
+  - ✅ Trusted oracle to report results
 
 ## 📦 Contracts
 
 ### Token Layer
 
-**`PlatformToken.sol`** - ERC20 CUT token
+**`PlatformToken.sol`** - ERC20 platform token
 
-- Minted 1:1 when users deposit USDC
-- Burned 1:1 when users withdraw USDC
+- Minted 1:1 when users deposit stablecoin (USDC)
+- Burned 1:1 when users withdraw stablecoin
 - Only DepositManager can mint/burn
+- Customizable name/symbol for your platform
 
-**`DepositManager.sol`** - USDC gateway + yield generation
+**`DepositManager.sol`** - Stablecoin gateway + yield generation
 
-- Users deposit USDC → receive CUT tokens
+- Users deposit USDC → receive platform tokens (1:1 ratio)
 - Supplies USDC to Compound V3 for yield
 - Users can withdraw USDC anytime (1:1 redemption)
+- Yield stays with platform (treasury)
 
 ### Contest Layer
 
-**`Contest.sol`** - Combined contestant competition + spectator predictions
+**`Contest.sol`** - Combined competition + prediction market
 
-- **Layer 1:** Contestants deposit CUT and compete for prizes
-- **Layer 2:** Spectators predict CUT on contestants with LMSR pricing
+- **Layer 1:** Competitors deposit tokens and compete for prizes
+- **Layer 2:** Spectators predict on competitors using LMSR pricing
 - **Settlement:** ONE oracle call distributes both layers
+- **Flexible:** Works with any competition format that has measurable outcomes
 
 **`ContestFactory.sol`** - Creates Contest instances
 
 - Standardized contest deployment
 - Registry of all contests
+- Configurable parameters per competition type
 
 ## 📅 Contest Lifecycle
 
-### Phase 1: OPEN - Contestant Registration & Early Predictions
+### Phase 1: OPEN - Registration & Early Predictions
 
 **State:** `ContestState.OPEN`  
 **Predictions:** ✅ Available (early predictions enabled)
 
-| Actor           | Can Do                                  | Function                              |
-| --------------- | --------------------------------------- | ------------------------------------- |
-| **Contestants** | Join contest with entry ID              | `joinContest(entryId)`                |
-| **Contestants** | Leave contest (auto-refunds spectators) | `leaveContest(entryId)`               |
-| **Spectators**  | Check prices                            | `calculateEntryPrice(entryId)`        |
-| **Spectators**  | Add prediction                          | `addPrediction(entryId, amount)`      |
-| **Spectators**  | Withdraw (100% refund)                  | `withdrawPrediction(entryId, tokens)` |
-| **Oracle**      | Activate contest                        | `activateContest()`                   |
+| Actor            | Can Do                                  | Function                              |
+| ---------------- | --------------------------------------- | ------------------------------------- |
+| **Competitors**  | Join contest with entry ID              | `joinContest(entryId)`                |
+| **Competitors**  | Leave contest (auto-refunds spectators) | `leaveContest(entryId)`               |
+| **Spectators**   | Check prices                            | `calculateEntryPrice(entryId)`        |
+| **Spectators**   | Add prediction                          | `addPrediction(entryId, amount)`      |
+| **Spectators**   | Withdraw (100% refund)                  | `withdrawPrediction(entryId, tokens)` |
+| **Oracle/Admin** | Activate contest                        | `activateContest()`                   |
 
 **State transition:** Oracle calls `activateContest()` → `ACTIVE`
 
 ---
 
-### Phase 2: ACTIVE - Contest Running, Predictions Open
+### Phase 2: ACTIVE - Competition Running, Predictions Open
 
 **State:** `ContestState.ACTIVE`  
 **Predictions:** ✅ Available
 
-| Actor           | Can Do                 | Function                                 |
-| --------------- | ---------------------- | ---------------------------------------- |
-| **Contestants** | ❌ Cannot join/leave   | -                                        |
-| **Spectators**  | Add predictions (LMSR) | `addPrediction(entryId, amount)`         |
-| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(entryId, tokens)`    |
-| **Spectators**  | Check prices           | `calculateEntryPrice(entryId)`           |
-| **Oracle**      | Close predictions      | `closePredictions()`                     |
-| **Oracle**      | Cancel contest         | `cancelContest()`                        |
-| **Oracle**      | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
+| Actor            | Can Do                 | Function                                 |
+| ---------------- | ---------------------- | ---------------------------------------- |
+| **Competitors**  | ❌ Cannot join/leave   | -                                        |
+| **Spectators**   | Add predictions (LMSR) | `addPrediction(entryId, amount)`         |
+| **Spectators**   | Withdraw (100% refund) | `withdrawPrediction(entryId, tokens)`    |
+| **Spectators**   | Check prices           | `calculateEntryPrice(entryId)`           |
+| **Oracle/Admin** | Close predictions      | `closePredictions()`                     |
+| **Oracle/Admin** | Cancel contest         | `cancelContest()`                        |
+| **Oracle/Admin** | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
 **State transition:** Oracle calls `closePredictions()` → `LOCKED`
 
 ---
 
-### Phase 3: LOCKED - Contest Finishing, Predictions Closed
+### Phase 3: LOCKED - Competition Finishing, Predictions Closed
 
 **State:** `ContestState.LOCKED`  
 **Predictions:** ❌ Closed
 
-| Actor           | Can Do                 | Function                                     |
-| --------------- | ---------------------- | -------------------------------------------- |
-| **Contestants** | ❌ Waiting for results | -                                            |
-| **Spectators**  | Check prices (locked)  | `calculateEntryPrice(entryId)`               |
-| **Spectators**  | ❌ Cannot predict      | -                                            |
-| **Spectators**  | ❌ Cannot withdraw     | -                                            |
-| **Oracle**      | Settle contest         | `settleContest(winningEntries[], payouts[])` |
+| Actor            | Can Do                 | Function                                     |
+| ---------------- | ---------------------- | -------------------------------------------- |
+| **Competitors**  | ❌ Waiting for results | -                                            |
+| **Spectators**   | Check prices (locked)  | `calculateEntryPrice(entryId)`               |
+| **Spectators**   | ❌ Cannot predict      | -                                            |
+| **Spectators**   | ❌ Cannot withdraw     | -                                            |
+| **Oracle/Admin** | Settle contest         | `settleContest(winningEntries[], payouts[])` |
 
-**Purpose:** Contest is finishing, outcome not yet certain, but predictions locked to prevent last-second unfair predictions.
+**Purpose:** Competition is finishing, outcome not yet certain, but predictions locked to prevent last-second unfair predictions.
 
 **Note:** This phase is optional - oracle can call `settleContest()` directly from ACTIVE state.
 
@@ -118,14 +199,14 @@ Everything works with entry IDs, not user addresses. This enables multiple entri
 **State:** `ContestState.SETTLED`  
 **Predictions:** Closed
 
-| Actor           | Can Do                                | Function                         |
-| --------------- | ------------------------------------- | -------------------------------- |
-| **Contestants** | Claim single entry payout             | `claimEntryPayout(entryId)`      |
-| **Contestants** | Claim all entries at once             | `claimAllEntryPayouts()`         |
-| **Spectators**  | Check final prices                    | `calculateEntryPrice(entryId)`   |
-| **Spectators**  | Claim prediction payout               | `claimPredictionPayout(entryId)` |
-| **Spectators**  | Winners get payout, losers get 0      | Same function                    |
-| **Oracle**      | Distribute after expiry (see Phase 5) | `distributeExpiredContest()`     |
+| Actor            | Can Do                                | Function                         |
+| ---------------- | ------------------------------------- | -------------------------------- |
+| **Competitors**  | Claim single entry payout             | `claimEntryPayout(entryId)`      |
+| **Competitors**  | Claim all entries at once             | `claimAllEntryPayouts()`         |
+| **Spectators**   | Check final prices                    | `calculateEntryPrice(entryId)`   |
+| **Spectators**   | Claim prediction payout               | `claimPredictionPayout(entryId)` |
+| **Spectators**   | Winners get payout, losers get 0      | Same function                    |
+| **Oracle/Admin** | Distribute after expiry (see Phase 5) | `distributeExpiredContest()`     |
 
 **State transition:** Oracle calls `distributeExpiredContest()` (after expiry) → `CLOSED`
 
@@ -136,10 +217,10 @@ Everything works with entry IDs, not user addresses. This enables multiple entri
 **State:** `ContestState.CLOSED`  
 **Trigger:** Oracle calls `distributeExpiredContest()` after contest expiry
 
-| Actor         | Can Do                          | Function |
-| ------------- | ------------------------------- | -------- |
-| **All Users** | Already received forced payouts | -        |
-| **Oracle**    | ❌ No more actions              | -        |
+| Actor            | Can Do                          | Function |
+| ---------------- | ------------------------------- | -------- |
+| **All Users**    | Already received forced payouts | -        |
+| **Oracle/Admin** | ❌ No more actions              | -        |
 
 **Purpose:** Prevent funds from being locked forever if users forget to claim.
 
@@ -147,7 +228,7 @@ Everything works with entry IDs, not user addresses. This enables multiple entri
 
 - After expiry timestamp, oracle can call `distributeExpiredContest()`
 - Automatically pushes all unclaimed payouts to users
-- Contestants receive their unclaimed prizes
+- Competitors receive their unclaimed prizes
 - Winning spectators receive their unclaimed winnings
 - Losing spectators get nothing (winner-take-all already determined)
 
@@ -159,12 +240,12 @@ Everything works with entry IDs, not user addresses. This enables multiple entri
 
 **State:** `ContestState.CANCELLED`
 
-| Actor           | Can Do                                 | Function                              |
-| --------------- | -------------------------------------- | ------------------------------------- |
-| **Contestants** | Get full refund (100% of deposit)      | `leaveContest(entryId)`               |
-| **Spectators**  | Check prices (locked)                  | `calculateEntryPrice(entryId)`        |
-| **Spectators**  | Get full refund (100% including fees!) | `withdrawPrediction(entryId, tokens)` |
-| **Oracle**      | ❌ No more actions                     | -                                     |
+| Actor            | Can Do                                 | Function                              |
+| ---------------- | -------------------------------------- | ------------------------------------- |
+| **Competitors**  | Get full refund (100% of deposit)      | `leaveContest(entryId)`               |
+| **Spectators**   | Check prices (locked)                  | `calculateEntryPrice(entryId)`        |
+| **Spectators**   | Get full refund (100% including fees!) | `withdrawPrediction(entryId, tokens)` |
+| **Oracle/Admin** | ❌ No more actions                     | -                                     |
 
 **Terminal state:** Contest cancelled, all deposits refunded.
 
@@ -176,13 +257,13 @@ Everything works with entry IDs, not user addresses. This enables multiple entri
 **Refund guarantee:**
 
 ```
-Contestants: Get back full contestantDepositAmount
+Competitors: Get back full deposit amount
 Spectators: Get back 100% of what they deposited (including entry fees!)
 
 Example:
-- Spectator deposited 100 CUT
-- Entry fee was 15 CUT
-- If cancelled: Get back full 100 CUT ✅
+- Spectator deposited 100 tokens
+- Entry fee was 15 tokens
+- If cancelled: Get back full 100 tokens ✅
 ```
 
 ---
@@ -192,7 +273,7 @@ Example:
 ```
                     OPEN
                      │
-                     │ Contestants join
+                     │ Competitors join
                      │ Spectators predict (early predictions!)
                      │ Spectators can withdraw
                      │
@@ -200,6 +281,7 @@ Example:
                      ▼
                   ACTIVE
                      │
+                     │ Competition in progress
                      │ Spectators continue predicting
                      │ Spectators can withdraw
                      │
@@ -207,7 +289,7 @@ Example:
                      ▼
                   LOCKED
                      │
-                     │ Contest finishing
+                     │ Competition finishing
                      │ No more predictions/withdrawals
                      │
                      │ Oracle: settleContest(...)
@@ -217,7 +299,7 @@ Example:
                      ▼
                   SETTLED
                      │
-                     │ Users claim
+                     │ Users claim payouts
                      │ whenever ready
                      │
                      │ (After expiry)
@@ -249,66 +331,66 @@ Example:
 ### Full User Flow
 
 ```
-1. User deposits USDC
+1. User deposits stablecoin (USDC)
    ├─ DepositManager.depositUSDC(100 USDC)
-   └─ Receives: 100 CUT tokens
+   └─ Receives: 100 platform tokens (1:1 ratio)
 
-2. User enters contest as contestant
-   ├─ Backend generates entryId: 12345
-   ├─ Contest.joinContest(12345) with 100 CUT
+2A. User enters as competitor
+   ├─ System generates unique entryId: 12345
+   ├─ Contest.joinContest(12345) with deposit amount
    └─ Competes for prizes
 
    OR
 
-   User adds prediction as spectator
-   ├─ Contest.addPrediction(entryId, 50 CUT)
-   └─ Receives ERC1155 tokens at LMSR price
+2B. User predicts as spectator
+   ├─ Contest.addPrediction(entryId, 50 tokens)
+   └─ Receives ERC1155 tokens at dynamic LMSR price
 
-3. Contest settles
+3. Competition completes & settles
    ├─ Oracle calls Contest.settleContest(winningEntries, payouts)
-   └─ ONE call settles everything! (only winners needed)
+   └─ ONE call settles both layers! (only winners needed)
 
-4. Users claim
-   ├─ Contestants: Contest.claimEntryPayout(entryId) or claimAllEntryPayouts()
+4. Users claim winnings
+   ├─ Competitors: Contest.claimEntryPayout(entryId) or claimAllEntryPayouts()
    ├─ Spectators: Contest.claimPredictionPayout(entryId)
-   └─ Receive CUT tokens
+   └─ Receive platform tokens
 
-5. Convert back to USDC
-   ├─ DepositManager.withdrawUSDC(100 CUT)
-   └─ Receives: 100 USDC
+5. Convert back to stablecoin
+   ├─ DepositManager.withdrawUSDC(100 tokens)
+   └─ Receives: 100 USDC (1:1 ratio)
 ```
 
 ## 💰 Economic Model
 
-### Example: 3 contestants, 10 spectators
+### Example: 3 competitors, 10 spectators
 
-**Phase 1: Contestants Enter**
+**Phase 1: Competitors Enter**
 
 ```
-User A deposits: 100 CUT
-User B deposits: 100 CUT
-User C deposits: 100 CUT
+Entry A deposits: 100 tokens
+Entry B deposits: 100 tokens
+Entry C deposits: 100 tokens
 ─────────────────────────
-Layer 1 pool: 300 CUT
+Layer 1 pool: 300 tokens
 ```
 
 **Phase 2: Spectators Predict**
 
 ```
-5 people predict 100 CUT on User B = 500 CUT (50% of volume)
-3 people predict 100 CUT on User A = 300 CUT (30% of volume)
-2 people predict 100 CUT on User C = 200 CUT (20% of volume)
+5 people predict 100 tokens on Entry B = 500 tokens (50% of volume)
+3 people predict 100 tokens on Entry A = 300 tokens (30% of volume)
+2 people predict 100 tokens on Entry C = 200 tokens (20% of volume)
 ─────────────────────────────────────────
-Total spectator deposits: 1,000 CUT
+Total spectator deposits: 1,000 tokens
 
-Entry fees (15%): 150 CUT
-├─ Prize bonus: 75 CUT → augments Layer 1 pool
-└─ Contestant bonuses: 75 CUT → split by prediction volume
-    ├─ User B: 37.50 CUT (50% of prediction volume) ← Based on popularity!
-    ├─ User A: 22.50 CUT (30% of prediction volume)
-    └─ User C: 15 CUT (20% of prediction volume)
+Entry fees (15%): 150 tokens
+├─ Prize bonus: 75 tokens → augments Layer 1 pool
+└─ Competitor bonuses: 75 tokens → split by prediction volume
+    ├─ Entry B: 37.50 tokens (50% of prediction volume) ← Based on popularity!
+    ├─ Entry A: 22.50 tokens (30% of prediction volume)
+    └─ Entry C: 15 tokens (20% of prediction volume)
 
-Spectator collateral: 850 CUT (backs tokens)
+Spectator collateral: 850 tokens (backs tokens)
 ```
 
 **Phase 3: ONE Oracle Call Settles**
@@ -325,41 +407,41 @@ contest.settleContest(
 
 1. Calculate total pool:
 
-   - Contestant deposits: 300 CUT
-   - Prize bonus: 75 CUT
-   - Contestant bonuses: 75 CUT
-   - **Total: 450 CUT**
+   - Competitor deposits: 300 tokens
+   - Prize bonus: 75 tokens
+   - Competitor bonuses: 75 tokens
+   - **Total: 450 tokens**
 
 2. Apply oracle fee (1%) to ENTIRE pool:
 
-   - Oracle fee: 4.50 CUT
-   - **After fee: 445.50 CUT**
+   - Oracle fee: 4.50 tokens
+   - **After fee: 445.50 tokens**
 
-3. Distribute Layer 1 prizes (from 375 - 1% = 371.25 CUT):
+3. Distribute Layer 1 prizes (from 375 - 1% = 371.25 tokens):
 
-   - User B: 222.75 CUT (60% ← Oracle sets based on PERFORMANCE)
-   - User A: 111.38 CUT (30% ← Oracle sets)
-   - User C: 37.13 CUT (10% ← Oracle sets)
+   - Entry B: 222.75 tokens (60% ← Oracle sets based on PERFORMANCE)
+   - Entry A: 111.38 tokens (30% ← Oracle sets)
+   - Entry C: 37.13 tokens (10% ← Oracle sets)
 
-4. Distribute Layer 2 bonuses (from 75 - 1% = 74.25 CUT):
+4. Distribute Layer 2 bonuses (from 75 - 1% = 74.25 tokens):
 
-   - User B: 37.13 CUT (50% ← Based on PREDICTION VOLUME)
-   - User A: 22.28 CUT (30% ← Based on volume)
-   - User C: 14.85 CUT (20% ← Based on volume)
+   - Entry B: 37.13 tokens (50% ← Based on PREDICTION VOLUME)
+   - Entry A: 22.28 tokens (30% ← Based on volume)
+   - Entry C: 14.85 tokens (20% ← Based on volume)
 
    ⚠️ Note: Layer 1 (performance) and Layer 2 (popularity) are independent!
    An unpopular winner gets big Layer 1 prize (60%) but small Layer 2 bonus (20%).
 
-5. Set Layer 2 winner: User B (100%), others (0%)
+5. Set Layer 2 winner: Entry B (100%), others (0%)
 
 **Phase 4: Users Claim**
 
-Layer 1 (Contestants):
+Layer 1 (Competitors):
 
 ```
-User B claims: 222.75 + 37.13 = 259.88 CUT total (160% ROI!)
-User A claims: 111.38 + 22.28 = 133.66 CUT (34% ROI)
-User C claims: 37.13 + 14.85 = 51.98 CUT (-48% but got bonuses!)
+Entry B owner claims: 222.75 + 37.13 = 259.88 tokens total (160% ROI!)
+Entry A owner claims: 111.38 + 22.28 = 133.66 tokens (34% ROI)
+Entry C owner claims: 37.13 + 14.85 = 51.98 tokens (-48% but got bonuses!)
 
 Note: Oracle fee (1%) applied to both prizes AND bonuses
 ```
@@ -367,88 +449,27 @@ Note: Oracle fee (1%) applied to both prizes AND bonuses
 Layer 2 (Spectators):
 
 ```
-User B predictors (winners):
+Entry B predictors (winners):
 ├─ Hold ~515 tokens total
-├─ Redeem for: 850 CUT (all collateral!)
-├─ Invested: 500 CUT
-└─ Profit: +350 CUT (+70% ROI for picking winner!)
+├─ Redeem for: 850 tokens (all collateral!)
+├─ Invested: 500 tokens
+└─ Profit: +350 tokens (+70% ROI for picking winner!)
 
-User A predictors: 0 CUT (winner-take-all)
-User C predictors: 0 CUT (winner-take-all)
-```
-
-## 🔧 Key Features
-
-### LMSR Dynamic Pricing
-
-Spectator predictions use Logarithmic Market Scoring Rule:
-
-```solidity
-price = basePrice + (demand × demandSensitivity) / liquidityParameter
-```
-
-**Result:**
-
-- Popular contestants = expensive (fewer tokens per CUT)
-- Unpopular contestants = cheap (more tokens per CUT)
-- Early predictors get better prices
-- Market discovers true odds
-
-### Winner-Take-All
-
-Layer 2 spectators use winner-take-all (different from Layer 1):
-
-```
-Layer 1 (Contestants): Proportional (60%, 30%, 10%)
-Layer 2 (Spectators): Winner-take-all (100%, 0%, 0%)
-```
-
-**Why?** Higher stakes = more excitement for spectators!
-
-### Deferred Fee Distribution
-
-Entry fees held until settlement, enabling free withdrawals:
-
-```
-addPrediction(contestantId, 100 CUT)
-├─ 85 CUT → collateral (backs tokens)
-└─ 15 CUT → fees (held, not sent yet)
-
-withdraw() before settlement
-└─ Get back: 100 CUT (full refund!)
-
-settleContest() at settlement
-├─ Send 75 CUT to prize pool
-└─ Send 75 CUT to contestants
-```
-
-### No Swaps (Security)
-
-Swaps disabled to prevent arbitrage:
-
-```
-❌ BAD (if swaps were enabled):
-1. Deposit on cheap contestant ($0.92/token)
-2. Swap 1:1 to expensive contestant ($1.40/token)
-3. Instant 52% profit (exploit!)
-
-✅ GOOD (current):
-1. addPrediction() directly on desired contestant
-2. No swaps allowed
-3. Arbitrage impossible
+Entry A predictors: 0 tokens (winner-take-all)
+Entry C predictors: 0 tokens (winner-take-all)
 ```
 
 ## 📖 API Reference
 
 ### Contest.sol
 
-#### Contestant Functions
+#### Competitor Functions
 
 ```solidity
 // Join contest with unique entry ID
 function joinContest(uint256 entryId) external
-// Requirements: state == OPEN, exact contestantDepositAmount, entryId not used
-// Note: Entry ID must be unique (typically generated by your database)
+// Requirements: state == OPEN, exact deposit amount, entryId not used
+// Note: Entry ID must be unique (generated by your system/database)
 
 // Leave contest before start (automatically refunds spectators!)
 function leaveContest(uint256 entryId) external
@@ -489,12 +510,12 @@ function claimPredictionPayout(uint256 entryId) external
 // Payout: Winner-take-all (100% to winners, 0% to losers)
 ```
 
-#### Oracle Functions
+#### Oracle/Admin Functions
 
 ```solidity
-// Activate contest (closes contestant registration, predictions continue)
+// Activate contest (closes registration, predictions continue)
 function activateContest() external onlyOracle
-// Requirements: state == OPEN, has contestants
+// Requirements: state == OPEN, has at least one entry
 
 // Close predictions window (prevent last-second predictions) [OPTIONAL]
 function closePredictions() external onlyOracle
@@ -519,7 +540,7 @@ function cancelContest() external onlyOracle
 // Distribute all unclaimed payouts after expiry
 function distributeExpiredContest() external onlyOracle
 // Requirements: state == SETTLED, block.timestamp >= expiryTimestamp
-// Does: Pushes all unclaimed contestant and spectator payouts
+// Does: Pushes all unclaimed competitor and spectator payouts
 ```
 
 ### ContestFactory.sol
@@ -527,19 +548,19 @@ function distributeExpiredContest() external onlyOracle
 ```solidity
 // Create new contest
 function createContest(
-    address paymentToken,     // PlatformToken address
-    address oracle,
-    uint256 contestantDepositAmount,
-    uint256 oracleFee,       // Basis points (max 1000 = 10%)
-    uint256 expiry,
-    uint256 liquidityParameter,
-    uint256 demandSensitivity
+    address paymentToken,        // Platform token address
+    address oracle,              // Oracle/admin address
+    uint256 competitorDepositAmount, // Required deposit per entry
+    uint256 oracleFee,           // Basis points (max 1000 = 10%)
+    uint256 expiry,              // Expiry timestamp
+    uint256 liquidityParameter,  // LMSR liquidity parameter
+    uint256 demandSensitivity    // LMSR demand sensitivity (BPS)
 ) external returns (address)
 
 // Get all contests
 function getContests() external view returns (address[])
 
-// Get count
+// Get total contest count
 function getContestCount() external view returns (uint256)
 ```
 
@@ -548,18 +569,18 @@ function getContestCount() external view returns (uint256)
 ### 1. Deploy Platform (Once)
 
 ```solidity
-// Deploy CUT token
-PlatformToken cut = new PlatformToken("Cut", "CUT");
+// Deploy platform token with custom name/symbol
+PlatformToken token = new PlatformToken("Your Platform", "SYMBOL");
 
-// Deploy USDC manager
+// Deploy USDC deposit manager
 DepositManager dm = new DepositManager(
-    usdcAddress,
-    address(cut),
-    cUSDCAddress  // Compound V3 comet
+    usdcAddress,      // USDC token address
+    address(token),   // Your platform token
+    cUSDCAddress      // Compound V3 comet address
 );
 
 // Connect them
-cut.setDepositManager(address(dm));
+token.setDepositManager(address(dm));
 ```
 
 ### 2. Deploy ContestFactory (Once)
@@ -572,13 +593,13 @@ ContestFactory factory = new ContestFactory();
 
 ```solidity
 address contest = factory.createContest(
-    address(cut),         // paymentToken
-    oracleAddress,
-    100e18,              // 100 CUT per contestant
-    100,                 // 1% oracle fee
-    block.timestamp + 7 days,
-    1000e18,             // LMSR liquidity
-    500                  // LMSR sensitivity (5%)
+    address(token),       // Platform token
+    oracleAddress,        // Your oracle/admin address
+    100e18,               // 100 tokens per entry
+    100,                  // 1% oracle fee (100 basis points)
+    block.timestamp + 7 days, // Expiry: 7 days
+    1000e18,              // LMSR liquidity parameter
+    500                   // LMSR sensitivity (5% = 500 bps)
 );
 ```
 
@@ -589,31 +610,31 @@ address contest = factory.createContest(
 ```typescript
 import { ethers } from "ethers";
 
-// 1. User deposits USDC for CUT tokens
+// 1. User deposits USDC for platform tokens
 await depositManager.depositUSDC(ethers.parseUnits("1000", 6)); // 1000 USDC
-// User now has 1000 CUT
+// User now has 1000 platform tokens
 
 // 2. Create a contest
 const contest = await contestFactory.createContest(
-  platformTokenAddress,
-  oracleAddress,
-  ethers.parseEther("100"), // 100 CUT per contestant
-  100, // 1% fee
-  Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days
-  ethers.parseEther("1000"), // Liquidity
-  500 // Sensitivity
+  platformTokenAddress, // Your platform token
+  oracleAddress, // Your oracle/admin
+  ethers.parseEther("100"), // 100 tokens per entry
+  100, // 1% oracle fee
+  Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days expiry
+  ethers.parseEther("1000"), // LMSR liquidity
+  500 // LMSR sensitivity (5%)
 );
 
-// 3. Contestants join with entry IDs
-const entryId = 12345; // From your database
-await cutToken.approve(contest, ethers.parseEther("100"));
+// 3. Competitors join with entry IDs
+const entryId = 12345; // From your system/database
+await platformToken.approve(contest, ethers.parseEther("100"));
 await contest.joinContest(entryId);
 
-// 4. Oracle activates
+// 4. Oracle activates contest
 await contest.activateContest();
 
 // 5. Spectators add predictions (using entry IDs directly!)
-await cutToken.approve(contest, ethers.parseEther("50"));
+await platformToken.approve(contest, ethers.parseEther("50"));
 await contest.addPrediction(entryId, ethers.parseEther("50")); // Predict on entryId
 
 // 6. Oracle settles (ONE CALL! Only winners needed!)
@@ -622,7 +643,8 @@ await contest.settleContest(
   [6000, 3000, 1000] // 60%, 30%, 10%
 );
 
-// 7. Claim prizes
+// 7. Users claim winnings
+// Competitors claim
 await contest.claimEntryPayout(entryId); // Single entry
 // OR
 await contest.claimAllEntryPayouts(); // All entries at once
@@ -630,9 +652,9 @@ await contest.claimAllEntryPayouts(); // All entries at once
 // Spectators claim
 await contest.claimPredictionPayout(entryId);
 
-// 8. Convert CUT back to USDC
+// 8. Convert platform tokens back to USDC
 await depositManager.withdrawUSDC(ethers.parseEther("150"));
-// User receives 150 USDC
+// User receives 150 USDC (1:1 ratio)
 ```
 
 ## 🧪 Testing
@@ -677,55 +699,55 @@ Total: 100% passing
 
 ## 📈 Economics
 
-### Contestant Earnings
+### Competitor Earnings
 
 ```
-Base prize: From contestant deposits
+Base prize: From competitor deposits
 Bonus prize: From spectator entry fees (7.5%)
 Volume bonus: From spectator prediction volume (7.5%)
 
-Oracle fee: Applied to ALL contestant earnings (prizes + bonuses)
+Oracle fee: Applied to ALL competitor earnings (prizes + bonuses)
 
-Total earnings: (Contest winnings + popularity bonuses) × (1 - oracleFee%)
+Total earnings: (Competition winnings + popularity bonuses) × (1 - oracleFee%)
 ```
 
 **Oracle Fee Application:**
 
 ```
-Total pool going to contestants:
-├─ Contestant deposits: 300 CUT
-├─ Prize bonus (7.5% of spectator deposits): 75 CUT
-└─ Volume bonuses (7.5% of spectator deposits): 75 CUT
-    Total: 450 CUT
+Total pool going to competitors:
+├─ Competitor deposits: 300 tokens
+├─ Prize bonus (7.5% of spectator deposits): 75 tokens
+└─ Volume bonuses (7.5% of spectator deposits): 75 tokens
+    Total: 450 tokens
 
 Oracle takes fee from ENTIRE pool:
-├─ Oracle fee (1% of 450): 4.50 CUT
-└─ Contestants receive: 445.50 CUT
+├─ Oracle fee (1% of 450): 4.50 tokens
+└─ Competitors receive: 445.50 tokens
 
 Distribution (TWO INDEPENDENT calculations):
-├─ Layer 1 prizes: 371.25 CUT split by oracle's payoutBps[] ← Performance!
-└─ Layer 2 bonuses: 74.25 CUT split by prediction volume ← Popularity!
+├─ Layer 1 prizes: 371.25 tokens split by oracle's payoutBps[] ← Performance!
+└─ Layer 2 bonuses: 74.25 tokens split by prediction volume ← Popularity!
 
 These percentages can differ! Layer 1 = skill, Layer 2 = popularity.
 ```
 
-**Example:** User B wins with high prediction volume
+**Example:** Entry B wins with high prediction volume
 
 ```
-Contest prize: 222.75 CUT (60% of augmented pool, after 1% oracle fee)
-Volume bonus: 37.13 CUT (from being popular, after 1% oracle fee)
-Total: 259.88 CUT on 100 CUT deposit = 160% ROI!
+Competition prize: 222.75 tokens (60% of augmented pool, after 1% oracle fee)
+Volume bonus: 37.13 tokens (from being popular, after 1% oracle fee)
+Total: 259.88 tokens on 100 token deposit = 160% ROI!
 
-Oracle fee applies to ALL contestant earnings (prizes + bonuses)
+Oracle fee applies to ALL competitor earnings (prizes + bonuses)
 ```
 
 ### Spectator Earnings
 
 ```
-Prediction amount: 100 CUT
-Entry fee: 15 CUT (non-refundable after settlement)
-Collateral: 85 CUT (backing)
-Tokens: 85 / LMSR_price
+Prediction amount: 100 tokens
+Entry fee: 15 tokens (non-refundable after settlement)
+Collateral: 85 tokens (backing)
+Tokens received: 85 / LMSR_price
 
 If predicted winner:
   Payout = (your tokens / total winning tokens) × total collateral
@@ -737,12 +759,12 @@ If predicted loser:
 **Example:** Picking the winner
 
 ```
-Invested: 100 CUT
-Entry fee: -15 CUT
-Collateral: 85 CUT
+Invested: 100 tokens
+Entry fee: -15 tokens (distributed to prize pool & competitors)
+Collateral: 85 tokens
 
 If win (hold 515/850 of tokens):
-  Receive: (your % of winning tokens) × 850 CUT
+  Receive: (your % of winning tokens) × 850 tokens
   Potential: +42% ROI if others also predicted winner
 ```
 
@@ -782,21 +804,22 @@ forge script script/Deploy_base.s.sol --rpc-url base --broadcast
 Contest States:
 
 OPEN
-  ↓ contestants joinContest(entryId)
+  ↓ competitors joinContest(entryId)
   ↓ spectators addPrediction(entryId, amount) (early predictions!)
   ↓ oracle activateContest()
 
 ACTIVE
+  ↓ competition in progress
   ↓ spectators addPrediction(entryId, amount) (predictions continue)
   ↓ (optional) spectators withdrawPrediction(entryId, tokens)
   ↓ (optional) oracle closePredictions()
 
 LOCKED [OPTIONAL]
-  ↓ contest finishes (no more predictions/withdrawals)
+  ↓ competition finishes (no more predictions/withdrawals)
   ↓ oracle settleContest(winningEntries, payouts)
 
 SETTLED
-  ↓ contestants claimEntryPayout(entryId) or claimAllEntryPayouts()
+  ↓ competitors claimEntryPayout(entryId) or claimAllEntryPayouts()
   ↓ spectators claimPredictionPayout(entryId)
   ↓ (after expiry) oracle distributeExpiredContest()
 
@@ -808,17 +831,17 @@ CLOSED
 
 CANCELLED
   ↓ refunds available (cannot cancel after LOCKED/SETTLED)
-  ↓ contestants leaveContest(entryId)
+  ↓ competitors leaveContest(entryId)
   ↓ spectators withdrawPrediction(entryId, tokens)
 ```
 
 ## 🎯 Quick Reference
 
-### For Contestants
+### For Competitors
 
 | Want to...         | Call...                     |
 | ------------------ | --------------------------- |
-| Join contest       | `joinContest(entryId)`      |
+| Join competition   | `joinContest(entryId)`      |
 | Leave before start | `leaveContest(entryId)`     |
 | Claim single prize | `claimEntryPayout(entryId)` |
 | Claim all prizes   | `claimAllEntryPayouts()`    |
@@ -832,13 +855,13 @@ CANCELLED
 | Claim winnings      | `claimPredictionPayout(entryId)`      |
 | Check price         | `calculateEntryPrice(entryId)`        |
 
-### For Oracle
+### For Oracle/Admin
 
 | Want to...                     | Call...                                  | When...                        |
 | ------------------------------ | ---------------------------------------- | ------------------------------ |
-| Activate contest               | `activateContest()`                      | After contestants join         |
-| Close predictions              | `closePredictions()`                     | Before contest finishes        |
-| Settle everything              | `settleContest(winningEntries, payouts)` | After contest finishes         |
+| Activate contest               | `activateContest()`                      | After competitors join         |
+| Close predictions              | `closePredictions()`                     | Before competition finishes    |
+| Settle everything              | `settleContest(winningEntries, payouts)` | After competition finishes     |
 | Cancel                         | `cancelContest()`                        | If contest needs cancellation  |
 | Distribute unclaimed (expired) | `distributeExpiredContest()`             | After expiry (if users forgot) |
 
@@ -847,6 +870,20 @@ CANCELLED
 ## 📄 License
 
 MIT
+
+## 💡 About
+
+This infrastructure is completely **generic and reusable**. The contracts contain no domain-specific logic - they work with any competition format.
+
+The name "the Cut" refers to one specific implementation (fantasy golf), but the smart contracts themselves are **competition-agnostic** and can power:
+
+- Sports prediction platforms
+- Gaming tournament systems
+- Trading competitions
+- Creator challenges
+- Any skill-based competition with measurable outcomes
+
+**Core Principle:** Your backend determines the competition rules and scoring. The smart contracts handle deposits, predictions, settlement, and payouts - the same way for every competition type.
 
 ## 👨‍💻 Author
 
