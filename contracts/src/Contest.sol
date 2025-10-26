@@ -19,12 +19,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * - Winners claim their payouts
  * 
  * Layer 2 (Spectators):
- * - Spectators bet on contestants using LMSR pricing
+ * - Spectators predict on contestants using LMSR pricing
  * - 15% entry fee augments Layer 1 prizes and pays contestant bonuses
  * - Winner-take-all redemption based on Layer 1 results
  * - Can withdraw before settlement (full refund with deferred fees)
  * 
- * Key Innovation: ONE oracle call (`distribute()`) settles both layers!
+ * Key Innovation: ONE oracle call (`settleContest()`) settles both layers!
  */
 contract Contest is ERC1155, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -60,9 +60,9 @@ contract Contest is ERC1155, ReentrancyGuard {
     uint256 public constant PRICE_PRECISION = 1e6;
     
     /// @notice Current state of the contest
-    /// OPEN: Contestants join, spectators bet (early betting)
-    /// ACTIVE: Contestants locked in, spectators still betting
-    /// LOCKED: Betting closed, contest finishing
+    /// OPEN: Contestants join, spectators predict (early predictions)
+    /// ACTIVE: Contestants locked in, spectators still predicting
+    /// LOCKED: Predictions closed, contest finishing
     /// SETTLED: Results in, users claim
     /// CLOSED: Force distributed
     /// CANCELLED: Contest cancelled, refunds available
@@ -100,10 +100,10 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Accumulated prize bonus to augment Layer 1 pool
     uint256 public accumulatedPrizeBonus;
     
-    /// @notice Bonuses earned by each contestant from betting volume
+    /// @notice Bonuses earned by each contestant from prediction volume
     mapping(address => uint256) public contestantBonuses;
     
-    /// @notice Total betting volume on each contestant (for transparency)
+    /// @notice Total prediction volume on each contestant (for transparency)
     mapping(address => uint256) public totalVolumeOnContestant;
     
     /// @notice Track total payment tokens deposited by each spectator (for withdrawals)
@@ -119,14 +119,14 @@ contract Contest is ERC1155, ReentrancyGuard {
     
     event ContestantDeposited(address indexed contestant);
     event ContestActivated();
-    event BettingLocked();
+    event PredictionsClosed();
     event SpectatorDeposited(address indexed spectator, uint256 indexed outcomeId, uint256 amount, uint256 tokensReceived);
     event SpectatorWithdrew(address indexed spectator, uint256 amount);
     event ContestSettled(address[] winners, uint256[] payouts);
     event ContestantPayoutClaimed(address indexed contestant, uint256 amount);
     event SpectatorPayoutRedeemed(address indexed spectator, uint256 indexed outcomeId, uint256 payout);
     event ContestCancelled();
-    event ContestForceClosed(uint256 contestantsPaid, uint256 spectatorsPaid, uint256 timestamp);
+    event ContestForceDistributed(uint256 contestantsPaid, uint256 spectatorsPaid, uint256 timestamp);
     
     /// @notice Modifier to restrict functions to only the oracle
     modifier onlyOracle() {
@@ -206,7 +206,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         isContestant[msg.sender] = false;
         totalContestantDeposits -= contestantDepositAmount;
         
-        // Only remove from array in OPEN state (before betting starts)
+        // Only remove from array in OPEN state (before predictions start)
         // In CANCELLED state, keep array intact so spectator outcomeIds remain valid
         if (state == ContestState.OPEN) {
             // Remove from contestants array (swap with last and pop)
@@ -223,7 +223,7 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Oracle activates the contest (closes contestant registration, betting continues)
+     * @notice Oracle activates the contest (closes contestant registration, predictions continue)
      */
     function activateContest() external onlyOracle {
         require(state == ContestState.OPEN, "Contest already started");
@@ -235,18 +235,18 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Oracle locks betting before contest ends
-     * @dev Prevents last-second bets when outcome is nearly certain
+     * @notice Oracle closes predictions before contest ends
+     * @dev Prevents last-second predictions when outcome is nearly certain
      * 
-     * Use case: Lock betting when final round starts, before results are known
-     * This prevents unfair late bets and potential race conditions
+     * Use case: Close predictions when final round starts, before results are known
+     * This prevents unfair late predictions and potential race conditions
      */
-    function lockBetting() external onlyOracle {
+    function closePredictions() external onlyOracle {
         require(state == ContestState.ACTIVE, "Contest not active");
         
         state = ContestState.LOCKED;
         
-        emit BettingLocked();
+        emit PredictionsClosed();
     }
     
     // ============ Layer 2: Spectator Functions ============
@@ -273,15 +273,15 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Spectator adds a prediction by betting on a specific contestant
-     * @param outcomeId Index of contestant to bet on
+     * @notice Spectator adds a prediction by predicting on a specific contestant
+     * @param outcomeId Index of contestant to predict on
      * @param amount Amount of payment token to deposit
      * @dev Uses LMSR pricing - popular contestants cost more
      */
     function addPrediction(uint256 outcomeId, uint256 amount) external nonReentrant {
         require(
             state == ContestState.OPEN || state == ContestState.ACTIVE, 
-            "Betting not available"
+            "Predictions not available"
         );
         require(outcomeId < contestants.length, "Invalid outcome");
         require(amount > 0, "Amount must be > 0");
@@ -332,7 +332,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * 
      * @dev Works in:
      * - OPEN state (during registration)
-     * - ACTIVE state (before betting locks)
+     * - ACTIVE state (before predictions lock)
      * - CANCELLED state (full refund anytime)
      */
     function withdrawPrediction(uint256 outcomeId, uint256 tokenAmount) external nonReentrant {
@@ -340,7 +340,7 @@ contract Contest is ERC1155, ReentrancyGuard {
             state == ContestState.OPEN || 
             state == ContestState.ACTIVE || 
             state == ContestState.CANCELLED,
-            "Cannot withdraw - betting locked or settled"
+            "Cannot withdraw - predictions locked or settled"
         );
         
         require(outcomeId < contestants.length, "Invalid outcome");
@@ -381,7 +381,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param winners Array of winner addresses in order
      * @param payoutBps Array of payout basis points (must sum to 10000)
      */
-    function distribute(
+    function settleContest(
         address[] calldata winners,
         uint256[] calldata payoutBps
     ) external onlyOracle nonReentrant {
@@ -519,7 +519,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @notice Oracle cancels contest, enables refunds
      * @dev Cannot cancel after settlement - settlement is final
      */
-    function cancel() external onlyOracle {
+    function cancelContest() external onlyOracle {
         require(state != ContestState.SETTLED && state != ContestState.CLOSED, "Contest settled - cannot cancel");
         state = ContestState.CANCELLED;
         emit ContestCancelled();
@@ -536,7 +536,7 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Force close contest and push all unclaimed winnings to users
+     * @notice Distribute all unclaimed winnings after contest expires
      * @dev Can only be called after expiryTimestamp has passed
      * 
      * This function distributes all unclaimed winnings to their rightful owners:
@@ -546,7 +546,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * Use case: Users forgot to claim or lost access to accounts.
      * After expiry, oracle can force distribution to prevent funds being locked forever.
      */
-    function forceClose() external onlyOracle nonReentrant {
+    function distributeExpiredContest() external onlyOracle nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
         require(block.timestamp >= expiryTimestamp, "Expiry not reached");
         
@@ -583,7 +583,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         }
         
         state = ContestState.CLOSED;
-        emit ContestForceClosed(contestantsPaid, spectatorsPaid, block.timestamp);
+        emit ContestForceDistributed(contestantsPaid, spectatorsPaid, block.timestamp);
     }
     
     // ============ View Functions ============

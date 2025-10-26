@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title PlatformToken
  * @author MagRelo
- * @dev ERC20 token for the Bet the Cut platform (CUT)
+ * @dev ERC20 token for the Cut platform (CUT)
  * 
  * This token implements a simple ERC20 with restricted minting and burning capabilities.
  * Only the designated DepositManager contract can mint and burn tokens.

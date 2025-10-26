@@ -1,29 +1,10 @@
-# Bet the Cut - Smart Contracts
+# the Cut - Smart Contracts
 
 Complete fantasy golf contest and prediction market system built on Solidity.
 
-## 🎯 Architecture
-
-```
-┌─────────────────────────────────────────┐
-│         Platform Layer (USDC)           │
-│                                         │
-│  PlatformToken           DepositManager │
-│  (CUT token)             (USDC ↔ CUT)  │
-└──────────────┬──────────────────────────┘
-               │ Users get CUT tokens
-               ▼
-┌─────────────────────────────────────────┐
-│         Contest Layer (CUT)             │
-│                                         │
-│  ContestFactory          Contest        │
-│  (Creates contests)      (All-in-one!)  │
-└─────────────────────────────────────────┘
-```
-
 ## 📦 Contracts
 
-### Platform Layer
+### Token Layer
 
 **`PlatformToken.sol`** - ERC20 CUT token
 
@@ -35,29 +16,27 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 
 - Users deposit USDC → receive CUT tokens
 - Supplies USDC to Compound V3 for yield
-- Yield stays with platform (not distributed to users)
 - Users can withdraw USDC anytime (1:1 redemption)
 
 ### Contest Layer
 
-**`Contest.sol`** - Combined contestant competition + spectator betting
+**`Contest.sol`** - Combined contestant competition + spectator predictions
 
 - **Layer 1:** Contestants deposit CUT and compete for prizes
-- **Layer 2:** Spectators bet CUT on contestants with LMSR pricing
+- **Layer 2:** Spectators predict CUT on contestants with LMSR pricing
 - **Settlement:** ONE oracle call distributes both layers
 
 **`ContestFactory.sol`** - Creates Contest instances
 
 - Standardized contest deployment
 - Registry of all contests
-- Each contest has unique parameters
 
 ## 📅 Contest Lifecycle
 
-### Phase 1: OPEN - Contestant Registration & Early Betting
+### Phase 1: OPEN - Contestant Registration & Early Predictions
 
 **State:** `ContestState.OPEN`  
-**Betting:** ✅ Available (early betting enabled)
+**Predictions:** ✅ Available (early predictions enabled)
 
 | Actor           | Can Do                 | Function                         |
 | --------------- | ---------------------- | -------------------------------- |
@@ -67,74 +46,73 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 | **Spectators**  | Add prediction         | `addPrediction(id, amount)`      |
 | **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
 | **Oracle**      | Activate contest       | `activateContest()`              |
-| **Anyone**      | Cancel if expired      | `cancelExpired()`                |
 
 **State transition:** Oracle calls `activateContest()` → `ACTIVE`
 
 ---
 
-### Phase 2: ACTIVE - Contest Running, Betting Open
+### Phase 2: ACTIVE - Contest Running, Predictions Open
 
 **State:** `ContestState.ACTIVE`  
-**Betting:** ✅ Available
+**Predictions:** ✅ Available
 
-| Actor           | Can Do                 | Function                         |
-| --------------- | ---------------------- | -------------------------------- |
-| **Contestants** | ❌ Cannot join/leave   | -                                |
-| **Spectators**  | Add predictions (LMSR) | `addPrediction(id, amount)`      |
-| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)` |
-| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`      |
-| **Oracle**      | Lock betting window    | `lockBetting()`                  |
-| **Oracle**      | Cancel contest         | `cancel()`                       |
-| **Oracle**      | Settle (if not locked) | `distribute(winners, payouts)`   |
+| Actor           | Can Do                 | Function                          |
+| --------------- | ---------------------- | --------------------------------- |
+| **Contestants** | ❌ Cannot join/leave   | -                                 |
+| **Spectators**  | Add predictions (LMSR) | `addPrediction(id, amount)`       |
+| **Spectators**  | Withdraw (100% refund) | `withdrawPrediction(id, tokens)`  |
+| **Spectators**  | Check prices           | `calculateOutcomePrice(id)`       |
+| **Oracle**      | Close predictions      | `closePredictions()`              |
+| **Oracle**      | Cancel contest         | `cancelContest()`                 |
+| **Oracle**      | Settle (if not locked) | `settleContest(winners, payouts)` |
 
-**State transition:** Oracle calls `lockBetting()` → `LOCKED`
+**State transition:** Oracle calls `closePredictions()` → `LOCKED`
 
 ---
 
-### Phase 3: LOCKED - Contest Finishing, Betting Closed
+### Phase 3: LOCKED - Contest Finishing, Predictions Closed
 
 **State:** `ContestState.LOCKED`  
-**Betting:** ❌ Closed
+**Predictions:** ❌ Closed
 
-| Actor           | Can Do                 | Function                           |
-| --------------- | ---------------------- | ---------------------------------- |
-| **Contestants** | ❌ Waiting for results | -                                  |
-| **Spectators**  | Check prices (locked)  | `calculateOutcomePrice(id)`        |
-| **Spectators**  | ❌ Cannot bet          | -                                  |
-| **Spectators**  | ❌ Cannot withdraw     | -                                  |
-| **Oracle**      | Settle contest         | `distribute(winners[], payouts[])` |
+| Actor           | Can Do                 | Function                              |
+| --------------- | ---------------------- | ------------------------------------- |
+| **Contestants** | ❌ Waiting for results | -                                     |
+| **Spectators**  | Check prices (locked)  | `calculateOutcomePrice(id)`           |
+| **Spectators**  | ❌ Cannot predict      | -                                     |
+| **Spectators**  | ❌ Cannot withdraw     | -                                     |
+| **Oracle**      | Settle contest         | `settleContest(winners[], payouts[])` |
 
-**Purpose:** Contest is finishing, outcome not yet certain, but betting locked to prevent last-second unfair bets.
+**Purpose:** Contest is finishing, outcome not yet certain, but predictions locked to prevent last-second unfair predictions.
 
-**Note:** This phase is optional - oracle can call `distribute()` directly from ACTIVE state.
+**Note:** This phase is optional - oracle can call `settleContest()` directly from ACTIVE state.
 
-**State transition:** Oracle calls `distribute()` → `SETTLED`
+**State transition:** Oracle calls `settleContest()` → `SETTLED`
 
 ---
 
 ### Phase 4: SETTLED - Claiming
 
 **State:** `ContestState.SETTLED`  
-**Betting:** Closed
+**Predictions:** Closed
 
-| Actor           | Can Do                                               | Function                    |
-| --------------- | ---------------------------------------------------- | --------------------------- |
-| **Contestants** | Claim contest payout                                 | `claimContestPayout()`      |
-| **Contestants** | (Can claim multiple times if made multiple deposits) | Same function               |
-| **Spectators**  | Check final prices                                   | `calculateOutcomePrice(id)` |
-| **Spectators**  | Claim prediction payout                              | `claimPredictionPayout(id)` |
-| **Spectators**  | Winners get payout, losers get 0                     | Same function               |
-| **Oracle**      | Force close after expiry (see Phase 5)               | `forceClose()`              |
+| Actor           | Can Do                                               | Function                     |
+| --------------- | ---------------------------------------------------- | ---------------------------- |
+| **Contestants** | Claim contest payout                                 | `claimContestPayout()`       |
+| **Contestants** | (Can claim multiple times if made multiple deposits) | Same function                |
+| **Spectators**  | Check final prices                                   | `calculateOutcomePrice(id)`  |
+| **Spectators**  | Claim prediction payout                              | `claimPredictionPayout(id)`  |
+| **Spectators**  | Winners get payout, losers get 0                     | Same function                |
+| **Oracle**      | Distribute after expiry (see Phase 5)                | `distributeExpiredContest()` |
 
-**State transition:** Oracle calls `forceClose()` (after expiry) → `CLOSED`
+**State transition:** Oracle calls `distributeExpiredContest()` (after expiry) → `CLOSED`
 
 ---
 
 ### Phase 5: CLOSED - Force Distribution (After Expiry)
 
 **State:** `ContestState.CLOSED`  
-**Trigger:** Oracle calls `forceClose()` after contest expiry
+**Trigger:** Oracle calls `distributeExpiredContest()` after contest expiry
 
 | Actor         | Can Do                          | Function |
 | ------------- | ------------------------------- | -------- |
@@ -145,7 +123,7 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 
 **How it works:**
 
-- After expiry timestamp, oracle can call `forceClose()`
+- After expiry timestamp, oracle can call `distributeExpiredContest()`
 - Automatically pushes all unclaimed payouts to users
 - Contestants receive their unclaimed prizes
 - Winning spectators receive their unclaimed winnings
@@ -170,7 +148,7 @@ Complete fantasy golf contest and prediction market system built on Solidity.
 
 **How to get to CANCELLED:**
 
-- Oracle calls `cancel()` (anytime before SETTLED - settlement is final!)
+- Oracle calls `cancelContest()` (anytime before SETTLED - settlement is final!)
 - Anyone calls `cancelExpired()` (after expiry timestamp, if not settled)
 
 **Refund guarantee:**
@@ -193,24 +171,24 @@ Example:
                     OPEN
                      │
                      │ Contestants join
-                     │ Spectators bet (early betting!)
+                     │ Spectators predict (early predictions!)
                      │ Spectators can withdraw
                      │
                      │ Oracle: activateContest()
                      ▼
                   ACTIVE
                      │
-                     │ Spectators continue betting
+                     │ Spectators continue predicting
                      │ Spectators can withdraw
                      │
-                     │ Oracle: lockBetting() [OPTIONAL]
+                     │ Oracle: closePredictions() [OPTIONAL]
                      ▼
                   LOCKED
                      │
                      │ Contest finishing
-                     │ No more bets/withdrawals
+                     │ No more predictions/withdrawals
                      │
-                     │ Oracle: distribute(...)
+                     │ Oracle: settleContest(...)
                      │ (Can also call from ACTIVE)
                      │ Pays Layer 1 prizes
                      │ Pays Layer 2 bonuses
@@ -221,7 +199,7 @@ Example:
                      │ whenever ready
                      │
                      │ (After expiry)
-                     │ Oracle: forceClose()
+                     │ Oracle: distributeExpiredContest()
                      │ Pushes unclaimed payouts
                      ▼
                   CLOSED
@@ -232,7 +210,7 @@ Example:
 
         (Alternative path from OPEN/ACTIVE only)
                      │
-                     │ Oracle: cancel()
+                     │ Oracle: cancelContest()
                      │ OR
                      │ Anyone: cancelExpired()
                      │ (Cannot cancel after LOCKED/SETTLED)
@@ -291,21 +269,21 @@ User C deposits: 100 CUT
 Layer 1 pool: 300 CUT
 ```
 
-**Phase 2: Spectators Bet**
+**Phase 2: Spectators Predict**
 
 ```
-5 people bet 100 CUT on User B = 500 CUT (50% of volume)
-3 people bet 100 CUT on User A = 300 CUT (30% of volume)
-2 people bet 100 CUT on User C = 200 CUT (20% of volume)
+5 people predict 100 CUT on User B = 500 CUT (50% of volume)
+3 people predict 100 CUT on User A = 300 CUT (30% of volume)
+2 people predict 100 CUT on User C = 200 CUT (20% of volume)
 ─────────────────────────────────────────
 Total spectator deposits: 1,000 CUT
 
 Entry fees (15%): 150 CUT
 ├─ Prize bonus: 75 CUT → augments Layer 1 pool
-└─ Contestant bonuses: 75 CUT → split by betting volume
-    ├─ User B: 37.50 CUT (50% of betting volume) ← Based on popularity!
-    ├─ User A: 22.50 CUT (30% of betting volume)
-    └─ User C: 15 CUT (20% of betting volume)
+└─ Contestant bonuses: 75 CUT → split by prediction volume
+    ├─ User B: 37.50 CUT (50% of prediction volume) ← Based on popularity!
+    ├─ User A: 22.50 CUT (30% of prediction volume)
+    └─ User C: 15 CUT (20% of prediction volume)
 
 Spectator collateral: 850 CUT (backs tokens)
 ```
@@ -313,7 +291,7 @@ Spectator collateral: 850 CUT (backs tokens)
 **Phase 3: ONE Oracle Call Settles**
 
 ```solidity
-contest.distribute(
+contest.settleContest(
     [userB, userA, userC],  // Winners in order
     [6000, 3000, 1000]      // 60%, 30%, 10%
 )
@@ -341,7 +319,7 @@ contest.distribute(
 
 4. Distribute Layer 2 bonuses (from 75 - 1% = 74.25 CUT):
 
-   - User B: 37.13 CUT (50% ← Based on BETTING VOLUME)
+   - User B: 37.13 CUT (50% ← Based on PREDICTION VOLUME)
    - User A: 22.28 CUT (30% ← Based on volume)
    - User C: 14.85 CUT (20% ← Based on volume)
 
@@ -365,21 +343,21 @@ Note: Oracle fee (1%) applied to both prizes AND bonuses
 Layer 2 (Spectators):
 
 ```
-User B bettors (winners):
+User B predictors (winners):
 ├─ Hold ~515 tokens total
 ├─ Redeem for: 850 CUT (all collateral!)
 ├─ Invested: 500 CUT
 └─ Profit: +350 CUT (+70% ROI for picking winner!)
 
-User A bettors: 0 CUT (winner-take-all)
-User C bettors: 0 CUT (winner-take-all)
+User A predictors: 0 CUT (winner-take-all)
+User C predictors: 0 CUT (winner-take-all)
 ```
 
 ## 🔧 Key Features
 
 ### LMSR Dynamic Pricing
 
-Spectator betting uses Logarithmic Market Scoring Rule:
+Spectator predictions use Logarithmic Market Scoring Rule:
 
 ```solidity
 price = basePrice + (demand × demandSensitivity) / liquidityParameter
@@ -389,7 +367,7 @@ price = basePrice + (demand × demandSensitivity) / liquidityParameter
 
 - Popular contestants = expensive (fewer tokens per CUT)
 - Unpopular contestants = cheap (more tokens per CUT)
-- Early bettors get better prices
+- Early predictors get better prices
 - Market discovers true odds
 
 ### Winner-Take-All
@@ -415,7 +393,7 @@ addPrediction(contestantId, 100 CUT)
 withdraw() before settlement
 └─ Get back: 100 CUT (full refund!)
 
-distribute() at settlement
+settleContest() at settlement
 ├─ Send 75 CUT to prize pool
 └─ Send 75 CUT to contestants
 ```
@@ -461,13 +439,13 @@ function claimContestPayout() external
 ```solidity
 // Add prediction on a contestant (LMSR pricing)
 function addPrediction(uint256 outcomeId, uint256 amount) external
-// Requirements: state == OPEN or IN_PROGRESS (with bettingOpen)
+// Requirements: state == OPEN or ACTIVE
 // Returns: ERC1155 tokens representing prediction
 // Price: Dynamic based on demand (LMSR)
 
 // Withdraw prediction before settlement (100% refund!)
 function withdrawPrediction(uint256 outcomeId, uint256 tokenAmount) external
-// Requirements: state == OPEN, IN_PROGRESS (with bettingOpen), or CANCELLED
+// Requirements: state == OPEN, ACTIVE, or CANCELLED
 // Returns: Full original deposit (including entry fee)
 
 // Claim prediction winnings after settlement
@@ -479,16 +457,16 @@ function claimPredictionPayout(uint256 outcomeId) external
 #### Oracle Functions
 
 ```solidity
-// Activate contest (closes contestant registration, betting continues)
+// Activate contest (closes contestant registration, predictions continue)
 function activateContest() external onlyOracle
 // Requirements: state == OPEN, has contestants
 
-// Lock betting window (prevent last-second bets) [OPTIONAL]
-function lockBetting() external onlyOracle
+// Close predictions window (prevent last-second predictions) [OPTIONAL]
+function closePredictions() external onlyOracle
 // Requirements: state == ACTIVE
 
 // Settle contest (ONE call does everything!)
-function distribute(
+function settleContest(
     address[] calldata winners,
     uint256[] calldata payoutBps
 ) external onlyOracle
@@ -496,12 +474,12 @@ function distribute(
 // Does: Pays Layer 1 prizes + bonuses, resolves Layer 2 market
 
 // Cancel contest (enables refunds)
-function cancel() external onlyOracle
+function cancelContest() external onlyOracle
 // Requirements: state != SETTLED and state != CLOSED
 // Note: Cannot cancel after settlement - settlement is final
 
-// Force close and push unclaimed payouts (after expiry)
-function forceClose() external onlyOracle
+// Distribute all unclaimed payouts after expiry
+function distributeExpiredContest() external onlyOracle
 // Requirements: state == SETTLED, block.timestamp >= expiryTimestamp
 // Does: Pushes all unclaimed contestant and spectator payouts
 ```
@@ -592,15 +570,15 @@ const contest = await contestFactory.createContest(
 await cutToken.approve(contest, ethers.parseEther("100"));
 await contest.joinContest();
 
-// 4. Oracle starts
-await contest.startContest();
+// 4. Oracle activates
+await contest.activateContest();
 
 // 5. Spectators add predictions
 await cutToken.approve(contest, ethers.parseEther("50"));
 await contest.addPrediction(1, ethers.parseEther("50")); // Predict contestant #1 wins
 
 // 6. Oracle settles (ONE CALL!)
-await contest.distribute(
+await contest.settleContest(
   [winner1, winner2, winner3],
   [6000, 3000, 1000] // 60%, 30%, 10%
 );
@@ -633,11 +611,11 @@ forge test -vvv
 ```
 ✅ Contest.t.sol: 15 tests including:
    - Full contest flow
-   - Early betting
+   - Early predictions
    - LMSR pricing
-   - Betting window control
+   - Prediction window control
    - Cancellation & refunds
-   - Force close (7 tests)
+   - Distribute expired contest (7 tests)
 ✅ ContestFactory.t.sol: 2/2 passing
 ✅ PlatformToken.t.sol: All passing
 ✅ DepositManager.t.sol: All passing
@@ -661,7 +639,7 @@ Total: 100% passing
 ```
 Base prize: From contestant deposits
 Bonus prize: From spectator entry fees (7.5%)
-Volume bonus: From spectator betting volume (7.5%)
+Volume bonus: From spectator prediction volume (7.5%)
 
 Oracle fee: Applied to ALL contestant earnings (prizes + bonuses)
 
@@ -683,12 +661,12 @@ Oracle takes fee from ENTIRE pool:
 
 Distribution (TWO INDEPENDENT calculations):
 ├─ Layer 1 prizes: 371.25 CUT split by oracle's payoutBps[] ← Performance!
-└─ Layer 2 bonuses: 74.25 CUT split by betting volume ← Popularity!
+└─ Layer 2 bonuses: 74.25 CUT split by prediction volume ← Popularity!
 
 These percentages can differ! Layer 1 = skill, Layer 2 = popularity.
 ```
 
-**Example:** User B wins with high betting volume
+**Example:** User B wins with high prediction volume
 
 ```
 Contest prize: 222.75 CUT (60% of augmented pool, after 1% oracle fee)
@@ -701,15 +679,15 @@ Oracle fee applies to ALL contestant earnings (prizes + bonuses)
 ### Spectator Earnings
 
 ```
-Bet amount: 100 CUT
+Prediction amount: 100 CUT
 Entry fee: 15 CUT (non-refundable after settlement)
 Collateral: 85 CUT (backing)
 Tokens: 85 / LMSR_price
 
-If bet on winner:
+If predicted winner:
   Payout = (your tokens / total winning tokens) × total collateral
 
-If bet on loser:
+If predicted loser:
   Payout = 0 (winner-take-all!)
 ```
 
@@ -722,7 +700,7 @@ Collateral: 85 CUT
 
 If win (hold 515/850 of tokens):
   Receive: (your % of winning tokens) × 850 CUT
-  Potential: +42% ROI if others also bet on winner
+  Potential: +42% ROI if others also predicted winner
 ```
 
 ## 🛠️ Development
@@ -762,22 +740,22 @@ Contest States:
 
 OPEN
   ↓ contestants joinContest()
-  ↓ spectators addPrediction() (early betting!)
+  ↓ spectators addPrediction() (early predictions!)
   ↓ oracle activateContest()
 
 ACTIVE
-  ↓ spectators addPrediction() (betting continues)
+  ↓ spectators addPrediction() (predictions continue)
   ↓ (optional) spectators withdraw()
-  ↓ (optional) oracle lockBetting()
+  ↓ (optional) oracle closePredictions()
 
 LOCKED [OPTIONAL]
-  ↓ contest finishes (no more bets/withdrawals)
-  ↓ oracle distribute()
+  ↓ contest finishes (no more predictions/withdrawals)
+  ↓ oracle settleContest()
 
 SETTLED
   ↓ contestants claimContestantPayout()
   ↓ spectators claimPredictionPayout()
-  ↓ (after expiry) oracle forceClose()
+  ↓ (after expiry) oracle distributeExpiredContest()
 
 CLOSED
   ↓ all unclaimed funds pushed to users
@@ -810,13 +788,13 @@ CANCELLED
 
 ### For Oracle
 
-| Want to...                   | Call...                        | When...                        |
-| ---------------------------- | ------------------------------ | ------------------------------ |
-| Activate contest             | `activateContest()`            | After contestants join         |
-| Lock betting (prevent races) | `lockBetting()`                | Before contest finishes        |
-| Settle everything            | `distribute(winners, payouts)` | After contest finishes         |
-| Cancel                       | `cancel()`                     | If contest needs cancellation  |
-| Force close and pay everyone | `forceClose()`                 | After expiry (if users forgot) |
+| Want to...                     | Call...                           | When...                        |
+| ------------------------------ | --------------------------------- | ------------------------------ |
+| Activate contest               | `activateContest()`               | After contestants join         |
+| Close predictions              | `closePredictions()`              | Before contest finishes        |
+| Settle everything              | `settleContest(winners, payouts)` | After contest finishes         |
+| Cancel                         | `cancelContest()`                 | If contest needs cancellation  |
+| Distribute unclaimed (expired) | `distributeExpiredContest()`      | After expiry (if users forgot) |
 
 ## 📄 License
 

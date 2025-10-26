@@ -9,7 +9,7 @@ import "./Contest.sol";
  * @dev Factory contract for creating Contest contracts
  * 
  * This contract provides a centralized way to create and manage Contest contracts.
- * Each Contest combines Layer 1 (contestant competition) and Layer 2 (spectator betting).
+ * Each Contest combines Layer 1 (contestant competition) and Layer 2 (spectator predictions).
  * 
  * @custom:security All contest contracts created through this factory can be tracked
  */
@@ -33,7 +33,7 @@ contract ContestFactory {
      * @param contestantDepositAmount The amount each contestant must deposit
      * @param oracleFee The fee percentage for the oracle (in basis points, max 1000 = 10%)
      * @param expiry The expiration timestamp for the contest
-     * @param liquidityParameter LMSR liquidity parameter for spectator betting
+     * @param liquidityParameter LMSR liquidity parameter for spectator predictions
      * @param demandSensitivity LMSR demand sensitivity in basis points
      * @return The address of the newly created Contest contract
      * 
