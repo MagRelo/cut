@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useMemo } from "react";
+import React, { Fragment, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild, DialogTitle } from "@headlessui/react";
 import { parseUnits } from "viem";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
@@ -6,12 +6,25 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import { type Contest } from "../../types/contest";
 
+interface EntryData {
+  entryId: string;
+  price: bigint;
+  priceFormatted: string;
+  balance: bigint;
+  balanceFormatted: string;
+  totalSupply: bigint;
+  totalSupplyFormatted: string;
+  impliedWinnings: bigint;
+  impliedWinningsFormatted: string;
+  hasPosition: boolean;
+}
+
 interface PredictionEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   contest: Contest;
   entryId: string | null;
-  entryData: any[];
+  entryData: EntryData[];
 }
 
 export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
@@ -43,26 +56,6 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
       setError(errorMsg);
     },
   });
-
-  // Calculate estimated tokens to receive
-  const estimatedTokens = useMemo(() => {
-    if (!amount || !selectedEntryInfo) return "0";
-
-    try {
-      const amountBigInt = parseUnits(amount, 18);
-      const entryInfo = selectedEntryInfo;
-
-      if (!entryInfo || !entryInfo.price || entryInfo.price === 0n) {
-        return "0";
-      }
-
-      // Calculate tokens = amount / price (both in wei)
-      const tokensWei = (amountBigInt * parseUnits("1", 18)) / entryInfo.price;
-      return (Number(tokensWei) / 1e18).toFixed(2);
-    } catch {
-      return "0";
-    }
-  }, [amount, selectedEntryInfo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,10 +210,12 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                         isProcessing ||
                         !amount ||
                         parseFloat(amount) <= 0 ||
-                        (platformTokenBalance &&
-                          paymentTokenBalance &&
-                          parseUnits(amount, 18) > platformTokenBalance &&
-                          parseUnits(amount, 6) > paymentTokenBalance)
+                        Boolean(
+                          platformTokenBalance &&
+                            paymentTokenBalance &&
+                            parseUnits(amount, 18) > platformTokenBalance &&
+                            parseUnits(amount, 6) > paymentTokenBalance
+                        )
                       }
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-all"
                     >

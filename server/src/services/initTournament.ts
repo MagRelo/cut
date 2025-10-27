@@ -177,7 +177,7 @@ export async function initTournament(pgaTourId: string) {
     for (const playerChunk of playerChunks) {
       // Get player profiles for this chunk
       const playerProfiles = await Promise.all(
-        playerChunk.map(async (player) => {
+        playerChunk.map(async (player: any) => {
           const profile = await getPlayerProfileOverview(player.pga_pgaTourId || "");
           return { playerId: player.id, profile };
         })
@@ -211,7 +211,7 @@ export async function initTournament(pgaTourId: string) {
     console.log(`- initTournament: Updated ${totalProfilesUpdated} player profiles.`);
 
     // Batch create TournamentPlayer records for all players in the field
-    const tournamentPlayerData = playersInField.map((player) => ({
+    const tournamentPlayerData = playersInField.map((player: any) => ({
       tournamentId: tournament.id,
       playerId: player.id,
     }));

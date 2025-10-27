@@ -35,11 +35,14 @@ export async function updateContestLineups() {
     console.log(`- Updating scores for ${contestLineups.length} contest lineups`);
 
     // update ContestLineup score
-    const updateContestScorePromises = contestLineups.map(async (contestLineup) => {
-      const totalScore = contestLineup.tournamentLineup.players.reduce((sum, lineupPlayer) => {
-        const player = lineupPlayer.tournamentPlayer;
-        return sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0);
-      }, 0);
+    const updateContestScorePromises = contestLineups.map(async (contestLineup: any) => {
+      const totalScore = contestLineup.tournamentLineup.players.reduce(
+        (sum: any, lineupPlayer: any) => {
+          const player = lineupPlayer.tournamentPlayer;
+          return sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0);
+        },
+        0
+      );
 
       // Update the in-memory object with the new score
       contestLineup.score = totalScore;
@@ -57,20 +60,20 @@ export async function updateContestLineups() {
     console.log(`- Updated contest lineup scores`);
 
     // update contest lineup positions
-    const contestLineupsByContest = contestLineups.reduce((acc, lineup) => {
+    const contestLineupsByContest = contestLineups.reduce((acc: any, lineup: any) => {
       const contestId = lineup.contestId;
       if (!acc[contestId]) {
         acc[contestId] = [];
       }
       acc[contestId].push(lineup);
       return acc;
-    }, {} as Record<string, typeof contestLineups>);
+    }, {} as Record<string, any>);
 
     // update ContestLineup position
     const positionUpdatePromises = Object.entries(contestLineupsByContest).map(
-      async ([_contestId, lineups]) => {
+      async ([_contestId, lineups]: [string, any]) => {
         // Sort lineups by score in descending order
-        const sortedLineups = [...lineups].sort((a, b) => {
+        const sortedLineups = [...lineups].sort((a: any, b: any) => {
           const scoreA = a.score ?? 0;
           const scoreB = b.score ?? 0;
           return scoreB - scoreA;

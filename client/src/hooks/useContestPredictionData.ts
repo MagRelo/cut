@@ -116,7 +116,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       supply &&
       supply > 0n &&
       totalSpectatorCollateral &&
-      totalSpectatorCollateral > 0n
+      (totalSpectatorCollateral as bigint) > 0n
     ) {
       impliedWinnings = (balance * (totalSpectatorCollateral as bigint)) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);

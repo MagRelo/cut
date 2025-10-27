@@ -101,7 +101,7 @@ tournamentRouter.get("/active", async (c) => {
     ]);
 
     // Transform players to match PlayerWithTournamentData type
-    const playersWithTournamentData = players.map((player) =>
+    const playersWithTournamentData = players.map((player: any) =>
       transformPlayerWithTournamentData(player, tournament.id)
     );
 

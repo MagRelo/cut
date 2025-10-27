@@ -70,7 +70,7 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
     const formattedLineup = {
       id: tournamentLineup.id,
       name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer) =>
+      players: lineupEntries.map((lineupPlayer: any) =>
         transformLineupPlayer(lineupPlayer, tournamentId)
       ),
     };
@@ -156,7 +156,7 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
     const formattedLineup = {
       id: tournamentLineup.id,
       name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer) =>
+      players: lineupEntries.map((lineupPlayer: any) =>
         transformLineupPlayer(lineupPlayer, tournamentLineup.tournamentId)
       ),
     };
@@ -190,7 +190,7 @@ lineupRouter.get("/lineup/:lineupId", requireAuth, async (c) => {
     const formattedLineup = {
       id: lineup.id,
       name: lineup.name,
-      players: lineup.players.map((lineupPlayer) =>
+      players: lineup.players.map((lineupPlayer: any) =>
         transformLineupPlayer(lineupPlayer, lineup.tournamentId)
       ),
     };
@@ -214,10 +214,10 @@ lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
     });
 
     // Transform the data into TournamentLineup type
-    const formattedLineups = lineups.map((lineup) => ({
+    const formattedLineups = lineups.map((lineup: any) => ({
       id: lineup.id,
       name: lineup.name,
-      players: lineup.players.map((lineupPlayer) =>
+      players: lineup.players.map((lineupPlayer: any) =>
         transformLineupPlayer(lineupPlayer, tournamentId)
       ),
     }));

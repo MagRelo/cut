@@ -45,14 +45,14 @@ contestRouter.get("/", async (c) => {
     });
 
     // Format the contests data to transform player structure
-    const formattedContests = contests.map((contest) => ({
+    const formattedContests = contests.map((contest: any) => ({
       ...contest,
-      contestLineups: contest.contestLineups.map((lineup) => ({
+      contestLineups: contest.contestLineups.map((lineup: any) => ({
         ...lineup,
         tournamentLineup: lineup.tournamentLineup
           ? {
               ...lineup.tournamentLineup,
-              players: lineup.tournamentLineup.players.map((playerData) =>
+              players: lineup.tournamentLineup.players.map((playerData: any) =>
                 transformLineupPlayer(playerData, validTournamentId)
               ),
             }
@@ -106,11 +106,11 @@ contestRouter.get("/:id", async (c) => {
     // Format the contest.contestLineups.tournamentLineup.players
     const formattedContest = {
       ...contest,
-      contestLineups: contest.contestLineups.map((lineup) => ({
+      contestLineups: contest.contestLineups.map((lineup: any) => ({
         ...lineup,
         tournamentLineup: {
           ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData) =>
+          players: lineup.tournamentLineup.players.map((playerData: any) =>
             transformLineupPlayer(playerData, contest.tournamentId)
           ),
         },
@@ -245,11 +245,11 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
     // Format the contest data
     const formattedContest = {
       ...contest,
-      contestLineups: contest.contestLineups.map((lineup) => ({
+      contestLineups: contest.contestLineups.map((lineup: any) => ({
         ...lineup,
         tournamentLineup: {
           ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData) =>
+          players: lineup.tournamentLineup.players.map((playerData: any) =>
             transformLineupPlayer(playerData, contest.tournamentId)
           ),
         },
@@ -327,11 +327,11 @@ contestRouter.delete(
       // Format the contest data
       const formattedContest = {
         ...contest,
-        contestLineups: contest.contestLineups.map((lineup) => ({
+        contestLineups: contest.contestLineups.map((lineup: any) => ({
           ...lineup,
           tournamentLineup: {
             ...lineup.tournamentLineup,
-            players: lineup.tournamentLineup.players.map((playerData) =>
+            players: lineup.tournamentLineup.players.map((playerData: any) =>
               transformLineupPlayer(playerData, contest.tournamentId)
             ),
           },
