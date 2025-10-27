@@ -30,7 +30,8 @@ export function TokenBalances({
   showCutTokenLink = false,
   showUsdcLink = false,
 }: TokenBalancesProps) {
-  const { platformTokenBalance, paymentTokenBalance, paymentTokenSymbol } = usePortoAuth();
+  const { platformTokenBalance, paymentTokenBalance, paymentTokenSymbol, platformTokenSymbol } =
+    usePortoAuth();
 
   // round balance to 2 decimal points for payment tokens (6 decimals)
   const formattedPaymentBalance = (balance: bigint) => {
@@ -56,7 +57,7 @@ export function TokenBalances({
         {/* CUT Token */}
         <CutLogo />
         <div className="text-sm text-gray-600 font-semibold">
-          CUT
+          {platformTokenSymbol || "CUT"}
           {showCutTokenLink && (
             <Link
               to="/cut"
