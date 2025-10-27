@@ -149,7 +149,11 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Estimated Winnings:</span>
                     <span className="font-semibold text-green-600">
-                      ~{parseFloat(position.impliedWinningsFormatted).toFixed(2)} CUT
+                      ~
+                      {parseFloat(position.impliedWinningsFormatted) < 0.01
+                        ? "< 0.01"
+                        : parseFloat(position.impliedWinningsFormatted).toFixed(2)}{" "}
+                      CUT
                     </span>
                   </div>
                 </div>

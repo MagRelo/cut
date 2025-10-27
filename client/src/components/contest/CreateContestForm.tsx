@@ -165,7 +165,9 @@ export const CreateContestForm = () => {
 
   // Get parameters from environment variables
   const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
-  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "1000000";
+  // liquidityParameter controls LMSR price sensitivity
+  // Recommended: 10-50 CUT = 2.5e18 | 50-100 CUT = 5e18 | 100-500 CUT = 2.5e19 | 500+ CUT = 5e19
+  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "5000000000000000000";
   const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
   const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
   const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
@@ -335,7 +337,10 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label className="block font-medium">Liquidity Parameter</label>
-          <div className="p-2 bg-gray-100 rounded-md font-mono">{liquidityParameter}</div>
+          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs">{liquidityParameter}</div>
+          <div className="text-xs text-gray-500">
+            Controls LMSR price sensitivity (higher = more stable prices)
+          </div>
         </div>
 
         <div className="space-y-2">

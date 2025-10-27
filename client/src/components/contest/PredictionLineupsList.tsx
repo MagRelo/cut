@@ -21,13 +21,55 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   }, [contest.contestLineups]);
 
   // Fetch prediction data for all entries
-  const { entryData, canPredict, isLoading } = useContestPredictionData({
-    contestAddress: contest.address,
-    entryIds,
-    enabled: true,
-  });
+  const { entryData, canPredict, isLoading, totalSpectatorCollateralFormatted } =
+    useContestPredictionData({
+      contestAddress: contest.address,
+      entryIds,
+      enabled: true,
+    });
 
-  // Calculate relative odds and betting indicators
+  // Calculate market stats
+  const marketStats = useMemo(() => {
+    const totalPot = parseFloat(totalSpectatorCollateralFormatted);
+    const totalSupplySum = entryData.reduce(
+      (sum, e) => sum + parseFloat(e.totalSupplyFormatted),
+      0
+    );
+
+    return {
+      totalPot,
+      totalSupplySum,
+    };
+  }, [entryData, totalSpectatorCollateralFormatted]);
+
+  // Calculate what a $10 bet would win for each entry
+  const calculateWinnings = (price: number, supply: number) => {
+    if (price === 0) return 0;
+
+    const betAmount = 10;
+
+    // $10 buys you (10 / price) tokens
+    const tokensFromBet = betAmount / price;
+
+    // After your purchase, the supply increases
+    const newSupply = supply + tokensFromBet;
+
+    // After your bet, the prize pool increases by your bet amount
+    // (assuming no fees for now - adjust if there's a platform fee)
+    const newTotalPot = marketStats.totalPot + betAmount;
+
+    // If entry wins, your payout = (your tokens / new total tokens) * new total pot
+    const payout = (tokensFromBet / newSupply) * newTotalPot;
+
+    return payout;
+  };
+
+  // Calculate each entry's share of the market
+  const calculateMarketShare = (supply: number) => {
+    if (marketStats.totalSupplySum === 0) return 0;
+    return (supply / marketStats.totalSupplySum) * 100;
+  };
+
   const priceStats = useMemo(() => {
     const prices = entryData.map((e) => parseFloat(e.priceFormatted)).filter((p) => p > 0);
     if (prices.length === 0) return { min: 0, max: 0, avg: 0, totalEntries: 0 };
@@ -109,46 +151,63 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   return (
     <>
-      <div className="mt-1">
+      {/* Total Pot Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-3">
+        <div className="text-center">
+          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
+            Prediction Prize Pool
+          </div>
+          <div className="text-2xl font-bold text-gray-900">${marketStats.totalPot.toFixed(2)}</div>
+        </div>
+      </div>
+
+      {/* Lineups */}
+      <div className="space-y-2">
         {entryData.map((entry) => {
           const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
           const userName = lineup?.user?.name || "Unknown";
           const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+          const supply = parseFloat(entry.totalSupplyFormatted);
           const price = parseFloat(entry.priceFormatted);
-          const indicator = getOddsIndicator(price);
+          const marketShare = calculateMarketShare(supply);
+          const potentialWinnings = calculateWinnings(price, supply);
 
-          // Normalize odds around 1.0 (cheap < 1, expensive > 1)
-          // barWidth ranges from 25% (long shot) to 85% (favorite)
-          // Convert to normalized odds: 25% → 0.5, 50% → 1.0, 85% → 1.7
-          const normalizedOdds = parseFloat(indicator.barWidth) / 50;
+          // Debug log
+          // console.log("Entry debug:", {
+          //   entryId: entry.entryId,
+          //   supply,
+          //   price,
+          //   marketShare,
+          //   potentialWinnings,
+          //   totalPot: marketStats.totalPot,
+          // });
 
           return (
             <div
               key={entry.entryId}
               onClick={() => setSelectedEntryId(entry.entryId)}
               className={`${
-                entry.hasPosition ? "bg-blue-50" : "bg-white"
-              } rounded-sm p-3 mb-1 cursor-pointer hover:bg-gray-50 transition-colors`}
+                entry.hasPosition ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200"
+              } border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all`}
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 mb-2">
                 {/* Left - User & Lineup Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                    {userName}
-                  </div>
+                  <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
                   <div className="text-xs text-gray-500 truncate">{lineupName}</div>
-                  {/* {entry.hasPosition && (
-                    <div className="text-xs text-blue-600 font-medium mt-0.5">✓ Active bet</div>
-                  )} */}
                 </div>
 
-                {/* Right - Market Info */}
+                {/* Right - Market Share */}
                 <div className="text-right flex-shrink-0">
-                  <div className={`text-xs font-semibold ${indicator.color}`}>
-                    {normalizedOdds.toFixed(2)}x
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">{indicator.barWidth} volume</div>
+                  <div className="text-xs font-medium text-gray-600">Market Share</div>
+                  <div className="text-sm font-bold text-blue-600">{marketShare.toFixed(1)}%</div>
                 </div>
+              </div>
+
+              {/* Winnings Scenario */}
+              <div className="bg-gray-50 rounded px-2 py-1.5 text-xs text-gray-700">
+                <span className="font-medium">$10 bet wins you</span>{" "}
+                <span className="font-bold text-green-600">~${potentialWinnings.toFixed(2)}</span>
               </div>
             </div>
           );

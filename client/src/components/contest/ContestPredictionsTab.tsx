@@ -62,9 +62,9 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
   // Check if user needs to connect wallet
   if (!userAddress) {
     return (
-      <div className="p-2 space-y-4">
+      <div className="p-2 space-y-4 mt-4">
         {/* Wallet Connection Prompt */}
-        <div className="bg-white rounded-lg shadow p-6 text-center space-y-4">
+        <div className="bg-white p-2 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
             <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -74,35 +74,10 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
               />
             </svg>
             <p className="text-gray-600 text-sm font-display">
-              <b>Connect Wallet</b> to place predictions
+              <b>Sign In</b> to place predictions
             </p>
           </div>
           <Connect />
-        </div>
-
-        {/* Info Panel */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3 font-display">
-            How Predictions Work
-          </h4>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">•</span>
-              <span>Place predictions on any entry using CUT tokens (dynamic LMSR pricing)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">•</span>
-              <span>Winner-take-all: only predictions on the winning entry receive payouts</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">•</span>
-              <span>Withdraw anytime before settlement for 100% refund (including fees)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">•</span>
-              <span>Entry fees (15%) augment prize pool and reward popular entries</span>
-            </li>
-          </ul>
         </div>
       </div>
     );
