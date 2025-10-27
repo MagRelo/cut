@@ -125,7 +125,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     return {
       entryId,
       price: price || 0n,
-      priceFormatted: price ? formatUnits(price, 18) : "0",
+      priceFormatted: price ? formatUnits(price, 6) : "0", // Price uses 6 decimals (PRICE_PRECISION = 1e6)
       balance: balance || 0n,
       balanceFormatted: balance ? formatUnits(balance, 18) : "0",
       totalSupply: supply || 0n,

@@ -92,29 +92,9 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   return (
     <div className="bg-white rounded-sm">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 font-display px-4 pt-4">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4 font-display px-2 pt-4">
         Your Predictions
       </h3>
-
-      {/* Prize Pool Summary */}
-      {/* {parseFloat(totalSpectatorCollateralFormatted) > 0 && (
-        <div className="mx-4 mb-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-gray-700">Total Prize Pool:</span>
-            <span className="text-lg font-bold text-blue-600">
-              {parseFloat(totalSpectatorCollateralFormatted).toFixed(2)} CUT
-            </span>
-          </div>
-          {totalPotentialWinnings > 0 && (
-            <div className="flex justify-between items-center pt-2 border-t border-blue-200">
-              <span className="text-xs text-gray-600">Your max potential (if all win):</span>
-              <span className="text-sm font-bold text-green-600">
-                ~{totalPotentialWinnings.toFixed(2)} CUT
-              </span>
-            </div>
-          )}
-        </div>
-      )} */}
 
       {/* Error Message */}
       {error && (
@@ -131,21 +111,20 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
           const isWithdrawing = withdrawingEntryId === position.entryId;
 
           return (
-            <div key={position.entryId} className="p-4 border border-gray-200 rounded-sm">
+            <div key={position.entryId} className="p-4 border border-gray-300 rounded-sm">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-semibold text-gray-900 font-display">
                     {userName} - {lineupName}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">Entry #{position.entryId}</div>
                 </div>
                 <div className="flex items-center px-2 py-1 bg-blue-100 rounded text-blue-700 text-xs font-semibold">
-                  ✓ Active Bet
+                  ✓ Active Position
                 </div>
               </div>
 
               {parseFloat(position.impliedWinningsFormatted) > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="mt-2 pt-2 ">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Estimated Winnings:</span>
                     <span className="font-semibold text-green-600">
@@ -176,6 +155,10 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                       "Withdraw"
                     )}
                   </button>
+
+                  <div className="text-center text-xs text-gray-500 mt-2">
+                    Entry #{position.entryId}
+                  </div>
                 </div>
               )}
             </div>

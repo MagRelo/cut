@@ -14,7 +14,9 @@ function loadContractAddresses(network: "sepolia" | "base" = "sepolia") {
 
     return {
       depositManagerAddress: config.depositManagerAddress.toLowerCase(),
-      escrowFactoryAddress: config.escrowFactoryAddress.toLowerCase(),
+      contestFactoryAddress: (
+        config.contestFactoryAddress || config.escrowFactoryAddress
+      ).toLowerCase(),
       paymentTokenAddress: config.paymentTokenAddress?.toLowerCase(),
       platformTokenAddress: config.platformTokenAddress?.toLowerCase(),
     };
@@ -76,13 +78,13 @@ async function isSponsoredContract(
     // Load contract addresses from the appropriate network config
     const {
       depositManagerAddress,
-      escrowFactoryAddress,
+      contestFactoryAddress,
       paymentTokenAddress,
       platformTokenAddress,
     } = loadContractAddresses(network);
 
     // console.log({ depositManagerAddress });
-    // console.log({ escrowFactoryAddress });
+    // console.log({ contestFactoryAddress });
     // console.log({ paymentTokenAddress });
     // console.log({ platformTokenAddress });
     // console.log({ to: addresses });
@@ -106,7 +108,7 @@ async function isSponsoredContract(
     const allSponsored = addresses.every(
       (address: any) =>
         address === depositManagerAddress ||
-        address === escrowFactoryAddress ||
+        address === contestFactoryAddress ||
         address === paymentTokenAddress ||
         address === platformTokenAddress ||
         contestAddresses.includes(address)

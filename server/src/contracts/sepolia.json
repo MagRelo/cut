@@ -1,7 +1,7 @@
 {
-  "paymentTokenAddress": "0x68cC5fB83C5eFf2B869527Fc46a5975cDD5cBABB",
-  "platformTokenAddress": "0xC2F9a0fdc030Afe96a5993d76c142C1ea93736Ea",
-  "depositManagerAddress": "0x4466Ef72084211F058C758eBCac50442D6453a21",
-  "contestFactoryAddress": "0x76f05a9c7D956ba72F67e650980205623de3F0De",
-  "mockCTokenAddress": "0xfc6ac3d39f51cABCBa6598dbed85875a6EeeF117"
+  "paymentTokenAddress": "0xbFf800B3D7D3bF336bBE1fF2A4205A890FfE03F4",
+  "platformTokenAddress": "0xDD1984eEcE35EDf0A0d25F0A3F186Fc79FBCC5A7",
+  "depositManagerAddress": "0x651BFAd625492cDC69f079DDd5Eed435A2B3eC2F",
+  "contestFactoryAddress": "0xbC1a164F17fD362E492921b66A40345566025691",
+  "mockCTokenAddress": "0xd361f7dC2aa1a2bfEAeD83f373171a359276694D"
 }

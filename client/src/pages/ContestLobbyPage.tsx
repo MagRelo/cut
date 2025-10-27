@@ -116,7 +116,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Lineups ({contest.contestLineups?.length})
+              Lineups
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -129,7 +129,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Predictions
+              Winner Prop
             </Tab>
             {!isTournamentEditable && (
               <Tab

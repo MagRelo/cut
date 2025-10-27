@@ -12,15 +12,6 @@ interface PredictionEntryModalProps {
   contest: Contest;
   entryId: string | null;
   entryData: any[];
-  priceStats: { min: number; max: number; avg: number; totalEntries: number };
-  getOddsIndicator: (price: number) => {
-    label: string;
-    emoji: string;
-    color: string;
-    bgColor: string;
-    barWidth: string;
-    description?: string;
-  };
 }
 
 export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
@@ -29,8 +20,6 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   contest,
   entryId,
   entryData,
-  priceStats,
-  getOddsIndicator,
 }) => {
   const { platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const [amount, setAmount] = useState<string>("");
@@ -108,9 +97,6 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
 
   if (!selectedEntryInfo) return null;
 
-  const price = parseFloat(selectedEntryInfo.priceFormatted);
-  const indicator = getOddsIndicator(price);
-
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -149,33 +135,16 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                  {/* Odds Display */}
-                  <div className={`${indicator.bgColor} border border-gray-200 rounded-lg p-3`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-700 font-medium">Market Sentiment:</span>
-                      <span className={`font-bold ${indicator.color} flex items-center gap-1`}>
-                        <span className="text-xl">{indicator.emoji}</span>
-                        {indicator.label}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${indicator.bgColor} opacity-70`}
-                        style={{ width: indicator.barWidth }}
-                      />
-                    </div>
-                  </div>
-
                   {/* Amount Input */}
                   <div>
                     <label
-                      htmlFor="bet-amount"
+                      htmlFor="position-amount"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Bet Amount (CUT)
+                      Position Amount (CUT)
                     </label>
                     <input
-                      id="bet-amount"
+                      id="position-amount"
                       type="number"
                       step="0.01"
                       min="0"
@@ -188,11 +157,11 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     />
                   </div>
 
-                  {/* Betting Summary */}
+                  {/* Position Summary */}
                   {amount && parseFloat(amount) > 0 && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Your bet:</span>
+                        <span className="text-gray-600">Your position:</span>
                         <span className="font-semibold text-gray-900">{amount} CUT</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-500">
@@ -261,7 +230,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                           Placing...
                         </span>
                       ) : (
-                        "Place Bet"
+                        "Place Position"
                       )}
                     </button>
                   </div>

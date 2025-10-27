@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
 /**
- * Configure React Query with sensible defaults for Bet the Cut
+ * Configure React Query with sensible defaults for the Cut
  *
  * Key configurations:
  * - staleTime: Data is fresh for 1 minute before refetching
