@@ -25,7 +25,9 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     oracleFee: number,
     expiry: bigint,
     liquidityParameter: bigint,
-    demandSensitivity: number
+    demandSensitivity: number,
+    prizeShareBps: number,
+    userShareBps: number
   ) => {
     return [
       {
@@ -38,6 +40,8 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           expiry,
           liquidityParameter,
           demandSensitivity,
+          prizeShareBps,
+          userShareBps,
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,

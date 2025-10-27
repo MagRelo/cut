@@ -30,6 +30,8 @@ contract ContestTest is Test {
     uint256 public constant ORACLE_FEE = 100; // 1%
     uint256 public constant LIQUIDITY = 1000e6;
     uint256 public constant DEMAND_SENSITIVITY = 500; // 5%
+    uint256 public constant PRIZE_SHARE = 750; // 7.5%
+    uint256 public constant USER_SHARE = 750; // 7.5%
     uint256 public constant EXPIRY = 365 days;
     
     function setUp() public {
@@ -42,7 +44,9 @@ contract ContestTest is Test {
             ORACLE_FEE,
             block.timestamp + EXPIRY,
             LIQUIDITY,
-            DEMAND_SENSITIVITY
+            DEMAND_SENSITIVITY,
+            PRIZE_SHARE,
+            USER_SHARE
         );
     }
     

@@ -35,6 +35,8 @@ contract ContestFactory {
      * @param expiry The expiration timestamp for the contest
      * @param liquidityParameter LMSR liquidity parameter for spectator predictions
      * @param demandSensitivity LMSR demand sensitivity in basis points
+     * @param prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
+     * @param userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
      * @return The address of the newly created Contest contract
      * 
      * Note: paymentToken is typically the PlatformToken (CUT) address
@@ -44,6 +46,7 @@ contract ContestFactory {
      * - oracle must not be zero address
      * - contestantDepositAmount must be greater than 0
      * - expiry must be in the future
+     * - prizeShareBps + userShareBps must not exceed 100%
      * 
      * Emits a {ContestCreated} event
      */
@@ -54,7 +57,9 @@ contract ContestFactory {
         uint256 oracleFee,
         uint256 expiry,
         uint256 liquidityParameter,
-        uint256 demandSensitivity
+        uint256 demandSensitivity,
+        uint256 prizeShareBps,
+        uint256 userShareBps
     ) external returns (address) {
         Contest contest = new Contest(
             paymentToken,
@@ -63,7 +68,9 @@ contract ContestFactory {
             oracleFee,
             expiry,
             liquidityParameter,
-            demandSensitivity
+            demandSensitivity,
+            prizeShareBps,
+            userShareBps
         );
         
         address contestAddress = address(contest);

@@ -29,7 +29,9 @@ contract ContestFactoryTest is Test {
             100, // 1% oracle fee
             expiry,
             1000e18, // liquidity parameter
-            500 // demand sensitivity 5%
+            500, // demand sensitivity 5%
+            750, // prize share 7.5%
+            750  // user share 7.5%
         );
         
         assertEq(factory.contestHost(contest), address(this));
@@ -53,7 +55,9 @@ contract ContestFactoryTest is Test {
                 100,
                 expiry + i * 1 days,
                 1000e18,
-                500
+                500,
+                750, // prize share
+                750  // user share
             );
         }
         

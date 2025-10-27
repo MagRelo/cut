@@ -167,6 +167,8 @@ export const CreateContestForm = () => {
   const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
   const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "1000000";
   const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
+  const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
+  const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
 
   // Effect to handle pending contest data state
   useEffect(() => {
@@ -199,6 +201,8 @@ export const CreateContestForm = () => {
       oracleFee,
       liquidityParameter,
       demandSensitivity,
+      prizeShareBps,
+      userShareBps,
     });
 
     // Create and execute the contest creation calls
@@ -211,7 +215,9 @@ export const CreateContestForm = () => {
       oracleFee, // oracleFee in bps
       BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
       BigInt(liquidityParameter), // liquidityParameter
-      demandSensitivity // demandSensitivity in bps
+      demandSensitivity, // demandSensitivity in bps
+      prizeShareBps, // prizeShareBps
+      userShareBps // userShareBps
     );
 
     await execute(calls);

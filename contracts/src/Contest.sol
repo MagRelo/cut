@@ -20,7 +20,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * 
  * Layer 2 (Spectators):
  * - Spectators predict on contestants using LMSR pricing
- * - 15% entry fee augments Layer 1 prizes and pays contestant bonuses
+ * - Configurable entry fee split between prize pool and contestant bonuses
  * - Winner-take-all redemption based on Layer 1 results
  * - Can withdraw before settlement (full refund with deferred fees)
  * 
@@ -50,8 +50,11 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Demand sensitivity in basis points - controls LMSR price curve steepness
     uint256 public immutable demandSensitivityBps;
     
-    /// @notice Entry fee for spectators in basis points (e.g., 1500 = 15%)
-    uint256 public constant SPECTATOR_ENTRY_FEE_BPS = 1500;
+    /// @notice Portion of spectator deposit that goes to prize pool in basis points (e.g., 750 = 7.5%)
+    uint256 public immutable prizeShareBps;
+    
+    /// @notice Portion of spectator deposit that goes to contestant bonuses in basis points (e.g., 750 = 7.5%)
+    uint256 public immutable userShareBps;
     
     /// @notice Denominator for basis point calculations
     uint256 public constant BPS_DENOMINATOR = 10000;
@@ -154,6 +157,8 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param _expiryTimestamp When contest expires (for refunds)
      * @param _liquidityParameter LMSR curve parameter
      * @param _demandSensitivityBps LMSR price sensitivity parameter
+     * @param _prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
+     * @param _userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
      */
     constructor(
         address _paymentToken,
@@ -162,7 +167,9 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 _oracleFeeBps,
         uint256 _expiryTimestamp,
         uint256 _liquidityParameter,
-        uint256 _demandSensitivityBps
+        uint256 _demandSensitivityBps,
+        uint256 _prizeShareBps,
+        uint256 _userShareBps
     ) ERC1155("") {
         require(_paymentToken != address(0), "Invalid payment token");
         require(_oracle != address(0), "Invalid oracle");
@@ -171,6 +178,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         require(_expiryTimestamp > block.timestamp, "Expiry in past");
         require(_liquidityParameter > 0, "Invalid liquidity parameter");
         require(_demandSensitivityBps <= BPS_DENOMINATOR, "Invalid demand sensitivity");
+        require(_prizeShareBps + _userShareBps <= BPS_DENOMINATOR, "Total fees exceed 100%");
         
         paymentToken = IERC20(_paymentToken);
         oracle = _oracle;
@@ -179,6 +187,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         expiryTimestamp = _expiryTimestamp;
         liquidityParameter = _liquidityParameter;
         demandSensitivityBps = _demandSensitivityBps;
+        prizeShareBps = _prizeShareBps;
+        userShareBps = _userShareBps;
         
         state = ContestState.OPEN;
     }
@@ -236,14 +246,16 @@ contract Contest is ERC1155, ReentrancyGuard {
                     // Burn tokens
                     _burn(spectator, entryId, tokenBalance);
                     
-                    // Calculate fee reversal
-                    uint256 feeInDeposit = (depositedOnThisEntry * SPECTATOR_ENTRY_FEE_BPS) / BPS_DENOMINATOR;
-                    uint256 collateralInDeposit = depositedOnThisEntry - feeInDeposit;
+                    // Calculate fee split reversal
+                    uint256 prizeShare = (depositedOnThisEntry * prizeShareBps) / BPS_DENOMINATOR;
+                    uint256 userShare = (depositedOnThisEntry * userShareBps) / BPS_DENOMINATOR;
+                    uint256 totalFee = prizeShare + userShare;
+                    uint256 collateralInDeposit = depositedOnThisEntry - totalFee;
                     
                     // Reverse accounting
                     netPosition[entryId] -= int256(tokenBalance);
-                    accumulatedPrizeBonus -= feeInDeposit / 2;
-                    entryBonuses[entryId] -= feeInDeposit / 2;
+                    accumulatedPrizeBonus -= prizeShare;
+                    entryBonuses[entryId] -= userShare;
                     totalSpectatorCollateral -= collateralInDeposit;
                     spectatorTotalDeposited[spectator] -= depositedOnThisEntry;
                     spectatorDepositedPerEntry[spectator][entryId] = 0;
@@ -335,9 +347,11 @@ contract Contest is ERC1155, ReentrancyGuard {
             isSpectator[msg.sender] = true;
         }
         
-        // Calculate entry fee (held until settlement)
-        uint256 entryFee = (amount * SPECTATOR_ENTRY_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 collateral = amount - entryFee;
+        // Split fees based on configured shares
+        uint256 prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
+        uint256 userShare = (amount * userShareBps) / BPS_DENOMINATOR;
+        uint256 totalFee = prizeShare + userShare;
+        uint256 collateral = amount - totalFee;
         
         // Get current LMSR price
         uint256 price = calculateEntryPrice(entryId);
@@ -346,8 +360,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 tokensToMint = (collateral * PRICE_PRECISION) / price;
         
         // Accumulate fees (distributed on settlement)
-        accumulatedPrizeBonus += entryFee / 2;
-        entryBonuses[entryId] += entryFee / 2;
+        accumulatedPrizeBonus += prizeShare;
+        entryBonuses[entryId] += userShare;
         
         // Transfer payment
         paymentToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -395,17 +409,19 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 userTotalTokens = balanceOf(msg.sender, entryId);
         uint256 refundAmount = (spectatorTotalDeposited[msg.sender] * tokenAmount) / userTotalTokens;
         
-        // Calculate fee portion to reverse
-        uint256 feeInRefund = (refundAmount * SPECTATOR_ENTRY_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 collateralInRefund = refundAmount - feeInRefund;
+        // Calculate fee split reversal
+        uint256 prizeShare = (refundAmount * prizeShareBps) / BPS_DENOMINATOR;
+        uint256 userShare = (refundAmount * userShareBps) / BPS_DENOMINATOR;
+        uint256 totalFee = prizeShare + userShare;
+        uint256 collateralInRefund = refundAmount - totalFee;
         
         // Burn tokens
         _burn(msg.sender, entryId, tokenAmount);
         netPosition[entryId] -= int256(tokenAmount);
         
         // Reverse fee accounting
-        accumulatedPrizeBonus -= feeInRefund / 2;
-        entryBonuses[entryId] -= feeInRefund / 2;
+        accumulatedPrizeBonus -= prizeShare;
+        entryBonuses[entryId] -= userShare;
         
         // Reverse collateral
         totalSpectatorCollateral -= collateralInRefund;
