@@ -1,0 +1,190 @@
+import React, { useState, useMemo } from "react";
+import { useAccount } from "wagmi";
+import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
+import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { type Contest } from "../../types/contest";
+
+interface PredictionPositionsListProps {
+  contest: Contest;
+}
+
+export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = ({ contest }) => {
+  const { address: userAddress } = useAccount();
+  const [withdrawingEntryId, setWithdrawingEntryId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get entry IDs from contest lineups
+  const entryIds = useMemo(() => {
+    return (
+      contest.contestLineups
+        ?.filter((lineup) => lineup.entryId)
+        .map((lineup) => lineup.entryId as string) || []
+    );
+  }, [contest.contestLineups]);
+
+  // Fetch prediction data
+  const { entryData, canWithdraw, isLoading } = useContestPredictionData({
+    contestAddress: contest.address,
+    entryIds,
+    enabled: !!userAddress,
+  });
+
+  // Filter to only show entries where user has a position
+  const userPositions = useMemo(() => {
+    return entryData.filter((entry) => entry.hasPosition);
+  }, [entryData]);
+
+  // Blockchain transaction hook
+  const { execute, isProcessing, createWithdrawPredictionCalls } = useWithdrawPrediction({
+    onSuccess: async () => {
+      setWithdrawingEntryId(null);
+      setError(null);
+    },
+    onError: (err) => {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(errorMsg);
+      setWithdrawingEntryId(null);
+    },
+  });
+
+  const handleWithdraw = async (entryId: string, tokenAmount: bigint) => {
+    setError(null);
+    setWithdrawingEntryId(entryId);
+
+    try {
+      const calls = createWithdrawPredictionCalls(contest.address, parseInt(entryId), tokenAmount);
+      await execute(calls);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(errorMsg);
+      setWithdrawingEntryId(null);
+    }
+  };
+
+  if (!userAddress) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+        <p className="text-gray-600 text-sm font-display">
+          Connect your wallet to view your prediction positions.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <LoadingSpinnerSmall />
+      </div>
+    );
+  }
+
+  if (userPositions.length === 0) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+        <p className="text-gray-600 text-sm font-display">
+          You haven't placed any predictions yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-sm">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4 font-display px-4 pt-4">
+        Your Predictions
+      </h3>
+
+      {/* Prize Pool Summary */}
+      {/* {parseFloat(totalSpectatorCollateralFormatted) > 0 && (
+        <div className="mx-4 mb-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-gray-700">Total Prize Pool:</span>
+            <span className="text-lg font-bold text-blue-600">
+              {parseFloat(totalSpectatorCollateralFormatted).toFixed(2)} CUT
+            </span>
+          </div>
+          {totalPotentialWinnings > 0 && (
+            <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+              <span className="text-xs text-gray-600">Your max potential (if all win):</span>
+              <span className="text-sm font-bold text-green-600">
+                ~{totalPotentialWinnings.toFixed(2)} CUT
+              </span>
+            </div>
+          )}
+        </div>
+      )} */}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded-md p-3">
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      <div className="divide-y divide-gray-200">
+        {userPositions.map((position) => {
+          const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
+          const userName = lineup?.user?.name || "Unknown";
+          const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+          const isWithdrawing = withdrawingEntryId === position.entryId;
+
+          return (
+            <div key={position.entryId} className="p-4 border border-gray-200 rounded-sm">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <div className="font-semibold text-gray-900 font-display">
+                    {userName} - {lineupName}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Entry #{position.entryId}</div>
+                </div>
+                <div className="flex items-center px-2 py-1 bg-blue-100 rounded text-blue-700 text-xs font-semibold">
+                  ✓ Active Bet
+                </div>
+              </div>
+
+              {parseFloat(position.impliedWinningsFormatted) > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Estimated Winnings:</span>
+                    <span className="font-semibold text-green-600">
+                      ~{parseFloat(position.impliedWinningsFormatted).toFixed(2)} CUT
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Withdraw Button */}
+              {canWithdraw && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <button
+                    onClick={() => handleWithdraw(position.entryId, position.balance)}
+                    disabled={isProcessing}
+                    className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
+                  >
+                    {isWithdrawing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <LoadingSpinnerSmall />
+                        Withdrawing...
+                      </span>
+                    ) : (
+                      "Withdraw"
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-4 pb-4 text-xs text-gray-500 border-t border-gray-200 pt-4 mt-2">
+        <p>
+          <strong>Note:</strong> Current value is calculated using live LMSR pricing. Actual payout
+          depends on contest settlement.
+        </p>
+      </div>
+    </div>
+  );
+};

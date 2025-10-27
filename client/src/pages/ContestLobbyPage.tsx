@@ -11,6 +11,7 @@ import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import { ContestSettings } from "../components/contest/ContestSettings";
+import { ContestPredictionsTab } from "../components/contest/ContestPredictionsTab";
 import { Connect } from "../components/user/Connect";
 
 function classNames(...classes: string[]) {
@@ -117,6 +118,19 @@ export const ContestLobby: React.FC = () => {
             >
               Lineups ({contest.contestLineups?.length})
             </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                )
+              }
+            >
+              Predictions
+            </Tab>
             {!isTournamentEditable && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
@@ -186,6 +200,11 @@ export const ContestLobby: React.FC = () => {
                 contestLineups={contest?.contestLineups}
                 roundDisplay={contest?.tournament?.roundDisplay}
               />
+            </TabPanel>
+
+            {/* PREDICTIONS */}
+            <TabPanel>
+              <ContestPredictionsTab contest={contest} />
             </TabPanel>
 
             {/* PLAYERS - Only shown when NOT editable */}
