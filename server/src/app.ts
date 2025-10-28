@@ -29,6 +29,34 @@ app.use(
       return;
     }
 
+    // In production, skip logging static files
+    if (process.env.NODE_ENV === "production") {
+      const staticFilePatterns = [
+        "/manifest.json",
+        "/assets/",
+        "/favicon",
+        ".js",
+        ".css",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".svg",
+        ".ico",
+        ".webp",
+        ".woff",
+        ".woff2",
+        ".ttf",
+      ];
+
+      const isStaticFile = staticFilePatterns.some((pattern) => message.includes(pattern));
+
+      // Skip static files with 2xx status codes
+      const isSuccess = message.includes(" 2");
+      if (isStaticFile && isSuccess) {
+        return;
+      }
+    }
+
     // In development, log everything
     // In production, only log errors (status >= 400)
     const isError = message.includes(" 4") || message.includes(" 5");

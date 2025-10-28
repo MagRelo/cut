@@ -47,6 +47,7 @@ try {
   });
 
   console.log(`[SERVER] Server running on port ${port}`);
+  console.log(`[SERVER] Environment: ${process.env.NODE_ENV || "development"}`);
 
   // Graceful shutdown
   process.on("SIGTERM", () => {
