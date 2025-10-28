@@ -129,7 +129,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Winner Prop
+              Winner Pool
             </Tab>
             {!isTournamentEditable && (
               <Tab

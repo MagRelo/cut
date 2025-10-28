@@ -97,7 +97,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mt-2">
         <div className="text-center">
           <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-            Contest Winner Pool
+            Winner Pool Pot
           </div>
           <div className="text-2xl font-bold text-gray-900">${marketStats.totalPot.toFixed(2)}</div>
         </div>

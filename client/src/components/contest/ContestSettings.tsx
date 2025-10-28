@@ -102,6 +102,58 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   });
 
+  // Layer 1: Contestant Pool Data
+  const totalContestantDeposits = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalContestantDeposits",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const accumulatedPrizeBonus = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "accumulatedPrizeBonus",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  // Layer 2: Spectator/Prediction Market Data
+  const totalSpectatorCollateral = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalSpectatorCollateral",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const prizeShareBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "prizeShareBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const userShareBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "userShareBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
   // Map contract state number to readable string
   const getStatusLabel = (state: number | undefined) => {
     if (state === undefined) return "Unknown";
@@ -283,6 +335,55 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
                   {contractBalance.symbol}
                 </span>
+              </div>
+            )}
+
+            {/* Total Contestant Deposits */}
+            {totalContestantDeposits !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Contestant Deposits:</span>
+                <span className="text-gray-900">
+                  {Number(totalContestantDeposits) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Accumulated Prize Bonus */}
+            {accumulatedPrizeBonus !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Prize Bonus:</span>
+                <span className="text-gray-900">
+                  {Number(accumulatedPrizeBonus) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Total Spectator Collateral */}
+            {totalSpectatorCollateral !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Spectator Collateral:</span>
+                <span className="text-gray-900">
+                  {Number(totalSpectatorCollateral) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Prize Share BPS */}
+            {prizeShareBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Prize Share:</span>
+                <span className="text-gray-900">{Number(prizeShareBps) / 100}%</span>
+              </div>
+            )}
+
+            {/* User Share BPS */}
+            {userShareBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Contestant Bonus Share:</span>
+                <span className="text-gray-900">{Number(userShareBps) / 100}%</span>
               </div>
             )}
 
