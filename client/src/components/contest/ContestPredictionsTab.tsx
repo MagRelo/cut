@@ -29,6 +29,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
     contestAddress: contest.address,
     entryIds: entryIds.slice(0, 1), // Just need one entry to check state
     enabled: true,
+    chainId: contest.chainId,
   });
 
   // // State labels for display

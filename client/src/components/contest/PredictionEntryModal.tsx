@@ -164,16 +164,19 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
             >
               <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-xl transition-all">
                 {/* Header */}
-                <div className="bg-gray-800 px-6 py-4 text-white">
+                <div className="bg-gradient-to-r from-purple-700 to-purple-800 px-6 py-4 text-white">
                   <DialogTitle as="h3" className="text-lg font-semibold font-display">
                     Buy Shares
                   </DialogTitle>
-                  <p className="text-sm text-gray-300 mt-1">
-                    {userName} - {lineupName}
-                  </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                  {/* Lineup Info */}
+                  <div className="border-b border-gray-200 pb-4">
+                    <div className="text-base font-semibold text-gray-900">{userName}</div>
+                    <div className="text-sm text-gray-600 mt-0.5">{lineupName}</div>
+                  </div>
+
                   {/* Amount Input */}
                   <div>
                     <label
@@ -190,14 +193,14 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       disabled={isProcessing}
                       autoFocus
                     />
                   </div>
 
                   {/* Position Summary - Always Visible */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3 text-sm">
+                  <div className="bg-purple-50/30 border border-purple-100 rounded-lg p-4 space-y-3 text-sm">
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Position Amount:</span>
@@ -215,7 +218,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
 
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Estimated Payout:</span>
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-purple-700">
                           {metrics.potentialReturn > 0
                             ? `${metrics.potentialReturn.toFixed(2)} CUT`
                             : "0 CUT"}
@@ -225,7 +228,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
                         <div className="flex justify-between items-center ">
                           <span className="text-gray-600">Return:</span>
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-semibold text-purple-700">
                             {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
                           </span>
                         </div>
@@ -238,7 +241,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     <div className="text-xs">
                       {platformTokenBalance && parseUnits(amount, 18) > platformTokenBalance ? (
                         paymentTokenBalance && parseUnits(amount, 6) <= paymentTokenBalance ? (
-                          <div className="bg-blue-50 border border-blue-200 rounded p-2 text-blue-700">
+                          <div className="bg-purple-50 border border-purple-200 rounded p-2 text-purple-700">
                             Insufficient CUT tokens. Will automatically swap from USDC.
                           </div>
                         ) : (
@@ -280,7 +283,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                             parseUnits(amount, 6) > paymentTokenBalance
                         )
                       }
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
+                      className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
                     >
                       {isProcessing ? (
                         <span className="flex items-center justify-center gap-2">

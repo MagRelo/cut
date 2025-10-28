@@ -12,10 +12,14 @@ export enum ContestState {
   CLOSED = 5,
 }
 
+// Supported chain IDs
+type SupportedChainId = 8453 | 84532;
+
 interface UseContestPredictionDataOptions {
   contestAddress: string;
   entryIds?: string[]; // Array of entry IDs to fetch data for
   enabled?: boolean;
+  chainId?: number; // Optional chainId - if not provided, uses connected wallet's chain
 }
 
 /**
@@ -23,9 +27,10 @@ interface UseContestPredictionDataOptions {
  * Fetches LMSR prices, user balances, and contest state
  */
 export function useContestPredictionData(options: UseContestPredictionDataOptions) {
-  const { contestAddress, entryIds = [], enabled = true } = options;
+  const { contestAddress, entryIds = [], enabled = true, chainId: providedChainId } = options;
   const { address: userAddress } = useAccount();
-  const chainId = useChainId();
+  const walletChainId = useChainId();
+  const chainId = (providedChainId ?? walletChainId) as SupportedChainId;
 
   // Read contest state
   const { data: contestState, isLoading: isLoadingState } = useReadContract({

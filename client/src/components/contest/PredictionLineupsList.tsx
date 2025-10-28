@@ -26,6 +26,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       contestAddress: contest.address,
       entryIds,
       enabled: true,
+      chainId: contest.chainId,
     });
 
   // Calculate market stats
@@ -94,12 +95,14 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   return (
     <div>
       {/* Total Pot Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mt-2">
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-300 rounded-lg p-4 mt-2">
         <div className="text-center">
           <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-            Winner Pool Pot
+            Winner Pool
           </div>
-          <div className="text-2xl font-bold text-gray-900">${marketStats.totalPot.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-purple-700">
+            ${marketStats.totalPot.toFixed(2)}
+          </div>
         </div>
       </div>
 
@@ -131,7 +134,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                   {/* Right - CTA & Winnings */}
                   <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors">
+                    <button className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors">
                       BUY SHARES
                     </button>
                     <div className="text-xs text-gray-700">
