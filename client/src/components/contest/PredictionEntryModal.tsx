@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild, DialogTitle } from "@headlessui/react";
 import { parseUnits } from "viem";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
@@ -35,7 +35,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   entryData,
 }) => {
   const { platformTokenBalance, paymentTokenBalance } = usePortoAuth();
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
   // Find the entry data for the selected entry
@@ -44,10 +44,56 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   const userName = lineup?.user?.name || "Unknown";
   const lineupName = lineup?.tournamentLineup?.name || "Lineup";
 
+  // Calculate total prize pool from all entry supplies
+  const totalPrizePool = entryData.reduce((sum, entry) => {
+    return sum + parseFloat(entry.totalSupplyFormatted);
+  }, 0);
+
+  // Calculate opportunity metrics
+  const calculateOpportunityMetrics = () => {
+    if (!amount || parseFloat(amount) <= 0 || !selectedEntryInfo) {
+      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+    }
+
+    const positionAmount = parseFloat(amount);
+    const feePercentage = 0.15;
+    const netPosition = positionAmount * (1 - feePercentage);
+
+    const price = parseFloat(selectedEntryInfo.priceFormatted);
+    const currentSupply = parseFloat(selectedEntryInfo.totalSupplyFormatted);
+
+    // Tokens they'll receive
+    const tokensReceived = price > 0 ? netPosition / price : 0;
+
+    // New total supply after purchase
+    const newSupply = currentSupply + tokensReceived;
+
+    // % of supply owned
+    const ownershipPercent = newSupply > 0 ? (tokensReceived / newSupply) * 100 : 0;
+
+    // Prize pool after their position
+    const newPrizePool = totalPrizePool + netPosition;
+
+    // Potential return if this entry wins (winner-take-all)
+    const potentialReturn = newSupply > 0 ? (tokensReceived / newSupply) * newPrizePool : 0;
+
+    return { ownershipPercent, potentialReturn, tokensReceived };
+  };
+
+  const metrics = calculateOpportunityMetrics();
+
+  // Reset form when modal opens with new entry
+  useEffect(() => {
+    if (isOpen && entryId) {
+      setAmount("10");
+      setError(null);
+    }
+  }, [isOpen, entryId]);
+
   // Blockchain transaction hook
   const { execute, isProcessing, createAddPredictionCalls } = useAddPrediction({
     onSuccess: async () => {
-      setAmount("");
+      setAmount("10");
       setError(null);
       onClose();
     },
@@ -118,11 +164,11 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
             >
               <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-xl transition-all">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4 text-white">
+                <div className="bg-gray-800 px-6 py-4 text-white">
                   <DialogTitle as="h3" className="text-lg font-semibold font-display">
-                    Place Prediction
+                    Buy Shares
                   </DialogTitle>
-                  <p className="text-sm text-blue-100 mt-1">
+                  <p className="text-sm text-gray-300 mt-1">
                     {userName} - {lineupName}
                   </p>
                 </div>
@@ -150,25 +196,42 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     />
                   </div>
 
-                  {/* Position Summary */}
-                  {amount && parseFloat(amount) > 0 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Your position:</span>
-                        <span className="font-semibold text-gray-900">{amount} CUT</span>
+                  {/* Position Summary - Always Visible */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3 text-sm">
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Position Amount:</span>
+                        <span className="font-semibold text-gray-900">{amount || "0"} CUT</span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>Entry fee (15%):</span>
-                        <span>-{(parseFloat(amount) * 0.15).toFixed(2)} CUT</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <span className="text-gray-700 font-medium">Position value:</span>
-                        <span className="font-bold text-gray-900">
-                          {(parseFloat(amount) * 0.85).toFixed(2)} CUT
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Ownership Share:</span>
+                        <span className="font-semibold text-gray-900">
+                          {metrics.ownershipPercent > 0
+                            ? `${metrics.ownershipPercent.toFixed(2)}%`
+                            : "0%"}
                         </span>
                       </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Estimated Payout:</span>
+                        <span className="font-semibold text-gray-900">
+                          {metrics.potentialReturn > 0
+                            ? `${metrics.potentialReturn.toFixed(2)} CUT`
+                            : "0 CUT"}
+                        </span>
+                      </div>
+
+                      {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
+                        <div className="flex justify-between items-center ">
+                          <span className="text-gray-600">Return:</span>
+                          <span className="font-semibold text-gray-900">
+                            {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   {/* Balance Warning */}
                   {amount && parseFloat(amount) > 0 && (
@@ -176,11 +239,11 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       {platformTokenBalance && parseUnits(amount, 18) > platformTokenBalance ? (
                         paymentTokenBalance && parseUnits(amount, 6) <= paymentTokenBalance ? (
                           <div className="bg-blue-50 border border-blue-200 rounded p-2 text-blue-700">
-                            ℹ️ Insufficient CUT tokens. Will automatically swap from USDC.
+                            Insufficient CUT tokens. Will automatically swap from USDC.
                           </div>
                         ) : (
                           <div className="bg-red-50 border border-red-200 rounded p-2 text-red-700">
-                            ⚠️ Insufficient balance. Please add funds.
+                            Insufficient balance. Please add funds to continue.
                           </div>
                         )
                       ) : null}
@@ -217,7 +280,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                             parseUnits(amount, 6) > paymentTokenBalance
                         )
                       }
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-all"
+                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
                     >
                       {isProcessing ? (
                         <span className="flex items-center justify-center gap-2">
@@ -225,17 +288,16 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                           Placing...
                         </span>
                       ) : (
-                        "Place Position"
+                        "Buy Shares"
                       )}
                     </button>
                   </div>
 
                   {/* Info Note */}
-                  <div className="text-xs text-gray-500 pt-2 border-t border-gray-200">
-                    <p>
-                      💡 If this entry wins, you share the prize pool with other winners
-                      proportionally. You can withdraw for a 100% refund before settlement.
-                    </p>
+                  <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 space-y-1.5">
+                    <strong>Note:</strong> Current value is calculated using live LMSR pricing.
+                    Actual payout depends on contest settlement.
+                    <p>Withdrawals available for 100% refund while predictions are open.</p>
                   </div>
                 </form>
               </DialogPanel>

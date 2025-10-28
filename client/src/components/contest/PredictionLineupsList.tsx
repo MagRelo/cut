@@ -94,68 +94,70 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   return (
     <div>
       {/* Total Pot Header */}
-      {/* <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mt-2">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mt-2">
         <div className="text-center">
           <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
             Contest Winner Pool
           </div>
           <div className="text-2xl font-bold text-gray-900">${marketStats.totalPot.toFixed(2)}</div>
         </div>
-      </div> */}
+      </div>
 
       {/* Lineups */}
       <div className="space-y-2 mt-2">
-        {entryData.map((entry) => {
-          const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
-          const userName = lineup?.user?.name || "Unknown";
-          const lineupName = lineup?.tournamentLineup?.name || "Lineup";
-          const supply = parseFloat(entry.totalSupplyFormatted);
-          const price = parseFloat(entry.priceFormatted);
-          const marketShare = calculateMarketShare(supply);
-          const potentialWinnings = calculateWinnings(price, supply);
+        {[...entryData]
+          .sort((a, b) => parseFloat(b.priceFormatted) - parseFloat(a.priceFormatted))
+          .map((entry) => {
+            const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
+            const userName = lineup?.user?.name || "Unknown";
+            const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+            const supply = parseFloat(entry.totalSupplyFormatted);
+            const price = parseFloat(entry.priceFormatted);
+            const marketShare = calculateMarketShare(supply);
+            const potentialWinnings = calculateWinnings(price, supply);
 
-          return (
-            <div
-              key={entry.entryId}
-              onClick={() => setSelectedEntryId(entry.entryId)}
-              className="bg-white border-gray-200 border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                {/* Left - User & Lineup Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
-                  <div className="text-xs text-gray-500 truncate">{lineupName}</div>
+            return (
+              <div
+                key={entry.entryId}
+                onClick={() => setSelectedEntryId(entry.entryId)}
+                className="bg-white border-gray-200 border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  {/* Left - User & Lineup Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
+                    <div className="text-xs text-gray-500 truncate">{lineupName}</div>
+                  </div>
+
+                  {/* Right - CTA & Winnings */}
+                  <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                    <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors">
+                      BUY SHARES
+                    </button>
+                    <div className="text-xs text-gray-700">
+                      <span className="font-medium">$10 wins</span>{" "}
+                      <span className="font-bold text-green-600">
+                        ~${potentialWinnings.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Right - CTA & Winnings */}
-                <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors">
-                    BUY SHARES
-                  </button>
-                  <div className="text-xs text-gray-700">
-                    <span className="font-medium">$10 wins</span>{" "}
-                    <span className="font-bold text-green-600">
-                      ~${potentialWinnings.toFixed(2)}
-                    </span>
+                {/* Market Share Progress Bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Market Share: {marketShare.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gray-400 h-full rounded-full transition-all"
+                      style={{ width: `${Math.min(marketShare, 100)}%` }}
+                    />
                   </div>
                 </div>
               </div>
-
-              {/* Market Share Progress Bar */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Market Share: {marketShare.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-gray-400 h-full rounded-full transition-all"
-                    style={{ width: `${Math.min(marketShare, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
 
       {/* Prediction Modal */}
