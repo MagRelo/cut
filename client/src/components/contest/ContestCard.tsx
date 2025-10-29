@@ -12,17 +12,21 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
   const participantCount = contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const potAmount = contest.settings?.fee * participantCount;
 
-  // Fetch speculator pot data - don't need entryIds to get total pot
-  const { totalSpectatorCollateralFormatted, isLoading: isPredictionDataLoading } =
-    useContestPredictionData({
-      contestAddress: contest.address,
-      entryIds: [], // Empty array since we only need totalSpectatorCollateral
-      enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-      chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-    });
+  // Fetch speculator pot and prize bonus data - don't need entryIds to get total pot
+  const {
+    totalSpectatorCollateralFormatted,
+    accumulatedPrizeBonusFormatted,
+    isLoading: isPredictionDataLoading,
+  } = useContestPredictionData({
+    contestAddress: contest.address,
+    entryIds: [], // Empty array since we only need totalSpectatorCollateral
+    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
+    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+  });
 
   // Parse and format the speculator pot
-  const speculatorPot = parseFloat(totalSpectatorCollateralFormatted || "0");
+  const speculatorPot = Math.round(parseFloat(totalSpectatorCollateralFormatted || "0"));
+  const prizeBonus = Math.round(parseFloat(accumulatedPrizeBonusFormatted || "0"));
 
   const formatStatus = (status: string) => {
     return status
@@ -56,9 +60,14 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Prize Pool */}
             <div className="text-right">
-              <div className="text-lg font-bold text-gray-900 leading-none">${potAmount}</div>
+              <div className="text-lg font-bold text-gray-900 leading-none">
+                ${potAmount}
+                {prizeBonus > 0 && !isPredictionDataLoading && (
+                  <span className="text-purple-600"> +${prizeBonus}</span>
+                )}
+              </div>
               <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                POT
+                POT + BONUS
               </div>
             </div>
 
@@ -75,7 +84,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
               </div>
             </div>
 
-            <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
+            {/* <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" /> */}
           </div>
         </div>
       </div>

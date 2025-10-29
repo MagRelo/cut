@@ -190,7 +190,7 @@ contestRouter.post("/", requireAuth, async (c) => {
 // Add lineup to contest
 contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async (c) => {
   try {
-    const { tournamentLineupId, entryId: providedEntryId } = await c.req.json();
+    const { tournamentLineupId } = await c.req.json();
     const user = c.get("user");
     const contestId = c.req.param("id");
 

@@ -54,6 +54,17 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
+  // Read accumulated prize bonus (bonus added to contestant prize pool)
+  const { data: accumulatedPrizeBonus } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "accumulatedPrizeBonus",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
+
   // Helper to determine if predictions are available
   const canPredict = contestState === ContestState.OPEN || contestState === ContestState.ACTIVE;
   const canWithdraw =
@@ -159,6 +170,10 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     totalSpectatorCollateral: (totalSpectatorCollateral as bigint) || 0n,
     totalSpectatorCollateralFormatted: totalSpectatorCollateral
       ? formatUnits(totalSpectatorCollateral as bigint, 18)
+      : "0",
+    accumulatedPrizeBonus: (accumulatedPrizeBonus as bigint) || 0n,
+    accumulatedPrizeBonusFormatted: accumulatedPrizeBonus
+      ? formatUnits(accumulatedPrizeBonus as bigint, 18)
       : "0",
     isLoading,
   };
