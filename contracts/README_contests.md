@@ -6,6 +6,7 @@ Complete technical documentation for the Competition + Prediction Market smart c
 
 ## 📚 Table of Contents
 
+- [Token Flow & Distribution](#-token-flow--distribution)
 - [Contracts](#-contracts)
 - [API Reference](#-api-reference)
 - [Deployment](#-deployment)
@@ -16,6 +17,101 @@ Complete technical documentation for the Competition + Prediction Market smart c
 - [License](#-license)
 - [About](#-about)
 - [Author](#-author)
+
+## 💰 Token Flow & Distribution
+
+Understanding how tokens move through the system during key actions:
+
+### addPrediction(entryId, amount)
+
+When a spectator makes a prediction, their tokens are distributed as follows:
+
+```
+Spectator sends 100 tokens:
+├─ 7.5 tokens → Prize Pool Bonus (prizeShareBps, augments Layer 1)
+│               └─ Added to competitor prize pool (prize bonus)
+│
+├─ 7.5 tokens → Entry Owner Bonus (userShareBps)
+│               └─ Paid to entry owner at settlement (popularity bonus)
+│
+└─ 85 tokens → Spectator Market Pool (collateral)
+                └─ Winning spectators claim from here after settlement
+```
+
+**Key Points:**
+
+- Fees split between prize pool (prizeShareBps) and entry bonuses (userShareBps)
+- Example shows 7.5% each, but both are configurable per contest
+- Remaining collateral (~85%) backs the prediction market
+- Oracle fee (e.g., 1%) is NOT taken here - it's deducted at settlement from total pool
+- Spectator receives ERC1155 tokens representing their position
+- LMSR pricing determines how many prediction tokens they receive
+
+### joinContest(entryId)
+
+When a competitor joins the contest, their deposit is allocated:
+
+```
+Competitor deposits 100 tokens:
+└─ 100 tokens → Prize Pool (for competitor payouts)
+                └─ Distributed to winners at settlement based on payoutBps[]
+```
+
+**Key Points:**
+
+- Full deposit goes to prize pool (no fees on entry)
+- Prize pool distributed at settlement according to `payoutBps` array
+- Winners can claim prizes after settlement
+
+### settleContest(winningEntries[], payoutBps[])
+
+At settlement, the oracle fee is first deducted from the total pool, then both layers are distributed:
+
+```
+TOTAL POOL:
+Competitor Deposits + Prize Pool Bonus + Entry Owner Bonuses
+├─ Oracle Fee (1% example) → Sent to oracle immediately
+└─ Remaining funds → Distributed to winners
+
+LAYER 1 (Competitors):
+Prize Pool (after oracle fee) → Distributed by payoutBps
+├─ Winner 1 (60%) → Gets 60% of prize pool
+├─ Winner 2 (30%) → Gets 30% of prize pool
+└─ Winner 3 (10%) → Gets 10% of prize pool
+
+Entry Owner Bonuses (after oracle fee) → Sent to entry owners immediately
+
+LAYER 2 (Spectators):
+Spectator Market Pool → Winner-take-all
+└─ All spectators who predicted on winningEntries[0] split 100% of pool
+   (proportional to their prediction token holdings)
+```
+
+**Key Points:**
+
+- Oracle fee (configurable, e.g., 1%) is deducted first from the entire pool
+- Entry bonuses are paid out immediately to entry owners (after oracle fee)
+- Competitor prizes use flexible payout structure (basis points)
+- Spectator market is winner-take-all: only first entry in `winningEntries[]` wins
+- Users must call `claimEntryPayout()` or `claimPredictionPayout()` to receive funds
+- Unclaimed funds can be distributed by oracle after expiry
+
+### cancelContest()
+
+If a contest is cancelled, all deposits are returned:
+
+```
+CANCELLED STATE:
+├─ Competitors → 100% refund via leaveContest(entryId)
+└─ Spectators → 100% refund via withdrawPrediction(entryId, tokens)
+                (includes original deposit + oracle fee)
+```
+
+**Key Points:**
+
+- Spectators get full refunds including the oracle fee
+- All tokens returned to original depositors
+- Can only cancel before settlement (settlement is final)
 
 ## 📦 Contracts
 
