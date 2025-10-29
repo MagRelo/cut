@@ -7,10 +7,12 @@ import { Navigation } from "../common/Navigation";
 export const TournamentHeaderPanel: React.FC = () => {
   // Use lightweight metadata endpoint instead of full tournament data
   // This loads ~10x faster since it doesn't fetch all players and contests
-  const { data, isLoading, error } = useTournamentMetadata();
+  const { data, isLoading, isFetching, error } = useTournamentMetadata();
   const currentTournament = data?.tournament;
 
-  if (isLoading) {
+  // Only show loading on initial load (no data yet)
+  // This prevents getting stuck in loading state when refetching
+  if (isLoading && !currentTournament) {
     return (
       <div className="relative overflow-hidden min-h-[176px] border-b border-gray-300 bg-slate-700 animate-pulse">
         <div className="relative p-4">
@@ -46,6 +48,10 @@ export const TournamentHeaderPanel: React.FC = () => {
   return (
     <>
       <div className="relative overflow-hidden min-h-[176px] border-b border-gray-300">
+        {/* Subtle loading indicator when refetching in background */}
+        {isFetching && (
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 animate-pulse z-50"></div>
+        )}
         {currentTournament.beautyImage ? (
           <>
             <div
