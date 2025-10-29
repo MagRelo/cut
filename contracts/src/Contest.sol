@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * - Spectators predict on contestants using LMSR pricing
  * - Configurable entry fee split between prize pool and contestant bonuses
  * - Winner-take-all redemption based on Layer 1 results
- * - Can withdraw before settlement (full refund with deferred fees)
+ * - Can withdraw during OPEN phase only (full refund with deferred fees)
  * 
  * Key Innovation: ONE oracle call (`settleContest()`) settles both layers!
  */
@@ -63,8 +63,8 @@ contract Contest is ERC1155, ReentrancyGuard {
     uint256 public constant PRICE_PRECISION = 1e6;
     
     /// @notice Current state of the contest
-    /// OPEN: Contestants join, spectators predict (early predictions)
-    /// ACTIVE: Contestants locked in, spectators still predicting
+    /// OPEN: Contestants join, spectators predict (early predictions), withdrawals allowed
+    /// ACTIVE: Contestants locked in, spectators still predicting, NO withdrawals (predictions locked in)
     /// LOCKED: Predictions closed, contest finishing
     /// SETTLED: Results in, users claim
     /// CLOSED: Force distributed
@@ -389,16 +389,16 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param tokenAmount Amount of tokens to burn
      * 
      * @dev Works in:
-     * - OPEN state (during registration)
-     * - ACTIVE state (before predictions lock)
+     * - OPEN state (during registration, before competition starts)
      * - CANCELLED state (full refund anytime)
+     * 
+     * @dev NOT allowed in ACTIVE state - once competition starts, predictions are locked
      */
     function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external nonReentrant {
         require(
             state == ContestState.OPEN || 
-            state == ContestState.ACTIVE || 
             state == ContestState.CANCELLED,
-            "Cannot withdraw - predictions locked or settled"
+            "Cannot withdraw - competition started or settled"
         );
         
         require(entryOwner[entryId] != address(0), "Entry does not exist");

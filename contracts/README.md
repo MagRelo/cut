@@ -21,7 +21,7 @@ Transform passive viewers into active participants with skin in the game:
 - **Real Stakes:** Put money behind predictions - winners take all collateral
 - **Price Discovery:** Market-driven odds reveal true competitor rankings
 - **Early Advantage:** First predictors get better prices (incentivizes early engagement)
-- **Safe Withdrawals:** 100% refunds before settlement (no lock-in risk)
+- **Safe Withdrawals:** 100% refunds during OPEN phase (change your mind before competition starts)
 
 ### ⚡ Instant, Trustless Settlement
 
@@ -63,7 +63,7 @@ Smart fee structure benefits all participants:
 - **Popularity Bonuses:** 7.5% distributed to competitors based on prediction volume
 - **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure
 - **No Hidden Costs:** All fees transparent and enforced by smart contract
-- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals)
+- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals in OPEN phase)
 
 ## 🌍 Competition Examples
 
@@ -157,19 +157,22 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 ### Phase 2: ACTIVE - Competition Running, Predictions Open
 
 **State:** `ContestState.ACTIVE`  
-**Predictions:** ✅ Available
+**Predictions:** ✅ Available  
+**Withdrawals:** ❌ NOT allowed (predictions locked in once competition starts)
 
 | Actor            | Can Do                 | Function                                 |
 | ---------------- | ---------------------- | ---------------------------------------- |
 | **Competitors**  | ❌ Cannot join/leave   | -                                        |
 | **Spectators**   | Add predictions (LMSR) | `addPrediction(entryId, amount)`         |
-| **Spectators**   | Withdraw (100% refund) | `withdrawPrediction(entryId, tokens)`    |
+| **Spectators**   | ❌ Cannot withdraw     | -                                        |
 | **Spectators**   | Check prices           | `calculateEntryPrice(entryId)`           |
 | **Oracle/Admin** | Close predictions      | `closePredictions()`                     |
 | **Oracle/Admin** | Cancel contest         | `cancelContest()`                        |
 | **Oracle/Admin** | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
 **State transition:** Oracle calls `closePredictions()` → `LOCKED`
+
+**Note:** Once the contest is activated, spectators can still add new predictions but CANNOT withdraw existing predictions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
 
 ---
 
@@ -275,7 +278,7 @@ Example:
                      │
                      │ Competitors join
                      │ Spectators predict (early predictions!)
-                     │ Spectators can withdraw
+                     │ Spectators can withdraw (free exit)
                      │
                      │ Oracle: activateContest()
                      ▼
@@ -283,7 +286,7 @@ Example:
                      │
                      │ Competition in progress
                      │ Spectators continue predicting
-                     │ Spectators can withdraw
+                     │ NO withdrawals (predictions locked in)
                      │
                      │ Oracle: closePredictions() [OPTIONAL]
                      ▼
@@ -495,10 +498,11 @@ function addPrediction(uint256 entryId, uint256 amount) external
 // Returns: ERC1155 tokens (token ID = entry ID)
 // Price: Dynamic based on demand (LMSR)
 
-// Withdraw prediction before settlement (100% refund!)
+// Withdraw prediction before competition starts (100% refund!)
 function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external
-// Requirements: state == OPEN, ACTIVE, or CANCELLED
+// Requirements: state == OPEN or CANCELLED
 // Returns: Full original deposit (including entry fee)
+// Note: NOT allowed in ACTIVE state - predictions locked once competition starts
 
 // Check current LMSR price for an entry
 function calculateEntryPrice(uint256 entryId) public view returns (uint256)
@@ -693,7 +697,7 @@ Total: 100% passing
 ✅ **No arbitrage** - Swaps disabled, LMSR only on entry  
 ✅ **Reentrancy protection** - All external calls guarded  
 ✅ **Oracle control** - Only oracle can settle contests  
-✅ **Deferred fees** - Users can withdraw with full refunds  
+✅ **Deferred fees** - Users can withdraw with full refunds during OPEN phase  
 ✅ **Winner-take-all** - All collateral goes to winners  
 ✅ **State validation** - Proper state checks throughout
 
@@ -806,12 +810,13 @@ Contest States:
 OPEN
   ↓ competitors joinContest(entryId)
   ↓ spectators addPrediction(entryId, amount) (early predictions!)
+  ↓ spectators withdrawPrediction(entryId, tokens) (free exit)
   ↓ oracle activateContest()
 
 ACTIVE
   ↓ competition in progress
   ↓ spectators addPrediction(entryId, amount) (predictions continue)
-  ↓ (optional) spectators withdrawPrediction(entryId, tokens)
+  ↓ NO withdrawals allowed (predictions locked in)
   ↓ (optional) oracle closePredictions()
 
 LOCKED [OPTIONAL]
@@ -848,12 +853,12 @@ CANCELLED
 
 ### For Spectators
 
-| Want to...          | Call...                               |
-| ------------------- | ------------------------------------- |
-| Add prediction      | `addPrediction(entryId, amount)`      |
-| Withdraw prediction | `withdrawPrediction(entryId, tokens)` |
-| Claim winnings      | `claimPredictionPayout(entryId)`      |
-| Check price         | `calculateEntryPrice(entryId)`        |
+| Want to...                      | Call...                               | When...                |
+| ------------------------------- | ------------------------------------- | ---------------------- |
+| Add prediction                  | `addPrediction(entryId, amount)`      | OPEN or ACTIVE states  |
+| Withdraw prediction (free exit) | `withdrawPrediction(entryId, tokens)` | OPEN or CANCELLED only |
+| Claim winnings                  | `claimPredictionPayout(entryId)`      | After SETTLED          |
+| Check price                     | `calculateEntryPrice(entryId)`        | Anytime                |
 
 ### For Oracle/Admin
 

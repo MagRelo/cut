@@ -256,10 +256,7 @@ contract ContestTest is Test {
         vm.prank(userA);
         contest.joinContest(ENTRY_A1);
         
-        vm.prank(oracle);
-        contest.activateContest();
-        
-        // Spectator predicts
+        // Spectator predicts BEFORE activation (during OPEN state)
         usdc.mint(spectator1, 100e6);
         vm.prank(spectator1);
         usdc.approve(address(contest), 100e6);
@@ -268,7 +265,7 @@ contract ContestTest is Test {
         
         uint256 tokens = contest.balanceOf(spectator1, ENTRY_A1);
         
-        // Withdraw
+        // Withdraw BEFORE activation (only allowed in OPEN state)
         uint256 balanceBefore = usdc.balanceOf(spectator1);
         vm.prank(spectator1);
         contest.withdrawPrediction(ENTRY_A1, tokens);
@@ -276,6 +273,33 @@ contract ContestTest is Test {
         // Full refund
         assertEq(usdc.balanceOf(spectator1), balanceBefore + 100e6, "Full refund");
         assertEq(contest.balanceOf(spectator1, ENTRY_A1), 0, "Tokens burned");
+    }
+    
+    function testCannotWithdrawPredictionAfterActivation() public {
+        // Setup
+        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        vm.prank(userA);
+        contest.joinContest(ENTRY_A1);
+        
+        // Spectator predicts in OPEN state
+        usdc.mint(spectator1, 100e6);
+        vm.prank(spectator1);
+        usdc.approve(address(contest), 100e6);
+        vm.prank(spectator1);
+        contest.addPrediction(ENTRY_A1, 100e6);
+        
+        uint256 tokens = contest.balanceOf(spectator1, ENTRY_A1);
+        
+        // Activate contest
+        vm.prank(oracle);
+        contest.activateContest();
+        
+        // Try to withdraw after activation - should fail
+        vm.prank(spectator1);
+        vm.expectRevert("Cannot withdraw - competition started or settled");
+        contest.withdrawPrediction(ENTRY_A1, tokens);
     }
     
     function testCannotPredictOnWithdrawnEntry() public {
