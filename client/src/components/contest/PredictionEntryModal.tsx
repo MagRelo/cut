@@ -182,7 +182,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Purchase Amount</span>
-                        <span className="font-semibold text-gray-700">{amount || "0"} CUT</span>
+                        <span className="font-semibold text-gray-700">${amount || "0"}</span>
                       </div>
 
                       <div className="flex justify-between items-center">
@@ -195,18 +195,18 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Estimated Payout*</span>
+                        <span className="text-gray-600">Value if Entry Wins</span>
                         <span className="font-semibold text-green-600">
-                          ~
+                          ~$
                           {metrics.potentialReturn > 0
-                            ? `${metrics.potentialReturn.toFixed(2)} CUT`
-                            : "0 CUT"}
+                            ? `${metrics.potentialReturn.toFixed(2)}`
+                            : "0"}
                         </span>
                       </div>
 
                       {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
                         <div className="flex justify-between items-center ">
-                          <span className="text-gray-600">Estimated Return*</span>
+                          <span className="text-gray-600">Return if Entry Wins</span>
                           <span className="font-semibold text-purple-700">
                             {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
                           </span>
@@ -225,9 +225,8 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     </label>
                     <input
                       id="position-amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Enter amount"
@@ -300,8 +299,8 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                   {/* Info Note */}
                   <div className="text-xs text-gray-500 pt-3 border-t border-gray-200">
                     <p>
-                      * Current value is calculated using live LMSR pricing. Actual payout depends
-                      on contest settlement.
+                      <strong>Note:</strong> Payouts are calculated using live LMSR pricing. Actual
+                      payout depends on contest settlement.
                     </p>
                   </div>
                 </form>

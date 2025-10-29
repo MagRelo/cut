@@ -141,21 +141,24 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
                 {parseFloat(position.impliedWinningsFormatted) > 0 && (
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600">Estimated Winnings:</span>
+                    <span className="text-gray-600"> Estimated Share Value:</span>
                     <span className="font-semibold text-green-600">
-                      ~
+                      ~$
                       {parseFloat(position.impliedWinningsFormatted) < 0.01
                         ? "< 0.01"
                         : parseFloat(position.impliedWinningsFormatted).toFixed(2)}{" "}
-                      CUT
                     </span>
                   </div>
                 )}
               </div>
+              {/* 
+              <div className="text-center text-xs text-gray-500 mt-2">
+                Entry #{position.entryId}
+              </div> */}
 
               {/* Withdraw Button */}
               {canWithdraw && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="mt-4 border-t border-gray-200 pt-4">
                   <button
                     onClick={() => handleWithdraw(position.entryId, position.balance)}
                     disabled={isProcessing}
@@ -170,10 +173,6 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                       "Withdraw"
                     )}
                   </button>
-
-                  <div className="text-center text-xs text-gray-500 mt-2">
-                    Entry #{position.entryId}
-                  </div>
                 </div>
               )}
             </div>

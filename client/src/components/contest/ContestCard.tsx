@@ -57,13 +57,13 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           </div>
 
           {/* Right Section - Prize Pool & Speculator Pool */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {/* Prize Pool */}
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900 leading-none">
                 ${potAmount}
                 {prizeBonus > 0 && !isPredictionDataLoading && (
-                  <span className="text-purple-600"> +${prizeBonus}</span>
+                  <span className="text-purple-600"> + ${prizeBonus}</span>
                 )}
               </div>
               <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">

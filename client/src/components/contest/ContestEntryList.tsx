@@ -95,17 +95,14 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                     {lineup.user?.name || lineup.user?.email || "Unknown User"}
                   </div>
 
-                  {!isTournamentEditable && (
-                    <div className="text-xs text-gray-500 truncate">
-                      {lineup.tournamentLineup?.players
-                        ?.sort(
-                          (a, b) => (b.tournamentData?.total || 0) - (a.tournamentData?.total || 0)
-                        )
-                        .map((p) => p.pga_lastName)
-                        .filter(Boolean)
-                        .join(", ") || ""}
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500 truncate">
+                    {isTournamentEditable
+                      ? lineup.tournamentLineup?.name || "Lineup"
+                      : lineup.tournamentLineup?.players
+                          ?.map((player) => player.pga_lastName)
+                          .filter(Boolean)
+                          .join(", ") || "No players"}
+                  </div>
                 </div>
 
                 {/* Right - Points */}
