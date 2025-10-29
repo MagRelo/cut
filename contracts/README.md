@@ -11,6 +11,19 @@ Build prediction markets on top of any competition where:
 
 **Use Cases:** Fantasy sports • Gaming tournaments • Trading competitions • Content creator battles • Skill-based challenges • Any measurable competition
 
+## 📚 Table of Contents
+
+- [What This Infrastructure Enables](#-what-this-infrastructure-enables)
+- [Competition Examples](#-competition-examples)
+- [Contest Lifecycle](#-contest-lifecycle)
+- [State Transition Diagram](#-state-transition-diagram)
+- [How It Works](#-how-it-works)
+- [Economic Model](#-economic-model)
+- [Security Features](#-security-features)
+- [Economics](#-economics)
+
+**📖 [Contest Technical Reference](./README_contests.md)** - Contracts, API, Deployment, Testing, State Machine, Quick Reference
+
 ## ⚡ What This Infrastructure Enables
 
 ### 🎯 Engage Spectators Financially
@@ -22,6 +35,27 @@ Transform passive viewers into active participants with skin in the game:
 - **Price Discovery:** Market-driven odds reveal true competitor rankings
 - **Early Advantage:** First predictors get better prices (incentivizes early engagement)
 - **Safe Withdrawals:** 100% refunds during OPEN phase (change your mind before competition starts)
+
+### 💰 Aligned Incentives
+
+Smart fee structure benefits all participants:
+
+- **Spectator Fees Augment Prizes:** 7.5% goes to competition prize pool (bigger prizes!)
+- **Popularity Bonuses:** 7.5% distributed to competitors based on prediction volume
+- **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure
+- **No Hidden Costs:** All fees transparent and enforced by smart contract
+- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals in OPEN phase)
+
+### 🎮 Flexible Architecture
+
+Works with any competition format you can imagine:
+
+- **Entry-Based:** One user can have multiple entries (strategies, lineups, teams)
+- **Any Scoring System:** Your oracle reports results - contracts handle payouts
+- **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
+- **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
+- **Yield Generation:** Idle USDC earns Compound V3 yield for platform treasury
+- **Custom Branding:** Deploy tokens with your platform's name and symbol
 
 ### ⚡ Instant, Trustless Settlement
 
@@ -43,27 +77,6 @@ All actions transparent and tamper-proof on-chain:
 - **Reentrancy Protected:** OpenZeppelin security standards throughout
 - **Arbitrage-Proof:** No token swaps allowed - prevents market manipulation
 - **Refund Guarantees:** Automatic 100% refunds on entry withdrawals (spectators protected)
-
-### 🎮 Flexible Architecture
-
-Works with any competition format you can imagine:
-
-- **Entry-Based:** One user can have multiple entries (strategies, lineups, teams)
-- **Any Scoring System:** Your oracle reports results - contracts handle payouts
-- **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
-- **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
-- **Yield Generation:** Idle USDC earns Compound V3 yield for platform treasury
-- **Custom Branding:** Deploy tokens with your platform's name and symbol
-
-### 💰 Aligned Incentives
-
-Smart fee structure benefits all participants:
-
-- **Spectator Fees Augment Prizes:** 7.5% goes to competition prize pool (bigger prizes!)
-- **Popularity Bonuses:** 7.5% distributed to competitors based on prediction volume
-- **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure
-- **No Hidden Costs:** All fees transparent and enforced by smart contract
-- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals in OPEN phase)
 
 ## 🌍 Competition Examples
 
@@ -100,39 +113,6 @@ This infrastructure is **competition-agnostic** - it works with any format that 
   - ✅ Measurable outcomes
   - ✅ Ranked results (or binary win/loss)
   - ✅ Trusted oracle to report results
-
-## 📦 Contracts
-
-### Token Layer
-
-**`PlatformToken.sol`** - ERC20 platform token
-
-- Minted 1:1 when users deposit stablecoin (USDC)
-- Burned 1:1 when users withdraw stablecoin
-- Only DepositManager can mint/burn
-- Customizable name/symbol for your platform
-
-**`DepositManager.sol`** - Stablecoin gateway + yield generation
-
-- Users deposit USDC → receive platform tokens (1:1 ratio)
-- Supplies USDC to Compound V3 for yield
-- Users can withdraw USDC anytime (1:1 redemption)
-- Yield stays with platform (treasury)
-
-### Contest Layer
-
-**`Contest.sol`** - Combined competition + prediction market
-
-- **Layer 1:** Competitors deposit tokens and compete for prizes
-- **Layer 2:** Spectators predict on competitors using LMSR pricing
-- **Settlement:** ONE oracle call distributes both layers
-- **Flexible:** Works with any competition format that has measurable outcomes
-
-**`ContestFactory.sol`** - Creates Contest instances
-
-- Standardized contest deployment
-- Registry of all contests
-- Configurable parameters per competition type
 
 ## 📅 Contest Lifecycle
 
@@ -462,236 +442,6 @@ Entry A predictors: 0 tokens (winner-take-all)
 Entry C predictors: 0 tokens (winner-take-all)
 ```
 
-## 📖 API Reference
-
-### Contest.sol
-
-#### Competitor Functions
-
-```solidity
-// Join contest with unique entry ID
-function joinContest(uint256 entryId) external
-// Requirements: state == OPEN, exact deposit amount, entryId not used
-// Note: Entry ID must be unique (generated by your system/database)
-
-// Leave contest before start (automatically refunds spectators!)
-function leaveContest(uint256 entryId) external
-// Requirements: state == OPEN or CANCELLED, owns entry
-// Note: All spectators who predicted on this entry get 100% refunds
-
-// Claim single entry prize after settlement
-function claimEntryPayout(uint256 entryId) external
-// Requirements: state == SETTLED, owns entry, has payout
-
-// Claim all entry prizes at once (convenience function)
-function claimAllEntryPayouts() external
-// Requirements: state == SETTLED, has at least one payout
-// Note: Claims all entries owned by msg.sender in one transaction
-```
-
-#### Spectator Functions
-
-```solidity
-// Add prediction on an entry (LMSR pricing)
-function addPrediction(uint256 entryId, uint256 amount) external
-// Requirements: state == OPEN or ACTIVE, entry exists and not withdrawn
-// Returns: ERC1155 tokens (token ID = entry ID)
-// Price: Dynamic based on demand (LMSR)
-
-// Withdraw prediction before competition starts (100% refund!)
-function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external
-// Requirements: state == OPEN or CANCELLED
-// Returns: Full original deposit (including entry fee)
-// Note: NOT allowed in ACTIVE state - predictions locked once competition starts
-
-// Check current LMSR price for an entry
-function calculateEntryPrice(uint256 entryId) public view returns (uint256)
-// Returns: Current price per token (increases with demand)
-
-// Claim prediction winnings after settlement
-function claimPredictionPayout(uint256 entryId) external
-// Requirements: state == SETTLED, holds tokens for entryId
-// Payout: Winner-take-all (100% to winners, 0% to losers)
-```
-
-#### Oracle/Admin Functions
-
-```solidity
-// Activate contest (closes registration, predictions continue)
-function activateContest() external onlyOracle
-// Requirements: state == OPEN, has at least one entry
-
-// Close predictions window (prevent last-second predictions) [OPTIONAL]
-function closePredictions() external onlyOracle
-// Requirements: state == ACTIVE
-
-// Settle contest (ONE call does everything!)
-function settleContest(
-    uint256[] calldata winningEntries,
-    uint256[] calldata payoutBps
-) external onlyOracle
-// Requirements: state == ACTIVE or state == LOCKED
-// Note: Only include entries with payouts > 0 (no zeros needed!)
-// Note: First entry in array = winner for spectator market
-// Does: Pays Layer 1 prizes + bonuses, resolves Layer 2 market
-// Example: settleContest([entry1, entry2], [6000, 4000]) - entries not listed get 0%
-
-// Cancel contest (enables refunds)
-function cancelContest() external onlyOracle
-// Requirements: state != SETTLED and state != CLOSED
-// Note: Cannot cancel after settlement - settlement is final
-
-// Distribute all unclaimed payouts after expiry
-function distributeExpiredContest() external onlyOracle
-// Requirements: state == SETTLED, block.timestamp >= expiryTimestamp
-// Does: Pushes all unclaimed competitor and spectator payouts
-```
-
-### ContestFactory.sol
-
-```solidity
-// Create new contest
-function createContest(
-    address paymentToken,        // Platform token address
-    address oracle,              // Oracle/admin address
-    uint256 competitorDepositAmount, // Required deposit per entry
-    uint256 oracleFee,           // Basis points (max 1000 = 10%)
-    uint256 expiry,              // Expiry timestamp
-    uint256 liquidityParameter,  // LMSR liquidity parameter
-    uint256 demandSensitivity    // LMSR demand sensitivity (BPS)
-) external returns (address)
-
-// Get all contests
-function getContests() external view returns (address[])
-
-// Get total contest count
-function getContestCount() external view returns (uint256)
-```
-
-## 🚀 Deployment
-
-### 1. Deploy Platform (Once)
-
-```solidity
-// Deploy platform token with custom name/symbol
-PlatformToken token = new PlatformToken("Your Platform", "SYMBOL");
-
-// Deploy USDC deposit manager
-DepositManager dm = new DepositManager(
-    usdcAddress,      // USDC token address
-    address(token),   // Your platform token
-    cUSDCAddress      // Compound V3 comet address
-);
-
-// Connect them
-token.setDepositManager(address(dm));
-```
-
-### 2. Deploy ContestFactory (Once)
-
-```solidity
-ContestFactory factory = new ContestFactory();
-```
-
-### 3. Create Contests (Many Times)
-
-```solidity
-address contest = factory.createContest(
-    address(token),       // Platform token
-    oracleAddress,        // Your oracle/admin address
-    100e18,               // 100 tokens per entry
-    100,                  // 1% oracle fee (100 basis points)
-    block.timestamp + 7 days, // Expiry: 7 days
-    1000e18,              // LMSR liquidity parameter
-    500                   // LMSR sensitivity (5% = 500 bps)
-);
-```
-
-## 📊 Example Usage
-
-### TypeScript/ethers.js
-
-```typescript
-import { ethers } from "ethers";
-
-// 1. User deposits USDC for platform tokens
-await depositManager.depositUSDC(ethers.parseUnits("1000", 6)); // 1000 USDC
-// User now has 1000 platform tokens
-
-// 2. Create a contest
-const contest = await contestFactory.createContest(
-  platformTokenAddress, // Your platform token
-  oracleAddress, // Your oracle/admin
-  ethers.parseEther("100"), // 100 tokens per entry
-  100, // 1% oracle fee
-  Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days expiry
-  ethers.parseEther("1000"), // LMSR liquidity
-  500 // LMSR sensitivity (5%)
-);
-
-// 3. Competitors join with entry IDs
-const entryId = 12345; // From your system/database
-await platformToken.approve(contest, ethers.parseEther("100"));
-await contest.joinContest(entryId);
-
-// 4. Oracle activates contest
-await contest.activateContest();
-
-// 5. Spectators add predictions (using entry IDs directly!)
-await platformToken.approve(contest, ethers.parseEther("50"));
-await contest.addPrediction(entryId, ethers.parseEther("50")); // Predict on entryId
-
-// 6. Oracle settles (ONE CALL! Only winners needed!)
-await contest.settleContest(
-  [entry1, entry2, entry3], // Winning entry IDs (no zeros!)
-  [6000, 3000, 1000] // 60%, 30%, 10%
-);
-
-// 7. Users claim winnings
-// Competitors claim
-await contest.claimEntryPayout(entryId); // Single entry
-// OR
-await contest.claimAllEntryPayouts(); // All entries at once
-
-// Spectators claim
-await contest.claimPredictionPayout(entryId);
-
-// 8. Convert platform tokens back to USDC
-await depositManager.withdrawUSDC(ethers.parseEther("150"));
-// User receives 150 USDC (1:1 ratio)
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-forge test
-
-# Run specific test suite
-forge test --match-path "test/Contest.t.sol"
-forge test --match-path "test/ContestFactory.t.sol"
-
-# Verbose output
-forge test -vvv
-```
-
-**Current test status:**
-
-```
-✅ Contest.t.sol: 15 tests including:
-   - Full contest flow
-   - Early predictions
-   - LMSR pricing
-   - Prediction window control
-   - Cancellation & refunds
-   - Distribute expired contest (7 tests)
-✅ ContestFactory.t.sol: 2/2 passing
-✅ PlatformToken.t.sol: All passing
-✅ DepositManager.t.sol: All passing
-
-Total: 100% passing
-```
-
 ## 🔐 Security Features
 
 ✅ **No arbitrage** - Swaps disabled, LMSR only on entry  
@@ -802,94 +552,6 @@ forge script script/Deploy_sepolia.s.sol --rpc-url sepolia --broadcast
 forge script script/Deploy_base.s.sol --rpc-url base --broadcast
 ```
 
-## 📝 State Machine
+---
 
-```
-Contest States:
-
-OPEN
-  ↓ competitors joinContest(entryId)
-  ↓ spectators addPrediction(entryId, amount) (early predictions!)
-  ↓ spectators withdrawPrediction(entryId, tokens) (free exit)
-  ↓ oracle activateContest()
-
-ACTIVE
-  ↓ competition in progress
-  ↓ spectators addPrediction(entryId, amount) (predictions continue)
-  ↓ NO withdrawals allowed (predictions locked in)
-  ↓ (optional) oracle closePredictions()
-
-LOCKED [OPTIONAL]
-  ↓ competition finishes (no more predictions/withdrawals)
-  ↓ oracle settleContest(winningEntries, payouts)
-
-SETTLED
-  ↓ competitors claimEntryPayout(entryId) or claimAllEntryPayouts()
-  ↓ spectators claimPredictionPayout(entryId)
-  ↓ (after expiry) oracle distributeExpiredContest()
-
-CLOSED
-  ↓ all unclaimed funds pushed to users
-  ↓ contest fully closed
-
-(OR - from OPEN/ACTIVE only)
-
-CANCELLED
-  ↓ refunds available (cannot cancel after LOCKED/SETTLED)
-  ↓ competitors leaveContest(entryId)
-  ↓ spectators withdrawPrediction(entryId, tokens)
-```
-
-## 🎯 Quick Reference
-
-### For Competitors
-
-| Want to...         | Call...                     |
-| ------------------ | --------------------------- |
-| Join competition   | `joinContest(entryId)`      |
-| Leave before start | `leaveContest(entryId)`     |
-| Claim single prize | `claimEntryPayout(entryId)` |
-| Claim all prizes   | `claimAllEntryPayouts()`    |
-
-### For Spectators
-
-| Want to...                      | Call...                               | When...                |
-| ------------------------------- | ------------------------------------- | ---------------------- |
-| Add prediction                  | `addPrediction(entryId, amount)`      | OPEN or ACTIVE states  |
-| Withdraw prediction (free exit) | `withdrawPrediction(entryId, tokens)` | OPEN or CANCELLED only |
-| Claim winnings                  | `claimPredictionPayout(entryId)`      | After SETTLED          |
-| Check price                     | `calculateEntryPrice(entryId)`        | Anytime                |
-
-### For Oracle/Admin
-
-| Want to...                     | Call...                                  | When...                        |
-| ------------------------------ | ---------------------------------------- | ------------------------------ |
-| Activate contest               | `activateContest()`                      | After competitors join         |
-| Close predictions              | `closePredictions()`                     | Before competition finishes    |
-| Settle everything              | `settleContest(winningEntries, payouts)` | After competition finishes     |
-| Cancel                         | `cancelContest()`                        | If contest needs cancellation  |
-| Distribute unclaimed (expired) | `distributeExpiredContest()`             | After expiry (if users forgot) |
-
-**Note:** `settleContest()` only requires winning entries - no need to include zeros!
-
-## 📄 License
-
-MIT
-
-## 💡 About
-
-This infrastructure is completely **generic and reusable**. The contracts contain no domain-specific logic - they work with any competition format.
-
-The name "the Cut" refers to one specific implementation (fantasy golf), but the smart contracts themselves are **competition-agnostic** and can power:
-
-- Sports prediction platforms
-- Gaming tournament systems
-- Trading competitions
-- Creator challenges
-- Any skill-based competition with measurable outcomes
-
-**Core Principle:** Your backend determines the competition rules and scoring. The smart contracts handle deposits, predictions, settlement, and payouts - the same way for every competition type.
-
-## 👨‍💻 Author
-
-MagRelo
+**For detailed technical documentation, see [README_technical.md](./README_technical.md)**
