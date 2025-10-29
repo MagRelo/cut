@@ -93,7 +93,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   return (
     <div className="bg-white rounded-sm">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 font-display px-2 pt-4">
+      <h3 className="text-lg font-semibold text-gray-800 mb-2 font-display px-2 pt-4">
         Your Predictions
       </h3>
 
@@ -111,22 +111,36 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
           const lineupName = lineup?.tournamentLineup?.name || "Lineup";
           const isWithdrawing = withdrawingEntryId === position.entryId;
 
+          // Calculate ownership share percentage
+          const ownershipShare =
+            position.totalSupply > 0n
+              ? (Number(position.balance) / Number(position.totalSupply)) * 100
+              : 0;
+
           return (
-            <div key={position.entryId} className="p-4 border border-gray-300 rounded-sm">
-              <div className="flex justify-between items-start mb-2">
+            <div key={position.entryId} className="p-4 border border-gray-300 rounded-sm mb-2">
+              <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-semibold text-gray-900 font-display">
-                    {userName} - {lineupName}
+                  <div className="text-md font-semibold text-gray-900 truncate leading-tight font-display">
+                    {userName}
                   </div>
+                  <div className="text-xs text-gray-600 truncate leading-6">{lineupName}</div>
                 </div>
-                <div className="flex items-center px-2 py-1 bg-blue-100 rounded text-blue-700 text-xs font-semibold">
-                  ✓ Active Position
+                <div className="flex items-center px-2 py-1 bg-purple-100 rounded text-purple-700 text-xs font-semibold">
+                  ✓ Active
                 </div>
               </div>
 
-              {parseFloat(position.impliedWinningsFormatted) > 0 && (
-                <div className="mt-2 pt-2 ">
-                  <div className="flex justify-between items-center text-sm">
+              <div className="pt-2 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">Ownership Share:</span>
+                  <span className="font-semibold text-gray-600">
+                    {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
+                  </span>
+                </div>
+
+                {parseFloat(position.impliedWinningsFormatted) > 0 && (
+                  <div className="flex justify-between items-center text-xs">
                     <span className="text-gray-600">Estimated Winnings:</span>
                     <span className="font-semibold text-green-600">
                       ~
@@ -136,8 +150,8 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                       CUT
                     </span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Withdraw Button */}
               {canWithdraw && (

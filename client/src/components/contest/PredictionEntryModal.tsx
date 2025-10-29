@@ -171,10 +171,48 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                  {/* Lineup Info */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="text-base font-semibold text-gray-900">{userName}</div>
-                    <div className="text-sm text-gray-600 mt-0.5">{lineupName}</div>
+                  {/* Position Summary - Always Visible */}
+                  <div className="bg-purple-100/40 border border-purple-200 rounded-lg p-4 space-y-3 text-sm">
+                    {/* Lineup Info */}
+                    <div className="pb-3 border-b border-purple-300/60">
+                      <div className="text-base font-semibold text-gray-700">{userName}</div>
+                      <div className="text-sm text-gray-600 mt-0.5">{lineupName}</div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Purchase Amount</span>
+                        <span className="font-semibold text-gray-700">{amount || "0"} CUT</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Outcome Share</span>
+                        <span className="font-semibold text-gray-900">
+                          {metrics.ownershipPercent > 0
+                            ? `${metrics.ownershipPercent.toFixed(2)}%`
+                            : "0%"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Estimated Payout*</span>
+                        <span className="font-semibold text-green-600">
+                          ~
+                          {metrics.potentialReturn > 0
+                            ? `${metrics.potentialReturn.toFixed(2)} CUT`
+                            : "0 CUT"}
+                        </span>
+                      </div>
+
+                      {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
+                        <div className="flex justify-between items-center ">
+                          <span className="text-gray-600">Estimated Return*</span>
+                          <span className="font-semibold text-purple-700">
+                            {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Amount Input */}
@@ -183,7 +221,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       htmlFor="position-amount"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Position Amount (CUT)
+                      Purchase Amount (CUT)
                     </label>
                     <input
                       id="position-amount"
@@ -197,43 +235,6 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       disabled={isProcessing}
                       autoFocus
                     />
-                  </div>
-
-                  {/* Position Summary - Always Visible */}
-                  <div className="bg-purple-50/30 border border-purple-100 rounded-lg p-4 space-y-3 text-sm">
-                    <div className="space-y-2.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Position Amount:</span>
-                        <span className="font-semibold text-gray-900">{amount || "0"} CUT</span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Ownership Share:</span>
-                        <span className="font-semibold text-gray-900">
-                          {metrics.ownershipPercent > 0
-                            ? `${metrics.ownershipPercent.toFixed(2)}%`
-                            : "0%"}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Estimated Payout:</span>
-                        <span className="font-semibold text-purple-700">
-                          {metrics.potentialReturn > 0
-                            ? `${metrics.potentialReturn.toFixed(2)} CUT`
-                            : "0 CUT"}
-                        </span>
-                      </div>
-
-                      {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
-                        <div className="flex justify-between items-center ">
-                          <span className="text-gray-600">Return:</span>
-                          <span className="font-semibold text-purple-700">
-                            {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {/* Balance Warning */}
@@ -297,10 +298,11 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                   </div>
 
                   {/* Info Note */}
-                  <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 space-y-1.5">
-                    <strong>Note:</strong> Current value is calculated using live LMSR pricing.
-                    Actual payout depends on contest settlement.
-                    <p>Withdrawals available for 100% refund while predictions are open.</p>
+                  <div className="text-xs text-gray-500 pt-3 border-t border-gray-200">
+                    <p>
+                      * Current value is calculated using live LMSR pricing. Actual payout depends
+                      on contest settlement.
+                    </p>
                   </div>
                 </form>
               </DialogPanel>
