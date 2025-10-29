@@ -61,13 +61,10 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
             {/* Prize Pool */}
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900 leading-none">
-                ${potAmount}
-                {prizeBonus > 0 && !isPredictionDataLoading && (
-                  <span className="text-purple-600"> + ${prizeBonus}</span>
-                )}
+                ${potAmount + prizeBonus}
               </div>
               <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                POT + BONUS
+                CONTEST
               </div>
             </div>
 

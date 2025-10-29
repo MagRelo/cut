@@ -133,7 +133,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
               <div className="pt-2 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-600">Outcome ownership:</span>
+                  <span className="text-gray-600">Outcome Ownership:</span>
                   <span className="font-semibold text-gray-600">
                     {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
                   </span>
