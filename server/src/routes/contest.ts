@@ -5,6 +5,12 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 import { contestLineupsInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
+import {
+  hasMinimumPlayers,
+  isDuplicateInContest,
+  generateEntryId,
+  getPlayerIdsFromLineup,
+} from "../utils/lineupValidation.js";
 
 const contestRouter = new Hono();
 
@@ -184,11 +190,28 @@ contestRouter.post("/", requireAuth, async (c) => {
 // Add lineup to contest
 contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async (c) => {
   try {
-    const { tournamentLineupId, entryId } = await c.req.json();
+    const { tournamentLineupId, entryId: providedEntryId } = await c.req.json();
     const user = c.get("user");
     const contestId = c.req.param("id");
 
-    // Check if this lineup is already in this contest
+    // Fetch the lineup and its players
+    const playerIds = await getPlayerIdsFromLineup(tournamentLineupId);
+
+    // Validate minimum players
+    if (!hasMinimumPlayers(playerIds)) {
+      return c.json({ error: "Lineup must have at least 1 player" }, 400);
+    }
+
+    // Check if user already has this player set in this contest
+    const isDuplicate = await isDuplicateInContest(user.userId, contestId, playerIds);
+    if (isDuplicate) {
+      return c.json(
+        { error: "You've already submitted a lineup with these players to this contest" },
+        400
+      );
+    }
+
+    // Check if this specific lineup is already in this contest (by tournamentLineupId)
     const existingLineup = await prisma.contestLineup.findFirst({
       where: {
         contestId: contestId,
@@ -200,9 +223,23 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
       return c.json({ error: "This lineup has already been added to this contest" }, 400);
     }
 
-    // Validate entryId if provided
-    if (entryId && typeof entryId !== "string") {
-      return c.json({ error: "Invalid entryId format" }, 400);
+    // Generate deterministic entryId from userId and playerIds
+    // This ensures same players = same entryId for this user
+    const entryId = generateEntryId(user.userId, playerIds);
+
+    // Check if this entryId already exists in this contest (shouldn't happen with proper validation, but extra safety)
+    const existingEntry = await prisma.contestLineup.findFirst({
+      where: {
+        contestId: contestId,
+        entryId: entryId,
+      },
+    });
+
+    if (existingEntry) {
+      return c.json(
+        { error: "An entry with this player composition already exists in this contest" },
+        400
+      );
     }
 
     await prisma.contestLineup.create({
@@ -210,7 +247,7 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
         contestId: contestId,
         tournamentLineupId,
         userId: user.userId,
-        entryId: entryId || null,
+        entryId: entryId,
         status: "ACTIVE",
       },
     });

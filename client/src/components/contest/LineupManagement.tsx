@@ -56,6 +56,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{
     type: "join" | "leave";
     lineupId: string;
@@ -196,7 +197,58 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     }
   }, [pendingAction, isConfirmed]);
 
+  // Helper function to check if lineup with same players already exists in contest
+  const checkForDuplicateInContest = (lineupId: string): boolean => {
+    const lineup = lineups.find((l) => l.id === lineupId);
+    if (!lineup) return false;
+
+    // Normalize player IDs by sorting
+    const normalizedPlayerIds = lineup.players
+      .map((p) => p.id)
+      .sort()
+      .join(",");
+
+    // Check if any contest lineup has the same player set
+    return (
+      contest.contestLineups?.some((contestLineup) => {
+        // Only check user's own lineups
+        if (contestLineup.userId !== user?.id) return false;
+
+        // Get the tournament lineup for this contest lineup
+        const contestTournamentLineup = lineups.find(
+          (l) => l.id === contestLineup.tournamentLineupId
+        );
+        if (!contestTournamentLineup) return false;
+
+        // Normalize and compare player sets
+        const contestPlayerIds = contestTournamentLineup.players
+          .map((p) => p.id)
+          .sort()
+          .join(",");
+        return contestPlayerIds === normalizedPlayerIds;
+      }) || false
+    );
+  };
+
   const handleJoinContest = async (lineupId: string) => {
+    // Find the lineup being added
+    const lineup = lineups.find((l) => l.id === lineupId);
+
+    // Validate lineup has at least 1 player
+    if (!lineup || lineup.players.length === 0) {
+      setValidationError("Lineup must have at least 1 player");
+      return;
+    }
+
+    // Check for duplicate player set in contest
+    if (checkForDuplicateInContest(lineupId)) {
+      setValidationError("You've already submitted a lineup with these players to this contest");
+      return;
+    }
+
+    // Clear validation error if checks pass
+    setValidationError(null);
+
     if (!hasEnoughBalance) {
       setWarningModal({
         open: true,
@@ -374,9 +426,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       )}
 
       {/* Error Display */}
-      {(submissionError || serverError || transactionError || isFailed) && (
+      {(validationError || submissionError || serverError || transactionError || isFailed) && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-          {submissionError ||
+          {validationError ||
+            submissionError ||
             serverError ||
             transactionError ||
             "The transaction was rejected or failed to execute. Please try again."}

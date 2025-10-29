@@ -55,6 +55,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     Array.from({ length: 4 }, () => null)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Initialize draft players with current lineup when in edit mode
   useEffect(() => {
@@ -137,6 +138,30 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
 
     setDraftPlayers(newDraftPlayers);
     setSelectedPlayerIndex(null);
+    setValidationError(null); // Clear validation error when players change
+  };
+
+  // Helper function to check if this player set already exists
+  const checkForDuplicateLineup = (playerIds: string[]): boolean => {
+    // Normalize player IDs by sorting
+    const normalizedPlayerIds = [...playerIds].sort().join(",");
+
+    // Check all existing lineups for duplicates
+    return lineups.some((lineup) => {
+      // Skip the current lineup if updating
+      if (lineupId && lineup.id === lineupId) {
+        return false;
+      }
+
+      // Get player IDs from the lineup and normalize
+      const lineupPlayerIds = lineup.players
+        .map((p) => p.id)
+        .sort()
+        .join(",");
+
+      // Compare normalized player sets
+      return lineupPlayerIds === normalizedPlayerIds;
+    });
   };
 
   const handleSubmit = async () => {
@@ -146,11 +171,19 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
       .filter((p): p is PlayerWithTournamentData => p !== null)
       .map((p) => p.id);
 
+    // Validate minimum players
     if (playerIds.length === 0) {
-      console.error("No players selected");
+      setValidationError("Lineup must have at least 1 player");
       return;
     }
 
+    // Check for duplicate lineup
+    if (checkForDuplicateLineup(playerIds)) {
+      setValidationError("You already have a lineup with these players for this tournament");
+      return;
+    }
+
+    setValidationError(null);
     setIsSubmitting(true);
     try {
       if (lineupId) {
@@ -165,6 +198,10 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
       navigate("/lineups");
     } catch (error) {
       console.error("Failed to save lineup:", error);
+      // Show server error if validation passed on client but failed on server
+      if (error instanceof Error) {
+        setValidationError(error.message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -212,6 +249,13 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
           )}
         </button>
       </div>
+
+      {/* Validation Error Message */}
+      {validationError && (
+        <div className="mb-4">
+          <ErrorMessage message={validationError} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         {Array.from({ length: 4 }).map((_, index) => (

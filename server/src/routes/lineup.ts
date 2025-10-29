@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
+import { hasMinimumPlayers, isDuplicateLineup } from "../utils/lineupValidation.js";
 
 const lineupRouter = new Hono();
 
@@ -16,6 +17,20 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
 
     if (!Array.isArray(players) || players.length > 4) {
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
+    }
+
+    // Validate minimum players
+    if (!hasMinimumPlayers(players)) {
+      return c.json({ error: "Lineup must have at least 1 player" }, 400);
+    }
+
+    // Check for duplicate lineup
+    const isDuplicate = await isDuplicateLineup(user.userId, tournamentId, players);
+    if (isDuplicate) {
+      return c.json(
+        { error: "You already have a lineup with these players for this tournament" },
+        400
+      );
     }
 
     // Create a new tournament lineup
@@ -93,6 +108,11 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
     }
 
+    // Validate minimum players
+    if (!hasMinimumPlayers(players)) {
+      return c.json({ error: "Lineup must have at least 1 player" }, 400);
+    }
+
     // Get the existing tournament lineup
     const tournamentLineup = await prisma.tournamentLineup.findFirst({
       where: {
@@ -103,6 +123,20 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
 
     if (!tournamentLineup) {
       return c.json({ error: "Lineup not found" }, 404);
+    }
+
+    // Check for duplicate lineup (exclude current lineup)
+    const isDuplicate = await isDuplicateLineup(
+      user.userId,
+      tournamentLineup.tournamentId,
+      players,
+      lineupId
+    );
+    if (isDuplicate) {
+      return c.json(
+        { error: "You already have a lineup with these players for this tournament" },
+        400
+      );
     }
 
     // Update lineup name if provided
