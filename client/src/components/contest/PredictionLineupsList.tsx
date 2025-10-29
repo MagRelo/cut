@@ -149,7 +149,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                 {/* Market Share Progress Bar */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">Market Share: {marketShare.toFixed(1)}%</span>
+                    <span className="text-gray-500">Support: {marketShare.toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     <div
