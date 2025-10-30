@@ -150,7 +150,9 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param _contestantDepositAmount Fixed amount each contestant must deposit
      * @param _oracleFeeBps Oracle fee as basis points
      * @param _expiryTimestamp When contest expires (for refunds)
-     * @param _liquidityParameter LMSR curve parameter
+     * @param _liquidityParameter LMSR curve parameter - controls price curve steepness
+     * @dev Recommended: Use ContestFactory which calculates this as contestantDepositAmount × 100
+     * @dev Lower values = steeper curves (stronger early incentive), higher values = flatter curves
      * @param _demandSensitivityBps LMSR price sensitivity parameter
      * @param _prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
      * @param _userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)

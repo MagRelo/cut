@@ -14,6 +14,11 @@ import "./Contest.sol";
  * @custom:security All contest contracts created through this factory can be tracked
  */
 contract ContestFactory {
+    /// @notice Multiplier for calculating liquidityParameter from contestantDepositAmount
+    /// @dev liquidityParameter = contestantDepositAmount × LIQUIDITY_MULTIPLIER
+    /// @dev Higher entry fees create flatter curves (more volume expected)
+    uint256 public constant LIQUIDITY_MULTIPLIER = 100;
+    
     /// @notice Array of all created contest contract addresses
     address[] public contests;
     
@@ -27,19 +32,21 @@ contract ContestFactory {
     event ContestCreated(address indexed contest, address indexed host, uint256 contestantDepositAmount);
     
     /**
-     * @notice Creates a new Contest contract
+     * @notice Creates a new Contest contract with automatic or custom liquidityParameter
      * @param paymentToken The ERC20 token used for deposits (typically PlatformToken/CUT)
      * @param oracle The address that will control the contest
      * @param contestantDepositAmount The amount each contestant must deposit
      * @param oracleFee The fee percentage for the oracle (in basis points, max 1000 = 10%)
      * @param expiry The expiration timestamp for the contest
-     * @param liquidityParameter LMSR liquidity parameter for spectator predictions
+     * @param liquidityParameterOverride Custom LMSR liquidity parameter (0 = auto-calculate)
      * @param demandSensitivity LMSR demand sensitivity in basis points
      * @param prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
      * @param userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
      * @return The address of the newly created Contest contract
      * 
      * Note: paymentToken is typically the PlatformToken (CUT) address
+     * Note: If liquidityParameterOverride is 0, it's calculated as contestantDepositAmount × LIQUIDITY_MULTIPLIER
+     *       This automatically creates steeper curves for small contests and flatter curves for large contests.
      * 
      * Requirements:
      * - paymentToken must not be zero address
@@ -56,11 +63,19 @@ contract ContestFactory {
         uint256 contestantDepositAmount,
         uint256 oracleFee,
         uint256 expiry,
-        uint256 liquidityParameter,
+        uint256 liquidityParameterOverride,
         uint256 demandSensitivity,
         uint256 prizeShareBps,
         uint256 userShareBps
     ) external returns (address) {
+        // Calculate liquidityParameter dynamically unless override is provided
+        uint256 liquidityParameter;
+        if (liquidityParameterOverride > 0) {
+            liquidityParameter = liquidityParameterOverride;
+        } else {
+            liquidityParameter = contestantDepositAmount * LIQUIDITY_MULTIPLIER;
+        }
+        
         Contest contest = new Contest(
             paymentToken,
             oracle,

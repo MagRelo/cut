@@ -394,6 +394,51 @@ price = PRICE_PRECISION + (|netPosition[entryId]| * demandSensitivityBps / liqui
 tokensToMint = collateral * PRICE_PRECISION / price
 ```
 
+### LMSR Pricing Mechanism
+
+The `liquidityParameter` controls how steep the price curve is for spectator predictions. A lower value creates steeper prices (early bettors get much better prices), while a higher value creates flatter prices.
+
+**Dynamic Calculation:**
+
+The ContestFactory automatically calculates `liquidityParameter` based on contest size:
+
+```
+liquidityParameter = contestantDepositAmount × 100
+```
+
+**Why This Works:**
+
+Higher entry fees typically attract more prediction volume, so the curve should be flatter to accommodate larger bets without extreme price impact. Lower entry fees have less volume, so a steeper curve creates stronger early incentives.
+
+**Examples:**
+
+| Entry Fee | liquidityParameter | Curve Steepness | Effect                                             |
+| --------- | ------------------ | --------------- | -------------------------------------------------- |
+| $10       | 1,000              | Very steep      | Strong early advantage, 20x+ premium at $5K volume |
+| $100      | 10,000             | Steep           | Good early advantage, 3x premium at $5K volume     |
+| $1,000    | 100,000            | Moderate        | Balanced, 1.5x premium at $50K volume              |
+| $10,000   | 1,000,000          | Flatter         | Accommodates whales, 1.2x premium at $200K volume  |
+
+**Gaming Protection:**
+
+The steep curve (for typical contest sizes) provides:
+
+- **Early incentive:** First bettors get best prices (up to 3-10x advantage over late bettors)
+- **Whale protection:** Late large bets pay significant premiums (50-200%)
+- **Anti-gaming:** Tiny early bets ($0.01) have negligible impact on pricing
+- **Proportional rewards:** Your share of winnings is proportional to your investment
+
+**Price Formula:**
+
+```
+demandPremium = (netPosition × demandSensitivityBps) / liquidityParameter
+price = 1,000,000 + demandPremium
+
+At $5,000 volume with liquidityParameter = 10,000:
+- Early bettor: price ≈ 1.00 (base)
+- Late bettor: price ≈ 3.10 (+210% premium)
+```
+
 ### Settlement Payouts
 
 ```
@@ -407,7 +452,13 @@ finalEntryPayouts[i] = layer1Pool * payoutBps[i] / 10000
 payout = userTokenBalance * predictionPrizePool / totalSupply
 ```
 
-## Constructor Parameters
+## Creating Contests
+
+**Recommended:** Use `ContestFactory.createContest()` which automatically calculates optimal pricing parameters.
+
+The ContestFactory creates contests with automatic `liquidityParameter` calculation based on entry fee, ensuring appropriate price curves for each contest size.
+
+### Contest Constructor Parameters
 
 ```solidity
 constructor(
@@ -416,12 +467,14 @@ constructor(
     uint256 _contestantDepositAmount, // Fixed entry fee
     uint256 _oracleFeeBps,          // Oracle fee (e.g., 100 = 1%)
     uint256 _expiryTimestamp,       // When contest expires
-    uint256 _liquidityParameter,    // LMSR liquidity (higher = flatter prices)
+    uint256 _liquidityParameter,    // LMSR liquidity (auto-calculated by factory)
     uint256 _demandSensitivityBps,  // LMSR sensitivity (e.g., 500 = 5%)
     uint256 _prizeShareBps,         // Spectator → prize pool (e.g., 750 = 7.5%)
     uint256 _userShareBps           // Spectator → entry bonus (e.g., 750 = 7.5%)
 )
 ```
+
+**Note:** The `_liquidityParameter` is typically calculated by ContestFactory as `contestantDepositAmount × 100`. This can be overridden if custom pricing curves are needed.
 
 **Constraints:**
 
