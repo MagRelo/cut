@@ -101,7 +101,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Contest
+              Fantasy Contest
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -114,7 +114,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Pool
+              Prediction Market
             </Tab>
             {!isTournamentEditable && (
               <Tab
@@ -136,15 +136,18 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES (Contest) */}
             <TabPanel>
               <div className="p-2 mt-1">
-                {/* Manage Lineups Button */}
+                {/* Contest Status & Action */}
                 {isTournamentEditable && (
-                  <div className="mb-3 flex items-center justify-start">
+                  <div className="mb-3 flex items-center justify-center gap-2">
+                    <span className="text-sm font-medium text-gray-700 font-display">
+                      Contest Open:
+                    </span>
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
-                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none"
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
                     >
-                      Add Lineup
+                      ADD LINEUP
                     </button>
                   </div>
                 )}

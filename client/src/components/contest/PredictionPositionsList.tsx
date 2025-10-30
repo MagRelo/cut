@@ -132,16 +132,16 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
               </div>
 
               <div className="pt-2 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-600">Outcome Ownership:</span>
-                  <span className="font-semibold text-gray-600">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Outcome Share:</span>
+                  <span className=" text-gray-500">
                     {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
                   </span>
                 </div>
 
                 {parseFloat(position.impliedWinningsFormatted) > 0 && (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600"> Estimated Share Value:</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Share Value:</span>
                     <span className="font-semibold text-green-600">
                       ~$
                       {parseFloat(position.impliedWinningsFormatted) < 0.01
@@ -167,10 +167,10 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                     {isWithdrawing ? (
                       <span className="flex items-center justify-center gap-2">
                         <LoadingSpinnerSmall />
-                        Withdrawing...
+                        Cancelling...
                       </span>
                     ) : (
-                      "Withdraw"
+                      "Cancel"
                     )}
                   </button>
                 </div>
