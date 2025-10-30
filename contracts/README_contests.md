@@ -43,7 +43,7 @@ Spectator sends 100 tokens:
 - Fees split between prize pool (prizeShareBps) and entry bonuses (userShareBps)
 - Example shows 7.5% each, but both are configurable per contest
 - Remaining collateral (~85%) backs the prediction market
-- Oracle fee (e.g., 1%) is NOT taken here - it's deducted at settlement from total pool
+- Oracle fee (e.g., 1%) is NOT taken here - it's deducted at settlement
 - Spectator receives ERC1155 tokens representing their position
 - LMSR pricing determines how many prediction tokens they receive
 
@@ -65,36 +65,144 @@ Competitor deposits 100 tokens:
 
 ### settleContest(winningEntries[], payoutBps[])
 
-At settlement, the oracle fee is first deducted from the total pool, then both layers are distributed:
+At settlement, fees and distributions are handled deterministically with no dust left behind:
 
 ```
-TOTAL POOL:
-Competitor Deposits + Prize Pool Bonus + Entry Owner Bonuses
-├─ Oracle Fee (1% example) → Sent to oracle immediately
-└─ Remaining funds → Distributed to winners
-
 LAYER 1 (Competitors):
-Prize Pool (after oracle fee) → Distributed by payoutBps
-├─ Winner 1 (60%) → Gets 60% of prize pool
-├─ Winner 2 (30%) → Gets 30% of prize pool
-└─ Winner 3 (10%) → Gets 10% of prize pool
+Competitor Deposits + Prize Pool Bonus (prizeShare)
+├─ Oracle Fee on Layer 1 → Sent to oracle
+└─ Remaining funds → Distributed by payoutBps
+   ├─ Winner 1 (60%)
+   ├─ Winner 2 (30%)
+   └─ Winner 3 (10%)
 
-Entry Owner Bonuses (after oracle fee) → Sent to entry owners immediately
+Entry Owner Bonuses (userShare) → Fee applied per bonus, then paid
+├─ Bonus Fee (1% example) → Sent to oracle
+└─ Bonus After Fee → Sent to entry owners immediately
 
 LAYER 2 (Spectators):
-Spectator Market Pool → Winner-take-all
+Spectator Market Pool (collateral) → Winner-take-all
 └─ All spectators who predicted on winningEntries[0] split 100% of pool
    (proportional to their prediction token holdings)
 ```
 
 **Key Points:**
 
-- Oracle fee (configurable, e.g., 1%) is deducted first from the entire pool
-- Entry bonuses are paid out immediately to entry owners (after oracle fee)
+- Oracle fee is assessed on both components:
+  - Layer 1 pool (deposits + prize pool bonus)
+  - Entry owner bonuses (fee withheld per-entry before paying each bonus)
+- Entry bonuses are paid out immediately to entry owners after their per-bonus fee
 - Competitor prizes use flexible payout structure (basis points)
 - Spectator market is winner-take-all: only first entry in `winningEntries[]` wins
 - Users must call `claimEntryPayout()` or `claimPredictionPayout()` to receive funds
 - Unclaimed funds can be distributed by oracle after expiry
+
+### Special Case: No Winning ERC1155 Supply
+
+If no spectators hold tokens for `winningEntries[0]` at settlement (i.e., `netPosition[winningEntries[0]] == 0`), the entire `predictionPrizePool` is redistributed to Layer 1 winners proportionally to `payoutBps[]` (with any integer remainder sent to the top winner). This zeroes the spectator pool and sends the extra directly to the winning entry owners. This applies whether spectators predicted only losing entries or there were simply no spectator predictions on the winner.
+
+### Dust Handling Guarantees
+
+- Layer 1 distributions and entry bonuses use integer math; any remainder from spectator redistribution without winning supply is sent to the top winner.
+- Spectator claims decrement `predictionPrizePool` per claim. When the last holder claims, any residual rounding dust is swept to the last claimant, leaving the contract with zero leftover spectator collateral.
+
+## 🧮 Funds Flow & Accounting Invariants
+
+This section formalizes the accounting and provides formulas used to verify tests.
+
+Definitions (contract state variables in `Contest.sol`):
+
+- `contestPrizePool`: sum of contestant deposits via `joinContest`
+- `contestPrizePoolSubsidy`: sum of prize share from spectator deposits
+- `contestantSubsidy[entryId]`: sum of per-entry spectator bonus share
+- `predictionPrizePool`: spectator collateral (backs ERC1155 redemption)
+- `oracleFeeBps`: fee bps applied at settlement to Layer 1 pool and to each entry bonus
+- `BPS_DENOMINATOR = 10000`
+
+Spectator deposit split for amount `A` with `prizeShareBps = p`, `userShareBps = u`:
+
+- `prizeShare = A * p / 10000` → accumulates in `contestPrizePoolSubsidy`
+- `entryBonus = A * u / 10000` → accumulates in `contestantSubsidy[entryId]`
+- `collateral = A - (prizeShare + entryBonus)` → accumulates in `predictionPrizePool`
+
+Settlement (Layer 1):
+
+- `totalPoolL1 = contestPrizePool + contestPrizePoolSubsidy`
+- `oracleFeeL1 = totalPoolL1 * oracleFeeBps / 10000`
+- `layer1AfterFee = totalPoolL1 - oracleFeeL1`
+- Payouts: For each winning entry i: `entryPayout[i] = layer1AfterFee * payoutBps[i] / 10000`
+- Entry bonuses: For each entry e:
+  - `bonusFee[e] = contestantSubsidy[e] * oracleFeeBps / 10000`
+  - `bonusAfterFee[e] = contestantSubsidy[e] - bonusFee[e]`
+  - Oracle receives `Σ bonusFee[e]`
+
+Settlement (Layer 2):
+
+- Winner-take-all: Only `winningEntries[0]` is payable
+- Let `supply = uint256(netPosition[winner])` (total ERC1155 supply for winner)
+- A spectator with balance `b` on winner receives: `b * predictionPrizePool / supply`
+
+Refunds and reversals:
+
+- In `OPEN` or `CANCELLED`, spectator withdrawals fully reverse all three components: prizeShare, entryBonus, and collateral.
+- `leaveContest` in `OPEN` auto-refunds all spectators who predicted on the withdrawn entry (burns their tokens and returns their full deposit, reversing accounting).
+
+Invariants:
+
+- Conservation before settlement: contract balance in payment token equals `contestPrizePool + contestPrizePoolSubsidy + Σ(contestantSubsidy) + predictionPrizePool`.
+- At settlement, Layer 1 distributions plus `oracleFeeL1` equal `totalPoolL1` (and `Σ bonusAfterFee + Σ bonusFee = Σ contestantSubsidy`).
+- Post-claims (or after `distributeExpiredContest`), contract payment token balance should be 0.
+- If there is no ERC1155 supply for the winning entry at settlement, `predictionPrizePool` is set to 0 and the same amount is distributed to Layer 1 winners per `payoutBps[]`.
+
+## 📐 Worked Examples
+
+Example parameters:
+
+- `contestantDepositAmount = 100e18`
+- `oracleFeeBps = 100` (1%)
+- `prizeShareBps = 750` (7.5%)
+- `userShareBps = 750` (7.5%)
+
+Scenario: 3 contestants join (300e18 total). One spectator deposits 100e18 on Entry #1.
+
+- Spectator split: prizeShare=7.5, entryBonus=7.5, collateral=85 (all in e18)
+- Before settlement:
+  - `contestPrizePool = 300`
+  - `contestPrizePoolSubsidy = 7.5`
+  - `contestantSubsidy[1] = 7.5`, others 0 → `Σ = 7.5`
+  - `predictionPrizePool = 85`
+
+Settlement with `payoutBps = [6000, 3000, 1000]` and `winningEntries = [1,2,3]`:
+
+- `totalPoolL1 = 300 + 7.5 = 307.5`
+- `oracleFeeL1 = 3.075`
+- `layer1AfterFee = 304.425`
+- Entry payouts (rounded down by Solidity math):
+  - #1: 60% → 182.655
+  - #2: 30% → 91.3275
+  - #3: 10% → 30.4425
+- Bonuses:
+  - Bonus fee on #1: `7.5 * 1% = 0.075` → oracle
+  - Bonus after fee to #1: `7.425`
+- Spectator winner-take-all:
+  - If Entry #1 is first in `winningEntries`, all `predictionPrizePool (85)` goes to token holders of entry #1, prorata by supply.
+
+## 🧪 Test Scenarios Matrix
+
+We validate these cases in `contracts/test/Contest_Accounting.t.sol`:
+
+- Common
+  - S1: 3 competitors, no spectators. Settle [10000] → 100% to winner, oracle fee from competitor pool only.
+  - S2: 3 competitors, spectators on multiple entries, no withdrawals. Settle [6000, 3000, 1000] → verify fee, prizes, bonuses, spectator pot.
+  - S3: Spectators withdraw during OPEN → full reversals, then settle.
+  - S4: Oracle closes predictions (LOCKED) then settle; no withdrawals allowed.
+- Edge
+  - E1: Entry withdrawn in OPEN auto-refunds its spectators; settle remaining entries.
+  - E2: Zero spectators; varied payout splits; check only deposits fund prizes.
+  - E3: All spectators on a losing entry → if there is ERC1155 supply on `winningEntries[0]`, winners split the prediction pool; if there is no winning supply, the entire prediction pool is redistributed to Layer 1 winners per `payoutBps[]` (with any remainder to the top winner).
+  - E4: No winning ERC1155 supply (corner): ensure no spectator payout and no stranded funds.
+  - E5: High oracle fee (e.g., 10%) and extreme bps splits; rounding safety.
+  - E6: `distributeExpiredContest` pushes unclaimed payouts and ends with CLOSED state.
 
 ### cancelContest()
 
@@ -287,7 +395,7 @@ address contest = factory.createContest(
     100,                  // 1% oracle fee (100 basis points)
     block.timestamp + 7 days, // Expiry: 7 days
     1000e18,              // LMSR liquidity parameter
-    500                   // LMSR sensitivity (5% = 500 bps)
+    500                   // LMSR sensitivity (5%)
 );
 ```
 

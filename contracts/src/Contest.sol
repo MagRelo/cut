@@ -131,8 +131,8 @@ contract Contest is ERC1155, ReentrancyGuard {
     event EntryWithdrawn(uint256 indexed entryId, address indexed owner, uint256 spectatorsRefunded);
     event ContestActivated();
     event PredictionsClosed();
-    event SpectatorDeposited(address indexed spectator, uint256 indexed entryId, uint256 amount, uint256 tokensReceived);
-    event SpectatorWithdrew(address indexed spectator, uint256 amount);
+    event PredictionAdded(address indexed spectator, uint256 indexed entryId, uint256 amount, uint256 tokensReceived);
+    event PredictionWithdrawn(address indexed spectator, uint256 amount);
     event SpectatorAutoRefunded(address indexed spectator, uint256 indexed entryId, uint256 amount);
     event ContestSettled(uint256[] winningEntries, uint256[] payouts);
     event EntryPayoutClaimed(address indexed owner, uint256 indexed entryId, uint256 amount);
@@ -345,25 +345,25 @@ contract Contest is ERC1155, ReentrancyGuard {
             isSpectator[msg.sender] = true;
         }
         
-        // Split fees based on configured shares
+        // Split subsidies based on configured shares
         uint256 prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
         uint256 contestantShare = (amount * userShareBps) / BPS_DENOMINATOR;
-        uint256 totalFee = prizeShare + contestantShare;
-        uint256 collateral = amount - totalFee;
+        uint256 totalSubsidy = prizeShare + contestantShare;
+        uint256 collateral = amount - totalSubsidy;
+
+        // Accumulate subsidies (distributed on settlement)
+        contestPrizePoolSubsidy += prizeShare;
+        contestantSubsidy[entryId] += contestantShare;
+
+        // Track user's total deposits (for withdrawal refunds)
+        spectatorTotalDeposited[msg.sender] += amount;
+        spectatorDepositedPerEntry[msg.sender][entryId] += amount;
         
         // Get current LMSR price
         uint256 price = calculateEntryPrice(entryId);
         
         // Calculate tokens to mint
         uint256 tokensToMint = (collateral * PRICE_PRECISION) / price;
-        
-        // Accumulate fees (distributed on settlement)
-        contestPrizePoolSubsidy += prizeShare;
-        contestantSubsidy[entryId] += contestantShare;
-        
-        // Track user's total deposits (for withdrawal refunds)
-        spectatorTotalDeposited[msg.sender] += amount;
-        spectatorDepositedPerEntry[msg.sender][entryId] += amount;
         
         // Mint ERC1155 tokens (token ID = entry ID)
         _mint(msg.sender, entryId, tokensToMint, "");
@@ -372,13 +372,11 @@ contract Contest is ERC1155, ReentrancyGuard {
         netPosition[entryId] += int256(tokensToMint);
         predictionPrizePool += collateral;
         
-        // External call last (CEI pattern)
+        // Pull payment from spectator
         paymentToken.safeTransferFrom(msg.sender, address(this), amount);
         
-        emit SpectatorDeposited(msg.sender, entryId, amount, tokensToMint);
+        emit PredictionAdded(msg.sender, entryId, amount, tokensToMint);
     }
-    
-    // Complete sets removed - use depositOnOutcome() only
     
     /**
      * @notice Spectator withdraws their prediction (burns tokens, gets 100% refund)
@@ -428,7 +426,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         // Refund 100% of what they deposited for these tokens
         paymentToken.safeTransfer(msg.sender, refundAmount);
         
-        emit SpectatorWithdrew(msg.sender, refundAmount);
+        emit PredictionWithdrawn(msg.sender, refundAmount);
     }
     
     // ============ Combined Settlement ============
@@ -463,53 +461,75 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         state = ContestState.SETTLED;
         
-        // Step 1: Calculate total pool (all money going to entries)
+        // Step 1: Calculate Layer 1 prize pool (contest deposits + prize pool subsidy only)
+        // Entry bonuses (contestantSubsidy) are handled separately below and DO NOT contribute to layer1 payouts
         uint256 totalPool = contestPrizePool + contestPrizePoolSubsidy;
+
+        // Step 2: Apply oracle fee to Layer 1 pool
+        uint256 oracleFeeLayer1 = (totalPool * oracleFeeBps) / BPS_DENOMINATOR;
         
-        // Calculate total entry bonuses
-        uint256 totalBonuses = 0;
-        for (uint256 i = 0; i < entries.length; i++) {
-            totalBonuses += contestantSubsidy[entries[i]];
-        }
+        // Step 3: Calculate contestant prize pool (after oracle fee)
+        uint256 layer1PoolAfterFee = (totalPool * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
         
-        totalPool += totalBonuses;
-        
-        // Step 2: Apply oracle fee to ENTIRE pool
-        uint256 oracleFee = (totalPool * oracleFeeBps) / BPS_DENOMINATOR;
-        
-        // Step 3: Calculate Layer 1 prize pool (after oracle fee)
-        uint256 layer1PoolAfterFee = ((contestPrizePool + contestPrizePoolSubsidy) * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
-        
-        // Step 4: Set Layer 1 payouts (by entry ID - now safe for same owner multiple times!)
+        // Step 4: Pay contestant payouts
         for (uint256 i = 0; i < winningEntries.length; i++) {
             uint256 entryId = winningEntries[i];
             uint256 payout = (layer1PoolAfterFee * payoutBps[i]) / BPS_DENOMINATOR;
-            finalEntryPayouts[entryId] = payout;
+            // Pay owner directly and emit event
+            paymentToken.safeTransfer(entryOwner[entryId], payout);
+            emit EntryPayoutClaimed(entryOwner[entryId], entryId, payout);
         }
         
-        // Step 5: Pay oracle fee
-        if (oracleFee > 0) {
-            paymentToken.safeTransfer(oracle, oracleFee);
-        }
-        
-        // Step 6: Distribute Layer 2 entry bonuses (after oracle fee)
+        // Step 5: pay contestant subsidies (after oracle fee) and track bonus fee portion for oracle
+        uint256 bonusFeeTotal = 0;
         for (uint256 i = 0; i < entries.length; i++) {
             uint256 entryId = entries[i];
             uint256 bonus = contestantSubsidy[entryId];
             if (bonus > 0) {
-                // Apply oracle fee proportionally
-                uint256 bonusAfterFee = (bonus * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
                 contestantSubsidy[entryId] = 0;
-                // Send bonus to entry owner
+                // Deduct oracle fee proportionally from each bonus
+                uint256 bonusAfterFee = (bonus * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
+                uint256 bonusFee = bonus - bonusAfterFee;
+                bonusFeeTotal += bonusFee;
                 paymentToken.safeTransfer(entryOwner[entryId], bonusAfterFee);
             }
+        }
+        
+        // Step 6: Pay oracle fee (Layer 1 fee + bonuses fee)
+        uint256 totalOracleFee = oracleFeeLayer1 + bonusFeeTotal;
+        if (totalOracleFee > 0) {
+            paymentToken.safeTransfer(oracle, totalOracleFee);
         }
         
         // Step 7: Determine Layer 2 winner (winner-take-all)
         // The first entry in winningEntries array is the contest winner (highest payout)
         spectatorWinningEntry = winningEntries[0];
         spectatorMarketResolved = true;
+
+        // Step 8: If no ERC1155 supply exists for the winning entry (no one predicted correctly),
+        // redistribute the spectator pool to Layer 1 winners proportionally to payoutBps.
+        uint256 winnerSupply = uint256(netPosition[spectatorWinningEntry]);
+        if (predictionPrizePool > 0 && winnerSupply == 0) {
+            uint256 poolToDistribute = predictionPrizePool;
+            predictionPrizePool = 0;
+            uint256 distributed = 0;
+            for (uint256 i = 0; i < winningEntries.length; i++) {
+                uint256 entryId = winningEntries[i];
+                uint256 extra = (poolToDistribute * payoutBps[i]) / BPS_DENOMINATOR;
+                if (extra > 0) {
+                    distributed += extra;
+                    paymentToken.safeTransfer(entryOwner[entryId], extra);
+                }
+            }
+            // Send any rounding remainder to the top winner to ensure full pool distribution
+            if (distributed < poolToDistribute) {
+                uint256 remainder = poolToDistribute - distributed;
+                paymentToken.safeTransfer(entryOwner[winningEntries[0]], remainder);
+            }
+        }
         
+        // Step 9: No dust expected now; any residual belongs to predictionPrizePool
+
         emit ContestSettled(winningEntries, payoutBps);
     }
     
@@ -567,17 +587,24 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 balance = balanceOf(msg.sender, entryId);
         require(balance > 0, "No tokens");
         
+        // Burn user tokens first
         _burn(msg.sender, entryId, balance);
         
         uint256 payout = 0;
         
         // Winner-take-all: only winning entry gets paid
         if (entryId == spectatorWinningEntry) {
-            uint256 totalSupply = uint256(netPosition[entryId]);
-            require(totalSupply > 0, "No supply");
+            // Capture supply BEFORE decrement for proportional payout
+            uint256 totalSupplyBefore = uint256(netPosition[entryId]);
+            require(totalSupplyBefore > 0, "No supply");
             
             // Winners split ALL spectator collateral
-            payout = (balance * predictionPrizePool) / totalSupply;
+            payout = (balance * predictionPrizePool) / totalSupplyBefore;
+            
+            // Decrement supply by burned balance
+            if (balance > 0) {
+                netPosition[entryId] -= int256(balance);
+            }
             
             // Safety check
             uint256 available = paymentToken.balanceOf(address(this));
@@ -586,7 +613,23 @@ contract Contest is ERC1155, ReentrancyGuard {
             }
             
             if (payout > 0) {
+                // Decrement prediction pool by paid amount (cap to avoid underflow)
+                if (payout <= predictionPrizePool) {
+                    predictionPrizePool -= payout;
+                } else {
+                    predictionPrizePool = 0;
+                }
                 paymentToken.safeTransfer(msg.sender, payout);
+            }
+            
+            // If this was the last claim (no supply remains), sweep any dust to the last claimant
+            uint256 remainingSupply = uint256(netPosition[entryId]);
+            if (remainingSupply == 0) {
+                uint256 remaining = paymentToken.balanceOf(address(this));
+                if (remaining > 0) {
+                    predictionPrizePool = 0;
+                    paymentToken.safeTransfer(msg.sender, remaining);
+                }
             }
         }
         
@@ -661,6 +704,8 @@ contract Contest is ERC1155, ReentrancyGuard {
                     }
                 }
             }
+            // After pushing all, zero the prediction pool to avoid dust
+            predictionPrizePool = 0;
         }
         
         state = ContestState.CLOSED;

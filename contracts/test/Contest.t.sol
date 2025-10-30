@@ -146,17 +146,8 @@ contract ContestTest is Test {
         
         vm.prank(oracle);
         contest.settleContest(winningEntries, payoutBps);
-        
-        // Verify each entry has correct payout
-        assertGt(contest.finalEntryPayouts(ENTRY_A1), 0, "Entry A1 should have payout");
-        assertGt(contest.finalEntryPayouts(ENTRY_A2), 0, "Entry A2 should have payout");
-        assertGt(contest.finalEntryPayouts(ENTRY_B), 0, "Entry B should have payout");
-        
-        // UserA claims both entries
-        vm.prank(userA);
-        contest.claimAllEntryPayouts();
-        
-        // UserA should get 80% of pool (50% + 30%)
+
+        // Immediate payouts occur in settle; assert user balances increased
         uint256 userABalance = usdc.balanceOf(userA);
         assertGt(userABalance, 0, "UserA should receive combined payout");
     }
@@ -366,9 +357,9 @@ contract ContestTest is Test {
         uint256 balanceBefore = usdc.balanceOf(userA);
         vm.prank(oracle);
         contest.distributeExpiredContest();
-        
-        // UserA should receive both payouts
-        assertGt(usdc.balanceOf(userA), balanceBefore, "Should receive both entry payouts");
+
+        // Payouts were already sent at settlement, so no change
+        assertEq(usdc.balanceOf(userA), balanceBefore, "No additional payouts after distribute");
         assertEq(uint256(contest.state()), uint256(Contest.ContestState.CLOSED));
     }
 }
