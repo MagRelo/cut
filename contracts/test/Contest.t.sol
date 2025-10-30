@@ -326,7 +326,7 @@ contract ContestTest is Test {
         assertEq(initialPrice, 1e6, "Initial price should be 1.0 (PRICE_PRECISION)");
     }
     
-    function testDistributeExpiredWithEntries() public {
+    function testSweepToTreasuryAfterExpiry() public {
         // Setup 2 entries, both owned by userA
         usdc.mint(userA, CONTESTANT_DEPOSIT * 2);
         vm.startPrank(userA);
@@ -350,17 +350,22 @@ contract ContestTest is Test {
         vm.prank(oracle);
         contest.settleContest(winningEntries, payoutBps);
         
-        // Fast forward
+        // User doesn't claim - funds remain in contract
+        uint256 contractBalance = usdc.balanceOf(address(contest));
+        assertGt(contractBalance, 0, "Contract should have funds");
+        
+        // Fast forward past expiry
         vm.warp(block.timestamp + EXPIRY + 1);
         
-        // Distribute
-        uint256 balanceBefore = usdc.balanceOf(userA);
+        // Sweep unclaimed funds to treasury
+        uint256 oracleBalanceBefore = usdc.balanceOf(oracle);
         vm.prank(oracle);
-        contest.distributeExpiredContest();
+        contest.sweepToTreasury();
 
-        // Payouts were already sent at settlement, so no change
-        assertEq(usdc.balanceOf(userA), balanceBefore, "No additional payouts after distribute");
+        // All unclaimed funds swept to oracle
+        assertEq(usdc.balanceOf(oracle) - oracleBalanceBefore, contractBalance, "Oracle should receive all unclaimed funds");
         assertEq(uint256(contest.state()), uint256(Contest.ContestState.CLOSED));
+        assertEq(usdc.balanceOf(address(contest)), 0, "Contract should have zero balance");
     }
 }
 

@@ -90,20 +90,27 @@ contract ContestAccountingTest is Test {
         uint256[] memory bps = new uint256[](1);
         bps[0] = 10000; // 100%
 
-        uint256 beforeA = usdc.balanceOf(a);
-        uint256 beforeOracle = usdc.balanceOf(oracle);
-
         _settle(winners, bps);
 
+        // Settlement is pure accounting - no transfers yet
+        assertEq(usdc.balanceOf(address(contest)), 300e6);
+        
         // totalPoolL1 = 3 * 100 = 300
         uint256 oracleFee = (300e6 * ORACLE_FEE_BPS) / 10000; // 3e6
         uint256 layer1AfterFee = 300e6 - oracleFee;            // 297e6
 
-        // A should receive entire layer1AfterFee
+        // Contestants and oracle claim
+        uint256 beforeA = usdc.balanceOf(a);
+        vm.prank(a);
+        contest.claimEntryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - beforeA, layer1AfterFee);
-        // Oracle should receive oracleFee
+        
+        uint256 beforeOracle = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        contest.claimOracleFee();
         assertEq(usdc.balanceOf(oracle) - beforeOracle, oracleFee);
-        // Contract should hold 0 after no spectators and immediate payouts
+        
+        // Contract should hold 0 after all claims
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
@@ -120,13 +127,6 @@ contract ContestAccountingTest is Test {
         uint256 specA = 100e6;
         uint256 specB = 200e6;
 
-        uint256 s1Before = usdc.balanceOf(s1);
-        uint256 s2Before = usdc.balanceOf(s2);
-        uint256 aBefore = usdc.balanceOf(a);
-        uint256 bBefore = usdc.balanceOf(b);
-        uint256 cBefore = usdc.balanceOf(c);
-        uint256 oracleBefore = usdc.balanceOf(oracle);
-
         uint256 tA = _specDeposit(s1, ENTRY_A, specA);
         uint256 tB = _specDeposit(s2, ENTRY_B, specB);
         assertGt(tA, 0);
@@ -142,48 +142,69 @@ contract ContestAccountingTest is Test {
 
         _settle(winners, bps);
 
-        // Compute expected L1 (contest deposits + prize subsidy only)
-        // Contestant pool: 300
-        // Prize subsidy: 7.5% of (100+200) = 22.5
-        // totalPoolL1 = 300 + 22.5 = 322.5
-        uint256 totalPoolL1 = 322_500_000;
-        uint256 oracleFee = (totalPoolL1 * ORACLE_FEE_BPS) / 10000; // 3.225e6
-        uint256 layer1AfterFee = totalPoolL1 - oracleFee;            // 319.275e6
+        // NEW ACCOUNTING: Oracle fees deducted at deposit time, not settlement
+        // Contestants deposit 300, oracle fee 1% = 3, contestPrizePool = 297
+        // Spectators deposit 300, oracle fee 1% = 3, remaining 297
+        // From 297: prizeShare 7.5% = 22.275, userShare 7.5% = 22.275, collateral 85% = 252.45
+        
+        // Layer 1 pool (already net of oracle fees)
+        uint256 contestantDepositsAfterFee = 300e6 - (300e6 * ORACLE_FEE_BPS) / 10000; // 297e6
+        uint256 spectatorTotal = 300e6;
+        uint256 spectatorAfterOracleFee = spectatorTotal - (spectatorTotal * ORACLE_FEE_BPS) / 10000; // 297e6
+        uint256 prizeSubsidy = (spectatorAfterOracleFee * PRIZE_SHARE_BPS) / 10000; // 22.275e6
+        uint256 layer1Pool = contestantDepositsAfterFee + prizeSubsidy; // 319.275e6
 
-        // Entry payouts (rounded down by integer math):
-        uint256 payoutA = (layer1AfterFee * 6000) / 10000;
-        uint256 payoutB = (layer1AfterFee * 3000) / 10000;
-        uint256 payoutC = (layer1AfterFee * 1000) / 10000;
+        // Entry payouts (already net of fees):
+        uint256 payoutA = (layer1Pool * 6000) / 10000;
+        uint256 payoutB = (layer1Pool * 3000) / 10000;
+        uint256 payoutC = (layer1Pool * 1000) / 10000;
 
-        // Bonuses after fee:
-        uint256 bonusAAfter = (uint256(7_500_000) * (10000 - ORACLE_FEE_BPS)) / 10000; // 7.5e6 * 99%
-        uint256 bonusBAfter = (uint256(15_000_000) * (10000 - ORACLE_FEE_BPS)) / 10000; // 15e6 * 99%
+        // Bonuses (already net of oracle fee from deposit time):
+        uint256 bonusAAfter = (spectatorAfterOracleFee * USER_SHARE_BPS) / 10000 / 2; // Split between A entries
+        uint256 bonusBAfter = (spectatorAfterOracleFee * USER_SHARE_BPS) / 10000 / 2; // Split between B entries
+        // Actually: A gets bonus from 100 deposit, B gets bonus from 200 deposit
+        bonusAAfter = ((100e6 - (100e6 * ORACLE_FEE_BPS) / 10000) * USER_SHARE_BPS) / 10000;
+        bonusBAfter = ((200e6 - (200e6 * ORACLE_FEE_BPS) / 10000) * USER_SHARE_BPS) / 10000;
 
-        // Since contract pays both prize payouts and bonuses in settle, balances for A and B include both
+        // Contestants claim (prize + bonus in one transaction)
+        uint256 aBefore = usdc.balanceOf(a);
+        vm.prank(a);
+        contest.claimEntryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, payoutA + bonusAAfter);
+
+        uint256 bBefore = usdc.balanceOf(b);
+        vm.prank(b);
+        contest.claimEntryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, payoutB + bonusBAfter);
+
+        uint256 cBefore = usdc.balanceOf(c);
+        vm.prank(c);
+        contest.claimEntryPayout(ENTRY_C);
         assertEq(usdc.balanceOf(c) - cBefore, payoutC);
 
-        // Oracle got fee on Layer 1 plus fee on bonuses
-        uint256 bonusFee = (7_500_000 * ORACLE_FEE_BPS) / 10000 + (15_000_000 * ORACLE_FEE_BPS) / 10000; // 225,000
-        assertEq(usdc.balanceOf(oracle) - oracleBefore, oracleFee + bonusFee);
+        // Oracle claims fee (accumulated from all deposits)
+        // Contestant deposits: 300 * 1% = 3
+        // Spectator deposits: 300 * 1% = 3
+        // Total oracle fee = 6
+        uint256 totalOracleFee = ((300e6 + 300e6) * ORACLE_FEE_BPS) / 10000; // 6e6
+        uint256 oracleBefore = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        contest.claimOracleFee();
+        assertEq(usdc.balanceOf(oracle) - oracleBefore, totalOracleFee);
 
-        // Spectator pool winner receives the entire remaining contract balance
+        // Spectator pool winner claims
         uint256 s1Tokens = contest.balanceOf(s1, ENTRY_A);
         uint256 totalSupplyA = uint256(contest.netPosition(ENTRY_A));
         assertEq(s1Tokens, totalSupplyA);
 
-        uint256 s1ClaimBefore = usdc.balanceOf(s1);
+        uint256 s1Before = usdc.balanceOf(s1);
         uint256 contractBefore = usdc.balanceOf(address(contest));
         vm.prank(s1);
         contest.claimPredictionPayout(ENTRY_A);
-        assertEq(usdc.balanceOf(s1) - s1ClaimBefore, contractBefore);
-
-        // No remaining funds in contract after winner claims
-        assertEq(usdc.balanceOf(address(contest)), 0);
-        // Spectator balances before vs after
         assertEq(usdc.balanceOf(s1) - s1Before, contractBefore);
-        assertEq(usdc.balanceOf(s2) - s2Before, 0);
+
+        // No remaining funds in contract after all claims
+        assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
     // ============ S3: spectator withdraws during OPEN (full reversal) ============
@@ -219,15 +240,22 @@ contract ContestAccountingTest is Test {
         uint256[] memory bps = new uint256[](1);
         bps[0] = 10000;
 
-        uint256 bBefore = usdc.balanceOf(b);
-        uint256 oracleBefore = usdc.balanceOf(oracle);
         _settle(winners, bps);
 
         // With 3 contestants and no spectators (after reversal): same as S1 math
         uint256 oracleFee = (300e6 * ORACLE_FEE_BPS) / 10000;
         uint256 afterFee = 300e6 - oracleFee;
+        
+        uint256 bBefore = usdc.balanceOf(b);
+        vm.prank(b);
+        contest.claimEntryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, afterFee);
+        
+        uint256 oracleBefore = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        contest.claimOracleFee();
         assertEq(usdc.balanceOf(oracle) - oracleBefore, oracleFee);
+        
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
@@ -267,8 +295,8 @@ contract ContestAccountingTest is Test {
         assertGt(usdc.balanceOf(s2), before);
     }
 
-    // ============ E1: entry withdrawn in OPEN auto-refunds its spectators ============
-    function testE1_EntryWithdrawnAutoRefundsSpectators() public {
+    // ============ E1: entry withdrawn in OPEN - spectators lose capital ============
+    function testE1_EntryWithdrawn_SpectatorsLoseCapital() public {
         // A joins, spectator predicts on A during OPEN
         _join(a, ENTRY_A);
         uint256 amount = 120e6;
@@ -278,19 +306,27 @@ contract ContestAccountingTest is Test {
         contest.addPrediction(ENTRY_A, amount);
         uint256 tok = contest.balanceOf(s1, ENTRY_A);
         assertGt(tok, 0);
+        
+        uint256 prizeSubsidy = contest.contestPrizePoolSubsidy();
+        uint256 bonus = contest.contestantSubsidy(ENTRY_A);
 
-        // A leaves → auto refund spectator and contestant deposit back
+        // A leaves → spectator funds stay in pool (no auto-refund)
         uint256 aBefore = usdc.balanceOf(a);
         vm.prank(a);
         contest.leaveContest(ENTRY_A);
 
-        // Spectator fully refunded
-        assertEq(usdc.balanceOf(s1), sBefore + amount);
-        assertEq(contest.balanceOf(s1, ENTRY_A), 0);
+        // Spectator NOT refunded - still has tokens but entry withdrawn
+        assertEq(usdc.balanceOf(s1), sBefore); // No refund
+        assertEq(contest.balanceOf(s1, ENTRY_A), tok); // Still has tokens
+        
         // Contestant refunded deposit
         assertEq(usdc.balanceOf(a), aBefore + CONTESTANT_DEPOSIT);
-        // Accounting reset for that entry
-        assertEq(contest.contestantSubsidy(ENTRY_A), 0);
+        
+        // Spectator funds redistributed:
+        // - prizeSubsidy stays in contestPrizePoolSubsidy
+        // - orphaned bonus MOVED to contestPrizePoolSubsidy (since entry owner left)
+        assertEq(contest.contestPrizePoolSubsidy(), prizeSubsidy + bonus);
+        assertEq(contest.contestantSubsidy(ENTRY_A), 0); // Moved to prize pool
     }
 
     // ============ E2: zero spectators; varied payout splits ============
@@ -307,25 +343,37 @@ contract ContestAccountingTest is Test {
         uint256[] memory bps = new uint256[](3);
         bps[0] = 5000; bps[1] = 3000; bps[2] = 2000;
 
-        uint256 aBefore = usdc.balanceOf(a);
-        uint256 bBefore = usdc.balanceOf(b);
-        uint256 cBefore = usdc.balanceOf(c);
-        uint256 oracleBefore = usdc.balanceOf(oracle);
-
         _settle(winners, bps);
 
         // totalPoolL1 = 300 (no spectators)
         uint256 fee = (300e6 * ORACLE_FEE_BPS) / 10000; // 3e6
         uint256 afterFee = 300e6 - fee;                 // 297e6
-        assertEq(usdc.balanceOf(c) - cBefore, (afterFee * 5000) / 10000);
+        
+        uint256 aBefore = usdc.balanceOf(a);
+        vm.prank(a);
+        contest.claimEntryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, (afterFee * 3000) / 10000);
+        
+        uint256 bBefore = usdc.balanceOf(b);
+        vm.prank(b);
+        contest.claimEntryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, (afterFee * 2000) / 10000);
+        
+        uint256 cBefore = usdc.balanceOf(c);
+        vm.prank(c);
+        contest.claimEntryPayout(ENTRY_C);
+        assertEq(usdc.balanceOf(c) - cBefore, (afterFee * 5000) / 10000);
+        
+        uint256 oracleBefore = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        contest.claimOracleFee();
         assertEq(usdc.balanceOf(oracle) - oracleBefore, fee);
+        
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
-    // ============ E6: distributeExpiredContest pushes unclaimed payouts ============
-    function testE6_DistributeExpiredContest_PushesUnclaimed() public {
+    // ============ E6: sweepToTreasury after expiry sweeps unclaimed funds ============
+    function testE6_SweepToTreasury_AfterExpiry() public {
         // Two contestants, no spectators
         _join(a, ENTRY_A);
         _join(b, ENTRY_B);
@@ -340,16 +388,18 @@ contract ContestAccountingTest is Test {
         // Settle
         _settle(winners, bps);
 
-        // Warp past expiry and force distribute
-        vm.warp(block.timestamp + EXPIRY + 1);
-        uint256 aBefore = usdc.balanceOf(a);
-        uint256 bBefore = usdc.balanceOf(b);
-        vm.prank(oracle);
-        contest.distributeExpiredContest();
+        // Users don't claim - funds remain in contract
+        uint256 contractBalance = usdc.balanceOf(address(contest));
+        assertGt(contractBalance, 0);
 
-        // Payouts were already sent at settlement; distribute should not change balances
-        assertEq(usdc.balanceOf(a), aBefore);
-        assertEq(usdc.balanceOf(b), bBefore);
+        // Warp past expiry and sweep to treasury
+        vm.warp(block.timestamp + EXPIRY + 1);
+        uint256 oracleBefore = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        contest.sweepToTreasury();
+
+        // All unclaimed funds swept to oracle
+        assertEq(usdc.balanceOf(oracle) - oracleBefore, contractBalance);
         // Contest closed
         assertEq(uint256(contest.state()), uint256(Contest.ContestState.CLOSED));
         // No funds left
@@ -396,8 +446,16 @@ contract ContestAccountingTest is Test {
         // All spectators on A, but B will be the first winner
         _specDeposit(s1, ENTRY_A, 200e6);
 
-        // Compute spectator pool (85% of 200)
-        uint256 spectatorPool = (200e6 * 85) / 100;
+        // NEW ACCOUNTING: Oracle fees deducted at deposit time
+        // Contestants deposit 200, oracle fee 1% = 2, contestPrizePool = 198
+        // Spectator deposits 200, oracle fee 1% = 2, remaining 198
+        // From 198: prizeShare 7.5% = 14.85, userShare 7.5% = 14.85, collateral 85% = 168.3
+        
+        uint256 contestantDepositsAfterFee = 200e6 - (200e6 * ORACLE_FEE_BPS) / 10000; // 198e6
+        uint256 spectatorAfterOracleFee = 200e6 - (200e6 * ORACLE_FEE_BPS) / 10000; // 198e6
+        uint256 prizeSubsidy = (spectatorAfterOracleFee * PRIZE_SHARE_BPS) / 10000; // 14.85e6
+        uint256 bonusA = (spectatorAfterOracleFee * USER_SHARE_BPS) / 10000; // 14.85e6
+        uint256 spectatorPool = (spectatorAfterOracleFee * (10000 - PRIZE_SHARE_BPS - USER_SHARE_BPS)) / 10000; // 168.3e6
 
         // Settle with B first; no one holds B tokens → pool redistributed by payoutBps
         uint256[] memory winners = new uint256[](2);
@@ -407,27 +465,33 @@ contract ContestAccountingTest is Test {
         bps[0] = 6000; // 60%
         bps[1] = 4000; // 40%
 
-        // Record balances before
-        uint256 aBefore = usdc.balanceOf(a);
-        uint256 bBefore = usdc.balanceOf(b);
-
         _settle(winners, bps);
 
-        // Base Layer 1: deposits + prize subsidy = 200 + 15 = 215; fee 1% = 2.15; after = 212.85
-        uint256 totalL1 = 215e6;
-        uint256 fee = (totalL1 * ORACLE_FEE_BPS) / 10000; // 2.15e6
-        uint256 afterFee = totalL1 - fee;                  // 212.85e6
-        uint256 baseB = (afterFee * 6000) / 10000;         // 127.71e6
-        uint256 baseA = (afterFee * 4000) / 10000;         // 85.14e6
+        // Base Layer 1 (already net of oracle fees)
+        uint256 layer1Pool = contestantDepositsAfterFee + prizeSubsidy; // 212.85e6
+        uint256 baseB = (layer1Pool * 6000) / 10000;
+        uint256 baseA = (layer1Pool * 4000) / 10000;
 
-        // Redistribution from spectator pool (no extra fee applied):
-        uint256 redistB = (spectatorPool * 6000) / 10000; // 102e6
-        uint256 redistA = (spectatorPool * 4000) / 10000; // 68e6
-        // Bonus after fee for A from spectators on A (7.5% of 200, less 1%)
-        uint256 bonusAAfterFee = (uint256(15_000_000) * (10000 - ORACLE_FEE_BPS)) / 10000; // 14.85e6
+        // Redistribution from spectator pool (already net of oracle fee):
+        uint256 redistB = (spectatorPool * 6000) / 10000;
+        uint256 redistA = (spectatorPool * 4000) / 10000;
+        // Bonus for A (already net of oracle fee)
+        uint256 bonusAAfterFee = bonusA;
 
-        assertEq(usdc.balanceOf(b) - bBefore, baseB + redistB);
+        // Contestants claim (spectator pool was added to their payouts in settlement)
+        uint256 aBefore = usdc.balanceOf(a);
+        vm.prank(a);
+        contest.claimEntryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, baseA + redistA + bonusAAfterFee);
+
+        uint256 bBefore = usdc.balanceOf(b);
+        vm.prank(b);
+        contest.claimEntryPayout(ENTRY_B);
+        assertEq(usdc.balanceOf(b) - bBefore, baseB + redistB);
+
+        // Oracle claims fee
+        vm.prank(oracle);
+        contest.claimOracleFee();
 
         // Spectator pool should be zeroed; no funds left for spectators to claim
         assertEq(contest.predictionPrizePool(), 0);
@@ -470,14 +534,20 @@ contract ContestAccountingTest is Test {
         uint256[] memory bps = new uint256[](1);
         bps[0] = 10000;
 
-        uint256 cBefore = usdc.balanceOf(c);
-        uint256 oracleBefore = usdc.balanceOf(oracle);
         vm.prank(oracle);
         highFee.settleContest(winners, bps);
 
         // total = 300, fee = 30, after = 270
+        uint256 cBefore = usdc.balanceOf(c);
+        vm.prank(c);
+        highFee.claimEntryPayout(ENTRY_C);
         assertEq(usdc.balanceOf(c) - cBefore, 270e6);
+        
+        uint256 oracleBefore = usdc.balanceOf(oracle);
+        vm.prank(oracle);
+        highFee.claimOracleFee();
         assertEq(usdc.balanceOf(oracle) - oracleBefore, 30e6);
+        
         assertEq(usdc.balanceOf(address(highFee)), 0);
     }
 
@@ -500,11 +570,23 @@ contract ContestAccountingTest is Test {
         bps[0] = 6000; bps[1] = 3000; bps[2] = 1000;
         _settle(winners, bps);
 
-        // claim spectator for A
+        // All contestants claim
+        vm.prank(a);
+        contest.claimEntryPayout(ENTRY_A);
+        vm.prank(b);
+        contest.claimEntryPayout(ENTRY_B);
+        vm.prank(c);
+        contest.claimEntryPayout(ENTRY_C);
+
+        // Oracle claims fee
+        vm.prank(oracle);
+        contest.claimOracleFee();
+
+        // Spectator winner claims
         vm.prank(s1);
         contest.claimPredictionPayout(ENTRY_A);
 
-        // no claim for B (loser) and no remaining L1 payouts (paid immediately)
+        // After all claims, contract balance should be zero
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 }

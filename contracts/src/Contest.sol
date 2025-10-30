@@ -112,11 +112,7 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Contestant subsidies per entry from prediction volume (7.5% of spectator deposits)
     mapping(uint256 => uint256) public contestantSubsidy;
     
-    
-    /// @notice Track total payment tokens deposited by each spectator (for withdrawals)
-    mapping(address => uint256) public spectatorTotalDeposited;
-    
-    /// @notice Track deposits per spectator per entry (for auto-refunds on withdrawal)
+    /// @notice Track deposits per spectator per entry (for withdrawal refunds)
     mapping(address => mapping(uint256 => uint256)) public spectatorDepositedPerEntry;
     
     /// @notice Winning entry ID after settlement (for winner-take-all)
@@ -124,6 +120,9 @@ contract Contest is ERC1155, ReentrancyGuard {
     
     /// @notice Flag indicating if spectator market has been resolved
     bool public spectatorMarketResolved;
+    
+    /// @notice Accumulated oracle fee from settlement (claimable by oracle)
+    uint256 public accumulatedOracleFee;
     
     // ============ Events ============
     
@@ -133,12 +132,10 @@ contract Contest is ERC1155, ReentrancyGuard {
     event PredictionsClosed();
     event PredictionAdded(address indexed spectator, uint256 indexed entryId, uint256 amount, uint256 tokensReceived);
     event PredictionWithdrawn(address indexed spectator, uint256 amount);
-    event SpectatorAutoRefunded(address indexed spectator, uint256 indexed entryId, uint256 amount);
     event ContestSettled(uint256[] winningEntries, uint256[] payouts);
     event EntryPayoutClaimed(address indexed owner, uint256 indexed entryId, uint256 amount);
     event SpectatorPayoutRedeemed(address indexed spectator, uint256 indexed entryId, uint256 payout);
     event ContestCancelled();
-    event ContestForceDistributed(uint256 entriesPaid, uint256 spectatorsPaid, uint256 timestamp);
     
     /// @notice Modifier to restrict functions to only the oracle
     modifier onlyOracle() {
@@ -206,7 +203,11 @@ contract Contest is ERC1155, ReentrancyGuard {
         entries.push(entryId);
         entryOwner[entryId] = msg.sender;
         userEntries[msg.sender].push(entryId);
-        contestPrizePool += contestantDepositAmount;
+        
+        // Deduct oracle fee
+        uint256 oracleFee = _calculateOracleFee(contestantDepositAmount);
+        accumulatedOracleFee += oracleFee;
+        contestPrizePool += contestantDepositAmount - oracleFee;
         
         paymentToken.safeTransferFrom(msg.sender, address(this), contestantDepositAmount);
         
@@ -217,7 +218,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @notice User withdraws an entry and gets deposit back
      * @param entryId Entry to withdraw
      * @dev Works in OPEN state (before contest starts) or CANCELLED state (full refund)
-     * @dev Automatically refunds all spectators who predicted on this entry
+     * @dev Spectator funds on this entry remain in prize pool (no refunds)
      */
     function leaveContest(uint256 entryId) external nonReentrant {
         require(
@@ -227,50 +228,28 @@ contract Contest is ERC1155, ReentrancyGuard {
         require(entryOwner[entryId] == msg.sender, "Not entry owner");
         require(!entryWithdrawn[entryId], "Entry already withdrawn");
         
-        // Mark entry as withdrawn first
+        // Mark entry as withdrawn
         entryWithdrawn[entryId] = true;
-        contestPrizePool -= contestantDepositAmount;
         
-        // Auto-refund all spectators who predicted on this entry
-        uint256 refundCount = 0;
-        for (uint256 i = 0; i < spectators.length; i++) {
-            address spectator = spectators[i];
-            uint256 tokenBalance = balanceOf(spectator, entryId);
-            
-            if (tokenBalance > 0) {
-                uint256 depositedOnThisEntry = spectatorDepositedPerEntry[spectator][entryId];
-                
-                if (depositedOnThisEntry > 0) {
-                    // Burn tokens
-                    _burn(spectator, entryId, tokenBalance);
-                    
-                    // Calculate fee split reversal
-                    uint256 prizeShare = (depositedOnThisEntry * prizeShareBps) / BPS_DENOMINATOR;
-                    uint256 userShare = (depositedOnThisEntry * userShareBps) / BPS_DENOMINATOR;
-                    uint256 totalFee = prizeShare + userShare;
-                    uint256 collateralInDeposit = depositedOnThisEntry - totalFee;
-                    
-                    // Reverse accounting
-                    netPosition[entryId] -= int256(tokenBalance);
-                    contestPrizePoolSubsidy -= prizeShare;
-                    contestantSubsidy[entryId] -= userShare;
-                    predictionPrizePool -= collateralInDeposit;
-                    spectatorTotalDeposited[spectator] -= depositedOnThisEntry;
-                    spectatorDepositedPerEntry[spectator][entryId] = 0;
-                    
-                    // Refund 100% to spectator
-                    paymentToken.safeTransfer(spectator, depositedOnThisEntry);
-                    
-                    emit SpectatorAutoRefunded(spectator, entryId, depositedOnThisEntry);
-                    refundCount++;
-                }
-            }
+        // Reverse oracle fee deduction from contestant deposit
+        uint256 oracleFee = _calculateOracleFee(contestantDepositAmount);
+        accumulatedOracleFee -= oracleFee;
+        contestPrizePool -= (contestantDepositAmount - oracleFee);
+        
+        // Spectator funds on this entry are redistributed to winners:
+        // - contestPrizePoolSubsidy: already in pool → goes to all winners
+        // - contestantSubsidy[entryId]: move to prize pool since entry owner left
+        // - predictionPrizePool: already in pool → goes to winning spectators
+        uint256 orphanedBonus = contestantSubsidy[entryId];
+        if (orphanedBonus > 0) {
+            contestantSubsidy[entryId] = 0;
+            contestPrizePoolSubsidy += orphanedBonus;
         }
         
-        // Refund entry owner
+        // Refund entry owner (full amount)
         paymentToken.safeTransfer(msg.sender, contestantDepositAmount);
         
-        emit EntryWithdrawn(entryId, msg.sender, refundCount);
+        emit EntryWithdrawn(entryId, msg.sender, 0);
     }
     
     /**
@@ -298,6 +277,34 @@ contract Contest is ERC1155, ReentrancyGuard {
         state = ContestState.LOCKED;
         
         emit PredictionsClosed();
+    }
+    
+    // ============ Fee Calculation Helpers ============
+    
+    /**
+     * @notice Calculate spectator deposit split into prize share, user share, and collateral
+     * @param amount Total deposit amount
+     * @return prizeShare Amount going to prize pool subsidy
+     * @return userShare Amount going to contestant bonus
+     * @return collateral Amount backing prediction tokens
+     */
+    function _calculateSpectatorSplit(uint256 amount) internal view returns (
+        uint256 prizeShare,
+        uint256 userShare,
+        uint256 collateral
+    ) {
+        prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
+        userShare = (amount * userShareBps) / BPS_DENOMINATOR;
+        collateral = amount - prizeShare - userShare;
+    }
+    
+    /**
+     * @notice Calculate oracle fee from an amount
+     * @param amount Amount to calculate fee on
+     * @return fee Oracle fee amount
+     */
+    function _calculateOracleFee(uint256 amount) internal view returns (uint256 fee) {
+        fee = (amount * oracleFeeBps) / BPS_DENOMINATOR;
     }
     
     // ============ Layer 2: Spectator Functions ============
@@ -345,18 +352,19 @@ contract Contest is ERC1155, ReentrancyGuard {
             isSpectator[msg.sender] = true;
         }
         
-        // Split subsidies based on configured shares
-        uint256 prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
-        uint256 contestantShare = (amount * userShareBps) / BPS_DENOMINATOR;
-        uint256 totalSubsidy = prizeShare + contestantShare;
-        uint256 collateral = amount - totalSubsidy;
+        // Deduct oracle fee first
+        uint256 oracleFee = _calculateOracleFee(amount);
+        accumulatedOracleFee += oracleFee;
+        uint256 amountAfterFee = amount - oracleFee;
+        
+        // Calculate fee split on amount after oracle fee
+        (uint256 prizeShare, uint256 userShare, uint256 collateral) = _calculateSpectatorSplit(amountAfterFee);
 
         // Accumulate subsidies (distributed on settlement)
         contestPrizePoolSubsidy += prizeShare;
-        contestantSubsidy[entryId] += contestantShare;
+        contestantSubsidy[entryId] += userShare;
 
-        // Track user's total deposits (for withdrawal refunds)
-        spectatorTotalDeposited[msg.sender] += amount;
+        // Track deposits per entry (for withdrawal refunds)
         spectatorDepositedPerEntry[msg.sender][entryId] += amount;
         
         // Get current LMSR price
@@ -400,15 +408,18 @@ contract Contest is ERC1155, ReentrancyGuard {
         require(tokenAmount > 0, "Amount must be > 0");
         require(balanceOf(msg.sender, entryId) >= tokenAmount, "Insufficient balance");
         
-        // Calculate what portion of user's total deposit this represents
+        // Calculate what portion of user's deposit this represents
         uint256 userTotalTokens = balanceOf(msg.sender, entryId);
-        uint256 refundAmount = (spectatorTotalDeposited[msg.sender] * tokenAmount) / userTotalTokens;
+        uint256 depositedOnEntry = spectatorDepositedPerEntry[msg.sender][entryId];
+        uint256 refundAmount = (depositedOnEntry * tokenAmount) / userTotalTokens;
         
-        // Calculate fee split reversal
-        uint256 prizeShare = (refundAmount * prizeShareBps) / BPS_DENOMINATOR;
-        uint256 userShare = (refundAmount * userShareBps) / BPS_DENOMINATOR;
-        uint256 totalFee = prizeShare + userShare;
-        uint256 collateralInRefund = refundAmount - totalFee;
+        // Reverse oracle fee
+        uint256 oracleFee = _calculateOracleFee(refundAmount);
+        accumulatedOracleFee -= oracleFee;
+        uint256 amountAfterFee = refundAmount - oracleFee;
+        
+        // Calculate fee split reversal using helper (on amount after oracle fee)
+        (uint256 prizeShare, uint256 userShare, uint256 collateral) = _calculateSpectatorSplit(amountAfterFee);
         
         // Burn tokens
         _burn(msg.sender, entryId, tokenAmount);
@@ -419,8 +430,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         contestantSubsidy[entryId] -= userShare;
         
         // Reverse collateral
-        predictionPrizePool -= collateralInRefund;
-        spectatorTotalDeposited[msg.sender] -= refundAmount;
+        predictionPrizePool -= collateral;
         spectatorDepositedPerEntry[msg.sender][entryId] -= refundAmount;
         
         // Refund 100% of what they deposited for these tokens
@@ -432,12 +442,12 @@ contract Contest is ERC1155, ReentrancyGuard {
     // ============ Combined Settlement ============
     
     /**
-     * @notice Oracle settles contest - distributes Layer 1 prizes and resolves Layer 2 market
-     * @dev ONE call does everything!
+     * @notice Oracle settles contest - pure accounting (no transfers)
      * @param winningEntries Array of winning entry IDs (only entries with payouts > 0)
      * @param payoutBps Array of payout basis points (must sum to 10000)
      * @dev First entry in winningEntries is the overall winner (for spectator market)
      * @dev Entries not included are assumed to have 0% payout
+     * @dev All payouts stored for later claims - NO transfers in this function
      */
     function settleContest(
         uint256[] calldata winningEntries,
@@ -461,53 +471,29 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         state = ContestState.SETTLED;
         
-        // Step 1: Calculate Layer 1 prize pool (contest deposits + prize pool subsidy only)
-        // Entry bonuses (contestantSubsidy) are handled separately below and DO NOT contribute to layer1 payouts
-        uint256 totalPool = contestPrizePool + contestPrizePoolSubsidy;
-
-        // Step 2: Apply oracle fee to Layer 1 pool
-        uint256 oracleFeeLayer1 = (totalPool * oracleFeeBps) / BPS_DENOMINATOR;
+        // Oracle fees already deducted at deposit time - accumulatedOracleFee is ready to claim
+        // All pools (contestPrizePool, contestPrizePoolSubsidy, contestantSubsidy, predictionPrizePool)
+        // are already net of oracle fees
         
-        // Step 3: Calculate contestant prize pool (after oracle fee)
-        uint256 layer1PoolAfterFee = (totalPool * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
+        // Step 1: Calculate Layer 1 prize pool (already after oracle fee)
+        uint256 layer1Pool = contestPrizePool + contestPrizePoolSubsidy;
         
-        // Step 4: Pay contestant payouts
+        // Step 2: Store contestant prize payouts (NO TRANSFERS)
         for (uint256 i = 0; i < winningEntries.length; i++) {
             uint256 entryId = winningEntries[i];
-            uint256 payout = (layer1PoolAfterFee * payoutBps[i]) / BPS_DENOMINATOR;
-            // Pay owner directly and emit event
-            paymentToken.safeTransfer(entryOwner[entryId], payout);
-            emit EntryPayoutClaimed(entryOwner[entryId], entryId, payout);
+            uint256 payout = (layer1Pool * payoutBps[i]) / BPS_DENOMINATOR;
+            finalEntryPayouts[entryId] = payout;
         }
         
-        // Step 5: pay contestant subsidies (after oracle fee) and track bonus fee portion for oracle
-        uint256 bonusFeeTotal = 0;
-        for (uint256 i = 0; i < entries.length; i++) {
-            uint256 entryId = entries[i];
-            uint256 bonus = contestantSubsidy[entryId];
-            if (bonus > 0) {
-                contestantSubsidy[entryId] = 0;
-                // Deduct oracle fee proportionally from each bonus
-                uint256 bonusAfterFee = (bonus * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
-                uint256 bonusFee = bonus - bonusAfterFee;
-                bonusFeeTotal += bonusFee;
-                paymentToken.safeTransfer(entryOwner[entryId], bonusAfterFee);
-            }
-        }
+        // Step 3: Contestant bonuses already net of oracle fee - no adjustment needed
+        // contestantSubsidy[entryId] values are ready to be claimed as-is
         
-        // Step 6: Pay oracle fee (Layer 1 fee + bonuses fee)
-        uint256 totalOracleFee = oracleFeeLayer1 + bonusFeeTotal;
-        if (totalOracleFee > 0) {
-            paymentToken.safeTransfer(oracle, totalOracleFee);
-        }
-        
-        // Step 7: Determine Layer 2 winner (winner-take-all)
-        // The first entry in winningEntries array is the contest winner (highest payout)
+        // Step 4: Set Layer 2 winner (winner-take-all)
         spectatorWinningEntry = winningEntries[0];
         spectatorMarketResolved = true;
 
-        // Step 8: If no ERC1155 supply exists for the winning entry (no one predicted correctly),
-        // redistribute the spectator pool to Layer 1 winners proportionally to payoutBps.
+        // Step 5: Handle edge case - no ERC1155 supply on winning entry
+        // Add spectator pool to winning contestants' payouts
         uint256 winnerSupply = uint256(netPosition[spectatorWinningEntry]);
         if (predictionPrizePool > 0 && winnerSupply == 0) {
             uint256 poolToDistribute = predictionPrizePool;
@@ -518,17 +504,15 @@ contract Contest is ERC1155, ReentrancyGuard {
                 uint256 extra = (poolToDistribute * payoutBps[i]) / BPS_DENOMINATOR;
                 if (extra > 0) {
                     distributed += extra;
-                    paymentToken.safeTransfer(entryOwner[entryId], extra);
+                    finalEntryPayouts[entryId] += extra;
                 }
             }
-            // Send any rounding remainder to the top winner to ensure full pool distribution
+            // Send any rounding remainder to the top winner
             if (distributed < poolToDistribute) {
                 uint256 remainder = poolToDistribute - distributed;
-                paymentToken.safeTransfer(entryOwner[winningEntries[0]], remainder);
+                finalEntryPayouts[winningEntries[0]] += remainder;
             }
         }
-        
-        // Step 9: No dust expected now; any residual belongs to predictionPrizePool
 
         emit ContestSettled(winningEntries, payoutBps);
     }
@@ -538,41 +522,39 @@ contract Contest is ERC1155, ReentrancyGuard {
     /**
      * @notice User claims payout for a specific entry after settlement
      * @param entryId The entry to claim payout for
+     * @dev Pays both prize payout AND contestant bonus in one transaction
      */
     function claimEntryPayout(uint256 entryId) external nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
         require(entryOwner[entryId] == msg.sender, "Not entry owner");
         
         uint256 payout = finalEntryPayouts[entryId];
-        require(payout > 0, "No payout");
+        uint256 bonus = contestantSubsidy[entryId];
+        uint256 totalClaim = payout + bonus;
         
+        require(totalClaim > 0, "No payout");
+        
+        // Clear both payouts
         finalEntryPayouts[entryId] = 0;
-        paymentToken.safeTransfer(msg.sender, payout);
+        contestantSubsidy[entryId] = 0;
         
-        emit EntryPayoutClaimed(msg.sender, entryId, payout);
+        // Single transfer for both prize + bonus
+        paymentToken.safeTransfer(msg.sender, totalClaim);
+        
+        emit EntryPayoutClaimed(msg.sender, entryId, totalClaim);
     }
     
     /**
-     * @notice User claims payouts for all their entries at once
+     * @notice Oracle claims accumulated fee from settlement
      */
-    function claimAllEntryPayouts() external nonReentrant {
-        require(state == ContestState.SETTLED, "Contest not settled");
+    function claimOracleFee() external nonReentrant {
+        require(msg.sender == oracle, "Not oracle");
+        require(accumulatedOracleFee > 0, "No fee to claim");
         
-        uint256 totalPayout = 0;
-        uint256[] memory myEntries = userEntries[msg.sender];
+        uint256 fee = accumulatedOracleFee;
+        accumulatedOracleFee = 0;
         
-        for (uint256 i = 0; i < myEntries.length; i++) {
-            uint256 entryId = myEntries[i];
-            uint256 payout = finalEntryPayouts[entryId];
-            if (payout > 0) {
-                finalEntryPayouts[entryId] = 0;
-                totalPayout += payout;
-                emit EntryPayoutClaimed(msg.sender, entryId, payout);
-            }
-        }
-        
-        require(totalPayout > 0, "No payouts");
-        paymentToken.safeTransfer(msg.sender, totalPayout);
+        paymentToken.safeTransfer(oracle, fee);
     }
     
     /**
@@ -583,6 +565,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         require(state == ContestState.SETTLED, "Contest not settled");
         require(spectatorMarketResolved, "Market not resolved");
         require(entryOwner[entryId] != address(0), "Entry does not exist");
+        require(!entryWithdrawn[entryId], "Entry was withdrawn");
         
         uint256 balance = balanceOf(msg.sender, entryId);
         require(balance > 0, "No tokens");
@@ -658,58 +641,89 @@ contract Contest is ERC1155, ReentrancyGuard {
         emit ContestCancelled();
     }
     
+    // ============ Optional Push Functions (Convenience) ============
+    
     /**
-     * @notice Distribute all unclaimed winnings after contest expires
-     * @dev Can only be called after expiryTimestamp has passed
-     * 
-     * This function distributes all unclaimed winnings to their rightful owners:
-     * - Pushes unclaimed entry payouts
-     * - Pushes unclaimed spectator payouts (winners only)
-     * 
-     * Use case: Users forgot to claim or lost access to accounts.
-     * After expiry, oracle can force distribution to prevent funds being locked forever.
+     * @notice Push contestant payouts (prize + bonus) to specific entries
+     * @param entryIds Array of entry IDs to push payouts for
+     * @dev Oracle can use this to help users who forgot to claim
+     * @dev Gas-efficient: oracle controls which entries to push
      */
-    function distributeExpiredContest() external onlyOracle nonReentrant {
+    function pushContestantPayouts(uint256[] calldata entryIds) external onlyOracle nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
-        require(block.timestamp >= expiryTimestamp, "Expiry not reached");
         
-        uint256 entriesPaid = 0;
-        uint256 spectatorsPaid = 0;
-        
-        // Push unclaimed entry payouts
-        for (uint256 i = 0; i < entries.length; i++) {
-            uint256 entryId = entries[i];
+        for (uint256 i = 0; i < entryIds.length; i++) {
+            uint256 entryId = entryIds[i];
             uint256 payout = finalEntryPayouts[entryId];
-            if (payout > 0) {
+            uint256 bonus = contestantSubsidy[entryId];
+            uint256 totalClaim = payout + bonus;
+            
+            if (totalClaim > 0) {
                 finalEntryPayouts[entryId] = 0;
+                contestantSubsidy[entryId] = 0;
                 address owner = entryOwner[entryId];
-                paymentToken.safeTransfer(owner, payout);
-                entriesPaid++;
+                paymentToken.safeTransfer(owner, totalClaim);
+                emit EntryPayoutClaimed(owner, entryId, totalClaim);
             }
         }
+    }
+    
+    /**
+     * @notice Push spectator payouts to specific addresses
+     * @param spectatorAddresses Array of spectator addresses to push payouts for
+     * @param entryId The winning entry ID (should be spectatorWinningEntry)
+     * @dev Oracle can use this to help spectators who forgot to claim
+     * @dev Gas-efficient: oracle controls which spectators to push
+     */
+    function pushSpectatorPayouts(address[] calldata spectatorAddresses, uint256 entryId) external onlyOracle nonReentrant {
+        require(state == ContestState.SETTLED, "Contest not settled");
+        require(spectatorMarketResolved, "Market not resolved");
+        require(entryId == spectatorWinningEntry, "Not winning entry");
         
-        // Push unclaimed spectator payouts (winners only)
-        uint256 totalSupply = uint256(netPosition[spectatorWinningEntry]);
+        uint256 totalSupplyBefore = uint256(netPosition[entryId]);
+        require(totalSupplyBefore > 0, "No supply");
         
-        if (totalSupply > 0) {
-            for (uint256 i = 0; i < spectators.length; i++) {
-                address spectator = spectators[i];
-                uint256 balance = balanceOf(spectator, spectatorWinningEntry);
-                if (balance > 0) {
-                    _burn(spectator, spectatorWinningEntry, balance);
-                    uint256 payout = (balance * predictionPrizePool) / totalSupply;
-                    if (payout > 0) {
-                        paymentToken.safeTransfer(spectator, payout);
-                        spectatorsPaid++;
+        for (uint256 i = 0; i < spectatorAddresses.length; i++) {
+            address spectator = spectatorAddresses[i];
+            uint256 balance = balanceOf(spectator, entryId);
+            
+            if (balance > 0) {
+                _burn(spectator, entryId, balance);
+                netPosition[entryId] -= int256(balance);
+                
+                uint256 payout = (balance * predictionPrizePool) / totalSupplyBefore;
+                
+                if (payout > 0) {
+                    if (payout <= predictionPrizePool) {
+                        predictionPrizePool -= payout;
+                    } else {
+                        predictionPrizePool = 0;
                     }
+                    paymentToken.safeTransfer(spectator, payout);
+                    emit SpectatorPayoutRedeemed(spectator, entryId, payout);
                 }
             }
-            // After pushing all, zero the prediction pool to avoid dust
-            predictionPrizePool = 0;
         }
+    }
+    
+    /**
+     * @notice Sweep remaining unclaimed funds to treasury after expiry
+     * @dev Can only be called after expiryTimestamp
+     * @dev Sweeps any remaining balance to oracle address
+     */
+    function sweepToTreasury() external onlyOracle nonReentrant {
+        require(block.timestamp >= expiryTimestamp, "Expiry not reached");
         
-        state = ContestState.CLOSED;
-        emit ContestForceDistributed(entriesPaid, spectatorsPaid, block.timestamp);
+        uint256 remaining = paymentToken.balanceOf(address(this));
+        if (remaining > 0) {
+            paymentToken.safeTransfer(oracle, remaining);
+            
+            // Zero out any remaining accounting
+            predictionPrizePool = 0;
+            accumulatedOracleFee = 0;
+            
+            state = ContestState.CLOSED;
+        }
     }
     
     // ============ View Functions ============
@@ -741,4 +755,5 @@ contract Contest is ERC1155, ReentrancyGuard {
         return spectators[index];
     }
 }
+
 
