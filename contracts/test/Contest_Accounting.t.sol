@@ -20,20 +20,23 @@ contract ContestAccountingTest is Test {
     uint256 public constant ENTRY_B = 1002;
     uint256 public constant ENTRY_C = 1003;
 
-    uint256 public constant CONTESTANT_DEPOSIT = 100e6; // 6 decimals (USDC-like)
+    uint256 public constant PRIMARY_DEPOSIT = 100e6; // 6 decimals (USDC-like)
     uint256 public constant ORACLE_FEE_BPS = 100;       // 1%
     uint256 public constant LIQUIDITY = 1000e6;
     uint256 public constant DEMAND_SENSITIVITY = 500;   // 5%
     uint256 public constant PRIZE_SHARE_BPS = 750;      // 7.5%
     uint256 public constant USER_SHARE_BPS = 750;       // 7.5%
     uint256 public constant EXPIRY = 7 days;
+    
+    // Empty merkle proof for tests (no gating)
+    bytes32[] emptyProof;
 
     function setUp() public {
         usdc = new MockUSDC();
         contest = new Contest(
             address(usdc),
             oracle,
-            CONTESTANT_DEPOSIT,
+            PRIMARY_DEPOSIT,
             ORACLE_FEE_BPS,
             block.timestamp + EXPIRY,
             LIQUIDITY,
@@ -53,21 +56,21 @@ contract ContestAccountingTest is Test {
     }
 
     function _join(address user, uint256 entryId) internal {
-        _mintAndApprove(user, CONTESTANT_DEPOSIT);
+        _mintAndApprove(user, PRIMARY_DEPOSIT);
         vm.prank(user);
-        contest.joinContest(entryId);
+        contest.addPrimaryPosition(entryId, emptyProof);
     }
 
     function _specDeposit(address user, uint256 entryId, uint256 amount) internal returns (uint256 tokens) {
         _mintAndApprove(user, amount);
         vm.prank(user);
-        contest.addPrediction(entryId, amount);
+        contest.addSecondaryPosition(entryId, amount, emptyProof);
         tokens = contest.balanceOf(user, entryId);
     }
 
     function _activate() internal {
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
     }
 
     function _settle(uint256[] memory winners, uint256[] memory bps) internal {
@@ -102,7 +105,7 @@ contract ContestAccountingTest is Test {
         // Contestants and oracle claim
         uint256 beforeA = usdc.balanceOf(a);
         vm.prank(a);
-        contest.claimEntryPayout(ENTRY_A);
+        contest.claimPrimaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - beforeA, layer1AfterFee);
         
         uint256 beforeOracle = usdc.balanceOf(oracle);
@@ -169,17 +172,17 @@ contract ContestAccountingTest is Test {
         // Contestants claim (prize + bonus in one transaction)
         uint256 aBefore = usdc.balanceOf(a);
         vm.prank(a);
-        contest.claimEntryPayout(ENTRY_A);
+        contest.claimPrimaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, payoutA + bonusAAfter);
 
         uint256 bBefore = usdc.balanceOf(b);
         vm.prank(b);
-        contest.claimEntryPayout(ENTRY_B);
+        contest.claimPrimaryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, payoutB + bonusBAfter);
 
         uint256 cBefore = usdc.balanceOf(c);
         vm.prank(c);
-        contest.claimEntryPayout(ENTRY_C);
+        contest.claimPrimaryPayout(ENTRY_C);
         assertEq(usdc.balanceOf(c) - cBefore, payoutC);
 
         // Oracle claims fee (accumulated from all deposits)
@@ -200,7 +203,7 @@ contract ContestAccountingTest is Test {
         uint256 s1Before = usdc.balanceOf(s1);
         uint256 contractBefore = usdc.balanceOf(address(contest));
         vm.prank(s1);
-        contest.claimPredictionPayout(ENTRY_A);
+        contest.claimSecondaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(s1) - s1Before, contractBefore);
 
         // No remaining funds in contract after all claims
@@ -215,7 +218,7 @@ contract ContestAccountingTest is Test {
         uint256 amount = 100e6;
         _mintAndApprove(s1, amount);
         vm.prank(s1);
-        contest.addPrediction(ENTRY_A, amount);
+        contest.addSecondaryPosition(ENTRY_A, amount, emptyProof);
 
         uint256 tokens = contest.balanceOf(s1, ENTRY_A);
         assertGt(tokens, 0);
@@ -223,12 +226,12 @@ contract ContestAccountingTest is Test {
         // Withdraw in OPEN → full refund and accounting reversal
         uint256 s1Before = usdc.balanceOf(s1);
         vm.prank(s1);
-        contest.withdrawPrediction(ENTRY_A, tokens);
+        contest.removeSecondaryPosition(ENTRY_A, tokens);
         assertEq(usdc.balanceOf(s1), s1Before + amount);
         assertEq(contest.balanceOf(s1, ENTRY_A), 0);
-        assertEq(contest.predictionPrizePool(), 0);
-        assertEq(contest.contestPrizePoolSubsidy(), 0);
-        assertEq(contest.contestantSubsidy(ENTRY_A), 0);
+        assertEq(contest.secondaryPrizePool(), 0);
+        assertEq(contest.primaryPrizePoolSubsidy(), 0);
+        assertEq(contest.primaryPositionSubsidy(ENTRY_A), 0);
 
         // Proceed with two more contestants and normal settlement
         _join(b, ENTRY_B);
@@ -248,7 +251,7 @@ contract ContestAccountingTest is Test {
         
         uint256 bBefore = usdc.balanceOf(b);
         vm.prank(b);
-        contest.claimEntryPayout(ENTRY_B);
+        contest.claimPrimaryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, afterFee);
         
         uint256 oracleBefore = usdc.balanceOf(oracle);
@@ -271,13 +274,13 @@ contract ContestAccountingTest is Test {
 
         // close predictions
         vm.prank(oracle);
-        contest.closePredictions();
+        contest.closeSecondary();
 
         // attempt withdrawal should fail in LOCKED
         uint256 tokens = contest.balanceOf(s1, ENTRY_A);
         vm.prank(s1);
         vm.expectRevert("Cannot withdraw - competition started or settled");
-        contest.withdrawPrediction(ENTRY_A, tokens);
+        contest.removeSecondaryPosition(ENTRY_A, tokens);
 
         // settle
         uint256[] memory winners = new uint256[](2);
@@ -291,7 +294,7 @@ contract ContestAccountingTest is Test {
         // winner spectator can claim
         uint256 before = usdc.balanceOf(s2);
         vm.prank(s2);
-        contest.claimPredictionPayout(ENTRY_B);
+        contest.claimSecondaryPayout(ENTRY_B);
         assertGt(usdc.balanceOf(s2), before);
     }
 
@@ -303,30 +306,30 @@ contract ContestAccountingTest is Test {
         uint256 sBefore = usdc.balanceOf(s1);
         _mintAndApprove(s1, amount);
         vm.prank(s1);
-        contest.addPrediction(ENTRY_A, amount);
+        contest.addSecondaryPosition(ENTRY_A, amount, emptyProof);
         uint256 tok = contest.balanceOf(s1, ENTRY_A);
         assertGt(tok, 0);
         
-        uint256 prizeSubsidy = contest.contestPrizePoolSubsidy();
-        uint256 bonus = contest.contestantSubsidy(ENTRY_A);
+        uint256 prizeSubsidy = contest.primaryPrizePoolSubsidy();
+        uint256 bonus = contest.primaryPositionSubsidy(ENTRY_A);
 
         // A leaves → spectator funds stay in pool (no auto-refund)
         uint256 aBefore = usdc.balanceOf(a);
         vm.prank(a);
-        contest.leaveContest(ENTRY_A);
+        contest.removePrimaryPosition(ENTRY_A);
 
         // Spectator NOT refunded - still has tokens but entry withdrawn
         assertEq(usdc.balanceOf(s1), sBefore); // No refund
         assertEq(contest.balanceOf(s1, ENTRY_A), tok); // Still has tokens
         
         // Contestant refunded deposit
-        assertEq(usdc.balanceOf(a), aBefore + CONTESTANT_DEPOSIT);
+        assertEq(usdc.balanceOf(a), aBefore + PRIMARY_DEPOSIT);
         
         // Spectator funds redistributed:
         // - prizeSubsidy stays in contestPrizePoolSubsidy
         // - orphaned bonus MOVED to contestPrizePoolSubsidy (since entry owner left)
-        assertEq(contest.contestPrizePoolSubsidy(), prizeSubsidy + bonus);
-        assertEq(contest.contestantSubsidy(ENTRY_A), 0); // Moved to prize pool
+        assertEq(contest.primaryPrizePoolSubsidy(), prizeSubsidy + bonus);
+        assertEq(contest.primaryPositionSubsidy(ENTRY_A), 0); // Moved to prize pool
     }
 
     // ============ E2: zero spectators; varied payout splits ============
@@ -351,17 +354,17 @@ contract ContestAccountingTest is Test {
         
         uint256 aBefore = usdc.balanceOf(a);
         vm.prank(a);
-        contest.claimEntryPayout(ENTRY_A);
+        contest.claimPrimaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, (afterFee * 3000) / 10000);
         
         uint256 bBefore = usdc.balanceOf(b);
         vm.prank(b);
-        contest.claimEntryPayout(ENTRY_B);
+        contest.claimPrimaryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, (afterFee * 2000) / 10000);
         
         uint256 cBefore = usdc.balanceOf(c);
         vm.prank(c);
-        contest.claimEntryPayout(ENTRY_C);
+        contest.claimPrimaryPayout(ENTRY_C);
         assertEq(usdc.balanceOf(c) - cBefore, (afterFee * 5000) / 10000);
         
         uint256 oracleBefore = usdc.balanceOf(oracle);
@@ -427,12 +430,12 @@ contract ContestAccountingTest is Test {
         // Losers (A) cannot claim anything
         uint256 s1Before = usdc.balanceOf(s1);
         vm.prank(s1);
-        contest.claimPredictionPayout(ENTRY_A);
+        contest.claimSecondaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(s1), s1Before);
 
         uint256 s2Before = usdc.balanceOf(s2);
         vm.prank(s2);
-        contest.claimPredictionPayout(ENTRY_A);
+        contest.claimSecondaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(s2), s2Before);
     }
 
@@ -481,12 +484,12 @@ contract ContestAccountingTest is Test {
         // Contestants claim (spectator pool was added to their payouts in settlement)
         uint256 aBefore = usdc.balanceOf(a);
         vm.prank(a);
-        contest.claimEntryPayout(ENTRY_A);
+        contest.claimPrimaryPayout(ENTRY_A);
         assertEq(usdc.balanceOf(a) - aBefore, baseA + redistA + bonusAAfterFee);
 
         uint256 bBefore = usdc.balanceOf(b);
         vm.prank(b);
-        contest.claimEntryPayout(ENTRY_B);
+        contest.claimPrimaryPayout(ENTRY_B);
         assertEq(usdc.balanceOf(b) - bBefore, baseB + redistB);
 
         // Oracle claims fee
@@ -494,7 +497,7 @@ contract ContestAccountingTest is Test {
         contest.claimOracleFee();
 
         // Spectator pool should be zeroed; no funds left for spectators to claim
-        assertEq(contest.predictionPrizePool(), 0);
+        assertEq(contest.secondaryPrizePool(), 0);
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
@@ -504,7 +507,7 @@ contract ContestAccountingTest is Test {
         Contest highFee = new Contest(
             address(usdc),
             oracle,
-            CONTESTANT_DEPOSIT,
+            PRIMARY_DEPOSIT,
             1000, // 10%
             block.timestamp + EXPIRY,
             LIQUIDITY,
@@ -514,20 +517,20 @@ contract ContestAccountingTest is Test {
         );
 
         // Three contestants, no spectators
-        usdc.mint(a, CONTESTANT_DEPOSIT);
-        vm.startPrank(a); usdc.approve(address(highFee), CONTESTANT_DEPOSIT); vm.stopPrank();
-        vm.prank(a); highFee.joinContest(ENTRY_A);
+        usdc.mint(a, PRIMARY_DEPOSIT);
+        vm.startPrank(a); usdc.approve(address(highFee), PRIMARY_DEPOSIT); vm.stopPrank();
+        vm.prank(a); highFee.addPrimaryPosition(ENTRY_A, emptyProof);
 
-        usdc.mint(b, CONTESTANT_DEPOSIT);
-        vm.startPrank(b); usdc.approve(address(highFee), CONTESTANT_DEPOSIT); vm.stopPrank();
-        vm.prank(b); highFee.joinContest(ENTRY_B);
+        usdc.mint(b, PRIMARY_DEPOSIT);
+        vm.startPrank(b); usdc.approve(address(highFee), PRIMARY_DEPOSIT); vm.stopPrank();
+        vm.prank(b); highFee.addPrimaryPosition(ENTRY_B, emptyProof);
 
-        usdc.mint(c, CONTESTANT_DEPOSIT);
-        vm.startPrank(c); usdc.approve(address(highFee), CONTESTANT_DEPOSIT); vm.stopPrank();
-        vm.prank(c); highFee.joinContest(ENTRY_C);
+        usdc.mint(c, PRIMARY_DEPOSIT);
+        vm.startPrank(c); usdc.approve(address(highFee), PRIMARY_DEPOSIT); vm.stopPrank();
+        vm.prank(c); highFee.addPrimaryPosition(ENTRY_C, emptyProof);
 
         vm.prank(oracle);
-        highFee.activateContest();
+        highFee.activatePrimary();
 
         uint256[] memory winners = new uint256[](1);
         winners[0] = ENTRY_C;
@@ -540,7 +543,7 @@ contract ContestAccountingTest is Test {
         // total = 300, fee = 30, after = 270
         uint256 cBefore = usdc.balanceOf(c);
         vm.prank(c);
-        highFee.claimEntryPayout(ENTRY_C);
+        highFee.claimPrimaryPayout(ENTRY_C);
         assertEq(usdc.balanceOf(c) - cBefore, 270e6);
         
         uint256 oracleBefore = usdc.balanceOf(oracle);
@@ -572,11 +575,11 @@ contract ContestAccountingTest is Test {
 
         // All contestants claim
         vm.prank(a);
-        contest.claimEntryPayout(ENTRY_A);
+        contest.claimPrimaryPayout(ENTRY_A);
         vm.prank(b);
-        contest.claimEntryPayout(ENTRY_B);
+        contest.claimPrimaryPayout(ENTRY_B);
         vm.prank(c);
-        contest.claimEntryPayout(ENTRY_C);
+        contest.claimPrimaryPayout(ENTRY_C);
 
         // Oracle claims fee
         vm.prank(oracle);
@@ -584,7 +587,7 @@ contract ContestAccountingTest is Test {
 
         // Spectator winner claims
         vm.prank(s1);
-        contest.claimPredictionPayout(ENTRY_A);
+        contest.claimSecondaryPayout(ENTRY_A);
 
         // After all claims, contract balance should be zero
         assertEq(usdc.balanceOf(address(contest)), 0);

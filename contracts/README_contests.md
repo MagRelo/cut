@@ -14,11 +14,13 @@ Complete technical documentation for the unified Contest smart contract (Competi
 
 ## Overview
 
-The Contest contract combines two layers in a single contract:
+The Contest contract combines three layers in a single contract:
 
-**Layer 1 (Contestants):** Competitors deposit tokens to enter, oracle determines winners, winners claim prizes based on performance.
+**Layer 0 (Oracle):** Provides real-world event data and settles the contest.
 
-**Layer 2 (Spectators):** Spectators predict on contestants using LMSR pricing, hold ERC1155 tokens representing their positions, and claim winnings if they predicted the winner.
+**Layer 1 (Primary):** Primary participants deposit tokens to enter, oracle determines winners, winners claim prizes based on performance.
+
+**Layer 2 (Secondary):** Secondary participants predict on primary positions using LMSR pricing, hold ERC1155 tokens representing their positions, and claim winnings if they predicted the winner.
 
 **Key Design Principle:** Settlement is pure accounting. All fees are deducted at deposit time. Users claim via pull-based functions.
 
@@ -34,27 +36,27 @@ ANY deposit of 100 tokens:
 └─ 99 tokens → distributed to appropriate pools
 ```
 
-### Contestant Deposits
+### Primary Participant Deposits
 
-When a contestant joins, their deposit (minus oracle fee) goes entirely to the prize pool:
+When a primary participant joins, their deposit (minus oracle fee) goes entirely to the prize pool:
 
 ```
-joinContest(100):
+addPrimaryPosition(100):
 ├─ 1 → accumulatedOracleFee
-└─ 99 → contestPrizePool
+└─ 99 → primaryPrizePool
 ```
 
-### Spectator Deposits
+### Secondary Participant Deposits
 
-When a spectator predicts, their deposit is split THREE ways (after oracle fee):
+When a secondary participant adds a position, their deposit is split THREE ways (after oracle fee):
 
 ```
-addPrediction(100):
+addSecondaryPosition(100):
 ├─ 1 → accumulatedOracleFee (oracle fee first)
 └─ 99 → split three ways:
-    ├─ 7.425 → contestPrizePoolSubsidy (7.5% of 99)
-    ├─ 7.425 → contestantSubsidy[entryId] (7.5% of 99)
-    └─ 84.15 → predictionPrizePool (85% of 99, backs ERC1155 tokens)
+    ├─ 7.425 → primaryPrizePoolSubsidy (7.5% of 99)
+    ├─ 7.425 → primaryPositionSubsidy[entryId] (7.5% of 99)
+    └─ 84.15 → secondaryPrizePool (85% of 99, backs ERC1155 tokens)
 ```
 
 **All percentages are configurable per contest.**
@@ -63,21 +65,21 @@ addPrediction(100):
 
 ### Complete Flow Example (100 token deposit)
 
-#### Contestant Flow
+#### Primary Participant Flow
 
 ```
 User deposits 100
   ↓
 1% oracle fee deducted → accumulatedOracleFee
   ↓
-99 → contestPrizePool
+99 → primaryPrizePool
   ↓
 Settlement calculates prize splits
   ↓
-Winner claims via claimEntryPayout()
+Winner claims via claimPrimaryPayout()
 ```
 
-#### Spectator Flow
+#### Secondary Participant Flow
 
 ```
 User deposits 100
@@ -85,53 +87,53 @@ User deposits 100
 1% oracle fee deducted → accumulatedOracleFee
   ↓
 99 split:
-├─ 7.5% → contestPrizePoolSubsidy (augments contestant prizes)
-├─ 7.5% → contestantSubsidy[entryId] (bonus to entry owner)
-└─ 85% → predictionPrizePool (backs tokens)
+├─ 7.5% → primaryPrizePoolSubsidy (augments primary prizes)
+├─ 7.5% → primaryPositionSubsidy[entryId] (bonus to entry owner)
+└─ 85% → secondaryPrizePool (backs tokens)
   ↓
 Mint ERC1155 tokens (amount based on LMSR price)
   ↓
 Settlement determines winner
   ↓
-If predicted winner: claim proportional share via claimPredictionPayout()
+If predicted winner: claim proportional share via claimSecondaryPayout()
 If predicted loser: tokens worthless
 ```
 
 ### Withdrawal Flows
 
-#### Spectator Withdrawals (OPEN or CANCELLED)
+#### Secondary Participant Withdrawals (OPEN or CANCELLED)
 
-Spectators can withdraw and get 100% refund:
+Secondary participants can withdraw and get 100% refund:
 
 - Oracle fee is reversed (deducted from accumulatedOracleFee)
-- All three splits are reversed (prizeShare, userShare, collateral)
+- All three splits are reversed (prizeShare, positionShare, collateral)
 - User receives full deposit back
 
-#### Contestant Withdrawals (OPEN or CANCELLED)
+#### Primary Participant Withdrawals (OPEN or CANCELLED)
 
-Contestants can withdraw and get 100% refund, BUT spectators who predicted on them DON'T get refunded - their funds are redistributed to other winners:
+Primary participants can withdraw and get 100% refund, BUT secondary participants who predicted on them DON'T get refunded - their funds are redistributed to other winners:
 
 ```
-Entry A withdraws after spectators predicted 100 on Entry A:
-├─ Contestant A → Gets full 100 deposit back
-└─ Spectator funds (99 after oracle fee) redistributed:
-    ├─ 7.425 → contestPrizePoolSubsidy ✅ Goes to ALL winners
-    ├─ 7.425 → contestPrizePoolSubsidy ✅ Orphaned bonus moved to prize pool
-    └─ 84.15 → predictionPrizePool ✅ Goes to spectators who predicted winner
+Entry A withdraws after secondary participants predicted 100 on Entry A:
+├─ Primary participant A → Gets full 100 deposit back
+└─ Secondary participant funds (99 after oracle fee) redistributed:
+    ├─ 7.425 → primaryPrizePoolSubsidy ✅ Goes to ALL winners
+    ├─ 7.425 → primaryPrizePoolSubsidy ✅ Orphaned bonus moved to prize pool
+    └─ 84.15 → secondaryPrizePool ✅ Goes to secondary participants who predicted winner
 ```
 
-**Key Point:** Spectators don't get refunded when their entry withdraws. Instead, their funds are redistributed to other winners. This incentivizes spectators to predict on committed entries.
+**Key Point:** Secondary participants don't get refunded when their entry withdraws. Instead, their funds are redistributed to other winners. This incentivizes secondary participants to predict on committed entries.
 
 ## Accounting Model
 
 ### State Variables (Always Net of Oracle Fees)
 
 ```solidity
-accumulatedOracleFee        // Oracle's accumulated fee, claimable
-contestPrizePool            // Contestant deposits (net of fees)
-contestPrizePoolSubsidy     // Spectator subsidy to prizes (net of fees)
-contestantSubsidy[entryId]  // Spectator bonus per entry (net of fees)
-predictionPrizePool         // Spectator collateral pool (net of fees)
+accumulatedOracleFee              // Oracle's accumulated fee, claimable
+primaryPrizePool                  // Primary participant deposits (net of fees)
+primaryPrizePoolSubsidy           // Secondary subsidy to prizes (net of fees)
+primaryPositionSubsidy[entryId]   // Secondary bonus per entry (net of fees)
+secondaryPrizePool                // Secondary collateral pool (net of fees)
 ```
 
 ### Invariant
@@ -140,10 +142,10 @@ At any point in time:
 
 ```
 contract balance = accumulatedOracleFee
-                 + contestPrizePool
-                 + contestPrizePoolSubsidy
-                 + Σ(contestantSubsidy)
-                 + predictionPrizePool
+                 + primaryPrizePool
+                 + primaryPrizePoolSubsidy
+                 + Σ(primaryPositionSubsidy)
+                 + secondaryPrizePool
 ```
 
 **After all claims, contract balance = 0.** All funds are distributed - nothing is locked.
@@ -152,11 +154,11 @@ contract balance = accumulatedOracleFee
 
 Settlement does **NO transfers**, only calculations:
 
-1. Calculate Layer 1 prize pool: `contestPrizePool + contestPrizePoolSubsidy`
-2. Store prize payouts in `finalEntryPayouts[entryId]` based on `payoutBps`
-3. Store bonus payouts in `contestantSubsidy[entryId]` (already net of fees)
-4. Set `spectatorWinningEntry` to first entry in winningEntries array
-5. If no supply on winning entry: redistribute prediction pool to winners
+1. Calculate Layer 1 prize pool: `primaryPrizePool + primaryPrizePoolSubsidy`
+2. Store prize payouts in `finalPrimaryPayouts[entryId]` based on `payoutBps`
+3. Store bonus payouts in `primaryPositionSubsidy[entryId]` (already net of fees)
+4. Set `secondaryWinningEntry` to first entry in winningEntries array
+5. If no supply on winning entry: redistribute secondary pool to winners
 
 **That's it.** No transfers, no fee calculations. Everything is already net of fees.
 
@@ -164,10 +166,10 @@ Settlement does **NO transfers**, only calculations:
 
 **Every token deposited is distributed to someone:**
 
-- **Contestant deposits** → Winning contestants (via `finalEntryPayouts`)
-- **Spectator prize share** → Winning contestants (via `contestPrizePoolSubsidy`)
-- **Spectator entry bonuses** → Entry owners (via `contestantSubsidy`) OR moved to prize pool if entry withdrew
-- **Spectator collateral** → Winning spectators (via `predictionPrizePool`)
+- **Primary deposits** → Winning primary participants (via `finalPrimaryPayouts`)
+- **Secondary prize share** → Winning primary participants (via `primaryPrizePoolSubsidy`)
+- **Secondary entry bonuses** → Entry owners (via `primaryPositionSubsidy`) OR moved to prize pool if entry withdrew
+- **Secondary collateral** → Winning secondary participants (via `secondaryPrizePool`)
 - **Oracle fees** → Oracle (via `accumulatedOracleFee`)
 
 If users don't claim, oracle can use `sweepToTreasury()` after expiry to recover unclaimed funds.
@@ -177,80 +179,80 @@ If users don't claim, oracle can use `sweepToTreasury()` after expiry to recover
 After settlement, users claim their payouts:
 
 ```solidity
-// Contestants claim prize + bonus
-claimEntryPayout(entryId)
-  → pays finalEntryPayouts[entryId] + contestantSubsidy[entryId]
+// Primary participants claim prize + bonus
+claimPrimaryPayout(entryId)
+  → pays finalPrimaryPayouts[entryId] + primaryPositionSubsidy[entryId]
 
 // Oracle claims accumulated fees
 claimOracleFee()
   → pays accumulatedOracleFee
 
-// Spectators claim winnings (winner-take-all)
-claimPredictionPayout(entryId)
-  → if entryId == spectatorWinningEntry:
-      pays (userTokens / totalSupply) * predictionPrizePool
+// Secondary participants claim winnings (winner-take-all)
+claimSecondaryPayout(entryId)
+  → if entryId == secondaryWinningEntry:
+      pays (userTokens / totalSupply) * secondaryPrizePool
 ```
 
 ## API Reference
 
 ### Core Functions
 
-#### For Contestants
+#### For Primary Participants
 
 ```solidity
-// Join contest (oracle fee deducted immediately)
-function joinContest(uint256 entryId) external
+// Add primary position (oracle fee deducted immediately)
+function addPrimaryPosition(uint256 entryId) external
 // State: OPEN only
-// Deducts 1% oracle fee, adds remainder to contestPrizePool
+// Deducts 1% oracle fee, adds remainder to primaryPrizePool
 
-// Leave before activation (get full refund)
-function leaveContest(uint256 entryId) external
+// Remove before activation (get full refund)
+function removePrimaryPosition(uint256 entryId) external
 // State: OPEN or CANCELLED
-// Reverses oracle fee, spectator funds stay in pool (no auto-refund)
+// Reverses oracle fee, secondary funds stay in pool (no auto-refund)
 
 // Claim prize + bonus after settlement
-function claimEntryPayout(uint256 entryId) external
+function claimPrimaryPayout(uint256 entryId) external
 // State: SETTLED
-// Pays finalEntryPayouts[entryId] + contestantSubsidy[entryId]
+// Pays finalPrimaryPayouts[entryId] + primaryPositionSubsidy[entryId]
 ```
 
-#### For Spectators
+#### For Secondary Participants
 
 ```solidity
-// Add prediction (oracle fee deducted immediately)
-function addPrediction(uint256 entryId, uint256 amount) external
+// Add secondary position (oracle fee deducted immediately)
+function addSecondaryPosition(uint256 entryId, uint256 amount) external
 // State: OPEN or ACTIVE
 // Deducts oracle fee, splits remainder, mints ERC1155 tokens
 
-// Withdraw prediction (only before contest starts)
-function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external
+// Remove position (only before contest starts)
+function removeSecondaryPosition(uint256 entryId, uint256 tokenAmount) external
 // State: OPEN or CANCELLED only
 // Reverses all accounting, returns 100% of deposit
 
 // Check current LMSR price
-function calculateEntryPrice(uint256 entryId) public view returns (uint256)
+function calculateSecondaryPrice(uint256 entryId) public view returns (uint256)
 
 // Claim winnings (winner-take-all)
-function claimPredictionPayout(uint256 entryId) external
+function claimSecondaryPayout(uint256 entryId) external
 // State: SETTLED
-// Only pays if entryId == spectatorWinningEntry
+// Only pays if entryId == secondaryWinningEntry
 ```
 
 #### For Oracle
 
 ```solidity
-// Activate contest (locks entry registration)
-function activateContest() external onlyOracle
+// Activate primary (locks entry registration)
+function activatePrimary() external onlyOracle
 
-// Close predictions (locks spectator deposits)
-function closePredictions() external onlyOracle
+// Close secondary positions (locks secondary deposits)
+function closeSecondary() external onlyOracle
 
 // Settle contest (pure accounting, NO transfers)
 function settleContest(
     uint256[] calldata winningEntries,
     uint256[] calldata payoutBps
 ) external onlyOracle
-// Stores all payouts, first entry is spectator winner
+// Stores all payouts, first entry is secondary winner
 // payoutBps must sum to 10000 (100%)
 
 // Claim accumulated oracle fees
@@ -267,10 +269,10 @@ These are optional helpers for the oracle to push payouts instead of waiting for
 
 ```solidity
 // Push prizes + bonuses to specific entries
-function pushContestantPayouts(uint256[] calldata entryIds) external onlyOracle
+function pushPrimaryPayouts(uint256[] calldata entryIds) external onlyOracle
 
-// Push winnings to specific spectators
-function pushSpectatorPayouts(address[] calldata spectators, uint256 entryId) external onlyOracle
+// Push winnings to specific secondary participants
+function pushSecondaryPayouts(address[] calldata participants, uint256 entryId) external onlyOracle
 
 // Sweep all unclaimed funds after expiry
 function sweepToTreasury() external onlyOracle
@@ -280,49 +282,49 @@ function sweepToTreasury() external onlyOracle
 ## State Machine
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ OPEN                                                        │
-│  • Contestants: joinContest() / leaveContest()             │
-│  • Spectators: addPrediction() / withdrawPrediction()      │
-│  • Oracle: activateContest()                               │
-└─────────────────┬───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ OPEN                                                            │
+│  • Primary: addPrimaryPosition() / removePrimaryPosition()     │
+│  • Secondary: addSecondaryPosition() / removeSecondaryPosition()│
+│  • Oracle: activatePrimary()                                    │
+└─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│ ACTIVE                                                       │
-│  • Spectators: addPrediction() only (no withdrawals)        │
-│  • Oracle: closePredictions() [optional]                    │
-└─────────────────┬───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ ACTIVE                                                           │
+│  • Secondary: addSecondaryPosition() only (no withdrawals)      │
+│  • Oracle: closeSecondary() [optional]                          │
+└─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│ LOCKED [optional]                                           │
-│  • No deposits or withdrawals                               │
-│  • Oracle: settleContest()                                  │
-└─────────────────┬───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ LOCKED [optional]                                               │
+│  • No deposits or withdrawals                                   │
+│  • Oracle: settleContest()                                      │
+└─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│ SETTLED                                                      │
-│  • Contestants: claimEntryPayout()                          │
-│  • Spectators: claimPredictionPayout()                      │
-│  • Oracle: claimOracleFee()                                 │
-│  • Oracle: pushContestantPayouts() / pushSpectatorPayouts() │
-│  • Oracle: sweepToTreasury() [after expiry]                │
-└─────────────────┬───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ SETTLED                                                          │
+│  • Primary: claimPrimaryPayout()                                │
+│  • Secondary: claimSecondaryPayout()                            │
+│  • Oracle: claimOracleFee()                                     │
+│  • Oracle: pushPrimaryPayouts() / pushSecondaryPayouts()        │
+│  • Oracle: sweepToTreasury() [after expiry]                    │
+└─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│ CLOSED                                                       │
-│  • All funds distributed or swept                           │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ CLOSED                                                           │
+│  • All funds distributed or swept                               │
+└─────────────────────────────────────────────────────────────────┘
 
 CANCELLATION PATH (from OPEN or ACTIVE only):
-┌─────────────────────────────────────────────────────────────┐
-│ CANCELLED                                                    │
-│  • Full refunds available via leaveContest() and            │
-│    withdrawPrediction()                                      │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ CANCELLED                                                        │
+│  • Full refunds available via removePrimaryPosition() and       │
+│    removeSecondaryPosition()                                     │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Testing
@@ -344,14 +346,14 @@ forge test --gas-report
 
 **Contest_Accounting.t.sol** - 11 comprehensive tests:
 
-- ✅ S1: No spectators, verify oracle fee from contestants
-- ✅ S2: Spectators on multiple entries, verify fee splits
+- ✅ S1: No secondary participants, verify oracle fee from primary participants
+- ✅ S2: Secondary participants on multiple entries, verify fee splits
 - ✅ S3: Withdrawals during OPEN, verify accounting reversals
-- ✅ S4: Lock predictions, verify no withdrawals in LOCKED
-- ✅ E1: Entry withdrawn, spectators lose capital (no auto-refund)
-- ✅ E2: Zero spectators, varied payout splits
-- ✅ E3: All spectators on losing entry
-- ✅ E4: No supply on winning entry, redistribute to contestants
+- ✅ S4: Lock secondary positions, verify no withdrawals in LOCKED
+- ✅ E1: Entry withdrawn, secondary participants lose capital (no auto-refund)
+- ✅ E2: Zero secondary participants, varied payout splits
+- ✅ E3: All secondary participants on losing entry
+- ✅ E4: No supply on winning entry, redistribute to primary participants
 - ✅ E5: High oracle fee (10%), verify rounding safety
 - ✅ E6: Sweep unclaimed funds after expiry
 - ✅ Invariant: Zero balance after all claims
@@ -365,7 +367,7 @@ Compared to traditional prediction market + contest systems:
 1. **Immediate Fee Deduction:** Oracle fees deducted at deposit time, not settlement
 2. **Pure Accounting Settlement:** `settleContest()` only stores payouts, no transfers
 3. **Real-Time Accurate Balances:** All pool variables always reflect true claimable amounts
-4. **No Complex Loops:** Removed auto-refund loops when contestants withdraw
+4. **No Complex Loops:** Removed auto-refund loops when primary participants withdraw
 5. **Centralized Fee Tracking:** Single `accumulatedOracleFee` variable
 6. **Pull-Based Claims:** Users control gas costs by claiming when ready
 7. **Optional Push:** Oracle can help users via optional push functions
@@ -379,12 +381,12 @@ oracleFee = amount * oracleFeeBps / 10000
 netAmount = amount - oracleFee
 ```
 
-### Spectator Split (on netAmount)
+### Secondary Participant Split (on netAmount)
 
 ```
-prizeShare = netAmount * prizeShareBps / 10000
-userShare = netAmount * userShareBps / 10000
-collateral = netAmount - prizeShare - userShare
+prizeShare = netAmount * primaryShareBps / 10000
+positionShare = netAmount * primaryPositionShareBps / 10000
+collateral = netAmount - prizeShare - positionShare
 ```
 
 ### LMSR Token Minting
@@ -396,19 +398,19 @@ tokensToMint = collateral * PRICE_PRECISION / price
 
 ### LMSR Pricing Mechanism
 
-The `liquidityParameter` controls how steep the price curve is for spectator predictions. A lower value creates steeper prices (early bettors get much better prices), while a higher value creates flatter prices.
+The `liquidityParameter` controls how steep the price curve is for secondary participant positions. A lower value creates steeper prices (early position holders get much better prices), while a higher value creates flatter prices.
 
 **Dynamic Calculation:**
 
 The ContestFactory automatically calculates `liquidityParameter` based on contest size:
 
 ```
-liquidityParameter = contestantDepositAmount × 100
+liquidityParameter = primaryDepositAmount × 100
 ```
 
 **Why This Works:**
 
-Higher entry fees typically attract more prediction volume, so the curve should be flatter to accommodate larger bets without extreme price impact. Lower entry fees have less volume, so a steeper curve creates stronger early incentives.
+Higher entry fees typically attract more prediction volume, so the curve should be flatter to accommodate larger positions without extreme price impact. Lower entry fees have less volume, so a steeper curve creates stronger early incentives.
 
 **Examples:**
 
@@ -442,14 +444,14 @@ At $5,000 volume with liquidityParameter = 10,000:
 ### Settlement Payouts
 
 ```
-layer1Pool = contestPrizePool + contestPrizePoolSubsidy
-finalEntryPayouts[i] = layer1Pool * payoutBps[i] / 10000
+layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
+finalPrimaryPayouts[i] = layer1Pool * payoutBps[i] / 10000
 ```
 
-### Spectator Claims
+### Secondary Participant Claims
 
 ```
-payout = userTokenBalance * predictionPrizePool / totalSupply
+payout = userTokenBalance * secondaryPrizePool / totalSupply
 ```
 
 ## Creating Contests
@@ -462,24 +464,24 @@ The ContestFactory creates contests with automatic `liquidityParameter` calculat
 
 ```solidity
 constructor(
-    address _paymentToken,          // ERC20 token for deposits (e.g., USDC)
-    address _oracle,                // Oracle address (settles contest)
-    uint256 _contestantDepositAmount, // Fixed entry fee
-    uint256 _oracleFeeBps,          // Oracle fee (e.g., 100 = 1%)
-    uint256 _expiryTimestamp,       // When contest expires
-    uint256 _liquidityParameter,    // LMSR liquidity (auto-calculated by factory)
-    uint256 _demandSensitivityBps,  // LMSR sensitivity (e.g., 500 = 5%)
-    uint256 _prizeShareBps,         // Spectator → prize pool (e.g., 750 = 7.5%)
-    uint256 _userShareBps           // Spectator → entry bonus (e.g., 750 = 7.5%)
+    address _paymentToken,              // ERC20 token for deposits (e.g., USDC)
+    address _oracle,                    // Oracle address (settles contest)
+    uint256 _primaryDepositAmount,      // Fixed entry fee for primary participants
+    uint256 _oracleFeeBps,              // Oracle fee (e.g., 100 = 1%)
+    uint256 _expiryTimestamp,           // When contest expires
+    uint256 _liquidityParameter,        // LMSR liquidity (auto-calculated by factory)
+    uint256 _demandSensitivityBps,      // LMSR sensitivity (e.g., 500 = 5%)
+    uint256 _primaryShareBps,           // Secondary → prize pool (e.g., 750 = 7.5%)
+    uint256 _primaryPositionShareBps    // Secondary → primary position bonus (e.g., 750 = 7.5%)
 )
 ```
 
-**Note:** The `_liquidityParameter` is typically calculated by ContestFactory as `contestantDepositAmount × 100`. This can be overridden if custom pricing curves are needed.
+**Note:** The `_liquidityParameter` is typically calculated by ContestFactory as `primaryDepositAmount × 100`. This can be overridden if custom pricing curves are needed.
 
 **Constraints:**
 
 - `_oracleFeeBps <= 1000` (max 10%)
-- `_prizeShareBps + _userShareBps <= 10000` (max 100%)
+- `_primaryShareBps + _primaryPositionShareBps <= 10000` (max 100%)
 - `_expiryTimestamp > block.timestamp`
 
 ## License

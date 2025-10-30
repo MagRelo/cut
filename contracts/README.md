@@ -4,9 +4,9 @@ Universal smart contract system for **skill-based competitions with integrated p
 
 Build prediction markets on top of any competition where:
 
-- **Competitors** deposit entry fees and compete for prizes
-- **Spectators** predict on competitors using dynamic LMSR pricing
-- **Oracle** settles both layers in a single transaction
+- **Primary Participants** deposit entry fees and compete for prizes (Layer 1)
+- **Secondary Participants** predict on primary positions using dynamic LMSR pricing (Layer 2)
+- **Oracle** provides real-world event data and settles both layers in a single transaction (Layer 0)
 - **Everyone** benefits from automated, trustless prize distribution
 
 **Use Cases:** Fantasy sports • Gaming tournaments • Trading competitions • Content creator battles • Skill-based challenges • Any measurable competition
@@ -26,13 +26,13 @@ Build prediction markets on top of any competition where:
 
 ## ⚡ What This Infrastructure Enables
 
-### 🎯 Engage Spectators Financially
+### 🎯 Engage Secondary Participants Financially
 
 Transform passive viewers into active participants with skin in the game:
 
-- **Prediction Markets:** Spectators predict on competitors using dynamic LMSR pricing
+- **Prediction Markets:** Secondary participants predict on primary positions using dynamic LMSR pricing
 - **Real Stakes:** Put money behind predictions - winners take all collateral
-- **Price Discovery:** Market-driven odds reveal true competitor rankings
+- **Price Discovery:** Market-driven odds reveal true position rankings
 - **Early Advantage:** First predictors get better prices (incentivizes early engagement)
 - **Safe Withdrawals:** 100% refunds during OPEN phase (change your mind before competition starts)
 
@@ -40,11 +40,11 @@ Transform passive viewers into active participants with skin in the game:
 
 Smart fee structure benefits all participants:
 
-- **Spectator Fees Augment Prizes:** 7.5% goes to competition prize pool (bigger prizes!)
-- **Popularity Bonuses:** 7.5% distributed to competitors based on prediction volume
-- **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure
+- **Secondary Fees Augment Prizes:** 7.5% goes to competition prize pool (bigger prizes!)
+- **Popularity Bonuses:** 7.5% distributed to primary participants based on prediction volume
+- **Configurable Oracle Fee:** Platform takes 1-10% for providing infrastructure, deducted at deposit time
 - **No Hidden Costs:** All fees transparent and enforced by smart contract
-- **Deferred Fee Collection:** Fees only collected at settlement (enables free withdrawals in OPEN phase)
+- **Reversible Fees:** Withdraw during OPEN phase and get 100% refund (fees reversed on withdrawal)
 
 ### 🎮 Flexible Architecture
 
@@ -62,9 +62,9 @@ Works with any competition format you can imagine:
 No manual calculations, no disputes, no delays:
 
 - **One Transaction Settles Everything:** Single oracle call distributes both competition prizes AND prediction market payouts
-- **Two-Layer Economy:** Layer 1 (competition) + Layer 2 (predictions) unified in one smart contract
+- **Three-Layer Architecture:** Layer 0 (Oracle) + Layer 1 (Primary) + Layer 2 (Secondary) unified in one smart contract
 - **No Trusted Intermediary:** Smart contracts hold all funds - no platform custodian risk
-- **Automated Bonuses:** Popular competitors automatically earn extra rewards from prediction volume
+- **Automated Bonuses:** Popular primary participants automatically earn extra rewards from prediction volume
 - **Force Distribution:** After expiry, unclaimed funds auto-pushed to winners (never locked forever)
 
 ### 🔒 Secure & Verifiable
@@ -76,7 +76,7 @@ All actions transparent and tamper-proof on-chain:
 - **Audit Trail:** Every prediction, withdrawal, and claim recorded permanently
 - **Reentrancy Protected:** OpenZeppelin security standards throughout
 - **Arbitrage-Proof:** No token swaps allowed - prevents market manipulation
-- **Refund Guarantees:** Automatic 100% refunds on entry withdrawals (spectators protected)
+- **Refund Guarantees:** Automatic 100% refunds on entry withdrawals (secondary participants protected)
 
 ## 🌍 Competition Examples
 
@@ -116,60 +116,60 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 
 ## 📅 Contest Lifecycle
 
-### Phase 1: OPEN - Registration & Early Predictions
+### Phase 1: OPEN - Registration & Early Positions
 
 **State:** `ContestState.OPEN`  
-**Predictions:** ✅ Available (early predictions enabled)
+**Secondary Positions:** ✅ Available (early positions enabled)
 
-| Actor            | Can Do                                  | Function                              |
-| ---------------- | --------------------------------------- | ------------------------------------- |
-| **Competitors**  | Join contest with entry ID              | `joinContest(entryId)`                |
-| **Competitors**  | Leave contest (auto-refunds spectators) | `leaveContest(entryId)`               |
-| **Spectators**   | Check prices                            | `calculateEntryPrice(entryId)`        |
-| **Spectators**   | Add prediction                          | `addPrediction(entryId, amount)`      |
-| **Spectators**   | Withdraw (100% refund)                  | `withdrawPrediction(entryId, tokens)` |
-| **Oracle/Admin** | Activate contest                        | `activateContest()`                   |
+| Actor                      | Can Do                              | Function                                   |
+| -------------------------- | ----------------------------------- | ------------------------------------------ |
+| **Primary Participants**   | Join contest with entry ID          | `addPrimaryPosition(entryId)`              |
+| **Primary Participants**   | Leave contest (funds redistributed) | `removePrimaryPosition(entryId)`           |
+| **Secondary Participants** | Check prices                        | `calculateSecondaryPrice(entryId)`         |
+| **Secondary Participants** | Add position                        | `addSecondaryPosition(entryId, amount)`    |
+| **Secondary Participants** | Withdraw (100% refund)              | `removeSecondaryPosition(entryId, tokens)` |
+| **Oracle/Admin**           | Activate primary                    | `activatePrimary()`                        |
 
-**State transition:** Oracle calls `activateContest()` → `ACTIVE`
+**State transition:** Oracle calls `activatePrimary()` → `ACTIVE`
 
 ---
 
-### Phase 2: ACTIVE - Competition Running, Predictions Open
+### Phase 2: ACTIVE - Competition Running, Secondary Positions Open
 
 **State:** `ContestState.ACTIVE`  
-**Predictions:** ✅ Available  
-**Withdrawals:** ❌ NOT allowed (predictions locked in once competition starts)
+**Secondary Positions:** ✅ Available  
+**Withdrawals:** ❌ NOT allowed (positions locked in once competition starts)
 
-| Actor            | Can Do                 | Function                                 |
-| ---------------- | ---------------------- | ---------------------------------------- |
-| **Competitors**  | ❌ Cannot join/leave   | -                                        |
-| **Spectators**   | Add predictions (LMSR) | `addPrediction(entryId, amount)`         |
-| **Spectators**   | ❌ Cannot withdraw     | -                                        |
-| **Spectators**   | Check prices           | `calculateEntryPrice(entryId)`           |
-| **Oracle/Admin** | Close predictions      | `closePredictions()`                     |
-| **Oracle/Admin** | Cancel contest         | `cancelContest()`                        |
-| **Oracle/Admin** | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
+| Actor                      | Can Do                 | Function                                 |
+| -------------------------- | ---------------------- | ---------------------------------------- |
+| **Primary Participants**   | ❌ Cannot join/leave   | -                                        |
+| **Secondary Participants** | Add positions (LMSR)   | `addSecondaryPosition(entryId, amount)`  |
+| **Secondary Participants** | ❌ Cannot withdraw     | -                                        |
+| **Secondary Participants** | Check prices           | `calculateSecondaryPrice(entryId)`       |
+| **Oracle/Admin**           | Close secondary        | `closeSecondary()`                       |
+| **Oracle/Admin**           | Cancel contest         | `cancelContest()`                        |
+| **Oracle/Admin**           | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
-**State transition:** Oracle calls `closePredictions()` → `LOCKED`
+**State transition:** Oracle calls `closeSecondary()` → `LOCKED`
 
-**Note:** Once the contest is activated, spectators can still add new predictions but CANNOT withdraw existing predictions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
+**Note:** Once the contest is activated, secondary participants can still add new positions but CANNOT withdraw existing positions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
 
 ---
 
-### Phase 3: LOCKED - Competition Finishing, Predictions Closed
+### Phase 3: LOCKED - Competition Finishing, Secondary Positions Closed
 
 **State:** `ContestState.LOCKED`  
-**Predictions:** ❌ Closed
+**Secondary Positions:** ❌ Closed
 
-| Actor            | Can Do                 | Function                                     |
-| ---------------- | ---------------------- | -------------------------------------------- |
-| **Competitors**  | ❌ Waiting for results | -                                            |
-| **Spectators**   | Check prices (locked)  | `calculateEntryPrice(entryId)`               |
-| **Spectators**   | ❌ Cannot predict      | -                                            |
-| **Spectators**   | ❌ Cannot withdraw     | -                                            |
-| **Oracle/Admin** | Settle contest         | `settleContest(winningEntries[], payouts[])` |
+| Actor                      | Can Do                 | Function                                     |
+| -------------------------- | ---------------------- | -------------------------------------------- |
+| **Primary Participants**   | ❌ Waiting for results | -                                            |
+| **Secondary Participants** | Check prices (locked)  | `calculateSecondaryPrice(entryId)`           |
+| **Secondary Participants** | ❌ Cannot add position | -                                            |
+| **Secondary Participants** | ❌ Cannot withdraw     | -                                            |
+| **Oracle/Admin**           | Settle contest         | `settleContest(winningEntries[], payouts[])` |
 
-**Purpose:** Competition is finishing, outcome not yet certain, but predictions locked to prevent last-second unfair predictions.
+**Purpose:** Competition is finishing, outcome not yet certain, but secondary positions locked to prevent last-second unfair positions.
 
 **Note:** This phase is optional - oracle can call `settleContest()` directly from ACTIVE state.
 
@@ -180,25 +180,24 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 ### Phase 4: SETTLED - Claiming
 
 **State:** `ContestState.SETTLED`  
-**Predictions:** Closed
+**Secondary Positions:** Closed
 
-| Actor            | Can Do                                | Function                         |
-| ---------------- | ------------------------------------- | -------------------------------- |
-| **Competitors**  | Claim single entry payout             | `claimEntryPayout(entryId)`      |
-| **Competitors**  | Claim all entries at once             | `claimAllEntryPayouts()`         |
-| **Spectators**   | Check final prices                    | `calculateEntryPrice(entryId)`   |
-| **Spectators**   | Claim prediction payout               | `claimPredictionPayout(entryId)` |
-| **Spectators**   | Winners get payout, losers get 0      | Same function                    |
-| **Oracle/Admin** | Distribute after expiry (see Phase 5) | `distributeExpiredContest()`     |
+| Actor                      | Can Do                                | Function                           |
+| -------------------------- | ------------------------------------- | ---------------------------------- |
+| **Primary Participants**   | Claim single entry payout             | `claimPrimaryPayout(entryId)`      |
+| **Secondary Participants** | Check final prices                    | `calculateSecondaryPrice(entryId)` |
+| **Secondary Participants** | Claim secondary payout                | `claimSecondaryPayout(entryId)`    |
+| **Secondary Participants** | Winners get payout, losers get 0      | Same function                      |
+| **Oracle/Admin**           | Distribute after expiry (see Phase 5) | `sweepToTreasury()`                |
 
-**State transition:** Oracle calls `distributeExpiredContest()` (after expiry) → `CLOSED`
+**State transition:** Oracle calls `sweepToTreasury()` (after expiry) → `CLOSED`
 
 ---
 
 ### Phase 5: CLOSED - Force Distribution (After Expiry)
 
 **State:** `ContestState.CLOSED`  
-**Trigger:** Oracle calls `distributeExpiredContest()` after contest expiry
+**Trigger:** Oracle calls `sweepToTreasury()` after contest expiry
 
 | Actor            | Can Do                          | Function |
 | ---------------- | ------------------------------- | -------- |
@@ -209,13 +208,13 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 
 **How it works:**
 
-- After expiry timestamp, oracle can call `distributeExpiredContest()`
-- Automatically pushes all unclaimed payouts to users
-- Competitors receive their unclaimed prizes
-- Winning spectators receive their unclaimed winnings
-- Losing spectators get nothing (winner-take-all already determined)
+- After expiry timestamp, oracle can call `sweepToTreasury()`
+- Sweeps all unclaimed funds to treasury (oracle address)
+- Primary participants who didn't claim lose their prizes
+- Winning secondary participants who didn't claim lose their winnings
+- Losing secondary participants already got nothing (winner-take-all)
 
-**Terminal state:** Contest fully closed, all funds distributed.
+**Terminal state:** Contest fully closed, all funds distributed or swept.
 
 ---
 
@@ -223,12 +222,12 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 
 **State:** `ContestState.CANCELLED`
 
-| Actor            | Can Do                                 | Function                              |
-| ---------------- | -------------------------------------- | ------------------------------------- |
-| **Competitors**  | Get full refund (100% of deposit)      | `leaveContest(entryId)`               |
-| **Spectators**   | Check prices (locked)                  | `calculateEntryPrice(entryId)`        |
-| **Spectators**   | Get full refund (100% including fees!) | `withdrawPrediction(entryId, tokens)` |
-| **Oracle/Admin** | ❌ No more actions                     | -                                     |
+| Actor                      | Can Do                                 | Function                                   |
+| -------------------------- | -------------------------------------- | ------------------------------------------ |
+| **Primary Participants**   | Get full refund (100% of deposit)      | `removePrimaryPosition(entryId)`           |
+| **Secondary Participants** | Check prices (locked)                  | `calculateSecondaryPrice(entryId)`         |
+| **Secondary Participants** | Get full refund (100% including fees!) | `removeSecondaryPosition(entryId, tokens)` |
+| **Oracle/Admin**           | ❌ No more actions                     | -                                          |
 
 **Terminal state:** Contest cancelled, all deposits refunded.
 
@@ -240,11 +239,11 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 **Refund guarantee:**
 
 ```
-Competitors: Get back full deposit amount
-Spectators: Get back 100% of what they deposited (including entry fees!)
+Primary Participants: Get back full deposit amount
+Secondary Participants: Get back 100% of what they deposited (including entry fees!)
 
 Example:
-- Spectator deposited 100 tokens
+- Secondary participant deposited 100 tokens
 - Entry fee was 15 tokens
 - If cancelled: Get back full 100 tokens ✅
 ```
@@ -256,29 +255,29 @@ Example:
 ```
                     OPEN
                      │
-                     │ Competitors join
-                     │ Spectators predict (early predictions!)
-                     │ Spectators can withdraw (free exit)
+                     │ Primary participants join
+                     │ Secondary participants add positions (early positions!)
+                     │ Secondary participants can withdraw (free exit)
                      │
-                     │ Oracle: activateContest()
+                     │ Oracle: activatePrimary()
                      ▼
                   ACTIVE
                      │
                      │ Competition in progress
-                     │ Spectators continue predicting
-                     │ NO withdrawals (predictions locked in)
+                     │ Secondary participants continue adding positions
+                     │ NO withdrawals (positions locked in)
                      │
-                     │ Oracle: closePredictions() [OPTIONAL]
+                     │ Oracle: closeSecondary() [OPTIONAL]
                      ▼
                   LOCKED
                      │
                      │ Competition finishing
-                     │ No more predictions/withdrawals
+                     │ No more positions/withdrawals
                      │
                      │ Oracle: settleContest(...)
                      │ (Can also call from ACTIVE)
-                     │ Pays Layer 1 prizes
-                     │ Pays Layer 2 bonuses
+                     │ Pays Layer 1 (Primary) prizes
+                     │ Pays Layer 2 (Secondary) bonuses
                      ▼
                   SETTLED
                      │
@@ -286,8 +285,8 @@ Example:
                      │ whenever ready
                      │
                      │ (After expiry)
-                     │ Oracle: distributeExpiredContest()
-                     │ Pushes unclaimed payouts
+                     │ Oracle: sweepToTreasury()
+                     │ Sweeps unclaimed funds
                      ▼
                   CLOSED
                      │
@@ -318,15 +317,15 @@ Example:
    ├─ DepositManager.depositUSDC(100 USDC)
    └─ Receives: 100 platform tokens (1:1 ratio)
 
-2A. User enters as competitor
+2A. User enters as primary participant
    ├─ System generates unique entryId: 12345
-   ├─ Contest.joinContest(12345) with deposit amount
+   ├─ Contest.addPrimaryPosition(12345) with deposit amount
    └─ Competes for prizes
 
    OR
 
-2B. User predicts as spectator
-   ├─ Contest.addPrediction(entryId, 50 tokens)
+2B. User adds secondary position
+   ├─ Contest.addSecondaryPosition(entryId, 50 tokens)
    └─ Receives ERC1155 tokens at dynamic LMSR price
 
 3. Competition completes & settles
@@ -334,8 +333,8 @@ Example:
    └─ ONE call settles both layers! (only winners needed)
 
 4. Users claim winnings
-   ├─ Competitors: Contest.claimEntryPayout(entryId) or claimAllEntryPayouts()
-   ├─ Spectators: Contest.claimPredictionPayout(entryId)
+   ├─ Primary participants: Contest.claimPrimaryPayout(entryId)
+   ├─ Secondary participants: Contest.claimSecondaryPayout(entryId)
    └─ Receive platform tokens
 
 5. Convert back to stablecoin
@@ -345,35 +344,37 @@ Example:
 
 ## 💰 Economic Model
 
-### Example: 3 competitors, 10 spectators
+### Example: 3 primary participants, 10 secondary participants
 
-**Phase 1: Competitors Enter**
-
-```
-Entry A deposits: 100 tokens
-Entry B deposits: 100 tokens
-Entry C deposits: 100 tokens
-─────────────────────────
-Layer 1 pool: 300 tokens
-```
-
-**Phase 2: Spectators Predict**
+**Phase 1: Primary Participants Enter**
 
 ```
-5 people predict 100 tokens on Entry B = 500 tokens (50% of volume)
-3 people predict 100 tokens on Entry A = 300 tokens (30% of volume)
-2 people predict 100 tokens on Entry C = 200 tokens (20% of volume)
+Entry A deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
+Entry B deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
+Entry C deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
+─────────────────────────────────────────────────────────
+Oracle fees accumulated: 3 tokens
+Layer 1 pool (primaryPrizePool): 297 tokens
+```
+
+**Phase 2: Secondary Participants Add Positions**
+
+```
+5 people add 100 tokens on Entry B = 500 tokens (50% of volume)
+3 people add 100 tokens on Entry A = 300 tokens (30% of volume)
+2 people add 100 tokens on Entry C = 200 tokens (20% of volume)
 ─────────────────────────────────────────
-Total spectator deposits: 1,000 tokens
+Total secondary deposits: 1,000 tokens
 
-Entry fees (15%): 150 tokens
-├─ Prize bonus: 75 tokens → augments Layer 1 pool
-└─ Competitor bonuses: 75 tokens → split by prediction volume
-    ├─ Entry B: 37.50 tokens (50% of prediction volume) ← Based on popularity!
-    ├─ Entry A: 22.50 tokens (30% of prediction volume)
-    └─ Entry C: 15 tokens (20% of prediction volume)
+Oracle fee deducted at deposit (1%): 10 tokens → accumulatedOracleFee
+Remaining: 990 tokens split three ways:
 
-Spectator collateral: 850 tokens (backs tokens)
+├─ Prize bonus (7.5% of 990): 74.25 tokens → augments Layer 1 pool
+├─ Primary position bonuses (7.5% of 990): 74.25 tokens → split by volume
+│   ├─ Entry B: 37.13 tokens (50% of prediction volume) ← Based on popularity!
+│   ├─ Entry A: 22.28 tokens (30% of prediction volume)
+│   └─ Entry C: 14.84 tokens (20% of prediction volume)
+└─ Secondary collateral (85% of 990): 841.5 tokens → backs position tokens
 ```
 
 **Phase 3: ONE Oracle Call Settles**
@@ -388,58 +389,63 @@ contest.settleContest(
 
 **What happens:**
 
-1. Calculate total pool:
+**Note:** Oracle fees (1%) were already deducted at deposit time, so all pools are already net of fees.
 
-   - Competitor deposits: 300 tokens
-   - Prize bonus: 75 tokens
-   - Competitor bonuses: 75 tokens
-   - **Total: 450 tokens**
+1. Calculate Layer 1 pool (already net of oracle fees):
 
-2. Apply oracle fee (1%) to ENTIRE pool:
+   - Primary deposits: 300 - 3 (1% fee) = 297 tokens
+   - Secondary prize bonus: 1000 - 10 (1% fee) = 990 → 7.5% = 74.25 tokens
+   - **Layer 1 pool: 371.25 tokens**
 
-   - Oracle fee: 4.50 tokens
-   - **After fee: 445.50 tokens**
+2. Calculate Layer 2 bonuses (already net of oracle fees):
 
-3. Distribute Layer 1 prizes (from 375 - 1% = 371.25 tokens):
+   - Secondary deposits: 1000 - 10 (1% fee) = 990 tokens
+   - User share (7.5% of 990): 74.25 tokens
+   - Split by prediction volume:
+     - Entry B: 37.13 tokens (50% of volume)
+     - Entry A: 22.28 tokens (30% of volume)
+     - Entry C: 14.84 tokens (20% of volume)
+
+3. Distribute Layer 1 prizes (371.25 tokens):
 
    - Entry B: 222.75 tokens (60% ← Oracle sets based on PERFORMANCE)
    - Entry A: 111.38 tokens (30% ← Oracle sets)
    - Entry C: 37.13 tokens (10% ← Oracle sets)
 
-4. Distribute Layer 2 bonuses (from 75 - 1% = 74.25 tokens):
+4. Layer 2 bonuses (74.25 tokens total):
 
-   - Entry B: 37.13 tokens (50% ← Based on PREDICTION VOLUME)
-   - Entry A: 22.28 tokens (30% ← Based on volume)
-   - Entry C: 14.85 tokens (20% ← Based on volume)
+   - Already calculated above, distributed by volume, not performance
 
    ⚠️ Note: Layer 1 (performance) and Layer 2 (popularity) are independent!
    An unpopular winner gets big Layer 1 prize (60%) but small Layer 2 bonus (20%).
 
 5. Set Layer 2 winner: Entry B (100%), others (0%)
 
+6. Oracle fee already accumulated: 3 (primary) + 10 (secondary) = 13 tokens total
+
 **Phase 4: Users Claim**
 
-Layer 1 (Competitors):
+Layer 1 (Primary Participants):
 
 ```
 Entry B owner claims: 222.75 + 37.13 = 259.88 tokens total (160% ROI!)
 Entry A owner claims: 111.38 + 22.28 = 133.66 tokens (34% ROI)
-Entry C owner claims: 37.13 + 14.85 = 51.98 tokens (-48% but got bonuses!)
+Entry C owner claims: 37.13 + 14.84 = 51.97 tokens (-48% but got bonuses!)
 
-Note: Oracle fee (1%) applied to both prizes AND bonuses
+Note: All payouts already net of oracle fees (deducted at deposit time)
 ```
 
-Layer 2 (Spectators):
+Layer 2 (Secondary Participants):
 
 ```
-Entry B predictors (winners):
+Entry B position holders (winners):
 ├─ Hold ~515 tokens total
-├─ Redeem for: 850 tokens (all collateral!)
+├─ Redeem for: 841.5 tokens (all collateral!)
 ├─ Invested: 500 tokens
-└─ Profit: +350 tokens (+70% ROI for picking winner!)
+└─ Profit: +341.5 tokens (+68% ROI for picking winner!)
 
-Entry A predictors: 0 tokens (winner-take-all)
-Entry C predictors: 0 tokens (winner-take-all)
+Entry A position holders: 0 tokens (winner-take-all)
+Entry C position holders: 0 tokens (winner-take-all)
 ```
 
 ## 🔐 Security Features
@@ -453,32 +459,35 @@ Entry C predictors: 0 tokens (winner-take-all)
 
 ## 📈 Economics
 
-### Competitor Earnings
+### Primary Participant Earnings
 
 ```
-Base prize: From competitor deposits
-Bonus prize: From spectator entry fees (7.5%)
-Volume bonus: From spectator prediction volume (7.5%)
+Base prize: From primary participant deposits (net of oracle fee)
+Bonus prize: From secondary entry fees (7.5%, net of oracle fee)
+Volume bonus: From secondary prediction volume (7.5%, net of oracle fee)
 
-Oracle fee: Applied to ALL competitor earnings (prizes + bonuses)
+Oracle fee: Deducted at deposit time (NOT at settlement)
 
-Total earnings: (Competition winnings + popularity bonuses) × (1 - oracleFee%)
+Total earnings: Competition winnings + popularity bonuses (already net of fees)
 ```
 
-**Oracle Fee Application:**
+**Oracle Fee Application (At Deposit Time):**
 
 ```
-Total pool going to competitors:
-├─ Competitor deposits: 300 tokens
-├─ Prize bonus (7.5% of spectator deposits): 75 tokens
-└─ Volume bonuses (7.5% of spectator deposits): 75 tokens
-    Total: 450 tokens
+Primary deposits (3 participants × 100 each):
+├─ Each deposit: 100 tokens → 1% oracle fee = 1 token
+├─ Net per entry: 99 tokens → primaryPrizePool
+└─ Total net: 297 tokens in primaryPrizePool
 
-Oracle takes fee from ENTIRE pool:
-├─ Oracle fee (1% of 450): 4.50 tokens
-└─ Competitors receive: 445.50 tokens
+Secondary deposits (10 participants × 100 each = 1000):
+├─ Each deposit: 100 tokens → 1% oracle fee = 1 token
+├─ Net per deposit: 99 tokens → split three ways:
+│   ├─ 7.5% → primaryPrizePoolSubsidy = 7.425 tokens
+│   ├─ 7.5% → primaryPositionSubsidy = 7.425 tokens
+│   └─ 85% → secondaryPrizePool = 84.15 tokens
+└─ Total: 74.25 to prizes, 74.25 to bonuses, 841.5 to secondary pool
 
-Distribution (TWO INDEPENDENT calculations):
+Distribution at settlement (TWO INDEPENDENT calculations):
 ├─ Layer 1 prizes: 371.25 tokens split by oracle's payoutBps[] ← Performance!
 └─ Layer 2 bonuses: 74.25 tokens split by prediction volume ← Popularity!
 
@@ -488,20 +497,21 @@ These percentages can differ! Layer 1 = skill, Layer 2 = popularity.
 **Example:** Entry B wins with high prediction volume
 
 ```
-Competition prize: 222.75 tokens (60% of augmented pool, after 1% oracle fee)
-Volume bonus: 37.13 tokens (from being popular, after 1% oracle fee)
+Competition prize: 222.75 tokens (60% of 371.25 pool)
+Volume bonus: 37.13 tokens (50% of 74.25 bonus pool - from being popular)
 Total: 259.88 tokens on 100 token deposit = 160% ROI!
 
-Oracle fee applies to ALL competitor earnings (prizes + bonuses)
+All amounts already net of oracle fees (deducted at deposit time)
 ```
 
-### Spectator Earnings
+### Secondary Participant Earnings
 
 ```
-Prediction amount: 100 tokens
-Entry fee: 15 tokens (non-refundable after settlement)
-Collateral: 85 tokens (backing)
-Tokens received: 85 / LMSR_price
+Position amount: 100 tokens
+Oracle fee: 1 token (deducted immediately)
+Secondary fees: 14.85 tokens (7.5% + 7.5% of 99 after oracle fee)
+Collateral: 84.15 tokens (backing your position tokens)
+Tokens received: 84.15 / LMSR_price
 
 If predicted winner:
   Payout = (your tokens / total winning tokens) × total collateral
@@ -514,11 +524,12 @@ If predicted loser:
 
 ```
 Invested: 100 tokens
-Entry fee: -15 tokens (distributed to prize pool & competitors)
-Collateral: 85 tokens
+Oracle fee: -1 token (deducted at deposit)
+Secondary fees: -14.85 tokens (distributed to prize pool & primary participants)
+Collateral: 84.15 tokens (backs your position tokens)
 
-If win (hold 515/850 of tokens):
-  Receive: (your % of winning tokens) × 850 tokens
+If win (hold 515/841.5 of tokens):
+  Receive: (your % of winning tokens) × 841.5 tokens
   Potential: +42% ROI if others also predicted winner
 ```
 

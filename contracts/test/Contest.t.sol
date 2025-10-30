@@ -26,7 +26,7 @@ contract ContestTest is Test {
     uint256 public constant ENTRY_B = 1002;
     uint256 public constant ENTRY_C = 1003;
     
-    uint256 public constant CONTESTANT_DEPOSIT = 100e6;
+    uint256 public constant PRIMARY_DEPOSIT = 100e6;
     uint256 public constant ORACLE_FEE = 100; // 1%
     uint256 public constant LIQUIDITY = 1000e6;
     uint256 public constant DEMAND_SENSITIVITY = 500; // 5%
@@ -34,13 +34,16 @@ contract ContestTest is Test {
     uint256 public constant USER_SHARE = 750; // 7.5%
     uint256 public constant EXPIRY = 365 days;
     
+    // Empty merkle proof for tests (no gating)
+    bytes32[] emptyProof;
+    
     function setUp() public {
         usdc = new MockUSDC();
         
         contest = new Contest(
             address(usdc),
             oracle,
-            CONTESTANT_DEPOSIT,
+            PRIMARY_DEPOSIT,
             ORACLE_FEE,
             block.timestamp + EXPIRY,
             LIQUIDITY,
@@ -52,61 +55,65 @@ contract ContestTest is Test {
     
     function testBasicEntryFlow() public {
         // UserA joins with one entry
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.startPrank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
-        contest.joinContest(ENTRY_A1);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         vm.stopPrank();
         
         assertEq(contest.getEntriesCount(), 1);
         assertEq(contest.entryOwner(ENTRY_A1), userA);
-        assertEq(contest.getUserEntriesCount(userA), 1);
-        assertEq(contest.contestPrizePool(), CONTESTANT_DEPOSIT);
+        assertEq(contest.getUserPrimaryPositionsCount(userA), 1);
+        // Oracle fee (1%) deducted at deposit time
+        uint256 expectedPool = PRIMARY_DEPOSIT - (PRIMARY_DEPOSIT * ORACLE_FEE) / 10000;
+        assertEq(contest.primaryPrizePool(), expectedPool);
     }
     
     function testMultipleEntriesPerUser() public {
         // UserA joins with TWO entries
-        usdc.mint(userA, CONTESTANT_DEPOSIT * 2);
+        usdc.mint(userA, PRIMARY_DEPOSIT * 2);
         vm.startPrank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT * 2);
-        contest.joinContest(ENTRY_A1);
-        contest.joinContest(ENTRY_A2);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT * 2);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
+        contest.addPrimaryPosition(ENTRY_A2, emptyProof);
         vm.stopPrank();
         
         // Verify both entries exist
         assertEq(contest.getEntriesCount(), 2);
         assertEq(contest.entryOwner(ENTRY_A1), userA);
         assertEq(contest.entryOwner(ENTRY_A2), userA);
-        assertEq(contest.getUserEntriesCount(userA), 2);
-        assertEq(contest.contestPrizePool(), CONTESTANT_DEPOSIT * 2);
+        assertEq(contest.getUserPrimaryPositionsCount(userA), 2);
+        // Oracle fee (1%) deducted at deposit time for each entry
+        uint256 expectedPool = (PRIMARY_DEPOSIT * 2) - ((PRIMARY_DEPOSIT * 2) * ORACLE_FEE) / 10000;
+        assertEq(contest.primaryPrizePool(), expectedPool);
         
         // Verify userA owns both entries
-        assertEq(contest.getUserEntryAtIndex(userA, 0), ENTRY_A1);
-        assertEq(contest.getUserEntryAtIndex(userA, 1), ENTRY_A2);
+        assertEq(contest.getUserPrimaryPositionAtIndex(userA, 0), ENTRY_A1);
+        assertEq(contest.getUserPrimaryPositionAtIndex(userA, 1), ENTRY_A2);
     }
     
     function testSpectatorPredictsOnEntryId() public {
         // Setup entries
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
-        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        usdc.mint(userB, PRIMARY_DEPOSIT);
         vm.prank(userB);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userB);
-        contest.joinContest(ENTRY_B);
+        contest.addPrimaryPosition(ENTRY_B, emptyProof);
         
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
         
         // Spectator predicts on ENTRY_B (using ID directly!)
         usdc.mint(spectator1, 100e6);
         vm.startPrank(spectator1);
         usdc.approve(address(contest), 100e6);
-        contest.addPrediction(ENTRY_B, 100e6);
+        contest.addSecondaryPosition(ENTRY_B, 100e6, emptyProof);
         vm.stopPrank();
         
         // Spectator receives ERC1155 tokens with ID = ENTRY_B
@@ -116,21 +123,21 @@ contract ContestTest is Test {
     
     function testSettlementWithSameUserMultipleWins() public {
         // UserA enters with 2 entries, UserB with 1
-        usdc.mint(userA, CONTESTANT_DEPOSIT * 2);
+        usdc.mint(userA, PRIMARY_DEPOSIT * 2);
         vm.startPrank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT * 2);
-        contest.joinContest(ENTRY_A1);
-        contest.joinContest(ENTRY_A2);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT * 2);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
+        contest.addPrimaryPosition(ENTRY_A2, emptyProof);
         vm.stopPrank();
         
-        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        usdc.mint(userB, PRIMARY_DEPOSIT);
         vm.prank(userB);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userB);
-        contest.joinContest(ENTRY_B);
+        contest.addPrimaryPosition(ENTRY_B, emptyProof);
         
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
         
         // Settle: ENTRY_A1 wins 50%, ENTRY_A2 gets 30%, ENTRY_B gets 20%
         // Note: Only include entries with payouts > 0
@@ -147,46 +154,54 @@ contract ContestTest is Test {
         vm.prank(oracle);
         contest.settleContest(winningEntries, payoutBps);
 
-        // Immediate payouts occur in settle; assert user balances increased
-        uint256 userABalance = usdc.balanceOf(userA);
-        assertGt(userABalance, 0, "UserA should receive combined payout");
+        // Settlement is pure accounting - users must claim
+        uint256 userABalanceBefore = usdc.balanceOf(userA);
+        
+        // UserA claims both entries
+        vm.startPrank(userA);
+        contest.claimPrimaryPayout(ENTRY_A1);
+        contest.claimPrimaryPayout(ENTRY_A2);
+        vm.stopPrank();
+        
+        uint256 userABalanceAfter = usdc.balanceOf(userA);
+        assertGt(userABalanceAfter - userABalanceBefore, 0, "UserA should receive combined payout");
     }
     
     function testSpectatorWinningEntry() public {
         // Setup 3 entries
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
-        usdc.mint(userB, CONTESTANT_DEPOSIT);
+        usdc.mint(userB, PRIMARY_DEPOSIT);
         vm.prank(userB);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userB);
-        contest.joinContest(ENTRY_B);
+        contest.addPrimaryPosition(ENTRY_B, emptyProof);
         
-        usdc.mint(userC, CONTESTANT_DEPOSIT);
+        usdc.mint(userC, PRIMARY_DEPOSIT);
         vm.prank(userC);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userC);
-        contest.joinContest(ENTRY_C);
+        contest.addPrimaryPosition(ENTRY_C, emptyProof);
         
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
         
         // Spectators predict
         usdc.mint(spectator1, 100e6);
         vm.prank(spectator1);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator1);
-        contest.addPrediction(ENTRY_B, 100e6); // Predicts winner
+        contest.addSecondaryPosition(ENTRY_B, 100e6, emptyProof); // Predicts winner
         
         usdc.mint(spectator2, 100e6);
         vm.prank(spectator2);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator2);
-        contest.addPrediction(ENTRY_A1, 100e6); // Predicts loser
+        contest.addSecondaryPosition(ENTRY_A1, 100e6, emptyProof); // Predicts loser
         
         // ENTRY_B wins
         uint256[] memory winningEntries = new uint256[](3);
@@ -203,36 +218,36 @@ contract ContestTest is Test {
         contest.settleContest(winningEntries, payoutBps);
         
         // Verify winning entry
-        assertEq(contest.spectatorWinningEntry(), ENTRY_B);
+        assertEq(contest.secondaryWinningEntry(), ENTRY_B);
         
         // Spectator1 (predicted winner) can claim
         uint256 spec1Before = usdc.balanceOf(spectator1);
         vm.prank(spectator1);
-        contest.claimPredictionPayout(ENTRY_B);
+        contest.claimSecondaryPayout(ENTRY_B);
         assertGt(usdc.balanceOf(spectator1), spec1Before, "Winner should get payout");
         
         // Spectator2 (predicted loser) gets nothing
         uint256 spec2Before = usdc.balanceOf(spectator2);
         vm.prank(spectator2);
-        contest.claimPredictionPayout(ENTRY_A1);
+        contest.claimSecondaryPayout(ENTRY_A1);
         assertEq(usdc.balanceOf(spectator2), spec2Before, "Loser gets nothing");
     }
     
     function testLeaveContestWithEntry() public {
         // User joins
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
         // User leaves
         uint256 balanceBefore = usdc.balanceOf(userA);
         vm.prank(userA);
-        contest.leaveContest(ENTRY_A1);
+        contest.removePrimaryPosition(ENTRY_A1);
         
         // Verify refund
-        assertEq(usdc.balanceOf(userA), balanceBefore + CONTESTANT_DEPOSIT);
+        assertEq(usdc.balanceOf(userA), balanceBefore + PRIMARY_DEPOSIT);
         assertTrue(contest.entryWithdrawn(ENTRY_A1), "Entry should be marked withdrawn");
         
         // Entry still exists in array (for stability)
@@ -241,25 +256,25 @@ contract ContestTest is Test {
     
     function testWithdrawPredictionByEntry() public {
         // Setup
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
         // Spectator predicts BEFORE activation (during OPEN state)
         usdc.mint(spectator1, 100e6);
         vm.prank(spectator1);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator1);
-        contest.addPrediction(ENTRY_A1, 100e6);
+        contest.addSecondaryPosition(ENTRY_A1, 100e6, emptyProof);
         
         uint256 tokens = contest.balanceOf(spectator1, ENTRY_A1);
         
         // Withdraw BEFORE activation (only allowed in OPEN state)
         uint256 balanceBefore = usdc.balanceOf(spectator1);
         vm.prank(spectator1);
-        contest.withdrawPrediction(ENTRY_A1, tokens);
+        contest.removeSecondaryPosition(ENTRY_A1, tokens);
         
         // Full refund
         assertEq(usdc.balanceOf(spectator1), balanceBefore + 100e6, "Full refund");
@@ -268,41 +283,41 @@ contract ContestTest is Test {
     
     function testCannotWithdrawPredictionAfterActivation() public {
         // Setup
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
         // Spectator predicts in OPEN state
         usdc.mint(spectator1, 100e6);
         vm.prank(spectator1);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator1);
-        contest.addPrediction(ENTRY_A1, 100e6);
+        contest.addSecondaryPosition(ENTRY_A1, 100e6, emptyProof);
         
         uint256 tokens = contest.balanceOf(spectator1, ENTRY_A1);
         
         // Activate contest
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
         
         // Try to withdraw after activation - should fail
         vm.prank(spectator1);
         vm.expectRevert("Cannot withdraw - competition started or settled");
-        contest.withdrawPrediction(ENTRY_A1, tokens);
+        contest.removeSecondaryPosition(ENTRY_A1, tokens);
     }
     
     function testCannotPredictOnWithdrawnEntry() public {
         // User joins and withdraws
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
         vm.prank(userA);
-        contest.leaveContest(ENTRY_A1);
+        contest.removePrimaryPosition(ENTRY_A1);
         
         // Try to predict on withdrawn entry
         usdc.mint(spectator1, 100e6);
@@ -310,33 +325,33 @@ contract ContestTest is Test {
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator1);
         vm.expectRevert("Entry withdrawn");
-        contest.addPrediction(ENTRY_A1, 100e6);
+        contest.addSecondaryPosition(ENTRY_A1, 100e6, emptyProof);
     }
     
     function testCalculateEntryPrice() public {
         // Setup entry
-        usdc.mint(userA, CONTESTANT_DEPOSIT);
+        usdc.mint(userA, PRIMARY_DEPOSIT);
         vm.prank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT);
         vm.prank(userA);
-        contest.joinContest(ENTRY_A1);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
         
         // Get initial price
-        uint256 initialPrice = contest.calculateEntryPrice(ENTRY_A1);
+        uint256 initialPrice = contest.calculateSecondaryPrice(ENTRY_A1);
         assertEq(initialPrice, 1e6, "Initial price should be 1.0 (PRICE_PRECISION)");
     }
     
     function testSweepToTreasuryAfterExpiry() public {
         // Setup 2 entries, both owned by userA
-        usdc.mint(userA, CONTESTANT_DEPOSIT * 2);
+        usdc.mint(userA, PRIMARY_DEPOSIT * 2);
         vm.startPrank(userA);
-        usdc.approve(address(contest), CONTESTANT_DEPOSIT * 2);
-        contest.joinContest(ENTRY_A1);
-        contest.joinContest(ENTRY_A2);
+        usdc.approve(address(contest), PRIMARY_DEPOSIT * 2);
+        contest.addPrimaryPosition(ENTRY_A1, emptyProof);
+        contest.addPrimaryPosition(ENTRY_A2, emptyProof);
         vm.stopPrank();
         
         vm.prank(oracle);
-        contest.activateContest();
+        contest.activatePrimary();
         
         // Settle
         uint256[] memory winningEntries = new uint256[](2);

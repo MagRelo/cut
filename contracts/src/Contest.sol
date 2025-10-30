@@ -5,22 +5,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title Contest
  * @author MagRelo
  * @dev Combined contest and prediction market contract
  * 
- * This contract merges Escrow (Layer 1) and PredictionMarket (Layer 2) into a single contract:
+ * Three-layer architecture:
+ * - Layer 0 (Oracle): Real-world event data provided by the oracle
+ * - Layer 1 (Primary): Competition participants with fixed deposits
+ * - Layer 2 (Secondary): Prediction market on primary outcomes using LMSR
  * 
- * Layer 1 (Contestants):
- * - Contestants deposit fixed amount to enter
+ * Layer 1 (Primary):
+ * - Primary participants deposit fixed amount to enter
  * - Oracle distributes prizes based on results
  * - Winners claim their payouts
  * 
- * Layer 2 (Spectators):
- * - Spectators predict on contestants using LMSR pricing
- * - Configurable entry fee split between prize pool and contestant bonuses
+ * Layer 2 (Secondary):
+ * - Secondary participants predict on primary positions using LMSR pricing
+ * - Configurable entry fee split between prize pool and primary position bonuses
  * - Winner-take-all redemption based on Layer 1 results
  * - Can withdraw during OPEN phase only (full refund with deferred fees)
  * 
@@ -35,8 +39,8 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Address of the oracle that controls contest state
     address public immutable oracle;
     
-    /// @notice Fixed deposit amount for contestants
-    uint256 public immutable contestantDepositAmount;
+    /// @notice Fixed deposit amount for primary participants
+    uint256 public immutable primaryDepositAmount;
     
     /// @notice Oracle fee in basis points (e.g., 100 = 1%)
     uint256 public immutable oracleFeeBps;
@@ -50,11 +54,11 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Demand sensitivity in basis points - controls LMSR price curve steepness
     uint256 public immutable demandSensitivityBps;
     
-    /// @notice Portion of spectator deposit that goes to prize pool in basis points (e.g., 750 = 7.5%)
-    uint256 public immutable prizeShareBps;
+    /// @notice Portion of secondary deposit that goes to prize pool in basis points (e.g., 750 = 7.5%)
+    uint256 public immutable primaryShareBps;
     
-    /// @notice Portion of spectator deposit that goes to contestant bonuses in basis points (e.g., 750 = 7.5%)
-    uint256 public immutable userShareBps;
+    /// @notice Portion of secondary deposit that goes to primary position bonuses in basis points (e.g., 750 = 7.5%)
+    uint256 public immutable primaryPositionShareBps;
     
     /// @notice Denominator for basis point calculations
     uint256 public constant BPS_DENOMINATOR = 10000;
@@ -63,16 +67,16 @@ contract Contest is ERC1155, ReentrancyGuard {
     uint256 public constant PRICE_PRECISION = 1e6;
     
     /// @notice Current state of the contest
-    /// OPEN: Contestants join, spectators predict (early predictions), withdrawals allowed
-    /// ACTIVE: Contestants locked in, spectators still predicting, NO withdrawals (predictions locked in)
-    /// LOCKED: Predictions closed, contest finishing
+    /// OPEN: Primary participants join, secondary participants add positions (early positions), withdrawals allowed
+    /// ACTIVE: Primary positions locked in, secondary participants still adding positions, NO withdrawals (positions locked in)
+    /// LOCKED: Secondary positions closed, contest finishing
     /// SETTLED: Results in, users claim
     /// CLOSED: Force distributed
     /// CANCELLED: Contest cancelled, refunds available
     enum ContestState { OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED }
     ContestState public state;
     
-    // ============ Layer 1: Entry Data ============
+    // ============ Layer 1: Primary Data ============
     
     /// @notice Array of entry IDs (for iteration only)
     uint256[] public entries;
@@ -83,59 +87,67 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Tracks if entry has been withdrawn
     mapping(uint256 => bool) public entryWithdrawn;
     
-    /// @notice Contest prize pool - sum of all contestant entry deposits
-    uint256 public contestPrizePool;
+    /// @notice Primary prize pool - sum of all primary participant entry deposits
+    uint256 public primaryPrizePool;
     
     /// @notice Final payouts for each entry after settlement
-    mapping(uint256 => uint256) public finalEntryPayouts;
+    mapping(uint256 => uint256) public finalPrimaryPayouts;
     
     /// @notice Track all entry IDs owned by a user
-    mapping(address => uint256[]) public userEntries;
+    mapping(address => uint256[]) public userPrimaryPositions;
     
-    // ============ Layer 2: Spectator Data ============
+    // ============ Layer 2: Secondary Data ============
     
-    /// @notice Array of spectator addresses (for forceClose iteration)
-    address[] public spectators;
+    /// @notice Array of secondary participant addresses (for forceClose iteration)
+    address[] public secondaryParticipants;
     
-    /// @notice Mapping to check if address is a spectator
-    mapping(address => bool) public isSpectator;
+    /// @notice Mapping to check if address is a secondary participant
+    mapping(address => bool) public isSecondaryParticipant;
     
     /// @notice Track net position for each entry ID (for LMSR pricing and total supply)
     mapping(uint256 => int256) public netPosition;
     
-    /// @notice Prediction prize pool - collateral backing spectator prediction tokens (~85% of deposits)
-    uint256 public predictionPrizePool;
+    /// @notice Secondary prize pool - collateral backing secondary position tokens (~85% of deposits)
+    uint256 public secondaryPrizePool;
     
-    /// @notice Contest prize pool subsidy from spectators (7.5% of spectator deposits)
-    uint256 public contestPrizePoolSubsidy;
+    /// @notice Primary prize pool subsidy from secondary participants (7.5% of secondary deposits)
+    uint256 public primaryPrizePoolSubsidy;
     
-    /// @notice Contestant subsidies per entry from prediction volume (7.5% of spectator deposits)
-    mapping(uint256 => uint256) public contestantSubsidy;
+    /// @notice Primary position subsidies per entry from secondary volume (7.5% of secondary deposits)
+    mapping(uint256 => uint256) public primaryPositionSubsidy;
     
-    /// @notice Track deposits per spectator per entry (for withdrawal refunds)
-    mapping(address => mapping(uint256 => uint256)) public spectatorDepositedPerEntry;
+    /// @notice Track deposits per secondary participant per entry (for withdrawal refunds)
+    mapping(address => mapping(uint256 => uint256)) public secondaryDepositedPerEntry;
     
     /// @notice Winning entry ID after settlement (for winner-take-all)
-    uint256 public spectatorWinningEntry;
+    uint256 public secondaryWinningEntry;
     
-    /// @notice Flag indicating if spectator market has been resolved
-    bool public spectatorMarketResolved;
+    /// @notice Flag indicating if secondary market has been resolved
+    bool public secondaryMarketResolved;
     
     /// @notice Accumulated oracle fee from settlement (claimable by oracle)
     uint256 public accumulatedOracleFee;
     
+    /// @notice Merkle root for primary position whitelist (bytes32(0) = no gating)
+    bytes32 public primaryMerkleRoot;
+    
+    /// @notice Merkle root for secondary position whitelist (bytes32(0) = no gating)
+    bytes32 public secondaryMerkleRoot;
+    
     // ============ Events ============
     
-    event EntryDeposited(address indexed owner, uint256 indexed entryId);
-    event EntryWithdrawn(uint256 indexed entryId, address indexed owner, uint256 spectatorsRefunded);
-    event ContestActivated();
-    event PredictionsClosed();
-    event PredictionAdded(address indexed spectator, uint256 indexed entryId, uint256 amount, uint256 tokensReceived);
-    event PredictionWithdrawn(address indexed spectator, uint256 amount);
+    event PrimaryPositionAdded(address indexed owner, uint256 indexed entryId);
+    event PrimaryPositionRemoved(uint256 indexed entryId, address indexed owner, uint256 secondaryParticipantsRefunded);
+    event PrimaryActivated();
+    event SecondaryClosed();
+    event SecondaryPositionAdded(address indexed participant, uint256 indexed entryId, uint256 amount, uint256 tokensReceived);
+    event SecondaryPositionRemoved(address indexed participant, uint256 amount);
     event ContestSettled(uint256[] winningEntries, uint256[] payouts);
-    event EntryPayoutClaimed(address indexed owner, uint256 indexed entryId, uint256 amount);
-    event SpectatorPayoutRedeemed(address indexed spectator, uint256 indexed entryId, uint256 payout);
+    event PrimaryPayoutClaimed(address indexed owner, uint256 indexed entryId, uint256 amount);
+    event SecondaryPayoutClaimed(address indexed participant, uint256 indexed entryId, uint256 payout);
     event ContestCancelled();
+    event PrimaryMerkleRootUpdated(bytes32 newRoot);
+    event SecondaryMerkleRootUpdated(bytes32 newRoot);
     
     /// @notice Modifier to restrict functions to only the oracle
     modifier onlyOracle() {
@@ -147,82 +159,92 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @notice Constructor initializes the contest
      * @param _paymentToken ERC20 token used for deposits and payouts
      * @param _oracle Address that controls contest lifecycle
-     * @param _contestantDepositAmount Fixed amount each contestant must deposit
+     * @param _primaryDepositAmount Fixed amount each primary participant must deposit
      * @param _oracleFeeBps Oracle fee as basis points
      * @param _expiryTimestamp When contest expires (for refunds)
      * @param _liquidityParameter LMSR curve parameter - controls price curve steepness
-     * @dev Recommended: Use ContestFactory which calculates this as contestantDepositAmount × 100
+     * @dev Recommended: Use ContestFactory which calculates this as primaryDepositAmount × 100
      * @dev Lower values = steeper curves (stronger early incentive), higher values = flatter curves
      * @param _demandSensitivityBps LMSR price sensitivity parameter
-     * @param _prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
-     * @param _userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
+     * @param _primaryShareBps Portion of secondary deposit going to prize pool (e.g., 750 = 7.5%)
+     * @param _primaryPositionShareBps Portion of secondary deposit going to primary position bonuses (e.g., 750 = 7.5%)
      */
     constructor(
         address _paymentToken,
         address _oracle,
-        uint256 _contestantDepositAmount,
+        uint256 _primaryDepositAmount,
         uint256 _oracleFeeBps,
         uint256 _expiryTimestamp,
         uint256 _liquidityParameter,
         uint256 _demandSensitivityBps,
-        uint256 _prizeShareBps,
-        uint256 _userShareBps
+        uint256 _primaryShareBps,
+        uint256 _primaryPositionShareBps
     ) ERC1155("") {
         require(_paymentToken != address(0), "Invalid payment token");
         require(_oracle != address(0), "Invalid oracle");
-        require(_contestantDepositAmount > 0, "Invalid deposit amount");
+        require(_primaryDepositAmount > 0, "Invalid deposit amount");
         require(_oracleFeeBps <= 1000, "Oracle fee too high"); // Max 10%
         require(_expiryTimestamp > block.timestamp, "Expiry in past");
         require(_liquidityParameter > 0, "Invalid liquidity parameter");
         require(_demandSensitivityBps <= BPS_DENOMINATOR, "Invalid demand sensitivity");
-        require(_prizeShareBps + _userShareBps <= BPS_DENOMINATOR, "Total fees exceed 100%");
+        require(_primaryShareBps + _primaryPositionShareBps <= BPS_DENOMINATOR, "Total fees exceed 100%");
         
         paymentToken = IERC20(_paymentToken);
         oracle = _oracle;
-        contestantDepositAmount = _contestantDepositAmount;
+        primaryDepositAmount = _primaryDepositAmount;
         oracleFeeBps = _oracleFeeBps;
         expiryTimestamp = _expiryTimestamp;
         liquidityParameter = _liquidityParameter;
         demandSensitivityBps = _demandSensitivityBps;
-        prizeShareBps = _prizeShareBps;
-        userShareBps = _userShareBps;
+        primaryShareBps = _primaryShareBps;
+        primaryPositionShareBps = _primaryPositionShareBps;
         
         state = ContestState.OPEN;
     }
     
-    // ============ Layer 1: Entry Functions ============
+    // ============ Layer 1: Primary Functions ============
     
     /**
-     * @notice User joins the contest with a specific entry ID
+     * @notice User adds a primary position with a specific entry ID
      * @param entryId Unique entry ID (from database/external system)
-     * @dev Must deposit exact contestantDepositAmount per entry
+     * @param merkleProof Merkle proof for whitelist verification (empty array if no gating)
+     * @dev Must deposit exact primaryDepositAmount per entry
      */
-    function joinContest(uint256 entryId) external nonReentrant {
+    function addPrimaryPosition(uint256 entryId, bytes32[] calldata merkleProof) external nonReentrant {
         require(state == ContestState.OPEN, "Contest not open");
         require(entryOwner[entryId] == address(0), "Entry already exists");
         require(block.timestamp < expiryTimestamp, "Contest expired");
         
+        // Verify merkle proof if root is set
+        if (primaryMerkleRoot != bytes32(0)) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(
+                MerkleProof.verify(merkleProof, primaryMerkleRoot, leaf),
+                "Invalid merkle proof"
+            );
+        }
+        
         entries.push(entryId);
         entryOwner[entryId] = msg.sender;
-        userEntries[msg.sender].push(entryId);
+        userPrimaryPositions[msg.sender].push(entryId);
         
         // Deduct oracle fee
-        uint256 oracleFee = _calculateOracleFee(contestantDepositAmount);
+        uint256 oracleFee = _calculateOracleFee(primaryDepositAmount);
         accumulatedOracleFee += oracleFee;
-        contestPrizePool += contestantDepositAmount - oracleFee;
+        primaryPrizePool += primaryDepositAmount - oracleFee;
         
-        paymentToken.safeTransferFrom(msg.sender, address(this), contestantDepositAmount);
+        paymentToken.safeTransferFrom(msg.sender, address(this), primaryDepositAmount);
         
-        emit EntryDeposited(msg.sender, entryId);
+        emit PrimaryPositionAdded(msg.sender, entryId);
     }
     
     /**
-     * @notice User withdraws an entry and gets deposit back
+     * @notice User removes a primary position and gets deposit back
      * @param entryId Entry to withdraw
      * @dev Works in OPEN state (before contest starts) or CANCELLED state (full refund)
-     * @dev Spectator funds on this entry remain in prize pool (no refunds)
+     * @dev Secondary participant funds on this entry remain in prize pool (no refunds)
      */
-    function leaveContest(uint256 entryId) external nonReentrant {
+    function removePrimaryPosition(uint256 entryId) external nonReentrant {
         require(
             state == ContestState.OPEN || state == ContestState.CANCELLED,
             "Cannot withdraw - contest in progress or settled"
@@ -233,71 +255,71 @@ contract Contest is ERC1155, ReentrancyGuard {
         // Mark entry as withdrawn
         entryWithdrawn[entryId] = true;
         
-        // Reverse oracle fee deduction from contestant deposit
-        uint256 oracleFee = _calculateOracleFee(contestantDepositAmount);
+        // Reverse oracle fee deduction from primary deposit
+        uint256 oracleFee = _calculateOracleFee(primaryDepositAmount);
         accumulatedOracleFee -= oracleFee;
-        contestPrizePool -= (contestantDepositAmount - oracleFee);
+        primaryPrizePool -= (primaryDepositAmount - oracleFee);
         
-        // Spectator funds on this entry are redistributed to winners:
-        // - contestPrizePoolSubsidy: already in pool → goes to all winners
-        // - contestantSubsidy[entryId]: move to prize pool since entry owner left
-        // - predictionPrizePool: already in pool → goes to winning spectators
-        uint256 orphanedBonus = contestantSubsidy[entryId];
+        // Secondary participant funds on this entry are redistributed to winners:
+        // - primaryPrizePoolSubsidy: already in pool → goes to all winners
+        // - primaryPositionSubsidy[entryId]: move to prize pool since entry owner left
+        // - secondaryPrizePool: already in pool → goes to winning secondary participants
+        uint256 orphanedBonus = primaryPositionSubsidy[entryId];
         if (orphanedBonus > 0) {
-            contestantSubsidy[entryId] = 0;
-            contestPrizePoolSubsidy += orphanedBonus;
+            primaryPositionSubsidy[entryId] = 0;
+            primaryPrizePoolSubsidy += orphanedBonus;
         }
         
         // Refund entry owner (full amount)
-        paymentToken.safeTransfer(msg.sender, contestantDepositAmount);
+        paymentToken.safeTransfer(msg.sender, primaryDepositAmount);
         
-        emit EntryWithdrawn(entryId, msg.sender, 0);
+        emit PrimaryPositionRemoved(entryId, msg.sender, 0);
     }
     
     /**
-     * @notice Oracle activates the contest (closes entry registration, predictions continue)
+     * @notice Oracle activates the primary (closes entry registration, secondary positions continue)
      */
-    function activateContest() external onlyOracle {
+    function activatePrimary() external onlyOracle {
         require(state == ContestState.OPEN, "Contest already started");
         require(entries.length > 0, "No entries");
         
         state = ContestState.ACTIVE;
         
-        emit ContestActivated();
+        emit PrimaryActivated();
     }
     
     /**
-     * @notice Oracle closes predictions before contest ends
-     * @dev Prevents last-second predictions when outcome is nearly certain
+     * @notice Oracle closes secondary positions before contest ends
+     * @dev Prevents last-second positions when outcome is nearly certain
      * 
-     * Use case: Close predictions when final round starts, before results are known
-     * This prevents unfair late predictions and potential race conditions
+     * Use case: Close secondary positions when final round starts, before results are known
+     * This prevents unfair late positions and potential race conditions
      */
-    function closePredictions() external onlyOracle {
+    function closeSecondary() external onlyOracle {
         require(state == ContestState.ACTIVE, "Contest not active");
         
         state = ContestState.LOCKED;
         
-        emit PredictionsClosed();
+        emit SecondaryClosed();
     }
     
     // ============ Fee Calculation Helpers ============
     
     /**
-     * @notice Calculate spectator deposit split into prize share, user share, and collateral
+     * @notice Calculate secondary deposit split into prize share, position share, and collateral
      * @param amount Total deposit amount
      * @return prizeShare Amount going to prize pool subsidy
-     * @return userShare Amount going to contestant bonus
-     * @return collateral Amount backing prediction tokens
+     * @return positionShare Amount going to primary position bonus
+     * @return collateral Amount backing secondary position tokens
      */
-    function _calculateSpectatorSplit(uint256 amount) internal view returns (
+    function _calculateSecondarySplit(uint256 amount) internal view returns (
         uint256 prizeShare,
-        uint256 userShare,
+        uint256 positionShare,
         uint256 collateral
     ) {
-        prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
-        userShare = (amount * userShareBps) / BPS_DENOMINATOR;
-        collateral = amount - prizeShare - userShare;
+        prizeShare = (amount * primaryShareBps) / BPS_DENOMINATOR;
+        positionShare = (amount * primaryPositionShareBps) / BPS_DENOMINATOR;
+        collateral = amount - prizeShare - positionShare;
     }
     
     /**
@@ -309,14 +331,14 @@ contract Contest is ERC1155, ReentrancyGuard {
         fee = (amount * oracleFeeBps) / BPS_DENOMINATOR;
     }
     
-    // ============ Layer 2: Spectator Functions ============
+    // ============ Layer 2: Secondary Functions ============
     
     /**
      * @notice Calculate current LMSR price for an entry
      * @param entryId The entry to get price for
      * @return Current price per token
      */
-    function calculateEntryPrice(uint256 entryId) public view returns (uint256) {
+    function calculateSecondaryPrice(uint256 entryId) public view returns (uint256) {
         require(entryOwner[entryId] != address(0), "Entry does not exist");
         require(!entryWithdrawn[entryId], "Entry withdrawn");
         
@@ -334,24 +356,34 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Spectator adds a prediction by predicting on a specific entry
-     * @param entryId Entry ID to predict on
+     * @notice Secondary participant adds a position on a specific entry
+     * @param entryId Entry ID to add position on
      * @param amount Amount of payment token to deposit
+     * @param merkleProof Merkle proof for whitelist verification (empty array if no gating)
      * @dev Uses LMSR pricing - popular entries cost more
      */
-    function addPrediction(uint256 entryId, uint256 amount) external nonReentrant {
+    function addSecondaryPosition(uint256 entryId, uint256 amount, bytes32[] calldata merkleProof) external nonReentrant {
         require(
             state == ContestState.OPEN || state == ContestState.ACTIVE, 
-            "Predictions not available"
+            "Secondary positions not available"
         );
         require(entryOwner[entryId] != address(0), "Entry does not exist");
         require(!entryWithdrawn[entryId], "Entry withdrawn");
         require(amount > 0, "Amount must be > 0");
         
-        // Track new spectators (for forceClose iteration)
-        if (!isSpectator[msg.sender]) {
-            spectators.push(msg.sender);
-            isSpectator[msg.sender] = true;
+        // Verify merkle proof if root is set
+        if (secondaryMerkleRoot != bytes32(0)) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(
+                MerkleProof.verify(merkleProof, secondaryMerkleRoot, leaf),
+                "Invalid merkle proof"
+            );
+        }
+        
+        // Track new secondaryParticipants (for forceClose iteration)
+        if (!isSecondaryParticipant[msg.sender]) {
+            secondaryParticipants.push(msg.sender);
+            isSecondaryParticipant[msg.sender] = true;
         }
         
         // Deduct oracle fee first
@@ -360,17 +392,17 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 amountAfterFee = amount - oracleFee;
         
         // Calculate fee split on amount after oracle fee
-        (uint256 prizeShare, uint256 userShare, uint256 collateral) = _calculateSpectatorSplit(amountAfterFee);
+        (uint256 prizeShare, uint256 positionShare, uint256 collateral) = _calculateSecondarySplit(amountAfterFee);
 
         // Accumulate subsidies (distributed on settlement)
-        contestPrizePoolSubsidy += prizeShare;
-        contestantSubsidy[entryId] += userShare;
+        primaryPrizePoolSubsidy += prizeShare;
+        primaryPositionSubsidy[entryId] += positionShare;
 
         // Track deposits per entry (for withdrawal refunds)
-        spectatorDepositedPerEntry[msg.sender][entryId] += amount;
+        secondaryDepositedPerEntry[msg.sender][entryId] += amount;
         
         // Get current LMSR price
-        uint256 price = calculateEntryPrice(entryId);
+        uint256 price = calculateSecondaryPrice(entryId);
         
         // Calculate tokens to mint
         uint256 tokensToMint = (collateral * PRICE_PRECISION) / price;
@@ -380,16 +412,16 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Update demand tracking
         netPosition[entryId] += int256(tokensToMint);
-        predictionPrizePool += collateral;
+        secondaryPrizePool += collateral;
         
-        // Pull payment from spectator
+        // Pull payment from secondary participant
         paymentToken.safeTransferFrom(msg.sender, address(this), amount);
         
-        emit PredictionAdded(msg.sender, entryId, amount, tokensToMint);
+        emit SecondaryPositionAdded(msg.sender, entryId, amount, tokensToMint);
     }
     
     /**
-     * @notice Spectator withdraws their prediction (burns tokens, gets 100% refund)
+     * @notice Secondary participant removes their position (burns tokens, gets 100% refund)
      * @param entryId Which entry to withdraw from
      * @param tokenAmount Amount of tokens to burn
      * 
@@ -397,9 +429,9 @@ contract Contest is ERC1155, ReentrancyGuard {
      * - OPEN state (during registration, before competition starts)
      * - CANCELLED state (full refund anytime)
      * 
-     * @dev NOT allowed in ACTIVE state - once competition starts, predictions are locked
+     * @dev NOT allowed in ACTIVE state - once competition starts, positions are locked
      */
-    function withdrawPrediction(uint256 entryId, uint256 tokenAmount) external nonReentrant {
+    function removeSecondaryPosition(uint256 entryId, uint256 tokenAmount) external nonReentrant {
         require(
             state == ContestState.OPEN || 
             state == ContestState.CANCELLED,
@@ -412,7 +444,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Calculate what portion of user's deposit this represents
         uint256 userTotalTokens = balanceOf(msg.sender, entryId);
-        uint256 depositedOnEntry = spectatorDepositedPerEntry[msg.sender][entryId];
+        uint256 depositedOnEntry = secondaryDepositedPerEntry[msg.sender][entryId];
         uint256 refundAmount = (depositedOnEntry * tokenAmount) / userTotalTokens;
         
         // Reverse oracle fee
@@ -421,24 +453,24 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 amountAfterFee = refundAmount - oracleFee;
         
         // Calculate fee split reversal using helper (on amount after oracle fee)
-        (uint256 prizeShare, uint256 userShare, uint256 collateral) = _calculateSpectatorSplit(amountAfterFee);
+        (uint256 prizeShare, uint256 positionShare, uint256 collateral) = _calculateSecondarySplit(amountAfterFee);
         
         // Burn tokens
         _burn(msg.sender, entryId, tokenAmount);
         netPosition[entryId] -= int256(tokenAmount);
         
         // Reverse fee accounting
-        contestPrizePoolSubsidy -= prizeShare;
-        contestantSubsidy[entryId] -= userShare;
+        primaryPrizePoolSubsidy -= prizeShare;
+        primaryPositionSubsidy[entryId] -= positionShare;
         
         // Reverse collateral
-        predictionPrizePool -= collateral;
-        spectatorDepositedPerEntry[msg.sender][entryId] -= refundAmount;
+        secondaryPrizePool -= collateral;
+        secondaryDepositedPerEntry[msg.sender][entryId] -= refundAmount;
         
         // Refund 100% of what they deposited for these tokens
         paymentToken.safeTransfer(msg.sender, refundAmount);
         
-        emit PredictionWithdrawn(msg.sender, refundAmount);
+        emit SecondaryPositionRemoved(msg.sender, refundAmount);
     }
     
     // ============ Combined Settlement ============
@@ -447,7 +479,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @notice Oracle settles contest - pure accounting (no transfers)
      * @param winningEntries Array of winning entry IDs (only entries with payouts > 0)
      * @param payoutBps Array of payout basis points (must sum to 10000)
-     * @dev First entry in winningEntries is the overall winner (for spectator market)
+     * @dev First entry in winningEntries is the overall winner (for secondary market)
      * @dev Entries not included are assumed to have 0% payout
      * @dev All payouts stored for later claims - NO transfers in this function
      */
@@ -474,45 +506,45 @@ contract Contest is ERC1155, ReentrancyGuard {
         state = ContestState.SETTLED;
         
         // Oracle fees already deducted at deposit time - accumulatedOracleFee is ready to claim
-        // All pools (contestPrizePool, contestPrizePoolSubsidy, contestantSubsidy, predictionPrizePool)
+        // All pools (primaryPrizePool, primaryPrizePoolSubsidy, primaryPositionSubsidy, secondaryPrizePool)
         // are already net of oracle fees
         
         // Step 1: Calculate Layer 1 prize pool (already after oracle fee)
-        uint256 layer1Pool = contestPrizePool + contestPrizePoolSubsidy;
+        uint256 layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy;
         
-        // Step 2: Store contestant prize payouts (NO TRANSFERS)
+        // Step 2: Store primary prize payouts (NO TRANSFERS)
         for (uint256 i = 0; i < winningEntries.length; i++) {
             uint256 entryId = winningEntries[i];
             uint256 payout = (layer1Pool * payoutBps[i]) / BPS_DENOMINATOR;
-            finalEntryPayouts[entryId] = payout;
+            finalPrimaryPayouts[entryId] = payout;
         }
         
-        // Step 3: Contestant bonuses already net of oracle fee - no adjustment needed
-        // contestantSubsidy[entryId] values are ready to be claimed as-is
+        // Step 3: Primary position bonuses already net of oracle fee - no adjustment needed
+        // primaryPositionSubsidy[entryId] values are ready to be claimed as-is
         
         // Step 4: Set Layer 2 winner (winner-take-all)
-        spectatorWinningEntry = winningEntries[0];
-        spectatorMarketResolved = true;
+        secondaryWinningEntry = winningEntries[0];
+        secondaryMarketResolved = true;
 
         // Step 5: Handle edge case - no ERC1155 supply on winning entry
-        // Add spectator pool to winning contestants' payouts
-        uint256 winnerSupply = uint256(netPosition[spectatorWinningEntry]);
-        if (predictionPrizePool > 0 && winnerSupply == 0) {
-            uint256 poolToDistribute = predictionPrizePool;
-            predictionPrizePool = 0;
+        // Add secondary pool to winning primary participants' payouts
+        uint256 winnerSupply = uint256(netPosition[secondaryWinningEntry]);
+        if (secondaryPrizePool > 0 && winnerSupply == 0) {
+            uint256 poolToDistribute = secondaryPrizePool;
+            secondaryPrizePool = 0;
             uint256 distributed = 0;
             for (uint256 i = 0; i < winningEntries.length; i++) {
                 uint256 entryId = winningEntries[i];
                 uint256 extra = (poolToDistribute * payoutBps[i]) / BPS_DENOMINATOR;
                 if (extra > 0) {
                     distributed += extra;
-                    finalEntryPayouts[entryId] += extra;
+                    finalPrimaryPayouts[entryId] += extra;
                 }
             }
             // Send any rounding remainder to the top winner
             if (distributed < poolToDistribute) {
                 uint256 remainder = poolToDistribute - distributed;
-                finalEntryPayouts[winningEntries[0]] += remainder;
+                finalPrimaryPayouts[winningEntries[0]] += remainder;
             }
         }
 
@@ -524,26 +556,26 @@ contract Contest is ERC1155, ReentrancyGuard {
     /**
      * @notice User claims payout for a specific entry after settlement
      * @param entryId The entry to claim payout for
-     * @dev Pays both prize payout AND contestant bonus in one transaction
+     * @dev Pays both prize payout AND primary position bonus in one transaction
      */
-    function claimEntryPayout(uint256 entryId) external nonReentrant {
+    function claimPrimaryPayout(uint256 entryId) external nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
         require(entryOwner[entryId] == msg.sender, "Not entry owner");
         
-        uint256 payout = finalEntryPayouts[entryId];
-        uint256 bonus = contestantSubsidy[entryId];
+        uint256 payout = finalPrimaryPayouts[entryId];
+        uint256 bonus = primaryPositionSubsidy[entryId];
         uint256 totalClaim = payout + bonus;
         
         require(totalClaim > 0, "No payout");
         
         // Clear both payouts
-        finalEntryPayouts[entryId] = 0;
-        contestantSubsidy[entryId] = 0;
+        finalPrimaryPayouts[entryId] = 0;
+        primaryPositionSubsidy[entryId] = 0;
         
         // Single transfer for both prize + bonus
         paymentToken.safeTransfer(msg.sender, totalClaim);
         
-        emit EntryPayoutClaimed(msg.sender, entryId, totalClaim);
+        emit PrimaryPayoutClaimed(msg.sender, entryId, totalClaim);
     }
     
     /**
@@ -560,12 +592,12 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
     
     /**
-     * @notice Spectator claims their prediction payout (winner-take-all)
+     * @notice Secondary participant claims their payout (winner-take-all)
      * @param entryId The entry to claim
      */
-    function claimPredictionPayout(uint256 entryId) external nonReentrant {
+    function claimSecondaryPayout(uint256 entryId) external nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
-        require(spectatorMarketResolved, "Market not resolved");
+        require(secondaryMarketResolved, "Market not resolved");
         require(entryOwner[entryId] != address(0), "Entry does not exist");
         require(!entryWithdrawn[entryId], "Entry was withdrawn");
         
@@ -578,13 +610,13 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 payout = 0;
         
         // Winner-take-all: only winning entry gets paid
-        if (entryId == spectatorWinningEntry) {
+        if (entryId == secondaryWinningEntry) {
             // Capture supply BEFORE decrement for proportional payout
             uint256 totalSupplyBefore = uint256(netPosition[entryId]);
             require(totalSupplyBefore > 0, "No supply");
             
-            // Winners split ALL spectator collateral
-            payout = (balance * predictionPrizePool) / totalSupplyBefore;
+            // Winners split ALL secondary collateral
+            payout = (balance * secondaryPrizePool) / totalSupplyBefore;
             
             // Decrement supply by burned balance
             if (balance > 0) {
@@ -599,10 +631,10 @@ contract Contest is ERC1155, ReentrancyGuard {
             
             if (payout > 0) {
                 // Decrement prediction pool by paid amount (cap to avoid underflow)
-                if (payout <= predictionPrizePool) {
-                    predictionPrizePool -= payout;
+                if (payout <= secondaryPrizePool) {
+                    secondaryPrizePool -= payout;
                 } else {
-                    predictionPrizePool = 0;
+                    secondaryPrizePool = 0;
                 }
                 paymentToken.safeTransfer(msg.sender, payout);
             }
@@ -612,13 +644,13 @@ contract Contest is ERC1155, ReentrancyGuard {
             if (remainingSupply == 0) {
                 uint256 remaining = paymentToken.balanceOf(address(this));
                 if (remaining > 0) {
-                    predictionPrizePool = 0;
+                    secondaryPrizePool = 0;
                     paymentToken.safeTransfer(msg.sender, remaining);
                 }
             }
         }
         
-        emit SpectatorPayoutRedeemed(msg.sender, entryId, payout);
+        emit SecondaryPayoutClaimed(msg.sender, entryId, payout);
     }
     
     // ============ Cancellation & Refunds ============
@@ -643,66 +675,86 @@ contract Contest is ERC1155, ReentrancyGuard {
         emit ContestCancelled();
     }
     
+    // ============ Merkle Access Control ============
+    
+    /**
+     * @notice Oracle sets merkle root for primary position whitelist
+     * @param _root Merkle root hash (bytes32(0) to disable gating)
+     */
+    function setPrimaryMerkleRoot(bytes32 _root) external onlyOracle {
+        primaryMerkleRoot = _root;
+        emit PrimaryMerkleRootUpdated(_root);
+    }
+    
+    /**
+     * @notice Oracle sets merkle root for secondary position whitelist
+     * @param _root Merkle root hash (bytes32(0) to disable gating)
+     */
+    function setSecondaryMerkleRoot(bytes32 _root) external onlyOracle {
+        secondaryMerkleRoot = _root;
+        emit SecondaryMerkleRootUpdated(_root);
+    }
+    
     // ============ Optional Push Functions (Convenience) ============
     
     /**
-     * @notice Push contestant payouts (prize + bonus) to specific entries
+     * @notice Push primary payouts (prize + bonus) to specific entries
      * @param entryIds Array of entry IDs to push payouts for
      * @dev Oracle can use this to help users who forgot to claim
      * @dev Gas-efficient: oracle controls which entries to push
      */
-    function pushContestantPayouts(uint256[] calldata entryIds) external onlyOracle nonReentrant {
+    function pushPrimaryPayouts(uint256[] calldata entryIds) external onlyOracle nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
         
         for (uint256 i = 0; i < entryIds.length; i++) {
             uint256 entryId = entryIds[i];
-            uint256 payout = finalEntryPayouts[entryId];
-            uint256 bonus = contestantSubsidy[entryId];
+            uint256 payout = finalPrimaryPayouts[entryId];
+            uint256 bonus = primaryPositionSubsidy[entryId];
             uint256 totalClaim = payout + bonus;
             
             if (totalClaim > 0) {
-                finalEntryPayouts[entryId] = 0;
-                contestantSubsidy[entryId] = 0;
+                finalPrimaryPayouts[entryId] = 0;
+                primaryPositionSubsidy[entryId] = 0;
                 address owner = entryOwner[entryId];
                 paymentToken.safeTransfer(owner, totalClaim);
-                emit EntryPayoutClaimed(owner, entryId, totalClaim);
+                emit PrimaryPayoutClaimed(owner, entryId, totalClaim);
             }
         }
     }
     
     /**
-     * @notice Push spectator payouts to specific addresses
-     * @param spectatorAddresses Array of spectator addresses to push payouts for
-     * @param entryId The winning entry ID (should be spectatorWinningEntry)
-     * @dev Oracle can use this to help spectators who forgot to claim
-     * @dev Gas-efficient: oracle controls which spectators to push
+     * @notice Push secondary payouts to specific addresses
+     * @param participantAddresses Array of secondary participant addresses to push payouts for
+     * @param entryId The winning entry ID (should be secondaryWinningEntry)
+     * @dev Oracle can use this to help secondary participants who forgot to claim
+     * @dev Gas-efficient: oracle controls which participants to push
      */
-    function pushSpectatorPayouts(address[] calldata spectatorAddresses, uint256 entryId) external onlyOracle nonReentrant {
+    function pushSecondaryPayouts(address[] calldata participantAddresses, uint256 entryId) external onlyOracle nonReentrant {
         require(state == ContestState.SETTLED, "Contest not settled");
-        require(spectatorMarketResolved, "Market not resolved");
-        require(entryId == spectatorWinningEntry, "Not winning entry");
+        require(secondaryMarketResolved, "Market not resolved");
+        require(entryId == secondaryWinningEntry, "Not winning entry");
         
         uint256 totalSupplyBefore = uint256(netPosition[entryId]);
         require(totalSupplyBefore > 0, "No supply");
         
-        for (uint256 i = 0; i < spectatorAddresses.length; i++) {
-            address spectator = spectatorAddresses[i];
-            uint256 balance = balanceOf(spectator, entryId);
+        for (uint256 i = 0; i < participantAddresses.length; i++) {
+            address participant = participantAddresses[i];
+            uint256 balance = balanceOf(participant, entryId);
             
             if (balance > 0) {
-                _burn(spectator, entryId, balance);
+                _burn(participant, entryId, balance);
                 netPosition[entryId] -= int256(balance);
                 
-                uint256 payout = (balance * predictionPrizePool) / totalSupplyBefore;
+                uint256 payout = (balance * secondaryPrizePool) / totalSupplyBefore;
                 
                 if (payout > 0) {
-                    if (payout <= predictionPrizePool) {
-                        predictionPrizePool -= payout;
+                    if (payout <= secondaryPrizePool) {
+                        secondaryPrizePool -= payout;
                     } else {
-                        predictionPrizePool = 0;
+                        secondaryPrizePool = 0;
                     }
-                    paymentToken.safeTransfer(spectator, payout);
-                    emit SpectatorPayoutRedeemed(spectator, entryId, payout);
+                    paymentToken.safeTransfer(participant, payout);
+                    emit SecondaryPayoutClaimed(participant, entryId, payout);
                 }
             }
         }
@@ -721,7 +773,7 @@ contract Contest is ERC1155, ReentrancyGuard {
             paymentToken.safeTransfer(oracle, remaining);
             
             // Zero out any remaining accounting
-            predictionPrizePool = 0;
+            secondaryPrizePool = 0;
             accumulatedOracleFee = 0;
             
             state = ContestState.CLOSED;
@@ -739,22 +791,22 @@ contract Contest is ERC1155, ReentrancyGuard {
         return entries[index];
     }
     
-    function getUserEntriesCount(address user) external view returns (uint256) {
-        return userEntries[user].length;
+    function getUserPrimaryPositionsCount(address user) external view returns (uint256) {
+        return userPrimaryPositions[user].length;
     }
     
-    function getUserEntryAtIndex(address user, uint256 index) external view returns (uint256) {
-        require(index < userEntries[user].length, "Invalid index");
-        return userEntries[user][index];
+    function getUserPrimaryPositionAtIndex(address user, uint256 index) external view returns (uint256) {
+        require(index < userPrimaryPositions[user].length, "Invalid index");
+        return userPrimaryPositions[user][index];
     }
     
-    function getSpectatorsCount() external view returns (uint256) {
-        return spectators.length;
+    function getSecondaryParticipantsCount() external view returns (uint256) {
+        return secondaryParticipants.length;
     }
     
-    function getSpectatorAtIndex(uint256 index) external view returns (address) {
-        require(index < spectators.length, "Invalid index");
-        return spectators[index];
+    function getSecondaryParticipantAtIndex(uint256 index) external view returns (address) {
+        require(index < secondaryParticipants.length, "Invalid index");
+        return secondaryParticipants[index];
     }
 }
 
