@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import { Tab, TabPanel, TabList, TabGroup, Dialog, Transition } from "@headlessui/react";
 import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -10,7 +10,6 @@ import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestPlayerList } from "../components/contest/ContestPlayerList";
-import { ContestSettings } from "../components/contest/ContestSettings";
 import { ContestPredictionsTab } from "../components/contest/ContestPredictionsTab";
 import { Connect } from "../components/user/Connect";
 
@@ -26,8 +25,9 @@ export const ContestLobby: React.FC = () => {
   // React Query - handles all fetching, caching, and refetching automatically!
   const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
 
-  // tabs - default to Entries tab (index 1 when editable, index 0 when not)
-  const [selectedIndex, setSelectedIndex] = useState(isTournamentEditable ? 1 : 0);
+  // tabs - default to first tab (Contest)
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -90,21 +90,6 @@ export const ContestLobby: React.FC = () => {
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-            {isTournamentEditable && (
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  classNames(
-                    "w-full py-1.5 text-sm font-display leading-5",
-                    "focus:outline-none",
-                    selected
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
-                  )
-                }
-              >
-                My Lineups
-              </Tab>
-            )}
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
@@ -124,7 +109,7 @@ export const ContestLobby: React.FC = () => {
                   "w-full py-1.5 text-sm font-display leading-5",
                   "focus:outline-none",
                   selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
+                    ? "border-b-2 border-purple-500 text-purple-600"
                     : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
                 )
               }
@@ -146,60 +131,105 @@ export const ContestLobby: React.FC = () => {
                 Players
               </Tab>
             )}
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Settings
-            </Tab>
           </TabList>
           <div className="">
-            {/* MY LINEUPS - Only shown when editable */}
-            {isTournamentEditable && (
-              <TabPanel>
-                <div className="p-4">
-                  {user ? (
-                    <LineupManagement contest={contest} />
-                  ) : (
-                    <div className="space-y-4 mt-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <svg
-                            className="w-5 h-5 text-yellow-500"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <p className="text-gray-600 text-sm font-display">
-                            <b>Sign In</b> to manage lineups
-                          </p>
-                        </div>
-                      </div>
-                      <Connect />
-                    </div>
-                  )}
-                </div>
-              </TabPanel>
-            )}
-
-            {/* ENTRIES */}
+            {/* ENTRIES (Contest) */}
             <TabPanel>
-              <ContestEntryList
-                contestLineups={contest?.contestLineups}
-                roundDisplay={contest?.tournament?.roundDisplay}
-              />
+              <div className="p-2 mt-1">
+                {/* Manage Lineups Button */}
+                {isTournamentEditable && (
+                  <div className="mb-3 flex items-center justify-start">
+                    <button
+                      type="button"
+                      onClick={() => setIsLineupModalOpen(true)}
+                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none"
+                    >
+                      Add Lineup
+                    </button>
+                  </div>
+                )}
+
+                {/* Contest Entry List */}
+                <ContestEntryList
+                  contestLineups={contest?.contestLineups}
+                  roundDisplay={contest?.tournament?.roundDisplay}
+                />
+              </div>
+
+              <Transition appear show={isLineupModalOpen} as={React.Fragment}>
+                <Dialog
+                  as="div"
+                  className="relative z-50"
+                  onClose={() => setIsLineupModalOpen(false)}
+                >
+                  <Transition.Child
+                    as={React.Fragment}
+                    enter="ease-out duration-200"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-150"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <div className="fixed inset-0 bg-black/30" />
+                  </Transition.Child>
+
+                  <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4">
+                      <Transition.Child
+                        as={React.Fragment}
+                        enter="ease-out duration-200"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-150"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
+                      >
+                        <Dialog.Panel className="w-full max-w-4xl transform rounded-md bg-white p-4 text-left align-middle shadow-xl transition-all">
+                          <div className="mb-2 flex items-center justify-between">
+                            <Dialog.Title className="text-lg font-medium text-gray-900">
+                              Manage Lineups
+                            </Dialog.Title>
+                            <button
+                              type="button"
+                              className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                              onClick={() => setIsLineupModalOpen(false)}
+                              aria-label="Close"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="h-5 w-5"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="mt-2">
+                            {user ? (
+                              <LineupManagement contest={contest} />
+                            ) : (
+                              <div className="space-y-4 mt-2">
+                                <div className="text-center">
+                                  <p className="text-gray-600 text-sm font-display">
+                                    Sign in to manage lineups
+                                  </p>
+                                </div>
+                                <Connect />
+                              </div>
+                            )}
+                          </div>
+                        </Dialog.Panel>
+                      </Transition.Child>
+                    </div>
+                  </div>
+                </Dialog>
+              </Transition>
             </TabPanel>
 
             {/* PREDICTIONS */}
@@ -216,11 +246,6 @@ export const ContestLobby: React.FC = () => {
                 />
               </TabPanel>
             )}
-
-            {/* INFO */}
-            <TabPanel>
-              <ContestSettings contest={contest} />
-            </TabPanel>
           </div>
         </TabGroup>
       </div>

@@ -95,7 +95,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   return (
     <div>
       {/* Total Pot Header */}
-      <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-300 rounded-lg p-4 mt-2">
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-300 rounded-lg p-4">
         <div className="text-center">
           <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
             Winner Pool

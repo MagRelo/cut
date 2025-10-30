@@ -63,7 +63,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
   // Check if user needs to connect wallet
   if (!userAddress) {
     return (
-      <div className="p-2 space-y-4 mt-4">
+      <div className="p-2 space-y-4">
         {/* Wallet Connection Prompt */}
         <div className="bg-white p-2 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
@@ -85,7 +85,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
   }
 
   return (
-    <div className="p-2 space-y-4">
+    <div className="p-2 space-y-4 mt-1">
       {/* Lineup Odds List (OPEN or ACTIVE states) */}
       {canPredict && <PredictionLineupsList contest={contest} />}
 
