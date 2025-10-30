@@ -62,7 +62,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
 
   return (
     <>
-      <div className="px-2 mt-3">
+      <div className="mt-3">
         {sortedLineups.map((lineup) => {
           const isInTheMoney = (lineup.position || 0) <= paidPositions;
           const isCurrentUser = lineup.userId === user?.id;
