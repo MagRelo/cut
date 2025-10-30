@@ -112,8 +112,6 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Contestant subsidies per entry from prediction volume (7.5% of spectator deposits)
     mapping(uint256 => uint256) public contestantSubsidy;
     
-    /// @notice Total prediction volume on each entry (for transparency)
-    mapping(uint256 => uint256) public totalVolumeOnEntry;
     
     /// @notice Track total payment tokens deposited by each spectator (for withdrawals)
     mapping(address => uint256) public spectatorTotalDeposited;
@@ -349,8 +347,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Split fees based on configured shares
         uint256 prizeShare = (amount * prizeShareBps) / BPS_DENOMINATOR;
-        uint256 userShare = (amount * userShareBps) / BPS_DENOMINATOR;
-        uint256 totalFee = prizeShare + userShare;
+        uint256 contestantShare = (amount * userShareBps) / BPS_DENOMINATOR;
+        uint256 totalFee = prizeShare + contestantShare;
         uint256 collateral = amount - totalFee;
         
         // Get current LMSR price
@@ -361,10 +359,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Accumulate fees (distributed on settlement)
         contestPrizePoolSubsidy += prizeShare;
-        contestantSubsidy[entryId] += userShare;
-        
-        // Transfer payment
-        paymentToken.safeTransferFrom(msg.sender, address(this), amount);
+        contestantSubsidy[entryId] += contestantShare;
         
         // Track user's total deposits (for withdrawal refunds)
         spectatorTotalDeposited[msg.sender] += amount;
@@ -375,8 +370,10 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Update demand tracking
         netPosition[entryId] += int256(tokensToMint);
-        totalVolumeOnEntry[entryId] += tokensToMint;
         predictionPrizePool += collateral;
+        
+        // External call last (CEI pattern)
+        paymentToken.safeTransferFrom(msg.sender, address(this), amount);
         
         emit SpectatorDeposited(msg.sender, entryId, amount, tokensToMint);
     }
