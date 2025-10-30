@@ -61,7 +61,7 @@ contract ContestTest is Test {
         assertEq(contest.getEntriesCount(), 1);
         assertEq(contest.entryOwner(ENTRY_A1), userA);
         assertEq(contest.getUserEntriesCount(userA), 1);
-        assertEq(contest.totalContestantDeposits(), CONTESTANT_DEPOSIT);
+        assertEq(contest.contestPrizePool(), CONTESTANT_DEPOSIT);
     }
     
     function testMultipleEntriesPerUser() public {
@@ -78,7 +78,7 @@ contract ContestTest is Test {
         assertEq(contest.entryOwner(ENTRY_A1), userA);
         assertEq(contest.entryOwner(ENTRY_A2), userA);
         assertEq(contest.getUserEntriesCount(userA), 2);
-        assertEq(contest.totalContestantDeposits(), CONTESTANT_DEPOSIT * 2);
+        assertEq(contest.contestPrizePool(), CONTESTANT_DEPOSIT * 2);
         
         // Verify userA owns both entries
         assertEq(contest.getUserEntryAtIndex(userA, 0), ENTRY_A1);

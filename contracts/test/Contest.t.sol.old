@@ -58,7 +58,7 @@ contract ContestTest is Test {
         }
         
         assertEq(contest.getContestantsCount(), 3);
-        assertEq(contest.totalContestantDeposits(), CONTESTANT_DEPOSIT * 3);
+        assertEq(contest.contestPrizePool(), CONTESTANT_DEPOSIT * 3);
         
         // ============ Phase 2: Oracle Starts Contest ============
         

@@ -83,8 +83,8 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Tracks if entry has been withdrawn
     mapping(uint256 => bool) public entryWithdrawn;
     
-    /// @notice Total contestant deposits collected
-    uint256 public totalContestantDeposits;
+    /// @notice Contest prize pool - sum of all contestant entry deposits
+    uint256 public contestPrizePool;
     
     /// @notice Final payouts for each entry after settlement
     mapping(uint256 => uint256) public finalEntryPayouts;
@@ -103,14 +103,14 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Track net position for each entry ID (for LMSR pricing and total supply)
     mapping(uint256 => int256) public netPosition;
     
-    /// @notice Total collateral from spectators (85% of deposits)
-    uint256 public totalSpectatorCollateral;
+    /// @notice Prediction prize pool - collateral backing spectator prediction tokens (~85% of deposits)
+    uint256 public predictionPrizePool;
     
-    /// @notice Accumulated prize bonus to augment Layer 1 pool
-    uint256 public accumulatedPrizeBonus;
+    /// @notice Contest prize pool subsidy from spectators (7.5% of spectator deposits)
+    uint256 public contestPrizePoolSubsidy;
     
-    /// @notice Bonuses earned by each entry from prediction volume
-    mapping(uint256 => uint256) public entryBonuses;
+    /// @notice Contestant subsidies per entry from prediction volume (7.5% of spectator deposits)
+    mapping(uint256 => uint256) public contestantSubsidy;
     
     /// @notice Total prediction volume on each entry (for transparency)
     mapping(uint256 => uint256) public totalVolumeOnEntry;
@@ -208,7 +208,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         entries.push(entryId);
         entryOwner[entryId] = msg.sender;
         userEntries[msg.sender].push(entryId);
-        totalContestantDeposits += contestantDepositAmount;
+        contestPrizePool += contestantDepositAmount;
         
         paymentToken.safeTransferFrom(msg.sender, address(this), contestantDepositAmount);
         
@@ -231,7 +231,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         
         // Mark entry as withdrawn first
         entryWithdrawn[entryId] = true;
-        totalContestantDeposits -= contestantDepositAmount;
+        contestPrizePool -= contestantDepositAmount;
         
         // Auto-refund all spectators who predicted on this entry
         uint256 refundCount = 0;
@@ -254,9 +254,9 @@ contract Contest is ERC1155, ReentrancyGuard {
                     
                     // Reverse accounting
                     netPosition[entryId] -= int256(tokenBalance);
-                    accumulatedPrizeBonus -= prizeShare;
-                    entryBonuses[entryId] -= userShare;
-                    totalSpectatorCollateral -= collateralInDeposit;
+                    contestPrizePoolSubsidy -= prizeShare;
+                    contestantSubsidy[entryId] -= userShare;
+                    predictionPrizePool -= collateralInDeposit;
                     spectatorTotalDeposited[spectator] -= depositedOnThisEntry;
                     spectatorDepositedPerEntry[spectator][entryId] = 0;
                     
@@ -360,8 +360,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 tokensToMint = (collateral * PRICE_PRECISION) / price;
         
         // Accumulate fees (distributed on settlement)
-        accumulatedPrizeBonus += prizeShare;
-        entryBonuses[entryId] += userShare;
+        contestPrizePoolSubsidy += prizeShare;
+        contestantSubsidy[entryId] += userShare;
         
         // Transfer payment
         paymentToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -376,7 +376,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         // Update demand tracking
         netPosition[entryId] += int256(tokensToMint);
         totalVolumeOnEntry[entryId] += tokensToMint;
-        totalSpectatorCollateral += collateral;
+        predictionPrizePool += collateral;
         
         emit SpectatorDeposited(msg.sender, entryId, amount, tokensToMint);
     }
@@ -420,11 +420,11 @@ contract Contest is ERC1155, ReentrancyGuard {
         netPosition[entryId] -= int256(tokenAmount);
         
         // Reverse fee accounting
-        accumulatedPrizeBonus -= prizeShare;
-        entryBonuses[entryId] -= userShare;
+        contestPrizePoolSubsidy -= prizeShare;
+        contestantSubsidy[entryId] -= userShare;
         
         // Reverse collateral
-        totalSpectatorCollateral -= collateralInRefund;
+        predictionPrizePool -= collateralInRefund;
         spectatorTotalDeposited[msg.sender] -= refundAmount;
         spectatorDepositedPerEntry[msg.sender][entryId] -= refundAmount;
         
@@ -467,12 +467,12 @@ contract Contest is ERC1155, ReentrancyGuard {
         state = ContestState.SETTLED;
         
         // Step 1: Calculate total pool (all money going to entries)
-        uint256 totalPool = totalContestantDeposits + accumulatedPrizeBonus;
+        uint256 totalPool = contestPrizePool + contestPrizePoolSubsidy;
         
         // Calculate total entry bonuses
         uint256 totalBonuses = 0;
         for (uint256 i = 0; i < entries.length; i++) {
-            totalBonuses += entryBonuses[entries[i]];
+            totalBonuses += contestantSubsidy[entries[i]];
         }
         
         totalPool += totalBonuses;
@@ -481,7 +481,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 oracleFee = (totalPool * oracleFeeBps) / BPS_DENOMINATOR;
         
         // Step 3: Calculate Layer 1 prize pool (after oracle fee)
-        uint256 layer1PoolAfterFee = ((totalContestantDeposits + accumulatedPrizeBonus) * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
+        uint256 layer1PoolAfterFee = ((contestPrizePool + contestPrizePoolSubsidy) * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
         
         // Step 4: Set Layer 1 payouts (by entry ID - now safe for same owner multiple times!)
         for (uint256 i = 0; i < winningEntries.length; i++) {
@@ -498,11 +498,11 @@ contract Contest is ERC1155, ReentrancyGuard {
         // Step 6: Distribute Layer 2 entry bonuses (after oracle fee)
         for (uint256 i = 0; i < entries.length; i++) {
             uint256 entryId = entries[i];
-            uint256 bonus = entryBonuses[entryId];
+            uint256 bonus = contestantSubsidy[entryId];
             if (bonus > 0) {
                 // Apply oracle fee proportionally
                 uint256 bonusAfterFee = (bonus * (BPS_DENOMINATOR - oracleFeeBps)) / BPS_DENOMINATOR;
-                entryBonuses[entryId] = 0;
+                contestantSubsidy[entryId] = 0;
                 // Send bonus to entry owner
                 paymentToken.safeTransfer(entryOwner[entryId], bonusAfterFee);
             }
@@ -580,7 +580,7 @@ contract Contest is ERC1155, ReentrancyGuard {
             require(totalSupply > 0, "No supply");
             
             // Winners split ALL spectator collateral
-            payout = (balance * totalSpectatorCollateral) / totalSupply;
+            payout = (balance * predictionPrizePool) / totalSupply;
             
             // Safety check
             uint256 available = paymentToken.balanceOf(address(this));
@@ -657,7 +657,7 @@ contract Contest is ERC1155, ReentrancyGuard {
                 uint256 balance = balanceOf(spectator, spectatorWinningEntry);
                 if (balance > 0) {
                     _burn(spectator, spectatorWinningEntry, balance);
-                    uint256 payout = (balance * totalSpectatorCollateral) / totalSupply;
+                    uint256 payout = (balance * predictionPrizePool) / totalSupply;
                     if (payout > 0) {
                         paymentToken.safeTransfer(spectator, payout);
                         spectatorsPaid++;
