@@ -138,9 +138,9 @@ export const ContestLobby: React.FC = () => {
               <div className="p-2 mt-1">
                 {/* Contest Status & Action */}
                 {isTournamentEditable && (
-                  <div className="mb-3 flex items-center justify-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 font-display">
-                      Contest Open:
+                  <div className="flex items-center justify-end gap-2 border-b border-gray-200 pb-3">
+                    <span className="text-xs text-gray-400 font-display pr-2">
+                      Contest Starting Soon:
                     </span>
                     <button
                       type="button"
