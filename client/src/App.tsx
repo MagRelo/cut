@@ -10,6 +10,7 @@ import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useT
 // import { config } from "./wagmi-base";
 
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
+import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
 import { LineupProvider } from "./contexts/LineupContext";
 
@@ -50,14 +51,15 @@ export const App: React.FC = () => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <PortoAuthProvider>
-          <Router>
-            <TournamentProvider>
-              <LineupProvider>
-                <div className="min-h-screen bg-gray-100 flex flex-col">
-                  {/* TODO: Remove this when we're ready to go live */}
-                  {/* <MaintenanceOverlay /> */}
-                  <div className="flex flex-col flex-grow">
+        <GlobalErrorProvider>
+          <PortoAuthProvider>
+            <Router>
+              <TournamentProvider>
+                <LineupProvider>
+                  <div className="min-h-screen bg-gray-100 flex flex-col">
+                    {/* TODO: Remove this when we're ready to go live */}
+                    {/* <MaintenanceOverlay /> */}
+                    <div className="flex flex-col flex-grow">
                     <div className="container mx-auto md:py-8">
                       <div className="max-w-2xl mx-auto">
                         <TournamentHeaderPanel />
@@ -118,12 +120,13 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <Footer />
-                </div>
-              </LineupProvider>
-            </TournamentProvider>
-          </Router>
-        </PortoAuthProvider>
+                    <Footer />
+                  </div>
+                </LineupProvider>
+              </TournamentProvider>
+            </Router>
+          </PortoAuthProvider>
+        </GlobalErrorProvider>
         {/* React Query DevTools - only loads in development */}
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

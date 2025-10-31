@@ -1,13 +1,28 @@
-import React from "react";
-import { ErrorMessage } from "../common/ErrorMessage";
+import React, { useEffect } from "react";
 import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { CountdownTimer } from "./CountdownTimer";
 import { Navigation } from "../common/Navigation";
+import { useGlobalError } from "../../contexts/GlobalErrorContext";
 
 export const TournamentHeaderPanel: React.FC = () => {
   // Use lightweight metadata endpoint instead of full tournament data
   // This loads ~10x faster since it doesn't fetch all players and contests
-  const { data, isLoading, isFetching, error } = useTournamentMetadata();
+  const { data, isLoading, isFetching, error: queryError } = useTournamentMetadata();
+  const { showError, clearError } = useGlobalError();
+
+  useEffect(() => {
+    if (queryError) {
+      showError({
+        id: "tournament-header",
+        title: "Something is wrong...",
+        message: "Failed to load tournament data.",
+        retryLabel: "Try Again",
+        onRetry: () => window.location.reload(),
+      });
+    } else {
+      clearError("tournament-header");
+    }
+  }, [queryError, showError, clearError]);
   const currentTournament = data?.tournament;
 
   // Only show loading on initial load (no data yet)
@@ -33,12 +48,8 @@ export const TournamentHeaderPanel: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="relative overflow-hidden p-4 min-h-[176px] border-b border-gray-300">
-        <ErrorMessage message={error.message} />
-      </div>
-    );
+  if (queryError) {
+    return <div className="relative overflow-hidden min-h-[176px]" />;
   }
 
   if (!currentTournament) {
