@@ -128,9 +128,9 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 | **Secondary Participants** | Check prices                        | `calculateSecondaryPrice(entryId)`         |
 | **Secondary Participants** | Add position                        | `addSecondaryPosition(entryId, amount)`    |
 | **Secondary Participants** | Withdraw (100% refund)              | `removeSecondaryPosition(entryId, tokens)` |
-| **Oracle/Admin**           | Activate primary                    | `activatePrimary()`                        |
+| **Oracle/Admin**           | Activate contest                    | `activateContest()`                        |
 
-**State transition:** Oracle calls `activatePrimary()` → `ACTIVE`
+**State transition:** Oracle calls `activateContest()` → `ACTIVE`
 
 ---
 
@@ -146,11 +146,11 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 | **Secondary Participants** | Add positions (LMSR)   | `addSecondaryPosition(entryId, amount)`  |
 | **Secondary Participants** | ❌ Cannot withdraw     | -                                        |
 | **Secondary Participants** | Check prices           | `calculateSecondaryPrice(entryId)`       |
-| **Oracle/Admin**           | Close secondary        | `closeSecondary()`                       |
+| **Oracle/Admin**           | Lock contest           | `lockContest()`                          |
 | **Oracle/Admin**           | Cancel contest         | `cancelContest()`                        |
 | **Oracle/Admin**           | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
-**State transition:** Oracle calls `closeSecondary()` → `LOCKED`
+**State transition:** Oracle calls `lockContest()` → `LOCKED`
 
 **Note:** Once the contest is activated, secondary participants can still add new positions but CANNOT withdraw existing positions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
 
@@ -188,16 +188,16 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 | **Secondary Participants** | Check final prices                    | `calculateSecondaryPrice(entryId)` |
 | **Secondary Participants** | Claim secondary payout                | `claimSecondaryPayout(entryId)`    |
 | **Secondary Participants** | Winners get payout, losers get 0      | Same function                      |
-| **Oracle/Admin**           | Distribute after expiry (see Phase 5) | `sweepToTreasury()`                |
+| **Oracle/Admin**           | Distribute after expiry (see Phase 5) | `closeContest()`                   |
 
-**State transition:** Oracle calls `sweepToTreasury()` (after expiry) → `CLOSED`
+**State transition:** Oracle calls `closeContest()` (after expiry) → `CLOSED`
 
 ---
 
 ### Phase 5: CLOSED - Force Distribution (After Expiry)
 
 **State:** `ContestState.CLOSED`  
-**Trigger:** Oracle calls `sweepToTreasury()` after contest expiry
+**Trigger:** Oracle calls `closeContest()` after contest expiry
 
 | Actor            | Can Do                          | Function |
 | ---------------- | ------------------------------- | -------- |
@@ -208,7 +208,7 @@ This infrastructure is **competition-agnostic** - it works with any format that 
 
 **How it works:**
 
-- After expiry timestamp, oracle can call `sweepToTreasury()`
+- After expiry timestamp, oracle can call `closeContest()`
 - Sweeps all unclaimed funds to treasury (oracle address)
 - Primary participants who didn't claim lose their prizes
 - Winning secondary participants who didn't claim lose their winnings
@@ -259,7 +259,7 @@ Example:
                      │ Secondary participants add positions (early positions!)
                      │ Secondary participants can withdraw (free exit)
                      │
-                     │ Oracle: activatePrimary()
+                     │ Oracle: activateContest()
                      ▼
                   ACTIVE
                      │
@@ -267,7 +267,7 @@ Example:
                      │ Secondary participants continue adding positions
                      │ NO withdrawals (positions locked in)
                      │
-                     │ Oracle: closeSecondary() [OPTIONAL]
+                     │ Oracle: lockContest() [OPTIONAL]
                      ▼
                   LOCKED
                      │
@@ -285,7 +285,7 @@ Example:
                      │ whenever ready
                      │
                      │ (After expiry)
-                     │ Oracle: sweepToTreasury()
+                     │ Oracle: closeContest()
                      │ Sweeps unclaimed funds
                      ▼
                   CLOSED

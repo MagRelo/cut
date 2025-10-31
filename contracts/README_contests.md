@@ -155,7 +155,7 @@ contract balance = accumulatedOracleFee
 Settlement does **NO transfers**, only calculations:
 
 1. Calculate Layer 1 prize pool: `primaryPrizePool + primaryPrizePoolSubsidy`
-2. Store prize payouts in `finalPrimaryPayouts[entryId]` based on `payoutBps`
+2. Store prize payouts in `primaryPrizePoolPayouts[entryId]` based on `payoutBps`
 3. Store bonus payouts in `primaryPositionSubsidy[entryId]` (already net of fees)
 4. Set `secondaryWinningEntry` to first entry in winningEntries array
 5. If no supply on winning entry: redistribute secondary pool to winners
@@ -166,13 +166,13 @@ Settlement does **NO transfers**, only calculations:
 
 **Every token deposited is distributed to someone:**
 
-- **Primary deposits** → Winning primary participants (via `finalPrimaryPayouts`)
+- **Primary deposits** → Winning primary participants (via `primaryPrizePoolPayouts`)
 - **Secondary prize share** → Winning primary participants (via `primaryPrizePoolSubsidy`)
 - **Secondary entry bonuses** → Entry owners (via `primaryPositionSubsidy`) OR moved to prize pool if entry withdrew
 - **Secondary collateral** → Winning secondary participants (via `secondaryPrizePool`)
 - **Oracle fees** → Oracle (via `accumulatedOracleFee`)
 
-If users don't claim, oracle can use `sweepToTreasury()` after expiry to recover unclaimed funds.
+If users don't claim, oracle can use `closeContest()` after expiry to recover unclaimed funds.
 
 ### Claims (Pull-Based)
 
@@ -181,7 +181,7 @@ After settlement, users claim their payouts:
 ```solidity
 // Primary participants claim prize + bonus
 claimPrimaryPayout(entryId)
-  → pays finalPrimaryPayouts[entryId] + primaryPositionSubsidy[entryId]
+  → pays primaryPrizePoolPayouts[entryId] + primaryPositionSubsidy[entryId]
 
 // Oracle claims accumulated fees
 claimOracleFee()
@@ -213,7 +213,7 @@ function removePrimaryPosition(uint256 entryId) external
 // Claim prize + bonus after settlement
 function claimPrimaryPayout(uint256 entryId) external
 // State: SETTLED
-// Pays finalPrimaryPayouts[entryId] + primaryPositionSubsidy[entryId]
+// Pays primaryPrizePoolPayouts[entryId] + primaryPositionSubsidy[entryId]
 ```
 
 #### For Secondary Participants
@@ -241,11 +241,11 @@ function claimSecondaryPayout(uint256 entryId) external
 #### For Oracle
 
 ```solidity
-// Activate primary (locks entry registration)
-function activatePrimary() external onlyOracle
+// Activate contest (locks entry registration)
+function activateContest() external onlyOracle
 
-// Close secondary positions (locks secondary deposits)
-function closeSecondary() external onlyOracle
+// Lock contest (closes secondary positions)
+function lockContest() external onlyOracle
 
 // Settle contest (pure accounting, NO transfers)
 function settleContest(
@@ -274,8 +274,8 @@ function pushPrimaryPayouts(uint256[] calldata entryIds) external onlyOracle
 // Push winnings to specific secondary participants
 function pushSecondaryPayouts(address[] calldata participants, uint256 entryId) external onlyOracle
 
-// Sweep all unclaimed funds after expiry
-function sweepToTreasury() external onlyOracle
+// Close contest and sweep all unclaimed funds after expiry
+function closeContest() external onlyOracle
 // Requirements: block.timestamp >= expiryTimestamp
 ```
 
@@ -286,14 +286,14 @@ function sweepToTreasury() external onlyOracle
 │ OPEN                                                            │
 │  • Primary: addPrimaryPosition() / removePrimaryPosition()     │
 │  • Secondary: addSecondaryPosition() / removeSecondaryPosition()│
-│  • Oracle: activatePrimary()                                    │
+│  • Oracle: activateContest()                                    │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ ACTIVE                                                           │
 │  • Secondary: addSecondaryPosition() only (no withdrawals)      │
-│  • Oracle: closeSecondary() [optional]                          │
+│  • Oracle: lockContest() [optional]                             │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
@@ -310,7 +310,7 @@ function sweepToTreasury() external onlyOracle
 │  • Secondary: claimSecondaryPayout()                            │
 │  • Oracle: claimOracleFee()                                     │
 │  • Oracle: pushPrimaryPayouts() / pushSecondaryPayouts()        │
-│  • Oracle: sweepToTreasury() [after expiry]                    │
+│  • Oracle: closeContest() [after expiry]                        │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
@@ -445,7 +445,7 @@ At $5,000 volume with liquidityParameter = 10,000:
 
 ```
 layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
-finalPrimaryPayouts[i] = layer1Pool * payoutBps[i] / 10000
+primaryPrizePoolPayouts[i] = layer1Pool * payoutBps[i] / 10000
 ```
 
 ### Secondary Participant Claims

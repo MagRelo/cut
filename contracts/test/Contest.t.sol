@@ -63,7 +63,6 @@ contract ContestTest is Test {
         
         assertEq(contest.getEntriesCount(), 1);
         assertEq(contest.entryOwner(ENTRY_A1), userA);
-        assertEq(contest.getUserPrimaryPositionsCount(userA), 1);
         // Oracle fee (1%) deducted at deposit time
         uint256 expectedPool = PRIMARY_DEPOSIT - (PRIMARY_DEPOSIT * ORACLE_FEE) / 10000;
         assertEq(contest.primaryPrizePool(), expectedPool);
@@ -82,14 +81,9 @@ contract ContestTest is Test {
         assertEq(contest.getEntriesCount(), 2);
         assertEq(contest.entryOwner(ENTRY_A1), userA);
         assertEq(contest.entryOwner(ENTRY_A2), userA);
-        assertEq(contest.getUserPrimaryPositionsCount(userA), 2);
         // Oracle fee (1%) deducted at deposit time for each entry
         uint256 expectedPool = (PRIMARY_DEPOSIT * 2) - ((PRIMARY_DEPOSIT * 2) * ORACLE_FEE) / 10000;
         assertEq(contest.primaryPrizePool(), expectedPool);
-        
-        // Verify userA owns both entries
-        assertEq(contest.getUserPrimaryPositionAtIndex(userA, 0), ENTRY_A1);
-        assertEq(contest.getUserPrimaryPositionAtIndex(userA, 1), ENTRY_A2);
     }
     
     function testSpectatorPredictsOnEntryId() public {
@@ -107,7 +101,7 @@ contract ContestTest is Test {
         contest.addPrimaryPosition(ENTRY_B, emptyProof);
         
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
         
         // Spectator predicts on ENTRY_B (using ID directly!)
         usdc.mint(spectator1, 100e6);
@@ -137,7 +131,7 @@ contract ContestTest is Test {
         contest.addPrimaryPosition(ENTRY_B, emptyProof);
         
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
         
         // Settle: ENTRY_A1 wins 50%, ENTRY_A2 gets 30%, ENTRY_B gets 20%
         // Note: Only include entries with payouts > 0
@@ -188,7 +182,7 @@ contract ContestTest is Test {
         contest.addPrimaryPosition(ENTRY_C, emptyProof);
         
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
         
         // Spectators predict
         usdc.mint(spectator1, 100e6);
@@ -248,7 +242,7 @@ contract ContestTest is Test {
         
         // Verify refund
         assertEq(usdc.balanceOf(userA), balanceBefore + PRIMARY_DEPOSIT);
-        assertTrue(contest.entryWithdrawn(ENTRY_A1), "Entry should be marked withdrawn");
+        assertEq(contest.entryOwner(ENTRY_A1), address(0), "Entry owner should be cleared (withdrawn)");
         
         // Entry still exists in array (for stability)
         assertEq(contest.getEntriesCount(), 1);
@@ -300,7 +294,7 @@ contract ContestTest is Test {
         
         // Activate contest
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
         
         // Try to withdraw after activation - should fail
         vm.prank(spectator1);
@@ -324,7 +318,7 @@ contract ContestTest is Test {
         vm.prank(spectator1);
         usdc.approve(address(contest), 100e6);
         vm.prank(spectator1);
-        vm.expectRevert("Entry withdrawn");
+        vm.expectRevert("Entry does not exist or withdrawn");
         contest.addSecondaryPosition(ENTRY_A1, 100e6, emptyProof);
     }
     
@@ -351,7 +345,7 @@ contract ContestTest is Test {
         vm.stopPrank();
         
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
         
         // Settle
         uint256[] memory winningEntries = new uint256[](2);
@@ -375,7 +369,7 @@ contract ContestTest is Test {
         // Sweep unclaimed funds to treasury
         uint256 oracleBalanceBefore = usdc.balanceOf(oracle);
         vm.prank(oracle);
-        contest.sweepToTreasury();
+        contest.closeContest();
 
         // All unclaimed funds swept to oracle
         assertEq(usdc.balanceOf(oracle) - oracleBalanceBefore, contractBalance, "Oracle should receive all unclaimed funds");

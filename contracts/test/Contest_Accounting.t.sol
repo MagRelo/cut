@@ -70,7 +70,7 @@ contract ContestAccountingTest is Test {
 
     function _activate() internal {
         vm.prank(oracle);
-        contest.activatePrimary();
+        contest.activateContest();
     }
 
     function _settle(uint256[] memory winners, uint256[] memory bps) internal {
@@ -274,7 +274,7 @@ contract ContestAccountingTest is Test {
 
         // close predictions
         vm.prank(oracle);
-        contest.closeSecondary();
+        contest.lockContest();
 
         // attempt withdrawal should fail in LOCKED
         uint256 tokens = contest.balanceOf(s1, ENTRY_A);
@@ -375,7 +375,7 @@ contract ContestAccountingTest is Test {
         assertEq(usdc.balanceOf(address(contest)), 0);
     }
 
-    // ============ E6: sweepToTreasury after expiry sweeps unclaimed funds ============
+    // ============ E6: closeContest after expiry sweeps unclaimed funds ============
     function testE6_SweepToTreasury_AfterExpiry() public {
         // Two contestants, no spectators
         _join(a, ENTRY_A);
@@ -399,7 +399,7 @@ contract ContestAccountingTest is Test {
         vm.warp(block.timestamp + EXPIRY + 1);
         uint256 oracleBefore = usdc.balanceOf(oracle);
         vm.prank(oracle);
-        contest.sweepToTreasury();
+        contest.closeContest();
 
         // All unclaimed funds swept to oracle
         assertEq(usdc.balanceOf(oracle) - oracleBefore, contractBalance);
@@ -530,7 +530,7 @@ contract ContestAccountingTest is Test {
         vm.prank(c); highFee.addPrimaryPosition(ENTRY_C, emptyProof);
 
         vm.prank(oracle);
-        highFee.activatePrimary();
+        highFee.activateContest();
 
         uint256[] memory winners = new uint256[](1);
         winners[0] = ENTRY_C;
