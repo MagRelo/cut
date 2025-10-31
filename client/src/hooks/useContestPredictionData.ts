@@ -1,5 +1,6 @@
-import { useAccount, useReadContract, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+import { useMemo } from "react";
+import { useAccount, useReadContract, useReadContracts, useChainId } from "wagmi";
+import { formatUnits, type Abi } from "viem";
 import ContestContract from "../utils/contracts/Contest.json";
 
 // Contract state enum matching Contest.sol
@@ -31,6 +32,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
   const { address: userAddress } = useAccount();
   const walletChainId = useChainId();
   const chainId = (providedChainId ?? walletChainId) as SupportedChainId;
+  const contestAbi = ContestContract.abi as Abi;
 
   // Read contest state
   const { data: contestState, isLoading: isLoadingState } = useReadContract({
@@ -73,53 +75,88 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     contestState === ContestState.CANCELLED;
   const canClaim = contestState === ContestState.SETTLED;
 
-  // Read LMSR prices for each entry
-  const entryPrices = entryIds.map((entryId) =>
-    useReadContract({
-      address: contestAddress as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "calculateEntryPrice",
-      args: [BigInt(entryId)],
-      chainId,
-      query: {
-        enabled: enabled && !!contestAddress && !!entryId,
-      },
-    })
+  const shouldFetchEntries = enabled && !!contestAddress && entryIds.length > 0;
+  const shouldFetchBalances = shouldFetchEntries && !!userAddress;
+
+  const priceContracts = useMemo(
+    () =>
+      shouldFetchEntries
+        ? entryIds.map((entryId) => ({
+            address: contestAddress as `0x${string}`,
+            abi: contestAbi,
+            functionName: "calculateEntryPrice",
+            args: [BigInt(entryId)],
+            chainId,
+          }))
+        : [],
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
   );
 
-  // Read user's ERC1155 token balances for each entry
-  const userBalances = entryIds.map((entryId) =>
-    useReadContract({
-      address: contestAddress as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "balanceOf",
-      args: [userAddress as `0x${string}`, BigInt(entryId)],
-      chainId,
-      query: {
-        enabled: enabled && !!contestAddress && !!userAddress && !!entryId,
-      },
-    })
+  const supplyContracts = useMemo(
+    () =>
+      shouldFetchEntries
+        ? entryIds.map((entryId) => ({
+            address: contestAddress as `0x${string}`,
+            abi: contestAbi,
+            functionName: "netPosition",
+            args: [BigInt(entryId)],
+            chainId,
+          }))
+        : [],
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
   );
 
-  // Read net position (total supply) for each entry
-  const entrySupplies = entryIds.map((entryId) =>
-    useReadContract({
-      address: contestAddress as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "netPosition",
-      args: [BigInt(entryId)],
-      chainId,
-      query: {
-        enabled: enabled && !!contestAddress && !!entryId,
-      },
-    })
+  const balanceContracts = useMemo(
+    () =>
+      shouldFetchBalances
+        ? entryIds.map((entryId) => ({
+            address: contestAddress as `0x${string}`,
+            abi: contestAbi,
+            functionName: "balanceOf",
+            args: [userAddress as `0x${string}`, BigInt(entryId)],
+            chainId,
+          }))
+        : [],
+    [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress]
   );
+
+  const { data: priceResults, isLoading: isLoadingPrices } = useReadContracts({
+    contracts: priceContracts,
+    query: {
+      enabled: shouldFetchEntries,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  });
+
+  const { data: supplyResults, isLoading: isLoadingSupplies } = useReadContracts({
+    contracts: supplyContracts,
+    query: {
+      enabled: shouldFetchEntries,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  });
+
+  const { data: balanceResults, isLoading: isLoadingBalances } = useReadContracts({
+    contracts: balanceContracts,
+    query: {
+      enabled: shouldFetchBalances,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  });
 
   // Format the data for easier consumption
   const entryData = entryIds.map((entryId, index) => {
-    const price = entryPrices[index].data as bigint | undefined;
-    const balance = userBalances[index].data as bigint | undefined;
-    const supply = entrySupplies[index].data as bigint | undefined;
+    const price = priceResults?.[index]?.result as bigint | undefined;
+    const balance = shouldFetchBalances
+      ? (balanceResults?.[index]?.result as bigint | undefined)
+      : undefined;
+    const supply = supplyResults?.[index]?.result as bigint | undefined;
 
     // Calculate implied winnings if this entry wins
     // Formula: (userBalance / totalSupply) * totalCollateral
@@ -149,17 +186,13 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       impliedWinnings,
       impliedWinningsFormatted,
       hasPosition: balance ? balance > 0n : false,
-      isLoadingPrice: entryPrices[index].isLoading,
-      isLoadingBalance: userBalances[index].isLoading,
-      isLoadingSupply: entrySupplies[index].isLoading,
+      isLoadingPrice: isLoadingPrices,
+      isLoadingBalance: isLoadingBalances,
+      isLoadingSupply: isLoadingSupplies,
     };
   });
 
-  const isLoading =
-    isLoadingState ||
-    entryPrices.some((p) => p.isLoading) ||
-    userBalances.some((b) => b.isLoading) ||
-    entrySupplies.some((s) => s.isLoading);
+  const isLoading = isLoadingState || isLoadingPrices || isLoadingBalances || isLoadingSupplies;
 
   return {
     contestState: contestState as ContestState | undefined,
