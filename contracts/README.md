@@ -344,37 +344,44 @@ Example:
 
 ## 💰 Economic Model
 
+### Key Processes
+
+**Oracle Fee Deduction**: 1-10% deducted immediately from ALL deposits (primary and secondary) and accumulated for platform/oracle.
+
+**Dynamic Cross-Subsidy**: During deposits, funds automatically redirect between primary/secondary pools to maintain configurable balance ratios (e.g., 60% primary target). This prevents one side from dominating and ensures both markets remain viable.
+
+**Settlement Redistribution**: At settlement, secondary collateral gets redistributed:
+
+- Configurable portion augments primary prizes (bigger payouts!)
+- Configurable portion creates popularity bonuses for primary participants
+- Remaining backs secondary prediction tokens
+
 ### Example: 3 primary participants, 10 secondary participants
 
 **Phase 1: Primary Participants Enter**
 
 ```
-Entry A deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
-Entry B deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
-Entry C deposits: 100 tokens → 1% oracle fee = 1 token, 99 to pool
+Entry A deposits: 100 tokens → 1% oracle fee = 1 token, remaining may cross-subsidize to secondary if above target ratio
+Entry B deposits: 100 tokens → 1% oracle fee = 1 token, same cross-subsidy logic
+Entry C deposits: 100 tokens → 1% oracle fee = 1 token, same cross-subsidy logic
 ─────────────────────────────────────────────────────────
 Oracle fees accumulated: 3 tokens
-Layer 1 pool (primaryPrizePool): 297 tokens
+Primary prize pool: ~297 tokens (after any cross-subsidy balancing)
 ```
 
 **Phase 2: Secondary Participants Add Positions**
 
 ```
-5 people add 100 tokens on Entry B = 500 tokens (50% of volume)
-3 people add 100 tokens on Entry A = 300 tokens (30% of volume)
-2 people add 100 tokens on Entry C = 200 tokens (20% of volume)
+5 people add 100 tokens on Entry B = 500 tokens (50% prediction volume)
+3 people add 100 tokens on Entry A = 300 tokens (30% prediction volume)
+2 people add 100 tokens on Entry C = 200 tokens (20% prediction volume)
 ─────────────────────────────────────────
 Total secondary deposits: 1,000 tokens
 
 Oracle fee deducted at deposit (1%): 10 tokens → accumulatedOracleFee
-Remaining: 990 tokens split three ways:
-
-├─ Prize bonus (7.5% of 990): 74.25 tokens → augments Layer 1 pool
-├─ Primary position bonuses (7.5% of 990): 74.25 tokens → split by volume
-│   ├─ Entry B: 37.13 tokens (50% of prediction volume) ← Based on popularity!
-│   ├─ Entry A: 22.28 tokens (30% of prediction volume)
-│   └─ Entry C: 14.84 tokens (20% of prediction volume)
-└─ Secondary collateral (85% of 990): 841.5 tokens → backs position tokens
+Remaining: 990 tokens allocated with cross-subsidy balancing:
+- Up to configurable cap redirects to primary if below target ratio
+- Remaining goes to secondary collateral pool → backs ERC1155 prediction tokens
 ```
 
 **Phase 3: ONE Oracle Call Settles**
@@ -387,66 +394,50 @@ contest.settleContest(
 // Note: Only pass entries that receive payouts - no zeros needed!
 ```
 
-**What happens:**
+**What happens at settlement:**
 
 **Note:** Oracle fees (1%) were already deducted at deposit time, so all pools are already net of fees.
 
-1. Calculate Layer 1 pool (already net of oracle fees):
+1. **Secondary collateral redistribution**: The secondary collateral pool gets split according to configurable parameters:
 
-   - Primary deposits: 300 - 3 (1% fee) = 297 tokens
-   - Secondary prize bonus: 1000 - 10 (1% fee) = 990 → 7.5% = 74.25 tokens
-   - **Layer 1 pool: 371.25 tokens**
+   - Configurable % → augments primary prize pool (bigger competition payouts!)
+   - Configurable % → creates popularity bonuses for primary participants
+   - Remaining → backs winner-take-all prediction payouts
 
-2. Calculate Layer 2 bonuses (already net of oracle fees):
+2. **Primary prize calculation**: Combine base primary deposits + prize pool augmentation
 
-   - Secondary deposits: 1000 - 10 (1% fee) = 990 tokens
-   - User share (7.5% of 990): 74.25 tokens
-   - Split by prediction volume:
-     - Entry B: 37.13 tokens (50% of volume)
-     - Entry A: 22.28 tokens (30% of volume)
-     - Entry C: 14.84 tokens (20% of volume)
+3. **Bonus distribution**: Popularity bonuses distributed proportionally to prediction volume on each entry
 
-3. Distribute Layer 1 prizes (371.25 tokens):
+4. **Set prediction winner**: First entry in winners array becomes the secondary market winner
 
-   - Entry B: 222.75 tokens (60% ← Oracle sets based on PERFORMANCE)
-   - Entry A: 111.38 tokens (30% ← Oracle sets)
-   - Entry C: 37.13 tokens (10% ← Oracle sets)
-
-4. Layer 2 bonuses (74.25 tokens total):
-
-   - Already calculated above, distributed by volume, not performance
-
-   ⚠️ Note: Layer 1 (performance) and Layer 2 (popularity) are independent!
-   An unpopular winner gets big Layer 1 prize (60%) but small Layer 2 bonus (20%).
-
-5. Set Layer 2 winner: Entry B (100%), others (0%)
-
-6. Oracle fee already accumulated: 3 (primary) + 10 (secondary) = 13 tokens total
+**Key Insight:** Layer 1 prizes are based on PERFORMANCE (oracle-determined), while Layer 2 bonuses are based on POPULARITY (prediction volume). These can differ significantly!
 
 **Phase 4: Users Claim**
 
-Layer 1 (Primary Participants):
+Primary participants claim their performance-based prizes plus any popularity bonuses. Secondary participants who predicted the winner split all collateral (winner-take-all).
 
-```
-Entry B owner claims: 222.75 + 37.13 = 259.88 tokens total (160% ROI!)
-Entry A owner claims: 111.38 + 22.28 = 133.66 tokens (34% ROI)
-Entry C owner claims: 37.13 + 14.84 = 51.97 tokens (-48% but got bonuses!)
+## 🎯 Incentive Mechanisms
 
-Note: All payouts already net of oracle fees (deducted at deposit time)
-```
+### For Primary Participants
 
-Layer 2 (Secondary Participants):
+- **Performance Prizes**: Based on actual competition results (oracle-determined)
+- **Popularity Bonuses**: Additional rewards based on prediction market volume on their entry
+- **Bigger Prize Pools**: Augmented by secondary participant fees
+- **Early Entry Costs**: May be required to seed secondary liquidity when markets are empty
 
-```
-Entry B position holders (winners):
-├─ Hold ~515 tokens total
-├─ Redeem for: 841.5 tokens (all collateral!)
-├─ Invested: 500 tokens
-└─ Profit: +341.5 tokens (+68% ROI for picking winner!)
+### For Secondary Participants
 
-Entry A position holders: 0 tokens (winner-take-all)
-Entry C position holders: 0 tokens (winner-take-all)
-```
+- **Winner-Take-All**: All collateral goes to those who predicted correctly
+- **Early Pricing Advantage**: Better odds when joining early (LMSR curve)
+- **Liquidity Provision Rewards**: Can boost primary prizes when primary side needs support
+- **Safe Withdrawals**: 100% refunds during OPEN phase (change your mind!)
+
+### System-Wide Incentives
+
+- **Balanced Markets**: Cross-subsidy prevents one side from dominating
+- **Market Discovery**: Prediction odds reveal true entry rankings
+- **Engaged Communities**: Dual-market structure increases participation
+- **Configurable Economics**: Contests can be tuned for different incentive priorities
 
 ## 🔐 Security Features
 

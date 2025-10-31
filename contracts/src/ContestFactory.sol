@@ -42,6 +42,8 @@ contract ContestFactory {
      * @param demandSensitivity LMSR demand sensitivity in basis points
      * @param prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
      * @param userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
+     * @param targetPrimaryShareBps Target share (in basis points) to allocate to the primary side across deposits
+     * @param maxCrossSubsidyBps Maximum share (in basis points) of any deposit that can be redirected to the opposite pool
      * @return The address of the newly created Contest contract
      *
      * Note: paymentToken is typically the PlatformToken (CUT) address
@@ -53,7 +55,7 @@ contract ContestFactory {
      * - oracle must not be zero address
      * - contestantDepositAmount must be greater than 0
      * - expiry must be in the future
-     * - prizeShareBps + userShareBps must not exceed 100%
+     * - prizeShareBps + userShareBps must be < 100% (collateral required for tokens)
      *
      * Emits a {ContestCreated} event
      */
@@ -66,7 +68,9 @@ contract ContestFactory {
         uint256 liquidityParameterOverride,
         uint256 demandSensitivity,
         uint256 prizeShareBps,
-        uint256 userShareBps
+        uint256 userShareBps,
+        uint256 targetPrimaryShareBps,
+        uint256 maxCrossSubsidyBps
     ) external returns (address) {
         // Calculate liquidityParameter dynamically unless override is provided
         uint256 liquidityParameter;
@@ -85,7 +89,9 @@ contract ContestFactory {
             liquidityParameter,
             demandSensitivity,
             prizeShareBps,
-            userShareBps
+            userShareBps,
+            targetPrimaryShareBps,
+            maxCrossSubsidyBps
         );
 
         address contestAddress = address(contest);

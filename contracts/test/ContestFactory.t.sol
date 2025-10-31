@@ -31,7 +31,9 @@ contract ContestFactoryTest is Test {
             1000e18, // liquidity parameter
             500, // demand sensitivity 5%
             750, // prize share 7.5%
-            750 // user share 7.5%
+            750, // user share 7.5%
+            5000, // target primary share 50%
+            0 // max cross-subsidy (disabled for baseline test)
         );
 
         assertEq(factory.contestHost(contest), address(this));
@@ -57,7 +59,9 @@ contract ContestFactoryTest is Test {
                 1000e18,
                 500,
                 750, // prize share
-                750 // user share
+                750, // user share
+                5000,
+                0
             );
         }
 

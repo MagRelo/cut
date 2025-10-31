@@ -32,6 +32,8 @@ contract Contest_Access is Test {
     uint256 public constant USER_SHARE = 750; // 7.5%
     uint256 public constant EXPIRY = 365 days;
     uint256 public constant SECONDARY_AMOUNT = 50e6;
+    uint256 public constant TARGET_PRIMARY_SHARE = 5000;
+    uint256 public constant MAX_CROSS_SUBSIDY = 0;
 
     // Merkle tree data
     bytes32 public primaryMerkleRoot;
@@ -49,7 +51,9 @@ contract Contest_Access is Test {
             LIQUIDITY,
             DEMAND_SENSITIVITY,
             PRIZE_SHARE,
-            USER_SHARE
+            USER_SHARE,
+            TARGET_PRIMARY_SHARE,
+            MAX_CROSS_SUBSIDY
         );
 
         // Setup merkle roots for whitelisted users

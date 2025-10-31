@@ -33,6 +33,8 @@ contract ContestTest is Test {
     uint256 public constant PRIZE_SHARE = 750; // 7.5%
     uint256 public constant USER_SHARE = 750; // 7.5%
     uint256 public constant EXPIRY = 365 days;
+    uint256 public constant TARGET_PRIMARY_SHARE = 5000;
+    uint256 public constant MAX_CROSS_SUBSIDY = 0;
 
     // Empty merkle proof for tests (no gating)
     bytes32[] emptyProof;
@@ -49,7 +51,9 @@ contract ContestTest is Test {
             LIQUIDITY,
             DEMAND_SENSITIVITY,
             PRIZE_SHARE,
-            USER_SHARE
+            USER_SHARE,
+            TARGET_PRIMARY_SHARE,
+            MAX_CROSS_SUBSIDY
         );
     }
 
