@@ -31,11 +31,7 @@ contract DepositManagerTest is Test {
         usdcToken = new MockUSDC();
         mockCompound = new MockCompound(address(usdcToken));
         platformToken = new PlatformToken("Cut Platform Token", "CUT");
-        depositManager = new DepositManager(
-            address(usdcToken),
-            address(platformToken),
-            address(mockCompound)
-        );
+        depositManager = new DepositManager(address(usdcToken), address(platformToken), address(mockCompound));
 
         // Set up permissions
         platformToken.setDepositManager(address(depositManager));
@@ -45,10 +41,10 @@ contract DepositManagerTest is Test {
         usdcToken.mint(user2, 1000000 * 1e6); // 1M USDC
         usdcToken.mint(user3, 1000000 * 1e6); // 1M USDC
         usdcToken.mint(user4, 1000000 * 1e6); // 1M USDC
-        
+
         // Give MockCompound permission to mint USDC for yield simulation
         usdcToken.transferOwnership(address(mockCompound));
-        
+
         // Verify ownership is set correctly
         assertEq(depositManager.owner(), address(this), "Test contract should be the owner");
     }
@@ -65,10 +61,10 @@ contract DepositManagerTest is Test {
     function testConstructorZeroAddresses() public {
         vm.expectRevert("USDC token cannot be zero address");
         new DepositManager(address(0), address(platformToken), address(mockCompound));
-        
+
         vm.expectRevert("Platform token cannot be zero address");
         new DepositManager(address(usdcToken), address(0), address(mockCompound));
-        
+
         vm.expectRevert("CUSDC cannot be zero address");
         new DepositManager(address(usdcToken), address(platformToken), address(0));
     }
@@ -115,7 +111,7 @@ contract DepositManagerTest is Test {
 
     function testDepositUSDCCompoundPaused() public {
         mockCompound.setSupplyPaused(true);
-        
+
         uint256 depositAmount = 1000 * 1e6;
         uint256 expectedTokens = depositAmount * 1e12;
 
@@ -133,7 +129,7 @@ contract DepositManagerTest is Test {
     function testDepositUSDCCompoundSupplyFails() public {
         // Make Compound supply fail by setting a flag in mock
         mockCompound.setSupplyShouldFail(true);
-        
+
         uint256 depositAmount = 1000 * 1e6;
         uint256 expectedTokens = depositAmount * 1e12;
 
@@ -293,8 +289,6 @@ contract DepositManagerTest is Test {
         assertEq(usdcToken.balanceOf(user1), 1000000 * 1e6); // Back to original balance
     }
 
-
-
     // ============ YIELD AND BALANCE SUPPLY TESTS ============
 
     function testYieldAccumulation() public {
@@ -342,7 +336,7 @@ contract DepositManagerTest is Test {
 
         // User3 should receive the yield amount
         assertEq(usdcToken.balanceOf(user3), 1000000 * 1e6 + yieldAmount);
-        
+
         // Verify that required USDC for token supply is still available
         assertEq(depositManager.getTotalAvailableBalance(), depositAmount);
     }
@@ -397,7 +391,7 @@ contract DepositManagerTest is Test {
 
         // User3 should receive the yield amount
         assertEq(usdcToken.balanceOf(user3), 1000000 * 1e6 + yieldAmount);
-        
+
         // Verify that required USDC for token supply is still available
         assertEq(depositManager.getTotalAvailableBalance(), depositAmount1 + depositAmount2);
     }
@@ -424,7 +418,7 @@ contract DepositManagerTest is Test {
 
         // User3 should receive the yield amount (original yield + additional 200)
         assertEq(usdcToken.balanceOf(user3), 1000000 * 1e6 + yieldAmount + 200 * 1e6);
-        
+
         // Verify that required USDC for token supply is still available
         assertEq(depositManager.getTotalAvailableBalance(), depositAmount);
     }
@@ -449,7 +443,7 @@ contract DepositManagerTest is Test {
 
         // User3 should receive the total available balance
         assertEq(usdcToken.balanceOf(user3), 1000000 * 1e6 + depositAmount + yieldAmount);
-        
+
         // Contract should be empty
         assertEq(depositManager.getTotalAvailableBalance(), 0);
     }
@@ -485,7 +479,7 @@ contract DepositManagerTest is Test {
 
         // User3 should receive the total available balance
         assertEq(usdcToken.balanceOf(user3), 1000000 * 1e6 + depositAmount);
-        
+
         // Contract should be empty
         assertEq(depositManager.getTotalAvailableBalance(), 0);
     }
@@ -589,7 +583,7 @@ contract DepositManagerTest is Test {
         assertEq(platformToken.balanceOf(user2), 0);
         assertEq(platformToken.balanceOf(user3), depositAmount3 * 1e12);
         assertEq(usdcToken.balanceOf(user4), 1000000 * 1e6 + yieldAmount);
-        
+
         // Total available should be remaining deposits
         assertEq(depositManager.getTotalAvailableBalance(), depositAmount1 / 2 + depositAmount3);
     }

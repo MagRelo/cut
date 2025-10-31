@@ -38,4 +38,4 @@ contract DeployBase is Script {
         console2.log("DepositManager:", address(depositManager));
         console2.log("ContestFactory:", address(contestFactory));
     }
-} 
+}

@@ -30,11 +30,7 @@ contract PlatformTokenTest is Test {
         usdcToken = new MockUSDC();
         mockCompound = new MockCompound(address(usdcToken));
         platformToken = new PlatformToken("Cut Platform Token", "CUT");
-        depositManager = new DepositManager(
-            address(usdcToken),
-            address(platformToken),
-            address(mockCompound)
-        );
+        depositManager = new DepositManager(address(usdcToken), address(platformToken), address(mockCompound));
 
         // Set up permissions
         platformToken.setDepositManager(address(depositManager));
@@ -62,10 +58,10 @@ contract PlatformTokenTest is Test {
 
     function testSetDepositManager() public {
         address newDepositManager = address(0x999);
-        
+
         vm.expectEmit(true, false, false, true);
         emit DepositManagerSet(newDepositManager);
-        
+
         platformToken.setDepositManager(newDepositManager);
         assertEq(platformToken.depositManager(), newDepositManager);
     }
@@ -84,10 +80,10 @@ contract PlatformTokenTest is Test {
     function testSetDepositManagerMultipleTimes() public {
         address newDepositManager1 = address(0x999);
         address newDepositManager2 = address(0x888);
-        
+
         platformToken.setDepositManager(newDepositManager1);
         assertEq(platformToken.depositManager(), newDepositManager1);
-        
+
         platformToken.setDepositManager(newDepositManager2);
         assertEq(platformToken.depositManager(), newDepositManager2);
     }
@@ -96,14 +92,14 @@ contract PlatformTokenTest is Test {
 
     function testMintByDepositManager() public {
         uint256 amount = 1000 * 1e18;
-        
+
         vm.expectEmit(true, false, false, true);
         emit DepositManagerMint(user1, amount);
-        
+
         // Mint through DepositManager (which has permission)
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         assertEq(platformToken.balanceOf(user1), amount);
         assertEq(platformToken.totalSupply(), amount);
     }
@@ -117,7 +113,7 @@ contract PlatformTokenTest is Test {
     function testMintWhenDepositManagerNotSet() public {
         // Deploy new token without setting depositManager
         PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
-        
+
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
         newToken.mint(user1, 1000 * 1e18);
@@ -137,10 +133,10 @@ contract PlatformTokenTest is Test {
 
     function testMintLargeAmount() public {
         uint256 largeAmount = type(uint256).max / 2;
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user1, largeAmount);
-        
+
         assertEq(platformToken.balanceOf(user1), largeAmount);
         assertEq(platformToken.totalSupply(), largeAmount);
     }
@@ -148,26 +144,26 @@ contract PlatformTokenTest is Test {
     function testMintMultipleTimes() public {
         uint256 amount1 = 1000 * 1e18;
         uint256 amount2 = 2000 * 1e18;
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount1);
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount2);
-        
+
         assertEq(platformToken.balanceOf(user1), amount1 + amount2);
         assertEq(platformToken.totalSupply(), amount1 + amount2);
     }
 
     function testMintToMultipleUsers() public {
         uint256 amount = 1000 * 1e18;
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user2, amount);
-        
+
         assertEq(platformToken.balanceOf(user1), amount);
         assertEq(platformToken.balanceOf(user2), amount);
         assertEq(platformToken.totalSupply(), amount * 2);
@@ -177,29 +173,29 @@ contract PlatformTokenTest is Test {
 
     function testBurnByDepositManager() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         vm.expectEmit(true, false, false, true);
         emit DepositManagerBurn(user1, amount);
-        
+
         // Then burn through DepositManager
         vm.prank(address(depositManager));
         platformToken.burn(user1, amount);
-        
+
         assertEq(platformToken.balanceOf(user1), 0);
         assertEq(platformToken.totalSupply(), 0);
     }
 
     function testBurnByNonDepositManager() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         // Try to burn without permission
         vm.prank(user1);
         vm.expectRevert("Only depositManager can call this function");
@@ -209,7 +205,7 @@ contract PlatformTokenTest is Test {
     function testBurnWhenDepositManagerNotSet() public {
         // Deploy new token without setting depositManager
         PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
-        
+
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
         newToken.burn(user1, 1000 * 1e18);
@@ -229,11 +225,11 @@ contract PlatformTokenTest is Test {
 
     function testBurnInsufficientBalance() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         // Try to burn more than available
         vm.prank(address(depositManager));
         vm.expectRevert("Insufficient balance to burn");
@@ -243,15 +239,15 @@ contract PlatformTokenTest is Test {
     function testBurnPartialBalance() public {
         uint256 mintAmount = 1000 * 1e18;
         uint256 burnAmount = 300 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, mintAmount);
-        
+
         // Burn partial amount
         vm.prank(address(depositManager));
         platformToken.burn(user1, burnAmount);
-        
+
         assertEq(platformToken.balanceOf(user1), mintAmount - burnAmount);
         assertEq(platformToken.totalSupply(), mintAmount - burnAmount);
     }
@@ -260,18 +256,18 @@ contract PlatformTokenTest is Test {
         uint256 mintAmount = 1000 * 1e18;
         uint256 burnAmount1 = 300 * 1e18;
         uint256 burnAmount2 = 200 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, mintAmount);
-        
+
         // Burn multiple times
         vm.prank(address(depositManager));
         platformToken.burn(user1, burnAmount1);
-        
+
         vm.prank(address(depositManager));
         platformToken.burn(user1, burnAmount2);
-        
+
         assertEq(platformToken.balanceOf(user1), mintAmount - burnAmount1 - burnAmount2);
         assertEq(platformToken.totalSupply(), mintAmount - burnAmount1 - burnAmount2);
     }
@@ -280,31 +276,31 @@ contract PlatformTokenTest is Test {
 
     function testTransfer() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         uint256 transferAmount = amount / 2;
-        
+
         vm.expectEmit(true, true, false, true);
         emit Transfer(user1, user2, transferAmount);
-        
+
         // Transfer tokens
         vm.prank(user1);
         platformToken.transfer(user2, transferAmount);
-        
+
         assertEq(platformToken.balanceOf(user1), amount - transferAmount);
         assertEq(platformToken.balanceOf(user2), transferAmount);
     }
 
     function testTransferToZeroAddress() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         vm.prank(user1);
         vm.expectRevert();
         platformToken.transfer(address(0), amount);
@@ -312,11 +308,11 @@ contract PlatformTokenTest is Test {
 
     function testTransferInsufficientBalance() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         vm.prank(user1);
         vm.expectRevert();
         platformToken.transfer(user2, amount + 1);
@@ -324,24 +320,24 @@ contract PlatformTokenTest is Test {
 
     function testTransferFrom() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         uint256 transferAmount = amount / 2;
-        
+
         // Approve and transfer
         vm.prank(user1);
         vm.expectEmit(true, true, false, true);
         emit Approval(user1, user2, transferAmount);
         platformToken.approve(user2, transferAmount);
-        
+
         vm.prank(user2);
         vm.expectEmit(true, true, false, true);
         emit Transfer(user1, user3, transferAmount);
         platformToken.transferFrom(user1, user3, transferAmount);
-        
+
         assertEq(platformToken.balanceOf(user1), amount - transferAmount);
         assertEq(platformToken.balanceOf(user3), transferAmount);
         assertEq(platformToken.allowance(user1, user2), 0);
@@ -349,15 +345,15 @@ contract PlatformTokenTest is Test {
 
     function testTransferFromInsufficientAllowance() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         // Approve less than transfer amount
         vm.prank(user1);
         platformToken.approve(user2, amount / 2);
-        
+
         vm.prank(user2);
         vm.expectRevert();
         platformToken.transferFrom(user1, user3, amount);
@@ -365,15 +361,15 @@ contract PlatformTokenTest is Test {
 
     function testTransferFromInsufficientBalance() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // First mint some tokens
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         // Approve more than balance
         vm.prank(user1);
         platformToken.approve(user2, amount + 1);
-        
+
         vm.prank(user2);
         vm.expectRevert();
         platformToken.transferFrom(user1, user3, amount + 1);
@@ -383,19 +379,19 @@ contract PlatformTokenTest is Test {
 
     function testApprove() public {
         uint256 amount = 1000 * 1e18;
-        
+
         vm.expectEmit(true, true, false, true);
         emit Approval(user1, user2, amount);
-        
+
         vm.prank(user1);
         platformToken.approve(user2, amount);
-        
+
         assertEq(platformToken.allowance(user1, user2), amount);
     }
 
     function testApproveZeroAddress() public {
         uint256 amount = 1000 * 1e18;
-        
+
         vm.prank(user1);
         vm.expectRevert();
         platformToken.approve(address(0), amount);
@@ -404,11 +400,11 @@ contract PlatformTokenTest is Test {
     function testApproveMultipleTimes() public {
         uint256 amount1 = 1000 * 1e18;
         uint256 amount2 = 2000 * 1e18;
-        
+
         vm.prank(user1);
         platformToken.approve(user2, amount1);
         assertEq(platformToken.allowance(user1, user2), amount1);
-        
+
         vm.prank(user1);
         platformToken.approve(user2, amount2);
         assertEq(platformToken.allowance(user1, user2), amount2);
@@ -418,19 +414,19 @@ contract PlatformTokenTest is Test {
 
     function testMintAndBurnCycle() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // Mint
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
         assertEq(platformToken.balanceOf(user1), amount);
         assertEq(platformToken.totalSupply(), amount);
-        
+
         // Burn
         vm.prank(address(depositManager));
         platformToken.burn(user1, amount);
         assertEq(platformToken.balanceOf(user1), 0);
         assertEq(platformToken.totalSupply(), 0);
-        
+
         // Mint again
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
@@ -442,36 +438,36 @@ contract PlatformTokenTest is Test {
         uint256 amount1 = 1000 * 1e18;
         uint256 amount2 = 2000 * 1e18;
         uint256 amount3 = 500 * 1e18;
-        
+
         // Mint to multiple users
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount1);
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user2, amount2);
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user3, amount3);
-        
+
         // Transfer between users
         vm.prank(user1);
         platformToken.transfer(user2, amount1 / 2);
-        
+
         vm.prank(user2);
         platformToken.transfer(user3, amount2 / 4);
-        
+
         // Burn from users
         vm.prank(address(depositManager));
         platformToken.burn(user1, amount1 / 4);
-        
+
         vm.prank(address(depositManager));
         platformToken.burn(user2, amount2 / 8);
-        
+
         // Verify final balances
         assertEq(platformToken.balanceOf(user1), amount1 / 4); // 250
         assertEq(platformToken.balanceOf(user2), amount2 * 7 / 8); // 1750 (2000 - 250)
         assertEq(platformToken.balanceOf(user3), amount3 + amount2 / 4); // 1000 (500 + 500)
-        
+
         // Calculate expected total: 250 + 1750 + 1000 = 3000
         uint256 expectedTotal = amount1 / 4 + amount2 * 7 / 8 + (amount3 + amount2 / 4);
         assertEq(platformToken.totalSupply(), expectedTotal);
@@ -479,22 +475,22 @@ contract PlatformTokenTest is Test {
 
     function testGasOptimization() public {
         uint256 amount = 1000 * 1e18;
-        
+
         // Test gas usage for mint
         uint256 gasBefore = gasleft();
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
         uint256 gasUsed = gasBefore - gasleft();
-        
+
         // Gas should be reasonable (less than 100k for simple mint)
         assertLt(gasUsed, 100000);
-        
+
         // Test gas usage for transfer
         gasBefore = gasleft();
         vm.prank(user1);
         platformToken.transfer(user2, amount / 2);
         gasUsed = gasBefore - gasleft();
-        
+
         // Gas should be reasonable (less than 100k for simple transfer)
         assertLt(gasUsed, 100000);
     }
@@ -503,11 +499,11 @@ contract PlatformTokenTest is Test {
 
     function testRevertOnDepositManagerNotSet() public {
         PlatformToken newToken = new PlatformToken("Cut Platform Token", "CUT");
-        
+
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
         newToken.mint(user1, 1000 * 1e18);
-        
+
         vm.prank(address(depositManager));
         vm.expectRevert("DepositManager not set");
         newToken.burn(user1, 1000 * 1e18);
@@ -517,7 +513,7 @@ contract PlatformTokenTest is Test {
         vm.prank(user1);
         vm.expectRevert("Only depositManager can call this function");
         platformToken.mint(user2, 1000 * 1e18);
-        
+
         vm.prank(user1);
         vm.expectRevert("Only depositManager can call this function");
         platformToken.burn(user2, 1000 * 1e18);
@@ -535,23 +531,23 @@ contract PlatformTokenTest is Test {
 
     function testBalanceOf() public {
         uint256 amount = 1000 * 1e18;
-        
+
         assertEq(platformToken.balanceOf(user1), 0);
-        
+
         vm.prank(address(depositManager));
         platformToken.mint(user1, amount);
-        
+
         assertEq(platformToken.balanceOf(user1), amount);
     }
 
     function testAllowance() public {
         uint256 amount = 1000 * 1e18;
-        
+
         assertEq(platformToken.allowance(user1, user2), 0);
-        
+
         vm.prank(user1);
         platformToken.approve(user2, amount);
-        
+
         assertEq(platformToken.allowance(user1, user2), amount);
     }
 }

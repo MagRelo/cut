@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * USDC uses 6 decimals instead of the standard 18 decimals.
  * When deploying to production, this contract should not be deployed
  * and instead the actual USDC contract address should be used.
- * 
+ *
  * Real USDC functions we need to mock:
  * - transfer(address to, uint256 amount) - returns bool
  * - transferFrom(address from, address to, uint256 amount) - returns bool
@@ -59,4 +59,4 @@ contract MockUSDC is ERC20, Ownable {
     function burn(address from, uint256 amount) external onlyOwner {
         _burn(from, amount);
     }
-} 
+}

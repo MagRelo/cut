@@ -26,11 +26,8 @@ contract DeploySepolia is Script {
         console2.log("PlatformToken deployed to:", address(platformToken));
 
         // Deploy DepositManager with mock contracts
-        DepositManager depositManager = new DepositManager(
-            address(mockUSDC),
-            address(platformToken),
-            address(mockCompound)
-        );
+        DepositManager depositManager =
+            new DepositManager(address(mockUSDC), address(platformToken), address(mockCompound));
         console2.log("DepositManager deployed to:", address(depositManager));
 
         // Set deposit manager in platform token
@@ -50,4 +47,4 @@ contract DeploySepolia is Script {
         console2.log("DepositManager:", address(depositManager));
         console2.log("ContestFactory:", address(contestFactory));
     }
-} 
+}

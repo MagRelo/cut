@@ -300,27 +300,6 @@ contract Contest is ERC1155, ReentrancyGuard {
     // ============ Layer 2: Secondary Functions ============
 
     /**
-     * @notice Calculate current LMSR price for an entry
-     * @param entryId The entry to get price for
-     * @return Current price per token
-     */
-    function calculateSecondaryPrice(uint256 entryId) public view returns (uint256) {
-        require(entryOwner[entryId] != address(0), "Entry does not exist or withdrawn");
-
-        int256 demand = netPosition[entryId];
-        uint256 absDemand = demand >= 0 ? uint256(demand) : uint256(-demand);
-
-        uint256 basePrice = PRICE_PRECISION;
-        uint256 demandPremium = (absDemand * demandSensitivityBps) / liquidityParameter;
-
-        if (demand < 0 && demandPremium < basePrice) {
-            return basePrice - demandPremium;
-        }
-
-        return basePrice + demandPremium;
-    }
-
-    /**
      * @notice Secondary participant adds a position on a specific entry
      * @param entryId Entry ID to add position on
      * @param amount Amount of payment token to deposit
@@ -622,6 +601,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         }
     }
 
+    // ============ Oracle Functions ============
+
     /**
      * @notice Oracle claims accumulated fee from settlement
      */
@@ -634,8 +615,6 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         paymentToken.safeTransfer(oracle, fee);
     }
-
-    // ============ Merkle Access Control ============
 
     /**
      * @notice Oracle sets merkle root for primary position whitelist
@@ -668,6 +647,27 @@ contract Contest is ERC1155, ReentrancyGuard {
     }
 
     // ============ Fee Calculation Helpers ============
+
+    /**
+     * @notice Calculate current LMSR price for an entry
+     * @param entryId The entry to get price for
+     * @return Current price per token
+     */
+    function calculateSecondaryPrice(uint256 entryId) public view returns (uint256) {
+        require(entryOwner[entryId] != address(0), "Entry does not exist or withdrawn");
+
+        int256 demand = netPosition[entryId];
+        uint256 absDemand = demand >= 0 ? uint256(demand) : uint256(-demand);
+
+        uint256 basePrice = PRICE_PRECISION;
+        uint256 demandPremium = (absDemand * demandSensitivityBps) / liquidityParameter;
+
+        if (demand < 0 && demandPremium < basePrice) {
+            return basePrice - demandPremium;
+        }
+
+        return basePrice + demandPremium;
+    }
 
     /**
      * @notice Calculate secondary deposit split into prize share, position share, and collateral

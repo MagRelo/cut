@@ -18,12 +18,8 @@ contract DeployScript is Script {
         // Note: You'll need to set these addresses based on your network
         address usdcToken = vm.envAddress("USDC_TOKEN_ADDRESS");
         address cUSDC = vm.envAddress("CUSDC_ADDRESS");
-        
-        DepositManager depositManager = new DepositManager(
-            usdcToken,
-            address(platformToken),
-            cUSDC
-        );
+
+        DepositManager depositManager = new DepositManager(usdcToken, address(platformToken), cUSDC);
         console.log("DepositManager deployed at:", address(depositManager));
 
         // Set up permissions
