@@ -45,22 +45,27 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   // Calculate what a $10 position would win for each entry
   const calculateWinnings = (price: number, supply: number) => {
-    if (price === 0) return 0;
-
     const positionAmount = 10;
     const feePercentage = 0.15; // 15% fee
 
     // Calculate net position amount after fees
     const netPositionAmount = positionAmount * (1 - feePercentage);
 
+    // After your position, the prize pool increases by your net position amount
+    const newTotalPot = marketStats.totalPot + netPositionAmount;
+
+    // Special case: If no one has bought shares yet (supply = 0 and price = 0)
+    // You would own 100% of the tokens for this entry, so you'd win the entire pot
+    if (supply === 0 || price === 0) {
+      // If you're the only buyer and this entry wins, you get the entire new pot
+      return newTotalPot;
+    }
+
     // Net position amount buys you (netPositionAmount / price) tokens
     const tokensFromPosition = netPositionAmount / price;
 
     // After your purchase, the supply increases
     const newSupply = supply + tokensFromPosition;
-
-    // After your position, the prize pool increases by your net position amount
-    const newTotalPot = marketStats.totalPot + netPositionAmount;
 
     // If entry wins, your payout = (your tokens / new total tokens) * new total pot
     const payout = (tokensFromPosition / newSupply) * newTotalPot;

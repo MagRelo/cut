@@ -150,9 +150,12 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         return await handleApiResponse<T>(response);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          // Clear all user data on 401 (unauthorized)
+          // Clear user data on 401 (unauthorized)
           setUser(null);
-          queryClient.clear();
+          // Don't clear the entire query cache - public queries (like tournaments) should remain
+          // Only invalidate auth-specific queries
+          queryClient.invalidateQueries({ queryKey: ['auth'] });
+          queryClient.invalidateQueries({ queryKey: ['user'] });
         }
         throw error;
       }
@@ -199,15 +202,24 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   /**
-   * Completely clear all user data, auth state, and cached data
+   * Clear user data, auth state, and user-specific cached data
    * Used both for manual logout and when wallet disconnects
+   * Note: Preserves public data like tournaments that don't require auth
    */
   const clearAllUserData = useCallback(() => {
     // Clear user state
     setUser(null);
 
-    // Clear ALL React Query cache (tournaments, contests, lineups, players, scores, balance, etc.)
-    queryClient.clear();
+    // Clear user-specific React Query cache (lineups, user data, balances, etc.)
+    // but preserve public data (tournaments, contests, players, scores)
+    queryClient.invalidateQueries({ queryKey: ['auth'] });
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+    queryClient.invalidateQueries({ queryKey: ['lineups'] });
+    queryClient.invalidateQueries({ queryKey: ['balance'] });
+    queryClient.removeQueries({ queryKey: ['auth'] });
+    queryClient.removeQueries({ queryKey: ['user'] });
+    queryClient.removeQueries({ queryKey: ['lineups'] });
+    queryClient.removeQueries({ queryKey: ['balance'] });
 
     // Clear all cookies (including auth token)
     document.cookie.split(";").forEach((cookie) => {
@@ -250,8 +262,11 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(response);
 
-        // Invalidate all queries when auth refreshes to ensure fresh data with new auth context
-        queryClient.invalidateQueries();
+        // Invalidate only auth-dependent queries when auth refreshes
+        // Don't invalidate public queries (tournaments) that don't depend on auth state
+        queryClient.invalidateQueries({ queryKey: ['lineups'] });
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['balance'] });
       } catch (error) {
         console.error("Auth check failed:", error);
         if (
