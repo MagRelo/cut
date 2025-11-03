@@ -21,7 +21,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   }, [contest.contestLineups]);
 
   // Fetch prediction data for all entries
-  const { entryData, canPredict, isLoading, totalSpectatorCollateralFormatted } =
+  const { entryData, canPredict, isLoading, secondaryPrizePoolFormatted } =
     useContestPredictionData({
       contestAddress: contest.address,
       entryIds,
@@ -31,7 +31,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   // Calculate market stats
   const marketStats = useMemo(() => {
-    const totalPot = parseFloat(totalSpectatorCollateralFormatted);
+    const totalPot = parseFloat(secondaryPrizePoolFormatted);
     const totalSupplySum = entryData.reduce(
       (sum, e) => sum + parseFloat(e.totalSupplyFormatted),
       0
@@ -41,7 +41,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       totalPot,
       totalSupplySum,
     };
-  }, [entryData, totalSpectatorCollateralFormatted]);
+  }, [entryData, secondaryPrizePoolFormatted]);
 
   // Calculate what a $10 position would win for each entry
   const calculateWinnings = (price: number, supply: number) => {

@@ -171,6 +171,8 @@ export const CreateContestForm = () => {
   const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
   const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
   const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
+  const targetPrimaryShareBps = Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000; // 60% default
+  const maxCrossSubsidyBps = Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500; // 15% default
 
   // Effect to handle pending contest data state
   useEffect(() => {
@@ -218,8 +220,10 @@ export const CreateContestForm = () => {
       BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
       BigInt(liquidityParameter), // liquidityParameter
       demandSensitivity, // demandSensitivity in bps
-      prizeShareBps, // prizeShareBps
-      userShareBps // userShareBps
+      prizeShareBps, // prizeShareBps (7.5% to prize pool)
+      userShareBps, // userShareBps (7.5% to position bonuses)
+      targetPrimaryShareBps, // targetPrimaryShareBps (60% target for primary pool)
+      maxCrossSubsidyBps // maxCrossSubsidyBps (15% max reallocation per deposit)
     );
 
     await execute(calls);

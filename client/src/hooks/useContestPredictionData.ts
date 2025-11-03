@@ -45,22 +45,33 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  // Read total spectator collateral (total prize pool)
-  const { data: totalSpectatorCollateral } = useReadContract({
+  // Read secondary prize pool (total collateral backing secondary positions)
+  const { data: secondaryPrizePool } = useReadContract({
     address: contestAddress as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "totalSpectatorCollateral",
+    functionName: "secondaryPrizePool",
     chainId,
     query: {
       enabled: enabled && !!contestAddress,
     },
   });
 
-  // Read accumulated prize bonus (bonus added to contestant prize pool)
-  const { data: accumulatedPrizeBonus } = useReadContract({
+  // Read primary prize pool subsidy (from secondary participants)
+  const { data: primaryPrizePoolSubsidy } = useReadContract({
     address: contestAddress as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "accumulatedPrizeBonus",
+    functionName: "primaryPrizePoolSubsidy",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
+
+  // Read total primary position subsidies (bonuses for popular entries)
+  const { data: totalPrimaryPositionSubsidies } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalPrimaryPositionSubsidies",
     chainId,
     query: {
       enabled: enabled && !!contestAddress,
@@ -84,7 +95,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
         ? entryIds.map((entryId) => ({
             address: contestAddress as `0x${string}`,
             abi: contestAbi,
-            functionName: "calculateEntryPrice",
+            functionName: "calculateSecondaryPrice",
             args: [BigInt(entryId)],
             chainId,
           }))
@@ -168,10 +179,10 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       balance > 0n &&
       supply &&
       supply > 0n &&
-      totalSpectatorCollateral &&
-      (totalSpectatorCollateral as bigint) > 0n
+      secondaryPrizePool &&
+      (secondaryPrizePool as bigint) > 0n
     ) {
-      impliedWinnings = (balance * (totalSpectatorCollateral as bigint)) / supply;
+      impliedWinnings = (balance * (secondaryPrizePool as bigint)) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
 
@@ -200,14 +211,17 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     canWithdraw,
     canClaim,
     entryData,
-    totalSpectatorCollateral: (totalSpectatorCollateral as bigint) || 0n,
-    totalSpectatorCollateralFormatted: totalSpectatorCollateral
-      ? formatUnits(totalSpectatorCollateral as bigint, 18)
+    secondaryPrizePool: (secondaryPrizePool as bigint) || 0n,
+    secondaryPrizePoolFormatted: secondaryPrizePool
+      ? formatUnits(secondaryPrizePool as bigint, 18)
       : "0",
-    accumulatedPrizeBonus: (accumulatedPrizeBonus as bigint) || 0n,
-    accumulatedPrizeBonusFormatted: accumulatedPrizeBonus
-      ? formatUnits(accumulatedPrizeBonus as bigint, 18)
-      : "0",
+    // Combined subsidy is the sum of prize pool subsidy and position subsidies
+    combinedSubsidy: ((primaryPrizePoolSubsidy as bigint) || 0n) + ((totalPrimaryPositionSubsidies as bigint) || 0n),
+    combinedSubsidyFormatted: 
+      formatUnits(
+        ((primaryPrizePoolSubsidy as bigint) || 0n) + ((totalPrimaryPositionSubsidies as bigint) || 0n),
+        18
+      ),
     isLoading,
   };
 }

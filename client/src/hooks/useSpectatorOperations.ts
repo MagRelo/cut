@@ -87,11 +87,11 @@ export function useAddPrediction(options?: UseBlockchainTransactionOptions) {
       to: platformTokenAddress as `0x${string}`,
     });
 
-    // Add prediction (LMSR pricing, receives ERC1155 tokens)
+    // Add prediction (LMSR pricing, receives ERC1155 tokens) - now addSecondaryPosition
     calls.push({
       abi: ContestContract.abi,
-      args: [outcomeId, predictionAmount],
-      functionName: "addPrediction",
+      args: [outcomeId, predictionAmount, []],
+      functionName: "addSecondaryPosition",
       to: contestAddress as `0x${string}`,
     });
 
@@ -120,7 +120,7 @@ export function useWithdrawPrediction(options?: UseBlockchainTransactionOptions)
       {
         abi: ContestContract.abi,
         args: [outcomeId, tokenAmount],
-        functionName: "withdrawPrediction",
+        functionName: "removeSecondaryPosition",
         to: contestAddress as `0x${string}`,
       },
     ];
@@ -144,7 +144,7 @@ export function useClaimPredictionPayout(options?: UseBlockchainTransactionOptio
       {
         abi: ContestContract.abi,
         args: [outcomeId],
-        functionName: "claimPredictionPayout",
+        functionName: "claimSecondaryPayout",
         to: contestAddress as `0x${string}`,
       },
     ];

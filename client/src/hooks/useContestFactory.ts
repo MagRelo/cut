@@ -27,7 +27,9 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     liquidityParameter: bigint,
     demandSensitivity: number,
     prizeShareBps: number,
-    userShareBps: number
+    userShareBps: number,
+    targetPrimaryShareBps: number = 6000,
+    maxCrossSubsidyBps: number = 1500
   ) => {
     return [
       {
@@ -42,6 +44,8 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           demandSensitivity,
           prizeShareBps,
           userShareBps,
+          targetPrimaryShareBps,
+          maxCrossSubsidyBps,
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,

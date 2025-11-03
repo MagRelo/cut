@@ -14,19 +14,19 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
   // Fetch speculator pot and prize bonus data - don't need entryIds to get total pot
   const {
-    totalSpectatorCollateralFormatted,
-    accumulatedPrizeBonusFormatted,
+    secondaryPrizePoolFormatted,
+    combinedSubsidyFormatted,
     isLoading: isPredictionDataLoading,
   } = useContestPredictionData({
     contestAddress: contest.address,
-    entryIds: [], // Empty array since we only need totalSpectatorCollateral
+    entryIds: [], // Empty array since we only need secondaryPrizePool
     enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
     chainId: contest.chainId, // Use the contest's chainId, not the wallet's
   });
 
-  // Parse and format the speculator pot
-  const speculatorPot = Math.round(parseFloat(totalSpectatorCollateralFormatted || "0"));
-  const prizeBonus = Math.round(parseFloat(accumulatedPrizeBonusFormatted || "0"));
+  // Parse and format the speculator pot and combined subsidy
+  const speculatorPot = Math.round(parseFloat(secondaryPrizePoolFormatted || "0"));
+  const prizeBonus = Math.round(parseFloat(combinedSubsidyFormatted || "0"));
 
   const formatStatus = (status: string) => {
     return status

@@ -113,21 +113,34 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const accumulatedPrizeBonus = useReadContract({
+  const primaryPrizePoolSubsidy = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "accumulatedPrizeBonus",
+    functionName: "primaryPrizePoolSubsidy",
     args: [],
     query: {
       enabled: !!contest?.address,
     },
   }).data as bigint | undefined;
 
-  // Layer 2: Spectator/Prediction Market Data
-  const totalSpectatorCollateral = useReadContract({
+  const totalPrimaryPositionSubsidies = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "totalSpectatorCollateral",
+    functionName: "totalPrimaryPositionSubsidies",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  // Combined subsidy (for display compatibility)
+  const combinedSubsidy = ((primaryPrizePoolSubsidy || 0n) + (totalPrimaryPositionSubsidies || 0n));
+
+  // Layer 2: Secondary/Prediction Market Data
+  const secondaryPrizePool = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "secondaryPrizePool",
     args: [],
     query: {
       enabled: !!contest?.address,
@@ -159,9 +172,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     if (state === undefined) return "Unknown";
     const statusMap: { [key: number]: string } = {
       0: "Open",
-      1: "In Progress",
-      2: "Settled",
-      3: "Cancelled",
+      1: "Active",
+      2: "Locked",
+      3: "Settled",
+      4: "Cancelled",
+      5: "Closed",
     };
     return statusMap[state] || "Unknown";
   };
@@ -170,9 +185,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     if (state === undefined) return "text-gray-600";
     const colorMap: { [key: number]: string } = {
       0: "text-green-700 font-semibold", // Open
-      1: "text-blue-700 font-semibold", // In Progress
-      2: "text-emerald-700 font-semibold", // Settled
-      3: "text-red-700 font-semibold", // Cancelled
+      1: "text-blue-700 font-semibold", // Active
+      2: "text-yellow-700 font-semibold", // Locked
+      3: "text-emerald-700 font-semibold", // Settled
+      4: "text-red-700 font-semibold", // Cancelled
+      5: "text-gray-700 font-semibold", // Closed
     };
     return colorMap[state] || "text-gray-600";
   };
@@ -349,23 +366,23 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Accumulated Prize Bonus */}
-            {accumulatedPrizeBonus !== undefined && platformToken && (
+            {/* Combined Subsidy (Prize Pool Subsidy + Position Subsidies) */}
+            {combinedSubsidy !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Prize Bonus:</span>
+                <span className="text-gray-600">Combined Subsidy:</span>
                 <span className="text-gray-900">
-                  {Number(accumulatedPrizeBonus) / Math.pow(10, platformToken.decimals)}{" "}
+                  {Number(combinedSubsidy) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
                 </span>
               </div>
             )}
 
-            {/* Total Spectator Collateral */}
-            {totalSpectatorCollateral !== undefined && platformToken && (
+            {/* Secondary Prize Pool */}
+            {secondaryPrizePool !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Spectator Collateral:</span>
+                <span className="text-gray-600">Secondary Prize Pool:</span>
                 <span className="text-gray-900">
-                  {Number(totalSpectatorCollateral) / Math.pow(10, platformToken.decimals)}{" "}
+                  {Number(secondaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
                 </span>
               </div>

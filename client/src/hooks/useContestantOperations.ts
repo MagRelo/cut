@@ -89,11 +89,11 @@ export function useJoinContest(options?: UseBlockchainTransactionOptions) {
       to: platformTokenAddress as `0x${string}`,
     });
 
-    // Join the contest with the specified entry ID
+    // Join the contest with the specified entry ID (now addPrimaryPosition)
     calls.push({
       abi: ContestContract.abi,
-      args: [entryId],
-      functionName: "joinContest",
+      args: [entryId, []],
+      functionName: "addPrimaryPosition",
       to: contestAddress as `0x${string}`,
     });
 
@@ -117,7 +117,7 @@ export function useLeaveContest(options?: UseBlockchainTransactionOptions) {
       {
         abi: ContestContract.abi,
         args: [entryId],
-        functionName: "leaveContest",
+        functionName: "removePrimaryPosition",
         to: contestAddress as `0x${string}`,
       },
     ];
@@ -140,7 +140,7 @@ export function useClaimEntryPayout(options?: UseBlockchainTransactionOptions) {
       {
         abi: ContestContract.abi,
         args: [entryId],
-        functionName: "claimEntryPayout",
+        functionName: "claimPrimaryPayout",
         to: contestAddress as `0x${string}`,
       },
     ];

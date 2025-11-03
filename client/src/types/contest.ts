@@ -2,7 +2,7 @@ import { type Tournament } from "./tournament";
 import { type UserGroup } from "./userGroup";
 import { type ContestLineup } from "./lineup";
 
-export type ContestStatus = "OPEN" | "CLOSED" | "SETTLED" | "CANCELLED";
+export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 export interface ContestSettings {
   fee: number;
