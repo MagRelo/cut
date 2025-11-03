@@ -5,8 +5,9 @@ import { prisma } from "../lib/prisma.js";
 import { updateTournament } from "../services/updateTournament.js";
 import { updateTournamentPlayerScores } from "../services/updateTournamentPlayers.js";
 import { updateContestLineups } from "../services/updateContestLineups.js";
-import { closeEscrowDeposits } from "../services/closeEscrowDeposits.js";
-import { distributeContest } from "../services/distributeContest.js";
+import { batchActivateContests } from "../services/batch/batchActivateContests.js";
+import { batchSettleContests } from "../services/batch/batchSettleContests.js";
+import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
@@ -81,19 +82,25 @@ class CronScheduler {
     });
     this.jobs.set("updateTournament", updateTournamentJob);
 
-    // Job 2: Close escrow deposits every 5 minutes
-    const closeEscrowJob = cron.schedule("*/5 * * * *", () => {
-      this.executeWithErrorHandling("Close Escrow Deposits", closeEscrowDeposits);
+    // Job 2: Activate contests (OPEN → ACTIVE) every 5 minutes
+    const activateContestsJob = cron.schedule("*/5 * * * *", () => {
+      this.executeWithErrorHandling("Activate Contests", batchActivateContests);
     });
-    this.jobs.set("closeEscrowDeposits", closeEscrowJob);
+    this.jobs.set("batchActivateContests", activateContestsJob);
 
-    // Job 3: Distribute contests every 5 minutes
-    const distributeContestJob = cron.schedule("*/5 * * * *", () => {
-      this.executeWithErrorHandling("Distribute Contests", distributeContest);
+    // Job 3: Settle contests (ACTIVE/LOCKED → SETTLED) every 5 minutes
+    const settleContestsJob = cron.schedule("*/5 * * * *", () => {
+      this.executeWithErrorHandling("Settle Contests", batchSettleContests);
     });
-    this.jobs.set("distributeContest", distributeContestJob);
+    this.jobs.set("batchSettleContests", settleContestsJob);
 
-    // Job 4: Update player scores every 5 minutes (with conditional logic)
+    // Job 4: Close contests (SETTLED → CLOSED) every hour
+    const closeContestsJob = cron.schedule("0 * * * *", () => {
+      this.executeWithErrorHandling("Close Contests", batchCloseContests);
+    });
+    this.jobs.set("batchCloseContests", closeContestsJob);
+
+    // Job 5: Update player scores every 5 minutes (with conditional logic)
     const updatePlayersJob = cron.schedule("*/5 * * * *", async () => {
       const shouldRun = await this.shouldRunPlayerUpdates();
       if (shouldRun) {
@@ -105,7 +112,7 @@ class CronScheduler {
     });
     this.jobs.set("updateTournamentPlayers", updatePlayersJob);
 
-    // Job 5: Update contest lineups every 5 minutes (with conditional logic)
+    // Job 6: Update contest lineups every 5 minutes (with conditional logic)
     const updateLineupsJob = cron.schedule("*/5 * * * *", async () => {
       const shouldRun = await this.shouldRunPlayerUpdates();
       if (shouldRun) {

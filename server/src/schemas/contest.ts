@@ -33,7 +33,7 @@ export const createContestSchema = z.object({
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
   address: z.string().min(1, "Contract address is required"),
-  status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).default("OPEN"),
+  status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).default("OPEN"),
   settings: z
     .object({
       fee: z.number().optional(),
@@ -62,7 +62,7 @@ export const updateContestSchema = z.object({
     })
     .optional(),
   address: z.string().min(1, "Contract address is required").optional(),
-  status: z.enum(["OPEN", "IN_PROGRESS", "SETTLED", "ERROR"]).optional(),
+  status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).optional(),
   settings: z
     .object({
       fee: z.number().optional(),
