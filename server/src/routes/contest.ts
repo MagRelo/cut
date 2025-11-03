@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireTournamentEditable, requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
+import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
 import { contestLineupsInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import {

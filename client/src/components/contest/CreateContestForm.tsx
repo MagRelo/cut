@@ -139,6 +139,17 @@ export const CreateContestForm = () => {
     },
   });
 
+  // Get parameters from environment variables (MUST be before defaultFormData)
+  const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
+  // liquidityParameter controls LMSR price sensitivity
+  // Recommended: 10-50 CUT = 2.5e18 | 50-100 CUT = 5e18 | 100-500 CUT = 2.5e19 | 500+ CUT = 5e19
+  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "5000000000000000000";
+  const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
+  const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
+  const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
+  const targetPrimaryShareBps = Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000; // 60% default
+  const maxCrossSubsidyBps = Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500; // 15% default
+
   // Form management
   const defaultFormData: CreateContestInput = {
     name: "",
@@ -151,9 +162,16 @@ export const CreateContestForm = () => {
       fee: 10,
       contestType: "PUBLIC",
       chainId: chainId ?? 0,
-      platformTokenAddress: platformTokenAddress as `0x${string}`,
+      platformTokenAddress: (platformTokenAddress || "") as `0x${string}`,
       platformTokenSymbol: platformTokenSymbol ?? "",
-      oracleFee: 500, // Default 5% oracle fee (500 basis points)
+      oracleFee: oracleFee,
+      oracle: import.meta.env.VITE_ORACLE_ADDRESS,
+      liquidityParameter: liquidityParameter,
+      demandSensitivity: demandSensitivity,
+      prizeShareBps: prizeShareBps,
+      userShareBps: userShareBps,
+      targetPrimaryShareBps: targetPrimaryShareBps,
+      maxCrossSubsidyBps: maxCrossSubsidyBps,
     },
     description: undefined,
     userGroupId: undefined,
@@ -162,17 +180,6 @@ export const CreateContestForm = () => {
   const [pendingContestData, setPendingContestData] = useState<CreateContestInput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Get parameters from environment variables
-  const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
-  // liquidityParameter controls LMSR price sensitivity
-  // Recommended: 10-50 CUT = 2.5e18 | 50-100 CUT = 5e18 | 100-500 CUT = 2.5e19 | 500+ CUT = 5e19
-  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "5000000000000000000";
-  const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
-  const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
-  const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
-  const targetPrimaryShareBps = Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000; // 60% default
-  const maxCrossSubsidyBps = Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500; // 15% default
 
   // Effect to handle pending contest data state
   useEffect(() => {
@@ -195,6 +202,22 @@ export const CreateContestForm = () => {
       endTime,
       tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
       chainId: chainId ?? 0, // Ensure chainId is preserved
+      settings: {
+        ...formData.settings,
+        fee: formData.settings?.fee ?? 10,
+        contestType: formData.settings?.contestType ?? "PUBLIC",
+        platformTokenAddress: (platformTokenAddress || "") as `0x${string}`,
+        platformTokenSymbol: platformTokenSymbol ?? "",
+        chainId: chainId ?? 0,
+        oracleFee: oracleFee,
+        oracle: import.meta.env.VITE_ORACLE_ADDRESS,
+        liquidityParameter: liquidityParameter,
+        demandSensitivity: demandSensitivity,
+        prizeShareBps: prizeShareBps,
+        userShareBps: userShareBps,
+        targetPrimaryShareBps: targetPrimaryShareBps,
+        maxCrossSubsidyBps: maxCrossSubsidyBps,
+      },
     });
 
     console.log("Initiating blockchain transaction with data:", {

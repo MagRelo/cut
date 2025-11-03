@@ -23,6 +23,13 @@ export interface ContestSettings {
   platformTokenSymbol: string;
   chainId: number;
   oracleFee?: number; // Oracle fee in basis points (100 = 1%)
+  oracle?: string; // Oracle address
+  liquidityParameter?: string; // LMSR liquidity parameter
+  demandSensitivity?: number; // Demand sensitivity in basis points
+  prizeShareBps?: number; // Prize pool share in basis points
+  userShareBps?: number; // User position bonus share in basis points
+  targetPrimaryShareBps?: number; // Target primary pool share in basis points
+  maxCrossSubsidyBps?: number; // Max cross-subsidy in basis points
 }
 
 export interface Contest {
