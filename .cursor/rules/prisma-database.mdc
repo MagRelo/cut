@@ -6,6 +6,25 @@ alwaysApply: false
 
 # Database Documentation
 
+## ⚠️ CRITICAL: Destructive Database Operations
+
+**NEVER run destructive Prisma operations automatically. ALWAYS provide scripts for the user to run manually.**
+
+Destructive operations include:
+
+- `prisma migrate reset`
+- `prisma migrate deploy`
+- `prisma db push --force-reset`
+- `prisma db push --accept-data-loss`
+- Any Prisma command that drops tables, deletes data, or resets the database
+
+When the user asks for database resets or destructive operations:
+
+1. Provide the exact command(s) they should run
+2. Explain what each command will do
+3. Let them execute it themselves
+4. Never run these commands using the terminal tool
+
 ## Core Concepts
 
 The database is designed around these key concepts:
