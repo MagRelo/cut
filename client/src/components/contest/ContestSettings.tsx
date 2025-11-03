@@ -42,7 +42,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   const contestantDepositAmount = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "contestantDepositAmount",
+    functionName: "primaryDepositAmount",
     args: [],
     query: {
       enabled: !!contest?.address,

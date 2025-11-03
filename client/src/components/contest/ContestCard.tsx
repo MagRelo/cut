@@ -1,6 +1,9 @@
 import { type Contest } from "../../types/contest";
 import { Link } from "react-router-dom";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useReadContract } from "wagmi";
+import { formatUnits } from "viem";
+import ContestContract from "../../utils/contracts/Contest.json";
 
 interface ContestCardProps {
   contest: Contest;
@@ -8,25 +11,62 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest }: ContestCardProps) => {
-  // Use _count if available (from list view), otherwise use length of array (from detail view)
-  const participantCount = contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
-  const potAmount = contest.settings?.fee * participantCount;
+  // Read primary prize pool from contract
+  const primaryPrizePool = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "primaryPrizePool",
+    args: [],
+    chainId: contest.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
 
-  // Fetch speculator pot and prize bonus data - don't need entryIds to get total pot
-  const {
-    secondaryPrizePoolFormatted,
-    combinedSubsidyFormatted,
-    isLoading: isPredictionDataLoading,
-  } = useContestPredictionData({
-    contestAddress: contest.address,
-    entryIds: [], // Empty array since we only need secondaryPrizePool
-    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-  });
+  // Read primary prize pool subsidy from contract
+  const primaryPrizePoolSubsidy = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "primaryPrizePoolSubsidy",
+    args: [],
+    chainId: contest.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
 
-  // Parse and format the speculator pot and combined subsidy
+  // Read total primary position subsidies from contract
+  const totalPrimaryPositionSubsidies = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalPrimaryPositionSubsidies",
+    args: [],
+    chainId: contest.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  // Calculate pot amount from contract data (with 18 decimals)
+  const potAmount = primaryPrizePool ? Math.round(Number(formatUnits(primaryPrizePool, 18))) : 0;
+
+  // Combined subsidy from contract
+  const prizeBonus =
+    primaryPrizePoolSubsidy && totalPrimaryPositionSubsidies
+      ? Math.round(Number(formatUnits(primaryPrizePoolSubsidy + totalPrimaryPositionSubsidies, 18)))
+      : 0;
+
+  // Fetch speculator pot - don't need entryIds to get total pot
+  const { secondaryPrizePoolFormatted, isLoading: isPredictionDataLoading } =
+    useContestPredictionData({
+      contestAddress: contest.address,
+      entryIds: [], // Empty array since we only need secondaryPrizePool
+      enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
+      chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+    });
+
+  // Parse and format the speculator pot
   const speculatorPot = Math.round(parseFloat(secondaryPrizePoolFormatted || "0"));
-  const prizeBonus = Math.round(parseFloat(combinedSubsidyFormatted || "0"));
 
   const formatStatus = (status: string) => {
     return status
