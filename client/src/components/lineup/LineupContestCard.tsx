@@ -8,7 +8,8 @@ import { EntryHeader } from "../contest/EntryHeader";
 import { PositionBadge } from "../contest/PositionBadge";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
-import type { Contest, arePrimaryActionsLocked } from "../../types/contest";
+import type { Contest } from "../../types/contest";
+import { arePrimaryActionsLocked } from "../../types/contest";
 
 interface ContestInfo {
   contest: Contest;
