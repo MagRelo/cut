@@ -17,6 +17,11 @@ export const FAQPage: React.FC = () => {
             </a>
           </li>
           <li>
+            <a href="#contest-status" className="text-blue-600 hover:underline">
+              Contest Status & Timeline
+            </a>
+          </li>
+          <li>
             <a href="#account" className="text-blue-600 hover:underline">
               Account & Wallet
             </a>
@@ -139,6 +144,223 @@ export const FAQPage: React.FC = () => {
                 Note: A small oracle fee (typically 5%) is deducted from the prize pool to cover
                 tournament result verification costs.
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Contest Status & Timeline Section */}
+        <div id="contest-status" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">
+            Contest Status & Timeline
+          </h2>
+
+          <div className="space-y-4">
+            {/* Status Lifecycle */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                What are the contest status stages?
+              </h3>
+              <p className="text-gray-700 mb-3">
+                Contests progress through the following lifecycle:
+              </p>
+              <div className="bg-gray-50 rounded-sm border border-gray-200 p-4 mb-3">
+                <code className="text-sm text-gray-800">
+                  OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
+                </code>
+                <div className="mt-2 text-sm text-gray-600">
+                  Note: Contests can be CANCELLED from any pre-SETTLED state
+                </div>
+              </div>
+            </div>
+
+            {/* Weekly Timeline */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                What happens at each stage?
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-300 text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                        Day/Time
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                        Event
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                        What Happens
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                        Monday Morning
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Contest Created
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">
+                          OPEN
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Contest becomes available. Users can join/leave, build lineups, buy shares.
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                        Thursday Morning
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Tournament Starts
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
+                          ACTIVE
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Entries locked (no join/leave). Prediction market stays open (buy only).
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                        Sunday Morning
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Final Round (R4) Starts
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
+                          LOCKED
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        All positions frozen. Prediction market closed. Awaiting final results.
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                        Sunday Evening
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Tournament Complete
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold">
+                          SETTLED
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Results finalized. Winners can claim primary and secondary payouts.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                        Following Sunday
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Expiry Reached
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold">
+                          CLOSED
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                        Contest archived. All claims processed or forfeited.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Status Details */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                What can I do at each status?
+              </h3>
+              <div className="space-y-3">
+                <div className="bg-gray-50 rounded-sm border border-gray-200 p-3">
+                  <div className="font-semibold text-gray-900 mb-2">
+                    <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold mr-2">
+                      OPEN
+                    </span>
+                    Full Access
+                  </div>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Join or leave the contest</li>
+                    <li>Create and edit lineups</li>
+                    <li>Buy shares in the prediction market</li>
+                    <li>Sell shares in the prediction market</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 rounded-sm border border-gray-200 p-3">
+                  <div className="font-semibold text-gray-900 mb-2">
+                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold mr-2">
+                      ACTIVE
+                    </span>
+                    Limited Market Access
+                  </div>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Entries are locked (cannot join/leave)</li>
+                    <li>Lineups are locked (cannot edit)</li>
+                    <li>Can buy shares (but not sell)</li>
+                    <li>Tournament scores update in real-time</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 rounded-sm border border-gray-200 p-3">
+                  <div className="font-semibold text-gray-900 mb-2">
+                    <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold mr-2">
+                      LOCKED
+                    </span>
+                    All Positions Frozen
+                  </div>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>No changes allowed to any positions</li>
+                    <li>Prediction market completely closed</li>
+                    <li>Awaiting final tournament results</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 rounded-sm border border-gray-200 p-3">
+                  <div className="font-semibold text-gray-900 mb-2">
+                    <span className="inline-block bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold mr-2">
+                      SETTLED
+                    </span>
+                    Claims Available
+                  </div>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Final results and rankings posted</li>
+                    <li>Winners can claim contest prizes</li>
+                    <li>Prediction market holders can claim payouts</li>
+                    <li>One week to claim before contest closes</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 rounded-sm border border-gray-200 p-3">
+                  <div className="font-semibold text-gray-900 mb-2">
+                    <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-semibold mr-2">
+                      CLOSED
+                    </span>
+                    Contest Archived
+                  </div>
+                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Contest is complete and archived</li>
+                    <li>Unclaimed prizes are forfeited</li>
+                    <li>Contest visible in history only</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
