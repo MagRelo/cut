@@ -21,10 +21,10 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className="p-4 sm:p-6">
             <div className="space-y-1 pb-4 border-b border-gray-200">
               <DialogTitle className="text-xl font-bold text-gray-900">
-                2025 Bank of Utah Championship
+                2025 World Wide Technology Championship
               </DialogTitle>
-              <p className="text-sm font-semibold text-gray-700">Black Desert Resort Golf Course</p>
-              <p className="text-xs text-gray-500 font-medium">Ivins, Utah</p>
+              <p className="text-sm font-semibold text-gray-700">El Cardonal at Diamante</p>
+              <p className="text-xs text-gray-500 font-medium">Los Cabos, Mexico</p>
             </div>
 
             {/* Scrollable content area */}
@@ -36,35 +36,38 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Alex Noren (+1400):</span>{" "}
-                      Highest-ranked player in the field and current betting favorite. Known for
-                      precision short game and consistency in windy or firm desert conditions.
+                      <span className="font-semibold text-gray-900">Cameron Young (+1400):</span>{" "}
+                      Strongest-ranked player in the field, favored for his power off the tee and
+                      ability to score on wide, modern layouts. Recent fall performances have made
+                      him a key target for bettors.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Jason Day (+1600):</span> Former
-                      Major winner with several solid FedEx Cup Fall finishes. His controlled iron
-                      play and experience on firm courses make him a strong contender.
+                      <span className="font-semibold text-gray-900">Matt Fitzpatrick (+1600):</span>{" "}
+                      Former US Open champion with elite ball-striking and adaptability in windy
+                      coastal Mexican conditions. Has multiple top-15 fall finishes, making him a
+                      reliable pick this week.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Billy Horschel (+1800):</span>{" "}
-                      Veteran competitor trending upward with multiple top-20 fall results. His
-                      accuracy and patience fit Black Desert's strategic layout.
+                      <span className="font-semibold text-gray-900">Sahith Theegala (+1800):</span>{" "}
+                      Talented young star who thrives on aggressive courses. His recent late-season
+                      form includes several top-10s, positioning him as a strong contender in Cabo.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Maverick McNealy (+2000):</span>{" "}
-                      Excellent putter and known birdie-maker, often thrives on wide fairways like
-                      those in Ivins, Utah. Viewed as a sleeper-to-favorite bet range this week.
+                      <span className="font-semibold text-gray-900">Ludvig Åberg (+2000):</span> One
+                      of the Tour's rising talents, known for long irons and controlled aggression.
+                      His skill set matches El Cardonal's risk-reward holes; seen as a smart bet for
+                      breakout performance.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Kurt Kitayama (+2200):</span>{" "}
-                      Long hitter who performs well in altitude-adjusted settings. His aggressive
-                      playstyle could pay off if desert winds stay calm.
+                      <span className="font-semibold text-gray-900">Adam Svensson (+2200):</span>{" "}
+                      Canadian standout with past success in Mexico. Recent results highlight his
+                      consistency and putting prowess on paspalum greens, making him a popular
+                      sleeper selection.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Matt McCarty (+2500):</span>{" "}
-                      Defending champion after dominating the event in 2024. His familiarity with
-                      the Black Desert layout gives him a statistical edge despite less overall Tour
-                      experience.
+                      <span className="font-semibold text-gray-900">Erik van Rooyen (+2500):</span>{" "}
+                      Defending champion after his surge to victory in 2024. Familiarity with El
+                      Cardonal and a proven record in coastal events give him a statistical edge.
                     </li>
                   </ul>
                 </div>
@@ -76,22 +79,22 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
                       <span className="font-semibold text-gray-900">FedEx Cup Fall Series:</span>{" "}
-                      Part of the PGA Tour's FedEx Cup Fall series, offering players crucial points
-                      toward retaining or improving PGA Tour status for 2026.
+                      The event is a marquee stop in the FedEx Cup Fall, providing players vital
+                      chances to reclaim or improve PGA Tour cards heading into 2026.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Tournament Dates:</span> October
-                      23–26, 2025, marking the second year at Black Desert Resort.
+                      30–November 2, 2025, marking the second edition at El Cardonal.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Rebranding:</span> The event was
-                      rebranded from the Black Desert Championship to the Bank of Utah Championship.
+                      <span className="font-semibold text-gray-900">Tiger Woods Design:</span> El
+                      Cardonal is the first Tiger Woods-designed course used for a regular PGA Tour
+                      event, spotlighting strategic bunkering and expansive fairways.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Perfect Conditions:</span>{" "}
-                      Weather forecasts indicate warm and dry conditions with highs around 80–83°F
-                      and lows in the mid-50s—ideal scoring weather typical of late October in
-                      southern Utah.
+                      <span className="font-semibold text-gray-900">Course Setup:</span> Organizers
+                      have kept rough penalties light and the greens receptive, expecting low scores
+                      in consistent, breezy conditions typical of late fall in Cabo.
                     </li>
                   </ul>
                 </div>
@@ -102,18 +105,18 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Defending Champion:</span> Matt
-                      McCarty won the 2024 Black Desert Championship with a final round of 67,
-                      finishing three shots ahead of Stephan Jaeger.
+                      <span className="font-semibold text-gray-900">Defending Champion:</span> Erik
+                      van Rooyen claimed the 2024 title with a closing round 63, finishing two
+                      strokes ahead of Matt Kuchar.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Recent Top Finishers:</span>{" "}
-                      Lucas Glover and Kevin Streelman tied for third place in 2024.
+                      Matt Kuchar (2nd) and Justin Suh (3rd) posted strong results in 2024.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Tour History:</span> The event
-                      replaced the long-running Utah Championship on the Korn Ferry Tour, aligning
-                      with the PGA Tour's fall schedule restructuring.
+                      moved in 2023 to El Cardonal after years at Mayakoba, aligning with the Tour's
+                      focus on unique international venues for the fall series.
                     </li>
                   </ul>
                 </div>
@@ -124,18 +127,17 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Course:</span> Black Desert
-                      Resort Golf Course (Ivins, Utah), par 71, 7,421 yards.
+                      <span className="font-semibold text-gray-900">Course:</span> El Cardonal at
+                      Diamante (Los Cabos, Mexico), par 72, 7,452 yards.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Designer:</span> Designed by the
-                      late Tom Weiskopf, featuring striking lava rock formations and expansive views
-                      of Snow Canyon—one of the most visually recognizable stops on the fall
-                      schedule.
+                      <span className="font-semibold text-gray-900">Designer:</span> Tiger Woods;
+                      layout emphasizes strategy with dramatic elevation changes and panoramic
+                      Pacific views, making it one of the most modern venues in the Fall Series.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Total Purse:</span> $6 million
-                      with a winner's share of $1,080,000.
+                      <span className="font-semibold text-gray-900">Total Purse:</span> $8.7 million
+                      with a winner's share of $1,566,000.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Format:</span> Standard 72-hole
@@ -154,18 +156,18 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                       Sports App.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Thursday, Oct 23:</span> 5–8 PM
+                      <span className="font-semibold text-gray-900">Thursday, Oct 30:</span> 5–8 PM
                       ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Friday, Oct 24:</span> 5–8 PM ET
+                      <span className="font-semibold text-gray-900">Friday, Oct 31:</span> 5–8 PM ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Saturday, Oct 25:</span>{" "}
+                      <span className="font-semibold text-gray-900">Saturday, Nov 1:</span>{" "}
                       4:30–7:30 PM ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Sunday, Oct 26:</span> 4–7 PM ET
+                      <span className="font-semibold text-gray-900">Sunday, Nov 2:</span> 4–7 PM ET
                     </li>
                   </ul>
                 </div>
