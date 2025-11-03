@@ -62,17 +62,28 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
     const price = parseFloat(selectedEntryInfo.priceFormatted);
     const currentSupply = parseFloat(selectedEntryInfo.totalSupplyFormatted);
 
+    // Prize pool after their position
+    const newPrizePool = totalPrizePool + netPosition;
+
+    // Special case: If no one has bought shares yet (supply = 0 and price = 0)
+    // You would own 100% of the tokens for this entry, so you'd win the entire pot
+    if (currentSupply === 0 || price === 0) {
+      // If you're the only buyer and this entry wins, you get the entire new pot
+      return {
+        ownershipPercent: 100,
+        potentialReturn: newPrizePool,
+        tokensReceived: netPosition, // Arbitrary units when price = 0
+      };
+    }
+
     // Tokens they'll receive
-    const tokensReceived = price > 0 ? netPosition / price : 0;
+    const tokensReceived = netPosition / price;
 
     // New total supply after purchase
     const newSupply = currentSupply + tokensReceived;
 
     // % of supply owned
     const ownershipPercent = newSupply > 0 ? (tokensReceived / newSupply) * 100 : 0;
-
-    // Prize pool after their position
-    const newPrizePool = totalPrizePool + netPosition;
 
     // Potential return if this entry wins (winner-take-all)
     const potentialReturn = newSupply > 0 ? (tokensReceived / newSupply) * newPrizePool : 0;

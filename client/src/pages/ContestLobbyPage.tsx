@@ -138,8 +138,8 @@ export const ContestLobby: React.FC = () => {
               <div className="p-2 mt-1">
                 {/* Contest Status & Action */}
                 {isTournamentEditable && (
-                  <div className="flex items-center justify-end gap-2 border-b border-gray-200 pb-3">
-                    <span className="text-xs text-gray-400 font-display pr-2">
+                  <div className="flex items-center justify-center gap-2 border-b border-gray-200 pb-3">
+                    <span className="text-xs text-gray-400 font-display pr-1">
                       Contest Starting Soon:
                     </span>
                     <button
@@ -147,7 +147,7 @@ export const ContestLobby: React.FC = () => {
                       onClick={() => setIsLineupModalOpen(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
                     >
-                      ADD LINEUP
+                      MANAGE LINEUPS
                     </button>
                   </div>
                 )}
