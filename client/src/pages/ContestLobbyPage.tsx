@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup, Dialog, Transition } from "@headlessui/react";
-import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
@@ -12,6 +11,7 @@ import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import { ContestPredictionsTab } from "../components/contest/ContestPredictionsTab";
 import { Connect } from "../components/user/Connect";
+import { arePrimaryActionsLocked } from "../types/contest";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -19,11 +19,13 @@ function classNames(...classes: string[]) {
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
-  const { isTournamentEditable } = useTournament();
   const { user } = usePortoAuth();
 
   // React Query - handles all fetching, caching, and refetching automatically!
   const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
+
+  // Compute action locks based on contest status
+  const primaryActionsLocked = contest ? arePrimaryActionsLocked(contest.status) : true;
 
   // tabs - default to first tab (Contest)
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -116,7 +118,7 @@ export const ContestLobby: React.FC = () => {
             >
               Prediction Market
             </Tab>
-            {!isTournamentEditable && (
+            {primaryActionsLocked && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
@@ -137,7 +139,7 @@ export const ContestLobby: React.FC = () => {
             <TabPanel>
               <div className="p-2 mt-1">
                 {/* Contest Status & Action */}
-                {isTournamentEditable && (
+                {!primaryActionsLocked && (
                   <div className="flex items-center justify-center gap-2 border-b border-gray-200 pb-3">
                     <span className="text-xs text-gray-400 font-display pr-1">
                       Contest Starting Soon:
@@ -156,6 +158,7 @@ export const ContestLobby: React.FC = () => {
                 <ContestEntryList
                   contestLineups={contest?.contestLineups}
                   roundDisplay={contest?.tournament?.roundDisplay}
+                  contestStatus={contest.status}
                 />
               </div>
 
@@ -240,8 +243,8 @@ export const ContestLobby: React.FC = () => {
               <ContestPredictionsTab contest={contest} />
             </TabPanel>
 
-            {/* PLAYERS - Only shown when NOT editable */}
-            {!isTournamentEditable && (
+            {/* PLAYERS - Only shown when primary actions are locked */}
+            {primaryActionsLocked && (
               <TabPanel>
                 <ContestPlayerList
                   contest={contest}

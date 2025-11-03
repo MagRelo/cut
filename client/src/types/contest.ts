@@ -4,6 +4,17 @@ import { type ContestLineup } from "./lineup";
 
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
+
+// Action locking helpers based on contest status
+// Check if primary actions (join/leave contest) are locked
+export function arePrimaryActionsLocked(contestStatus: ContestStatus): boolean {
+  return contestStatus !== "OPEN";
+}
+
+// Check if secondary actions (predictions/betting) are locked
+export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean {
+  return contestStatus !== "OPEN" && contestStatus !== "ACTIVE";
+}
 export interface ContestSettings {
   fee: number;
   maxEntry?: number;

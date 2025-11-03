@@ -19,12 +19,18 @@ class CronScheduler {
 
   private async executeWithErrorHandling(
     jobName: string,
-    task: () => Promise<void>
+    task: () => Promise<void | any>
   ): Promise<void> {
     try {
       console.log(`[CRON] Starting job: ${jobName}`);
-      await task();
-      console.log(`[CRON] Completed job: ${jobName}`);
+      const result = await task();
+      
+      // If the task returns a BatchOperationResult, log it
+      if (result && typeof result === 'object' && 'total' in result) {
+        console.log(`[CRON] Completed job: ${jobName} - ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`);
+      } else {
+        console.log(`[CRON] Completed job: ${jobName}`);
+      }
     } catch (error) {
       console.error(`[CRON] Error in job ${jobName}:`, error);
 

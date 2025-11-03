@@ -4,7 +4,7 @@ import { parseUnits } from "viem";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
-import { type Contest } from "../../types/contest";
+import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 
 interface EntryData {
   entryId: string;
@@ -37,6 +37,9 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   const { platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
+
+  // Compute secondary actions lock based on contest status
+  const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
 
   // Find the entry data for the selected entry
   const selectedEntryInfo = entryData.find((e) => e.entryId === entryId);
@@ -284,6 +287,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     <button
                       type="submit"
                       disabled={
+                        secondaryActionsLocked ||
                         isProcessing ||
                         !amount ||
                         parseFloat(amount) <= 0 ||

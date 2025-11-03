@@ -8,8 +8,7 @@ import { EntryHeader } from "../contest/EntryHeader";
 import { PositionBadge } from "../contest/PositionBadge";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
-import type { Contest } from "../../types/contest";
-import { useTournament } from "../../contexts/TournamentContext";
+import type { Contest, arePrimaryActionsLocked } from "../../types/contest";
 
 interface ContestInfo {
   contest: Contest;
@@ -31,7 +30,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   roundDisplay,
   contests = [],
 }) => {
-  const { isTournamentEditable } = useTournament();
   // Tab state
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -139,6 +137,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   const paidPositions = totalEntries < 10 ? 1 : 3;
                   const isInTheMoney =
                     contestInfo.position > 0 && contestInfo.position <= paidPositions;
+                  const primaryActionsLocked = arePrimaryActionsLocked(contestInfo.contest.status);
 
                   return (
                     <div key={contestInfo.contest.id} className="flex items-center gap-3">
@@ -148,7 +147,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                           position={contestInfo.position}
                           isInTheMoney={isInTheMoney}
                           showBorder={true}
-                          isTournamentEditable={isTournamentEditable}
+                          primaryActionsLocked={primaryActionsLocked}
                         />
                       </div>
 

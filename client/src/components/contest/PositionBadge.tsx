@@ -3,7 +3,7 @@ interface PositionBadgeProps {
   isInTheMoney: boolean;
   isUser?: boolean;
   showBorder?: boolean;
-  isTournamentEditable?: boolean;
+  primaryActionsLocked?: boolean;
 }
 
 const getOrdinalSuffix = (num: number): string => {
@@ -20,7 +20,7 @@ export const PositionBadge = ({
   isInTheMoney,
   isUser = false,
   showBorder = false,
-  isTournamentEditable = false,
+  primaryActionsLocked = false,
 }: PositionBadgeProps) => {
   const ordinalSuffix = getOrdinalSuffix(position || 1);
 
@@ -28,7 +28,7 @@ export const PositionBadge = ({
     <div className="relative">
       <div
         className={`text-center font-bold rounded-full w-10 h-10 flex items-center justify-center text-sm ${
-          isInTheMoney && !isTournamentEditable
+          isInTheMoney && primaryActionsLocked
             ? "text-green-700 border border-green-600 bg-white"
             : showBorder
             ? "text-gray-700 border border-gray-400 bg-white"
@@ -40,7 +40,7 @@ export const PositionBadge = ({
           <sup className="text-[9px]">{ordinalSuffix}</sup>
         </span>
       </div>
-      {isInTheMoney && !isTournamentEditable && (
+      {isInTheMoney && primaryActionsLocked && (
         <div
           className={`absolute -top-0.5 -left-0.5 text-[10px] text-green-600 font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center ${
             isUser ? "bg-green-50" : "bg-white"

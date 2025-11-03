@@ -2,24 +2,27 @@ import { useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { PositionBadge } from "./PositionBadge";
-import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
+  contestStatus: ContestStatus;
 }
 
-export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryListProps) => {
-  const { isTournamentEditable } = useTournament();
+export const ContestEntryList = ({ contestLineups, roundDisplay, contestStatus }: ContestEntryListProps) => {
   const { user } = usePortoAuth();
+
+  // Compute action locks based on contest status
+  const primaryActionsLocked = arePrimaryActionsLocked(contestStatus);
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
-    if (isTournamentEditable) return; // Don't open modal if tournament is still editable
+    if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
 
     if (contestLineup.tournamentLineup) {
       setSelectedLineup(contestLineup);
@@ -34,7 +37,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
 
   // Function to determine row background color
   const getRowBackgroundColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
-    if (isCurrentUser && isInTheMoney && !isTournamentEditable) {
+    if (isCurrentUser && isInTheMoney && primaryActionsLocked) {
       return "bg-green-50"; // Green for current user in the money
     }
     if (isCurrentUser) {
@@ -74,7 +77,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                 isCurrentUser,
                 isInTheMoney
               )} rounded-sm p-3 mb-1 ${
-                isTournamentEditable ? "cursor-default opacity-80" : "cursor-pointer"
+                !primaryActionsLocked ? "cursor-default opacity-80" : "cursor-pointer"
               }`}
               onClick={() => openLineupModal(lineup)}
             >
@@ -85,7 +88,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                     position={lineup.position || 0}
                     isInTheMoney={isInTheMoney}
                     isUser={isCurrentUser}
-                    isTournamentEditable={isTournamentEditable}
+                    primaryActionsLocked={primaryActionsLocked}
                   />
                 </div>
 
@@ -96,7 +99,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                   </div>
 
                   <div className="text-xs text-gray-500 truncate">
-                    {isTournamentEditable
+                    {!primaryActionsLocked
                       ? lineup.tournamentLineup?.name || "Lineup"
                       : lineup.tournamentLineup?.players
                           ?.map((player) => player.pga_lastName)
@@ -115,7 +118,7 @@ export const ContestEntryList = ({ contestLineups, roundDisplay }: ContestEntryL
                       PTS
                     </div>
                   </div>
-                  {!isTournamentEditable && (
+                  {primaryActionsLocked && (
                     <svg
                       className="w-4 h-4 text-gray-400 flex-shrink-0"
                       fill="none"

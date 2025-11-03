@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { type Contest } from "../../types/contest";
+import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { PredictionEntryModal } from "./PredictionEntryModal";
 
 interface PredictionLineupsListProps {
@@ -10,6 +10,9 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+
+  // Compute secondary actions lock based on contest status
+  const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
 
   // Get entry IDs from contest lineups
   const entryIds = useMemo(() => {
@@ -127,8 +130,10 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             return (
               <div
                 key={entry.entryId}
-                onClick={() => setSelectedEntryId(entry.entryId)}
-                className="bg-white border-gray-200 border rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                onClick={() => !secondaryActionsLocked && setSelectedEntryId(entry.entryId)}
+                className={`bg-white border-gray-200 border rounded-lg p-3 ${
+                  secondaryActionsLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md"
+                } transition-all`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   {/* Left - User & Lineup Info */}
@@ -139,7 +144,10 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                   {/* Right - CTA & Winnings */}
                   <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors">
+                    <button 
+                      disabled={secondaryActionsLocked}
+                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
                       BUY SHARES
                     </button>
                     <div className="text-xs text-gray-700">

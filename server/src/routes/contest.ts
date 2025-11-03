@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
+import { requireTournamentEditable, requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
 import { contestLineupsInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import {
@@ -188,7 +188,7 @@ contestRouter.post("/", requireAuth, async (c) => {
 });
 
 // Add lineup to contest
-contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async (c) => {
+contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, async (c) => {
   try {
     const { tournamentLineupId } = await c.req.json();
     const user = c.get("user");
@@ -303,7 +303,7 @@ contestRouter.post("/:id/lineups", requireTournamentEditable, requireAuth, async
 // Remove lineup from contest
 contestRouter.delete(
   "/:id/lineups/:lineupId",
-  requireTournamentEditable,
+  requireContestPrimaryActionsUnlocked,
   requireAuth,
   async (c) => {
     try {
