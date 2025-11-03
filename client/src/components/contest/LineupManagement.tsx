@@ -153,7 +153,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   const contestantDepositAmount = useReadContract({
     address: contest.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "contestantDepositAmount",
+    functionName: "primaryDepositAmount",
     args: [],
   }).data as bigint | undefined;
 

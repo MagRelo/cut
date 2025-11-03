@@ -36,7 +36,7 @@ export function useJoinContest(options?: UseBlockchainTransactionOptions) {
   const createJoinContestCalls = (
     contestAddress: string,
     entryId: number,
-    contestantDepositAmount: bigint,
+    primaryDepositAmount: bigint,
     platformTokenBalance: bigint = 0n,
     paymentTokenBalance: bigint = 0n
   ) => {
@@ -44,8 +44,8 @@ export function useJoinContest(options?: UseBlockchainTransactionOptions) {
 
     // Calculate how many platform tokens we need to swap
     const platformTokensNeeded =
-      contestantDepositAmount > platformTokenBalance
-        ? contestantDepositAmount - platformTokenBalance
+      primaryDepositAmount > platformTokenBalance
+        ? primaryDepositAmount - platformTokenBalance
         : 0n;
 
     // Convert platform tokens needed to payment token equivalent (accounting for decimals)
@@ -84,7 +84,7 @@ export function useJoinContest(options?: UseBlockchainTransactionOptions) {
     // Approve the contest contract to spend platform tokens
     calls.push({
       abi: PlatformTokenContract.abi,
-      args: [contestAddress as `0x${string}`, contestantDepositAmount],
+      args: [contestAddress as `0x${string}`, primaryDepositAmount],
       functionName: "approve",
       to: platformTokenAddress as `0x${string}`,
     });

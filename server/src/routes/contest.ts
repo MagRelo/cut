@@ -8,7 +8,6 @@ import { transformLineupPlayer } from "../utils/playerTransform.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
-  generateEntryId,
   getPlayerIdsFromLineup,
 } from "../utils/lineupValidation.js";
 
@@ -190,9 +189,14 @@ contestRouter.post("/", requireAuth, async (c) => {
 // Add lineup to contest
 contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, async (c) => {
   try {
-    const { tournamentLineupId } = await c.req.json();
+    const { tournamentLineupId, entryId } = await c.req.json();
     const user = c.get("user");
     const contestId = c.req.param("id");
+
+    // Validate entryId is provided
+    if (!entryId) {
+      return c.json({ error: "Entry ID is required" }, 400);
+    }
 
     // Fetch the lineup and its players
     const playerIds = await getPlayerIdsFromLineup(tournamentLineupId);
@@ -223,9 +227,8 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       return c.json({ error: "This lineup has already been added to this contest" }, 400);
     }
 
-    // Generate deterministic entryId from userId and playerIds
-    // This ensures same players = same entryId for this user
-    const entryId = generateEntryId(user.userId, playerIds);
+    // Use the entryId provided by the client (which matches what's on the blockchain)
+    // The client generates this deterministically from contestAddress + tournamentLineupId
 
     // Check if this entryId already exists in this contest (shouldn't happen with proper validation, but extra safety)
     const existingEntry = await prisma.contestLineup.findFirst({
@@ -318,6 +321,7 @@ contestRouter.delete(
           contestId: contestId,
         },
       });
+
       if (!lineup) {
         return c.json({ error: "Lineup not found in this contest" }, 404);
       }

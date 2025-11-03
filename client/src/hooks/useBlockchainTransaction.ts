@@ -76,6 +76,10 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
             queryClient.invalidateQueries({
               queryKey: ["readContract"],
             }),
+            // Invalidate all contract multi-read queries (wagmi useReadContracts hook)
+            queryClient.invalidateQueries({
+              queryKey: ["readContracts"],
+            }),
           ]);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);

@@ -38,8 +38,8 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     token: platformTokenAddress as `0x${string}`,
   });
 
-  // Get contestant deposit amount from contract
-  const contestantDepositAmount = useReadContract({
+  // Get primary deposit amount from contract
+  const primaryDepositAmount = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "primaryDepositAmount",
@@ -134,7 +134,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   }).data as bigint | undefined;
 
   // Combined subsidy (for display compatibility)
-  const combinedSubsidy = ((primaryPrizePoolSubsidy || 0n) + (totalPrimaryPositionSubsidies || 0n));
+  const combinedSubsidy = (primaryPrizePoolSubsidy || 0n) + (totalPrimaryPositionSubsidies || 0n);
 
   // Layer 2: Secondary/Prediction Market Data
   const secondaryPrizePool = useReadContract({
@@ -271,15 +271,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                             <div className="text-lg font-bold text-green-700 leading-none">
                               {/* Calculate payout amount */}
                               {(() => {
-                                if (
-                                  !contestantDepositAmount ||
-                                  !contractOracleFee ||
-                                  !platformToken
-                                )
+                                if (!primaryDepositAmount || !contractOracleFee || !platformToken)
                                   return "...";
 
                                 // Calculate total pot from entry fee * number of participants
-                                const entryFee = Number(contestantDepositAmount);
+                                const entryFee = Number(primaryDepositAmount);
                                 const participantCount = contest.contestLineups?.length || 0;
                                 const totalPot = entryFee * participantCount;
 
@@ -334,11 +330,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             </div>
 
             {/* Deposit Amount */}
-            {contestantDepositAmount && (
+            {primaryDepositAmount && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Entry Fee:</span>
                 <span className="text-gray-900">
-                  {Number(contestantDepositAmount) / Math.pow(10, platformToken?.decimals || 6)}{" "}
+                  {Number(primaryDepositAmount) / Math.pow(10, platformToken?.decimals || 6)}{" "}
                   {platformToken?.symbol}
                 </span>
               </div>

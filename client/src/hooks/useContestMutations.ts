@@ -7,7 +7,7 @@ import { type ContestLineup } from "../types/lineup";
 interface JoinContestParams {
   contestId: string;
   tournamentLineupId: string;
-  entryId?: string; // Blockchain entry ID
+  entryId: string; // Blockchain entry ID (required)
 }
 
 interface LeaveContestParams {
