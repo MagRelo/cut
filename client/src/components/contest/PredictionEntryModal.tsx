@@ -186,31 +186,22 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                   {/* Position Summary - Always Visible */}
-                  <div className="bg-purple-100/40 border border-purple-200 rounded-lg p-4 space-y-3 text-sm">
+                  <div className="bg-purple-50/50 border border-purple-200/60 rounded-lg p-4 space-y-3 text-sm">
                     {/* Lineup Info */}
-                    <div className="pb-3 border-b border-purple-300/60">
-                      <div className="text-base font-semibold text-gray-700">{userName}</div>
-                      <div className="text-sm text-gray-600 mt-0.5">{lineupName}</div>
+                    <div className="pb-3 border-b border-gray-200">
+                      <div className="text-base font-semibold text-gray-800">{userName}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{lineupName}</div>
                     </div>
 
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Purchase Amount</span>
-                        <span className="font-semibold text-gray-700">${amount || "0"}</span>
+                        <span className="text-gray-500">Purchase Amount</span>
+                        <span className="font-bold text-gray-900 text-base">${amount || "0"}</span>
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Outcome Share</span>
-                        <span className="font-semibold text-gray-900">
-                          {metrics.ownershipPercent > 0
-                            ? `${metrics.ownershipPercent.toFixed(2)}%`
-                            : "0%"}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Value if Entry Wins</span>
-                        <span className="font-semibold text-green-600">
+                        <span className="text-gray-500">Value if Entry Wins</span>
+                        <span className="font-bold text-green-600 text-base">
                           ~$
                           {metrics.potentialReturn > 0
                             ? `${metrics.potentialReturn.toFixed(2)}`
@@ -218,14 +209,28 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                         </span>
                       </div>
 
-                      {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
-                        <div className="flex justify-between items-center ">
-                          <span className="text-gray-600">Return if Entry Wins</span>
-                          <span className="font-semibold text-purple-700">
-                            {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(0)}%
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 text-xs">Outcome Share</span>
+                          <span className="font-medium text-gray-600 text-sm">
+                            {metrics.ownershipPercent > 0
+                              ? `${metrics.ownershipPercent.toFixed(2)}%`
+                              : "0%"}
                           </span>
                         </div>
-                      )}
+
+                        {metrics.potentialReturn > 0 && parseFloat(amount) > 0 && (
+                          <div className="flex justify-between items-center mt-1.5">
+                            <span className="text-gray-400 text-xs">Return if Entry Wins</span>
+                            <span className="font-medium text-gray-600 text-sm">
+                              {((metrics.potentialReturn / parseFloat(amount) - 1) * 100).toFixed(
+                                0
+                              )}
+                              %
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
