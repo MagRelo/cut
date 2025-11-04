@@ -26,7 +26,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
 
@@ -143,61 +142,37 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
               </label>
             </div>
 
-            {/* Primary Mainnet Connect Button */}
+            {/* Primary Mainnet Connect Button - TEMPORARILY DISABLED */}
             <button
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md text-lg"
-              disabled={isConnecting || !tocAccepted}
+              disabled={true}
               onClick={() => handleConnect("mainnet")}
               type="button"
             >
               Sign in
             </button>
 
-            {/* Advanced Options Toggle */}
+            {/* Testnet Option - ALWAYS VISIBLE */}
             <div className="pt-4 mt-4 border-t border-gray-200">
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-xs text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 mx-auto"
-                type="button"
-              >
-                <span>Test Mode</span>
-                <svg
-                  className={`w-3 h-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {/* Testnet Option (Collapsible) */}
-              {showAdvanced && (
-                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                      Testnet
-                    </span>
-                    <span className="text-xs font-medium text-gray-700">Base Sepolia</span>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-3">
-                    Practice with test tokens without any risk. For testing purposes only.
-                  </p>
-                  <button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                    disabled={isConnecting || !tocAccepted}
-                    onClick={() => handleConnect("testnet")}
-                    type="button"
-                  >
-                    Connect to Testnet
-                  </button>
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                    Testnet
+                  </span>
+                  <span className="text-xs font-medium text-gray-700">Base Sepolia</span>
                 </div>
-              )}
+                <p className="text-xs text-gray-600 mb-3">
+                  Practice with test tokens without any risk. For testing purposes only.
+                </p>
+                <button
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  disabled={isConnecting || !tocAccepted}
+                  onClick={() => handleConnect("testnet")}
+                  type="button"
+                >
+                  Connect to Testnet
+                </button>
+              </div>
             </div>
           </div>
         </div>
