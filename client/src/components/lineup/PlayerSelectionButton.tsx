@@ -36,16 +36,20 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
       disabled={disabled}
       className={`w-full px-4 py-3 rounded-md border transition-all relative ${
         disabled
-          ? "bg-gray-200 border-gray-300 opacity-50 cursor-not-allowed"
+          ? "bg-white border-gray-300 opacity-60 cursor-not-allowed"
           : isSelected
           ? "bg-gray-100 border-gray-300"
           : "bg-white border-gray-300 shadow-md hover:bg-gray-50"
       }`}
     >
       {iconType && (
-        <div className="absolute top-3 right-3 p-1 rounded-md border border-emerald-600 bg-white">
+        <div
+          className={`absolute top-3 right-3 p-1 rounded-md ${
+            isSelected ? "bg-green-700" : "bg-blue-500"
+          }`}
+        >
           <svg
-            className="w-4 h-4 text-emerald-500"
+            className="w-4 h-4 text-white"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

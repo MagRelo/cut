@@ -102,15 +102,15 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               </div>
 
               {/* Search and Sort Controls */}
-              <div className="p-3 bg-white border-t border-gray-400">
+              <div className="p-3 bg-gray-100 border-t border-gray-300">
                 <div className="flex justify-center items-center gap-4">
                   <button
                     onClick={() => toggleSort("fedex")}
                     className={`px-3 py-1.5 text-xs font-medium ${
                       sortField === "fedex"
-                        ? "bg-emerald-100 text-emerald-600 border-emerald-500"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    } rounded-md border`}
+                        ? "bg-blue-50 text-blue-600 border-blue-300"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                    } rounded-md border transition-colors`}
                   >
                     FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
                   </button>
@@ -118,9 +118,9 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     onClick={() => toggleSort("owgr")}
                     className={`px-3 py-1.5 text-xs font-medium ${
                       sortField === "owgr"
-                        ? "bg-emerald-100 text-emerald-600 border-emerald-500"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    } rounded-md border`}
+                        ? "bg-blue-50 text-blue-600 border-blue-300"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                    } rounded-md border transition-colors`}
                   >
                     OWGR {sortField === "owgr" && (sortDirection === "asc" ? "↑" : "↓")}
                   </button>
@@ -128,9 +128,9 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     onClick={() => toggleSort("name")}
                     className={`px-3 py-1.5 text-xs font-medium ${
                       sortField === "name"
-                        ? "bg-emerald-100 text-emerald-600 border-emerald-500"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    } rounded-md border`}
+                        ? "bg-blue-50 text-blue-600 border-blue-300"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                    } rounded-md border transition-colors`}
                   >
                     Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                   </button>
@@ -155,13 +155,13 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             <div className="mt-4 sm:mt-6 flex justify-end space-x-4">
               <button
                 onClick={() => onSelect(null)}
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300"
+                className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
               >
                 Leave Empty
               </button>
               <button
                 onClick={handleClose}
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300"
+                className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
               >
                 Close
               </button>

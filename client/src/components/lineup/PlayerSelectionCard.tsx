@@ -28,7 +28,7 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
         <div className="flex items-center space-x-4 mb-2">
           {showImage && (
             <div className="flex-shrink-0">
-              <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center border border-gray-300">
+              <div className="h-14 w-14 rounded-full bg-gray-50 flex items-center justify-center border border-gray-300">
                 <svg
                   className="h-8 w-8 text-gray-300"
                   fill="none"
@@ -38,7 +38,7 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={1}
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
@@ -52,11 +52,11 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
             <div className="flex items-center space-x-4 mt-1">
               <div className="text-sm text-gray-400">
                 <Label>FedEx</Label>
-                <span className="font-bold text-gray-400 ml-1">-</span>
+                <span className="font-bold text-gray-400 ml-1"></span>
               </div>
               <div className="text-sm text-gray-400">
                 <Label>OWGR</Label>
-                <span className="font-bold text-gray-400 ml-1">-</span>
+                <span className="font-bold text-gray-400 ml-1"></span>
               </div>
             </div>
           </div>
@@ -66,19 +66,19 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
         <div className="flex items-center justify-around border-t border-gray-100 pt-2">
           <div className="text-sm text-gray-400">
             <Label>Events</Label>
-            <span className="font-bold text-gray-400 ml-1">-</span>
+            <span className="font-bold text-gray-400 ml-1"></span>
           </div>
           <div className="text-sm text-gray-400">
             <Label>Wins</Label>
-            <span className="font-bold text-gray-400 ml-1">-</span>
+            <span className="font-bold text-gray-400 ml-1"></span>
           </div>
           <div className="text-sm text-gray-400">
             <Label>T10</Label>
-            <span className="font-bold text-gray-400 ml-1">-</span>
+            <span className="font-bold text-gray-400 ml-1"></span>
           </div>
           <div className="text-sm text-gray-400">
             <Label>Cuts</Label>
-            <span className="font-bold text-gray-400 ml-1">-</span>
+            <span className="font-bold text-gray-400 ml-1"></span>
           </div>
         </div>
       </div>
