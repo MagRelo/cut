@@ -29,7 +29,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * - Dynamic cross-subsidy keeps primary and secondary prize pools near a configurable ratio
  * - Can withdraw during OPEN phase only (full refund with deferred fees)
  *
- * Key Innovation: ONE oracle call (`settleContest()`) settles both layers!
  */
 contract Contest is ERC1155, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -120,8 +119,11 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Track net position for each entry ID (for LMSR pricing and total supply)
     mapping(uint256 => int256) public netPosition;
 
-    /// @notice Secondary prize pool - collateral backing secondary position tokens (~85% of deposits)
+    /// @notice Secondary prize pool - collateral backing secondary position tokens from secondary deposits
     uint256 public secondaryPrizePool;
+
+    /// @notice Cross-subsidy from primary to secondary prize pool
+    uint256 public secondaryPrizePoolSubsidy;
 
     /// @notice Accumulated bonus per entry from secondary deposits (allocated per-deposit based on positionBonusShareBps)
     mapping(uint256 => uint256) public primaryPositionSubsidy;
@@ -256,7 +258,7 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         if (crossSubsidy > 0) {
             primaryToSecondarySubsidy[entryId] = crossSubsidy;
-            secondaryPrizePool += crossSubsidy;
+            secondaryPrizePoolSubsidy += crossSubsidy;
         }
 
         paymentToken.safeTransferFrom(msg.sender, address(this), primaryDepositAmount);
@@ -292,7 +294,7 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         if (crossSubsidy > 0) {
             primaryToSecondarySubsidy[entryId] = 0;
-            secondaryPrizePool -= crossSubsidy;
+            secondaryPrizePoolSubsidy -= crossSubsidy;
         }
 
         // Forfeit position bonus - redistributed to remaining primary participants via prize pool
@@ -516,8 +518,9 @@ contract Contest is ERC1155, ReentrancyGuard {
             uint256 totalSupplyBefore = uint256(netPosition[entryId]);
             require(totalSupplyBefore > 0, "No supply");
 
-            // Winners split ALL secondary collateral
-            payout = (balance * secondaryPrizePool) / totalSupplyBefore;
+            // Winners split ALL secondary collateral (base + subsidy)
+            uint256 totalSecondaryFunds = secondaryPrizePool + secondaryPrizePoolSubsidy;
+            payout = (balance * totalSecondaryFunds) / totalSupplyBefore;
 
             // Decrement supply by burned balance
             if (balance > 0) {
@@ -531,11 +534,22 @@ contract Contest is ERC1155, ReentrancyGuard {
             }
 
             if (payout > 0) {
-                // Decrement prediction pool by paid amount (cap to avoid underflow)
-                if (payout <= secondaryPrizePool) {
-                    secondaryPrizePool -= payout;
-                } else {
-                    secondaryPrizePool = 0;
+                // Reduce pools proportionally (mirror primary claim logic)
+                if (totalSecondaryFunds > 0) {
+                    uint256 fromBasePool = (payout * secondaryPrizePool) / totalSecondaryFunds;
+                    uint256 fromSubsidyPool = payout - fromBasePool;
+
+                    if (fromBasePool <= secondaryPrizePool) {
+                        secondaryPrizePool -= fromBasePool;
+                    } else {
+                        secondaryPrizePool = 0;
+                    }
+
+                    if (fromSubsidyPool <= secondaryPrizePoolSubsidy) {
+                        secondaryPrizePoolSubsidy -= fromSubsidyPool;
+                    } else {
+                        secondaryPrizePoolSubsidy = 0;
+                    }
                 }
                 paymentToken.safeTransfer(msg.sender, payout);
             }
@@ -546,6 +560,7 @@ contract Contest is ERC1155, ReentrancyGuard {
                 uint256 remaining = paymentToken.balanceOf(address(this));
                 if (remaining > 0) {
                     secondaryPrizePool = 0;
+                    secondaryPrizePoolSubsidy = 0;
                     paymentToken.safeTransfer(msg.sender, remaining);
                 }
             }
@@ -630,11 +645,13 @@ contract Contest is ERC1155, ReentrancyGuard {
         secondaryMarketResolved = true;
 
         // Step 5: Handle edge case - no ERC1155 supply on winning entry
-        // Add secondary pool to winning primary participants' payouts
+        // Add secondary pool (base + subsidy) to winning primary participants' payouts
         uint256 winnerSupply = uint256(netPosition[secondaryWinningEntry]);
-        if (secondaryPrizePool > 0 && winnerSupply == 0) {
-            uint256 poolToDistribute = secondaryPrizePool;
+        uint256 totalSecondaryFunds = secondaryPrizePool + secondaryPrizePoolSubsidy;
+        if (totalSecondaryFunds > 0 && winnerSupply == 0) {
+            uint256 poolToDistribute = totalSecondaryFunds;
             secondaryPrizePool = 0;
+            secondaryPrizePoolSubsidy = 0;
             uint256 distributed = 0;
             for (uint256 i = 0; i < winningEntries.length; i++) {
                 uint256 entryId = winningEntries[i];
@@ -674,13 +691,19 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         uint256 remaining = paymentToken.balanceOf(address(this));
         if (remaining > 0) {
-            paymentToken.safeTransfer(oracle, remaining);
-
-            // Zero out any remaining accounting
+            // Zero out all accounting (effects before interactions)
+            primaryPrizePool = 0;
+            primaryPrizePoolSubsidy = 0;
+            totalPrimaryPositionSubsidies = 0;
             secondaryPrizePool = 0;
+            secondaryPrizePoolSubsidy = 0;
             accumulatedOracleFee = 0;
 
             state = ContestState.CLOSED;
+
+            // Transfer remaining funds to oracle (interaction)
+            paymentToken.safeTransfer(oracle, remaining);
+
             emit ContestClosed();
         }
     }
@@ -742,7 +765,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         }
 
         uint256 primaryBefore = _currentPrimarySideBalance();
-        uint256 secondaryBefore = secondaryPrizePool;
+        uint256 secondaryBefore = secondaryPrizePool + secondaryPrizePoolSubsidy;
         uint256 total = primaryBefore + secondaryBefore + netAmount;
         if (total == 0) {
             return 0;
@@ -773,7 +796,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         }
 
         uint256 primaryBefore = _currentPrimarySideBalance();
-        uint256 secondaryBefore = secondaryPrizePool;
+        uint256 secondaryBefore = secondaryPrizePool + secondaryPrizePoolSubsidy;
         uint256 total = primaryBefore + secondaryBefore + netAmount;
         if (total == 0) {
             return 0;
@@ -900,6 +923,8 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 totalSupplyBefore = uint256(netPosition[entryId]);
         require(totalSupplyBefore > 0, "No supply");
 
+        uint256 totalSecondaryFunds = secondaryPrizePool + secondaryPrizePoolSubsidy;
+
         for (uint256 i = 0; i < participantAddresses.length; i++) {
             address participant = participantAddresses[i];
             uint256 balance = balanceOf(participant, entryId);
@@ -908,13 +933,25 @@ contract Contest is ERC1155, ReentrancyGuard {
                 _burn(participant, entryId, balance);
                 netPosition[entryId] -= int256(balance);
 
-                uint256 payout = (balance * secondaryPrizePool) / totalSupplyBefore;
+                uint256 payout = (balance * totalSecondaryFunds) / totalSupplyBefore;
 
                 if (payout > 0) {
-                    if (payout <= secondaryPrizePool) {
-                        secondaryPrizePool -= payout;
-                    } else {
-                        secondaryPrizePool = 0;
+                    // Reduce pools proportionally
+                    if (totalSecondaryFunds > 0) {
+                        uint256 fromBasePool = (payout * secondaryPrizePool) / totalSecondaryFunds;
+                        uint256 fromSubsidyPool = payout - fromBasePool;
+
+                        if (fromBasePool <= secondaryPrizePool) {
+                            secondaryPrizePool -= fromBasePool;
+                        } else {
+                            secondaryPrizePool = 0;
+                        }
+
+                        if (fromSubsidyPool <= secondaryPrizePoolSubsidy) {
+                            secondaryPrizePoolSubsidy -= fromSubsidyPool;
+                        } else {
+                            secondaryPrizePoolSubsidy = 0;
+                        }
                     }
                     paymentToken.safeTransfer(participant, payout);
                     emit SecondaryPayoutClaimed(participant, entryId, payout);
@@ -938,9 +975,14 @@ contract Contest is ERC1155, ReentrancyGuard {
         return _currentPrimarySideBalance();
     }
 
+    function getSecondarySideBalance() external view returns (uint256) {
+        return secondaryPrizePool + secondaryPrizePoolSubsidy;
+    }
+
     function getPrimarySideShareBps() external view returns (uint256) {
         uint256 primaryBalance = _currentPrimarySideBalance();
-        uint256 total = primaryBalance + secondaryPrizePool;
+        uint256 secondaryBalance = secondaryPrizePool + secondaryPrizePoolSubsidy;
+        uint256 total = primaryBalance + secondaryBalance;
         if (total == 0) {
             return 0;
         }

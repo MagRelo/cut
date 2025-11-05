@@ -68,7 +68,7 @@ contract ContestAccountingTest is Test {
         _assertBalanceSheetReconciliation(dynamicContest);
 
         assertEq(dynamicContest.primaryPrizePool(), netDeposit - expectedCross);
-        assertEq(dynamicContest.secondaryPrizePool(), expectedCross);
+        assertEq(dynamicContest.secondaryPrizePoolSubsidy(), expectedCross);
         assertEq(dynamicContest.primaryToSecondarySubsidy(ENTRY_A), expectedCross);
 
         // Withdrawal reverses both base contribution and cross-subsidy
@@ -78,7 +78,7 @@ contract ContestAccountingTest is Test {
         _assertBalanceSheetReconciliation(dynamicContest);
 
         assertEq(dynamicContest.primaryPrizePool(), 0);
-        assertEq(dynamicContest.secondaryPrizePool(), 0);
+        assertEq(dynamicContest.secondaryPrizePoolSubsidy(), 0);
         assertEq(dynamicContest.primaryToSecondarySubsidy(ENTRY_A), 0);
         assertEq(usdc.balanceOf(a), beforeBalance + PRIMARY_DEPOSIT);
     }
@@ -202,6 +202,7 @@ contract ContestAccountingTest is Test {
         uint256 trackedBalance = testContest.primaryPrizePool() +
                                testContest.secondaryPrizePool() +
                                testContest.primaryPrizePoolSubsidy() +
+                               testContest.secondaryPrizePoolSubsidy() +
                                testContest.totalPrimaryPositionSubsidies() +
                                testContest.accumulatedOracleFee();
 
