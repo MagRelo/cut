@@ -36,38 +36,57 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Cameron Young (+1400):</span>{" "}
-                      Strongest-ranked player in the field, favored for his power off the tee and
-                      ability to score on wide, modern layouts. Recent fall performances have made
-                      him a key target for bettors.
+                      <span className="font-semibold text-gray-900">Ben Griffin (+1000):</span> U.S.
+                      Ryder Cup rookie and this week's betting favorite, coming off multiple top
+                      finishes in 2025, including a win at the Charles Schwab Challenge.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Matt Fitzpatrick (+1600):</span>{" "}
-                      Former US Open champion with elite ball-striking and adaptability in windy
-                      coastal Mexican conditions. Has multiple top-15 fall finishes, making him a
-                      reliable pick this week.
+                      <span className="font-semibold text-gray-900">J.J. Spaun (+1200):</span> Fresh
+                      off his U.S. Open victory and Ryder Cup debut, Spaun's consistent iron play
+                      and clutch putting make him a strong contender this week.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Sahith Theegala (+1800):</span>{" "}
-                      Talented young star who thrives on aggressive courses. His recent late-season
-                      form includes several top-10s, positioning him as a strong contender in Cabo.
+                      <span className="font-semibold text-gray-900">Max Greyserman (+2200):</span>{" "}
+                      Noted for finishing runner-up at the Baycurrent Classic in Japan recently and
+                      placing fourth here last year; his birdie-making ability fits El Cardonal's
+                      low-scoring layout.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Ludvig Åberg (+2000):</span> One
-                      of the Tour's rising talents, known for long irons and controlled aggression.
-                      His skill set matches El Cardonal's risk-reward holes; seen as a smart bet for
-                      breakout performance.
+                      <span className="font-semibold text-gray-900">
+                        Michael Thorbjornsen (+2200):
+                      </span>{" "}
+                      Coming off recent top-three finishes and known for his power and resilience;
+                      he has shown an ability to attack in windy, coastal conditions.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Adam Svensson (+2200):</span>{" "}
-                      Canadian standout with past success in Mexico. Recent results highlight his
-                      consistency and putting prowess on paspalum greens, making him a popular
-                      sleeper selection.
+                      <span className="font-semibold text-gray-900">Rico Hoey (+2200):</span>{" "}
+                      Trending upward with two top-four finishes in his latest PGA Tour starts,
+                      suggesting strong form heading into Mexico.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Erik van Rooyen (+2500):</span>{" "}
-                      Defending champion after his surge to victory in 2024. Familiarity with El
-                      Cardonal and a proven record in coastal events give him a statistical edge.
+                      <span className="font-semibold text-gray-900">Si Woo Kim (+2200):</span>{" "}
+                      Proven winner and polished ball striker; though recently withdrew, his
+                      historical odds place him among the favorites.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">Garrick Higgo (+2500):</span>{" "}
+                      Arriving hot after top-five results in three straight tournaments, Higgo's
+                      scoring potential makes him a strong pick for this event.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">Kevin Yu (+2800):</span>{" "}
+                      Features on several expert tip sheets for his ball striking and consistent
+                      fall form.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">Wyndham Clark (+2800):</span>{" "}
+                      Former U.S. Open winner with elite long game and motivation to improve his
+                      FedEx Cup ranking in the season's final stretch.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">Michael Brennan (+3000):</span>{" "}
+                      Newly exempt on Tour after his Bank of Utah Championship win, Brennan is seen
+                      as a dark horse in his first start as a PGA winner.
                     </li>
                   </ul>
                 </div>
@@ -79,22 +98,23 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
                       <span className="font-semibold text-gray-900">FedEx Cup Fall Series:</span>{" "}
-                      The event is a marquee stop in the FedEx Cup Fall, providing players vital
-                      chances to reclaim or improve PGA Tour cards heading into 2026.
+                      The tournament is a pivotal stop for players aiming to retain or improve their
+                      cards for 2026, especially those ranked around No. 100.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Tournament Dates:</span> October
-                      30–November 2, 2025, marking the second edition at El Cardonal.
+                      <span className="font-semibold text-gray-900">Tournament Dates:</span>{" "}
+                      November 6–9, 2025, starting Thursday at El Cardonal, part of Diamante Resort,
+                      Cabo.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Tiger Woods Design:</span> El
-                      Cardonal is the first Tiger Woods-designed course used for a regular PGA Tour
-                      event, spotlighting strategic bunkering and expansive fairways.
+                      Cardonal remains the only regular PGA Tour venue architected by Tiger Woods,
+                      offering wide fairways and strategic bunkering.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Course Setup:</span> Organizers
-                      have kept rough penalties light and the greens receptive, expecting low scores
-                      in consistent, breezy conditions typical of late fall in Cabo.
+                      <span className="font-semibold text-gray-900">International Flavor:</span>{" "}
+                      132-player field, including 6 of the top 50 in the OWGR and several new
+                      full-status qualifiers from recent fall events.
                     </li>
                   </ul>
                 </div>
@@ -105,18 +125,19 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Defending Champion:</span> Erik
-                      van Rooyen claimed the 2024 title with a closing round 63, finishing two
-                      strokes ahead of Matt Kuchar.
+                      <span className="font-semibold text-gray-900">Defending Champion:</span>{" "}
+                      Austin Eckroat returns after last year's dramatic 24-under victory, including
+                      a final-round 63.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Recent Top Finishers:</span>{" "}
-                      Matt Kuchar (2nd) and Justin Suh (3rd) posted strong results in 2024.
+                      <span className="font-semibold text-gray-900">Recent Top Finishers:</span> Max
+                      Greyserman (4th last year), Matt Kuchar, and Michael Thorbjornsen have all
+                      performed well here recently.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Tour History:</span> The event
-                      moved in 2023 to El Cardonal after years at Mayakoba, aligning with the Tour's
-                      focus on unique international venues for the fall series.
+                      <span className="font-semibold text-gray-900">FedEx Cup Impact:</span> The
+                      event directly affects PGA Tour card retention for 2026, especially for those
+                      near the cutoff on points.
                     </li>
                   </ul>
                 </div>
@@ -128,20 +149,21 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
                       <span className="font-semibold text-gray-900">Course:</span> El Cardonal at
-                      Diamante (Los Cabos, Mexico), par 72, 7,452 yards.
+                      Diamante (Los Cabos, Mexico), par 72, 7,452 yards. Features wide paspalum
+                      fairways, dramatic elevation, and coastal vistas.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Designer:</span> Tiger Woods;
-                      layout emphasizes strategy with dramatic elevation changes and panoramic
-                      Pacific views, making it one of the most modern venues in the Fall Series.
+                      <span className="font-semibold text-gray-900">Designer:</span> Tiger Woods,
+                      layout emphasizes risk-reward holes and conditions that allow for extremely
+                      low scoring if winds are moderate.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Total Purse:</span> $8.7 million
-                      with a winner's share of $1,566,000.
+                      <span className="font-semibold text-gray-900">Total Purse:</span> $6 million,
+                      with a winner's share of about $1,080,000.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">Format:</span> Standard 72-hole
-                      stroke play.
+                      stroke play with FedEx Cup points allocation.
                     </li>
                   </ul>
                 </div>
@@ -152,22 +174,22 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">TV:</span> Golf Channel and NBC
-                      Sports App.
+                      <span className="font-semibold text-gray-900">TV:</span> Golf Channel (U.S.),
+                      extensive Mexico/Latino America coverage.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Thursday, Oct 30:</span> 5–8 PM
+                      <span className="font-semibold text-gray-900">Thursday, Nov 6:</span> 5–8 PM
                       ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Friday, Oct 31:</span> 5–8 PM ET
+                      <span className="font-semibold text-gray-900">Friday, Nov 7:</span> 5–8 PM ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Saturday, Nov 1:</span>{" "}
+                      <span className="font-semibold text-gray-900">Saturday, Nov 8:</span>{" "}
                       4:30–7:30 PM ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Sunday, Nov 2:</span> 4–7 PM ET
+                      <span className="font-semibold text-gray-900">Sunday, Nov 9:</span> 4–7 PM ET
                     </li>
                   </ul>
                 </div>
