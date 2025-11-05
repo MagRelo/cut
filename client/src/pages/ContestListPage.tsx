@@ -87,7 +87,7 @@ export const Contests: React.FC = () => {
               All Contests
             </Tab>
           </TabList>
-          <div className="p-4">
+          <div className="p-2">
             <TabPanel>
               <ContestList contests={userContests} loading={isLoading} error={error} />
             </TabPanel>

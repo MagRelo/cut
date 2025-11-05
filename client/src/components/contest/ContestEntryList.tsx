@@ -11,7 +11,11 @@ interface ContestEntryListProps {
   contestStatus: ContestStatus;
 }
 
-export const ContestEntryList = ({ contestLineups, roundDisplay, contestStatus }: ContestEntryListProps) => {
+export const ContestEntryList = ({
+  contestLineups,
+  roundDisplay,
+  contestStatus,
+}: ContestEntryListProps) => {
   const { user } = usePortoAuth();
 
   // Compute action locks based on contest status
@@ -65,80 +69,75 @@ export const ContestEntryList = ({ contestLineups, roundDisplay, contestStatus }
 
   return (
     <>
-      <div className="mt-3">
-        {sortedLineups.map((lineup) => {
-          const isInTheMoney = (lineup.position || 0) <= paidPositions;
-          const isCurrentUser = lineup.userId === user?.id;
+      {sortedLineups.map((lineup) => {
+        const isInTheMoney = (lineup.position || 0) <= paidPositions;
+        const isCurrentUser = lineup.userId === user?.id;
 
-          return (
-            <div
-              key={lineup.id}
-              className={`${getRowBackgroundColor(
-                isCurrentUser,
-                isInTheMoney
-              )} rounded-sm p-3 mb-1 ${
-                !primaryActionsLocked ? "cursor-default opacity-80" : "cursor-pointer"
-              }`}
-              onClick={() => openLineupModal(lineup)}
-            >
-              <div className="flex items-center justify-between gap-3">
-                {/* Left - Rank */}
-                <div className="flex-shrink-0">
-                  <PositionBadge
-                    position={lineup.position || 0}
-                    isInTheMoney={isInTheMoney}
-                    isUser={isCurrentUser}
-                    primaryActionsLocked={primaryActionsLocked}
-                  />
+        return (
+          <div
+            key={lineup.id}
+            className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 mb-1 ${
+              !primaryActionsLocked ? "cursor-default opacity-80" : "cursor-pointer"
+            }`}
+            onClick={() => openLineupModal(lineup)}
+          >
+            <div className="flex items-center justify-between gap-3">
+              {/* Left - Rank */}
+              <div className="flex-shrink-0">
+                <PositionBadge
+                  position={lineup.position || 0}
+                  isInTheMoney={isInTheMoney}
+                  isUser={isCurrentUser}
+                  primaryActionsLocked={primaryActionsLocked}
+                />
+              </div>
+
+              {/* Middle - User Info */}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                  {lineup.user?.name || lineup.user?.email || "Unknown User"}
                 </div>
 
-                {/* Middle - User Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                    {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                  </div>
-
-                  <div className="text-xs text-gray-500 truncate">
-                    {!primaryActionsLocked
-                      ? lineup.tournamentLineup?.name || "Lineup"
-                      : lineup.tournamentLineup?.players
-                          ?.map((player) => player.pga_lastName)
-                          .filter(Boolean)
-                          .join(", ") || "No players"}
-                  </div>
-                </div>
-
-                {/* Right - Points */}
-                <div className="flex-shrink-0 flex items-center gap-2">
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900 leading-none">
-                      {lineup.score || 0}
-                    </div>
-                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                      PTS
-                    </div>
-                  </div>
-                  {primaryActionsLocked && (
-                    <svg
-                      className="w-4 h-4 text-gray-400 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
+                <div className="text-xs text-gray-500 truncate">
+                  {!primaryActionsLocked
+                    ? lineup.tournamentLineup?.name || "Lineup"
+                    : lineup.tournamentLineup?.players
+                        ?.map((player) => player.pga_lastName)
+                        .filter(Boolean)
+                        .join(", ") || "No players"}
                 </div>
               </div>
+
+              {/* Right - Points */}
+              <div className="flex-shrink-0 flex items-center gap-2">
+                <div className="text-right">
+                  <div className="text-lg font-bold text-gray-900 leading-none">
+                    {lineup.score || 0}
+                  </div>
+                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                    PTS
+                  </div>
+                </div>
+                {primaryActionsLocked && (
+                  <svg
+                    className="w-4 h-4 text-gray-400 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                )}
+              </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
 
       {/* Contest Entry Modal */}
       <ContestEntryModal
