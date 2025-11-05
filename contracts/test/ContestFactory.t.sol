@@ -30,8 +30,7 @@ contract ContestFactoryTest is Test {
             expiry,
             1000e18, // liquidity parameter
             500, // demand sensitivity 5%
-            750, // prize share 7.5%
-            750, // user share 7.5%
+            5000, // position bonus share 50%
             5000, // target primary share 50%
             0 // max cross-subsidy (disabled for baseline test)
         );
@@ -58,8 +57,7 @@ contract ContestFactoryTest is Test {
                 expiry + i * 1 days,
                 1000e18,
                 500,
-                750, // prize share
-                750, // user share
+                5000, // position bonus share 50%
                 5000,
                 0
             );

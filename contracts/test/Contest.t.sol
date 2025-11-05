@@ -30,8 +30,7 @@ contract ContestTest is Test {
     uint256 public constant ORACLE_FEE = 100; // 1%
     uint256 public constant LIQUIDITY = 1000e6;
     uint256 public constant DEMAND_SENSITIVITY = 500; // 5%
-    uint256 public constant PRIZE_SHARE = 750; // 7.5%
-    uint256 public constant USER_SHARE = 750; // 7.5%
+    uint256 public constant POSITION_BONUS_SHARE = 5000; // 50% of subsidy to bonuses
     uint256 public constant EXPIRY = 365 days;
     uint256 public constant TARGET_PRIMARY_SHARE = 5000;
     uint256 public constant MAX_CROSS_SUBSIDY = 0;
@@ -50,8 +49,7 @@ contract ContestTest is Test {
             block.timestamp + EXPIRY,
             LIQUIDITY,
             DEMAND_SENSITIVITY,
-            PRIZE_SHARE,
-            USER_SHARE,
+            POSITION_BONUS_SHARE,
             TARGET_PRIMARY_SHARE,
             MAX_CROSS_SUBSIDY
         );

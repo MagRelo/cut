@@ -44,8 +44,7 @@ export interface ContestSettings {
   primaryDepositAmount: string; // bigint as string
   liquidityParameter: string; // bigint as string
   demandSensitivityBps: number;
-  primaryShareBps: number;
-  primaryPositionShareBps: number;
+  positionBonusShareBps: number;
   targetPrimaryShareBps: number;
   maxCrossSubsidyBps: number;
   expiryTimestamp: number; // Unix timestamp

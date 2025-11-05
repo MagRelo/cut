@@ -102,11 +102,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   });
 
-  // Layer 1: Contestant Pool Data
-  const totalContestantDeposits = useReadContract({
+  // Layer 1: Primary Pool Data
+  const primaryPrizePool = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "totalContestantDeposits",
+    functionName: "primaryPrizePool",
     args: [],
     query: {
       enabled: !!contest?.address,
@@ -133,8 +133,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  // Combined subsidy (for display compatibility)
-  const combinedSubsidy = (primaryPrizePoolSubsidy || 0n) + (totalPrimaryPositionSubsidies || 0n);
+  const primarySideBalance = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getPrimarySideBalance",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
 
   // Layer 2: Secondary/Prediction Market Data
   const secondaryPrizePool = useReadContract({
@@ -147,20 +154,41 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const prizeShareBps = useReadContract({
+  // Configuration Parameters
+  const positionBonusShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "prizeShareBps",
+    functionName: "positionBonusShareBps",
     args: [],
     query: {
       enabled: !!contest?.address,
     },
   }).data as bigint | undefined;
 
-  const userShareBps = useReadContract({
+  const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "userShareBps",
+    functionName: "targetPrimaryShareBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const maxCrossSubsidyBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "maxCrossSubsidyBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const currentPrimaryShareBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getPrimarySideShareBps",
     args: [],
     query: {
       enabled: !!contest?.address,
@@ -351,23 +379,45 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Total Contestant Deposits */}
-            {totalContestantDeposits !== undefined && platformToken && (
+            {/* Primary Side Balance (Total) */}
+            {primarySideBalance !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Contestant Deposits:</span>
-                <span className="text-gray-900">
-                  {Number(totalContestantDeposits) / Math.pow(10, platformToken.decimals)}{" "}
+                <span className="text-gray-600">Primary Side Balance:</span>
+                <span className="text-gray-900 font-semibold">
+                  {Number(primarySideBalance) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
                 </span>
               </div>
             )}
 
-            {/* Combined Subsidy (Prize Pool Subsidy + Position Subsidies) */}
-            {combinedSubsidy !== undefined && platformToken && (
+            {/* Primary Prize Pool (Base) */}
+            {primaryPrizePool !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Combined Subsidy:</span>
+                <span className="text-gray-600 pl-4">↳ Base Prize Pool:</span>
                 <span className="text-gray-900">
-                  {Number(combinedSubsidy) / Math.pow(10, platformToken.decimals)}{" "}
+                  {Number(primaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Primary Prize Pool Subsidy */}
+            {primaryPrizePoolSubsidy !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Prize Pool Subsidy:</span>
+                <span className="text-gray-900">
+                  {Number(primaryPrizePoolSubsidy) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )}
+
+            {/* Total Primary Position Subsidies */}
+            {totalPrimaryPositionSubsidies !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Position Subsidies:</span>
+                <span className="text-gray-900">
+                  {Number(totalPrimaryPositionSubsidies) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
                 </span>
               </div>
@@ -377,26 +427,45 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {secondaryPrizePool !== undefined && platformToken && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Secondary Prize Pool:</span>
-                <span className="text-gray-900">
+                <span className="text-gray-900 font-semibold">
                   {Number(secondaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
                 </span>
               </div>
             )}
 
-            {/* Prize Share BPS */}
-            {prizeShareBps !== undefined && (
+            {/* Current vs Target Ratio */}
+            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Prize Share:</span>
-                <span className="text-gray-900">{Number(prizeShareBps) / 100}%</span>
+                <span className="text-gray-600">Primary/Secondary Ratio:</span>
+                <span className="text-gray-900">
+                  {(Number(currentPrimaryShareBps) / 100).toFixed(2)}% /{" "}
+                  {(100 - Number(currentPrimaryShareBps) / 100).toFixed(2)}%
+                  <span className="text-gray-500 ml-1">
+                    (target: {(Number(targetPrimaryShareBps) / 100).toFixed(2)}%)
+                  </span>
+                </span>
               </div>
             )}
 
-            {/* User Share BPS */}
-            {userShareBps !== undefined && (
+            {/* Position Bonus Share */}
+            {positionBonusShareBps !== undefined && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">Position Bonus Share:</span>
+                  <span className="text-gray-900">{Number(positionBonusShareBps) / 100}%</span>
+                </div>
+                <div className="text-xs text-gray-500 pl-0">
+                  Allocated directly to entry owners from secondary deposits
+                </div>
+              </div>
+            )}
+
+            {/* Max Cross Subsidy BPS */}
+            {maxCrossSubsidyBps !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Contestant Bonus Share:</span>
-                <span className="text-gray-900">{Number(userShareBps) / 100}%</span>
+                <span className="text-gray-600">Max Cross-Subsidy:</span>
+                <span className="text-gray-900">{Number(maxCrossSubsidyBps) / 100}%</span>
               </div>
             )}
 

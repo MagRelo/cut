@@ -20,11 +20,9 @@ The Contest contract combines three layers in a single contract:
 
 **Layer 1 (Primary):** Primary participants deposit tokens to enter, oracle determines winners, winners claim prizes based on performance.
 
-**Layer 2 (Secondary):** Secondary participants predict on primary positions using LMSR pricing, hold ERC1155 tokens representing their positions, and claim winnings if they predicted the winner.
+**Layer 2 (Secondary):** Secondary participants predict on primary positions, hold ERC1155 tokens representing their positions, and claim winnings if they predicted the winner.
 
-**Dynamic Cross-Subsidy:** Deposits can redirect a capped portion of their net amount to the opposite layer to maintain a configurable primary-vs-secondary balance without minting unbacked tokens.
-
-**Key Design Principle:** Settlement is pure accounting. All fees are deducted at deposit time. Users claim via pull-based functions.
+**Dynamic Cross-Subsidy:** Deposits can redirect a capped portion of their net amount to the opposite layer to maintain a configurable primary-vs-secondary balance.
 
 ## Core Concepts
 
@@ -34,8 +32,8 @@ The oracle fee is deducted **immediately on every deposit** and accumulated in `
 
 ```
 ANY deposit of 100 tokens:
-├─ 1 token  → accumulatedOracleFee (1%)
-└─ 99 tokens → distributed to appropriate pools
+├─ 5 tokens → accumulatedOracleFee (5%)
+└─ 95 tokens → distributed to appropriate pools
 ```
 
 ### Primary Participant Deposits
@@ -44,23 +42,27 @@ When a primary participant joins, their deposit (minus oracle fee) primarily fun
 
 ```
 addPrimaryPosition(100):
-├─ 1 → accumulatedOracleFee
-└─ 99 →
-    ├─ ≤ 19.8 → secondaryPrizePool (cross-subsidy, only if primary > target)
+├─ 5 → accumulatedOracleFee (5%)
+└─ 95 (after fee) →
+    ├─ ≤ 14.25 → secondaryPrizePool (cross-subsidy, max 15% if primary > target)
     └─ remainder → primaryPrizePool
 ```
 
 ### Secondary Participant Deposits
 
-When a secondary participant adds a position, the oracle fee is deducted first. If the primary side is below the configured target, up to `maxCrossSubsidyBps` of the net amount is redirected to the primary subsidy pool; the remainder stays in the secondary collateral pool and backs the newly minted ERC1155 tokens:
+When a secondary participant adds a position, the oracle fee is deducted first. Then a position bonus is allocated directly to the entry owner. Finally, the remaining amount goes through cross-subsidy calculation, with the remainder backing the newly minted ERC1155 tokens:
 
 ```
-addSecondaryPosition(100):
-├─ 1 → accumulatedOracleFee (oracle fee first)
-└─ 99 →
-    ├─ ≤ 19.8 → primaryPrizePoolSubsidy (cross-subsidy toward target share)
-    └─ remainder → secondaryPrizePool (backs ERC1155 tokens)
+addSecondaryPosition(entryId, 100):
+├─ 5 → accumulatedOracleFee (oracle fee first, 5%)
+└─ 95 (after fee) →
+    ├─ 4.75 → primaryPositionSubsidy[entryId] (position bonus to entry owner, 5%)
+    └─ 90.25 (remaining) →
+        ├─ ≤ 13.54 → primaryPrizePoolSubsidy (cross-subsidy toward target, max 15%)
+        └─ remainder → secondaryPrizePool (backs ERC1155 tokens)
 ```
+
+**Position bonuses are claimable by entry owners after settlement, regardless of win/loss.**
 
 **All percentages are configurable per contest.**
 
@@ -73,9 +75,9 @@ addSecondaryPosition(100):
 ```
 User deposits 100
   ↓
-1% oracle fee deducted → accumulatedOracleFee
+5% oracle fee deducted → accumulatedOracleFee
   ↓
-99 → primaryPrizePool (with ≤ 20% optionally redirected to secondaryPrizePool if above target)
+95 → primaryPrizePool (with ≤ 15% optionally redirected to secondaryPrizePool if above target)
   ↓
 Settlement calculates prize splits
   ↓
@@ -87,11 +89,13 @@ Winner claims via claimPrimaryPayout()
 ```
 User deposits 100
   ↓
-1% oracle fee deducted → accumulatedOracleFee
+5% oracle fee deducted → accumulatedOracleFee
   ↓
-99 → (optional ≤ 20% cross-subsidy to primary side)
-    ↓
-    Remaining amount → secondaryPrizePool (backs tokens)
+95 (after fee) →
+  ├─ 5% → primaryPositionSubsidy[entryId] (bonus to entry owner)
+  └─ 90.25 (remaining) →
+      ├─ ≤ 15% → primaryPrizePoolSubsidy (cross-subsidy to primary if below target)
+      └─ remainder → secondaryPrizePool (backs tokens)
   ↓
 Mint ERC1155 tokens (amount based on LMSR price)
   ↓
@@ -101,28 +105,29 @@ If predicted winner: claim proportional share via claimSecondaryPayout()
 If predicted loser: tokens worthless
 ```
 
-### Scenario: 60% Primary Target, 15% Cross-Subsidy Cap
+### Scenario: 30% Primary Target, 15% Cross-Subsidy Cap
 
-- Parameters: oracle fee 1%, `primaryShareBps = primaryPositionShareBps = 750` (used only at settlement), `targetPrimaryShareBps = 6000`, `maxCrossSubsidyBps = 1500`.
+- Parameters: oracle fee 5%, `positionBonusShareBps = 500` (5% position bonus), `targetPrimaryShareBps = 3000`, `maxCrossSubsidyBps = 1500`.
 - Initial state: all pools are 0.
 
-| Step | Action                | Primary Prize Pool | Primary Subsidy | Secondary Pool | Primary Share |
-| ---- | --------------------- | ------------------ | --------------- | -------------- | ------------- |
-| 1    | Primary deposit 100   | 84.15              | 0.00            | 14.85          | 85.0%         |
-| 2    | Secondary deposit 200 | 84.15              | 29.70           | 183.15         | 38.3%         |
-| 3    | Primary deposit 100   | 183.15             | 29.70           | 183.15         | 53.7%         |
+| Step | Action                | Primary Prize Pool | Position Bonus | Primary Subsidy | Secondary Pool | Primary Share |
+| ---- | --------------------- | ------------------ | -------------- | --------------- | -------------- | ------------- |
+| 1    | Primary deposit 100   | 80.75              | 0.00           | 0.00            | 14.25          | 85.0%         |
+| 2    | Secondary deposit 200 | 80.75              | 9.50           | 23.75           | 161.50         | 41.0%         |
+| 3    | Primary deposit 100   | 175.50             | 9.50           | 23.75           | 161.50         | 56.4%         |
 
-**Step 1 – primary joins:** The net deposit is 99. Because the primary side would sit at 100% of the balance, the contract shifts the maximum 15% (14.85) across to the secondary pool. Primary entrants still have most of their capital in the prize pool, but secondary liquidity is immediately bootstrapped.
+**Step 1 – primary joins:** The net deposit is 95 (after 5% oracle fee). Because the primary side would sit at 100% of the balance, the contract shifts the maximum 15% (14.25) across to the secondary pool. Primary entrants still have most of their capital in the prize pool, but secondary liquidity is immediately bootstrapped.
 
-**Step 2 – secondary joins:** The net spectator deposit is 198. With the primary side well below the 60% target, the allowable cross-subsidy (29.7) flows into `primaryPrizePoolSubsidy`. The remaining 168.3 backs the spectator’s ERC1155 tokens.
+**Step 2 – secondary joins:** The net deposit is 190 (after 5% oracle fee). First, 5% position bonus (9.5) goes to Entry 1's owner. From the remaining 180.5, the primary side is well below the 30% target, so 13.16% cross-subsidy (23.75) flows into `primaryPrizePoolSubsidy`. The remaining 156.75 backs the spectator's ERC1155 tokens.
 
-**Step 3 – another primary joins:** The net 99 deposit pushes the ratio closer to the target but does not exceed it, so no additional cross-subsidy is redirected. Both pools now hold the same balance, leaving the primary share at ~54%.
+**Step 3 – another primary joins:** The net 95 deposit (after oracle fee) pushes the ratio above the target. The contract redirects 14.25 (15% max) to the secondary pool. The remaining 80.75 goes to primaryPrizePool, bringing the primary share to ~56%.
 
 ### Incentive Observations
 
 - **Primary entrants enable secondary markets when light:** Early primary deposits are required to seed secondary liquidity (step 1), enabling prediction markets to form - a necessary cost for the dual-market architecture.
-- **Secondary entrants boost primary rewards when underweight:** In step 2, spectators send an extra 29.7 (15% of their net deposit) into the primary subsidy pool, setting aside future rewards for contestants.
-- **Caps prevent over-correction:** When the ratio is already near the 60% target (step 3), no cross-subsidy is applied. Larger imbalances would keep pushing up to the 15% cap per deposit, but never drain an entire contribution.
+- **Secondary entrants boost primary rewards when underweight:** In step 2, spectators contribute 5% as position bonuses (9.5) directly to the entry owner, plus cross-subsidy (23.75) to the prize pool when primary side is below the 30% target.
+- **Entry owners rewarded for popularity:** Every entry owner receives 5% of all secondary deposits on their entry, regardless of whether they win or lose.
+- **Caps prevent over-correction:** When the ratio is already near the 30% target (step 3), cross-subsidy adjusts dynamically. Larger imbalances would push up to the 15% cap per deposit, but never drain an entire contribution.
 - **Dynamic optics:** As the cross-subsidy ebbs and flows, dashboards can surface `getPrimarySideShareBps()` so entrants see whether the next deposit is likely to receive extra support or subsidize the other side.
 
 ### Withdrawal Flows
@@ -132,6 +137,7 @@ If predicted loser: tokens worthless
 Secondary participants can withdraw and get 100% refund:
 
 - Oracle fee is reversed (deducted from `accumulatedOracleFee`)
+- Position bonus allocation is reversed (deducted from entry's `primaryPositionSubsidy`)
 - Any cross-subsidy credited to the primary side is clawed back
 - The remaining collateral is returned in full
 
@@ -140,6 +146,7 @@ Secondary participants can withdraw and get 100% refund:
 Primary participants can withdraw and get 100% refund, BUT secondary participants who predicted on them DON'T get refunded — their collateral stays in the contract.
 
 - Cross-subsidy booked for that entry is cleared, but the secondary pool remains untouched.
+- Position bonuses accumulated on that entry are forfeited (added to primaryPrizePool for remaining contestants).
 - On settlement, that collateral is distributed to whichever contestants and spectators ultimately win.
 
 **Key Point:** Secondary participants don't get refunded when their entry withdraws. This incentivizes secondary participants to predict on committed entries.
@@ -149,10 +156,10 @@ Primary participants can withdraw and get 100% refund, BUT secondary participant
 ### State Variables (Always Net of Oracle Fees)
 
 ```solidity
-accumulatedOracleFee              // Oracle's accumulated fee, claimable
+accumulatedOracleFee              // Oracle's accumulated fee (5% of all deposits), claimable
 primaryPrizePool                  // Primary participant deposits (net of fees)
-primaryPrizePoolSubsidy           // Secondary subsidy to prizes (net of fees)
-primaryPositionSubsidy[entryId]   // Secondary bonus per entry (net of fees)
+primaryPrizePoolSubsidy           // Cross-subsidy from secondary to primary prize pool
+primaryPositionSubsidy[entryId]   // Position bonus per entry (5% of secondary deposits on that entry)
 secondaryPrizePool                // Secondary collateral pool (net of fees, incl. primary cross-subsidy)
 primaryToSecondarySubsidy[entry]  // Cross-subsidy tracked per primary entry (for withdrawal reversal)
 secondaryToPrimarySubsidy[user][entry]
@@ -178,23 +185,23 @@ contract balance = accumulatedOracleFee
 
 Settlement does **NO transfers**, only calculations:
 
-1. Snapshot `primaryPrizePoolSubsidy` and split it into a bonus pool (`bonusPool`) and a prize boost (`prizePoolFromSubsidy`) according to `primaryShareBps`/`primaryPositionShareBps`.
-2. Compute the Layer 1 prize pool: `primaryPrizePool + prizePoolFromSubsidy`.
-3. Store prize payouts in `primaryPrizePoolPayouts[entryId]` based on `payoutBps`.
-4. Store bonus payouts in `primaryPositionSubsidy[entryId]` using the same `payoutBps` weighting.
-5. Set `secondaryWinningEntry` to the first entry in `winningEntries`.
-6. If no ERC1155 supply exists on the winning entry, redistribute the secondary pool to Layer 1 winners proportionally.
+1. Compute the Layer 1 prize pool: `primaryPrizePool + primaryPrizePoolSubsidy`.
+2. Store prize payouts in `primaryPrizePoolPayouts[entryId]` based on `payoutBps` (winners only).
+3. Position bonuses (`primaryPositionSubsidy[entryId]`) were already allocated per-deposit - no changes needed.
+4. Set `secondaryWinningEntry` to the first entry in `winningEntries`.
+5. If no ERC1155 supply exists on the winning entry, redistribute the secondary pool to Layer 1 winners proportionally.
 
-**That's it.** No transfers, no fee calculations. Everything is already net of fees.
+**That's it.** No transfers, no fee calculations, no bonus splitting. Everything is already net of fees and bonuses are pre-allocated.
 
 ### Fund Distribution Guarantee
 
 **Every token deposited is distributed to someone:**
 
 - **Primary deposits** → Winning primary participants (via `primaryPrizePoolPayouts`)
-- **Secondary cross-subsidy** → Split between extra primary payouts and entry-owner bonuses at settlement
+- **Secondary position bonuses (5%)** → Entry owners (via `primaryPositionSubsidy[entryId]`, regardless of win/loss)
+- **Secondary cross-subsidy** → Boosts primary prize pool when below target ratio
 - **Secondary collateral** → Winning secondary participants (via `secondaryPrizePool`)
-- **Oracle fees** → Oracle (via `accumulatedOracleFee`)
+- **Oracle fees (5%)** → Oracle (via `accumulatedOracleFee`)
 - **Cross-subsidy transfers** → Only rebalance between `primaryPrizePool`, `primaryPrizePoolSubsidy`, and `secondaryPrizePool`; no value is created or destroyed.
 
 If users don't claim, oracle can use `closeContest()` after expiry to recover unclaimed funds.
@@ -228,12 +235,12 @@ claimSecondaryPayout(entryId)
 // Add primary position (oracle fee deducted immediately)
 function addPrimaryPosition(uint256 entryId) external
 // State: OPEN only
-// Deducts 1% oracle fee, adds remainder to primaryPrizePool
+// Deducts 5% oracle fee, applies cross-subsidy, adds remainder to primaryPrizePool
 
 // Remove before activation (get full refund)
 function removePrimaryPosition(uint256 entryId) external
 // State: OPEN or CANCELLED
-// Reverses oracle fee, secondary funds stay in pool (no auto-refund)
+// Reverses oracle fee & cross-subsidy, forfeits position bonuses, secondary funds stay in pool
 
 // Claim prize + bonus after settlement
 function claimPrimaryPayout(uint256 entryId) external
@@ -247,12 +254,12 @@ function claimPrimaryPayout(uint256 entryId) external
 // Add secondary position (oracle fee deducted immediately)
 function addSecondaryPosition(uint256 entryId, uint256 amount) external
 // State: OPEN or ACTIVE
-// Deducts oracle fee, splits remainder, mints ERC1155 tokens
+// Deducts 5% oracle fee, allocates 5% position bonus, applies cross-subsidy, mints ERC1155 tokens
 
 // Remove position (only before contest starts)
 function removeSecondaryPosition(uint256 entryId, uint256 tokenAmount) external
 // State: OPEN or CANCELLED only
-// Reverses all accounting, returns 100% of deposit
+// Reverses all accounting (oracle fee, bonus, cross-subsidy), returns 100% of deposit
 
 // Check current LMSR price
 function calculateSecondaryPrice(uint256 entryId) public view returns (uint256)
@@ -432,6 +439,70 @@ price = PRICE_PRECISION + (|netPosition[entryId]| * demandSensitivityBps / liqui
 tokensToMint = collateral * PRICE_PRECISION / price
 ```
 
+**Sequential Deposit Example:**
+
+Let's walk through 10 people depositing $100 each on the same entry:
+
+**Setup:**
+
+- Entry fee: $100 (so liquidityParameter = $100 × 100 = 10,000)
+- demandSensitivityBps: 500 (5%)
+- Oracle fee: 5%
+- Position bonus: 5%
+- Cross-subsidy: 0 (for simplicity)
+
+**Per Deposit Breakdown:**
+
+```
+Deposit: $100
+├─ Oracle fee (5%): $5 → accumulatedOracleFee
+└─ Net: $95
+   ├─ Position bonus (5%): $4.75 → primaryPositionSubsidy[entryId]
+   └─ Collateral: $90.25 → used to buy tokens at current LMSR price
+```
+
+**Sequential Pricing (PRICE_PRECISION = 1,000,000):**
+
+| Deposit # | Net Position Before | Price     | Tokens Received | Net Position After | Cost per Token |
+| --------- | ------------------- | --------- | --------------- | ------------------ | -------------- |
+| 1         | 0                   | 1,000,000 | 90.25           | 90.25              | $1.00          |
+| 2         | 90.25               | 1,004,513 | 89.85           | 180.10             | $1.00          |
+| 3         | 180.10              | 1,009,005 | 89.45           | 269.55             | $1.01          |
+| 4         | 269.55              | 1,013,478 | 89.05           | 358.60             | $1.01          |
+| 5         | 358.60              | 1,017,930 | 88.66           | 447.26             | $1.02          |
+| 6         | 447.26              | 1,022,363 | 88.27           | 535.53             | $1.02          |
+| 7         | 535.53              | 1,026,777 | 87.89           | 623.42             | $1.03          |
+| 8         | 623.42              | 1,031,171 | 87.51           | 710.93             | $1.03          |
+| 9         | 710.93              | 1,035,547 | 87.13           | 798.06             | $1.04          |
+| 10        | 798.06              | 1,039,903 | 86.76           | 884.82             | $1.04          |
+
+**Key Observations:**
+
+1. **Early Advantage:** First depositor pays $1.00 per token, 10th pays $1.04 per token (4% premium)
+2. **Tokens Received Decrease:** Despite same collateral ($90.25), later depositors get fewer tokens
+3. **Price Increases Linearly:** With 5% demand sensitivity, price goes up gradually
+4. **Net Position Drives Price:** Each deposit increases netPosition, which increases price for next buyer
+
+**Formula Breakdown for Deposit #5:**
+
+```
+Previous netPosition = 358.60
+demandPremium = (358.60 × 500) / 10,000 = 17,930
+price = 1,000,000 + 17,930 = 1,017,930
+tokensToMint = (90.25 × 1,000,000) / 1,017,930 = 88.66
+newNetPosition = 358.60 + 88.66 = 447.26
+```
+
+**Payout Scenario (Winner-Take-All):**
+
+If this entry wins and total secondary collateral pool = $902.50:
+
+- Deposit #1: (90.25 / 884.82) × $902.50 = $92.01 → **ROI: -8.0%**
+- Deposit #5: (88.66 / 884.82) × $902.50 = $90.40 → **ROI: -9.6%**
+- Deposit #10: (86.76 / 884.82) × $902.50 = $88.47 → **ROI: -11.5%**
+
+**Why negative ROI?** The 5% oracle fee + 5% position bonus reduces the collateral pool by 10%. Winners need OTHER entries to also have secondary volume to profit, or they need to predict an underdog that wins.
+
 ### LMSR Pricing Mechanism
 
 The `liquidityParameter` controls how steep the price curve is for secondary participant positions. A lower value creates steeper prices (early position holders get much better prices), while a higher value creates flatter prices.
@@ -480,12 +551,14 @@ At $5,000 volume with liquidityParameter = 10,000:
 ### Settlement Payouts
 
 ```
-prizeBoost = primaryPrizePoolSubsidy * primaryShareBps / (primaryShareBps + primaryPositionShareBps)
-bonusPool = primaryPrizePoolSubsidy - prizeBoost
+// Position bonuses already allocated per-deposit during addSecondaryPosition()
+// Settlement only calculates prize pool payouts
 
-layer1Pool = primaryPrizePool + prizeBoost
+layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
 primaryPrizePoolPayouts[i] = layer1Pool * payoutBps[i] / 10000
-primaryPositionSubsidy[i] += bonusPool * payoutBps[i] / 10000
+
+// Winners claim: primaryPrizePoolPayouts[i] + primaryPositionSubsidy[i]
+// Losers claim: 0 + primaryPositionSubsidy[i] (if any bonuses accumulated)
 ```
 
 ### Secondary Participant Claims
@@ -507,14 +580,13 @@ constructor(
     address _paymentToken,              // ERC20 token for deposits (e.g., USDC)
     address _oracle,                    // Oracle address (settles contest)
     uint256 _primaryDepositAmount,      // Fixed entry fee for primary participants
-    uint256 _oracleFeeBps,              // Oracle fee (e.g., 100 = 1%)
+    uint256 _oracleFeeBps,              // Oracle fee (e.g., 500 = 5%)
     uint256 _expiryTimestamp,           // When contest expires
     uint256 _liquidityParameter,        // LMSR liquidity (auto-calculated by factory)
     uint256 _demandSensitivityBps,      // LMSR sensitivity (e.g., 500 = 5%)
-    uint256 _primaryShareBps,           // Secondary → prize pool (e.g., 750 = 7.5%)
-    uint256 _primaryPositionShareBps,   // Secondary → primary position bonus (e.g., 750 = 7.5%)
-    uint256 _targetPrimaryShareBps,     // Target share (in bps) for primary side after deposits
-    uint256 _maxCrossSubsidyBps         // Max per-deposit cross-subsidy toward the other side (bps)
+    uint256 _positionBonusShareBps,     // Position bonus from secondary deposits (e.g., 500 = 5%)
+    uint256 _targetPrimaryShareBps,     // Target share for primary side (e.g., 3000 = 30%)
+    uint256 _maxCrossSubsidyBps         // Max cross-subsidy per deposit (e.g., 1500 = 15%)
 )
 ```
 
@@ -522,10 +594,10 @@ constructor(
 
 **Constraints:**
 
-- `_oracleFeeBps <= 1000` (max 10%)
-- `_primaryShareBps + _primaryPositionShareBps < 10000` (must leave collateral for tokens)
-- `_targetPrimaryShareBps <= 10000`
-- `_maxCrossSubsidyBps <= 10000`
+- `_oracleFeeBps <= 1000` (max 10%, recommended 5%)
+- `_positionBonusShareBps <= 10000` (recommended 500 = 5% per secondary deposit)
+- `_targetPrimaryShareBps <= 10000` (recommended 3000 = 30%)
+- `_maxCrossSubsidyBps <= 10000` (recommended 1500 = 15%)
 - `_expiryTimestamp > block.timestamp`
 
 ## License

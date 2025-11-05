@@ -55,11 +55,9 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Demand sensitivity in basis points - controls LMSR price curve steepness
     uint256 public immutable demandSensitivityBps;
 
-    /// @notice Portion of secondary deposit that goes to prize pool in basis points (e.g., 750 = 7.5%)
-    uint256 public immutable primaryShareBps;
-
-    /// @notice Portion of secondary deposit that goes to primary position bonuses in basis points (e.g., 750 = 7.5%)
-    uint256 public immutable primaryPositionShareBps;
+    /// @notice Portion of accumulated subsidy that goes to position bonuses in basis points (e.g., 5000 = 50%)
+    /// @dev Remainder goes to prize pool. Applied at settlement, not per-deposit.
+    uint256 public immutable positionBonusShareBps;
 
     /// @notice Target primary-side share (in basis points) used to balance cross-subsidies between pools
     uint256 public immutable targetPrimaryShareBps;
@@ -119,13 +117,13 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Secondary prize pool - collateral backing secondary position tokens (~85% of deposits)
     uint256 public secondaryPrizePool;
 
-    /// @notice Primary prize pool subsidy from secondary participants (7.5% of secondary deposits)
+    /// @notice Cross-subsidy from secondary to primary prize pool (allocated after position bonuses)
     uint256 public primaryPrizePoolSubsidy;
 
     /// @notice Aggregate of all outstanding primary position subsidies (sum of primaryPositionSubsidy values)
     uint256 public totalPrimaryPositionSubsidies;
 
-    /// @notice Primary position subsidies per entry from secondary volume (7.5% of secondary deposits)
+    /// @notice Accumulated bonus per entry from secondary deposits (allocated per-deposit based on positionBonusShareBps)
     mapping(uint256 => uint256) public primaryPositionSubsidy;
 
     /// @notice Track deposits per secondary participant per entry (for withdrawal refunds)
@@ -183,8 +181,9 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @dev Recommended: Use ContestFactory which calculates this as primaryDepositAmount × 100
      * @dev Lower values = steeper curves (stronger early incentive), higher values = flatter curves
      * @param _demandSensitivityBps LMSR price sensitivity parameter
-     * @param _primaryShareBps Portion of secondary deposit going to prize pool (e.g., 750 = 7.5%)
-     * @param _primaryPositionShareBps Portion of secondary deposit going to primary position bonuses (e.g., 750 = 7.5%)
+     * @param _positionBonusShareBps Portion of accumulated subsidy going to position bonuses (e.g., 5000 = 50%)
+     * @param _targetPrimaryShareBps Target primary-side share for cross-subsidy balancing
+     * @param _maxCrossSubsidyBps Maximum cross-subsidy per deposit
      */
     constructor(
         address _paymentToken,
@@ -194,8 +193,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         uint256 _expiryTimestamp,
         uint256 _liquidityParameter,
         uint256 _demandSensitivityBps,
-        uint256 _primaryShareBps,
-        uint256 _primaryPositionShareBps,
+        uint256 _positionBonusShareBps,
         uint256 _targetPrimaryShareBps,
         uint256 _maxCrossSubsidyBps
     ) ERC1155("") {
@@ -206,7 +204,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         require(_expiryTimestamp > block.timestamp, "Expiry in past");
         require(_liquidityParameter > 0, "Invalid liquidity parameter");
         require(_demandSensitivityBps <= BPS_DENOMINATOR, "Invalid demand sensitivity");
-        require(_primaryShareBps + _primaryPositionShareBps < BPS_DENOMINATOR, "Total fees exceed limit");
+        require(_positionBonusShareBps <= BPS_DENOMINATOR, "Invalid position bonus share");
         require(_targetPrimaryShareBps <= BPS_DENOMINATOR, "Invalid target ratio");
         require(_maxCrossSubsidyBps <= BPS_DENOMINATOR, "Invalid subsidy cap");
 
@@ -217,8 +215,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         expiryTimestamp = _expiryTimestamp;
         liquidityParameter = _liquidityParameter;
         demandSensitivityBps = _demandSensitivityBps;
-        primaryShareBps = _primaryShareBps;
-        primaryPositionShareBps = _primaryPositionShareBps;
+        positionBonusShareBps = _positionBonusShareBps;
         targetPrimaryShareBps = _targetPrimaryShareBps;
         maxCrossSubsidyBps = _maxCrossSubsidyBps;
 
@@ -298,6 +295,14 @@ contract Contest is ERC1155, ReentrancyGuard {
             secondaryPrizePool -= crossSubsidy;
         }
 
+        // Forfeit position bonus - redistributed to remaining primary participants via prize pool
+        uint256 bonus = primaryPositionSubsidy[entryId];
+        if (bonus > 0) {
+            primaryPositionSubsidy[entryId] = 0;
+            totalPrimaryPositionSubsidies -= bonus;
+            primaryPrizePool += bonus; // Bonus goes to remaining contestants
+        }
+
         // Refund entry owner (full amount)
         paymentToken.safeTransfer(msg.sender, primaryDepositAmount);
 
@@ -359,6 +364,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param entryId Entry ID to add position on
      * @param amount Amount of payment token to deposit
      * @param merkleProof Merkle proof for whitelist verification (empty array if no gating)
+     * @dev Deposit flow: oracle fee → position bonus (to entry owner) → cross-subsidy (dynamic) → collateral (backs ERC1155)
      * @dev Uses LMSR pricing - popular entries cost more
      */
     function addSecondaryPosition(uint256 entryId, uint256 amount, bytes32[] calldata merkleProof)
@@ -380,8 +386,18 @@ contract Contest is ERC1155, ReentrancyGuard {
         accumulatedOracleFee += oracleFee;
         uint256 amountAfterFee = amount - oracleFee;
 
-        uint256 crossSubsidy = _calculateSecondaryCrossSubsidy(amountAfterFee);
-        uint256 collateral = amountAfterFee - crossSubsidy;
+        // Step 1: Allocate position bonus to entry owner (direct reward for being popular)
+        uint256 positionBonus = (amountAfterFee * positionBonusShareBps) / BPS_DENOMINATOR;
+        uint256 remainingAmount = amountAfterFee - positionBonus;
+
+        if (positionBonus > 0) {
+            primaryPositionSubsidy[entryId] += positionBonus;
+            totalPrimaryPositionSubsidies += positionBonus;
+        }
+
+        // Step 2: Apply cross-subsidy calculation to remaining amount
+        uint256 crossSubsidy = _calculateSecondaryCrossSubsidy(remainingAmount);
+        uint256 collateral = remainingAmount - crossSubsidy;
 
         if (crossSubsidy > 0) {
             primaryPrizePoolSubsidy += crossSubsidy;
@@ -394,7 +410,7 @@ contract Contest is ERC1155, ReentrancyGuard {
         // Get current LMSR price
         uint256 price = calculateSecondaryPrice(entryId);
 
-        // Calculate tokens to mint
+        // Calculate tokens to mint from collateral (after bonus and cross-subsidy)
         uint256 tokensToMint = (collateral * PRICE_PRECISION) / price;
 
         // Mint ERC1155 tokens (token ID = entry ID)
@@ -441,12 +457,22 @@ contract Contest is ERC1155, ReentrancyGuard {
         accumulatedOracleFee -= oracleFee;
         uint256 amountAfterFee = refundAmount - oracleFee;
 
+        // Step 1: Reverse position bonus allocation
+        uint256 positionBonus = (amountAfterFee * positionBonusShareBps) / BPS_DENOMINATOR;
+        uint256 remainingAmount = amountAfterFee - positionBonus;
+
+        if (positionBonus > 0) {
+            primaryPositionSubsidy[entryId] -= positionBonus;
+            totalPrimaryPositionSubsidies -= positionBonus;
+        }
+
+        // Step 2: Reverse cross-subsidy from remaining amount
         uint256 userCrossSubsidy = secondaryToPrimarySubsidy[msg.sender][entryId];
         uint256 crossRefund = (userCrossSubsidy * tokenAmount) / userTotalTokens;
-        if (crossRefund > amountAfterFee) {
-            crossRefund = amountAfterFee;
+        if (crossRefund > remainingAmount) {
+            crossRefund = remainingAmount;
         }
-        uint256 collateral = amountAfterFee - crossRefund;
+        uint256 collateral = remainingAmount - crossRefund;
 
         // Burn tokens
         _burn(msg.sender, entryId, tokenAmount);
@@ -563,6 +589,7 @@ contract Contest is ERC1155, ReentrancyGuard {
      * @param payoutBps Array of payout basis points (must sum to 10000)
      * @dev First entry in winningEntries is the overall winner (for secondary market)
      * @dev Entries not included are assumed to have 0% payout
+     * @dev Position bonuses already accumulated per-deposit, settlement only distributes prize pool
      * @dev All payouts stored for later claims - NO transfers in this function
      */
     function settleContest(uint256[] calldata winningEntries, uint256[] calldata payoutBps)
@@ -585,38 +612,18 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         state = ContestState.SETTLED;
 
-        // Oracle fees already deducted at deposit time - accumulatedOracleFee is ready to claim
-        // All pools (primaryPrizePool, primaryPrizePoolSubsidy, primaryPositionSubsidy, secondaryPrizePool)
-        // are already net of oracle fees
+        // Calculate Layer 1 prize pool: primary deposits + cross-subsidy from secondary
+        // Note: primaryPositionSubsidy already accumulated per-deposit during addSecondaryPosition()
+        // Note: Primary→secondary subsidy (in secondaryPrizePool) backs ERC1155 tokens (winner-take-all)
+        uint256 layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy;
 
-        uint256 subsidy = primaryPrizePoolSubsidy;
-        uint256 totalPrimaryFunds = primaryPrizePool + subsidy;
-
-        uint256 bonusPool = 0;
-        uint256 prizePoolFromSubsidy = subsidy;
-
-        if (subsidy > 0 && primaryPositionShareBps > 0) {
-            uint256 totalShareBps = primaryShareBps + primaryPositionShareBps;
-            if (totalShareBps > 0) {
-                bonusPool = (subsidy * primaryPositionShareBps) / totalShareBps;
-                prizePoolFromSubsidy = subsidy - bonusPool;
-            }
-        }
-
-        uint256 layer1Pool = totalPrimaryFunds - subsidy + prizePoolFromSubsidy;
-
+        // Distribute payouts to winners (proportional to payoutBps)
+        // Pools remain unchanged - they're reduced proportionally during claims
         for (uint256 i = 0; i < winningEntries.length; i++) {
             uint256 entryId = winningEntries[i];
             uint256 payout = (layer1Pool * payoutBps[i]) / BPS_DENOMINATOR;
             primaryPrizePoolPayouts[entryId] = payout;
-
-            if (bonusPool > 0) {
-                uint256 bonus = (bonusPool * payoutBps[i]) / BPS_DENOMINATOR;
-                primaryPositionSubsidy[entryId] += bonus;
-                totalPrimaryPositionSubsidies += bonus;
-            }
         }
-        primaryPrizePoolSubsidy = prizePoolFromSubsidy;
 
         // Step 4: Set Layer 2 winner (winner-take-all)
         secondaryWinningEntry = winningEntries[0];
@@ -841,6 +848,9 @@ contract Contest is ERC1155, ReentrancyGuard {
 
         for (uint256 i = 0; i < entryIds.length; i++) {
             uint256 entryId = entryIds[i];
+            address owner = entryOwner[entryId];
+            require(owner != address(0), "Entry withdrawn or invalid");
+
             uint256 payout = primaryPrizePoolPayouts[entryId];
             uint256 bonus = primaryPositionSubsidy[entryId];
             uint256 totalClaim = payout + bonus;
@@ -851,7 +861,20 @@ contract Contest is ERC1155, ReentrancyGuard {
                     primaryPositionSubsidy[entryId] = 0;
                     totalPrimaryPositionSubsidies -= bonus;
                 }
-                address owner = entryOwner[entryId];
+
+                // Reduce pools proportionally (if payout > 0)
+                if (payout > 0) {
+                    uint256 totalPrimaryFunds = primaryPrizePool + primaryPrizePoolSubsidy;
+                    if (totalPrimaryFunds > 0) {
+                        uint256 fromBasePool = (payout * primaryPrizePool) / totalPrimaryFunds;
+                        uint256 fromSubsidyPool = payout - fromBasePool;
+
+                        primaryPrizePool = primaryPrizePool >= fromBasePool ? primaryPrizePool - fromBasePool : 0;
+                        primaryPrizePoolSubsidy =
+                            primaryPrizePoolSubsidy >= fromSubsidyPool ? primaryPrizePoolSubsidy - fromSubsidyPool : 0;
+                    }
+                }
+
                 paymentToken.safeTransfer(owner, totalClaim);
                 emit PrimaryPayoutClaimed(owner, entryId, totalClaim);
             }

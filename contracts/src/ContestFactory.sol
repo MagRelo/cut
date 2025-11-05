@@ -40,8 +40,7 @@ contract ContestFactory {
      * @param expiry The expiration timestamp for the contest
      * @param liquidityParameterOverride Custom LMSR liquidity parameter (0 = auto-calculate)
      * @param demandSensitivity LMSR demand sensitivity in basis points
-     * @param prizeShareBps Portion of spectator deposit going to prize pool (e.g., 750 = 7.5%)
-     * @param userShareBps Portion of spectator deposit going to contestant bonuses (e.g., 750 = 7.5%)
+     * @param positionBonusShareBps Portion of accumulated subsidy going to position bonuses (e.g., 5000 = 50%)
      * @param targetPrimaryShareBps Target share (in basis points) to allocate to the primary side across deposits
      * @param maxCrossSubsidyBps Maximum share (in basis points) of any deposit that can be redirected to the opposite pool
      * @return The address of the newly created Contest contract
@@ -55,7 +54,7 @@ contract ContestFactory {
      * - oracle must not be zero address
      * - contestantDepositAmount must be greater than 0
      * - expiry must be in the future
-     * - prizeShareBps + userShareBps must be < 100% (collateral required for tokens)
+     * - positionBonusShareBps must be <= 100% (portion of subsidy)
      *
      * Emits a {ContestCreated} event
      */
@@ -67,8 +66,7 @@ contract ContestFactory {
         uint256 expiry,
         uint256 liquidityParameterOverride,
         uint256 demandSensitivity,
-        uint256 prizeShareBps,
-        uint256 userShareBps,
+        uint256 positionBonusShareBps,
         uint256 targetPrimaryShareBps,
         uint256 maxCrossSubsidyBps
     ) external returns (address) {
@@ -88,8 +86,7 @@ contract ContestFactory {
             expiry,
             liquidityParameter,
             demandSensitivity,
-            prizeShareBps,
-            userShareBps,
+            positionBonusShareBps,
             targetPrimaryShareBps,
             maxCrossSubsidyBps
         );

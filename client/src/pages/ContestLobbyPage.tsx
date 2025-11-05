@@ -10,6 +10,7 @@ import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import { ContestPredictionsTab } from "../components/contest/ContestPredictionsTab";
+import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
 import { arePrimaryActionsLocked } from "../types/contest";
 
@@ -30,6 +31,7 @@ export const ContestLobby: React.FC = () => {
   // tabs - default to first tab (Contest)
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -85,8 +87,34 @@ export const ContestLobby: React.FC = () => {
       {/* contest lobby */}
       <div className="bg-white rounded-sm shadow pb-3">
         {/* header */}
-        <div className="p-2 pb-0">
+
+        <div className="p-3 pb-1">
           <ContestCard contest={contest} />
+        </div>
+
+        {/* settings button */}
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Contest Settings"
+          >
+            {/* <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 text-gray-400"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                clipRule="evenodd"
+              />
+            </svg> */}
+
+            <span className="font-display text-gray-400">Settings</span>
+          </button>
         </div>
 
         {/* tabs */}
@@ -162,6 +190,7 @@ export const ContestLobby: React.FC = () => {
                 />
               </div>
 
+              {/* LINEUP MANAGEMENT MODAL */}
               <Transition appear show={isLineupModalOpen} as={React.Fragment}>
                 <Dialog
                   as="div"
@@ -255,6 +284,67 @@ export const ContestLobby: React.FC = () => {
           </div>
         </TabGroup>
       </div>
+
+      {/* Settings Modal */}
+      <Transition appear show={isSettingsModalOpen} as={React.Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setIsSettingsModalOpen(false)}>
+          <Transition.Child
+            as={React.Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={React.Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-2xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
+                  <div className="p-4 pb-0 flex items-center justify-between border-b border-gray-200">
+                    <Dialog.Title className="text-lg font-medium text-gray-900">
+                      Contest Details
+                    </Dialog.Title>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      onClick={() => setIsSettingsModalOpen(false)}
+                      aria-label="Close"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="max-h-[600px] overflow-y-auto">
+                    <ContestSettings contest={contest} />
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };
