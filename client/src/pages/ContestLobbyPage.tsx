@@ -105,19 +105,6 @@ export const ContestLobby: React.FC = () => {
             >
               Fantasy Contest
             </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-purple-500 text-purple-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Prediction Market
-            </Tab>
             {primaryActionsLocked && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
@@ -133,6 +120,19 @@ export const ContestLobby: React.FC = () => {
                 Players
               </Tab>
             )}
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-purple-500 text-purple-600"
+                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                )
+              }
+            >
+              Prediction Market
+            </Tab>
           </TabList>
           <div className="">
             {/* ENTRIES (Contest) */}
@@ -238,11 +238,6 @@ export const ContestLobby: React.FC = () => {
               </Transition>
             </TabPanel>
 
-            {/* PREDICTIONS */}
-            <TabPanel>
-              <ContestPredictionsTab contest={contest} />
-            </TabPanel>
-
             {/* PLAYERS - Only shown when primary actions are locked */}
             {primaryActionsLocked && (
               <TabPanel>
@@ -252,6 +247,11 @@ export const ContestLobby: React.FC = () => {
                 />
               </TabPanel>
             )}
+
+            {/* PREDICTIONS */}
+            <TabPanel>
+              <ContestPredictionsTab contest={contest} />
+            </TabPanel>
           </div>
         </TabGroup>
       </div>
