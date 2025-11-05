@@ -52,7 +52,7 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
   // Combined subsidy from contract
   const prizeBonus =
-    primaryPrizePoolSubsidy && totalPrimaryPositionSubsidies
+    primaryPrizePoolSubsidy !== undefined && totalPrimaryPositionSubsidies !== undefined
       ? Math.round(Number(formatUnits(primaryPrizePoolSubsidy + totalPrimaryPositionSubsidies, 18)))
       : 0;
 

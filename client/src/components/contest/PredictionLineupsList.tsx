@@ -105,12 +105,16 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       {/* Total Pot Header */}
       <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-300 rounded-lg p-4">
         <div className="text-center">
-          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-            Winner Market Pool
-          </div>
           <div className="text-2xl font-bold text-purple-700">
             ${marketStats.totalPot.toFixed(2)}
           </div>
+          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mt-1">
+            Prediction Pool - Winning Lineup
+          </div>
+          {/* 
+          <div className="text-xs text-gray-600">
+            Select the winning lineup to win the prize pool.
+          </div> */}
         </div>
       </div>
 
@@ -132,7 +136,9 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                 key={entry.entryId}
                 onClick={() => !secondaryActionsLocked && setSelectedEntryId(entry.entryId)}
                 className={`bg-white border-gray-200 border rounded-lg p-3 ${
-                  secondaryActionsLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md"
+                  secondaryActionsLocked
+                    ? "opacity-60 cursor-not-allowed"
+                    : "cursor-pointer hover:shadow-md"
                 } transition-all`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -144,7 +150,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                   {/* Right - CTA & Winnings */}
                   <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                    <button 
+                    <button
                       disabled={secondaryActionsLocked}
                       className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >

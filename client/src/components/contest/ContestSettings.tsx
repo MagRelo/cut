@@ -195,6 +195,16 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
+  // const accumulatedOracleFee = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: ContestContract.abi,
+  //   functionName: "accumulatedOracleFee",
+  //   args: [],
+  //   query: {
+  //     enabled: !!contest?.address,
+  //   },
+  // }).data as bigint | undefined;
+
   // Map contract state number to readable string
   const getStatusLabel = (state: number | undefined) => {
     if (state === undefined) return "Unknown";
@@ -349,30 +359,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
         {/* Contract panel */}
         <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
-            {/* Contract Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Contract State:</span>
-              <span className={`${getStatusColor(contractState)}`}>
-                {getStatusLabel(contractState)}
-              </span>
-            </div>
-
-            {/* Deposit Amount */}
-            {primaryDepositAmount && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Entry Fee:</span>
-                <span className="text-gray-900">
-                  {Number(primaryDepositAmount) / Math.pow(10, platformToken?.decimals || 6)}{" "}
-                  {platformToken?.symbol}
-                </span>
-              </div>
-            )}
-
             {/* Contract Balance */}
             {contractBalance !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Contract Balance:</span>
-                <span className="text-gray-900">
+                <span className="text-gray-900 font-semibold">
                   {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
                   {contractBalance.symbol}
                 </span>
@@ -382,7 +373,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Primary Side Balance (Total) */}
             {primarySideBalance !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Primary Side Balance:</span>
+                <span className="text-gray-600">Contest Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
                   {Number(primarySideBalance) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
@@ -426,7 +417,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Secondary Prize Pool */}
             {secondaryPrizePool !== undefined && platformToken && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Secondary Prize Pool:</span>
+                <span className="text-gray-600">Prediction Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
                   {Number(secondaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
                   {platformToken.symbol}
@@ -434,16 +425,13 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Current vs Target Ratio */}
-            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
+            {/* Current Ratio */}
+            {currentPrimaryShareBps !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Primary/Secondary Ratio:</span>
+                <span className="text-gray-600">Contest/Prediction Ratio:</span>
                 <span className="text-gray-900">
                   {(Number(currentPrimaryShareBps) / 100).toFixed(2)}% /{" "}
                   {(100 - Number(currentPrimaryShareBps) / 100).toFixed(2)}%
-                  <span className="text-gray-500 ml-1">
-                    (target: {(Number(targetPrimaryShareBps) / 100).toFixed(2)}%)
-                  </span>
                 </span>
               </div>
             )}
@@ -461,6 +449,27 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
+            <hr className="my-2" />
+
+            {/* Contract Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Contract State:</span>
+              <span className={`${getStatusColor(contractState)}`}>
+                {getStatusLabel(contractState)}
+              </span>
+            </div>
+
+            {/* Target Ratio */}
+            {targetPrimaryShareBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Target Ratio:</span>
+                <span className="text-gray-900">
+                  {(Number(targetPrimaryShareBps) / 100).toFixed(2)}% /{" "}
+                  {(100 - Number(targetPrimaryShareBps) / 100).toFixed(2)}%
+                </span>
+              </div>
+            )}
+
             {/* Max Cross Subsidy BPS */}
             {maxCrossSubsidyBps !== undefined && (
               <div className="flex items-center gap-2">
@@ -469,11 +478,13 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Oracle Fee */}
-            {contractOracleFee !== undefined && (
+            {/* Expiration */}
+            {expiryTimestamp && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Oracle Fee:</span>
-                <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
+                <span className="text-gray-600">Expires:</span>
+                <span className="text-gray-900">
+                  {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
+                </span>
               </div>
             )}
 
@@ -490,15 +501,24 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Expiration */}
-            {expiryTimestamp && (
+            {/* Oracle Fee */}
+            {contractOracleFee !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Expires:</span>
-                <span className="text-gray-900">
-                  {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
-                </span>
+                <span className="text-gray-600">Oracle Fee:</span>
+                <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
               </div>
             )}
+
+            {/* Accumulated Oracle Fee */}
+            {/* {accumulatedOracleFee !== undefined && platformToken && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Accumulated:</span>
+                <span className="text-gray-900">
+                  {Number(accumulatedOracleFee) / Math.pow(10, platformToken.decimals)}{" "}
+                  {platformToken.symbol}
+                </span>
+              </div>
+            )} */}
           </div>
         </div>
 

@@ -103,6 +103,12 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Primary prize pool - sum of all primary participant entry deposits
     uint256 public primaryPrizePool;
 
+    /// @notice Cross-subsidy from secondary to primary prize pool (allocated after position bonuses)
+    uint256 public primaryPrizePoolSubsidy;
+
+    /// @notice Track cross-subsidy amount from primary deposits that was redirected to the secondary pool per entry
+    mapping(uint256 => uint256) public primaryToSecondarySubsidy;
+
     /// @notice Prize pool payouts for each entry after settlement
     mapping(uint256 => uint256) public primaryPrizePoolPayouts;
 
@@ -117,20 +123,14 @@ contract Contest is ERC1155, ReentrancyGuard {
     /// @notice Secondary prize pool - collateral backing secondary position tokens (~85% of deposits)
     uint256 public secondaryPrizePool;
 
-    /// @notice Cross-subsidy from secondary to primary prize pool (allocated after position bonuses)
-    uint256 public primaryPrizePoolSubsidy;
+    /// @notice Accumulated bonus per entry from secondary deposits (allocated per-deposit based on positionBonusShareBps)
+    mapping(uint256 => uint256) public primaryPositionSubsidy;
 
     /// @notice Aggregate of all outstanding primary position subsidies (sum of primaryPositionSubsidy values)
     uint256 public totalPrimaryPositionSubsidies;
 
-    /// @notice Accumulated bonus per entry from secondary deposits (allocated per-deposit based on positionBonusShareBps)
-    mapping(uint256 => uint256) public primaryPositionSubsidy;
-
     /// @notice Track deposits per secondary participant per entry (for withdrawal refunds)
     mapping(address => mapping(uint256 => uint256)) public secondaryDepositedPerEntry;
-
-    /// @notice Track cross-subsidy amount from primary deposits that was redirected to the secondary pool per entry
-    mapping(uint256 => uint256) public primaryToSecondarySubsidy;
 
     /// @notice Track cross-subsidy amounts from secondary deposits that were redirected to the primary pool per participant/entry
     mapping(address => mapping(uint256 => uint256)) public secondaryToPrimarySubsidy;
