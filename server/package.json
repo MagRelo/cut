@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node dist/src/index.js",
     "start:prod": "NODE_ENV=production node dist/src/index.js",
+    "start:cron": "node dist/src/cron-app.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && cp -r src/contracts/* dist/src/contracts/",
     "test": "vitest",
