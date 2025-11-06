@@ -130,7 +130,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
           {/* CONTESTS TAB */}
           <TabPanel>
-            <div className="px-2 mt-3 pb-2">
+            <div className="px-2 mt-3 pb-2 space-y-2">
               {contests.length > 0 ? (
                 contests.map((contestInfo) => {
                   // Determine if position is "in the money"
@@ -153,7 +153,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                       </div>
 
                       {/* Contest Card */}
-                      <div className="flex-1 border bg-white rounded-sm">
+                      <div className="">
                         <ContestCard contest={contestInfo.contest} />
                       </div>
                     </div>
