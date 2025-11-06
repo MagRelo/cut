@@ -104,7 +104,6 @@ model Player {
   
   // Relations
   tournamentPlayers TournamentPlayer[]
-  tournamentTimelines TournamentPlayerTimeline[]
 
   @@index([pga_pgaTourId])
   @@index([isActive])
@@ -139,7 +138,6 @@ model Tournament {
   tournamentPlayers  TournamentPlayer[]
   tournamentLineups  TournamentLineup[]
   contests          Contest[]
-  playerTimelines   TournamentPlayerTimeline[]
 
   @@index([pgaTourId])
   @@index([status])
@@ -173,21 +171,22 @@ model TournamentPlayer {
   @@index([playerId])
 }
 
-model TournamentPlayerTimeline {
+model ContestLineupTimeline {
   id                String           @id @default(cuid())
-  tournamentId      String
-  playerId          String
+  contestLineupId   String
+  contestId         String
   timestamp         DateTime
   roundNumber       Int
   score             Int
-  position          Int?
+  position          Int
   createdAt         DateTime         @default(now())
   
   // Relations
-  tournament        Tournament       @relation(fields: [tournamentId], references: [id])
-  player            Player           @relation(fields: [playerId], references: [id])
+  contestLineup     ContestLineup    @relation(fields: [contestLineupId], references: [id])
+  contest           Contest          @relation(fields: [contestId], references: [id])
 
-  @@index([tournamentId, playerId, timestamp])
+  @@index([contestId, timestamp])
+  @@index([contestLineupId, timestamp])
 }
 
 model TournamentLineup {
@@ -239,6 +238,7 @@ model Contest {
   tournament      Tournament       @relation(fields: [tournamentId], references: [id])
   userGroup       UserGroup?       @relation(fields: [userGroupId], references: [id])
   contestLineups  ContestLineup[]
+  timelines       ContestLineupTimeline[]
 
   @@index([tournamentId])
   @@index([userGroupId])
@@ -263,6 +263,7 @@ model ContestLineup {
   contest           Contest          @relation(fields: [contestId], references: [id])
   tournamentLineup  TournamentLineup @relation(fields: [tournamentLineupId], references: [id])
   user              User             @relation(fields: [userId], references: [id])
+  timelines         ContestLineupTimeline[]
 
   @@unique([contestId, tournamentLineupId])
   @@unique([contestId, entryId])

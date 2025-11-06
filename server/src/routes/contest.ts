@@ -129,6 +129,110 @@ contestRouter.get("/:id", async (c) => {
   }
 });
 
+// Get contest timeline data
+contestRouter.get("/:id/timeline", async (c) => {
+  try {
+    const contestId = c.req.param("id");
+
+    // Verify contest exists
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { id: true },
+    });
+
+    if (!contest) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    // Fetch all timeline snapshots for this contest
+    const snapshots = await prisma.contestLineupTimeline.findMany({
+      where: {
+        contestId,
+      },
+      include: {
+        contestLineup: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+            tournamentLineup: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        timestamp: "asc",
+      },
+    });
+
+    // Helper function to generate distinct colors for each lineup
+    const generateColor = (index: number): string => {
+      const colors = [
+        "#3b82f6", // blue
+        "#ef4444", // red
+        "#10b981", // green
+        "#f59e0b", // amber
+        "#8b5cf6", // violet
+        "#ec4899", // pink
+        "#06b6d4", // cyan
+        "#f97316", // orange
+        "#6366f1", // indigo
+        "#14b8a6", // teal
+      ];
+      return colors[index % colors.length] || "#3b82f6";
+    };
+
+    // Group snapshots by contest lineup
+    const lineupMap = new Map();
+
+    snapshots.forEach((snapshot: any) => {
+      const lineupId = snapshot.contestLineupId;
+
+      if (!lineupMap.has(lineupId)) {
+        // Use tournament lineup name and user name for display
+        const userName = snapshot.contestLineup.user.name;
+        const lineupName = snapshot.contestLineup.tournamentLineup.name;
+        const displayName = `${userName} - ${lineupName}`;
+
+        lineupMap.set(lineupId, {
+          name: displayName,
+          dataPoints: [],
+        });
+      }
+
+      const lineup = lineupMap.get(lineupId);
+      lineup.dataPoints.push({
+        timestamp: snapshot.timestamp.toISOString(),
+        score: snapshot.score,
+        roundNumber: snapshot.roundNumber,
+      });
+    });
+
+    // Convert to array and sort by latest score (descending)
+    const teams = Array.from(lineupMap.entries())
+      .map(([_, lineup], index) => ({
+        name: lineup.name,
+        color: generateColor(index),
+        dataPoints: lineup.dataPoints,
+      }))
+      .sort((a, b) => {
+        const aLatestScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
+        const bLatestScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
+        return bLatestScore - aLatestScore;
+      });
+
+    return c.json({ teams });
+  } catch (error) {
+    console.error("Error fetching contest timeline:", error);
+    return c.json({ error: "Failed to fetch contest timeline" }, 500);
+  }
+});
+
 // Create new contest
 contestRouter.post("/", requireAuth, async (c) => {
   try {
