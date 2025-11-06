@@ -10,7 +10,7 @@ export async function updateTournament() {
     });
 
     if (!currentTournament) {
-      console.error("No current tournament found");
+      console.error("[CRON] No current tournament found");
       return;
     }
 
@@ -33,10 +33,8 @@ export async function updateTournament() {
         timezone: tournamentData.timezone,
       },
     });
-
-    console.log(`Updated tournament data for '${currentTournament.name}'.`);
   } catch (error) {
-    console.error("Error in updateTournamentPlayerScores:", error);
+    console.error("[CRON] Error in updateTournament:", error);
     throw error;
   }
 }

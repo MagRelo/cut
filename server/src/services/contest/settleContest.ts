@@ -16,7 +16,7 @@ import {
 
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
-    console.log(`[settleContest] Starting settlement for contest ${contestId}`);
+    // console.log(`[settleContest] Starting settlement for contest ${contestId}`);
 
     // Fetch contest from database with all lineup data
     const contest = await prisma.contest.findUnique({

@@ -16,7 +16,7 @@ async function processPlayerBatch(
   const results = await Promise.all(
     players.map(async (tournamentPlayer) => {
       if (!tournamentPlayer.player.pga_pgaTourId) {
-        console.warn(`- No PGA Tour ID found for player ${tournamentPlayer.player.id}`);
+        console.warn(`[CRON] No PGA Tour ID found for player ${tournamentPlayer.player.id}`);
         return null;
       }
 
@@ -26,7 +26,7 @@ async function processPlayerBatch(
 
       if (!leaderboardPlayer) {
         console.warn(
-          `- No leaderboard player found for player ${tournamentPlayer.player.pga_pgaTourId}`
+          `[CRON] No leaderboard player found for player ${tournamentPlayer.player.pga_pgaTourId}`
         );
         return null;
       }
@@ -84,7 +84,7 @@ export async function updateTournamentPlayerScores() {
     });
 
     if (!currentTournament) {
-      console.error("updateTournamentPlayerScores: No current tournament found");
+      console.error("[CRON] No current tournament found");
       return;
     }
 
@@ -96,10 +96,6 @@ export async function updateTournamentPlayerScores() {
       },
     });
 
-    console.log(
-      `- updateTournamentPlayerScores: Found ${tournamentPlayers.length} tournament players.`
-    );
-
     // Get the current leaderboard
     const { players: leaderboardPlayers } = await getPgaLeaderboard();
 
@@ -107,11 +103,11 @@ export async function updateTournamentPlayerScores() {
     const updatedPlayerIds: string[] = [];
     for (let i = 0; i < tournamentPlayers.length; i += BATCH_SIZE) {
       const batch = tournamentPlayers.slice(i, i + BATCH_SIZE);
-      console.log(
-        `- Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(
-          tournamentPlayers.length / BATCH_SIZE
-        )}`
-      );
+      // console.log(
+      //   `- Processing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(
+      //     tournamentPlayers.length / BATCH_SIZE
+      //   )}`
+      // );
 
       const batchResults = await processPlayerBatch(batch, currentTournament, leaderboardPlayers);
       updatedPlayerIds.push(...batchResults);
@@ -121,12 +117,8 @@ export async function updateTournamentPlayerScores() {
         await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
       }
     }
-
-    console.log(
-      `- updateTournamentPlayerScores: Updated scores for ${updatedPlayerIds.length} players in '${currentTournament.name}'.`
-    );
   } catch (error) {
-    console.error("Error in updateTournamentPlayerScores:", error);
+    console.error("[CRON] Error in updateTournamentPlayerScores:", error);
     throw error;
   }
 }

@@ -10,7 +10,7 @@ import { settleContest } from '../contest/settleContest.js';
 import { type BatchOperationResult } from '../shared/types.js';
 
 export async function batchSettleContests(): Promise<BatchOperationResult> {
-  console.log('[batchSettleContests] Starting batch settlement');
+  // console.log('[batchSettleContests] Starting batch settlement');
 
   try {
     // Find all ACTIVE or LOCKED contests where tournament is COMPLETED
@@ -33,8 +33,6 @@ export async function batchSettleContests(): Promise<BatchOperationResult> {
       },
     });
 
-    console.log(`[batchSettleContests] Found ${contests.length} contests to settle`);
-
     if (contests.length === 0) {
       return {
         total: 0,
@@ -44,19 +42,21 @@ export async function batchSettleContests(): Promise<BatchOperationResult> {
       };
     }
 
-    // Settle each contest
-    const results = await Promise.all(
-      contests.map((contest) => {
-        console.log(`[batchSettleContests] Settling contest ${contest.id}: ${contest.name}`);
-        return settleContest(contest.id);
-      })
-    );
+    // Settle each contest sequentially to avoid nonce conflicts
+    const results = [];
+    for (const contest of contests) {
+      const result = await settleContest(contest.id);
+      results.push(result);
+      
+      // Add a small delay between transactions to ensure nonce propagation
+      if (result.success) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
 
     // Count successes and failures
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
-
-    console.log(`[batchSettleContests] Complete: ${succeeded} succeeded, ${failed} failed`);
 
     return {
       total: contests.length,
@@ -65,7 +65,7 @@ export async function batchSettleContests(): Promise<BatchOperationResult> {
       results,
     };
   } catch (error) {
-    console.error('[batchSettleContests] Error in batch operation:', error);
+    console.error('Error in batch operation:', error);
     throw error;
   }
 }

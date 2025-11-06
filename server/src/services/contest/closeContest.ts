@@ -11,7 +11,7 @@ import { ContestState, type OperationResult } from '../shared/types.js';
 
 export async function closeContest(contestId: string): Promise<OperationResult> {
   try {
-    console.log(`[closeContest] Starting close for contest ${contestId}`);
+    // console.log(`[closeContest] Starting close for contest ${contestId}`);
 
     // Fetch contest from database
     const contest = await prisma.contest.findUnique({

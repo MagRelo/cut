@@ -11,7 +11,7 @@ import { ContestState, type OperationResult } from '../shared/types.js';
 
 export async function lockContest(contestId: string): Promise<OperationResult> {
   try {
-    console.log(`[lockContest] Starting lock for contest ${contestId}`);
+    // console.log(`[lockContest] Starting lock for contest ${contestId}`);
 
     // Fetch contest from database
     const contest = await prisma.contest.findUnique({

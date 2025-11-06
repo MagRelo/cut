@@ -11,7 +11,7 @@ import { ContestState, type OperationResult } from '../shared/types.js';
 
 export async function activateContest(contestId: string): Promise<OperationResult> {
   try {
-    console.log(`[activateContest] Starting activation for contest ${contestId}`);
+    // console.log(`[activateContest] Starting activation for contest ${contestId}`);
 
     // Fetch contest from database
     const contest = await prisma.contest.findUnique({

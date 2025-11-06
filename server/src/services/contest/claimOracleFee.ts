@@ -11,7 +11,7 @@ import { type OperationResult } from '../shared/types.js';
 
 export async function claimOracleFee(contestId: string): Promise<OperationResult> {
   try {
-    console.log(`[claimOracleFee] Starting fee claim for contest ${contestId}`);
+    // console.log(`[claimOracleFee] Starting fee claim for contest ${contestId}`);
 
     // Fetch contest from database
     const contest = await prisma.contest.findUnique({

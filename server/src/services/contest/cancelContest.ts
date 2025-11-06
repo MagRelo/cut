@@ -10,7 +10,7 @@ import { ContestState, type OperationResult } from '../shared/types.js';
 
 export async function cancelContest(contestId: string, reason?: string): Promise<OperationResult> {
   try {
-    console.log(`[cancelContest] Starting cancellation for contest ${contestId}. Reason: ${reason || 'Not specified'}`);
+    // console.log(`[cancelContest] Starting cancellation for contest ${contestId}. Reason: ${reason || 'Not specified'}`);
 
     // Fetch contest from database
     const contest = await prisma.contest.findUnique({

@@ -32,7 +32,6 @@ export async function updateContestLineups() {
         },
       },
     });
-    console.log(`- Updating scores for ${contestLineups.length} contest lineups`);
 
     // update ContestLineup score
     const updateContestScorePromises = contestLineups.map(async (contestLineup: any) => {
@@ -57,7 +56,6 @@ export async function updateContestLineups() {
       });
     });
     await Promise.all(updateContestScorePromises);
-    console.log(`- Updated contest lineup scores`);
 
     // update contest lineup positions
     const contestLineupsByContest = contestLineups.reduce((acc: any, lineup: any) => {
@@ -91,7 +89,6 @@ export async function updateContestLineups() {
       }
     );
     await Promise.all(positionUpdatePromises);
-    console.log(`- Updated contest lineup positions`);
 
     // Save timeline snapshots for all contest lineups
     const currentRound = currentTournament.currentRound || 1;
@@ -110,12 +107,9 @@ export async function updateContestLineups() {
       await prisma.contestLineupTimeline.createMany({
         data: timelineSnapshots,
       });
-      console.log(`- Saved ${timelineSnapshots.length} timeline snapshots`);
     }
-
-    console.log(`Updated tournament data for '${currentTournament.name}'.`);
   } catch (error) {
-    console.error("Error in updateTournamentPlayerScores:", error);
+    console.error("[CRON] Error in updateContestLineups:", error);
     throw error;
   }
 }

@@ -10,7 +10,7 @@ import { activateContest } from '../contest/activateContest.js';
 import { type BatchOperationResult } from '../shared/types.js';
 
 export async function batchActivateContests(): Promise<BatchOperationResult> {
-  console.log('[batchActivateContests] Starting batch activation');
+  // console.log('[batchActivateContests] Starting batch activation');
 
   try {
     // Find all OPEN contests where tournament is IN_PROGRESS or COMPLETED
@@ -33,7 +33,6 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
       },
     });
 
-    console.log(`[batchActivateContests] Found ${contests.length} contests to activate`);
 
     if (contests.length === 0) {
       return {
@@ -44,19 +43,21 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
       };
     }
 
-    // Activate each contest
-    const results = await Promise.all(
-      contests.map((contest) => {
-        console.log(`[batchActivateContests] Activating contest ${contest.id}: ${contest.name}`);
-        return activateContest(contest.id);
-      })
-    );
+    // Activate each contest sequentially to avoid nonce conflicts
+    const results = [];
+    for (const contest of contests) {
+      const result = await activateContest(contest.id);
+      results.push(result);
+      
+      // Add a small delay between transactions to ensure nonce propagation
+      if (result.success) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
 
     // Count successes and failures
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
-
-    console.log(`[batchActivateContests] Complete: ${succeeded} succeeded, ${failed} failed`);
 
     return {
       total: contests.length,

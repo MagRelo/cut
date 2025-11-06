@@ -12,6 +12,7 @@ import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
   private isEnabled: boolean;
+  private pipelineRunning: boolean = false;
 
   constructor(enabled: boolean = true) {
     this.isEnabled = enabled;
@@ -22,12 +23,14 @@ class CronScheduler {
     task: () => Promise<void | any>
   ): Promise<void> {
     try {
-      console.log(`[CRON] Starting job: ${jobName}`);
+      console.log(`[CRON] Starting ${jobName}...`);
       const result = await task();
-      
+
       // If the task returns a BatchOperationResult, log it
-      if (result && typeof result === 'object' && 'total' in result) {
-        console.log(`[CRON] Completed job: ${jobName} - ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`);
+      if (result && typeof result === "object" && "total" in result) {
+        console.log(
+          `[CRON] Completed job: ${jobName} - ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`
+        );
       } else {
         console.log(`[CRON] Completed job: ${jobName}`);
       }
@@ -74,6 +77,55 @@ class CronScheduler {
     }
   }
 
+  private async runDataUpdatePipeline(): Promise<void> {
+    // Prevent overlapping pipeline executions
+    if (this.pipelineRunning) {
+      console.log("[CRON] ⚠️  Pipeline already running, skipping this cycle");
+      return;
+    }
+
+    this.pipelineRunning = true;
+    const startTime = Date.now();
+    console.log(
+      `[CRON] ========== Starting Data Update Pipeline ${startTime.toLocaleString()} ==========`
+    );
+
+    try {
+      // Step 1: Update tournament data (always runs)
+      await this.executeWithErrorHandling("Update Tournament", updateTournament);
+
+      // Step 2: Activate contests that should be active (OPEN → ACTIVE)
+      await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
+
+      // Step 3-4: Update player scores and contest lineups (conditional on tournament status)
+      const shouldRunPlayerUpdates = await this.shouldRunPlayerUpdates();
+      if (shouldRunPlayerUpdates) {
+        // Update player scores first
+        await this.executeWithErrorHandling(
+          "Update Tournament Players",
+          updateTournamentPlayerScores
+        );
+
+        // Then update contest lineups (depends on player scores being updated)
+        // This also saves timeline snapshots
+        await this.executeWithErrorHandling("Update Contest Lineups", updateContestLineups);
+      }
+
+      // Step 5: Settle contests that should be settled (ACTIVE/LOCKED → SETTLED)
+      await this.executeWithErrorHandling("Settle Contests", batchSettleContests);
+
+      // Step 6: Close contests that should be closed (SETTLED → CLOSED)
+      await this.executeWithErrorHandling("Close Contests", batchCloseContests);
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[CRON] ========== Pipeline Complete (${duration}s) ==========`);
+    } catch (error) {
+      console.error("[CRON] Pipeline error:", error);
+    } finally {
+      this.pipelineRunning = false;
+    }
+  }
+
   public start(): void {
     if (!this.isEnabled) {
       // console.log("[CRON] Cron scheduler is disabled");
@@ -82,50 +134,12 @@ class CronScheduler {
 
     console.log("[CRON] Starting cron scheduler...");
 
-    // Job 1: Update tournament every 5 minutes
-    const updateTournamentJob = cron.schedule("*/5 * * * *", () => {
-      this.executeWithErrorHandling("Update Tournament", updateTournament);
+    // Main data update pipeline - runs every 5 minutes
+    // Executes jobs in sequence: Tournament → Activate → Players → Lineups → Settle → Close
+    const mainPipelineJob = cron.schedule("*/5 * * * *", () => {
+      this.runDataUpdatePipeline();
     });
-    this.jobs.set("updateTournament", updateTournamentJob);
-
-    // Job 2: Activate contests (OPEN → ACTIVE) every 5 minutes
-    const activateContestsJob = cron.schedule("*/5 * * * *", () => {
-      this.executeWithErrorHandling("Activate Contests", batchActivateContests);
-    });
-    this.jobs.set("batchActivateContests", activateContestsJob);
-
-    // Job 3: Settle contests (ACTIVE/LOCKED → SETTLED) every 5 minutes
-    const settleContestsJob = cron.schedule("*/5 * * * *", () => {
-      this.executeWithErrorHandling("Settle Contests", batchSettleContests);
-    });
-    this.jobs.set("batchSettleContests", settleContestsJob);
-
-    // Job 4: Close contests (SETTLED → CLOSED) every hour
-    const closeContestsJob = cron.schedule("0 * * * *", () => {
-      this.executeWithErrorHandling("Close Contests", batchCloseContests);
-    });
-    this.jobs.set("batchCloseContests", closeContestsJob);
-
-    // Job 5: Update player scores every 5 minutes (with conditional logic)
-    const updatePlayersJob = cron.schedule("*/5 * * * *", async () => {
-      const shouldRun = await this.shouldRunPlayerUpdates();
-      if (shouldRun) {
-        await this.executeWithErrorHandling(
-          "Update Tournament Players",
-          updateTournamentPlayerScores
-        );
-      }
-    });
-    this.jobs.set("updateTournamentPlayers", updatePlayersJob);
-
-    // Job 6: Update contest lineups every 5 minutes (with conditional logic)
-    const updateLineupsJob = cron.schedule("*/5 * * * *", async () => {
-      const shouldRun = await this.shouldRunPlayerUpdates();
-      if (shouldRun) {
-        await this.executeWithErrorHandling("Update Contest Lineups", updateContestLineups);
-      }
-    });
-    this.jobs.set("updateContestLineups", updateLineupsJob);
+    this.jobs.set("mainPipeline", mainPipelineJob);
 
     console.log("[CRON] All cron jobs scheduled successfully");
   }

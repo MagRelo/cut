@@ -11,7 +11,7 @@ import { getContestContract } from '../shared/contractClient.js';
 import { type BatchOperationResult } from '../shared/types.js';
 
 export async function batchCloseContests(): Promise<BatchOperationResult> {
-  console.log('[batchCloseContests] Starting batch close');
+  // console.log('[batchCloseContests] Starting batch close');
 
   try {
     // Find all SETTLED contests
@@ -29,8 +29,6 @@ export async function batchCloseContests(): Promise<BatchOperationResult> {
         chainId: true,
       },
     });
-
-    console.log(`[batchCloseContests] Found ${contests.length} SETTLED contests to check`);
 
     if (contests.length === 0) {
       return {
@@ -54,11 +52,9 @@ export async function batchCloseContests(): Promise<BatchOperationResult> {
           expiredContests.push(contest);
         }
       } catch (error) {
-        console.error(`[batchCloseContests] Error reading expiry for ${contest.id}:`, error);
+        console.error(`[CRON] Error reading expiry for contest ${contest.id}:`, error);
       }
     }
-
-    console.log(`[batchCloseContests] Found ${expiredContests.length} expired contests to close`);
 
     if (expiredContests.length === 0) {
       return {
@@ -69,19 +65,21 @@ export async function batchCloseContests(): Promise<BatchOperationResult> {
       };
     }
 
-    // Close each expired contest
-    const results = await Promise.all(
-      expiredContests.map((contest) => {
-        console.log(`[batchCloseContests] Closing contest ${contest.id}: ${contest.name}`);
-        return closeContest(contest.id);
-      })
-    );
+    // Close each expired contest sequentially to avoid nonce conflicts
+    const results = [];
+    for (const contest of expiredContests) {
+      const result = await closeContest(contest.id);
+      results.push(result);
+      
+      // Add a small delay between transactions to ensure nonce propagation
+      if (result.success) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
 
     // Count successes and failures
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
-
-    console.log(`[batchCloseContests] Complete: ${succeeded} succeeded, ${failed} failed`);
 
     return {
       total: expiredContests.length,
