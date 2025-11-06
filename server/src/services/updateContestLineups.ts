@@ -114,7 +114,7 @@ export async function updateContestLineups() {
     // Save timeline snapshots for all contest lineups
     const currentRound = currentTournament.currentRound || 1;
     const timestamp = new Date();
-    
+
     const timelineSnapshots = contestLineups.map((contestLineup: any) => ({
       contestLineupId: contestLineup.id,
       contestId: contestLineup.contestId,
