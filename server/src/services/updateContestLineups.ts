@@ -77,13 +77,34 @@ export async function updateContestLineups() {
           return scoreB - scoreA;
         });
 
-        // Update positions
-        const positionUpdates = sortedLineups.map((lineup, index) => {
-          return prisma.contestLineup.update({
-            where: { id: lineup.id },
-            data: { position: index + 1 },
-          });
-        });
+        // Update positions with tie handling
+        const positionUpdates: Promise<any>[] = [];
+        let currentPosition = 1;
+        let i = 0;
+
+        while (i < sortedLineups.length) {
+          const currentScore = sortedLineups[i].score ?? 0;
+          const tiedLineups: any[] = [];
+
+          // Collect all lineups with the same score
+          while (i < sortedLineups.length && (sortedLineups[i].score ?? 0) === currentScore) {
+            tiedLineups.push(sortedLineups[i]);
+            i++;
+          }
+
+          // Assign the same position to all tied lineups
+          for (const lineup of tiedLineups) {
+            positionUpdates.push(
+              prisma.contestLineup.update({
+                where: { id: lineup.id },
+                data: { position: currentPosition },
+              })
+            );
+          }
+
+          // Increment position by the number of tied players
+          currentPosition += tiedLineups.length;
+        }
 
         return Promise.all(positionUpdates);
       }
