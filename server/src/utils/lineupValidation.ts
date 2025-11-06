@@ -78,14 +78,14 @@ export async function isDuplicateLineup(
   });
 
   // Check if any lineup has the same player set
-  return userLineups.some((lineup) => {
+  return userLineups.some((lineup: typeof userLineups[number]) => {
     // Skip the lineup being updated
     if (excludeLineupId && lineup.id === excludeLineupId) {
       return false;
     }
 
     // Extract player IDs from this lineup
-    const lineupPlayerIds = lineup.players.map((p) => p.tournamentPlayer.playerId);
+    const lineupPlayerIds = lineup.players.map((p: typeof lineup.players[number]) => p.tournamentPlayer.playerId);
 
     // Compare normalized player sets
     return normalizePlayerSet(lineupPlayerIds) === normalized;
@@ -130,7 +130,7 @@ export async function isDuplicateInContest(
   });
 
   // Check if any contest lineup has the same player set
-  return contestLineups.some((contestLineup) => {
+  return contestLineups.some((contestLineup: typeof contestLineups[number]) => {
     // Skip the lineup being checked (if updating)
     if (excludeLineupId && contestLineup.tournamentLineupId === excludeLineupId) {
       return false;
@@ -138,7 +138,7 @@ export async function isDuplicateInContest(
 
     // Extract player IDs from this lineup
     const lineupPlayerIds = contestLineup.tournamentLineup.players.map(
-      (p) => p.tournamentPlayer.playerId
+      (p: typeof contestLineup.tournamentLineup.players[number]) => p.tournamentPlayer.playerId
     );
 
     // Compare normalized player sets
@@ -169,5 +169,5 @@ export async function getPlayerIdsFromLineup(tournamentLineupId: string): Promis
     throw new Error("Lineup not found");
   }
 
-  return lineup.players.map((p) => p.tournamentPlayer.playerId);
+  return lineup.players.map((p: typeof lineup.players[number]) => p.tournamentPlayer.playerId);
 }
