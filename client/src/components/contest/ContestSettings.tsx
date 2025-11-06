@@ -155,15 +155,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   }).data as bigint | undefined;
 
   // Configuration Parameters
-  const positionBonusShareBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "positionBonusShareBps",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
+  // const positionBonusShareBps = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: ContestContract.abi,
+  //   functionName: "positionBonusShareBps",
+  //   args: [],
+  //   query: {
+  //     enabled: !!contest?.address,
+  //   },
+  // }).data as bigint | undefined;
 
   const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -175,15 +175,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const maxCrossSubsidyBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "maxCrossSubsidyBps",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
+  // const maxCrossSubsidyBps = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: ContestContract.abi,
+  //   functionName: "maxCrossSubsidyBps",
+  //   args: [],
+  //   query: {
+  //     enabled: !!contest?.address,
+  //   },
+  // }).data as bigint | undefined;
 
   const currentPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -425,19 +425,66 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Current Ratio */}
-            {currentPrimaryShareBps !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Contest/Prediction Ratio:</span>
-                <span className="text-gray-900">
-                  {(Number(currentPrimaryShareBps) / 100).toFixed(2)}% /{" "}
-                  {(100 - Number(currentPrimaryShareBps) / 100).toFixed(2)}%
-                </span>
+            <hr className="my-2" />
+
+            {/* Current Ratio - Visual Slider */}
+            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
+              <div className="flex flex-col gap-1">
+                <span className="text-gray-600 mb-2">Rebalancing Ratio:</span>
+
+                {/* Slider Container */}
+                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg border border-gray-300">
+                  {/* Target Indicator Line */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
+                    style={{ left: `${Number(targetPrimaryShareBps) / 100}%` }}
+                  >
+                    {/* <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-400 rounded-full border-2 border-white" /> */}
+                    {/* <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-700 font-semibold">
+                      Target
+                    </div> */}
+                  </div>
+
+                  {/* Current Position Indicator */}
+                  <div
+                    className="absolute top-0 bottom-0 w-1 bg-green-500 z-20 rounded-sm"
+                    style={{ left: `${Number(currentPrimaryShareBps) / 100}%` }}
+                  >
+                    <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-md" />
+                    {/* <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-green-700 font-semibold bg-white px-1 rounded border border-green-300">
+                      Current: {(Number(currentPrimaryShareBps) / 100).toFixed(1)}%
+                    </div> */}
+                  </div>
+
+                  {/* Labels at the ends */}
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
+                    Contest
+                  </div>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-purple-700 font-semibold">
+                    Prediction
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-2">
+                  <span>0%</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                      <span>Target</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>Current</span>
+                    </div>
+                  </div>
+                  <span>100%</span>
+                </div>
               </div>
             )}
 
             {/* Position Bonus Share */}
-            {positionBonusShareBps !== undefined && (
+            {/* {positionBonusShareBps !== undefined && (
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Position Bonus Share:</span>
@@ -447,7 +494,26 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   Allocated directly to entry owners from secondary deposits
                 </div>
               </div>
-            )}
+            )} */}
+
+            {/* Target Ratio */}
+            {/* {targetPrimaryShareBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Target Ratio:</span>
+                <span className="text-gray-900">
+                  {(Number(targetPrimaryShareBps) / 100).toFixed(2)}% /{" "}
+                  {(100 - Number(targetPrimaryShareBps) / 100).toFixed(2)}%
+                </span>
+              </div>
+            )} */}
+
+            {/* Max Cross Subsidy BPS */}
+            {/* {maxCrossSubsidyBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Max Cross-Subsidy:</span>
+                <span className="text-gray-900">{Number(maxCrossSubsidyBps) / 100}%</span>
+              </div>
+            )} */}
 
             <hr className="my-2" />
 
@@ -458,35 +524,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                 {getStatusLabel(contractState)}
               </span>
             </div>
-
-            {/* Target Ratio */}
-            {targetPrimaryShareBps !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Target Ratio:</span>
-                <span className="text-gray-900">
-                  {(Number(targetPrimaryShareBps) / 100).toFixed(2)}% /{" "}
-                  {(100 - Number(targetPrimaryShareBps) / 100).toFixed(2)}%
-                </span>
-              </div>
-            )}
-
-            {/* Max Cross Subsidy BPS */}
-            {maxCrossSubsidyBps !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Max Cross-Subsidy:</span>
-                <span className="text-gray-900">{Number(maxCrossSubsidyBps) / 100}%</span>
-              </div>
-            )}
-
-            {/* Expiration */}
-            {expiryTimestamp && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Expires:</span>
-                <span className="text-gray-900">
-                  {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
-                </span>
-              </div>
-            )}
 
             {/* Oracle Address */}
             {oracleAddress && chainId && (
@@ -519,6 +556,16 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                 </span>
               </div>
             )} */}
+
+            {/* Expiration */}
+            {expiryTimestamp && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Contract Expires:</span>
+                <span className="text-gray-900">
+                  {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
