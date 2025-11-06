@@ -45,5 +45,6 @@ export function useContestsQuery(tournamentId: string | undefined, chainId: numb
     staleTime: 30 * 1000, // 30 seconds - contest list changes frequently
     refetchOnWindowFocus: true,
     retry: 1,
+    placeholderData: (previousData) => previousData, // Keep previous data while refetching
   });
 }

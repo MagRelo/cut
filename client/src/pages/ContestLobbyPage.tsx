@@ -93,13 +93,21 @@ export const ContestLobby: React.FC = () => {
         </div>
 
         {/* settings button */}
-        <div className="flex justify-start px-3">
+        <div className="flex justify-start px-2 my-1">
           <button
             type="button"
             onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
             aria-label="Contest Settings"
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-4 w-4 text-gray-400"
+            >
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+            </svg>
             <span className="font-display text-gray-400">Settings</span>
           </button>
         </div>
@@ -118,7 +126,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Fantasy Contest
+              Lineups
             </Tab>
             {primaryActionsLocked && (
               <Tab

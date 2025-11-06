@@ -28,7 +28,10 @@ export const LineupList: React.FC = () => {
   // Get chain ID and fetch contests with full contestLineups data
   const { chainId: connectedChainId } = useAccount();
   const chainId = connectedChainId ?? baseSepolia.id;
-  const { data: contests = [] } = useContestsQuery(currentTournament?.id, chainId);
+  const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
+    currentTournament?.id,
+    chainId
+  );
 
   // Extract user's contest lineups from all contests
   const userContestLineups = useMemo(() => {
@@ -151,19 +154,24 @@ export const LineupList: React.FC = () => {
           )}
 
       {/* tournament in progress message */}
-      {!isTournamentEditable && uniqueUserLineups && uniqueUserLineups.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-gray-600 text-lg">🏌️</span>
-            <div className="text-lg font-semibold text-gray-900 font-display">
-              Tournament {tournamentStatusDisplay}!
+      {!isTournamentEditable &&
+        !isContestsLoading &&
+        uniqueUserLineups &&
+        uniqueUserLineups.length === 0 && (
+          <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-gray-600 text-lg">🏌️</span>
+              <div className="text-lg font-semibold text-gray-900 font-display">
+                Tournament {tournamentStatusDisplay}!
+              </div>
+            </div>
+            <div className="text-sm text-gray-600">
+              <p className="mb-2">
+                Check back when the next tournament opens to create your lineup.
+              </p>
             </div>
           </div>
-          <div className="text-sm text-gray-600">
-            <p className="mb-2">Check back when the next tournament opens to create your lineup.</p>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* Create/Add Lineup Button */}
       {isTournamentEditable && (
