@@ -46,6 +46,21 @@ export const LineupList: React.FC = () => {
     return contestLineups;
   }, [contests, user?.id]);
 
+  // Get unique lineups (deduplicated by tournamentLineupId)
+  const uniqueUserLineups = useMemo(() => {
+    if (!userContestLineups.length) return [];
+
+    // Use a Map to deduplicate by tournamentLineupId
+    const lineupMap = new Map<string, ContestLineup>();
+    userContestLineups.forEach((contestLineup) => {
+      if (!lineupMap.has(contestLineup.tournamentLineupId)) {
+        lineupMap.set(contestLineup.tournamentLineupId, contestLineup);
+      }
+    });
+
+    return Array.from(lineupMap.values());
+  }, [userContestLineups]);
+
   // Function to get contests for a specific lineup
   const getContestsForLineup = (lineupId: string) => {
     return contests
@@ -116,13 +131,13 @@ export const LineupList: React.FC = () => {
               ))}
             </div>
           )
-        : // When not editable, show ContestLineup cards
-          userContestLineups &&
-          userContestLineups.length > 0 && (
+        : // When not editable, show unique ContestLineup cards (deduplicated by tournamentLineupId)
+          uniqueUserLineups &&
+          uniqueUserLineups.length > 0 && (
             <div>
-              {userContestLineups.map((contestLineup) => (
+              {uniqueUserLineups.map((contestLineup) => (
                 <div
-                  key={contestLineup.id}
+                  key={contestLineup.tournamentLineupId}
                   className="rounded-sm border border-gray-200 bg-white p-4 pb-6 mt-4"
                 >
                   <LineupContestCard
@@ -136,7 +151,7 @@ export const LineupList: React.FC = () => {
           )}
 
       {/* tournament in progress message */}
-      {!isTournamentEditable && userContestLineups && userContestLineups.length === 0 && (
+      {!isTournamentEditable && uniqueUserLineups && uniqueUserLineups.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-gray-600 text-lg">🏌️</span>

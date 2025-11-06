@@ -23,25 +23,23 @@ class CronScheduler {
     task: () => Promise<void | any>
   ): Promise<void> {
     try {
-      console.log(`[CRON] Starting ${jobName}...`);
+      console.log(`[CRON] ${jobName} - Starting...`);
       const result = await task();
 
       // If the task returns a BatchOperationResult, log it
       if (result && typeof result === "object" && "total" in result) {
         console.log(
-          `[CRON] Completed job: ${jobName} - ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`
+          `[CRON] ${jobName} - Completed: ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`
         );
       } else {
-        console.log(`[CRON] Completed job: ${jobName}`);
+        console.log(`[CRON] ${jobName} - Completed`);
       }
     } catch (error) {
-      console.error(`[CRON] Error in job ${jobName}:`, error);
+      console.error(`[CRON] ${jobName} - Error:`, error);
 
       // If it's a connection error, wait before continuing (hardcoded 30 seconds)
       if ((error as any)?.code === "P2037" || (error as any)?.message?.includes("connection")) {
-        console.log(
-          `[CRON] Connection error in ${jobName}, waiting 30 seconds before next attempt`
-        );
+        console.log(`[CRON] ${jobName} - Connection error, waiting 30 seconds before next attempt`);
         await new Promise((resolve) => setTimeout(resolve, 30000));
       }
     }
@@ -55,7 +53,7 @@ class CronScheduler {
       });
 
       if (!currentTournament) {
-        console.log("[CRON] No tournament is active, skipping player updates");
+        console.log("[CRON] Player Updates - Skipped: No tournament is active");
         return false;
       }
 
@@ -66,7 +64,7 @@ class CronScheduler {
 
       if (!shouldRun) {
         console.log(
-          `[CRON] Tournament status: ${currentTournament.status}, skipping player updates`
+          `[CRON] Player Updates - Skipped: Tournament status is ${currentTournament.status}`
         );
       }
 
@@ -80,14 +78,14 @@ class CronScheduler {
   private async runDataUpdatePipeline(): Promise<void> {
     // Prevent overlapping pipeline executions
     if (this.pipelineRunning) {
-      console.log("[CRON] ⚠️  Pipeline already running, skipping this cycle");
+      console.log("[CRON] Data Pipeline - Skipped: Pipeline already running");
       return;
     }
 
     this.pipelineRunning = true;
     const startTime = Date.now();
     console.log(
-      `[CRON] ========== Starting Data Update Pipeline ${startTime.toLocaleString()} ==========`
+      `[CRON] ========== Starting Data Update Pipeline (${new Date().toISOString()}) ==========`
     );
 
     try {
