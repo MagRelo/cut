@@ -1,9 +1,6 @@
 import dotenv from "dotenv";
-import { serve } from "@hono/node-server";
-import app from "./app.js";
-import CronScheduler from "./cron/scheduler.js";
 
-// Load environment variables, .env as fallback
+// Load environment variables FIRST, before any other imports
 const envFile =
   process.env.NODE_ENV === "test"
     ? ".env.test"
@@ -12,6 +9,11 @@ const envFile =
     : ".env.development";
 dotenv.config({ path: envFile });
 dotenv.config({ path: ".env" });
+
+// Import other modules after env vars are loaded
+import { serve } from "@hono/node-server";
+import app from "./app.js";
+import CronScheduler from "./cron/scheduler.js";
 const requiredEnvVars = [
   "DATABASE_URL",
   "ORACLE_ADDRESS",
