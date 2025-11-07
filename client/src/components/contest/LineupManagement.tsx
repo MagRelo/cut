@@ -5,7 +5,7 @@ import { useReadContract } from "wagmi";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
-import { useLineup } from "../../contexts/LineupContext";
+import { useLineupData } from "../../hooks/useLineupData";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useJoinContest, useLeaveContest } from "../../hooks/useContestMutations";
@@ -49,7 +49,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 };
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
-  const { lineups, getLineups } = useLineup();
+  const { lineups, getLineups } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();

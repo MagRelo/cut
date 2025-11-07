@@ -12,7 +12,6 @@ import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useT
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import { TournamentProvider } from "./contexts/TournamentContext";
-import { LineupProvider } from "./contexts/LineupContext";
 
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
@@ -55,11 +54,10 @@ export const App: React.FC = () => {
           <PortoAuthProvider>
             <Router>
               <TournamentProvider>
-                <LineupProvider>
-                  <div className="min-h-screen bg-gray-100 flex flex-col">
-                    {/* TODO: Remove this when we're ready to go live */}
-                    {/* <MaintenanceOverlay /> */}
-                    <div className="flex flex-col flex-grow">
+                <div className="min-h-screen bg-gray-100 flex flex-col">
+                  {/* TODO: Remove this when we're ready to go live */}
+                  {/* <MaintenanceOverlay /> */}
+                  <div className="flex flex-col flex-grow">
                     <div className="container mx-auto md:py-8">
                       <div className="max-w-2xl mx-auto">
                         <TournamentHeaderPanel />
@@ -120,9 +118,8 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                    <Footer />
-                  </div>
-                </LineupProvider>
+                  <Footer />
+                </div>
               </TournamentProvider>
             </Router>
           </PortoAuthProvider>

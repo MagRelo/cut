@@ -4,7 +4,7 @@ import { useAccount } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
 import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
-import { useLineup } from "../contexts/LineupContext";
+import { useLineupData } from "../hooks/useLineupData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -23,7 +23,7 @@ export const LineupList: React.FC = () => {
     isTournamentEditable,
     tournamentStatusDisplay,
   } = useTournament();
-  const { lineups, lineupError, getLineups } = useLineup();
+  const { lineups, lineupError, getLineups } = useLineupData();
 
   // Get chain ID and fetch contests with full contestLineups data
   const { chainId: connectedChainId } = useAccount();

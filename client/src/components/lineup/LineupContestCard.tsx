@@ -153,7 +153,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                       </div>
 
                       {/* Contest Card */}
-                      <div className="">
+                      <div className="flex-1 min-w-0">
                         <ContestCard contest={contestInfo.contest} />
                       </div>
                     </div>

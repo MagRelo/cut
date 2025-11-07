@@ -5,7 +5,7 @@ import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 
 import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
-import { useLineup } from "../../contexts/LineupContext";
+import { useLineupData } from "../../hooks/useLineupData";
 import { ErrorMessage } from "../common/ErrorMessage";
 
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
@@ -46,7 +46,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     lineupError,
     lineups,
     getLineups,
-  } = useLineup();
+  } = useLineupData();
 
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
