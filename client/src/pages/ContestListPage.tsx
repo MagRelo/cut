@@ -6,6 +6,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useTournamentData } from "../hooks/useTournamentData";
+import { useContestsQuery } from "../hooks/useContestQuery";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -19,9 +20,13 @@ export const Contests: React.FC = () => {
 
   // Single query fetches both tournament and contests - no duplicate requests!
   const { data, isLoading, error: fetchError } = useTournamentData();
+  const tournamentId = data?.tournament?.id;
   // const tournament = data?.tournament ?? null;
   const allContests = data?.contests;
   const error = fetchError?.message ?? null;
+
+  // Fetch contests with full lineup data to determine user participation
+  const { data: contestsWithLineups = [] } = useContestsQuery(tournamentId, chainId);
 
   // Filter contests by chain ID client-side
   const contests = useMemo(() => {
@@ -38,14 +43,20 @@ export const Contests: React.FC = () => {
   }, [contests]);
 
   // Separate contests into user's contests and all contests, then sort
+  const userContestIds = useMemo(() => {
+    if (!user?.id) return [];
+
+    return contestsWithLineups
+      .filter((contest) => contest.contestLineups?.some((lineup) => lineup.userId === user.id))
+      .map((contest) => contest.id);
+  }, [contestsWithLineups, user?.id]);
+
   const userContests = useMemo(() => {
-    return sortedContests?.filter((contest) => {
-      if (contest.contestLineups) {
-        return contest.contestLineups.some((lineup) => lineup.userId === user?.id);
-      }
-      return false;
-    });
-  }, [sortedContests, user?.id]);
+    if (userContestIds.length === 0) return [];
+
+    const contestIdSet = new Set(userContestIds);
+    return sortedContests?.filter((contest) => contestIdSet.has(contest.id)) ?? [];
+  }, [sortedContests, userContestIds]);
 
   // Update selected tab when data changes
   useEffect(() => {
