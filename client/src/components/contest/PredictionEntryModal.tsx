@@ -25,6 +25,7 @@ interface PredictionEntryModalProps {
   contest: Contest;
   entryId: string | null;
   entryData: EntryData[];
+  secondaryPrizePoolFormatted: string;
 }
 
 export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
@@ -33,6 +34,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   contest,
   entryId,
   entryData,
+  secondaryPrizePoolFormatted,
 }) => {
   const { platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const [amount, setAmount] = useState<string>("10");
@@ -47,10 +49,15 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   const userName = lineup?.user?.name || "Unknown";
   const lineupName = lineup?.tournamentLineup?.name || "Lineup";
 
-  // Calculate total prize pool from all entry supplies
-  const totalPrizePool = entryData.reduce((sum, entry) => {
-    return sum + parseFloat(entry.totalSupplyFormatted);
-  }, 0);
+  // Use the on-chain secondary prize pool as the source of truth
+  const parsedSecondaryPrizePool = parseFloat(secondaryPrizePoolFormatted);
+
+  // Fallback to derived sum only if the formatted value cannot be parsed
+  const totalPrizePool = Number.isFinite(parsedSecondaryPrizePool)
+    ? parsedSecondaryPrizePool
+    : entryData.reduce((sum, entry) => {
+        return sum + parseFloat(entry.totalSupplyFormatted);
+      }, 0);
 
   // Calculate opportunity metrics
   const calculateOpportunityMetrics = () => {

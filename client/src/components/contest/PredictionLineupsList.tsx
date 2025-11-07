@@ -189,6 +189,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         contest={contest}
         entryId={selectedEntryId}
         entryData={entryData}
+        secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
       />
     </div>
   );
