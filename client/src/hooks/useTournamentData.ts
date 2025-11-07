@@ -3,18 +3,18 @@ import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Tournament } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
-import { type Contest } from "../types/contest";
-
-export type ContestWithCount = Contest & {
-  _count: {
-    contestLineups: number;
-  };
-};
-
 export interface TournamentData {
   tournament: Tournament;
   players: PlayerWithTournamentData[];
-  contests: ContestWithCount[];
+}
+
+export interface ActiveTournamentState {
+  currentTournament: Tournament | null;
+  players: PlayerWithTournamentData[];
+  isLoading: boolean;
+  error: Error | null;
+  isTournamentEditable: boolean;
+  tournamentStatusDisplay: string;
 }
 
 /**
@@ -59,9 +59,6 @@ export function useCurrentTournament() {
   };
 }
 
-/**
- * Hook to get just the players from the cached data
- */
 export function useTournamentPlayers() {
   const { data, ...rest } = useTournamentData();
   return {
@@ -70,14 +67,29 @@ export function useTournamentPlayers() {
   };
 }
 
-/**
- * Hook to get just the contests from the cached data
- */
-export function useTournamentContests() {
-  const { data, ...rest } = useTournamentData();
+export function useActiveTournament(): ActiveTournamentState {
+  const { data, isLoading, error } = useTournamentData();
+
+  const currentTournament = data?.tournament ?? null;
+  const players = data?.players ?? [];
+
+  const isTournamentEditable =
+    currentTournament?.status !== "IN_PROGRESS" && currentTournament?.status !== "COMPLETED";
+
+  const tournamentStatusDisplay = currentTournament?.status
+    ?.split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ") ?? "";
+
+  const typedError = error instanceof Error ? error : error ? new Error("Failed to load tournament") : null;
+
   return {
-    contests: data?.contests ?? [],
-    ...rest,
+    currentTournament,
+    players,
+    isLoading,
+    error: typedError,
+    isTournamentEditable,
+    tournamentStatusDisplay,
   };
 }
 

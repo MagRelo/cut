@@ -1,12 +1,12 @@
 import React from "react";
-import { useTournament } from "../contexts/TournamentContext";
+import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { PlayerWithTournamentData } from "../types/player";
 
 export const LeaderboardPage: React.FC = () => {
-  const { currentTournament, players, isLoading, error } = useTournament();
+  const { currentTournament, players, isLoading, error } = useActiveTournament();
 
   if (isLoading) {
     return (

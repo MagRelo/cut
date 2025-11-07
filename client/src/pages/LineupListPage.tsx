@@ -2,10 +2,10 @@ import React, { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
-import { useTournament } from "../contexts/TournamentContext";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useLineupData } from "../hooks/useLineupData";
 import { useContestsQuery } from "../hooks/useContestQuery";
+import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 // import { Share } from "../components/common/Share";
@@ -22,7 +22,7 @@ export const LineupList: React.FC = () => {
     currentTournament,
     isTournamentEditable,
     tournamentStatusDisplay,
-  } = useTournament();
+  } = useActiveTournament();
   const { lineups, lineupError, getLineups } = useLineupData();
 
   // Get chain ID and fetch contests with full contestLineups data

@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 
 import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 
-import { useTournament } from "../../contexts/TournamentContext";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineupData } from "../../hooks/useLineupData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 import { ErrorMessage } from "../common/ErrorMessage";
 
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
@@ -36,7 +36,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     players: fieldPlayers,
     currentTournament,
     isLoading: isTournamentLoading,
-  } = useTournament();
+  } = useActiveTournament();
 
   const {
     getLineupById,

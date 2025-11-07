@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
 import { decodeEventLog } from "viem";
 
-import { useTournament } from "../../contexts/TournamentContext";
 import { type CreateContestInput } from "../../types/contest";
 import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateContest } from "../../hooks/useContestFactory";
 import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useCurrentTournament } from "../../hooks/useTournamentData";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
@@ -32,7 +32,7 @@ const getStatusMessages = (
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
-  const { currentTournament } = useTournament();
+  const { tournament: currentTournament } = useCurrentTournament();
   const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
 

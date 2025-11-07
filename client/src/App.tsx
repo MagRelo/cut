@@ -11,7 +11,6 @@ import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useT
 
 import { PortoAuthProvider } from "./contexts/PortoAuthContext";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
-import { TournamentProvider } from "./contexts/TournamentContext";
 
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
@@ -53,74 +52,72 @@ export const App: React.FC = () => {
         <GlobalErrorProvider>
           <PortoAuthProvider>
             <Router>
-              <TournamentProvider>
-                <div className="min-h-screen bg-gray-100 flex flex-col">
-                  {/* TODO: Remove this when we're ready to go live */}
-                  {/* <MaintenanceOverlay /> */}
-                  <div className="flex flex-col flex-grow">
-                    <div className="container mx-auto md:py-8">
-                      <div className="max-w-2xl mx-auto">
-                        <TournamentHeaderPanel />
-                        <Routes>
-                          <Route path="/" element={<Home />} />
-                          <Route path="/terms" element={<TermsOfService />} />
-                          <Route path="/faq" element={<FAQPage />} />
-                          <Route path="/connect" element={<ConnectPage />} />
-                          <Route path="/contracts" element={<ContractsPage />} />
-                          <Route
-                            path="/account"
-                            element={
-                              <ProtectedRoute>
-                                <UserPage />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route path="/usdc" element={<USDCInfoPage />} />
-                          <Route path="/cut" element={<CUTInfoPage />} />
+              <div className="min-h-screen bg-gray-100 flex flex-col">
+                {/* TODO: Remove this when we're ready to go live */}
+                {/* <MaintenanceOverlay /> */}
+                <div className="flex flex-col flex-grow">
+                  <div className="container mx-auto md:py-8">
+                    <div className="max-w-2xl mx-auto">
+                      <TournamentHeaderPanel />
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/terms" element={<TermsOfService />} />
+                        <Route path="/faq" element={<FAQPage />} />
+                        <Route path="/connect" element={<ConnectPage />} />
+                        <Route path="/contracts" element={<ContractsPage />} />
+                        <Route
+                          path="/account"
+                          element={
+                            <ProtectedRoute>
+                              <UserPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/usdc" element={<USDCInfoPage />} />
+                        <Route path="/cut" element={<CUTInfoPage />} />
 
-                          {/* Contests */}
-                          <Route path="/contests" element={<Contests />} />
-                          <Route
-                            path="/contests/create"
-                            element={
-                              <ProtectedRoute>
-                                <CreateContestPage />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route path="/contest/:id" element={<ContestLobby />} />
+                        {/* Contests */}
+                        <Route path="/contests" element={<Contests />} />
+                        <Route
+                          path="/contests/create"
+                          element={
+                            <ProtectedRoute>
+                              <CreateContestPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/contest/:id" element={<ContestLobby />} />
 
-                          {/* Lineups */}
-                          <Route path="/lineups/create" element={<LineupCreatePage />} />
-                          <Route
-                            path="/lineups/edit/:lineupId"
-                            element={
-                              <ProtectedRoute>
-                                <LineupCreatePage />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/lineups"
-                            element={
-                              <ProtectedRoute>
-                                <LineupList />
-                              </ProtectedRoute>
-                            }
-                          />
+                        {/* Lineups */}
+                        <Route path="/lineups/create" element={<LineupCreatePage />} />
+                        <Route
+                          path="/lineups/edit/:lineupId"
+                          element={
+                            <ProtectedRoute>
+                              <LineupCreatePage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/lineups"
+                          element={
+                            <ProtectedRoute>
+                              <LineupList />
+                            </ProtectedRoute>
+                          }
+                        />
 
-                          {/* Leaderboard */}
-                          <Route path="/leaderboard" element={<LeaderboardPage />} />
+                        {/* Leaderboard */}
+                        <Route path="/leaderboard" element={<LeaderboardPage />} />
 
-                          {/* Admin */}
-                          <Route path="/admin" element={<AdminPage />} />
-                        </Routes>
-                      </div>
+                        {/* Admin */}
+                        <Route path="/admin" element={<AdminPage />} />
+                      </Routes>
                     </div>
                   </div>
-                  <Footer />
                 </div>
-              </TournamentProvider>
+                <Footer />
+              </div>
             </Router>
           </PortoAuthProvider>
         </GlobalErrorProvider>
