@@ -102,6 +102,17 @@ export const ContestEntryList = ({
                   {!primaryActionsLocked
                     ? lineup.tournamentLineup?.name || "Lineup"
                     : lineup.tournamentLineup?.players
+                        .sort((a, b) => {
+                          const aTotal =
+                            (a.tournamentData?.total || 0) +
+                            (a.tournamentData?.cut || 0) +
+                            (a.tournamentData?.bonus || 0);
+                          const bTotal =
+                            (b.tournamentData?.total || 0) +
+                            (b.tournamentData?.cut || 0) +
+                            (b.tournamentData?.bonus || 0);
+                          return bTotal - aTotal;
+                        })
                         ?.map((player) => player.pga_lastName)
                         .filter(Boolean)
                         .join(", ") || "No players"}
