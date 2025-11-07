@@ -52,7 +52,7 @@ export function usePortoAuth() {
 }
 
 export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
-  const { address, chainId: currentChainId } = useAccount();
+  const { address, chainId: currentChainId, status } = useAccount();
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
   const queryClient = useQueryClient();
@@ -150,12 +150,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         return await handleApiResponse<T>(response);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          // Clear user data on 401 (unauthorized)
+          // Clear all user data on 401 (unauthorized)
           setUser(null);
-          // Don't clear the entire query cache - public queries (like tournaments) should remain
-          // Only invalidate auth-specific queries
-          queryClient.invalidateQueries({ queryKey: ['auth'] });
-          queryClient.invalidateQueries({ queryKey: ['user'] });
+          queryClient.clear();
         }
         throw error;
       }
@@ -212,14 +209,14 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
     // Clear user-specific React Query cache (lineups, user data, balances, etc.)
     // but preserve public data (tournaments, contests, players, scores)
-    queryClient.invalidateQueries({ queryKey: ['auth'] });
-    queryClient.invalidateQueries({ queryKey: ['user'] });
-    queryClient.invalidateQueries({ queryKey: ['lineups'] });
-    queryClient.invalidateQueries({ queryKey: ['balance'] });
-    queryClient.removeQueries({ queryKey: ['auth'] });
-    queryClient.removeQueries({ queryKey: ['user'] });
-    queryClient.removeQueries({ queryKey: ['lineups'] });
-    queryClient.removeQueries({ queryKey: ['balance'] });
+    queryClient.invalidateQueries({ queryKey: ["auth"] });
+    queryClient.invalidateQueries({ queryKey: ["user"] });
+    queryClient.invalidateQueries({ queryKey: ["lineups"] });
+    queryClient.invalidateQueries({ queryKey: ["balance"] });
+    queryClient.removeQueries({ queryKey: ["auth"] });
+    queryClient.removeQueries({ queryKey: ["user"] });
+    queryClient.removeQueries({ queryKey: ["lineups"] });
+    queryClient.removeQueries({ queryKey: ["balance"] });
 
     // Clear all cookies (including auth token)
     document.cookie.split(";").forEach((cookie) => {
@@ -241,8 +238,12 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       if (!address) {
-        setUser(null);
-        setLoading(false);
+        if (status === "disconnected") {
+          setUser(null);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
         return;
       }
 
@@ -264,9 +265,9 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
         // Invalidate only auth-dependent queries when auth refreshes
         // Don't invalidate public queries (tournaments) that don't depend on auth state
-        queryClient.invalidateQueries({ queryKey: ['lineups'] });
-        queryClient.invalidateQueries({ queryKey: ['user'] });
-        queryClient.invalidateQueries({ queryKey: ['balance'] });
+        queryClient.invalidateQueries({ queryKey: ["lineups"] });
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
       } catch (error) {
         console.error("Auth check failed:", error);
         if (
@@ -281,15 +282,15 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, [address, request, currentChainId, switchChain, queryClient]);
+  }, [address, request, currentChainId, switchChain, queryClient, status]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
-    if (!address && user) {
+    if (status === "disconnected" && !address && user) {
       // Only clear if we had a user (prevents clearing on initial load)
       clearAllUserData();
     }
-  }, [address, user, clearAllUserData]);
+  }, [address, user, clearAllUserData, status]);
 
   const contextValue = useMemo(
     () => ({
