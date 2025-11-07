@@ -15,6 +15,7 @@ import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
+import { PlayerScorecard } from "../player/PlayerScorecard";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -165,76 +166,86 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
               >
                 <DialogPanel className="w-full max-w-2xl transform overflow-hidden transition-all py-1">
                   {/* Content Section */}
-                  <div className="bg-gray-100 shadow p-2 ">
+                  <div className="bg-gray-100 shadow p-2">
                     {selectedPlayer && (
-                      <TabGroup className="border border-gray-300 rounded-sm">
-                        <TabList className="flex space-x-1 border-b border-gray-200 px-4 bg-white rounded-t-sm">
-                          <Tab
-                            className={({ selected }: { selected: boolean }) =>
-                              classNames(
-                                "w-full py-2 text-sm font-display leading-5",
-                                "focus:outline-none",
-                                selected
-                                  ? "border-b-2 border-blue-600 text-blue-700"
-                                  : "text-gray-600 hover:text-gray-800"
-                              )
-                            }
-                          >
-                            Player
-                          </Tab>
-                          <Tab
-                            className={({ selected }: { selected: boolean }) =>
-                              classNames(
-                                "w-full py-2 text-sm font-display leading-5",
-                                "focus:outline-none",
-                                selected
-                                  ? "border-b-2 border-blue-600 text-blue-700"
-                                  : "text-gray-600 hover:text-gray-800"
-                              )
-                            }
-                          >
-                            Lineups ({selectedPlayerLineups.length})
-                          </Tab>
-                        </TabList>
+                      <>
+                        <PlayerDisplayCard
+                          player={selectedPlayer}
+                          roundDisplay={roundDisplay || "R1"}
+                        />
 
-                        <TabPanels>
-                          <TabPanel>
-                            <div className="h-[334px] overflow-y-auto bg-slate-50">
-                              <PlayerDisplayCard
-                                player={selectedPlayer}
-                                roundDisplay={roundDisplay || "R1"}
-                              />
-                            </div>
-                          </TabPanel>
+                        <TabGroup className="">
+                          <TabList className="flex space-x-1 border-b border-gray-200 px-4 bg-white rounded-t-sm">
+                            <Tab
+                              className={({ selected }: { selected: boolean }) =>
+                                classNames(
+                                  "w-full py-2 text-sm font-display leading-5",
+                                  "focus:outline-none",
+                                  selected
+                                    ? "border-b-2 border-blue-600 text-blue-700"
+                                    : "text-gray-400 hover:text-gray-800"
+                                )
+                              }
+                            >
+                              Scorecard
+                            </Tab>
+                            <Tab
+                              className={({ selected }: { selected: boolean }) =>
+                                classNames(
+                                  "w-full py-2 text-sm font-display leading-5",
+                                  "focus:outline-none",
+                                  selected
+                                    ? "border-b-2 border-blue-600 text-blue-700"
+                                    : "text-gray-400 hover:text-gray-800"
+                                )
+                              }
+                            >
+                              Lineups ({selectedPlayerLineups.length})
+                            </Tab>
+                          </TabList>
 
-                          <TabPanel>
-                            <div className="h-[334px] overflow-y-auto bg-slate-50">
-                              {selectedPlayerLineups.length > 0 ? (
-                                <div className="px-4 py-3 font-display">
-                                  <div className="space-y-1.5">
-                                    {selectedPlayerLineups.map((lineup, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex items-center justify-center gap-2 px-3 py-1 text-sm"
-                                      >
-                                        <span className="font-medium text-gray-900">
-                                          {lineup.userName}
-                                        </span>
-                                        <span className="text-gray-600">•</span>
-                                        <span className="text-gray-700">{lineup.lineupName}</span>
-                                      </div>
-                                    ))}
+                          <TabPanels>
+                            <TabPanel>
+                              <div className="h-[184px] overflow-y-auto bg-slate-50">
+                                {/* Scorecard Section */}
+                                <div>
+                                  <PlayerScorecard
+                                    player={selectedPlayer}
+                                    roundDisplay={roundDisplay || "R1"}
+                                  />
+                                </div>
+                              </div>
+                            </TabPanel>
+
+                            <TabPanel>
+                              <div className="h-[184px] overflow-y-auto bg-slate-50">
+                                {selectedPlayerLineups.length > 0 ? (
+                                  <div className="px-4 py-3 font-display">
+                                    <div className="space-y-1.5">
+                                      {selectedPlayerLineups.map((lineup, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-center gap-2 px-3 py-1 text-sm"
+                                        >
+                                          <span className="font-medium text-gray-900">
+                                            {lineup.userName}
+                                          </span>
+                                          <span className="text-gray-600">•</span>
+                                          <span className="text-gray-700">{lineup.lineupName}</span>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <div className="text-center py-8">
-                                  <p className="text-gray-500 font-display">No lineups found.</p>
-                                </div>
-                              )}
-                            </div>
-                          </TabPanel>
-                        </TabPanels>
-                      </TabGroup>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <p className="text-gray-500 font-display">No lineups found.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </TabPanel>
+                          </TabPanels>
+                        </TabGroup>
+                      </>
                     )}
                   </div>
                 </DialogPanel>

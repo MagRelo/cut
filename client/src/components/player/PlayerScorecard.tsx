@@ -262,7 +262,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
       </div>
 
       {/* Round selector */}
-      {availableRounds.length > 1 && (
+      {availableRounds.length > 0 && (
         <div className="bg-white">
           <div className="flex items-center justify-between px-3 py-2 pt-3">
             <div className="flex items-center space-x-2">

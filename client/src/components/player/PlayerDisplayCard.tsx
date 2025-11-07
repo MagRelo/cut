@@ -1,6 +1,5 @@
 import React from "react";
 import type { PlayerWithTournamentData, TournamentPlayerData } from "../../types/player";
-import { PlayerScorecard } from "./PlayerScorecard";
 
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
@@ -180,11 +179,6 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Scorecard Section */}
-      <div>
-        <PlayerScorecard player={player} roundDisplay={currentRound?.round || "R1"} />
       </div>
     </div>
   );
