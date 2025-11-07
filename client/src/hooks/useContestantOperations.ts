@@ -7,7 +7,7 @@ import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
 interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: any) => void | Promise<void>;
+  onSuccess?: (data: unknown) => void | Promise<void>;
   onError?: (error: Error | string) => void;
   onSettled?: () => void;
 }

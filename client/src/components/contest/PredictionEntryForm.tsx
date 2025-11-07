@@ -33,7 +33,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   secondaryPrizePoolFormatted,
   onClose,
 }) => {
-  const { platformTokenBalance, paymentTokenBalance } = usePortoAuth();
+  const { platformTokenBalance, paymentTokenBalance, user } = usePortoAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +134,16 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       setError(errorMsg);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="space-y-2 h-[269px]">
+        <div className="rounded-md border border-purple-200 bg-purple-50 p-4 text-sm text-purple-700">
+          Please sign in to purchase shares in this outcome.
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedEntryInfo) {
     return (
