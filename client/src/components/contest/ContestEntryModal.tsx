@@ -1,8 +1,21 @@
 import React, { Fragment } from "react";
-import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import {
+  Dialog,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+  Tab,
+  TabGroup,
+  TabList,
+  TabPanels,
+  TabPanel,
+} from "@headlessui/react";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { EntryHeader } from "./EntryHeader";
 import { type ContestLineup } from "../../types/lineup";
+import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
+import { PredictionEntryPosition } from "./PredictionEntryPosition";
+import { type Contest } from "../../types/contest";
 
 interface ContestEntryModalProps {
   isOpen: boolean;
@@ -10,6 +23,10 @@ interface ContestEntryModalProps {
   lineup: ContestLineup | null;
   roundDisplay: string;
   userName?: string;
+  contest: Contest;
+  entryData: PredictionEntryData[];
+  secondaryPrizePoolFormatted: string;
+  canWithdraw: boolean;
 }
 
 export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
@@ -18,6 +35,10 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   lineup,
   roundDisplay,
   userName,
+  contest,
+  entryData,
+  secondaryPrizePoolFormatted,
+  canWithdraw,
 }) => {
   if (!lineup) return null;
 
@@ -30,6 +51,9 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
       (player.tournamentData?.bonus || 0)
     );
   }, 0);
+
+  const predictionEntry = entryData.find((entry) => entry.entryId === lineup.entryId);
+  const hasPosition = Boolean(predictionEntry?.hasPosition);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -71,28 +95,95 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                     />
                   </div>
 
-                  <div>
-                    {[...(lineup.tournamentLineup?.players || [])]
-                      .sort((a, b) => {
-                        const aTotal =
-                          (a.tournamentData?.total || 0) +
-                          (a.tournamentData?.cut || 0) +
-                          (a.tournamentData?.bonus || 0);
-                        const bTotal =
-                          (b.tournamentData?.total || 0) +
-                          (b.tournamentData?.cut || 0) +
-                          (b.tournamentData?.bonus || 0);
-                        return bTotal - aTotal;
-                      })
-                      .map((player) => (
-                        <PlayerDisplayRow
-                          key={player.id}
-                          player={player}
-                          roundDisplay={roundDisplay}
-                          showArrow={false}
-                        />
-                      ))}
-                  </div>
+                  <TabGroup>
+                    <TabList className="mb-3 flex gap-2 border-b border-gray-200 px-2">
+                      <Tab
+                        className={({ selected }) =>
+                          `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
+                            selected
+                              ? "border-blue-500 text-blue-600"
+                              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                          }`
+                        }
+                      >
+                        Players
+                      </Tab>
+                      <Tab
+                        className={({ selected }) =>
+                          `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
+                            selected
+                              ? "border-blue-500 text-blue-600"
+                              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                          }`
+                        }
+                      >
+                        Buy Shares
+                      </Tab>
+                      {hasPosition && (
+                        <Tab
+                          className={({ selected }) =>
+                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
+                              selected
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                            }`
+                          }
+                        >
+                          Position
+                        </Tab>
+                      )}
+                    </TabList>
+                    <TabPanels>
+                      <TabPanel>
+                        <div>
+                          {[...(lineup.tournamentLineup?.players || [])]
+                            .sort((a, b) => {
+                              const aTotal =
+                                (a.tournamentData?.total || 0) +
+                                (a.tournamentData?.cut || 0) +
+                                (a.tournamentData?.bonus || 0);
+                              const bTotal =
+                                (b.tournamentData?.total || 0) +
+                                (b.tournamentData?.cut || 0) +
+                                (b.tournamentData?.bonus || 0);
+                              return bTotal - aTotal;
+                            })
+                            .map((player) => (
+                              <PlayerDisplayRow
+                                key={player.id}
+                                player={player}
+                                roundDisplay={roundDisplay}
+                                showArrow={false}
+                              />
+                            ))}
+                        </div>
+                      </TabPanel>
+                      <TabPanel>
+                        <div className="pt-1">
+                          <PredictionEntryForm
+                            contest={contest}
+                            entryId={lineup.entryId ?? null}
+                            entryData={entryData}
+                            secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+                            onClose={onClose}
+                          />
+                        </div>
+                      </TabPanel>
+                      {hasPosition && predictionEntry && (
+                        <TabPanel>
+                          <div className="pt-1">
+                            <PredictionEntryPosition
+                              contest={contest}
+                              entry={predictionEntry}
+                              canWithdraw={canWithdraw}
+                              userName={userName || lineup.user?.email || "Unknown User"}
+                              lineupName={lineup.tournamentLineup?.name || "Lineup"}
+                            />
+                          </div>
+                        </TabPanel>
+                      )}
+                    </TabPanels>
+                  </TabGroup>
                 </div>
               </DialogPanel>
             </TransitionChild>

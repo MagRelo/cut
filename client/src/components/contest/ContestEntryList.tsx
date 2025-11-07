@@ -1,25 +1,94 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { PositionBadge } from "./PositionBadge";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
-import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
+import { arePrimaryActionsLocked, type ContestStatus, type Contest } from "../../types/contest";
+import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { type PredictionEntryData } from "./PredictionEntryForm";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
   contestStatus: ContestStatus;
+  contestAddress: string;
+  contestChainId: number;
+  contest: Contest;
 }
 
 export const ContestEntryList = ({
   contestLineups,
   roundDisplay,
   contestStatus,
+  contestAddress,
+  contestChainId,
+  contest,
 }: ContestEntryListProps) => {
   const { user } = usePortoAuth();
 
   // Compute action locks based on contest status
   const primaryActionsLocked = arePrimaryActionsLocked(contestStatus);
+
+  const entryIds = useMemo(() => {
+    if (!contestLineups) return [] as string[];
+    return contestLineups
+      .map((lineup) => lineup.entryId)
+      .filter((entryId): entryId is string => typeof entryId === "string" && entryId.length > 0);
+  }, [contestLineups]);
+
+  const { entryData, secondaryPrizePoolFormatted, canWithdraw } = useContestPredictionData({
+    contestAddress,
+    entryIds,
+    enabled: Boolean(contestAddress && entryIds.length > 0),
+    chainId: contestChainId,
+  });
+
+  const marketStats = useMemo(() => {
+    const parsedTotalPot = Number.parseFloat(secondaryPrizePoolFormatted);
+    const totalPot = Number.isFinite(parsedTotalPot) ? parsedTotalPot : 0;
+
+    const totalSupplySum = entryData.reduce((sum, entry) => {
+      const parsedSupply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
+      return sum + (Number.isFinite(parsedSupply) ? parsedSupply : 0);
+    }, 0);
+
+    return {
+      totalPot,
+      totalSupplySum,
+    };
+  }, [entryData, secondaryPrizePoolFormatted]);
+
+  const entryDataMap = useMemo(() => {
+    return entryData.reduce((map, entry) => {
+      map.set(entry.entryId, entry);
+      return map;
+    }, new Map<string, (typeof entryData)[number]>());
+  }, [entryData]);
+
+  const calculateWinnings = (price: number, supply: number) => {
+    const positionAmount = 10;
+    const feePercentage = 0.15;
+    const netPositionAmount = positionAmount * (1 - feePercentage);
+    const newTotalPot = marketStats.totalPot + netPositionAmount;
+
+    if (!Number.isFinite(price) || !Number.isFinite(supply) || price <= 0 || supply <= 0) {
+      return newTotalPot;
+    }
+
+    const tokensFromPosition = netPositionAmount / price;
+    const newSupply = supply + tokensFromPosition;
+
+    if (!Number.isFinite(newSupply) || newSupply <= 0) {
+      return 0;
+    }
+
+    return (tokensFromPosition / newSupply) * newTotalPot;
+  };
+
+  const calculateMarketShare = (supply: number) => {
+    if (!Number.isFinite(supply) || marketStats.totalSupplySum === 0) return 0;
+    return (supply / marketStats.totalSupplySum) * 100;
+  };
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,16 +141,35 @@ export const ContestEntryList = ({
       {sortedLineups.map((lineup) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const isCurrentUser = lineup.userId === user?.id;
+        const predictionEntry = lineup.entryId ? entryDataMap.get(lineup.entryId) : undefined;
+
+        const supplyValue = Number.parseFloat(predictionEntry?.totalSupplyFormatted ?? "0");
+        const priceValue = Number.parseFloat(predictionEntry?.priceFormatted ?? "0");
+        const balanceValue = Number.parseFloat(predictionEntry?.balanceFormatted ?? "0");
+        const normalizedSupply = Number.isFinite(supplyValue) ? supplyValue : 0;
+        const normalizedBalance = Number.isFinite(balanceValue) ? balanceValue : 0;
+        const normalizedPrice = Number.isFinite(priceValue) ? priceValue : 0;
+        const marketShare = calculateMarketShare(normalizedSupply);
+        const potentialWinnings = calculateWinnings(normalizedPrice, normalizedSupply);
+        const safeMarketShare = Number.isFinite(marketShare) ? marketShare : 0;
+        const userShareOfEntry =
+          normalizedSupply > 0 ? (normalizedBalance / normalizedSupply) * 100 : 0;
+        const safeUserShareOfEntry = Number.isFinite(userShareOfEntry) ? userShareOfEntry : 0;
+        const userMarketSharePortion = (safeUserShareOfEntry / 100) * safeMarketShare;
+        const safeUserMarketShare = Number.isFinite(userMarketSharePortion)
+          ? Math.max(0, userMarketSharePortion)
+          : 0;
+        const safePotentialWinnings = Number.isFinite(potentialWinnings) ? potentialWinnings : 0;
 
         return (
           <div
             key={lineup.id}
-            className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 mb-1 ${
+            className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 mb-2 ${
               !primaryActionsLocked ? "cursor-default opacity-80" : "cursor-pointer"
-            }`}
+            } border border-gray-300 pb-2 shadow-sm`}
             onClick={() => openLineupModal(lineup)}
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 ">
               {/* Left - Rank */}
               <div className="flex-shrink-0">
                 <PositionBadge
@@ -146,6 +234,31 @@ export const ContestEntryList = ({
                 )}
               </div>
             </div>
+
+            {predictionEntry && (
+              <div className="mt-2 text-xs text-gray-600 border-t border-gray-200 pt-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div
+                      className="absolute inset-y-0 left-0 bg-purple-400 rounded-full transition-all"
+                      style={{ width: `${Math.min(safeMarketShare, 100)}%` }}
+                    />
+                    {safeUserMarketShare > 0 && (
+                      <div
+                        className="absolute inset-y-0 left-0 bg-green-600 rounded-full transition-all"
+                        style={{ width: `${Math.min(safeUserMarketShare, safeMarketShare, 100)}%` }}
+                      />
+                    )}
+                  </div>
+
+                  <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
+                  <span className="whitespace-nowrap font-semibold text-purple-600">
+                    <span className="font-medium text-gray-500 pr-1">$10 wins</span> ~$
+                    {safePotentialWinnings.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
@@ -157,6 +270,10 @@ export const ContestEntryList = ({
         lineup={selectedLineup || null}
         roundDisplay={roundDisplay || ""}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
+        contest={contest}
+        entryData={entryData as PredictionEntryData[]}
+        secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+        canWithdraw={canWithdraw}
       />
     </>
   );

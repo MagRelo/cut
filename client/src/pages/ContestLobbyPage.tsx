@@ -9,7 +9,6 @@ import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestPlayerList } from "../components/contest/ContestPlayerList";
-import { ContestPredictionsTab } from "../components/contest/ContestPredictionsTab";
 import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
 import { arePrimaryActionsLocked } from "../types/contest";
@@ -143,19 +142,6 @@ export const ContestLobby: React.FC = () => {
                 Players
               </Tab>
             )}
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-purple-500 text-purple-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              Prediction Pool
-            </Tab>
           </TabList>
           <div className="">
             {/* ENTRIES (Contest) */}
@@ -182,6 +168,9 @@ export const ContestLobby: React.FC = () => {
                   contestLineups={contest?.contestLineups}
                   roundDisplay={contest?.tournament?.roundDisplay}
                   contestStatus={contest.status}
+                  contestAddress={contest.address}
+                  contestChainId={contest.chainId}
+                  contest={contest}
                 />
               </div>
 
@@ -271,11 +260,6 @@ export const ContestLobby: React.FC = () => {
                 />
               </TabPanel>
             )}
-
-            {/* PREDICTIONS */}
-            <TabPanel>
-              <ContestPredictionsTab contest={contest} />
-            </TabPanel>
           </div>
         </TabGroup>
       </div>
