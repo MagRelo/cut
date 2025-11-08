@@ -105,6 +105,15 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     Number.isFinite(metrics.potentialReturn) && metrics.potentialReturn > 0
       ? metrics.potentialReturn.toFixed(2)
       : "0.00";
+  const approximateOddsRatio =
+    Number.isFinite(metrics.potentialReturn) &&
+    metrics.potentialReturn > 0 &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0
+      ? metrics.potentialReturn / parsedAmount
+      : 0;
+  const approximateOddsDisplay =
+    approximateOddsRatio > 0 ? Math.max(1, Math.round(approximateOddsRatio)).toString() : "0";
 
   useEffect(() => {
     setAmount("10");
@@ -158,27 +167,32 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     return (
       <div className="space-y-2 h-[269px]">
         <div className="rounded-md border border-purple-200 bg-purple-50 p-4 text-sm text-purple-700">
+          {/* title */}
+          <h3 className="text-lg font-semibold font-display mb-2">Winner Outcome Market</h3>
+
           {/* Instuctions/examples */}
-          <p className="mb-2">
+          <p className="mb-2 leading-relaxed">
             <span className="font-semibold text-purple-700">${purchaseAmountDisplay}</span> can buy{" "}
             {tokensReceivedDisplay} shares in this outcome (
             <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
             supply).
           </p>
-          <p className="mb-2">
+          <p className="mb-2 leading-relaxed">
             {" "}
             If this entry wins, you would receive{" "}
             <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
             total prize pool (
             <span className="text-purple-700">${secondaryPrizePoolFormatted}</span>), currently
-            worth about $
-            <span className="font-semibold text-purple-700">{potentialReturnDisplay}</span>.
+            worth{" "}
+            <span className="font-semibold text-purple-700">
+              ${potentialReturnDisplay} (~{approximateOddsDisplay}x)
+            </span>
           </p>
           <p>
             <Link to="/connect" className="text-purple-700 font-semibold underline">
               Sign In
             </Link>{" "}
-            to purchase shares in this outcome.
+            to purchase shares.
           </p>
         </div>
       </div>
