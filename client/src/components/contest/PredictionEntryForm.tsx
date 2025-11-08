@@ -163,13 +163,15 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             <span className="font-semibold text-purple-700">${purchaseAmountDisplay}</span> can buy{" "}
             {tokensReceivedDisplay} shares in this outcome (
             <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
-            total supply).
+            supply).
           </p>
           <p className="mb-2">
             {" "}
-            If this entry wins, you will receive{" "}
+            If this entry wins, you would receive{" "}
             <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
-            total prize pool, currently worth about ~$
+            total prize pool (
+            <span className="text-purple-700">${secondaryPrizePoolFormatted}</span>), currently
+            worth about $
             <span className="font-semibold text-purple-700">{potentialReturnDisplay}</span>.
           </p>
           <p>
@@ -207,14 +209,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
           disabled={isProcessing}
           autoFocus
         />
       </div>
 
       {/* details */}
-      <div className="bg-purple-50/60 border border-purple-200/60 rounded-lg p-3 space-y-2 text-sm">
+      <div className="bg-purple-50/60 border border-purple-200/60 rounded-md p-3 space-y-2 text-sm">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Purchase Amount</span>
