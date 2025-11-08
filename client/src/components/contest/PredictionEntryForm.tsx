@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { parseUnits } from "viem";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
@@ -87,6 +88,24 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     return { ownershipPercent, potentialReturn, tokensReceived };
   }, [amount, selectedEntryInfo, totalPrizePool]);
 
+  const parsedAmount = Number.parseFloat(amount);
+  const purchaseAmountDisplay =
+    Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount.toFixed(2) : "0.00";
+  const tokensReceivedDisplay =
+    Number.isFinite(metrics.tokensReceived) && metrics.tokensReceived > 0
+      ? metrics.tokensReceived >= 1
+        ? metrics.tokensReceived.toFixed(2)
+        : metrics.tokensReceived.toFixed(4)
+      : "0";
+  const ownershipPercentDisplay =
+    Number.isFinite(metrics.ownershipPercent) && metrics.ownershipPercent > 0
+      ? `${metrics.ownershipPercent.toFixed(2)}%`
+      : "0%";
+  const potentialReturnDisplay =
+    Number.isFinite(metrics.potentialReturn) && metrics.potentialReturn > 0
+      ? metrics.potentialReturn.toFixed(2)
+      : "0.00";
+
   useEffect(() => {
     setAmount("10");
     setError(null);
@@ -139,7 +158,26 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     return (
       <div className="space-y-2 h-[269px]">
         <div className="rounded-md border border-purple-200 bg-purple-50 p-4 text-sm text-purple-700">
-          Please sign in to purchase shares in this outcome.
+          {/* Instuctions/examples */}
+          <p className="mb-2">
+            <span className="font-semibold text-purple-700">${purchaseAmountDisplay}</span> can buy{" "}
+            {tokensReceivedDisplay} shares in this outcome (
+            <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
+            total supply).
+          </p>
+          <p className="mb-2">
+            {" "}
+            If this entry wins, you will receive{" "}
+            <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
+            total prize pool, currently worth about ~$
+            <span className="font-semibold text-purple-700">{potentialReturnDisplay}</span>.
+          </p>
+          <p>
+            <Link to="/connect" className="text-purple-700 font-semibold underline">
+              Sign In
+            </Link>{" "}
+            to purchase shares in this outcome.
+          </p>
         </div>
       </div>
     );
@@ -158,7 +196,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       <div>
         <label
           htmlFor="position-amount"
-          className="block text-left block text-sm font-medium text-gray-500 mb-2"
+          className="block text-left text-sm font-medium text-gray-500 mb-2"
         >
           Purchase Amount
         </label>
@@ -176,7 +214,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       </div>
 
       {/* details */}
-      <div className="bg-purple-50/60 border border-purple-200/60 rounded-lg p-3 space-y-3 text-sm">
+      <div className="bg-purple-50/60 border border-purple-200/60 rounded-lg p-3 space-y-2 text-sm">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Purchase Amount</span>
@@ -185,14 +223,17 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-700">Pool Share Value *</span>
+              <span className="text-gray-700">Pool Share Value</span>
               <span className="font-bold text-green-600 text-base">
                 ~${metrics.potentialReturn > 0 ? metrics.potentialReturn.toFixed(2) : "0"}
               </span>
             </div>
-            <span className="block text-gray-500 text-xs text-left max-w-48">
-              * Payouts are subject to change based on participant activity.
-            </span>
+            <div className="text-xs text-gray-500 border-t border-gray-200 pt-1 mt-2">
+              <p>
+                <strong>Note:</strong> Final payouts are calculated based on overall participant
+                activity.
+              </p>
+            </div>
           </div>
         </div>
       </div>

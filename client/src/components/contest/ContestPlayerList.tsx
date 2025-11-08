@@ -166,9 +166,9 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
               >
                 <DialogPanel className="w-full max-w-2xl transform overflow-hidden transition-all py-1">
                   {/* Content Section */}
-                  <div className="bg-gray-100 shadow p-2">
+                  <div className="bg-gray-100 p-2">
                     {selectedPlayer && (
-                      <>
+                      <div className="overflow-hidden border border-gray-300 rounded-sm">
                         <PlayerDisplayCard
                           player={selectedPlayer}
                           roundDisplay={roundDisplay || "R1"}
@@ -245,7 +245,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
                             </TabPanel>
                           </TabPanels>
                         </TabGroup>
-                      </>
+                      </div>
                     )}
                   </div>
                 </DialogPanel>

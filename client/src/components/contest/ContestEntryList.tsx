@@ -253,7 +253,7 @@ export const ContestEntryList = ({
 
                   <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
                   <span className="whitespace-nowrap font-semibold text-purple-700">
-                    <span className="font-medium text-gray-500 pr-1">$10 wins</span> ~$
+                    <span className="font-medium text-gray-500">$10 buys</span> $
                     {safePotentialWinnings.toFixed(2)}
                   </span>
                 </div>

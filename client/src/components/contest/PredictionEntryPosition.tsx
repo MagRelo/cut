@@ -59,7 +59,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
   };
 
   return (
-    <div className="space-y-2 h-[269px]">
+    <div className="space-y-3 h-[269px]">
       <div className="bg-purple-50/60 border border-purple-200/60 rounded-lg p-4 text-sm">
         <div className="space-y-2.5">
           <div className="flex justify-between items-center">
@@ -106,10 +106,9 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
         </div>
       )}
 
-      <div className="text-xs text-gray-500 border-t border-gray-200 pt-3">
+      <div className="text-xs text-gray-500 border-t border-gray-200 pt-2">
         <p>
-          <strong>Note:</strong> Values update with live LMSR pricing. Final payout is determined
-          when the contest settles.
+          <strong>Note:</strong> Final payouts are calculated based on overall participant activity.
         </p>
       </div>
     </div>

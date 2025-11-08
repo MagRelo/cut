@@ -80,10 +80,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
 
   // Helper to determine if predictions are available
   const canPredict = contestState === ContestState.OPEN || contestState === ContestState.ACTIVE;
-  const canWithdraw =
-    contestState === ContestState.OPEN ||
-    contestState === ContestState.ACTIVE ||
-    contestState === ContestState.CANCELLED;
+  const canWithdraw = contestState === ContestState.OPEN || contestState === ContestState.CANCELLED;
   const canClaim = contestState === ContestState.SETTLED;
 
   const shouldFetchEntries = enabled && !!contestAddress && entryIds.length > 0;
@@ -216,12 +213,14 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       ? formatUnits(secondaryPrizePool as bigint, 18)
       : "0",
     // Combined subsidy is the sum of prize pool subsidy and position subsidies
-    combinedSubsidy: ((primaryPrizePoolSubsidy as bigint) || 0n) + ((totalPrimaryPositionSubsidies as bigint) || 0n),
-    combinedSubsidyFormatted: 
-      formatUnits(
-        ((primaryPrizePoolSubsidy as bigint) || 0n) + ((totalPrimaryPositionSubsidies as bigint) || 0n),
-        18
-      ),
+    combinedSubsidy:
+      ((primaryPrizePoolSubsidy as bigint) || 0n) +
+      ((totalPrimaryPositionSubsidies as bigint) || 0n),
+    combinedSubsidyFormatted: formatUnits(
+      ((primaryPrizePoolSubsidy as bigint) || 0n) +
+        ((totalPrimaryPositionSubsidies as bigint) || 0n),
+      18
+    ),
     isLoading,
   };
 }
