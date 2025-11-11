@@ -8,7 +8,7 @@ import { getPlayerProfileOverview } from "../src/lib/pgaPlayerProfile.js";
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: process.env.DATABASE_URL || "",
     },
   },
   // Add connection pooling configuration
@@ -47,13 +47,13 @@ async function main() {
             city: "", // Placeholder
             state: "", // Placeholder
             timezone: "", // Placeholder
-            venue: undefined,
+            venue: null as any,
             purse: null,
             status: "",
             roundStatusDisplay: null,
             roundDisplay: null,
             currentRound: null,
-            weather: undefined,
+            weather: null as any,
             beautyImage: null,
             cutLine: null,
             cutRound: null,
@@ -145,7 +145,7 @@ async function main() {
         currentRound: tournamentData.currentRound,
         weather: tournamentData.weather as any,
         beautyImage: tournamentData.beautyImage,
-        course: tournamentData.courses[0].courseName,
+        course: tournamentData.courses[0]?.courseName || "",
         city: tournamentData.city,
         state: tournamentData.state,
         timezone: tournamentData.timezone,
@@ -183,10 +183,10 @@ async function main() {
     for (let i = 0; i < playersInField.length; i++) {
       const player = playersInField[i];
       try {
-        const playerProfile = await getPlayerProfileOverview(player.pga_pgaTourId || "");
+        const playerProfile = await getPlayerProfileOverview(player?.pga_pgaTourId || "");
         if (playerProfile) {
           await prisma.player.update({
-            where: { id: player.id },
+            where: { id: player?.id as string },
             data: {
               pga_performance: {
                 performance: playerProfile.performance,
@@ -203,7 +203,7 @@ async function main() {
           console.log(`Updated player profiles: ${i + 1}/${playersInField.length}`);
         }
       } catch (error) {
-        console.error(`Error updating profile for player ${player.pga_displayName}:`, error);
+        console.error(`Error updating profile for player ${player?.pga_displayName}:`, error);
         // Continue with next player instead of failing the entire process
       }
     }
@@ -231,13 +231,13 @@ async function main() {
     );
 
     // 5. Create a default user group for testing
-    const defaultUserGroup = await prisma.userGroup.create({
-      data: {
-        name: "PGA Tour Default",
-        description: "Default user group for PGA Tour data",
-      },
-    });
-    console.log("Created default user group");
+    // const defaultUserGroup = await prisma.userGroup.create({
+    //   data: {
+    //     name: "PGA Tour Default",
+    //     description: "Default user group for PGA Tour data",
+    //   },
+    // });
+    // console.log("Created default user group");
 
     console.log("PGA Tour database seeding completed successfully!");
   } catch (error) {
