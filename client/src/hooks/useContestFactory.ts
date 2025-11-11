@@ -26,8 +26,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     expiry: bigint,
     liquidityParameter: bigint,
     demandSensitivity: number,
-    prizeShareBps: number,
-    userShareBps: number,
+    positionBonusShareBps: number,
     targetPrimaryShareBps: number = 6000,
     maxCrossSubsidyBps: number = 1500
   ) => {
@@ -42,8 +41,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           expiry,
           liquidityParameter,
           demandSensitivity,
-          prizeShareBps,
-          userShareBps,
+          positionBonusShareBps,
           targetPrimaryShareBps,
           maxCrossSubsidyBps,
         ],

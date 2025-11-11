@@ -228,8 +228,9 @@ export const CreateContestForm = () => {
       oracleFee,
       liquidityParameter,
       demandSensitivity,
-      prizeShareBps,
-      userShareBps,
+      positionBonusShareBps: userShareBps,
+      targetPrimaryShareBps,
+      maxCrossSubsidyBps,
     });
 
     // Create and execute the contest creation calls
@@ -243,8 +244,7 @@ export const CreateContestForm = () => {
       BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
       BigInt(liquidityParameter), // liquidityParameter
       demandSensitivity, // demandSensitivity in bps
-      prizeShareBps, // prizeShareBps (7.5% to prize pool)
-      userShareBps, // userShareBps (7.5% to position bonuses)
+      userShareBps, // positionBonusShareBps (portion to position bonuses)
       targetPrimaryShareBps, // targetPrimaryShareBps (60% target for primary pool)
       maxCrossSubsidyBps // maxCrossSubsidyBps (15% max reallocation per deposit)
     );

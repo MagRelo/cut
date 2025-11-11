@@ -1,6 +1,7 @@
 import React from "react";
 import { useBalance, useReadContract } from "wagmi";
-import { createExplorerLinkJSX, getContractAddress } from "../../utils/blockchainUtils";
+import { erc20Abi, formatUnits } from "viem";
+import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 import type { Contest, DetailedResult } from "../../types/contest";
 import ContestContract from "../../utils/contracts/Contest.json";
 import { PositionBadge } from "./PositionBadge";
@@ -30,12 +31,48 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   // Use the contest's stored chainId
   const chainId = contest?.chainId;
 
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
+  const paymentTokenOnChain = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "paymentToken",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as `0x${string}` | undefined;
 
-  // Get platformToken balance for symbol
-  const { data: platformToken } = useBalance({
-    address: platformTokenAddress as `0x${string}`,
-    token: platformTokenAddress as `0x${string}`,
+  const fallbackPaymentTokenAddress = contest?.settings?.platformTokenAddress as
+    | `0x${string}`
+    | undefined;
+
+  const paymentTokenAddress = paymentTokenOnChain ?? fallbackPaymentTokenAddress;
+
+  const paymentTokenSymbol = useReadContract({
+    address: paymentTokenAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "symbol",
+    args: [],
+    query: {
+      enabled: !!paymentTokenAddress,
+    },
+  }).data as string | undefined;
+
+  const paymentTokenDecimals = useReadContract({
+    address: paymentTokenAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "decimals",
+    args: [],
+    query: {
+      enabled: !!paymentTokenAddress,
+    },
+  }).data as number | undefined;
+
+  const { data: contractBalance } = useBalance({
+    address: contest?.address as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}` | undefined,
+    query: {
+      enabled: !!contest?.address && !!paymentTokenAddress,
+    },
   });
 
   // Get primary deposit amount from contract
@@ -93,15 +130,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as `0x${string}` | undefined;
 
-  // Get contract balance
-  const { data: contractBalance } = useBalance({
-    address: contest?.address as `0x${string}`,
-    token: platformTokenAddress as `0x${string}`,
-    query: {
-      enabled: !!contest?.address && !!platformTokenAddress,
-    },
-  });
-
   // Layer 1: Primary Pool Data
   const primaryPrizePool = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -154,16 +182,66 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
+  const secondaryPrizePoolSubsidy = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "secondaryPrizePoolSubsidy",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const secondarySideBalance = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getSecondarySideBalance",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
   // Configuration Parameters
-  // const positionBonusShareBps = useReadContract({
-  //   address: contest?.address as `0x${string}`,
-  //   abi: ContestContract.abi,
-  //   functionName: "positionBonusShareBps",
-  //   args: [],
-  //   query: {
-  //     enabled: !!contest?.address,
-  //   },
-  // }).data as bigint | undefined;
+  const liquidityParameter = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "liquidityParameter",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const demandSensitivityBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "demandSensitivityBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const positionBonusShareBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "positionBonusShareBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const maxCrossSubsidyBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "maxCrossSubsidyBps",
+    args: [],
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
 
   const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -175,16 +253,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  // const maxCrossSubsidyBps = useReadContract({
-  //   address: contest?.address as `0x${string}`,
-  //   abi: ContestContract.abi,
-  //   functionName: "maxCrossSubsidyBps",
-  //   args: [],
-  //   query: {
-  //     enabled: !!contest?.address,
-  //   },
-  // }).data as bigint | undefined;
-
   const currentPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
@@ -194,6 +262,47 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       enabled: !!contest?.address,
     },
   }).data as bigint | undefined;
+
+  const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
+  const tokenSymbol =
+    paymentTokenSymbol ??
+    contractBalance?.symbol ??
+    contest?.settings?.platformTokenSymbol ??
+    "";
+
+  const formatTokenAmount = (
+    value?: bigint,
+    {
+      fractionDigits = 2,
+      decimals = tokenDecimals,
+    }: { fractionDigits?: number; decimals?: number } = {}
+  ) => {
+    if (value === undefined) return "...";
+    try {
+      const normalized = formatUnits(value, decimals);
+      const numeric = Number.parseFloat(normalized);
+      if (Number.isNaN(numeric)) {
+        return normalized;
+      }
+      return numeric.toLocaleString(undefined, { maximumFractionDigits: fractionDigits });
+    } catch {
+      return value.toString();
+    }
+  };
+
+  const bpsToPercent = (value?: bigint, fractionDigits: number = 2) => {
+    if (value === undefined) return "...";
+    return `${(Number(value) / 100).toFixed(fractionDigits)}%`;
+  };
+
+  const resolvedTokenSymbol = tokenSymbol || "TOKEN";
+
+  const targetPrimarySharePercent =
+    targetPrimaryShareBps !== undefined ? Number(targetPrimaryShareBps) / 100 : undefined;
+  const currentPrimarySharePercent =
+    currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
+  const secondaryTargetSharePercent =
+    targetPrimarySharePercent !== undefined ? 100 - targetPrimarySharePercent : undefined;
 
   // const accumulatedOracleFee = useReadContract({
   //   address: contest?.address as `0x${string}`,
@@ -309,29 +418,25 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                             <div className="text-lg font-bold text-green-700 leading-none">
                               {/* Calculate payout amount */}
                               {(() => {
-                                if (!primaryDepositAmount || !contractOracleFee || !platformToken)
+                                if (primaryDepositAmount === undefined || contractOracleFee === undefined)
                                   return "...";
 
-                                // Calculate total pot from entry fee * number of participants
-                                const entryFee = Number(primaryDepositAmount);
+                                const entryFee = Number(
+                                  formatUnits(primaryDepositAmount, tokenDecimals)
+                                );
                                 const participantCount = contest.contestLineups?.length || 0;
                                 const totalPot = entryFee * participantCount;
 
-                                // Calculate oracle fee amount
                                 const oracleFeeAmount =
                                   (totalPot * Number(contractOracleFee)) / 10000;
 
-                                // Net pot after oracle fee
                                 const netPot = totalPot - oracleFeeAmount;
-
-                                // Calculate payout for this position
                                 const payoutAmount = (netPot * result.payoutBasisPoints) / 10000;
 
-                                // Convert to display value
-                                const displayValue =
-                                  payoutAmount / Math.pow(10, platformToken.decimals);
-
-                                return `$${displayValue.toFixed(2)}`;
+                                return `${resolvedTokenSymbol} ${payoutAmount.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`;
                               })()}
                             </div>
                             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
@@ -360,67 +465,90 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
         <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
             {/* Contract Balance */}
-            {contractBalance !== undefined && (
+            {contractBalance?.value !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Contract Balance:</span>
                 <span className="text-gray-900 font-semibold">
-                  {Number(contractBalance.value) / Math.pow(10, contractBalance.decimals)}{" "}
-                  {contractBalance.symbol}
+                  {formatTokenAmount(contractBalance.value, {
+                    fractionDigits: 4,
+                    decimals: contractBalance.decimals,
+                  })}{" "}
+                  {tokenSymbol || contractBalance.symbol || resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
             {/* Primary Side Balance (Total) */}
-            {primarySideBalance !== undefined && platformToken && (
+            {primarySideBalance !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Contest Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
-                  {Number(primarySideBalance) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })} {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
             {/* Primary Prize Pool (Base) */}
-            {primaryPrizePool !== undefined && platformToken && (
+            {primaryPrizePool !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 pl-4">↳ Base Prize Pool:</span>
                 <span className="text-gray-900">
-                  {Number(primaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
             {/* Primary Prize Pool Subsidy */}
-            {primaryPrizePoolSubsidy !== undefined && platformToken && (
+            {primaryPrizePoolSubsidy !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 pl-4">↳ Prize Pool Subsidy:</span>
                 <span className="text-gray-900">
-                  {Number(primaryPrizePoolSubsidy) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
             {/* Total Primary Position Subsidies */}
-            {totalPrimaryPositionSubsidies !== undefined && platformToken && (
+            {totalPrimaryPositionSubsidies !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 pl-4">↳ Position Subsidies:</span>
                 <span className="text-gray-900">
-                  {Number(totalPrimaryPositionSubsidies) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
             {/* Secondary Prize Pool */}
-            {secondaryPrizePool !== undefined && platformToken && (
+            {secondaryPrizePool !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Prediction Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
-                  {Number(secondaryPrizePool) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Prize Pool Subsidy */}
+            {secondaryPrizePoolSubsidy !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Prediction Subsidy:</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Side Balance */}
+            {secondarySideBalance !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Prediction Pool (Total):</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
                 </span>
               </div>
             )}
@@ -437,7 +565,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   {/* Target Indicator Line */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
-                    style={{ left: `${Number(targetPrimaryShareBps) / 100}%` }}
+                    style={{ left: `${targetPrimarySharePercent ?? 0}%` }}
                   >
                     {/* <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-400 rounded-full border-2 border-white" /> */}
                     {/* <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-700 font-semibold">
@@ -448,7 +576,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   {/* Current Position Indicator */}
                   <div
                     className="absolute top-0 bottom-0 w-1 bg-green-500 z-20 rounded-sm"
-                    style={{ left: `${Number(currentPrimaryShareBps) / 100}%` }}
+                    style={{ left: `${currentPrimarySharePercent ?? 0}%` }}
                   >
                     <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-md" />
                     {/* <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-green-700 font-semibold bg-white px-1 rounded border border-green-300">
@@ -483,37 +611,50 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Position Bonus Share */}
-            {/* {positionBonusShareBps !== undefined && (
+            {liquidityParameter !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Liquidity Parameter:</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(liquidityParameter, { fractionDigits: 2 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {demandSensitivityBps !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Demand Sensitivity:</span>
+                <span className="text-gray-900">{bpsToPercent(demandSensitivityBps)}</span>
+              </div>
+            )}
+
+            {positionBonusShareBps !== undefined && (
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Position Bonus Share:</span>
-                  <span className="text-gray-900">{Number(positionBonusShareBps) / 100}%</span>
+                  <span className="text-gray-900">{bpsToPercent(positionBonusShareBps)}</span>
                 </div>
-                <div className="text-xs text-gray-500 pl-0">
-                  Allocated directly to entry owners from secondary deposits
+                <div className="text-xs text-gray-500">
+                  Portion of secondary deposits distributed to entry owners.
                 </div>
               </div>
-            )} */}
+            )}
 
-            {/* Target Ratio */}
-            {/* {targetPrimaryShareBps !== undefined && (
+            {targetPrimarySharePercent !== undefined && secondaryTargetSharePercent !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">Target Ratio:</span>
                 <span className="text-gray-900">
-                  {(Number(targetPrimaryShareBps) / 100).toFixed(2)}% /{" "}
-                  {(100 - Number(targetPrimaryShareBps) / 100).toFixed(2)}%
+                  {targetPrimarySharePercent.toFixed(2)}% / {secondaryTargetSharePercent.toFixed(2)}%
                 </span>
               </div>
-            )} */}
+            )}
 
-            {/* Max Cross Subsidy BPS */}
-            {/* {maxCrossSubsidyBps !== undefined && (
+            {maxCrossSubsidyBps !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Max Cross-Subsidy:</span>
-                <span className="text-gray-900">{Number(maxCrossSubsidyBps) / 100}%</span>
+                <span className="text-gray-600">Max Cross-Subsidy Per Deposit:</span>
+                <span className="text-gray-900">{bpsToPercent(maxCrossSubsidyBps)}</span>
               </div>
-            )} */}
+            )}
 
             <hr className="my-2" />
 
@@ -547,12 +688,12 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )}
 
             {/* Accumulated Oracle Fee */}
-            {/* {accumulatedOracleFee !== undefined && platformToken && (
+            {/* {accumulatedOracleFee !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 pl-4">↳ Accumulated:</span>
                 <span className="text-gray-900">
-                  {Number(accumulatedOracleFee) / Math.pow(10, platformToken.decimals)}{" "}
-                  {platformToken.symbol}
+                  {formatTokenAmount(accumulatedOracleFee, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
                 </span>
               </div>
             )} */}
