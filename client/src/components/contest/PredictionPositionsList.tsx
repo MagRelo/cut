@@ -126,7 +126,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                   </div>
                   <div className="text-xs text-gray-600 truncate leading-6">{lineupName}</div>
                 </div>
-                <div className="flex items-center px-2 py-1 bg-purple-100 rounded text-purple-700 text-xs font-semibold">
+                <div className="flex items-center px-2 py-1 bg-emerald-100 rounded text-emerald-700 text-xs font-semibold">
                   ✓ Active
                 </div>
               </div>

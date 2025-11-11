@@ -2,29 +2,11 @@ import React from "react";
 import { useBalance, useReadContract } from "wagmi";
 import { erc20Abi, formatUnits } from "viem";
 import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
-import type { Contest, DetailedResult } from "../../types/contest";
+import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/Contest.json";
-import { PositionBadge } from "./PositionBadge";
 
 interface ContestSettingsProps {
   contest: Contest;
-}
-
-// Function to get payout structure based on contest size
-function getPayoutStructure(participantCount: number) {
-  const isLargeContest = participantCount >= 10;
-
-  if (isLargeContest) {
-    return {
-      "1": 7000, // 70% for winner
-      "2": 2000, // 20% for second place
-      "3": 1000, // 10% for third place
-    };
-  } else {
-    return {
-      "1": 10000, // 100% for winner (small contests)
-    };
-  }
 }
 
 export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => {
@@ -74,17 +56,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       enabled: !!contest?.address && !!paymentTokenAddress,
     },
   });
-
-  // Get primary deposit amount from contract
-  const primaryDepositAmount = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryDepositAmount",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
 
   // Get expiry timestamp from contract
   const expiryTimestamp = useReadContract({
@@ -202,47 +173,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  // Configuration Parameters
-  const liquidityParameter = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "liquidityParameter",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const demandSensitivityBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "demandSensitivityBps",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const positionBonusShareBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "positionBonusShareBps",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const maxCrossSubsidyBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "maxCrossSubsidyBps",
-    args: [],
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
@@ -265,10 +195,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
   const tokenSymbol =
-    paymentTokenSymbol ??
-    contractBalance?.symbol ??
-    contest?.settings?.platformTokenSymbol ??
-    "";
+    paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.platformTokenSymbol ?? "";
 
   const formatTokenAmount = (
     value?: bigint,
@@ -290,19 +217,12 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     }
   };
 
-  const bpsToPercent = (value?: bigint, fractionDigits: number = 2) => {
-    if (value === undefined) return "...";
-    return `${(Number(value) / 100).toFixed(fractionDigits)}%`;
-  };
-
   const resolvedTokenSymbol = tokenSymbol || "TOKEN";
 
   const targetPrimarySharePercent =
     targetPrimaryShareBps !== undefined ? Number(targetPrimaryShareBps) / 100 : undefined;
   const currentPrimarySharePercent =
     currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
-  const secondaryTargetSharePercent =
-    targetPrimarySharePercent !== undefined ? 100 - targetPrimarySharePercent : undefined;
 
   // const accumulatedOracleFee = useReadContract({
   //   address: contest?.address as `0x${string}`,
@@ -343,120 +263,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Payout Distribution - Only show when NOT settled */}
-      {contest?.contestLineups && contest.status !== "SETTLED" && (
-        <div className="">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Payout Distribution</h3>
-          <div className="bg-gray-50 rounded-lg p-3">
-            {(() => {
-              const participantCount = contest.contestLineups.length;
-              const payoutStructure = getPayoutStructure(participantCount);
-
-              return (
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    {Object.entries(payoutStructure).map(([position, percentage]) => {
-                      return (
-                        <div key={position} className="flex justify-between text-sm">
-                          <span className="text-gray-700 font-display">
-                            {position === "1"
-                              ? "1st Place"
-                              : position === "2"
-                              ? "2nd Place"
-                              : position === "3"
-                              ? "3rd Place"
-                              : `${position}th Place`}
-                          </span>
-                          <span className="font-medium text-emerald-600">{percentage / 100}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Settlement Details - Only show when SETTLED */}
-      {contest.status === "SETTLED" && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-900">Results</h3>
-          {contest.results?.detailedResults ? (
-            <div className="space-y-2 mt-2">
-              {contest.results.detailedResults
-                .filter((result: DetailedResult) => result.payoutBasisPoints > 0)
-                .map((result: DetailedResult, index: number) => {
-                  return (
-                    <div
-                      key={`${result.username}-${index}`}
-                      className="bg-green-50 rounded-sm p-3 border border-green-400"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        {/* Left - Position */}
-                        <PositionBadge
-                          position={result.position}
-                          isInTheMoney={true}
-                          isUser={true}
-                        />
-
-                        {/* Middle - User Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                            {result.username}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate leading-tight mt-0.5">
-                            {result.lineupName}
-                          </div>
-                        </div>
-
-                        {/* Right - Score & Payout */}
-                        <div className="flex-shrink-0 flex items-center gap-4">
-                          {/* Payout */}
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-700 leading-none">
-                              {/* Calculate payout amount */}
-                              {(() => {
-                                if (primaryDepositAmount === undefined || contractOracleFee === undefined)
-                                  return "...";
-
-                                const entryFee = Number(
-                                  formatUnits(primaryDepositAmount, tokenDecimals)
-                                );
-                                const participantCount = contest.contestLineups?.length || 0;
-                                const totalPot = entryFee * participantCount;
-
-                                const oracleFeeAmount =
-                                  (totalPot * Number(contractOracleFee)) / 10000;
-
-                                const netPot = totalPot - oracleFeeAmount;
-                                const payoutAmount = (netPot * result.payoutBasisPoints) / 10000;
-
-                                return `${resolvedTokenSymbol} ${payoutAmount.toLocaleString(undefined, {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}`;
-                              })()}
-                            </div>
-                            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                              {result.payoutBasisPoints / 100}%
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[100px] flex items-center justify-center">
-              <p className="text-gray-500 text-sm">No settlement results available</p>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Contest Contract Details */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-2">Contest Escrow Contract</h3>
@@ -464,6 +270,14 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
         {/* Contract panel */}
         <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
+            {/* Contract Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Contract State:</span>
+              <span className={`${getStatusColor(contractState)}`}>
+                {getStatusLabel(contractState)}
+              </span>
+            </div>
+
             {/* Contract Balance */}
             {contractBalance?.value !== undefined && (
               <div className="flex items-center gap-2">
@@ -478,100 +292,20 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Primary Side Balance (Total) */}
-            {primarySideBalance !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Contest Prize Pool:</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })} {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Primary Prize Pool (Base) */}
-            {primaryPrizePool !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600 pl-4">↳ Base Prize Pool:</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Primary Prize Pool Subsidy */}
-            {primaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600 pl-4">↳ Prize Pool Subsidy:</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Total Primary Position Subsidies */}
-            {totalPrimaryPositionSubsidies !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600 pl-4">↳ Position Subsidies:</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Prize Pool */}
-            {secondaryPrizePool !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Prediction Prize Pool:</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Prize Pool Subsidy */}
-            {secondaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600 pl-4">↳ Prediction Subsidy:</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Side Balance */}
-            {secondarySideBalance !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Prediction Pool (Total):</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
             <hr className="my-2" />
 
             {/* Current Ratio - Visual Slider */}
             {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
               <div className="flex flex-col gap-1">
-                <span className="text-gray-600 mb-2">Rebalancing Ratio:</span>
+                <span className="text-gray-600 mb-2">Pool Rebalancing:</span>
 
                 {/* Slider Container */}
-                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg border border-gray-300">
+                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
                   {/* Target Indicator Line */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
                     style={{ left: `${targetPrimarySharePercent ?? 0}%` }}
-                  >
-                    {/* <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-400 rounded-full border-2 border-white" /> */}
-                    {/* <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-700 font-semibold">
-                      Target
-                    </div> */}
-                  </div>
+                  ></div>
 
                   {/* Current Position Indicator */}
                   <div
@@ -579,16 +313,13 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                     style={{ left: `${currentPrimarySharePercent ?? 0}%` }}
                   >
                     <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-md" />
-                    {/* <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-green-700 font-semibold bg-white px-1 rounded border border-green-300">
-                      Current: {(Number(currentPrimaryShareBps) / 100).toFixed(1)}%
-                    </div> */}
                   </div>
 
                   {/* Labels at the ends */}
                   <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
                     Contest
                   </div>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-purple-700 font-semibold">
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-700 font-semibold">
                     Prediction
                   </div>
                 </div>
@@ -611,60 +342,85 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {liquidityParameter !== undefined && (
+            <div className="mt-2" />
+
+            {/* Primary Side Balance (Total) */}
+            {primarySideBalance !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Liquidity Parameter:</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(liquidityParameter, { fractionDigits: 2 })}{" "}
+                <span className="text-gray-600">Contest Prize Pool:</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
-            {demandSensitivityBps !== undefined && (
+            {/* Primary Prize Pool (Base) */}
+            {primaryPrizePool !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Demand Sensitivity:</span>
-                <span className="text-gray-900">{bpsToPercent(demandSensitivityBps)}</span>
-              </div>
-            )}
-
-            {positionBonusShareBps !== undefined && (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600">Position Bonus Share:</span>
-                  <span className="text-gray-900">{bpsToPercent(positionBonusShareBps)}</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Portion of secondary deposits distributed to entry owners.
-                </div>
-              </div>
-            )}
-
-            {targetPrimarySharePercent !== undefined && secondaryTargetSharePercent !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Target Ratio:</span>
+                <span className="text-gray-600 pl-4">↳ Base Pool:</span>
                 <span className="text-gray-900">
-                  {targetPrimarySharePercent.toFixed(2)}% / {secondaryTargetSharePercent.toFixed(2)}%
+                  {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
                 </span>
               </div>
             )}
 
-            {maxCrossSubsidyBps !== undefined && (
+            {/* Primary Prize Pool Subsidy */}
+            {primaryPrizePoolSubsidy !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600">Max Cross-Subsidy Per Deposit:</span>
-                <span className="text-gray-900">{bpsToPercent(maxCrossSubsidyBps)}</span>
+                <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Side Balance */}
+            {secondarySideBalance !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Prediction Prize Pool:</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Prize Pool */}
+            {secondaryPrizePool !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Base Pool:</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Prize Pool Subsidy */}
+            {secondaryPrizePoolSubsidy !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Total Primary Position Subsidies */}
+            {totalPrimaryPositionSubsidies !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Position Subsidies:</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
               </div>
             )}
 
             <hr className="my-2" />
-
-            {/* Contract Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Contract State:</span>
-              <span className={`${getStatusColor(contractState)}`}>
-                {getStatusLabel(contractState)}
-              </span>
-            </div>
 
             {/* Oracle Address */}
             {oracleAddress && chainId && (

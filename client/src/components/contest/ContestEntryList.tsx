@@ -36,17 +36,13 @@ export const ContestEntryList = ({
       .filter((entryId): entryId is string => typeof entryId === "string" && entryId.length > 0);
   }, [contestLineups]);
 
-  const {
-    entryData,
-    secondaryPrizePoolFormatted,
-    secondaryTotalFundsFormatted,
-    canWithdraw,
-  } = useContestPredictionData({
-    contestAddress,
-    entryIds,
-    enabled: Boolean(contestAddress && entryIds.length > 0),
-    chainId: contestChainId,
-  });
+  const { entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted, canWithdraw } =
+    useContestPredictionData({
+      contestAddress,
+      entryIds,
+      enabled: Boolean(contestAddress && entryIds.length > 0),
+      chainId: contestChainId,
+    });
 
   const marketStats = useMemo(() => {
     const parsedTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
@@ -253,7 +249,7 @@ export const ContestEntryList = ({
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
                     <div
-                      className="absolute inset-y-0 left-0 bg-purple-400 rounded-full transition-all"
+                      className="absolute inset-y-0 left-0 bg-emerald-400 rounded-full transition-all"
                       style={{ width: `${Math.min(safeMarketShare, 100)}%` }}
                     />
                     {safeUserMarketShare > 0 && (
@@ -265,7 +261,7 @@ export const ContestEntryList = ({
                   </div>
 
                   <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
-                  <span className="whitespace-nowrap font-semibold text-purple-700">
+                  <span className="whitespace-nowrap font-semibold text-emerald-700">
                     <span className="font-medium text-gray-500">$10 buys</span> $
                     {safePotentialWinnings.toFixed(2)}
                   </span>

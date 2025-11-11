@@ -60,7 +60,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
 
   return (
     <div className="space-y-3 h-[269px]">
-      <div className="bg-purple-50/60 border border-purple-200/60 rounded-md p-4 text-sm">
+      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-4 text-sm">
         <div className="space-y-2.5">
           <div className="flex justify-between items-center">
             <span className="text-gray-500">Outcome Share</span>

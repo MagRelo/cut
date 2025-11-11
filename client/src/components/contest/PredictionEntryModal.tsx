@@ -50,7 +50,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
             >
               <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-xl transition-all">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-700 to-purple-800 px-6 py-4 text-white">
+                <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4 text-white">
                   <DialogTitle as="h3" className="text-lg font-semibold font-display">
                     Buy Shares
                   </DialogTitle>

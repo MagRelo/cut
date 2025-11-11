@@ -211,7 +211,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                   <button
                     type="button"
                     disabled={!secondaryClaim.canClaim || isSecondaryProcessing}
-                    className="bg-purple-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
+                    className="bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
                     onClick={() => {
                       void handleSecondaryClaim();
                     }}

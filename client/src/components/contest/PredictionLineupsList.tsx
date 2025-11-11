@@ -142,7 +142,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                   <div className="flex-shrink-0 flex flex-col items-end gap-1">
                     <button
                       disabled={secondaryActionsLocked}
-                      className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
                       BUY SHARES
                     </button>

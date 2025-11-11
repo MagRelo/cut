@@ -176,30 +176,29 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   if (!user) {
     return (
       <div className="space-y-2 h-[269px]">
-        <div className="rounded-md border border-purple-200 bg-purple-50 p-4 text-sm text-purple-700">
+        <div className="rounded-md border border-emerald-00 bg-emerald-50 p-4 text-sm text-emerald-700">
           {/* title */}
           <h3 className="text-lg font-semibold font-display mb-2">Winner Outcome Market</h3>
 
           {/* Instuctions/examples */}
           <p className="mb-2 leading-relaxed">
-            <span className="font-semibold text-purple-700">${purchaseAmountDisplay}</span> can buy{" "}
+            <span className="font-semibold text-emerald-700">${purchaseAmountDisplay}</span> can buy{" "}
             {tokensReceivedDisplay} shares in this outcome (
-            <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
+            <span className="font-semibold text-emerald-700">{ownershipPercentDisplay}</span> of the
             supply).
           </p>
           <p className="mb-2 leading-relaxed">
             {" "}
             If this entry wins, you would receive{" "}
-            <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
-            total prize pool (
-            <span className="text-purple-700">${displayPrizePool}</span>), currently
-            worth{" "}
-            <span className="font-semibold text-purple-700">
+            <span className="font-semibold text-emerald-700">{ownershipPercentDisplay}</span> of the
+            total prize pool (<span className="text-emerald-700">${displayPrizePool}</span>),
+            currently worth{" "}
+            <span className="font-semibold text-emerald-700">
               ${potentialReturnDisplay} (~{approximateOddsDisplay}x)
             </span>
           </p>
           <p>
-            <Link to="/connect" className="text-purple-700 font-semibold underline">
+            <Link to="/connect" className="text-emerald-700 font-semibold underline">
               Sign In
             </Link>{" "}
             to purchase shares.
@@ -211,7 +210,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   if (!selectedEntryInfo) {
     return (
-      <div className="rounded-md border border-purple-200 bg-purple-50 p-4 text-sm text-purple-700">
+      <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
         Prediction data is unavailable for this entry.
       </div>
     );
@@ -233,14 +232,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
           disabled={isProcessing}
           autoFocus
         />
       </div>
 
       {/* details */}
-      <div className="bg-purple-50/60 border border-purple-200/60 rounded-md p-3 space-y-2 text-sm">
+      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Purchase Amount</span>
@@ -268,7 +267,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         <div className="text-xs">
           {platformTokenBalance && parseUnits(amount, 18) > platformTokenBalance ? (
             paymentTokenBalance && parseUnits(amount, 6) <= paymentTokenBalance ? (
-              <div className="bg-purple-50 border border-purple-200 rounded p-2 text-purple-700">
+              <div className="bg-emerald-50 border border-emerald-200 rounded p-2 text-emerald-700">
                 Insufficient CUT tokens. Will automatically swap from USDC.
               </div>
             ) : (
@@ -309,7 +308,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
                 parseUnits(amount, 6) > paymentTokenBalance
             )
           }
-          className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
+          className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">

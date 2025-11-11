@@ -122,10 +122,10 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
           {/* Speculator Pool */}
           <div className="text-right">
-            <div className="text-lg font-bold text-purple-700 leading-none">
+            <div className="text-lg font-bold text-emerald-700 leading-none">
               {isPredictionDataLoading ? "..." : `$${speculatorPot}`}
             </div>
-            <div className="text-[10px] uppercase text-purple-600 font-semibold tracking-wide leading-none mt-0.5">
+            <div className="text-[10px] uppercase text-emerald-600 font-semibold tracking-wide leading-none mt-0.5">
               Pool
             </div>
           </div>
