@@ -56,6 +56,17 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
+  // Read secondary prize pool subsidy (cross-subsidy allocated to secondary side)
+  const { data: secondaryPrizePoolSubsidy } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "secondaryPrizePoolSubsidy",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
+
   // Read primary prize pool subsidy (from secondary participants)
   const { data: primaryPrizePoolSubsidy } = useReadContract({
     address: contestAddress as `0x${string}`,
@@ -158,6 +169,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
+  const totalSecondaryFunds =
+    ((secondaryPrizePool as bigint) || 0n) + ((secondaryPrizePoolSubsidy as bigint) || 0n);
+
   // Format the data for easier consumption
   const entryData = entryIds.map((entryId, index) => {
     const price = priceResults?.[index]?.result as bigint | undefined;
@@ -171,15 +185,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     let impliedWinnings = 0n;
     let impliedWinningsFormatted = "0";
 
-    if (
-      balance &&
-      balance > 0n &&
-      supply &&
-      supply > 0n &&
-      secondaryPrizePool &&
-      (secondaryPrizePool as bigint) > 0n
-    ) {
-      impliedWinnings = (balance * (secondaryPrizePool as bigint)) / supply;
+    if (balance && balance > 0n && supply && supply > 0n && totalSecondaryFunds > 0n) {
+      impliedWinnings = (balance * totalSecondaryFunds) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
 
@@ -212,6 +219,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     secondaryPrizePoolFormatted: secondaryPrizePool
       ? formatUnits(secondaryPrizePool as bigint, 18)
       : "0",
+    secondaryPrizePoolSubsidy: (secondaryPrizePoolSubsidy as bigint) || 0n,
+    secondaryPrizePoolSubsidyFormatted: secondaryPrizePoolSubsidy
+      ? formatUnits(secondaryPrizePoolSubsidy as bigint, 18)
+      : "0",
+    secondaryTotalFunds: totalSecondaryFunds,
+    secondaryTotalFundsFormatted: formatUnits(totalSecondaryFunds, 18),
     // Combined subsidy is the sum of prize pool subsidy and position subsidies
     combinedSubsidy:
       ((primaryPrizePoolSubsidy as bigint) || 0n) +

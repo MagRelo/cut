@@ -12,6 +12,7 @@ import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
 import { arePrimaryActionsLocked } from "../types/contest";
+import { ContestResultsPanel } from "../components/contest/ContestResultsPanel";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -22,7 +23,12 @@ export const ContestLobby: React.FC = () => {
   const { user } = usePortoAuth();
 
   // React Query - handles all fetching, caching, and refetching automatically!
-  const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
+  const {
+    data: contest,
+    isLoading,
+    error: queryError,
+    refetch: refetchContest,
+  } = useContestQuery(contestId);
 
   // Compute action locks based on contest status
   const primaryActionsLocked = contest ? arePrimaryActionsLocked(contest.status) : true;
@@ -142,6 +148,21 @@ export const ContestLobby: React.FC = () => {
                 Players
               </Tab>
             )}
+            {contest.status === "SETTLED" && (
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  classNames(
+                    "w-full py-1.5 text-sm font-display leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                  )
+                }
+              >
+                Results
+              </Tab>
+            )}
           </TabList>
           <div className="">
             {/* ENTRIES (Contest) */}
@@ -258,6 +279,13 @@ export const ContestLobby: React.FC = () => {
                   contest={contest}
                   roundDisplay={contest?.tournament?.roundDisplay}
                 />
+              </TabPanel>
+            )}
+            {contest.status === "SETTLED" && (
+              <TabPanel>
+                <div className="p-3">
+                  <ContestResultsPanel contest={contest} onRefreshContest={refetchContest} />
+                </div>
               </TabPanel>
             )}
           </div>

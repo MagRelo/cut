@@ -53,7 +53,12 @@ export interface Contest {
     contestLineups: number;
   };
   results?: {
+    winningEntries: string[];
+    payoutBps: number[];
     detailedResults: DetailedResult[];
+    settleTx?: {
+      hash: string;
+    };
   };
 }
 
@@ -73,6 +78,7 @@ export interface CreateContestInput {
 export interface DetailedResult {
   username: string;
   lineupName: string;
+  entryId: string;
   position: number;
   score: number;
   payoutBasisPoints: number;
