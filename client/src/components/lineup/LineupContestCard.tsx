@@ -48,8 +48,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     setSelectedPlayer(null);
   };
 
+  const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+
   // Calculate total points for the lineup
-  const totalPoints = lineup.tournamentLineup?.players.reduce((sum, player) => {
+  const totalPoints = lineupPlayers.reduce((sum, player) => {
     return (
       sum +
       (player.tournamentData?.total || 0) +
@@ -59,7 +61,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   }, 0);
 
   // Sort players by total points (descending)
-  const sortedPlayers = [...(lineup.tournamentLineup?.players || [])].sort((a, b) => {
+  const sortedPlayers = [...lineupPlayers].sort((a, b) => {
     const aTotal =
       (a.tournamentData?.total || 0) +
       (a.tournamentData?.cut || 0) +
@@ -96,7 +98,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               )
             }
           >
-            Players ({lineup.tournamentLineup?.players.length || 0})
+            Players ({lineupPlayers.length})
           </Tab>
           <Tab
             className={({ selected }: { selected: boolean }) =>

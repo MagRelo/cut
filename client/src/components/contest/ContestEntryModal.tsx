@@ -26,6 +26,7 @@ interface ContestEntryModalProps {
   contest: Contest;
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
+  secondaryTotalFundsFormatted: string;
   canWithdraw: boolean;
 }
 
@@ -38,12 +39,15 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   contest,
   entryData,
   secondaryPrizePoolFormatted,
+  secondaryTotalFundsFormatted,
   canWithdraw,
 }) => {
   if (!lineup) return null;
 
+  const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+
   // Calculate total points for the lineup
-  const totalPoints = lineup.tournamentLineup?.players.reduce((sum, player) => {
+  const totalPoints = lineupPlayers.reduce((sum, player) => {
     return (
       sum +
       (player.tournamentData?.total || 0) +
@@ -52,8 +56,21 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     );
   }, 0);
 
+  const sortedPlayers = [...lineupPlayers].sort((a, b) => {
+    const aTotal =
+      (a.tournamentData?.total || 0) +
+      (a.tournamentData?.cut || 0) +
+      (a.tournamentData?.bonus || 0);
+    const bTotal =
+      (b.tournamentData?.total || 0) +
+      (b.tournamentData?.cut || 0) +
+      (b.tournamentData?.bonus || 0);
+    return bTotal - aTotal;
+  });
+
   const predictionEntry = entryData.find((entry) => entry.entryId === lineup.entryId);
   const hasPosition = Boolean(predictionEntry?.hasPosition);
+  const hasPlayers = lineupPlayers.length > 0;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -97,17 +114,19 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
                   <TabGroup>
                     <TabList className="mb-3 flex gap-2 border-b border-gray-200 px-2">
-                      <Tab
-                        className={({ selected }) =>
-                          `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
-                            selected
-                              ? "border-blue-500 text-blue-600"
-                              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-                          }`
-                        }
-                      >
-                        Players
-                      </Tab>
+                      {hasPlayers && (
+                        <Tab
+                          className={({ selected }) =>
+                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
+                              selected
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                            }`
+                          }
+                        >
+                          Players
+                        </Tab>
+                      )}
                       <Tab
                         className={({ selected }) =>
                           `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
@@ -134,21 +153,10 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       )}
                     </TabList>
                     <TabPanels>
-                      <TabPanel>
-                        <div>
-                          {[...(lineup.tournamentLineup?.players || [])]
-                            .sort((a, b) => {
-                              const aTotal =
-                                (a.tournamentData?.total || 0) +
-                                (a.tournamentData?.cut || 0) +
-                                (a.tournamentData?.bonus || 0);
-                              const bTotal =
-                                (b.tournamentData?.total || 0) +
-                                (b.tournamentData?.cut || 0) +
-                                (b.tournamentData?.bonus || 0);
-                              return bTotal - aTotal;
-                            })
-                            .map((player) => (
+                      {hasPlayers && (
+                        <TabPanel>
+                          <div>
+                            {sortedPlayers.map((player) => (
                               <PlayerDisplayRow
                                 key={player.id}
                                 player={player}
@@ -156,8 +164,9 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                                 showArrow={false}
                               />
                             ))}
-                        </div>
-                      </TabPanel>
+                          </div>
+                        </TabPanel>
+                      )}
                       <TabPanel>
                         <div className="pt-1">
                           <PredictionEntryForm
@@ -165,6 +174,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                             entryId={lineup.entryId ?? null}
                             entryData={entryData}
                             secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+                            secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
                             onClose={onClose}
                           />
                         </div>

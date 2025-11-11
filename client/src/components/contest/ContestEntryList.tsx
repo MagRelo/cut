@@ -36,7 +36,12 @@ export const ContestEntryList = ({
       .filter((entryId): entryId is string => typeof entryId === "string" && entryId.length > 0);
   }, [contestLineups]);
 
-  const { entryData, secondaryPrizePoolFormatted, canWithdraw } = useContestPredictionData({
+  const {
+    entryData,
+    secondaryPrizePoolFormatted,
+    secondaryTotalFundsFormatted,
+    canWithdraw,
+  } = useContestPredictionData({
     contestAddress,
     entryIds,
     enabled: Boolean(contestAddress && entryIds.length > 0),
@@ -44,8 +49,13 @@ export const ContestEntryList = ({
   });
 
   const marketStats = useMemo(() => {
+    const parsedTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
     const parsedTotalPot = Number.parseFloat(secondaryPrizePoolFormatted);
-    const totalPot = Number.isFinite(parsedTotalPot) ? parsedTotalPot : 0;
+    const totalPot = Number.isFinite(parsedTotalFunds)
+      ? parsedTotalFunds
+      : Number.isFinite(parsedTotalPot)
+      ? parsedTotalPot
+      : 0;
 
     const totalSupplySum = entryData.reduce((sum, entry) => {
       const parsedSupply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
@@ -56,7 +66,7 @@ export const ContestEntryList = ({
       totalPot,
       totalSupplySum,
     };
-  }, [entryData, secondaryPrizePoolFormatted]);
+  }, [entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted]);
 
   const entryDataMap = useMemo(() => {
     return entryData.reduce((map, entry) => {
@@ -95,7 +105,7 @@ export const ContestEntryList = ({
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
-    if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
+    // if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
 
     if (contestLineup.tournamentLineup) {
       setSelectedLineup(contestLineup);
@@ -142,6 +152,22 @@ export const ContestEntryList = ({
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const isCurrentUser = lineup.userId === user?.id;
         const predictionEntry = lineup.entryId ? entryDataMap.get(lineup.entryId) : undefined;
+        const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+        const sortedPlayerNames = [...lineupPlayers]
+          .sort((a, b) => {
+            const aTotal =
+              (a.tournamentData?.total || 0) +
+              (a.tournamentData?.cut || 0) +
+              (a.tournamentData?.bonus || 0);
+            const bTotal =
+              (b.tournamentData?.total || 0) +
+              (b.tournamentData?.cut || 0) +
+              (b.tournamentData?.bonus || 0);
+            return bTotal - aTotal;
+          })
+          .map((player) => player.pga_lastName)
+          .filter(Boolean)
+          .join(", ");
 
         const supplyValue = Number.parseFloat(predictionEntry?.totalSupplyFormatted ?? "0");
         const priceValue = Number.parseFloat(predictionEntry?.priceFormatted ?? "0");
@@ -164,9 +190,10 @@ export const ContestEntryList = ({
         return (
           <div
             key={lineup.id}
-            className={`${getRowBackgroundColor(isCurrentUser, isInTheMoney)} rounded-sm p-3 mb-2 ${
-              !primaryActionsLocked ? "cursor-default opacity-80" : "cursor-pointer"
-            } border border-gray-300 pb-2 shadow-sm`}
+            className={`${getRowBackgroundColor(
+              isCurrentUser,
+              isInTheMoney
+            )} rounded-sm p-3 mb-2  border border-gray-300 pb-2 shadow-sm`}
             onClick={() => openLineupModal(lineup)}
           >
             <div className="flex items-center justify-between gap-3 ">
@@ -189,21 +216,7 @@ export const ContestEntryList = ({
                 <div className="text-xs text-gray-500 truncate">
                   {!primaryActionsLocked
                     ? lineup.tournamentLineup?.name || "Lineup"
-                    : lineup.tournamentLineup?.players
-                        .sort((a, b) => {
-                          const aTotal =
-                            (a.tournamentData?.total || 0) +
-                            (a.tournamentData?.cut || 0) +
-                            (a.tournamentData?.bonus || 0);
-                          const bTotal =
-                            (b.tournamentData?.total || 0) +
-                            (b.tournamentData?.cut || 0) +
-                            (b.tournamentData?.bonus || 0);
-                          return bTotal - aTotal;
-                        })
-                        ?.map((player) => player.pga_lastName)
-                        .filter(Boolean)
-                        .join(", ") || "No players"}
+                    : sortedPlayerNames || "No players"}
                 </div>
               </div>
 
@@ -273,6 +286,7 @@ export const ContestEntryList = ({
         contest={contest}
         entryData={entryData as PredictionEntryData[]}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+        secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
         canWithdraw={canWithdraw}
       />
     </>

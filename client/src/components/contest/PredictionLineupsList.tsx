@@ -24,7 +24,13 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   }, [contest.contestLineups]);
 
   // Fetch prediction data for all entries
-  const { entryData, canPredict, isLoading, secondaryPrizePoolFormatted } =
+  const {
+    entryData,
+    canPredict,
+    isLoading,
+    secondaryPrizePoolFormatted,
+    secondaryTotalFundsFormatted,
+  } =
     useContestPredictionData({
       contestAddress: contest.address,
       entryIds,
@@ -102,22 +108,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   return (
     <div>
-      {/* Total Pot Header */}
-      <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-300 rounded-lg p-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-purple-700">
-            ${marketStats.totalPot.toFixed(2)}
-          </div>
-          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mt-1">
-            Prediction Pool - Winning Lineup
-          </div>
-          {/* 
-          <div className="text-xs text-gray-600">
-            Select the winning lineup to win the prize pool.
-          </div> */}
-        </div>
-      </div>
-
       {/* Lineups */}
       <div className="space-y-2 mt-2">
         {[...entryData]
@@ -190,6 +180,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         entryId={selectedEntryId}
         entryData={entryData}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+        secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
       />
     </div>
   );

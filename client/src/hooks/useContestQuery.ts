@@ -20,8 +20,8 @@ export function useContestQuery(contestId: string | undefined) {
       return await apiClient.get<Contest>(`/contests/${contestId}`);
     },
     enabled: !!contestId, // Only run query if contestId exists
-    staleTime: 1 * 60 * 1000, // 1 minute - contest data changes when people join/leave
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -42,8 +42,8 @@ export function useContestsQuery(tournamentId: string | undefined, chainId: numb
       );
     },
     enabled: !!tournamentId && !!chainId,
-    staleTime: 30 * 1000, // 30 seconds - contest list changes frequently
-    refetchOnWindowFocus: true,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     retry: 1,
     placeholderData: (previousData) => previousData, // Keep previous data while refetching
   });

@@ -24,6 +24,7 @@ interface PredictionEntryFormProps {
   entryId: string | null;
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
+  secondaryTotalFundsFormatted: string;
   onClose: () => void;
 }
 
@@ -32,6 +33,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   entryId,
   entryData,
   secondaryPrizePoolFormatted,
+  secondaryTotalFundsFormatted,
   onClose,
 }) => {
   const { platformTokenBalance, paymentTokenBalance, user } = usePortoAuth();
@@ -45,13 +47,21 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     [entryData, entryId]
   );
 
+  const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
   const parsedSecondaryPrizePool = Number.parseFloat(secondaryPrizePoolFormatted);
-  const totalPrizePool = Number.isFinite(parsedSecondaryPrizePool)
+
+  const totalPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
+    ? parsedSecondaryTotalFunds
+    : Number.isFinite(parsedSecondaryPrizePool)
     ? parsedSecondaryPrizePool
     : entryData.reduce((sum, entry) => {
         const supply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
         return sum + (Number.isFinite(supply) ? supply : 0);
       }, 0);
+
+  const displayPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
+    ? secondaryTotalFundsFormatted
+    : secondaryPrizePoolFormatted;
 
   const metrics = useMemo(() => {
     if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo) {
@@ -182,7 +192,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             If this entry wins, you would receive{" "}
             <span className="font-semibold text-purple-700">{ownershipPercentDisplay}</span> of the
             total prize pool (
-            <span className="text-purple-700">${secondaryPrizePoolFormatted}</span>), currently
+            <span className="text-purple-700">${displayPrizePool}</span>), currently
             worth{" "}
             <span className="font-semibold text-purple-700">
               ${potentialReturnDisplay} (~{approximateOddsDisplay}x)

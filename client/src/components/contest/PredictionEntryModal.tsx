@@ -10,6 +10,7 @@ interface PredictionEntryModalProps {
   entryId: string | null;
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
+  secondaryTotalFundsFormatted: string;
 }
 
 export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
@@ -19,6 +20,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   entryId,
   entryData,
   secondaryPrizePoolFormatted,
+  secondaryTotalFundsFormatted,
 }) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -60,6 +62,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     entryId={entryId}
                     entryData={entryData}
                     secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+                    secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
                     onClose={onClose}
                   />
                 </div>

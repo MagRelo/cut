@@ -25,8 +25,8 @@ export function useLineupsQuery(tournamentId: string | undefined, enabled: boole
       return data.lineups || [];
     },
     enabled: !!tournamentId && enabled, // Only run if tournamentId exists and enabled
-    staleTime: 2 * 60 * 1000, // 2 minutes - lineup data doesn't change often
-    refetchOnWindowFocus: true,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -46,8 +46,8 @@ export function useLineupQuery(lineupId: string | undefined, enabled: boolean = 
       return data.lineups[0] || null;
     },
     enabled: !!lineupId && enabled,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnWindowFocus: true,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }

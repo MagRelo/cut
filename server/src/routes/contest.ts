@@ -13,6 +13,49 @@ import {
 
 const contestRouter = new Hono();
 
+type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
+
+const formatContestLineup = (
+  lineup: any,
+  contestStatus: ContestStatus,
+  tournamentId?: string
+) => {
+  if (!lineup?.tournamentLineup) {
+    return lineup;
+  }
+
+  const shouldMaskPlayers = contestStatus === "OPEN";
+  const players =
+    !shouldMaskPlayers && tournamentId && lineup.tournamentLineup.players
+      ? lineup.tournamentLineup.players.map((playerData: any) =>
+          transformLineupPlayer(playerData, tournamentId)
+        )
+      : [];
+
+  return {
+    ...lineup,
+    tournamentLineup: {
+      ...lineup.tournamentLineup,
+      players,
+    },
+  };
+};
+
+const formatContestResponse = (contest: any, fallbackTournamentId?: string) => {
+  if (!contest?.contestLineups) {
+    return contest;
+  }
+
+  const tournamentId = contest.tournamentId ?? fallbackTournamentId;
+
+  return {
+    ...contest,
+    contestLineups: contest.contestLineups.map((lineup: any) =>
+      formatContestLineup(lineup, contest.status, tournamentId)
+    ),
+  };
+};
+
 // Get contests by tournament ID and chainId
 contestRouter.get("/", async (c) => {
   try {
@@ -50,20 +93,9 @@ contestRouter.get("/", async (c) => {
     });
 
     // Format the contests data to transform player structure
-    const formattedContests = contests.map((contest: any) => ({
-      ...contest,
-      contestLineups: contest.contestLineups.map((lineup: any) => ({
-        ...lineup,
-        tournamentLineup: lineup.tournamentLineup
-          ? {
-              ...lineup.tournamentLineup,
-              players: lineup.tournamentLineup.players.map((playerData: any) =>
-                transformLineupPlayer(playerData, validTournamentId)
-              ),
-            }
-          : null,
-      })),
-    }));
+    const formattedContests = contests.map((contest: any) =>
+      formatContestResponse(contest, validTournamentId)
+    );
 
     return c.json(formattedContests);
   } catch (error) {
@@ -109,18 +141,7 @@ contestRouter.get("/:id", async (c) => {
     }
 
     // Format the contest.contestLineups.tournamentLineup.players
-    const formattedContest = {
-      ...contest,
-      contestLineups: contest.contestLineups.map((lineup: any) => ({
-        ...lineup,
-        tournamentLineup: {
-          ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData: any) =>
-            transformLineupPlayer(playerData, contest.tournamentId)
-          ),
-        },
-      })),
-    };
+    const formattedContest = formatContestResponse(contest);
 
     return c.json(formattedContest);
   } catch (error) {
@@ -387,18 +408,7 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
     }
 
     // Format the contest data
-    const formattedContest = {
-      ...contest,
-      contestLineups: contest.contestLineups.map((lineup: any) => ({
-        ...lineup,
-        tournamentLineup: {
-          ...lineup.tournamentLineup,
-          players: lineup.tournamentLineup.players.map((playerData: any) =>
-            transformLineupPlayer(playerData, contest.tournamentId)
-          ),
-        },
-      })),
-    };
+    const formattedContest = formatContestResponse(contest);
 
     return c.json(formattedContest, 201);
   } catch (error) {
@@ -470,18 +480,7 @@ contestRouter.delete(
       }
 
       // Format the contest data
-      const formattedContest = {
-        ...contest,
-        contestLineups: contest.contestLineups.map((lineup: any) => ({
-          ...lineup,
-          tournamentLineup: {
-            ...lineup.tournamentLineup,
-            players: lineup.tournamentLineup.players.map((playerData: any) =>
-              transformLineupPlayer(playerData, contest.tournamentId)
-            ),
-          },
-        })),
-      };
+      const formattedContest = formatContestResponse(contest);
 
       return c.json(formattedContest);
     } catch (error) {

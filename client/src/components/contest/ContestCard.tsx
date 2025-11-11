@@ -57,16 +57,26 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
       : 0;
 
   // Fetch speculator pot - don't need entryIds to get total pot
-  const { secondaryPrizePoolFormatted, isLoading: isPredictionDataLoading } =
-    useContestPredictionData({
-      contestAddress: contest.address,
-      entryIds: [], // Empty array since we only need secondaryPrizePool
-      enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-      chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-    });
+  const {
+    secondaryPrizePoolFormatted,
+    secondaryPrizePoolSubsidyFormatted,
+    secondaryTotalFundsFormatted,
+    isLoading: isPredictionDataLoading,
+  } = useContestPredictionData({
+    contestAddress: contest.address,
+    entryIds: [], // Empty array since we only need secondary prize pool data
+    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
+    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+  });
 
-  // Parse and format the speculator pot
-  const speculatorPot = Math.round(parseFloat(secondaryPrizePoolFormatted || "0"));
+  // Parse and format the speculator pot (pool + subsidy)
+  const rawSecondaryPot = parseFloat(secondaryPrizePoolFormatted || "0");
+  const rawSecondarySubsidy = parseFloat(secondaryPrizePoolSubsidyFormatted || "0");
+  const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
+
+  const speculatorPot = Number.isFinite(rawSecondaryTotal)
+    ? Math.round(rawSecondaryTotal)
+    : Math.round(rawSecondaryPot + rawSecondarySubsidy);
 
   const formatStatus = (status: string) => {
     return status
