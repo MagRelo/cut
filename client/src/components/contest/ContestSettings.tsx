@@ -11,13 +11,14 @@ interface ContestSettingsProps {
 
 export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => {
   // Use the contest's stored chainId
-  const chainId = contest?.chainId;
+  const chainId = contest?.chainId as 8453 | 84532 | undefined;
 
   const paymentTokenOnChain = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "paymentToken",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -34,6 +35,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: erc20Abi,
     functionName: "symbol",
     args: [],
+    chainId,
     query: {
       enabled: !!paymentTokenAddress,
     },
@@ -44,6 +46,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: erc20Abi,
     functionName: "decimals",
     args: [],
+    chainId,
     query: {
       enabled: !!paymentTokenAddress,
     },
@@ -52,6 +55,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   const { data: contractBalance } = useBalance({
     address: contest?.address as `0x${string}`,
     token: paymentTokenAddress as `0x${string}` | undefined,
+    chainId,
     query: {
       enabled: !!contest?.address && !!paymentTokenAddress,
     },
@@ -63,6 +67,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "expiryTimestamp",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -74,6 +79,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "state",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -85,6 +91,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "oracleFeeBps",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -96,6 +103,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "oracle",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -107,6 +115,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "primaryPrizePool",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -117,6 +126,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "primaryPrizePoolSubsidy",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -127,6 +137,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "totalPrimaryPositionSubsidies",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -137,6 +148,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "getPrimarySideBalance",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -148,6 +160,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "secondaryPrizePool",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -158,6 +171,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "secondaryPrizePoolSubsidy",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -168,6 +182,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "getSecondarySideBalance",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -178,6 +193,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "targetPrimaryShareBps",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
@@ -188,6 +204,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     abi: ContestContract.abi,
     functionName: "getPrimarySideShareBps",
     args: [],
+    chainId,
     query: {
       enabled: !!contest?.address,
     },
