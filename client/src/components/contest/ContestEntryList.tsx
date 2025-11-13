@@ -263,7 +263,7 @@ export const ContestEntryList = ({
 
                   <span className="whitespace-nowrap font-semibold text-emerald-700">
                     <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                      ODDS TO WIN
+                      WIN PAYS
                     </span>{" "}
                     {oddsDisplay}
                   </span>
