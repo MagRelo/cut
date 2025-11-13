@@ -1,116 +1,46 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import React, { useMemo } from "react";
 import { useAccount } from "wagmi";
 import { baseSepolia } from "wagmi/chains";
 import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useCurrentTournament } from "../hooks/useTournamentData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
 export const Contests: React.FC = () => {
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const { user } = usePortoAuth();
   const { chainId: connectedChainId } = useAccount();
   const chainId = connectedChainId ?? baseSepolia.id;
 
-  const { tournament, isLoading, error: fetchError } = useCurrentTournament();
+  const { tournament, isLoading: isTournamentLoading, error: fetchError } = useCurrentTournament();
   const tournamentId = tournament?.id;
 
   // Fetch contests with full lineup data to determine user participation
   const {
-    data: contestsWithLineups = [],
+    data: contestsWithLineupsData,
     isLoading: isContestsLoading,
     error: contestsError,
   } = useContestsQuery(tournamentId, chainId);
-
   const tournamentError = fetchError instanceof Error ? fetchError.message : null;
   const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
   const error = tournamentError ?? contestsErrorMessage;
 
-  // Filter contests by chain ID client-side
-  const contests = useMemo(() => {
-    return contestsWithLineups?.filter((contest) => contest.chainId === chainId) ?? [];
-  }, [contestsWithLineups, chainId]);
-
   // Sort contests by entry fee (highest first)
-  const sortedContests = useMemo(() => {
-    return [...contests]?.sort((a, b) => {
+  const contests = useMemo(() => {
+    const list = contestsWithLineupsData ?? [];
+    return [...list].sort((a, b) => {
       const feeA = a.settings?.fee ?? 0;
       const feeB = b.settings?.fee ?? 0;
-      return feeB - feeA; // Descending order
+      return feeB - feeA;
     });
-  }, [contests]);
+  }, [contestsWithLineupsData]);
 
-  // Separate contests into user's contests and all contests, then sort
-  const userContestIds = useMemo(() => {
-    if (!user?.id) return [];
-
-    return contestsWithLineups
-      .filter((contest) => contest.contestLineups?.some((lineup) => lineup.userId === user.id))
-      .map((contest) => contest.id);
-  }, [contestsWithLineups, user?.id]);
-
-  const userContests = useMemo(() => {
-    if (userContestIds.length === 0) return [];
-
-    const contestIdSet = new Set(userContestIds);
-    return sortedContests?.filter((contest) => contestIdSet.has(contest.id)) ?? [];
-  }, [sortedContests, userContestIds]);
-
-  // Update selected tab when data changes
-  useEffect(() => {
-    if (!isLoading) {
-      const newTabIndex = userContests.length > 0 ? 0 : 1;
-      setSelectedTabIndex(newTabIndex);
-    }
-  }, [userContests.length, isLoading]);
+  const showLoading =
+    isTournamentLoading || (isContestsLoading && contestsWithLineupsData === undefined);
 
   return (
     <div className="space-y-4 p-4">
       <PageHeader title="Contests" className="" />
-
-      <div className="bg-white rounded-sm shadow">
-        <TabGroup selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
-          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              My Contests
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )
-              }
-            >
-              All Contests
-            </Tab>
-          </TabList>
-          <div className="p-2">
-            <TabPanel>
-              <ContestList contests={userContests} loading={isLoading || isContestsLoading} error={error} />
-            </TabPanel>
-            <TabPanel>
-              <ContestList contests={sortedContests} loading={isLoading || isContestsLoading} error={error} />
-            </TabPanel>
-          </div>
-        </TabGroup>
+      <div className="bg-white rounded-sm shadow p-2">
+        <ContestList contests={contests} loading={showLoading} error={error} />
       </div>
     </div>
   );
