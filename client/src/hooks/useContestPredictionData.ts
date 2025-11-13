@@ -139,6 +139,20 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress]
   );
 
+  const positionSubsidyContracts = useMemo(
+    () =>
+      shouldFetchEntries
+        ? entryIds.map((entryId) => ({
+            address: contestAddress as `0x${string}`,
+            abi: contestAbi,
+            functionName: "primaryPositionSubsidy",
+            args: [BigInt(entryId)],
+            chainId,
+          }))
+        : [],
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
+  );
+
   const { data: priceResults, isLoading: isLoadingPrices } = useReadContracts({
     contracts: priceContracts,
     query: {
@@ -169,6 +183,16 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
+  const { data: positionSubsidyResults, isLoading: isLoadingPositionSubsidies } = useReadContracts({
+    contracts: positionSubsidyContracts,
+    query: {
+      enabled: shouldFetchEntries,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  });
+
   const totalSecondaryFunds =
     ((secondaryPrizePool as bigint) || 0n) + ((secondaryPrizePoolSubsidy as bigint) || 0n);
 
@@ -179,6 +203,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       ? (balanceResults?.[index]?.result as bigint | undefined)
       : undefined;
     const supply = supplyResults?.[index]?.result as bigint | undefined;
+    const positionSubsidy = positionSubsidyResults?.[index]?.result as bigint | undefined;
 
     // Calculate implied winnings if this entry wins
     // Formula: (userBalance / totalSupply) * totalCollateral
@@ -198,6 +223,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       balanceFormatted: balance ? formatUnits(balance, 18) : "0",
       totalSupply: supply || 0n,
       totalSupplyFormatted: supply ? formatUnits(supply, 18) : "0",
+      positionSubsidy: positionSubsidy || 0n,
+      positionSubsidyFormatted: positionSubsidy ? formatUnits(positionSubsidy, 18) : "0",
       impliedWinnings,
       impliedWinningsFormatted,
       hasPosition: balance ? balance > 0n : false,
@@ -207,7 +234,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     };
   });
 
-  const isLoading = isLoadingState || isLoadingPrices || isLoadingBalances || isLoadingSupplies;
+  const isLoading =
+    isLoadingState ||
+    isLoadingPrices ||
+    isLoadingBalances ||
+    isLoadingSupplies ||
+    isLoadingPositionSubsidies;
 
   return {
     contestState: contestState as ContestState | undefined,

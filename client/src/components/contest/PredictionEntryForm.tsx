@@ -14,6 +14,8 @@ export interface PredictionEntryData {
   balanceFormatted: string;
   totalSupply: bigint;
   totalSupplyFormatted: string;
+  positionSubsidy: bigint;
+  positionSubsidyFormatted: string;
   impliedWinnings: bigint;
   impliedWinningsFormatted: string;
   hasPosition: boolean;

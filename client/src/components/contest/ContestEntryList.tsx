@@ -71,10 +71,11 @@ export const ContestEntryList = ({
     }, new Map<string, (typeof entryData)[number]>());
   }, [entryData]);
 
+  const DEFAULT_PURCHASE_AMOUNT = 10;
+  const FEE_PERCENTAGE = 0.15;
+
   const calculateWinnings = (price: number, supply: number) => {
-    const positionAmount = 10;
-    const feePercentage = 0.15;
-    const netPositionAmount = positionAmount * (1 - feePercentage);
+    const netPositionAmount = DEFAULT_PURCHASE_AMOUNT * (1 - FEE_PERCENTAGE);
     const newTotalPot = marketStats.totalPot + netPositionAmount;
 
     if (!Number.isFinite(price) || !Number.isFinite(supply) || price <= 0 || supply <= 0) {
@@ -89,11 +90,6 @@ export const ContestEntryList = ({
     }
 
     return (tokensFromPosition / newSupply) * newTotalPot;
-  };
-
-  const calculateMarketShare = (supply: number) => {
-    if (!Number.isFinite(supply) || marketStats.totalSupplySum === 0) return 0;
-    return (supply / marketStats.totalSupplySum) * 100;
   };
 
   // lineup modal
@@ -167,21 +163,26 @@ export const ContestEntryList = ({
 
         const supplyValue = Number.parseFloat(predictionEntry?.totalSupplyFormatted ?? "0");
         const priceValue = Number.parseFloat(predictionEntry?.priceFormatted ?? "0");
-        const balanceValue = Number.parseFloat(predictionEntry?.balanceFormatted ?? "0");
         const normalizedSupply = Number.isFinite(supplyValue) ? supplyValue : 0;
-        const normalizedBalance = Number.isFinite(balanceValue) ? balanceValue : 0;
         const normalizedPrice = Number.isFinite(priceValue) ? priceValue : 0;
-        const marketShare = calculateMarketShare(normalizedSupply);
         const potentialWinnings = calculateWinnings(normalizedPrice, normalizedSupply);
-        const safeMarketShare = Number.isFinite(marketShare) ? marketShare : 0;
-        const userShareOfEntry =
-          normalizedSupply > 0 ? (normalizedBalance / normalizedSupply) * 100 : 0;
-        const safeUserShareOfEntry = Number.isFinite(userShareOfEntry) ? userShareOfEntry : 0;
-        const userMarketSharePortion = (safeUserShareOfEntry / 100) * safeMarketShare;
-        const safeUserMarketShare = Number.isFinite(userMarketSharePortion)
-          ? Math.max(0, userMarketSharePortion)
-          : 0;
         const safePotentialWinnings = Number.isFinite(potentialWinnings) ? potentialWinnings : 0;
+        const oddsMultiple =
+          safePotentialWinnings > 0 ? safePotentialWinnings / DEFAULT_PURCHASE_AMOUNT : 0;
+        const oddsDisplay =
+          Number.isFinite(oddsMultiple) && oddsMultiple > 0
+            ? `${oddsMultiple.toFixed(1)}x`
+            : "0.0x";
+        const positionSubsidyValue = Number.parseFloat(
+          predictionEntry?.positionSubsidyFormatted ?? "0"
+        );
+        const safePositionSubsidy = Number.isFinite(positionSubsidyValue)
+          ? positionSubsidyValue
+          : 0;
+        const positionSubsidyDisplay = safePositionSubsidy.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
 
         return (
           <div
@@ -246,25 +247,33 @@ export const ContestEntryList = ({
 
             {predictionEntry && (
               <div className="mt-2 text-xs text-gray-600 border-t border-gray-200 pt-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
-                    <div
-                      className="absolute inset-y-0 left-0 bg-emerald-400 rounded-full transition-all"
-                      style={{ width: `${Math.min(safeMarketShare, 100)}%` }}
-                    />
-                    {safeUserMarketShare > 0 && (
-                      <div
-                        className="absolute inset-y-0 left-0 bg-green-600 rounded-full transition-all"
-                        style={{ width: `${Math.min(safeUserMarketShare, safeMarketShare, 100)}%` }}
-                      />
-                    )}
-                  </div>
+                <div className="flex items-center justify-end gap-3">
+                  {/* Earnings */}
+                  {isCurrentUser && (
+                    <>
+                      <div className="flex-1 flex items-center justify-start gap-1 text-sm font-semibold text-emerald-700">
+                        <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
+                          Earnings
+                        </span>
+                        <span className="text-[12px]">${positionSubsidyDisplay}</span>
+                      </div>
+                      <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
+                    </>
+                  )}
 
-                  <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
                   <span className="whitespace-nowrap font-semibold text-emerald-700">
-                    <span className="font-medium text-gray-500">$10 buys</span> $
-                    {safePotentialWinnings.toFixed(2)}
+                    <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
+                      ODDS TO WIN
+                    </span>{" "}
+                    {oddsDisplay}
                   </span>
+
+                  {/* dummy button t olet people know its clickable*/}
+                  <button className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded transition-colors">
+                    <span className="text-[10px] uppercase tracking-wide text-white font-semibold">
+                      BET
+                    </span>
+                  </button>
                 </div>
               </div>
             )}
