@@ -8,6 +8,7 @@ import { updateContestLineups } from "../services/updateContestLineups.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
+import { batchLockContests } from "../services/batch/batchLockContests.js";
 
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
@@ -89,13 +90,10 @@ class CronScheduler {
     );
 
     try {
-      // Step 1: Update tournament data (always runs)
       await this.executeWithErrorHandling("Update Tournament", updateTournament);
-
-      // Step 2: Activate contests that should be active (OPEN → ACTIVE)
       await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
+      await this.executeWithErrorHandling("Lock Contests", batchLockContests);
 
-      // Step 3-4: Update player scores and contest lineups (conditional on tournament status)
       const shouldRunPlayerUpdates = await this.shouldRunPlayerUpdates();
       if (shouldRunPlayerUpdates) {
         // Update player scores first
