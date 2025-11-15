@@ -7,7 +7,7 @@ import { useGlobalError } from "../../contexts/GlobalErrorContext";
 export const TournamentHeaderPanel: React.FC = () => {
   // Use lightweight metadata endpoint instead of full tournament data
   // This loads ~10x faster since it doesn't fetch all players and contests
-  const { data, isLoading, isFetching, error: queryError } = useTournamentMetadata();
+  const { data, isFetching, error: queryError } = useTournamentMetadata();
   const { showError, clearError } = useGlobalError();
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export const TournamentHeaderPanel: React.FC = () => {
 
   // Only show loading on initial load (no data yet)
   // This prevents getting stuck in loading state when refetching
-  if (isLoading && !currentTournament) {
+  if (isFetching && !currentTournament) {
     return (
       <div className="relative overflow-hidden min-h-[176px] border-b border-gray-300 bg-slate-700 animate-pulse">
         <div className="relative p-4">
