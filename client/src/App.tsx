@@ -28,6 +28,8 @@ import ContractsPage from "./pages/ContractsPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 
 import { TournamentHeaderPanel } from "./components/tournament/TournamentHeaderPanel";
+import { Navigation } from "./components/common/Navigation";
+
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
@@ -59,6 +61,9 @@ export const App: React.FC = () => {
                   <div className="container mx-auto md:py-8">
                     <div className="max-w-2xl mx-auto">
                       <TournamentHeaderPanel />
+                      <div className="-mt-[45px] relative z-10 px-4">
+                        <Navigation />
+                      </div>
                       <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/terms" element={<TermsOfService />} />

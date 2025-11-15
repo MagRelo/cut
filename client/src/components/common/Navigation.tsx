@@ -15,7 +15,7 @@ export const Navigation: React.FC = () => {
 
   const getLinkClassName = (path: string) => {
     return `flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-      location.pathname === path ? "border-white bg-white/20" : "border-white/50"
+      location.pathname === path ? "border-white bg-white/20" : "border-white/50 bg-black/30"
     } rounded px-3 py-1 transition-colors flex items-center justify-center`;
   };
 
@@ -59,7 +59,9 @@ export const Navigation: React.FC = () => {
         <Link
           to="/account"
           className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-            location.pathname === "/account" ? "border-white bg-white/20" : "border-white/50"
+            location.pathname === "/account"
+              ? "border-white bg-white/20"
+              : "border-white/50 bg-black/30"
           } rounded-full transition-colors flex items-center justify-center`}
           style={{ width: "31px", height: "31px" }}
         >

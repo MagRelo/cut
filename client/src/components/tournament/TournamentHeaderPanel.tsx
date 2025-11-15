@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { CountdownTimer } from "./CountdownTimer";
-import { Navigation } from "../common/Navigation";
+
 import { useGlobalError } from "../../contexts/GlobalErrorContext";
 
 export const TournamentHeaderPanel: React.FC = () => {
@@ -37,12 +37,6 @@ export const TournamentHeaderPanel: React.FC = () => {
           <div className="h-6 bg-gray-600 rounded w-1/2 mb-2"></div>
           {/* Status skeleton */}
           <div className="h-5 bg-gray-600 rounded w-1/3 mb-5"></div>
-          {/* Navigation skeleton */}
-          <div className="flex gap-2">
-            <div className="h-10 bg-gray-600 rounded w-24"></div>
-            <div className="h-10 bg-gray-600 rounded w-24"></div>
-            <div className="h-10 bg-gray-600 rounded w-24"></div>
-          </div>
         </div>
       </div>
     );
@@ -103,12 +97,10 @@ export const TournamentHeaderPanel: React.FC = () => {
               </p>
             )}
           </div>
-
-          {/* links to team and leagues */}
-          <div className="mt-4">
-            <Navigation />
-          </div>
         </div>
+
+        {/* padding for navigation */}
+        <div className="h-10" />
       </div>
     </>
   );
