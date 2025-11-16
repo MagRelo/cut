@@ -293,7 +293,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
             </div>
             {roundData?.ratio !== undefined && roundData.ratio < 1 && (
               <span className="text-xs font-bold text-gray-400">
-                {Math.round(roundData.ratio * 18)} holes completed
+                thru {Math.round(roundData.ratio * 18)}
               </span>
             )}
           </div>
