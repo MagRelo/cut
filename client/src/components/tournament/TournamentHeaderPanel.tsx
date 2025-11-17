@@ -45,12 +45,10 @@ export const TournamentHeaderPanel: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="h-8 w-16 bg-gray-300/70 rounded" />
               <div className="h-8 w-20 bg-gray-300/70 rounded" />
-              <div className="h-8 w-24 bg-gray-300/70 rounded" />
             </div>
 
             {/* account + icon skeleton */}
             <div className="flex items-center gap-2">
-              <div className="h-6 w-16 bg-gray-300/70 rounded" />
               <div className="h-8 w-8 bg-gray-300/70 rounded-full" />
             </div>
           </div>
