@@ -1,4 +1,5 @@
 import { useAccount } from "wagmi";
+import { Link } from "react-router-dom";
 
 import { CopyToClipboard } from "../components/common/CopyToClipboard";
 import { NetworkStatus } from "../components/common/NetworkStatus";
@@ -98,6 +99,46 @@ export function UserPage() {
 
       {/* User Settings */}
       <UserSettings />
+
+      {/* Contest History Link */}
+      <div className="bg-white rounded-sm shadow p-4 mt-4">
+        {/* Header */}
+        <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Contest History</div>
+
+        <Link
+          to="/account/history"
+          className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            {/* <div className="flex-shrink-0">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div> */}
+            <div className="text-sm text-gray-500">View all contests you've participated in</div>
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
 
       {/* Wallet Information - Below tabs */}
       <WalletInfo address={address} disconnect={logout} />

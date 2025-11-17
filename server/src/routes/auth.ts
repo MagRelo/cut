@@ -310,4 +310,80 @@ authRouter.put("/settings", requireAuth, async (c) => {
   }
 });
 
+// Get user's contest history
+authRouter.get("/contests", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+
+    // Get all contest lineups for this user, including contest and tournament data
+    const contestLineups = await prisma.contestLineup.findMany({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        contest: {
+          include: {
+            tournament: {
+              select: {
+                id: true,
+                name: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+            userGroup: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                contestLineups: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Group by contest ID to get unique contests (user may have multiple lineups in same contest)
+    const contestMap = new Map();
+    contestLineups.forEach((lineup) => {
+      const contestId = lineup.contestId;
+      if (!contestMap.has(contestId)) {
+        contestMap.set(contestId, {
+          contest: lineup.contest,
+          firstParticipatedAt: lineup.createdAt,
+          lineupCount: 0,
+        });
+      }
+      contestMap.get(contestId).lineupCount += 1;
+    });
+
+    // Convert to array and format response
+    const contests = Array.from(contestMap.values()).map((item) => ({
+      id: item.contest.id,
+      name: item.contest.name,
+      description: item.contest.description,
+      status: item.contest.status,
+      endTime: item.contest.endTime,
+      createdAt: item.contest.createdAt,
+      tournament: item.contest.tournament,
+      userGroup: item.contest.userGroup,
+      lineupCount: item.lineupCount,
+      totalEntries: item.contest._count.contestLineups,
+      firstParticipatedAt: item.firstParticipatedAt,
+    }));
+
+    return c.json({ contests });
+  } catch (error) {
+    console.error("Error fetching user contest history:", error);
+    return c.json({ error: "Failed to fetch contest history" }, 500);
+  }
+});
+
 export default authRouter;

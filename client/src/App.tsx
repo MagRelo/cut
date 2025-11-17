@@ -15,6 +15,7 @@ import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { UserPage } from "./pages/Account";
+import { UserHistoryPage } from "./pages/UserHistoryPage";
 import { CUTInfoPage } from "./pages/AccountCUTInfoPage";
 import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
 
@@ -71,6 +72,14 @@ export const App: React.FC = () => {
                           element={
                             <ProtectedRoute>
                               <UserPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/account/history"
+                          element={
+                            <ProtectedRoute>
+                              <UserHistoryPage />
                             </ProtectedRoute>
                           }
                         />

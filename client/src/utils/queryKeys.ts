@@ -36,4 +36,8 @@ export const queryKeys = {
     byTournament: (tournamentId: string) =>
       [...queryKeys.scores.all, "tournament", tournamentId] as const,
   },
+  user: {
+    all: ["user"] as const,
+    contests: () => [...queryKeys.user.all, "contests"] as const,
+  },
 } as const;
