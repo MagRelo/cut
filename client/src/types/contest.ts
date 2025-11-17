@@ -83,3 +83,19 @@ export interface DetailedResult {
   score: number;
   payoutBasisPoints: number;
 }
+
+export interface TimelineDataPoint {
+  timestamp: string;
+  score: number;
+  roundNumber?: number;
+}
+
+export interface TimelineTeam {
+  name: string;
+  color: string;
+  dataPoints: TimelineDataPoint[];
+}
+
+export interface TimelineData {
+  teams: TimelineTeam[];
+}

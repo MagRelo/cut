@@ -18,6 +18,7 @@ export const queryKeys = {
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
     byTournament: (tournamentId: string, chainId: number) =>
       [...queryKeys.contests.all, "list", tournamentId, chainId] as const,
+    timeline: (contestId: string) => [...queryKeys.contests.all, contestId, "timeline"] as const,
   },
   lineups: {
     all: ["lineups"] as const,

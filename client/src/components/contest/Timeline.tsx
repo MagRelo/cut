@@ -10,20 +10,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-// import type { TimelineData } from "../types.new/team";
-
-// Temporary type definition until the proper type is restored
-interface TimelineData {
-  teams: Array<{
-    name: string;
-    color: string;
-    dataPoints: Array<{
-      timestamp: string;
-      score: number;
-      roundNumber?: number;
-    }>;
-  }>;
-}
+import type { TimelineData } from "../../types/contest";
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -157,6 +144,25 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
       >
         <Line data={data} options={options} />
       </div>
+      {/* Legend */}
+      {topTeams.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="text-xs font-medium text-gray-600 mb-2">Teams</div>
+          <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto">
+            {topTeams.map((team, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: team.color }}
+                />
+                <span className="text-xs text-gray-700 font-display truncate max-w-[200px]">
+                  {team.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

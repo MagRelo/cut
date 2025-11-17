@@ -255,7 +255,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
                 ~${metrics.potentialReturn > 0 ? metrics.potentialReturn.toFixed(2) : "0"}
               </span>
             </div>
-            <div className="text-xs text-gray-500 border-t border-gray-200 pt-1 mt-2">
+            <div className="text-xs text-gray-500 border-t border-gray-200 pt-1 mt-2 text-left">
               <p>
                 <strong>Note:</strong> Final payouts are calculated based on overall participant
                 activity.
@@ -264,22 +264,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           </div>
         </div>
       </div>
-
-      {amount && Number.parseFloat(amount) > 0 && (
-        <div className="text-xs">
-          {platformTokenBalance && parseUnits(amount, 18) > platformTokenBalance ? (
-            paymentTokenBalance && parseUnits(amount, 6) <= paymentTokenBalance ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded p-2 text-emerald-700">
-                Insufficient CUT tokens. Will automatically swap from USDC.
-              </div>
-            ) : (
-              <div className="bg-red-50 border border-red-200 rounded p-2 text-red-700">
-                Insufficient balance. Please add funds to continue.
-              </div>
-            )
-          ) : null}
-        </div>
-      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-3">
