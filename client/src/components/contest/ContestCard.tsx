@@ -105,32 +105,18 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
           </p>
         </div>
 
-        {/* Right Section - Prize Pool & Speculator Pool */}
+        {/* Right Section - Total Prize Pool */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Prize Pool */}
           <div className="text-right">
             <div className="text-lg font-bold text-gray-900 leading-none">
-              ${potAmount + prizeBonus}
+              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-              CONTEST
+              POT
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-8 w-px bg-gray-300"></div>
-
-          {/* Speculator Pool */}
-          <div className="text-right">
-            <div className="text-lg font-bold text-emerald-700 leading-none">
-              {isPredictionDataLoading ? "..." : `$${speculatorPot}`}
-            </div>
-            <div className="text-[10px] uppercase text-emerald-600 font-semibold tracking-wide leading-none mt-0.5">
-              Pool
-            </div>
-          </div>
-
-          {/* <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" /> */}
+          <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
         </div>
       </div>
     </Link>

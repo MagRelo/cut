@@ -104,6 +104,29 @@ export const ContestLobby: React.FC = () => {
         <div className="flex justify-start px-2 my-1 gap-2">
           <button
             type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Contest Settings"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-4 w-4 text-gray-400 mr-1"
+            >
+              <path
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <path d="M8 2v4a2 2 0 002 2h4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            </svg>
+            <span className="font-display text-gray-400">Settings</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsTimelineModalOpen(true)}
             className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
             aria-label="Contest Timeline"
@@ -128,26 +151,6 @@ export const ContestLobby: React.FC = () => {
               />
             </svg>
             <span className="font-display text-gray-400">Timeline</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Settings"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4 text-gray-400 mr-1"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="font-display text-gray-400">Contract</span>
           </button>
         </div>
 
