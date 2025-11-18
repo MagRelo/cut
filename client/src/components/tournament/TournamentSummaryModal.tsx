@@ -21,10 +21,12 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
           <div className="p-4 sm:p-6">
             <div className="space-y-1 pb-4 border-b border-gray-200">
               <DialogTitle className="text-xl font-bold text-gray-900">
-                2025 World Wide Technology Championship
+                2025 RSM Classic
               </DialogTitle>
-              <p className="text-sm font-semibold text-gray-700">El Cardonal at Diamante</p>
-              <p className="text-xs text-gray-500 font-medium">Los Cabos, Mexico</p>
+              <p className="text-sm font-semibold text-gray-700">
+                Sea Island Golf Club (Seaside & Plantation Courses)
+              </p>
+              <p className="text-xs text-gray-500 font-medium">St. Simons Island, Georgia</p>
             </div>
 
             {/* Scrollable content area */}
@@ -36,57 +38,56 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Ben Griffin (+1000):</span> U.S.
-                      Ryder Cup rookie and this week's betting favorite, coming off multiple top
-                      finishes in 2025, including a win at the Charles Schwab Challenge.
-                    </li>
-                    <li>
-                      <span className="font-semibold text-gray-900">J.J. Spaun (+1200):</span> Fresh
-                      off his U.S. Open victory and Ryder Cup debut, Spaun's consistent iron play
-                      and clutch putting make him a strong contender this week.
-                    </li>
-                    <li>
-                      <span className="font-semibold text-gray-900">Max Greyserman (+2200):</span>{" "}
-                      Noted for finishing runner-up at the Baycurrent Classic in Japan recently and
-                      placing fourth here last year; his birdie-making ability fits El Cardonal's
-                      low-scoring layout.
+                      <span className="font-semibold text-gray-900">Harris English (+2000):</span>{" "}
+                      Sea Island resident, FedEx Cup Fall standout, and the betting favorite, known
+                      for elite iron control and performance on coastal layouts.
                     </li>
                     <li>
                       <span className="font-semibold text-gray-900">
-                        Michael Thorbjornsen (+2200):
+                        Michael Thorbjornsen (+2500):
                       </span>{" "}
-                      Coming off recent top-three finishes and known for his power and resilience;
-                      he has shown an ability to attack in windy, coastal conditions.
+                      Top-ranked rookie, coming off strong fall results; his aggressive style and
+                      creativity make him a key contender.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Rico Hoey (+2200):</span>{" "}
-                      Trending upward with two top-four finishes in his latest PGA Tour starts,
-                      suggesting strong form heading into Mexico.
+                      <span className="font-semibold text-gray-900">Si Woo Kim (+2500):</span> PGA
+                      Tour winner and reliable ball striker; his recent starts have him trending as
+                      a possible breakthrough pick this week.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Si Woo Kim (+2200):</span>{" "}
-                      Proven winner and polished ball striker; though recently withdrew, his
-                      historical odds place him among the favorites.
+                      <span className="font-semibold text-gray-900">Brian Harman (+2800):</span>{" "}
+                      Former Open champion, Georgia native, and Seaside Course expert. His precision
+                      and putting elevate him in windy fall conditions.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Garrick Higgo (+2500):</span>{" "}
-                      Arriving hot after top-five results in three straight tournaments, Higgo's
-                      scoring potential makes him a strong pick for this event.
+                      <span className="font-semibold text-gray-900">J.T. Poston (+2800):</span>{" "}
+                      Known for hot streaks in late-season events and solid form on bermudagrass
+                      greens.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Kevin Yu (+2800):</span>{" "}
-                      Features on several expert tip sheets for his ball striking and consistent
-                      fall form.
+                      <span className="font-semibold text-gray-900">Rico Hoey (+2800):</span> Recent
+                      top-five finishes boost his betting appeal, especially on strategic courses
+                      like Sea Island.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Wyndham Clark (+2800):</span>{" "}
-                      Former U.S. Open winner with elite long game and motivation to improve his
-                      FedEx Cup ranking in the season's final stretch.
+                      <span className="font-semibold text-gray-900">
+                        Alex Smalley (+3000), Denny McCarthy (+3000):
+                      </span>{" "}
+                      Both in excellent fall form, strong approach games and past RSM Classic
+                      top-10s.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Michael Brennan (+3000):</span>{" "}
-                      Newly exempt on Tour after his Bank of Utah Championship win, Brennan is seen
-                      as a dark horse in his first start as a PGA winner.
+                      <span className="font-semibold text-gray-900">
+                        Thorbjorn Olesen (+3000), Vince Whaley (+3000):
+                      </span>{" "}
+                      Popular sleeper picks for low scoring and aggressive play.
+                    </li>
+                    <li>
+                      <span className="font-semibold text-gray-900">
+                        Pierceson Coody (+4000), Jake Knapp (+4500):
+                      </span>{" "}
+                      Young guns near the bubble for Tour card eligibility seeking a breakout
+                      performance.
                     </li>
                   </ul>
                 </div>
@@ -97,24 +98,24 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">FedEx Cup Fall Series:</span>{" "}
-                      The tournament is a pivotal stop for players aiming to retain or improve their
-                      cards for 2026, especially those ranked around No. 100.
+                      <span className="font-semibold text-gray-900">FedEx Cup Finale:</span> This is
+                      the last event on the 2025 PGA Tour calendar and the final opportunity for
+                      players to secure their Tour cards for 2026.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Tournament Dates:</span>{" "}
-                      November 6–9, 2025, starting Thursday at El Cardonal, part of Diamante Resort,
-                      Cabo.
+                      <span className="font-semibold text-gray-900">Tour Card Bubble:</span> Only
+                      the top 100 in FedEx Cup points retain full exemption for next season; many
+                      players near the cutoff need strong finishes.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Tiger Woods Design:</span> El
-                      Cardonal remains the only regular PGA Tour venue architected by Tiger Woods,
-                      offering wide fairways and strategic bunkering.
+                      <span className="font-semibold text-gray-900">Expanded Field:</span> 156
+                      players due to the event's two-course format; many local residents and tour
+                      regulars in the mix.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">International Flavor:</span>{" "}
-                      132-player field, including 6 of the top 50 in the OWGR and several new
-                      full-status qualifiers from recent fall events.
+                      <span className="font-semibold text-gray-900">Historic Venue:</span> Sea
+                      Island, with its wind-exposed layout and unique two-course routing, is known
+                      for drama late in the fall season.
                     </li>
                   </ul>
                 </div>
@@ -126,18 +127,18 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
                       <span className="font-semibold text-gray-900">Defending Champion:</span>{" "}
-                      Austin Eckroat returns after last year's dramatic 24-under victory, including
-                      a final-round 63.
+                      Maverick McNealy (not in field after last year's win), 2022 champion Adam
+                      Svensson (+9000) returns.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Recent Top Finishers:</span> Max
-                      Greyserman (4th last year), Matt Kuchar, and Michael Thorbjornsen have all
-                      performed well here recently.
+                      <span className="font-semibold text-gray-900">Local Favorites:</span> Harris
+                      English and Brian Harman both expected to contend with local knowledge and
+                      recent strong form.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">FedEx Cup Impact:</span> The
-                      event directly affects PGA Tour card retention for 2026, especially for those
-                      near the cutoff on points.
+                      <span className="font-semibold text-gray-900">FedEx Bubble Tension:</span>{" "}
+                      Minimum required finishes for full card retention range from top-5 to top-43
+                      depending on position.
                     </li>
                   </ul>
                 </div>
@@ -148,22 +149,16 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   </h3>
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
-                      <span className="font-semibold text-gray-900">Course:</span> El Cardonal at
-                      Diamante (Los Cabos, Mexico), par 72, 7,452 yards. Features wide paspalum
-                      fairways, dramatic elevation, and coastal vistas.
+                      <span className="font-semibold text-gray-900">Venue:</span> Sea Island Golf
+                      Club (Seaside & Plantation, St. Simons Island, GA), Par 70 / 7,005 yards.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Designer:</span> Tiger Woods,
-                      layout emphasizes risk-reward holes and conditions that allow for extremely
-                      low scoring if winds are moderate.
+                      <span className="font-semibold text-gray-900">Purse:</span> $7.0 million, with
+                      elevated stakes for FedEx Cup bubble players.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Total Purse:</span> $6 million,
-                      with a winner's share of about $1,080,000.
-                    </li>
-                    <li>
-                      <span className="font-semibold text-gray-900">Format:</span> Standard 72-hole
-                      stroke play with FedEx Cup points allocation.
+                      <span className="font-semibold text-gray-900">Format:</span> 72-hole stroke
+                      play, cut after 36 holes.
                     </li>
                   </ul>
                 </div>
@@ -175,21 +170,22 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
                     <li>
                       <span className="font-semibold text-gray-900">TV:</span> Golf Channel (U.S.),
-                      extensive Mexico/Latino America coverage.
+                      PGA Tour Live app.
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Thursday, Nov 6:</span> 5–8 PM
+                      <span className="font-semibold text-gray-900">Thursday, Nov 20:</span> 1–4 PM
                       ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Friday, Nov 7:</span> 5–8 PM ET
+                      <span className="font-semibold text-gray-900">Friday, Nov 21:</span> 1–4 PM ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Saturday, Nov 8:</span>{" "}
-                      4:30–7:30 PM ET
+                      <span className="font-semibold text-gray-900">Saturday, Nov 22:</span> 1–4 PM
+                      ET
                     </li>
                     <li>
-                      <span className="font-semibold text-gray-900">Sunday, Nov 9:</span> 4–7 PM ET
+                      <span className="font-semibold text-gray-900">Sunday, Nov 23:</span> 1–3:30 PM
+                      ET
                     </li>
                   </ul>
                 </div>
