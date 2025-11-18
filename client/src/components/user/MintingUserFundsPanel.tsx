@@ -34,17 +34,8 @@ export function MintingUserFundsPanel() {
       return false;
     }
 
-    // Show if pendingTokenMint flag is set
-    if (user.pendingTokenMint) return true;
-
-    // Or if user was created less than 5 minutes ago
-    if (user.createdAt) {
-      const createdAt = new Date(user.createdAt);
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      if (createdAt > fiveMinutesAgo) return true;
-    }
-
-    return false;
+    // Only show if pendingTokenMint flag is set (indicates server is minting funds)
+    return user.pendingTokenMint === true;
   };
 
   // Poll balance every 5 seconds until funds arrive

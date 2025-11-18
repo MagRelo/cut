@@ -91,7 +91,7 @@ export function UserPage() {
       {/* Testnet Warning */}
       <TestnetWarning />
 
-      {/* Minting Funds Panel */}
+      {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
       <MintingUserFundsPanel />
 
       {/* Token Balances */}
