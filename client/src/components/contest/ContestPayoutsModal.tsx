@@ -222,9 +222,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-gray-900">Winner Take All</div>
-                  <div className="text-xs text-gray-500">
-                    Distributed proportionally to holders of the winning entry
-                  </div>
+                  <div className="text-xs text-gray-500">100%</div>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-gray-900">
