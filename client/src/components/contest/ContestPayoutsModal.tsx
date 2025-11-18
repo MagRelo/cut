@@ -3,7 +3,6 @@ import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { Modal } from "../common/Modal";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/Contest.json";
 
@@ -56,14 +55,31 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     },
   });
 
-  // Fetch secondary prize pool data
-  const { secondaryTotalFundsFormatted, isLoading: isPredictionDataLoading } =
-    useContestPredictionData({
-      contestAddress: contest.address,
-      entryIds: [],
-      enabled: !!contest.address && !!contest.chainId && isOpen,
-      chainId: contest.chainId,
-    });
+  // Read secondary prize pool from contract
+  const { data: secondaryPrizePool, isLoading: isLoadingSecondary } = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "secondaryPrizePool",
+    args: [],
+    chainId,
+    query: {
+      enabled: !!contest?.address && isOpen,
+    },
+  });
+
+  // Read secondary prize pool subsidy from contract
+  const { data: secondaryPrizePoolSubsidy, isLoading: isLoadingSecondarySubsidy } = useReadContract(
+    {
+      address: contest?.address as `0x${string}`,
+      abi: ContestContract.abi,
+      functionName: "secondaryPrizePoolSubsidy",
+      args: [],
+      chainId,
+      query: {
+        enabled: !!contest?.address && isOpen,
+      },
+    }
+  );
 
   // Calculate payout structure based on number of entries
   const entryCount = contest?.contestLineups?.length ?? 0;
@@ -79,29 +95,34 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     return [{ position: 1, percentage: 100, label: "1st Place" }];
   }, [isLargeContest]);
 
-  // Calculate total prize pool
-  const totalPrizePool = useMemo(() => {
-    const primary = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
-    const subsidy =
-      primaryPrizePoolSubsidy && totalPrimaryPositionSubsidies
-        ? Number(
-            formatUnits(
-              ((primaryPrizePoolSubsidy as bigint) +
-                (totalPrimaryPositionSubsidies as bigint)) as bigint,
-              18
-            )
-          )
-        : 0;
-    const secondary = parseFloat(secondaryTotalFundsFormatted || "0") || 0;
-    return primary + subsidy + secondary;
-  }, [
-    primaryPrizePool,
-    primaryPrizePoolSubsidy,
-    totalPrimaryPositionSubsidies,
-    secondaryTotalFundsFormatted,
-  ]);
+  // Calculate primary prize pool breakdown
+  const primaryPrizePoolData = useMemo(() => {
+    const base = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
+    const subsidy = primaryPrizePoolSubsidy
+      ? Number(formatUnits(primaryPrizePoolSubsidy as bigint, 18))
+      : 0;
+    const positionSubsidies = totalPrimaryPositionSubsidies
+      ? Number(formatUnits(totalPrimaryPositionSubsidies as bigint, 18))
+      : 0;
+    const total = base + subsidy + positionSubsidies;
+    return { base, subsidy, positionSubsidies, total };
+  }, [primaryPrizePool, primaryPrizePoolSubsidy, totalPrimaryPositionSubsidies]);
 
-  const isLoading = isLoadingPrimary || isLoadingSubsidy || isPredictionDataLoading;
+  // Calculate secondary prize pool breakdown
+  const secondaryPrizePoolData = useMemo(() => {
+    const base = secondaryPrizePool ? Number(formatUnits(secondaryPrizePool as bigint, 18)) : 0;
+    const subsidy = secondaryPrizePoolSubsidy
+      ? Number(formatUnits(secondaryPrizePoolSubsidy as bigint, 18))
+      : 0;
+    const total = base + subsidy;
+    return { base, subsidy, total };
+  }, [secondaryPrizePool, secondaryPrizePoolSubsidy]);
+
+  // Calculate total prize pool (for display)
+  const totalPrizePool = primaryPrizePoolData.total + secondaryPrizePoolData.total;
+
+  const isLoading =
+    isLoadingPrimary || isLoadingSubsidy || isLoadingSecondary || isLoadingSecondarySubsidy;
 
   return (
     <Modal
@@ -118,7 +139,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Prize Pool Summary */}
+          {/* Total Prize Pool Summary */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-4">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
               Total Prize Pool
@@ -126,21 +147,30 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             <div className="text-3xl font-bold text-gray-900">
               ${Math.round(totalPrizePool).toLocaleString()}
             </div>
-            <div className="mt-2 text-xs text-gray-600">
-              {entryCount} {entryCount === 1 ? "entry" : "entries"}
-            </div>
           </div>
 
-          {/* Payout Structure */}
+          {/* Primary Contest Payouts */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Payout Structure</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Contest Payouts</h3>
+              <div className="text-sm font-medium text-gray-600">
+                ${Math.round(primaryPrizePoolData.total).toLocaleString()}
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500 mt-1 mb-3">
+              Distributed based on final scores and position. In case of ties, payouts are split
+              evenly among tied participants. Position bonuses are added to the winner's payout.
+            </div>
+
+            {/* Primary Payout Structure */}
             <div className="space-y-3">
               {payoutStructure.map((payout) => {
-                const payoutAmount = (totalPrizePool * payout.percentage) / 100;
+                const payoutAmount = (primaryPrizePoolData.total * payout.percentage) / 100;
                 return (
                   <div
                     key={payout.position}
-                    className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-4 hover:border-blue-300 transition-colors"
+                    className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-4"
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -156,9 +186,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                       </div>
                       <div>
                         <div className="font-semibold text-gray-900">{payout.label}</div>
-                        <div className="text-xs text-gray-500">
-                          {payout.percentage}% of prize pool
-                        </div>
+                        <div className="text-xs text-gray-500">{payout.percentage}%</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -173,66 +201,41 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             </div>
           </div>
 
-          {/* Current Standings (if contest is active/locked) */}
-          {contest.status === "ACTIVE" || contest.status === "LOCKED" ? (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Current Standings</h3>
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                <p className="text-sm text-gray-600">
-                  Payouts will be calculated based on final scores after the contest ends. Current
-                  standings are shown in the Results tab once the contest is settled.
-                </p>
+          {/* Secondary Prediction Payouts */}
+          <div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Prediction Payouts</h3>
+              <div className="text-sm font-medium text-gray-600">
+                ${Math.round(secondaryPrizePoolData.total).toLocaleString()}
               </div>
             </div>
-          ) : contest.status === "SETTLED" && contest.results ? (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Final Results</h3>
-              <div className="space-y-2">
-                {contest.results.detailedResults
-                  .slice(0, Math.min(5, payoutStructure.length))
-                  .map((result) => {
-                    const payoutInfo = payoutStructure.find((p) => p.position === result.position);
-                    const payoutAmount = payoutInfo
-                      ? (totalPrizePool * payoutInfo.percentage) / 100
-                      : 0;
-                    return (
-                      <div
-                        key={result.entryId}
-                        className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="font-semibold text-gray-900">#{result.position}</div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {result.username}
-                            </div>
-                            <div className="text-xs text-gray-500">{result.lineupName}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-gray-900">
-                            {result.score} pts
-                          </div>
-                          {payoutInfo && (
-                            <div className="text-xs text-gray-500">
-                              ${Math.round(payoutAmount).toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          ) : null}
 
-          {/* Info Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-xs text-blue-800">
-              <strong>Note:</strong> Payouts are distributed based on final scores. In case of ties,
-              payouts are split evenly among tied participants. Secondary market (prediction)
-              payouts are winner-take-all and separate from primary contest payouts.
-            </p>
+            <div className="text-xs text-gray-500 mt-1 mb-3">
+              Winner-take-all pool distributed proportionally to holders of the winning entry.
+            </div>
+
+            {/* Secondary Payout Structure - Winner Take All */}
+            <div className="bg-white border border-purple-200 rounded-md p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm bg-purple-100 text-purple-800">
+                  1
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900">Winner Take All</div>
+                  <div className="text-xs text-gray-500">
+                    Distributed proportionally to holders of the winning entry
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-gray-900">
+                    ${Math.round(secondaryPrizePoolData.total).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {secondaryPrizePoolData.total.toFixed(2)} CUT
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
