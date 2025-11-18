@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Tab, TabPanel, TabList, TabGroup, Dialog, Transition } from "@headlessui/react";
+import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
@@ -15,6 +15,8 @@ import { arePrimaryActionsLocked } from "../types/contest";
 import { ContestResultsPanel } from "../components/contest/ContestResultsPanel";
 import { Timeline } from "../components/contest/Timeline";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
+import { Modal } from "../components/common/Modal";
+import { ContestPayoutsModal } from "../components/contest/ContestPayoutsModal";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -40,6 +42,7 @@ export const ContestLobby: React.FC = () => {
   const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -100,31 +103,9 @@ export const ContestLobby: React.FC = () => {
           <ContestCard contest={contest} />
         </div>
 
-        {/* settings and timeline buttons */}
+        {/* settings, timeline, and payouts buttons */}
         <div className="flex justify-start px-2 my-1 gap-2">
-          <button
-            type="button"
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Settings"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4 text-gray-400 mr-1"
-            >
-              <path
-                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-              />
-              <path d="M8 2v4a2 2 0 002 2h4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            </svg>
-            <span className="font-display text-gray-400">Settings</span>
-          </button>
-
+          {/* TIMELINE BUTTON */}
           <button
             type="button"
             onClick={() => setIsTimelineModalOpen(true)}
@@ -151,6 +132,57 @@ export const ContestLobby: React.FC = () => {
               />
             </svg>
             <span className="font-display text-gray-400">Timeline</span>
+          </button>
+
+          {/* PAYOUTS BUTTON */}
+          <button
+            type="button"
+            onClick={() => setIsPayoutsModalOpen(true)}
+            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Contest Payouts"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-4 w-4 text-[#10b981] mr-1"
+            >
+              <path
+                d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"
+                fill="currentColor"
+              />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                clipRule="evenodd"
+                fill="currentColor"
+              />
+            </svg>
+            <span className="font-display text-gray-400">Payouts</span>
+          </button>
+
+          {/* SETTINGS BUTTON */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Contest Settings"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-4 w-4 text-gray-400 mr-1"
+            >
+              <path
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <path d="M8 2v4a2 2 0 002 2h4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            </svg>
+            <span className="font-display text-gray-400">Settings</span>
           </button>
         </div>
 
@@ -233,80 +265,15 @@ export const ContestLobby: React.FC = () => {
               </div>
 
               {/* LINEUP MANAGEMENT MODAL */}
-              <Transition appear show={isLineupModalOpen} as={React.Fragment}>
-                <Dialog
-                  as="div"
-                  className="relative z-50"
-                  onClose={() => setIsLineupModalOpen(false)}
-                >
-                  <Transition.Child
-                    as={React.Fragment}
-                    enter="ease-out duration-200"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-150"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <div className="fixed inset-0 bg-black/30" />
-                  </Transition.Child>
-
-                  <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4">
-                      <Transition.Child
-                        as={React.Fragment}
-                        enter="ease-out duration-200"
-                        enterFrom="opacity-0 scale-95"
-                        enterTo="opacity-100 scale-100"
-                        leave="ease-in duration-150"
-                        leaveFrom="opacity-100 scale-100"
-                        leaveTo="opacity-0 scale-95"
-                      >
-                        <Dialog.Panel className="w-full max-w-4xl transform rounded-md bg-white p-4 text-left align-middle shadow-xl transition-all">
-                          <div className="mb-2 flex items-center justify-between">
-                            <Dialog.Title className="text-lg font-medium text-gray-900">
-                              Manage Lineups
-                            </Dialog.Title>
-                            <button
-                              type="button"
-                              className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                              onClick={() => setIsLineupModalOpen(false)}
-                              aria-label="Close"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                                className="h-5 w-5"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                          <div className="mt-2">
-                            {user ? (
-                              <LineupManagement contest={contest} />
-                            ) : (
-                              <div className="space-y-4 mt-2">
-                                <div className="text-center">
-                                  <p className="text-gray-600 text-sm font-display">
-                                    Sign in to manage lineups
-                                  </p>
-                                </div>
-                                <Connect />
-                              </div>
-                            )}
-                          </div>
-                        </Dialog.Panel>
-                      </Transition.Child>
-                    </div>
-                  </div>
-                </Dialog>
-              </Transition>
+              <Modal
+                isOpen={isLineupModalOpen}
+                onClose={() => setIsLineupModalOpen(false)}
+                title="Manage Lineups"
+                maxWidth="4xl"
+                contentClassName="p-0"
+              >
+                {user ? <LineupManagement contest={contest} /> : <Connect />}
+              </Modal>
             </TabPanel>
 
             {/* PLAYERS - Only shown when primary actions are locked */}
@@ -330,126 +297,34 @@ export const ContestLobby: React.FC = () => {
       </div>
 
       {/* Settings Modal */}
-      <Transition appear show={isSettingsModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsSettingsModalOpen(false)}>
-          <Transition.Child
-            as={React.Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-150"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={React.Fragment}
-                enter="ease-out duration-200"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-150"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-2xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
-                  <div className="p-4 pb-0 flex items-center justify-between border-b border-gray-200">
-                    <Dialog.Title className="text-lg font-medium text-gray-900">
-                      Contest Details
-                    </Dialog.Title>
-                    <button
-                      type="button"
-                      className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                      onClick={() => setIsSettingsModalOpen(false)}
-                      aria-label="Close"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-5 w-5"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="max-h-[600px] overflow-y-auto">
-                    <ContestSettings contest={contest} />
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        title="Settings"
+        maxWidth="2xl"
+        scrollable
+        maxHeight="600px"
+        contentClassName="p-0"
+      >
+        <ContestSettings contest={contest} />
+      </Modal>
 
       {/* Timeline Modal */}
-      <Transition appear show={isTimelineModalOpen} as={React.Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsTimelineModalOpen(false)}>
-          <Transition.Child
-            as={React.Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-150"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30" />
-          </Transition.Child>
+      <Modal
+        isOpen={isTimelineModalOpen}
+        onClose={() => setIsTimelineModalOpen(false)}
+        title="Timeline"
+        maxWidth="4xl"
+      >
+        <TimelineModalContent contestId={contestId} />
+      </Modal>
 
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={React.Fragment}
-                enter="ease-out duration-200"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-150"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-4xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
-                  <div className="p-4 pb-0 flex items-center justify-between border-b border-gray-200">
-                    <Dialog.Title className="text-lg font-medium text-gray-900">
-                      Contest Timeline
-                    </Dialog.Title>
-                    <button
-                      type="button"
-                      className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                      onClick={() => setIsTimelineModalOpen(false)}
-                      aria-label="Close"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-5 w-5"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <TimelineModalContent contestId={contestId} />
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      {/* Payouts Modal */}
+      <ContestPayoutsModal
+        isOpen={isPayoutsModalOpen}
+        onClose={() => setIsPayoutsModalOpen(false)}
+        contest={contest}
+      />
     </div>
   );
 };
