@@ -279,14 +279,14 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       {/* Contest Contract Details */}
       <div>
         {/* Contract panel */}
         <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
             {/* Contract Status */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
               <span className="text-gray-600">Contract State:</span>
               <span className={`${getStatusColor(contractState)}`}>
                 {getStatusLabel(contractState)}
@@ -295,7 +295,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Contract Balance */}
             {contractBalance?.value !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Contract Balance:</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(contractBalance.value, {
@@ -361,7 +361,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Primary Side Balance (Total) */}
             {primarySideBalance !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Contest Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })}{" "}
@@ -372,7 +372,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Primary Prize Pool (Base) */}
             {primaryPrizePool !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600 pl-4">↳ Base Pool:</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
@@ -382,7 +382,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Primary Prize Pool Subsidy */}
             {primaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
@@ -393,7 +393,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Secondary Side Balance */}
             {secondarySideBalance !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Prediction Prize Pool:</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
@@ -404,7 +404,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Secondary Prize Pool */}
             {secondaryPrizePool !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600 pl-4">↳ Base Pool:</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
@@ -415,7 +415,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Secondary Prize Pool Subsidy */}
             {secondaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
@@ -426,7 +426,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Total Primary Position Subsidies */}
             {totalPrimaryPositionSubsidies !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Position Subsidies:</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
@@ -439,7 +439,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Oracle Address */}
             {oracleAddress && chainId && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Oracle:</span>
                 {createExplorerLinkJSX(
                   oracleAddress,
@@ -452,7 +452,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Oracle Fee */}
             {contractOracleFee !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Oracle Fee:</span>
                 <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
               </div>
@@ -471,7 +471,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             {/* Expiration */}
             {expiryTimestamp && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
                 <span className="text-gray-600">Contract Expires:</span>
                 <span className="text-gray-900">
                   {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}

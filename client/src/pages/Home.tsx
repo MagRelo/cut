@@ -33,7 +33,7 @@ export const Home: React.FC = () => {
         </div>
 
         {/* with sensible crypto */}
-        <h3
+        {/* <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
@@ -41,8 +41,7 @@ export const Home: React.FC = () => {
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
           <span>Passkey Wallets</span>
-          {/* <span className="text-gray-500">•</span>
-          <span>SIWE</span> */}
+
           <span className="text-gray-500">•</span>
           <span>Stablecoin Payments</span>
         </div>
@@ -53,10 +52,10 @@ export const Home: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Automated DeFi Yield</span>
-        </div>
+        </div> */}
 
         {/* special thanks to */}
-        <h3
+        {/* <h3
           className="text-xl font-medium italic text-green-600 text-center mt-6 mb-3"
           style={{ fontFamily: "serif" }}
         >
@@ -70,7 +69,7 @@ export const Home: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Compound (Yield)</span>
-        </div>
+        </div> */}
       </div>
 
       <hr className="w-full border-gray-200 mb-6" />
