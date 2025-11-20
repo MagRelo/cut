@@ -173,16 +173,14 @@ export const ContestEntryList = ({
           Number.isFinite(oddsMultiple) && oddsMultiple > 0
             ? `${oddsMultiple.toFixed(1)}x`
             : "0.0x";
-        const positionSubsidyValue = Number.parseFloat(
-          predictionEntry?.positionSubsidyFormatted ?? "0"
-        );
-        const safePositionSubsidy = Number.isFinite(positionSubsidyValue)
-          ? positionSubsidyValue
-          : 0;
-        const positionSubsidyDisplay = safePositionSubsidy.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
+
+        const shareValue = Number.parseFloat(predictionEntry?.impliedWinningsFormatted ?? "0");
+        const shareValueDisplay =
+          shareValue > 0 && shareValue >= 0.01
+            ? shareValue.toFixed(2)
+            : shareValue > 0
+            ? "< 0.01"
+            : "0.00";
 
         return (
           <div
@@ -247,31 +245,29 @@ export const ContestEntryList = ({
 
             {predictionEntry && (
               <div className="mt-2 text-xs text-gray-600 border-t border-gray-200 pt-2">
-                <div className="flex items-center justify-end gap-3">
-                  {/* Earnings */}
-                  {isCurrentUser && (
-                    <>
-                      <div className="flex-1 flex items-center justify-start gap-1 text-sm font-semibold text-emerald-700">
+                <div className="flex items-center justify-end gap-2">
+                  <div className="flex-1 flex items-center justify-start gap-3 text-sm font-semibold text-emerald-700">
+                    {shareValue > 0 && (
+                      <div className="flex items-center gap-1">
                         <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                          Earnings
+                          Share Value
                         </span>
-                        <span className="text-[12px]">${positionSubsidyDisplay}</span>
+                        <span className="text-[12px] text-green-600">${shareValueDisplay}</span>
                       </div>
-                      <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
-                    </>
-                  )}
+                    )}
+                  </div>
+                  <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
 
                   <span className="whitespace-nowrap font-semibold text-emerald-700">
                     <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                      WIN PAYS
-                    </span>{" "}
-                    {oddsDisplay}
+                      BUY SHARES
+                    </span>
                   </span>
 
                   {/* dummy button t olet people know its clickable*/}
                   <button className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded transition-colors">
-                    <span className="text-[10px] uppercase tracking-wide text-white font-semibold">
-                      BET
+                    <span className="text-[10px] tracking-wide text-white font-semibold">
+                      {oddsDisplay}
                     </span>
                   </button>
                 </div>
