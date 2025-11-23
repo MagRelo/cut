@@ -250,7 +250,7 @@ export const ContestEntryList = ({
                     {shareValue > 0 && (
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                          Share Value
+                          Share
                         </span>
                         <span className="text-[12px] text-green-600">${shareValueDisplay}</span>
                       </div>

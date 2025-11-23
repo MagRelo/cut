@@ -136,7 +136,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                           }`
                         }
                       >
-                        Bet To Win
+                        Buy Shares
                       </Tab>
                       {hasPosition && (
                         <Tab

@@ -10,11 +10,14 @@ export const StablefordDisplay: React.FC<StablefordDisplayProps> = ({ points }) 
   if (points > 0) pointsClass = "text-emerald-600 font-semibold";
   else if (points < 0) pointsClass = "text-red-600 font-semibold";
 
+  // Format display: add + for positive, keep - for negative, show 0 as-is
+  const displayValue = points > 0 ? `+${points}` : points.toString();
+
   return (
     <td
       className={`px-2 py-2 text-center text-xs ${pointsClass} min-w-[2.25rem] w-[2.25rem] border-t border-b border-gray-300`}
     >
-      {points}
+      {displayValue}
     </td>
   );
 };
