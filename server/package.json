@@ -25,7 +25,11 @@
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:close-escrow": "tsx src/services/closeEscrowDeposits.ts",
-    "service:distribute-contest": "tsx src/services/distributeContest.ts"
+    "service:distribute-contest": "tsx src/services/distributeContest.ts",
+    "service:batch-activate-contests": "tsx src/services/batch/batchActivateContests.ts",
+    "service:batch-lock-contests": "tsx src/services/batch/batchLockContests.ts",
+    "service:batch-settle-contests": "tsx src/services/batch/batchSettleContests.ts",
+    "service:batch-close-contests": "tsx src/services/batch/batchCloseContests.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.3",
