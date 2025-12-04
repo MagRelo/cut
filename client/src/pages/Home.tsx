@@ -1,5 +1,8 @@
 import React from "react";
 import { Share } from "../components/common/Share";
+import { ContestStatusProgressBar } from "../components/contest/ContestStatusProgressBar";
+import { InfoScorecard } from "../components/common/InfoScorecard";
+import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 
 export const Home: React.FC = () => {
   return (
@@ -70,6 +73,52 @@ export const Home: React.FC = () => {
         <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mt-3">
           <span>Compound (Yield)</span>
         </div> */}
+      </div>
+
+      <hr className="w-full border-gray-200 mb-6" />
+
+      <div className="w-full max-w-4xl px-4 mb-6">
+        <div className="bg-white rounded-sm shadow p-4">
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">
+            Stableford Scoring
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Players earn points based on their performance on each hole:
+          </p>
+          <InfoScorecard />
+        </div>
+      </div>
+
+      {/* Info Scorecard */}
+      <div className="w-full max-w-4xl px-4 mb-6">
+        <div className="bg-white rounded-sm shadow p-4">
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">Create lineups</h3>
+          <p className="text-sm text-gray-500 mb-2">
+            Create your lineup by selecting 4 golfers from the available players.
+          </p>
+        </div>
+      </div>
+
+      {/* Tournament Info */}
+      <div className="w-full max-w-4xl px-4 mb-6">
+        <div className="bg-white rounded-sm shadow p-4">
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">
+            New Contests Every Week
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Every week is a new contest. Check out this week's tournament:
+          </p>
+          <TournamentInfoPanel />
+        </div>
+      </div>
+
+      {/* Contest Status Progress Bar */}
+      <div className="w-full max-w-4xl px-4 mb-6">
+        <div className="bg-white rounded-sm shadow p-4">
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">Contest Schedule</h3>
+          <p className="text-sm text-gray-500 mb-2">Contests run from Monday to Sunday.</p>
+          <ContestStatusProgressBar status="ACTIVE" roundDisplay={"R2"} />
+        </div>
       </div>
 
       <hr className="w-full border-gray-200 mb-6" />
