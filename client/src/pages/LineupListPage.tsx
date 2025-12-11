@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useAccount } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useLineupData } from "../hooks/useLineupData";
 import { useContestsQuery } from "../hooks/useContestQuery";
@@ -25,12 +23,10 @@ export const LineupList: React.FC = () => {
   } = useActiveTournament();
   const { lineups, lineupError, getLineups } = useLineupData();
 
-  // Get chain ID and fetch contests with full contestLineups data
-  const { chainId: connectedChainId } = useAccount();
-  const chainId = connectedChainId ?? baseSepolia.id;
+  // Fetch contests with full contestLineups data
   const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
     currentTournament?.id,
-    chainId
+    undefined
   );
 
   // Extract user's contest lineups from all contests

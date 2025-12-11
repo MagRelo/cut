@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Contest } from "../types/contest";
@@ -33,15 +34,20 @@ export function useContestQuery(contestId: string | undefined) {
  * @param chainId - The chain ID to filter contests
  */
 export function useContestsQuery(tournamentId: string | undefined, chainId: number | undefined) {
+  const { isConnected } = useAccount();
+
   return useQuery({
-    queryKey: queryKeys.contests.byTournament(tournamentId ?? "", chainId ?? 0),
+    queryKey: queryKeys.contests.byTournament(tournamentId ?? "", chainId ?? "all"),
     queryFn: async () => {
-      if (!tournamentId || !chainId) throw new Error("Tournament ID and Chain ID are required");
-      return await apiClient.get<Contest[]>(
-        `/contests?tournamentId=${tournamentId}&chainId=${chainId}`
-      );
+      if (!tournamentId) throw new Error("Tournament ID is required");
+      // Only send chainId if user is connected
+      const url =
+        isConnected && chainId
+          ? `/contests?tournamentId=${tournamentId}&chainId=${chainId}`
+          : `/contests?tournamentId=${tournamentId}`;
+      return await apiClient.get<Contest[]>(url);
     },
-    enabled: !!tournamentId && !!chainId,
+    enabled: !!tournamentId,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 1,

@@ -1,15 +1,10 @@
 import React, { useMemo } from "react";
-import { useAccount } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
 import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { useCurrentTournament } from "../hooks/useTournamentData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
 export const Contests: React.FC = () => {
-  const { chainId: connectedChainId } = useAccount();
-  const chainId = connectedChainId ?? baseSepolia.id;
-
   const { tournament, isLoading: isTournamentLoading, error: fetchError } = useCurrentTournament();
   const tournamentId = tournament?.id;
 
@@ -18,7 +13,7 @@ export const Contests: React.FC = () => {
     data: contestsWithLineupsData,
     isLoading: isContestsLoading,
     error: contestsError,
-  } = useContestsQuery(tournamentId, chainId);
+  } = useContestsQuery(tournamentId, undefined);
   const tournamentError = fetchError instanceof Error ? fetchError.message : null;
   const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
   const error = tournamentError ?? contestsErrorMessage;

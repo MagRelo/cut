@@ -15,11 +15,7 @@ const contestRouter = new Hono();
 
 type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 
-const formatContestLineup = (
-  lineup: any,
-  contestStatus: ContestStatus,
-  tournamentId?: string
-) => {
+const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tournamentId?: string) => {
   if (!lineup?.tournamentLineup) {
     return lineup;
   }
@@ -65,7 +61,7 @@ contestRouter.get("/", async (c) => {
     // Validate query parameters
     const validation = contestQuerySchema.safeParse({
       tournamentId,
-      chainId: chainId ? parseInt(chainId) : 84532, // Default to Base Sepolia
+      chainId: chainId ? parseInt(chainId) : undefined,
     });
 
     if (!validation.success) {
@@ -80,11 +76,22 @@ contestRouter.get("/", async (c) => {
 
     const { tournamentId: validTournamentId, chainId: validChainId } = validation.data;
 
+    // Build where clause - if chainId is not provided, return contests from all chains
+    const whereClause: any = {
+      tournamentId: validTournamentId,
+    };
+
+    if (validChainId !== undefined) {
+      whereClause.chainId = validChainId;
+    } else {
+      // No chainId provided - return contests from all chains
+      whereClause.chainId = {
+        in: [8453, 84532], // Base and Base Sepolia
+      };
+    }
+
     const contests = await prisma.contest.findMany({
-      where: {
-        tournamentId: validTournamentId,
-        chainId: validChainId,
-      },
+      where: whereClause,
       include: {
         tournament: true,
         userGroup: true,

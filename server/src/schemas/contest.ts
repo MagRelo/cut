@@ -105,7 +105,7 @@ export const contestQuerySchema = z.object({
     .refine((val) => [8453, 84532].includes(val), {
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     })
-    .default(84532), // Default to Base Sepolia
+    .optional(), // Optional - if not provided, return contests from all chains
 });
 
 // Types derived from schemas
