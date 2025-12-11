@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useConnectors, useDisconnect, useSwitchChain } from "wagmi";
+import { useConnectors, useSwitchChain, useAccount, useDisconnect } from "wagmi";
 import { Hooks } from "porto/wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 
@@ -24,9 +24,10 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
   const { switchChain } = useSwitchChain();
+  const { isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
-  const { disconnect } = useDisconnect();
   const { user } = usePortoAuth();
 
   // Helper function to get status display text
@@ -61,8 +62,21 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   }, [user, connectionStatus, onSuccess]);
 
   const handleConnect = async (network: NetworkOption) => {
-    disconnect();
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
+
+    // If user is not authenticated but wallet is connected, disconnect first
+    // This ensures we go through the full connect flow for authentication
+    if (!user && isConnected) {
+      console.log("User not authenticated but wallet connected - disconnecting first");
+      try {
+        await disconnect();
+        // Small delay to ensure disconnect completes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (disconnectError) {
+        console.warn("Disconnect failed:", disconnectError);
+        // Continue anyway
+      }
+    }
 
     // Switch to selected network before connecting
     const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
@@ -80,14 +94,13 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
           onSuccess: () => {
             setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
           },
-          onError: (error) => {
+          onError: (error: Error) => {
             console.log("connect OnError called", error);
             setConnectionStatus(ConnectionStatus.ERROR);
-            disconnect();
           },
         }
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.log("Network switch failed:", error);
       setConnectionStatus(ConnectionStatus.ERROR);
     }
@@ -166,11 +179,11 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                 </p>
                 <button
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  disabled={isConnecting || !tocAccepted}
+                  disabled={isConnecting || !tocAccepted || !!user}
                   onClick={() => handleConnect("testnet")}
                   type="button"
                 >
-                  Connect to Testnet
+                  {user ? "Authenticated" : "Connect to Testnet"}
                 </button>
               </div>
             </div>
