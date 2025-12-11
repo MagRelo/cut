@@ -50,6 +50,19 @@ export interface ContestSettings {
   expiryTimestamp: number; // Unix timestamp
 }
 
+// Snapshot of contest state at settlement time (for display purposes)
+export interface ContestSnapshot {
+  contractBalance: string; // bigint as string
+  primaryPrizePool: string; // bigint as string
+  primaryPrizePoolSubsidy: string; // bigint as string
+  primarySideBalance: string; // bigint as string (total)
+  secondaryPrizePool: string; // bigint as string
+  secondaryPrizePoolSubsidy: string; // bigint as string
+  secondarySideBalance: string; // bigint as string (total)
+  currentPrimaryShareBps: number;
+  totalPrimaryPositionSubsidies: string; // bigint as string
+}
+
 // Contest results (stored in DB as JSON after settlement)
 export interface ContestResults {
   winningEntries: string[]; // Entry IDs that won
@@ -58,6 +71,7 @@ export interface ContestResults {
   settleTx: {
     hash: string;
   };
+  snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time
 }
 
 export interface DetailedResult {

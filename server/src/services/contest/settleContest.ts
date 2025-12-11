@@ -6,13 +6,20 @@
  */
 
 import { prisma } from "../../lib/prisma.js";
-import { getContestContract, verifyOracle, readContestState } from "../shared/contractClient.js";
+import {
+  getContestContract,
+  verifyOracle,
+  readContestState,
+} from "../shared/contractClient.js";
 import {
   ContestState,
   type OperationResult,
   type ContestResults,
   type DetailedResult,
+  type ContestSnapshot,
 } from "../shared/types.js";
+import { getContract, createPublicClient, http, erc20Abi } from "viem";
+import { getChainConfig } from "../../lib/chainConfig.js";
 
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
@@ -118,12 +125,72 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       `[settleContest] Winners: ${winningEntries.length}, Payouts: ${payoutBps.join(", ")} BP`
     );
 
+    // Get contract instance for reading values
+    const contract = getContestContract(contest.address, contest.chainId);
+
+    // Capture snapshot values BEFORE settlement
+    console.log(`[settleContest] Capturing snapshot values...`);
+    const [
+      primaryPrizePool,
+      primaryPrizePoolSubsidy,
+      primarySideBalance,
+      secondaryPrizePool,
+      secondaryPrizePoolSubsidy,
+      secondarySideBalance,
+      currentPrimaryShareBps,
+      totalPrimaryPositionSubsidies,
+      paymentTokenAddress,
+    ] = await Promise.all([
+      contract.read.primaryPrizePool!() as Promise<bigint>,
+      contract.read.primaryPrizePoolSubsidy!() as Promise<bigint>,
+      contract.read.getPrimarySideBalance!() as Promise<bigint>,
+      contract.read.secondaryPrizePool!() as Promise<bigint>,
+      contract.read.secondaryPrizePoolSubsidy!() as Promise<bigint>,
+      contract.read.getSecondarySideBalance!() as Promise<bigint>,
+      contract.read.getPrimarySideShareBps!() as Promise<bigint>,
+      contract.read.totalPrimaryPositionSubsidies!() as Promise<bigint>,
+      contract.read.paymentToken!() as Promise<`0x${string}`>,
+    ]);
+
+    // Get contract token balance using ERC20 contract
+    const chainConfig = getChainConfig(contest.chainId);
+    const publicClient = createPublicClient({
+      chain: chainConfig.chain,
+      transport: http(chainConfig.rpcUrl),
+    });
+    const tokenContract = getContract({
+      address: paymentTokenAddress,
+      abi: erc20Abi,
+      client: publicClient,
+    });
+    const contractBalance = (await tokenContract.read.balanceOf([
+      contest.address as `0x${string}`,
+    ])) as bigint;
+
+    // Create snapshot
+    const snapshot: ContestSnapshot = {
+      contractBalance: contractBalance.toString(),
+      primaryPrizePool: primaryPrizePool.toString(),
+      primaryPrizePoolSubsidy: primaryPrizePoolSubsidy.toString(),
+      primarySideBalance: primarySideBalance.toString(),
+      secondaryPrizePool: secondaryPrizePool.toString(),
+      secondaryPrizePoolSubsidy: secondaryPrizePoolSubsidy.toString(),
+      secondarySideBalance: secondarySideBalance.toString(),
+      currentPrimaryShareBps: Number(currentPrimaryShareBps),
+      totalPrimaryPositionSubsidies: totalPrimaryPositionSubsidies.toString(),
+    };
+
+    console.log(`[settleContest] Snapshot captured:`, {
+      primarySideBalance: snapshot.primarySideBalance,
+      secondarySideBalance: snapshot.secondarySideBalance,
+      currentPrimaryShareBps: snapshot.currentPrimaryShareBps,
+    });
+
     // Convert entryIds to BigInt for contract call
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
 
     // Call contract to settle
-    const contract = getContestContract(contest.address, contest.chainId);
     const hash = (await contract.write.settleContest!([
       winningEntriesBigInt,
       payoutBpsBigInt,
@@ -137,6 +204,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       payoutBps,
       detailedResults,
       settleTx: { hash },
+      snapshot,
     };
 
     // Update database

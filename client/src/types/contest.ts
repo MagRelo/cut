@@ -59,6 +59,7 @@ export interface Contest {
     settleTx?: {
       hash: string;
     };
+    snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time
   };
 }
 
@@ -82,6 +83,19 @@ export interface DetailedResult {
   position: number;
   score: number;
   payoutBasisPoints: number;
+}
+
+// Snapshot of contest state at settlement time (for display purposes)
+export interface ContestSnapshot {
+  contractBalance: string; // bigint as string
+  primaryPrizePool: string; // bigint as string
+  primaryPrizePoolSubsidy: string; // bigint as string
+  primarySideBalance: string; // bigint as string (total)
+  secondaryPrizePool: string; // bigint as string
+  secondaryPrizePoolSubsidy: string; // bigint as string
+  secondarySideBalance: string; // bigint as string (total)
+  currentPrimaryShareBps: number;
+  totalPrimaryPositionSubsidies: string; // bigint as string
 }
 
 export interface TimelineDataPoint {
