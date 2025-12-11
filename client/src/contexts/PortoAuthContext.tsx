@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
@@ -58,38 +66,44 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const initializingRef = useRef(false);
+  const lastAddressRef = useRef<string | undefined>(undefined);
 
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
   // Fetch platform token balance with 30-second polling
+  // Only poll when user is connected and authenticated
   const { data: platformTokenBalanceData, isLoading: platformBalanceLoading } = useBalance({
     address: address,
     token: platformTokenAddress as `0x${string}`,
     query: {
-      enabled: !!address && !!platformTokenAddress,
-      refetchInterval: 30000, // 30 seconds
+      enabled: !!address && !!platformTokenAddress && !!user,
+      refetchInterval: user ? 30000 : false, // Only poll if user is authenticated
     },
   });
 
   // Fetch payment token balance with 30-second polling
+  // Only poll when user is connected and authenticated
   const { data: paymentTokenBalanceData, isLoading: paymentBalanceLoading } = useBalance({
     address: address,
     token: paymentTokenAddress as `0x${string}`,
     query: {
-      enabled: !!address && !!paymentTokenAddress,
-      refetchInterval: 30000, // 30 seconds
+      enabled: !!address && !!paymentTokenAddress && !!user,
+      refetchInterval: user ? 30000 : false, // Only poll if user is authenticated
     },
   });
 
   // Fetch payment token metadata
+  // These values are immutable (never change), so cache indefinitely
   const { data: paymentTokenSymbol } = useReadContract({
     address: paymentTokenAddress as `0x${string}`,
     abi: erc20Abi,
     functionName: "symbol",
     query: {
       enabled: !!paymentTokenAddress,
+      staleTime: Infinity, // Token symbol never changes, cache forever
     },
   });
 
@@ -99,16 +113,19 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     functionName: "decimals",
     query: {
       enabled: !!paymentTokenAddress,
+      staleTime: Infinity, // Token decimals never change, cache forever
     },
   });
 
   // Fetch platform token metadata
+  // These values are immutable (never change), so cache indefinitely
   const { data: platformTokenSymbol } = useReadContract({
     address: platformTokenAddress as `0x${string}`,
     abi: erc20Abi,
     functionName: "symbol",
     query: {
       enabled: !!platformTokenAddress,
+      staleTime: Infinity, // Token symbol never changes, cache forever
     },
   });
 
@@ -118,6 +135,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     functionName: "decimals",
     query: {
       enabled: !!platformTokenAddress,
+      staleTime: Infinity, // Token decimals never change, cache forever
     },
   });
 
@@ -151,13 +169,13 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // Clear all user data on 401 (unauthorized)
+          // Don't clear queryClient here as it can cause infinite loops
           setUser(null);
-          queryClient.clear();
         }
         throw error;
       }
     },
-    [config, queryClient]
+    [config]
   );
 
   const updateUser = useCallback(
@@ -237,15 +255,34 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // Prevent multiple simultaneous initialization calls
+      if (initializingRef.current) {
+        return;
+      }
+
+      // If address hasn't changed, don't re-initialize
+      if (address === lastAddressRef.current) {
+        return;
+      }
+
       if (!address) {
         if (status === "disconnected") {
           setUser(null);
           setLoading(false);
+          lastAddressRef.current = undefined;
         } else {
           setLoading(true);
         }
         return;
       }
+
+      // Skip if we're already initializing for this address
+      if (initializingRef.current && lastAddressRef.current === address) {
+        return;
+      }
+
+      initializingRef.current = true;
+      lastAddressRef.current = address;
 
       try {
         // Check if auth cookie exists by making a request to /me
@@ -275,14 +312,18 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           (error.message.includes("401") || error.message.includes("404"))
         ) {
           setUser(null);
+          // Don't retry on 401/404 - user is not authenticated
         }
       } finally {
         setLoading(false);
+        initializingRef.current = false;
       }
     };
 
     initializeAuth();
-  }, [address, request, currentChainId, switchChain, queryClient, status]);
+    // request is stable (only depends on config which is memoized), so it's safe to include
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, currentChainId, status, request]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
