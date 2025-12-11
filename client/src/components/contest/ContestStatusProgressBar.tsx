@@ -1,5 +1,6 @@
 import React from "react";
-import { type ContestStatus } from "../../types/contest";
+import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { type TournamentStatus } from "../../types/tournament";
 
 // SVG Icon Components
 const CheckmarkIcon: React.FC<{ className?: string }> = ({
@@ -33,29 +34,19 @@ const LockIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4 text-
   </svg>
 );
 
-interface ContestStatusProgressBarProps {
-  status: ContestStatus;
-  roundDisplay?: string | null;
-}
-
-// Calculate progress percentage based on status and round
-function calculateProgress(status: ContestStatus, roundDisplay?: string | null): number {
+// Calculate progress percentage based on tournament status and round
+function calculateProgress(status: TournamentStatus, roundDisplay?: string | null): number {
   const sectionWidth = 100 / 7; // ~14.29% per section
 
-  if (status === "OPEN") {
+  if (status === "NOT_STARTED" || status === "CANCELLED") {
     return 0; // No progress yet
   }
 
-  if (status === "SETTLED") {
+  if (status === "COMPLETED") {
     return 100; // Fully complete
   }
 
-  if (status === "LOCKED") {
-    // R4 - progress through Open (3 sections) + R1 (1) + R2 (1) + R3 (1) + part of R4
-    return sectionWidth * 6 + sectionWidth * 0.5; // 85.7% + 7.14% = ~92.86%
-  }
-
-  if (status === "ACTIVE" && roundDisplay) {
+  if (status === "IN_PROGRESS" && roundDisplay) {
     const roundNum = parseInt(roundDisplay.replace("R", ""), 10);
 
     if (roundNum === 1) {
@@ -72,20 +63,26 @@ function calculateProgress(status: ContestStatus, roundDisplay?: string | null):
       // R3 - progress through Open + R1 + R2 (5 sections) + part of R3
       return sectionWidth * 5 + sectionWidth * 0.5; // 71.43% + 7.14% = 78.57%
     }
+
+    if (roundNum === 4) {
+      // R4 - progress through Open + R1 + R2 + R3 (6 sections) + part of R4
+      return sectionWidth * 6 + sectionWidth * 0.5; // 85.7% + 7.14% = ~92.86%
+    }
   }
 
-  // Default for ACTIVE without roundDisplay - assume R1
-  if (status === "ACTIVE") {
+  // Default for IN_PROGRESS without roundDisplay - assume R1
+  if (status === "IN_PROGRESS") {
     return sectionWidth * 3 + sectionWidth * 0.5; // 50%
   }
 
   return 0;
 }
 
-export const ContestStatusProgressBar: React.FC<ContestStatusProgressBarProps> = ({
-  status,
-  roundDisplay,
-}) => {
+export const ContestStatusProgressBar: React.FC = () => {
+  const { tournament } = useCurrentTournament();
+  const roundDisplay = tournament?.roundDisplay ?? null;
+  const status = tournament?.status ?? "NOT_STARTED";
+
   // Seven sections representing days of the week
   const sections = 7;
   const sectionWidth = 100 / sections; // ~14.29% per section
@@ -116,13 +113,14 @@ export const ContestStatusProgressBar: React.FC<ContestStatusProgressBarProps> =
             </div>
 
             {/* Row 4: "Enter/Leave" label */}
+
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-600">Enter/Leave</span>
+              <span className="text-xs font-display text-gray-600">Create Lineups</span>
             </div>
 
             {/* Row 5: "Edit Lineup" label */}
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-600">Edit Lineups</span>
+              <span className="text-xs font-display text-gray-600">Enter Contest</span>
             </div>
           </div>
 

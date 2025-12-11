@@ -2,9 +2,9 @@ import React from "react";
 import { ScoreDisplay, StablefordDisplay } from "../player/PlayerScorecard";
 
 // Dummy data for 7 holes
-const dummyPars = [5, 3, 4, 4, 5];
-const dummyScores = [7, 4, 4, 3, 3];
-const dummyStableford = [-3, -1, 0, +3, +5];
+const dummyPars = [5, 4, 4, 3, 5];
+const dummyScores = [3, 3, 4, 4, 7];
+const dummyStableford = [+5, +3, 0, -1, -3];
 
 export const InfoScorecard: React.FC = () => {
   return (

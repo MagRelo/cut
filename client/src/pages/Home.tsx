@@ -117,7 +117,7 @@ export const Home: React.FC = () => {
         <div className="bg-white rounded-sm shadow p-4">
           <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">Contest Schedule</h3>
           <p className="text-sm text-gray-500 mb-2">Contests run from Monday to Sunday.</p>
-          <ContestStatusProgressBar status="ACTIVE" roundDisplay={"R2"} />
+          <ContestStatusProgressBar />
         </div>
       </div>
 
