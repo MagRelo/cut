@@ -150,7 +150,7 @@ export const ContestStatusProgressBar: React.FC = () => {
               }}
             ></div>
             <div
-              className="absolute text-xs font-display text-center text-gray-700"
+              className="absolute text-xs font-display text-center text-gray-400"
               style={{
                 left: `${sectionWidth * 3}%`,
                 width: `${sectionWidth}%`, // 1 section (Thu)
@@ -159,7 +159,7 @@ export const ContestStatusProgressBar: React.FC = () => {
               R1
             </div>
             <div
-              className="absolute text-xs font-display text-center text-gray-700"
+              className="absolute text-xs font-display text-center text-gray-400"
               style={{
                 left: `${sectionWidth * 4}%`,
                 width: `${sectionWidth}%`, // 1 section (Fri)
@@ -168,7 +168,7 @@ export const ContestStatusProgressBar: React.FC = () => {
               R2
             </div>
             <div
-              className="absolute text-xs font-display text-center text-gray-700"
+              className="absolute text-xs font-display text-center text-gray-400"
               style={{
                 left: `${sectionWidth * 5}%`,
                 width: `${sectionWidth}%`, // 1 section (Sat)
@@ -177,7 +177,7 @@ export const ContestStatusProgressBar: React.FC = () => {
               R3
             </div>
             <div
-              className="absolute text-xs font-display text-center text-gray-700"
+              className="absolute text-xs font-display text-center text-gray-400"
               style={{
                 left: `${sectionWidth * 6}%`,
                 width: `${sectionWidth}%`, // 1 section (Sun)

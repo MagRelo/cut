@@ -77,47 +77,39 @@ export const Home: React.FC = () => {
 
       <hr className="w-full border-gray-200 mb-6" />
 
+      {/* Create lineups */}
       <div className="w-full max-w-4xl px-4 mb-6">
         <div className="bg-white rounded-sm shadow p-4">
           <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">
-            Stableford Scoring
+            Select four golfers
           </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Players earn points based on their performance on each hole:
-          </p>
-          <InfoScorecard />
         </div>
       </div>
 
-      {/* Info Scorecard */}
       <div className="w-full max-w-4xl px-4 mb-6">
         <div className="bg-white rounded-sm shadow p-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">Create lineups</h3>
-          <p className="text-sm text-gray-500 mb-2">
-            Create your lineup by selecting 4 golfers from the available players.
-          </p>
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">
+            Earn points on performance
+          </h3>
+          <InfoScorecard />
         </div>
       </div>
 
       {/* Tournament Info */}
       <div className="w-full max-w-4xl px-4 mb-6">
         <div className="bg-white rounded-sm shadow p-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">
+          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display mb-4">
             New Contests Every Week
           </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Every week is a new contest. Check out this week's tournament:
-          </p>
-          <TournamentInfoPanel />
-        </div>
-      </div>
 
-      {/* Contest Status Progress Bar */}
-      <div className="w-full max-w-4xl px-4 mb-6">
-        <div className="bg-white rounded-sm shadow p-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-2 font-display">Contest Schedule</h3>
-          <p className="text-sm text-gray-500 mb-2">Contests run from Monday to Sunday.</p>
-          <ContestStatusProgressBar />
+          <div className="mb-6">
+            <p className="text-xs font-display  text-gray-400 mb-1">This Week:</p>
+            <TournamentInfoPanel />
+          </div>
+
+          <div className="mb-4">
+            <ContestStatusProgressBar />
+          </div>
         </div>
       </div>
 
