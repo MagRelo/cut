@@ -6,11 +6,7 @@
  */
 
 import { prisma } from "../../lib/prisma.js";
-import {
-  getContestContract,
-  verifyOracle,
-  readContestState,
-} from "../shared/contractClient.js";
+import { getContestContract, verifyOracle, readContestState } from "../shared/contractClient.js";
 import {
   ContestState,
   type OperationResult,
