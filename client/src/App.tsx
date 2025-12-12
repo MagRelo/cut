@@ -39,6 +39,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
+import { DebugPage } from "./pages/DebugPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
@@ -151,6 +152,9 @@ export const App: React.FC = () => {
 
                         {/* Admin */}
                         <Route path="/admin" element={<AdminPage />} />
+
+                        {/* Debug */}
+                        <Route path="/debug" element={<DebugPage />} />
                       </Routes>
                     </div>
                   </div>
