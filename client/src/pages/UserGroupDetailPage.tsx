@@ -70,11 +70,7 @@ export const UserGroupDetailPage = () => {
 
         <div className="border-t border-gray-200 pt-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Members</h3>
-          <UserGroupMembersList
-            members={userGroup.members}
-            currentUserRole={userGroup.currentUserRole}
-            currentUserId={user?.id}
-          />
+          <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireUserGroupMember, requireUserGroupAdmin } from "../middleware/userGroup.js";
+import { requireUserGroupAdmin } from "../middleware/userGroup.js";
 import {
   createUserGroupSchema,
   updateUserGroupSchema,
@@ -348,8 +348,6 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
     }
 
     // Find user by wallet address
-    // Try to find wallet across all chains, but prefer the current user's chain if available
-    const currentUser = c.get("user");
     const userWallet = await prisma.userWallet.findFirst({
       where: {
         publicKey: walletAddress.toLowerCase(),

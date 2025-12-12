@@ -1,16 +1,11 @@
-import { type UserGroupMemberResponse, type UserGroupRole } from "../../types/userGroup";
+import { type UserGroupMemberResponse } from "../../types/userGroup";
 
 interface UserGroupMembersListProps {
   members: UserGroupMemberResponse[];
-  currentUserRole?: UserGroupRole | null;
   currentUserId?: string;
 }
 
-export const UserGroupMembersList = ({
-  members,
-  currentUserRole,
-  currentUserId,
-}: UserGroupMembersListProps) => {
+export const UserGroupMembersList = ({ members, currentUserId }: UserGroupMembersListProps) => {
   const formatRole = (role: string) => {
     return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
   };

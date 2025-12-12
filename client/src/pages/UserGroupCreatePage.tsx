@@ -3,7 +3,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { UserGroupForm } from "../components/userGroup/UserGroupForm";
 import { useCreateUserGroup } from "../hooks/useUserGroupMutations";
-import { type CreateUserGroupInput } from "../types/userGroup";
+import { type CreateUserGroupInput, type UpdateUserGroupInput } from "../types/userGroup";
 
 export const UserGroupCreatePage = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export const UserGroupCreatePage = () => {
       <PageHeader title="Create User Group" />
       <div className="bg-white rounded-sm shadow p-4">
         <UserGroupForm
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit as (data: CreateUserGroupInput | UpdateUserGroupInput) => void}
           isLoading={createMutation.isPending}
           error={
             createMutation.error

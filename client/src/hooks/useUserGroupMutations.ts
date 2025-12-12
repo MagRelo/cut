@@ -7,7 +7,6 @@ import {
   type AddUserGroupMemberInput,
   type UserGroupDetailResponse,
   type UserGroupMembersResponse,
-  type UserGroupsListResponse,
 } from "../types/userGroup";
 
 /**
@@ -131,7 +130,7 @@ export function useAddUserGroupMember() {
       return await apiClient.post<UserGroupMemberResponse>(`/userGroups/${id}/members`, data);
     },
 
-    onSuccess: (data, { id }) => {
+    onSuccess: (_data, { id }) => {
       // Invalidate members query
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
@@ -194,7 +193,7 @@ export function useRemoveUserGroupMember() {
       }
     },
 
-    onSuccess: (data, { id }) => {
+    onSuccess: (_data, { id }) => {
       // Invalidate queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
