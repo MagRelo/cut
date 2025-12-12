@@ -106,6 +106,7 @@ export const contestQuerySchema = z.object({
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     })
     .optional(), // Optional - if not provided, return contests from all chains
+  userGroupId: z.string().cuid("Invalid user group ID").optional(),
 });
 
 // Types derived from schemas

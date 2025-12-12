@@ -10,6 +10,7 @@ import {
   isDuplicateInContest,
   getPlayerIdsFromLineup,
 } from "../utils/lineupValidation.js";
+import { isUserGroupMember } from "../utils/userGroup.js";
 
 const contestRouter = new Hono();
 
@@ -57,11 +58,13 @@ contestRouter.get("/", async (c) => {
   try {
     const tournamentId = c.req.query("tournamentId");
     const chainId = c.req.query("chainId");
+    const userGroupId = c.req.query("userGroupId");
 
     // Validate query parameters
     const validation = contestQuerySchema.safeParse({
       tournamentId,
       chainId: chainId ? parseInt(chainId) : undefined,
+      userGroupId: userGroupId || undefined,
     });
 
     if (!validation.success) {
@@ -74,7 +77,11 @@ contestRouter.get("/", async (c) => {
       );
     }
 
-    const { tournamentId: validTournamentId, chainId: validChainId } = validation.data;
+    const {
+      tournamentId: validTournamentId,
+      chainId: validChainId,
+      userGroupId: validUserGroupId,
+    } = validation.data;
 
     // Build where clause - if chainId is not provided, return contests from all chains
     const whereClause: any = {
@@ -88,6 +95,11 @@ contestRouter.get("/", async (c) => {
       whereClause.chainId = {
         in: [8453, 84532], // Base and Base Sepolia
       };
+    }
+
+    // Add userGroupId filter if provided
+    if (validUserGroupId !== undefined) {
+      whereClause.userGroupId = validUserGroupId;
     }
 
     const contests = await prisma.contest.findMany({
@@ -281,6 +293,19 @@ contestRouter.post("/", requireAuth, async (c) => {
     const { name, description, tournamentId, userGroupId, endDate, address, chainId, settings } =
       validation.data;
 
+    const user = c.get("user");
+
+    // If userGroupId is provided, verify user is a member of that group
+    if (userGroupId) {
+      const isMember = await isUserGroupMember(user.userId, userGroupId);
+      if (!isMember) {
+        return c.json(
+          { error: "You must be a member of this userGroup to create contests for it" },
+          403
+        );
+      }
+    }
+
     // Handle endDate conversion - it can be a string datetime or number timestamp
     const endTime = endDate
       ? typeof endDate === "number"
@@ -328,6 +353,27 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
     // Validate entryId is provided
     if (!entryId) {
       return c.json({ error: "Entry ID is required" }, 400);
+    }
+
+    // Fetch contest to check if it's userGroup-specific
+    const contestCheck = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: {
+        id: true,
+        userGroupId: true,
+      },
+    });
+
+    if (!contestCheck) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    // If contest has a userGroupId, verify user is a member
+    if (contestCheck.userGroupId) {
+      const isMember = await isUserGroupMember(user.userId, contestCheck.userGroupId);
+      if (!isMember) {
+        return c.json({ error: "You must be a member of this contest's userGroup to join" }, 403);
+      }
     }
 
     // Fetch the lineup and its players
