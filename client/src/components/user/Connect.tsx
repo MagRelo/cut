@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useConnectors, useSwitchChain, useAccount, useDisconnect } from "wagmi";
+import { useConnectors, useSwitchChain } from "wagmi";
 import { Hooks } from "porto/wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 
@@ -24,8 +24,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
   const { switchChain } = useSwitchChain();
-  const { isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
   const { user } = usePortoAuth();
@@ -61,54 +59,35 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     }
   }, [user, connectionStatus, onSuccess]);
 
-  // Log errors when they occur
-  useEffect(() => {
-    if (error && connectionStatus === ConnectionStatus.ERROR) {
-      console.error("Connection error:", error);
-    }
-  }, [error, connectionStatus]);
-
   const handleConnect = async (network: NetworkOption) => {
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
 
-    // If user is not authenticated but wallet is connected, disconnect first
-    // This ensures we go through the full connect flow for authentication
-    if (!user && isConnected) {
-      console.log("User not authenticated but wallet connected - disconnecting first");
-      try {
-        await disconnect();
-        // Small delay to ensure disconnect completes
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      } catch (disconnectError) {
-        console.error("Disconnect failed:", disconnectError);
-        // Continue anyway
-      }
-    }
-
-    // Switch to selected network before connecting
-    const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
-
     try {
-      // First switch to the selected network
-      await switchChain({ chainId: targetChainId as 8453 | 84532 });
-
-      // Then connect the wallet
+      // Connect the wallet first
       await connect(
         {
           connector,
         },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
             setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+            // Switch to selected network after successful connection
+            const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
+            try {
+              await switchChain({ chainId: targetChainId as 8453 | 84532 });
+            } catch (switchError) {
+              console.log("Network switch failed after connect:", switchError);
+              // Don't fail the connection if network switch fails
+            }
           },
-          onError: (error: Error) => {
-            console.error("connect OnError called", error);
+          onError: (error) => {
+            console.log("connect OnError called", error);
             setConnectionStatus(ConnectionStatus.ERROR);
           },
         }
       );
-    } catch (error: unknown) {
-      console.error("Network switch failed:", error);
+    } catch (error) {
+      console.log("Connection failed:", error);
       setConnectionStatus(ConnectionStatus.ERROR);
     }
   };
@@ -186,11 +165,11 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                 </p>
                 <button
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  disabled={isConnecting || !tocAccepted || !!user}
+                  disabled={isConnecting || !tocAccepted}
                   onClick={() => handleConnect("testnet")}
                   type="button"
                 >
-                  {user ? "Authenticated" : "Connect to Testnet"}
+                  Connect to Testnet
                 </button>
               </div>
             </div>
@@ -202,6 +181,12 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
       {connectionStatus === ConnectionStatus.ERROR && (
         <div className="px-6 py-4 bg-red-50 border-t border-red-100">
           <p className="text-sm text-red-600 text-center">{error?.shortMessage}</p>
+        </div>
+      )}
+      {/* Error display */}
+      {connectionStatus === ConnectionStatus.ERROR && (
+        <div className="px-6 py-4 bg-red-50 border-t border-red-100">
+          <p className="text-sm text-red-600 text-center">{error?.message}</p>
         </div>
       )}
     </div>

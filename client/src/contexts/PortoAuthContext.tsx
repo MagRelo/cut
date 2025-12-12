@@ -318,9 +318,15 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    initializeAuth();
+    // Add a small delay to prevent immediate auth checks during wallet connection
+    // This helps avoid conflicts with the wallet connection process
+    const timeoutId = setTimeout(() => {
+      initializeAuth();
+    }, 100);
+
     // request is stable (only depends on config which is memoized), so it's safe to include
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearTimeout(timeoutId);
   }, [address, currentChainId, status, request]);
 
   // Clear user data when wallet disconnects
