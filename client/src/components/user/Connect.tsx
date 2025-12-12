@@ -61,6 +61,13 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     }
   }, [user, connectionStatus, onSuccess]);
 
+  // Log errors when they occur
+  useEffect(() => {
+    if (error && connectionStatus === ConnectionStatus.ERROR) {
+      console.error("Connection error:", error);
+    }
+  }, [error, connectionStatus]);
+
   const handleConnect = async (network: NetworkOption) => {
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
 
@@ -73,7 +80,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         // Small delay to ensure disconnect completes
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (disconnectError) {
-        console.warn("Disconnect failed:", disconnectError);
+        console.error("Disconnect failed:", disconnectError);
         // Continue anyway
       }
     }
@@ -95,13 +102,13 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
             setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
           },
           onError: (error: Error) => {
-            console.log("connect OnError called", error);
+            console.error("connect OnError called", error);
             setConnectionStatus(ConnectionStatus.ERROR);
           },
         }
       );
     } catch (error: unknown) {
-      console.log("Network switch failed:", error);
+      console.error("Network switch failed:", error);
       setConnectionStatus(ConnectionStatus.ERROR);
     }
   };

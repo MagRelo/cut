@@ -24,7 +24,7 @@ const app = (
           capture_exceptions: {
             capture_unhandled_errors: true,
             capture_unhandled_rejections: true,
-            capture_console_errors: false,
+            capture_console_errors: true,
           },
         }}
       >
