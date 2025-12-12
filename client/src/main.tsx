@@ -21,6 +21,11 @@ const app = (
           capture_pageview: true,
           capture_pageleave: true,
           autocapture: true,
+          capture_exceptions: {
+            capture_unhandled_errors: true,
+            capture_unhandled_rejections: true,
+            capture_console_errors: false,
+          },
         }}
       >
         <App />

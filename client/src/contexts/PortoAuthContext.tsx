@@ -65,7 +65,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { disconnect } = useDisconnect();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const initializingRef = useRef(false);
   const lastAddressRef = useRef<string | undefined>(undefined);
 
@@ -266,13 +266,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!address) {
-        if (status === "disconnected") {
-          setUser(null);
-          setLoading(false);
-          lastAddressRef.current = undefined;
-        } else {
-          setLoading(true);
-        }
+        // If there's no address, we can't authenticate, so ensure loading is false
+        setUser(null);
+        setLoading(false);
+        lastAddressRef.current = undefined;
         return;
       }
 
@@ -285,6 +282,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       lastAddressRef.current = address;
 
       try {
+        setLoading(true);
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
 
