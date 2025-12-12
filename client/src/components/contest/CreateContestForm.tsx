@@ -10,6 +10,7 @@ import { useCreateContest } from "../../hooks/useContestFactory";
 import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
@@ -35,6 +36,7 @@ export const CreateContestForm = () => {
   const { tournament: currentTournament } = useCurrentTournament();
   const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
+  const { data: userGroupsData } = useUserGroupsQuery();
 
   // wagmi functions
   // const { address: userAddress} = useAccount();
@@ -202,6 +204,7 @@ export const CreateContestForm = () => {
       endTime,
       tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
       chainId: chainId ?? 0, // Ensure chainId is preserved
+      userGroupId: formData.userGroupId || undefined, // Ensure userGroupId is preserved
       settings: {
         ...formData.settings,
         fee: formData.settings?.fee ?? 10,
@@ -281,6 +284,35 @@ export const CreateContestForm = () => {
             required
             className="w-full p-2 border rounded-md"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="userGroupId" className="block font-medium">
+            User Group (Optional)
+          </label>
+          <select
+            id="userGroupId"
+            name="userGroupId"
+            value={formData.userGroupId || ""}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                userGroupId: e.target.value || undefined,
+              }));
+            }}
+            className="w-full p-2 border rounded-md"
+          >
+            <option value="">None (Public Contest)</option>
+            {userGroupsData?.userGroups?.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-600 mt-1">
+            Select a user group to make this contest private to group members only. Leave as "None"
+            for a public contest.
+          </p>
         </div>
 
         <div className="space-y-2">

@@ -14,7 +14,7 @@ export const updateUserGroupSchema = z.object({
 
 // Schema for user group member operations
 export const addUserGroupMemberSchema = z.object({
-  userId: z.string().cuid("Invalid user ID"),
+  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid wallet address"),
   role: z.enum(["MEMBER", "ADMIN"]).default("MEMBER"),
 });
 

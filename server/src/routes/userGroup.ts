@@ -335,7 +335,44 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
       );
     }
 
-    const { userId, role } = validation.data;
+    const { walletAddress, role } = validation.data;
+
+    // Verify userGroup exists
+    const userGroup = await prisma.userGroup.findUnique({
+      where: { id: userGroupId },
+      select: { id: true },
+    });
+
+    if (!userGroup) {
+      return c.json({ error: "UserGroup not found" }, 404);
+    }
+
+    // Find user by wallet address
+    // Try to find wallet across all chains, but prefer the current user's chain if available
+    const currentUser = c.get("user");
+    const userWallet = await prisma.userWallet.findFirst({
+      where: {
+        publicKey: walletAddress.toLowerCase(),
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        isPrimary: "desc", // Prefer primary wallet
+      },
+    });
+
+    if (!userWallet || !userWallet.user) {
+      return c.json(
+        {
+          error:
+            "User not found. Please ensure the wallet address is correct and the user has signed in at least once.",
+        },
+        404
+      );
+    }
+
+    const userId = userWallet.user.id;
 
     // Check if user is already a member
     const existingMember = await prisma.userGroupMember.findUnique({
@@ -349,26 +386,6 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
 
     if (existingMember) {
       return c.json({ error: "User is already a member of this userGroup" }, 400);
-    }
-
-    // Verify userGroup exists
-    const userGroup = await prisma.userGroup.findUnique({
-      where: { id: userGroupId },
-      select: { id: true },
-    });
-
-    if (!userGroup) {
-      return c.json({ error: "UserGroup not found" }, 404);
-    }
-
-    // Verify user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-
-    if (!user) {
-      return c.json({ error: "User not found" }, 404);
     }
 
     const member = await prisma.userGroupMember.create({

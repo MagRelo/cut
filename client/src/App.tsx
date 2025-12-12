@@ -36,6 +36,9 @@ import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 import { FAQPage } from "./pages/FAQPage";
 import { AdminPage } from "./pages/AdminPage";
+import { UserGroupListPage } from "./pages/UserGroupListPage";
+import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
+import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 export const App: React.FC = () => {
@@ -119,6 +122,32 @@ export const App: React.FC = () => {
 
                         {/* Leaderboard */}
                         <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+                        {/* User Groups */}
+                        <Route
+                          path="/user-groups"
+                          element={
+                            <ProtectedRoute>
+                              <UserGroupListPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/user-groups/create"
+                          element={
+                            <ProtectedRoute>
+                              <UserGroupCreatePage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/user-groups/:id"
+                          element={
+                            <ProtectedRoute>
+                              <UserGroupDetailPage />
+                            </ProtectedRoute>
+                          }
+                        />
 
                         {/* Admin */}
                         <Route path="/admin" element={<AdminPage />} />

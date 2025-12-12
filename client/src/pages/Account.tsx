@@ -103,7 +103,7 @@ export function UserPage() {
       {/* Contest History Link */}
       <div className="bg-white rounded-sm shadow p-4 mt-4">
         {/* Header */}
-        <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Contest History</div>
+        <div className="text-lg font-semibold text-gray-700 font-display">Contest History</div>
 
         <Link
           to="/account/history"
@@ -127,6 +127,30 @@ export function UserPage() {
               </svg>
             </div> */}
             <div className="text-sm text-gray-500">View all contests you've participated in</div>
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+
+      {/* User Groups Link */}
+      <div className="bg-white rounded-sm shadow p-4 mt-4">
+        {/* Header */}
+        <div className="text-lg font-semibold text-gray-700 font-display">User Groups</div>
+
+        <Link
+          to="/user-groups"
+          className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-gray-500">View and manage your user groups</div>
           </div>
           <svg
             xmlns="http://www.w3.org/2000/svg"
