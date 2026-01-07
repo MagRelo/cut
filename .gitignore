@@ -74,4 +74,3 @@ docker-compose.override.yml
 # Prisma
 prisma/*.db 
 
-spec
