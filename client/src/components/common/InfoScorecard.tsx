@@ -52,8 +52,8 @@ export const InfoScorecard: React.FC = () => {
             </tr>
             {/* Stableford row */}
             <tr className="border-t border-gray-200 bg-gray-50">
-              <td className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
-                Stableford
+              <td className="px-3 py-2 text-left text-xs font-bold text-gray-700 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
+                Points:
               </td>
               {dummyStableford.map((points, i) => (
                 <StablefordDisplay key={i} points={points} />

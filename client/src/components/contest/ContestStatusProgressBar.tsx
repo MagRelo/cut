@@ -128,7 +128,9 @@ export const ContestStatusProgressBar: React.FC = () => {
           <div className="mb-0 flex flex-col gap-2">
             {/* Row 6: "Winner Market" header */}
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-700 font-medium">Winner Market</span>
+              <span className="text-xs font-display text-gray-700 font-medium">
+                Prediction Market
+              </span>
             </div>
 
             {/* Row 7: "Buy Shares" label */}
