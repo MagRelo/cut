@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useConnectors, useSwitchChain } from "wagmi";
+import { useConnectors, useSwitchChain, useDisconnect } from "wagmi";
 import { Hooks } from "porto/wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 
@@ -23,6 +23,7 @@ interface ConnectProps {
 export function Connect({ onSuccess }: ConnectProps = {}) {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
+  const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
@@ -63,6 +64,9 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
 
     try {
+      // disconnect from any existing connections
+      await disconnect();
+
       // Connect the wallet first
       await connect(
         {

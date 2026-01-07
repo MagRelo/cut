@@ -34,7 +34,8 @@
     "deploy:full": "npm run deploy:contracts && npm run deploy",
     "verify:contracts": "node scripts/verify.js",
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
-    "verify:contracts:base": "node scripts/verify.js base"
+    "verify:contracts:base": "node scripts/verify.js base",
+    "ssh": "ssh root@45.55.136.214"
   },
   "workspaces": [
     "client",
