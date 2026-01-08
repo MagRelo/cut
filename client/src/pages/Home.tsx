@@ -5,63 +5,64 @@ import { InfoScorecard } from "../components/common/InfoScorecard";
 
 const HARDCODED_PLAYERS = [
   {
-    name: "Carl Yuan",
+    name: "Si Woo Kim",
     pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_55454.jpg",
+      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_37455.jpg",
   },
   {
-    name: "Will Zalatoris",
+    name: "Rico Hoey",
     pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_47483.jpg",
+      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_51696.jpg",
   },
   {
-    name: "Fabrizio Zanotti",
+    name: "J.T. Poston",
     pga_imageUrl:
       "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_29939.jpg",
   },
   {
-    name: "Fuzzy Zoeller",
+    name: "Denny McCarthy",
     pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_02321.jpg",
+      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_49771.jpg",
   },
 ];
 
 export const Home: React.FC = () => {
   return (
     <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-8 pb-8">
-      {/* Logo */}
-      <div className="flex items-center gap-3 pb-2" style={{ marginLeft: "-24px" }}>
-        <img src="/logo-transparent.png" alt="Cut Logo" className="h-32" />
+      <div>
+        {/* Title and Logo */}
+        <div className="flex items-center gap-3 pb-2" style={{ marginLeft: "-24px" }}>
+          <img src="/logo-transparent.png" alt="Cut Logo" className="h-32" />
 
-        <h1 className="text-6xl font-bold text-black">
-          the Cut
-          <div className="text-2xl font-bold text-gray-400">Fantasy Golf + </div>
-          <div className="text-2xl font-bold text-gray-400">Prediction Market</div>
-        </h1>
-      </div>
-      {/* Features */}
-      <div className="max-w-84 font-display max-w-sm mt-2 mb-4">
-        {/* featuring */}
-        <h3
-          className="text-xl font-medium italic text-green-600 text-center mb-3"
-          style={{ fontFamily: "serif" }}
-        >
-          ~ featuring ~
-        </h3>
+          <h1 className="text-6xl font-bold text-black">
+            the Cut
+            <div className="text-2xl font-bold text-gray-400">Fantasy Golf + </div>
+            <div className="text-2xl font-bold text-gray-400">Prediction Market</div>
+          </h1>
+        </div>
+        {/* Features */}
+        <div className="max-w-84 font-display max-w-sm mt-2 mb-4">
+          <h3
+            className="text-xl font-medium italic text-green-600 text-center mb-3"
+            style={{ fontFamily: "serif" }}
+          >
+            ~ featuring ~
+          </h3>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
-          <span>Real Money</span>
-          <span className="text-gray-500">•</span>
-          <span>Live Scoring Updates</span>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
-          <span>Earn Interest on Deposits</span>
-          <span className="text-gray-500">•</span>
-          <span>Weekly Contests</span>
-        </div>
-        {/* <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
+            <span>Real Money</span>
+            <span className="text-gray-500">•</span>
+            <span>Live Scoring Updates</span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
+            <span>Earn Interest on Deposits</span>
+            <span className="text-gray-500">•</span>
+            <span>Weekly Contests</span>
+          </div>
+          {/* <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
           <span>Multi-Level Referral Bonuses</span>
         </div> */}
+        </div>
       </div>
 
       <hr className="w-full border-gray-200 my-8" />
@@ -158,8 +159,8 @@ export const Home: React.FC = () => {
           </h3>
 
           {/* contest screenshot image */}
-          <div className="border border-green-300 shadow-lg">
-            <img src="/contest-screenshot.png" alt="contest screenshot" className="w-full h-auto" />
+          <div className="border border-green-300 shadow-lg max-w-[18rem] mx-auto">
+            <img src="/team-screenshot.png" alt="contest screenshot" className="w-full h-auto" />
           </div>
         </div>
       </div>
