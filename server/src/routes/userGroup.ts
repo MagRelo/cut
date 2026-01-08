@@ -260,8 +260,17 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
   try {
     const userGroupId = c.req.param("id");
 
-    await prisma.userGroup.delete({
-      where: { id: userGroupId },
+    // Delete all members first, then delete the group
+    await prisma.$transaction(async (tx) => {
+      // Delete all UserGroupMember records for this group
+      await tx.userGroupMember.deleteMany({
+        where: { userGroupId },
+      });
+
+      // Now delete the UserGroup
+      await tx.userGroup.delete({
+        where: { id: userGroupId },
+      });
     });
 
     return c.json({ success: true, message: "UserGroup deleted" });
