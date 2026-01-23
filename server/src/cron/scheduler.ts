@@ -90,27 +90,23 @@ class CronScheduler {
     );
 
     try {
-      await this.executeWithErrorHandling("Update Tournament", updateTournament);
-      await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
-      await this.executeWithErrorHandling("Lock Contests", batchLockContests);
 
+      // Step 1: Update tournament
+      await this.executeWithErrorHandling("Update Tournament", updateTournament);
+
+      // Step 2: Update player scores & contest lineups 
       const shouldRunPlayerUpdates = await this.shouldRunPlayerUpdates();
       if (shouldRunPlayerUpdates) {
-        // Update player scores first
-        await this.executeWithErrorHandling(
-          "Update Tournament Players",
-          updateTournamentPlayerScores
-        );
-
-        // Then update contest lineups (depends on player scores being updated)
-        // This also saves timeline snapshots
+        await this.executeWithErrorHandling("Update Players",updateTournamentPlayerScores);
         await this.executeWithErrorHandling("Update Contest Lineups", updateContestLineups);
+      } else {
+        console.log("[CRON] Player Updates - Skipped: Tournament is not active");
       }
 
-      // Step 5: Settle contests that should be settled (ACTIVE/LOCKED → SETTLED)
+      // Step 3: Update contest lifecycle
+      await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
+      await this.executeWithErrorHandling("Lock Contests", batchLockContests);
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests);
-
-      // Step 6: Close contests that should be closed (SETTLED → CLOSED)
       await this.executeWithErrorHandling("Close Contests", batchCloseContests);
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);

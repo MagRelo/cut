@@ -26,7 +26,7 @@ export async function fetchPgaSchedule() {
   try {
     const query = `
       query {
-        schedule(tourCode: "R") {
+        schedule(tourCode: "R", year: "2026") {
           seasonYear
           upcoming {
             tournaments {
