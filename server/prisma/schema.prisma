@@ -154,8 +154,10 @@ model TournamentPlayer {
   r2                  Json?
   r3                  Json?
   r4                  Json?
+  rCurrent            Json?
   cut                 Int?
   bonus               Int?
+  stableford          Int?
   total               Int?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt

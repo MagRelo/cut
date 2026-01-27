@@ -66,8 +66,10 @@ export type TournamentPlayer = {
   r2: any | null;
   r3: any | null;
   r4: any | null;
+  rCurrent: any | null;
   cut: number | null;
   bonus: number | null;
+  stableford: number | null;
   total: number | null;
   leaderboardTotal: string | null;
   createdAt: Date;

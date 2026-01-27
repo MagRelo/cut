@@ -19,8 +19,10 @@ export interface TournamentPlayerData {
   r2?: RoundData | null;
   r3?: RoundData | null;
   r4?: RoundData | null;
+  rCurrent?: RoundData | null;
   cut?: number | null;
   bonus?: number | null;
+  stableford?: number | null;
   total?: number | null;
   leaderboardTotal?: string | null;
 }

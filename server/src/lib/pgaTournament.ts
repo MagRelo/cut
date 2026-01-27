@@ -113,7 +113,12 @@ interface PGATournamentResponse {
 }
 
 const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
-const PGA_API_KEY = process.env.PGA_API_KEY || 'da2-gsrx5bibzbb4njvhl7t37wqyl4';
+
+function getPgaApiKey(): string {
+  const key = process.env.PGA_API_KEY;
+  if (!key) throw new Error('PGA_API_KEY environment variable is required');
+  return key;
+}
 
 /**
  * Fetches a single tournament's data from the PGA Tour API
@@ -230,7 +235,7 @@ export async function getTournament(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': PGA_API_KEY,
+        'X-API-Key': getPgaApiKey(),
       },
       body: JSON.stringify({
         query,

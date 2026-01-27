@@ -38,7 +38,7 @@ export async function updateContestLineups() {
       const totalScore = contestLineup.tournamentLineup.players.reduce(
         (sum: any, lineupPlayer: any) => {
           const player = lineupPlayer.tournamentPlayer;
-          return sum + (player.total || 0) + (player.cut || 0) + (player.bonus || 0);
+          return sum + (player.total ?? 0);
         },
         0
       );
