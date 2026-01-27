@@ -3,6 +3,7 @@
 import { prisma } from "../lib/prisma.js";
 import { getTournament } from "../lib/pgaTournament.js";
 import { getActivePlayers } from "../lib/pgaField.js";
+import { fetchPGATourPlayers } from "../lib/pgaPlayers.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
 import { fromZonedTime } from "date-fns-tz";
 import { parse } from "date-fns";
@@ -26,33 +27,38 @@ function chunk<T>(array: T[], size: number): T[][] {
 function parseTournamentDates(
   displayDate: string,
   timezone: string,
-  _seasonYear: number
+  _seasonYear: number,
 ): { startDate: Date; endDate: Date } | null {
   try {
-    // Match pattern: "Month Day - Day, Year" or "Month Day, Year - Month Day, Year"
+    // Match: "Month Day - Day, Year" | "Month Day - Month Day, Year" | "Month Day, Year - Month Day, Year"
     const singleMonthPattern = /^(\w+)\s+(\d+)\s*-\s*(\d+),\s*(\d{4})$/;
+    const twoMonthsSameYearPattern = /^(\w+)\s+(\d+)\s*-\s*(\w+)\s+(\d+),\s*(\d{4})$/;
     const multiMonthPattern = /^(\w+)\s+(\d+),?\s+(\d{4})\s*-\s*(\w+)\s+(\d+),?\s+(\d{4})$/;
 
     let startDateStr: string;
     let endDateStr: string;
 
-    // Try single month pattern first (e.g., "Oct 23 - 26, 2025")
     const singleMatch = displayDate.match(singleMonthPattern);
     if (singleMatch) {
       const [, month, startDay, endDay, year] = singleMatch;
       startDateStr = `${month} ${startDay}, ${year}`;
       endDateStr = `${month} ${endDay}, ${year}`;
     } else {
-      // Try multi-month pattern (e.g., "Dec 30, 2024 - Jan 2, 2025")
-      const multiMatch = displayDate.match(multiMonthPattern);
-      if (multiMatch) {
-        const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
-        startDateStr = `${startMonth} ${startDay}, ${startYear}`;
-        endDateStr = `${endMonth} ${endDay}, ${endYear}`;
+      const twoMonthsMatch = displayDate.match(twoMonthsSameYearPattern);
+      if (twoMonthsMatch) {
+        const [, startMonth, startDay, endMonth, endDay, year] = twoMonthsMatch;
+        startDateStr = `${startMonth} ${startDay}, ${year}`;
+        endDateStr = `${endMonth} ${endDay}, ${year}`;
       } else {
-        // If no pattern matches, log warning and return null
-        console.warn(`Could not parse displayDate: "${displayDate}"`);
-        return null;
+        const multiMatch = displayDate.match(multiMonthPattern);
+        if (multiMatch) {
+          const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
+          startDateStr = `${startMonth} ${startDay}, ${startYear}`;
+          endDateStr = `${endMonth} ${endDay}, ${endYear}`;
+        } else {
+          console.warn(`Could not parse displayDate: "${displayDate}"`);
+          return null;
+        }
       }
     }
 
@@ -66,7 +72,7 @@ function parseTournamentDates(
       8,
       0,
       0,
-      0
+      0,
     );
     const startDate = fromZonedTime(startNaive, timezone);
 
@@ -79,7 +85,7 @@ function parseTournamentDates(
       18,
       0,
       0,
-      0
+      0,
     );
     const endDate = fromZonedTime(endNaive, timezone);
 
@@ -109,7 +115,7 @@ export async function initTournament(pgaTourId: string) {
     const parsedDates = parseTournamentDates(
       tournamentData.displayDate,
       tournamentData.timezone,
-      tournamentData.seasonYear
+      tournamentData.seasonYear,
     );
 
     const updateData: any = {
@@ -132,11 +138,11 @@ export async function initTournament(pgaTourId: string) {
       updateData.startDate = parsedDates.startDate;
       updateData.endDate = parsedDates.endDate;
       console.log(
-        `- initTournament: Parsed dates - Start: ${parsedDates.startDate.toISOString()}, End: ${parsedDates.endDate.toISOString()}`
+        `- initTournament: Parsed dates - Start: ${parsedDates.startDate.toISOString()}, End: ${parsedDates.endDate.toISOString()}`,
       );
     } else {
       console.warn(
-        `- initTournament: Could not parse dates from displayDate: "${tournamentData.displayDate}"`
+        `- initTournament: Could not parse dates from displayDate: "${tournamentData.displayDate}"`,
       );
     }
 
@@ -149,6 +155,60 @@ export async function initTournament(pgaTourId: string) {
     // Update inField status for players in the field
     const fieldData = await getActivePlayers(pgaTourId);
     const fieldPlayerIds = fieldData.players.map((p) => p.id);
+
+    console.log(`- initTournament: Found ${fieldPlayerIds.length} players in the field.`);
+
+    // First, ensure all players from the field exist in the database
+    // Find existing players by pga_pgaTourId
+    const existingPlayers = await prisma.player.findMany({
+      where: { pga_pgaTourId: { in: fieldPlayerIds } },
+      select: { pga_pgaTourId: true },
+    });
+    const existingPlayerIds = new Set(
+      existingPlayers.map((p) => p.pga_pgaTourId).filter((id): id is string => id !== null),
+    );
+
+    // Find missing players (in field but not in database)
+    const missingPlayerIds = fieldPlayerIds.filter((id) => !existingPlayerIds.has(id));
+
+    // Create missing Player records using fetchPGATourPlayers() for actual player info when available
+    if (missingPlayerIds.length > 0) {
+      console.log(
+        `- initTournament: Creating ${missingPlayerIds.length} missing Player records for players in the field.`,
+      );
+
+      const pgaPlayers = await fetchPGATourPlayers();
+      const playerInfoById = new Map(pgaPlayers.map((p) => [p.id, p]));
+
+      for (const pgaTourId of missingPlayerIds) {
+        const info = playerInfoById.get(pgaTourId);
+        if (info) {
+          await prisma.player.create({
+            data: {
+              pga_pgaTourId: info.id,
+              pga_displayName: info.displayName,
+              pga_imageUrl: info.headshot,
+              isActive: info.isActive,
+              pga_firstName: info.firstName,
+              pga_lastName: info.lastName,
+              pga_shortName: info.shortName,
+              pga_country: info.country,
+              pga_countryFlag: info.countryFlag,
+              pga_age: info.playerBio?.age ?? null,
+              inField: true,
+            },
+          });
+        } else {
+          await prisma.player.create({
+            data: {
+              pga_pgaTourId: pgaTourId,
+              inField: true,
+            },
+          });
+        }
+      }
+      console.log(`- initTournament: Created ${missingPlayerIds.length} Player records.`);
+    }
 
     // Batch update: set inField to true for players in the field
     await prisma.player.updateMany({
@@ -180,7 +240,7 @@ export async function initTournament(pgaTourId: string) {
         playerChunk.map(async (player: any) => {
           const profile = await getPlayerProfileOverview(player.pga_pgaTourId || "");
           return { playerId: player.id, profile };
-        })
+        }),
       );
 
       // Filter players that have profiles and update each individually
@@ -196,12 +256,12 @@ export async function initTournament(pgaTourId: string) {
                 pga_performance: {
                   performance: playerProfile.profile?.performance,
                   standings: playerProfile.profile?.profileStandings?.find(
-                    (s) => s.title === "FedExCup Standings"
+                    (s) => s.title === "FedExCup Standings",
                   ),
                 },
               },
-            })
-          )
+            }),
+          ),
         );
 
         totalProfilesUpdated += playersWithProfiles.length;
@@ -222,9 +282,16 @@ export async function initTournament(pgaTourId: string) {
       skipDuplicates: true, // Skip if tournamentId_playerId combination already exists
     });
 
+    const createdCount = tournamentPlayerData.length;
     console.log(
-      `Created TournamentPlayer records for ${playersInField.length} players in the field.`
+      `- initTournament: Created TournamentPlayer records for ${createdCount} players in the field (expected ${fieldPlayerIds.length}).`,
     );
+
+    if (createdCount !== fieldPlayerIds.length) {
+      console.warn(
+        `- initTournament: WARNING - Mismatch between field players (${fieldPlayerIds.length}) and TournamentPlayer records created (${createdCount}).`,
+      );
+    }
 
     // Update manualActive to false for all tournaments
     await prisma.tournament.updateMany({
