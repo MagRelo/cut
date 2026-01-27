@@ -10,6 +10,20 @@ import type { ScorecardData, RoundScore, FormattedHoles } from "../schemas/score
 
 const CONCURRENCY = 15;
 const SCORECARD_TIMEOUT_MS = 15_000;
+/** Minimum holes-played ratio for round icon eligibility (~3 holes). */
+const MIN_RATIO_FOR_ICON = 0.1675;
+
+function parsePercentFromEnv(key: string, defaultVal: number): number {
+  const raw = process.env[key];
+  if (raw == null || raw === "") return defaultVal;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) && n >= 0 && n <= 1 ? n : defaultVal;
+}
+
+/** Top percentile for flame icon (e.g. 0.1 = top 10%). Env: ICON_FLAME_PERCENTILE. */
+const ICON_FLAME_PERCENTILE = parsePercentFromEnv("ICON_FLAME_PERCENTILE", 0.1);
+/** Bottom percentile for snow icon (e.g. 0.1 = bottom 10%). Env: ICON_SNOW_PERCENTILE. */
+const ICON_SNOW_PERCENTILE = parsePercentFromEnv("ICON_SNOW_PERCENTILE", 0.1);
 
 // ---- Types ----
 
@@ -98,15 +112,60 @@ function holesRemainingRatio(holes: FormattedHoles): number {
   return holes.stableford.length > 0 ? played / holes.stableford.length : 0;
 }
 
-function roundIcon(holes: FormattedHoles): string {
-  const played = holes.stableford.filter((s) => s !== null).length;
-  if (played < 4) return "";
-  const total = roundTotalFromHoles(holes);
-  const ratio = holesRemainingRatio(holes);
-  const adjusted = ratio > 0 ? total / ratio : 0;
-  if (adjusted > 11) return "🔥";
-  if (adjusted < 0) return "❄️";
-  return "";
+/** Points per hole (PPH): projected round total per 18 holes. */
+function calcPointsPerHole(round: RoundUpdate): number {
+  return round.ratio > 0 ? (round.total / round.ratio) / 18 : 0;
+}
+
+function getPercentileCutoff(
+  direction: "top" | "bottom",
+  percent: number,
+  values: number[]
+): number {
+  if (values.length === 0) return 0;
+  const ascending = (a: number, b: number) => a - b;
+  const descending = (a: number, b: number) => b - a;
+  const sortFn = direction === "bottom" ? descending : ascending;
+  const sorted = [...values].sort(sortFn);
+  const n = sorted.length;
+  const rank = (1 - percent) * (n - 1);
+  const lowerI = Math.min(n - 1, Math.max(0, Math.floor(rank)));
+  const upperI = Math.min(n - 1, Math.max(0, Math.ceil(rank)));
+  const weight = rank - Math.floor(rank);
+  const lo = sorted[lowerI]!;
+  const hi = sorted[upperI]!;
+  return lo + (hi - lo) * weight;
+}
+
+/**
+ * Sets rCurrent.icon on each payload using percentile-based cutoffs (top 10% = fire, bottom 10% = snow).
+ * Only eligible players get an icon: not CUT, and ratio > MIN_RATIO_FOR_ICON.
+ */
+function applyRoundIcons(
+  payloads: TournamentPlayerUpdate[],
+  _currentRound: number
+): void {
+  const valueArray = payloads
+    .filter((p) => p.leaderboardPosition !== "CUT")
+    .filter((p) => p.rCurrent && p.rCurrent.ratio > MIN_RATIO_FOR_ICON)
+    .map((p) => calcPointsPerHole(p.rCurrent!));
+
+  if (valueArray.length === 0) return;
+
+  const flameCutoff = getPercentileCutoff("top", ICON_FLAME_PERCENTILE, valueArray);
+  const snowCutoff = getPercentileCutoff("bottom", ICON_SNOW_PERCENTILE, valueArray);
+
+  for (const payload of payloads) {
+    const wasCut = payload.leaderboardPosition === "CUT";
+    const rCur = payload.rCurrent;
+    const tooEarly = !rCur || rCur.ratio <= MIN_RATIO_FOR_ICON;
+    if (wasCut || tooEarly) continue;
+
+    const pph = calcPointsPerHole(rCur);
+    if (pph > flameCutoff) rCur.icon = "🔥";
+    else if (pph < snowCutoff) rCur.icon = "❄️";
+    else rCur.icon = "";
+  }
 }
 
 function buildRoundUpdate(roundNumber: number, holes: FormattedHoles | null): RoundUpdate {
@@ -122,7 +181,7 @@ function buildRoundUpdate(roundNumber: number, holes: FormattedHoles | null): Ro
     holes,
     total: roundTotalFromHoles(holes),
     ratio: holesRemainingRatio(holes),
-    icon: roundIcon(holes),
+    icon: "",
   };
 }
 
@@ -214,11 +273,17 @@ async function fetchScorecardWithTimeout(
 
 // ---- Cron flow ----
 
-async function processOnePlayer(
+interface TransformResult {
+  tournamentId: string;
+  playerId: string;
+  payload: TournamentPlayerUpdate;
+}
+
+async function transformOnePlayer(
   tournamentPlayer: { playerId: string; player: { pga_pgaTourId: string | null } },
   currentTournament: { id: string; pgaTourId: string; currentRound: number | null },
   rawLeaderboard: { players: PlayerRowV3[] }
-): Promise<string | null> {
+): Promise<TransformResult | null> {
   const pgaTourId = tournamentPlayer.player.pga_pgaTourId;
   if (!pgaTourId) {
     console.warn(`[CRON] No PGA Tour ID for player ${tournamentPlayer.playerId}`);
@@ -241,28 +306,35 @@ async function processOnePlayer(
   );
   if (!payload) return null;
 
+  return {
+    tournamentId: currentTournament.id,
+    playerId: tournamentPlayer.playerId,
+    payload,
+  };
+}
+
+async function persistOnePlayer(result: TransformResult): Promise<string> {
+  const { tournamentId, playerId, payload } = result;
+  const data = {
+    cut: payload.cut,
+    bonus: payload.bonus,
+    leaderboardPosition: payload.leaderboardPosition,
+    leaderboardTotal: payload.leaderboardTotal,
+    stableford: payload.stableford,
+    total: payload.total,
+    r1: (payload.r1 == null ? Prisma.JsonNull : payload.r1) as unknown as Prisma.InputJsonValue,
+    r2: (payload.r2 == null ? Prisma.JsonNull : payload.r2) as unknown as Prisma.InputJsonValue,
+    r3: (payload.r3 == null ? Prisma.JsonNull : payload.r3) as unknown as Prisma.InputJsonValue,
+    r4: (payload.r4 == null ? Prisma.JsonNull : payload.r4) as unknown as Prisma.InputJsonValue,
+    rCurrent: (payload.rCurrent == null ? Prisma.JsonNull : payload.rCurrent) as unknown as Prisma.InputJsonValue,
+  };
   await prisma.tournamentPlayer.update({
     where: {
-      tournamentId_playerId: {
-        tournamentId: currentTournament.id,
-        playerId: tournamentPlayer.playerId,
-      },
+      tournamentId_playerId: { tournamentId, playerId },
     },
-    data: {
-      cut: payload.cut,
-      bonus: payload.bonus,
-      leaderboardPosition: payload.leaderboardPosition,
-      leaderboardTotal: payload.leaderboardTotal,
-      stableford: payload.stableford,
-      total: payload.total,
-      r1: (payload.r1 == null ? Prisma.JsonNull : payload.r1) as unknown as Prisma.InputJsonValue,
-      r2: (payload.r2 == null ? Prisma.JsonNull : payload.r2) as unknown as Prisma.InputJsonValue,
-      r3: (payload.r3 == null ? Prisma.JsonNull : payload.r3) as unknown as Prisma.InputJsonValue,
-      r4: (payload.r4 == null ? Prisma.JsonNull : payload.r4) as unknown as Prisma.InputJsonValue,
-      rCurrent: (payload.rCurrent == null ? Prisma.JsonNull : payload.rCurrent) as unknown as Prisma.InputJsonValue,
-    },
+    data,
   });
-  return tournamentPlayer.playerId;
+  return playerId;
 }
 
 export async function updateTournamentPlayerScores() {
@@ -280,14 +352,24 @@ export async function updateTournamentPlayerScores() {
   });
 
   const rawLeaderboard = await fetchLeaderboardRaw();
+  const currentRound = currentTournament.currentRound ?? 1;
 
+  const results: TransformResult[] = [];
   for (let i = 0; i < tournamentPlayers.length; i += CONCURRENCY) {
     const chunk = tournamentPlayers.slice(i, i + CONCURRENCY);
-    await Promise.all(
-      chunk.map((tp) =>
-        processOnePlayer(tp, currentTournament, rawLeaderboard)
-      )
+    const chunkResults = await Promise.all(
+      chunk.map((tp) => transformOnePlayer(tp, currentTournament, rawLeaderboard))
     );
+    for (const r of chunkResults) {
+      if (r) results.push(r);
+    }
+  }
+
+  const payloads = results.map((r) => r.payload);
+  applyRoundIcons(payloads, currentRound);
+
+  for (const result of results) {
+    await persistOnePlayer(result);
   }
 }
 
