@@ -107,7 +107,8 @@ function roundTotalFromHoles(holes: FormattedHoles): number {
   );
 }
 
-function holesRemainingRatio(holes: FormattedHoles): number {
+function holesRemainingRatio(holes: FormattedHoles, position?: string): number {
+  if (position === "WD") return 1;
   const played = holes.stableford.filter((s) => s !== null).length;
   return holes.stableford.length > 0 ? played / holes.stableford.length : 0;
 }
@@ -168,7 +169,11 @@ function applyRoundIcons(
   }
 }
 
-function buildRoundUpdate(roundNumber: number, holes: FormattedHoles | null): RoundUpdate {
+function buildRoundUpdate(
+  roundNumber: number,
+  holes: FormattedHoles | null,
+  position?: string
+): RoundUpdate {
   if (!holes) {
     return {
       holes: { round: roundNumber, par: [], scores: [], stableford: [], total: 0 },
@@ -180,7 +185,7 @@ function buildRoundUpdate(roundNumber: number, holes: FormattedHoles | null): Ro
   return {
     holes,
     total: roundTotalFromHoles(holes),
-    ratio: holesRemainingRatio(holes),
+    ratio: holesRemainingRatio(holes, position),
     icon: "",
   };
 }
@@ -234,10 +239,10 @@ export function transformTournamentPlayer(
     return update;
   }
 
-  const R1 = buildRoundUpdate(1, formatHolesFromRoundScores(scorecardRaw.roundScores, 1));
-  const R2 = buildRoundUpdate(2, formatHolesFromRoundScores(scorecardRaw.roundScores, 2));
-  const R3 = buildRoundUpdate(3, formatHolesFromRoundScores(scorecardRaw.roundScores, 3));
-  const R4 = buildRoundUpdate(4, formatHolesFromRoundScores(scorecardRaw.roundScores, 4));
+  const R1 = buildRoundUpdate(1, formatHolesFromRoundScores(scorecardRaw.roundScores, 1), position);
+  const R2 = buildRoundUpdate(2, formatHolesFromRoundScores(scorecardRaw.roundScores, 2), position);
+  const R3 = buildRoundUpdate(3, formatHolesFromRoundScores(scorecardRaw.roundScores, 3), position);
+  const R4 = buildRoundUpdate(4, formatHolesFromRoundScores(scorecardRaw.roundScores, 4), position);
 
   update.r1 = R1;
   update.r2 = R2;
