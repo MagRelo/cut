@@ -1,7 +1,7 @@
 // this service will run periodcally to keep the tournament up to date
 
 import { prisma } from "../lib/prisma.js";
-import { getTournament } from "../lib/pgaTournament.js";
+import { getTournament, formatWeather } from "../lib/pgaTournament.js";
 import { getActivePlayers } from "../lib/pgaField.js";
 import { fetchPGATourPlayers } from "../lib/pgaPlayers.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
@@ -123,7 +123,7 @@ export async function initTournament(pgaTourId: string) {
       roundStatusDisplay: tournamentData.roundStatusDisplay,
       roundDisplay: tournamentData.roundDisplay,
       currentRound: tournamentData.currentRound,
-      weather: tournamentData.weather as any,
+      weather: formatWeather(tournamentData.weather) as any,
       beautyImage: tournamentData.beautyImage,
       ...(tournamentData.courses?.[0]?.courseName && {
         course: tournamentData.courses[0].courseName,

@@ -112,6 +112,61 @@ interface PGATournamentResponse {
   };
 }
 
+/** Full weather object plus a human-readable formatted string for display. */
+export type FormattedWeather = PGATournamentWeather & { formatted: string };
+
+function conditionCaption(condition: string): string {
+  switch (true) {
+    case ["DAY_SUNNY", "DAY_MOSTLY_SUNNY"].includes(condition):
+      return "☀️ Sunny";
+    case ["DAY_PARTLY_CLOUDY", "DAY_MOSTLY_CLOUDY"].includes(condition):
+      return "🌤 Partly Cloudy";
+    case ["DAY_CLOUDY"].includes(condition):
+      return "🌥 Cloudy";
+    case ["DAY_RAINY"].includes(condition):
+      return "🌧️ Rainy";
+    case ["DAY_SCATTERED_SHOWERS"].includes(condition):
+      return "🌦️ Scattered Showers";
+    case ["DAY_THUNDERSTORMS"].includes(condition):
+      return "⛈️ Thunderstorms";
+    case ["DAY_FOG_MIST"].includes(condition):
+      return "🌫️ Misty";
+    case ["DAY_SNOW"].includes(condition):
+      return "❄️ Snow";
+    case [
+      "NIGHT_CLEAR",
+      "NIGHT_ISOLATED_CLOUDS",
+      "NIGHT_PARTLY_CLOUDY",
+      "NIGHT_MOSTLY_CLOUDY",
+    ].includes(condition):
+      return "🌙";
+    default:
+      return condition || "—";
+  }
+}
+
+export function formatWeather(
+  raw: PGATournamentWeather | null | undefined
+): FormattedWeather | null {
+  if (raw == null) return null;
+  const tempF = typeof raw.tempF === "number" ? raw.tempF : 0;
+  const windSpeedMPH = typeof raw.windSpeedMPH === "number" ? raw.windSpeedMPH : 0;
+  const caption = conditionCaption(raw.condition ?? "");
+  const formatted = `${tempF} · ${caption} · ${windSpeedMPH}mph`;
+  return {
+    ...raw,
+    condition: raw.condition ?? "",
+    tempF,
+    tempC: typeof raw.tempC === "number" ? raw.tempC : 0,
+    windDirection: raw.windDirection ?? "",
+    windSpeedMPH,
+    windSpeedKPH: typeof raw.windSpeedKPH === "number" ? raw.windSpeedKPH : 0,
+    precipitation: typeof raw.precipitation === "number" ? raw.precipitation : 0,
+    humidity: typeof raw.humidity === "number" ? raw.humidity : 0,
+    formatted,
+  };
+}
+
 const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
 
 function getPgaApiKey(): string {
