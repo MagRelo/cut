@@ -9,7 +9,7 @@
     "start:prod": "NODE_ENV=production node dist/src/index.js",
     "start:cron": "node dist/src/cron-app.js",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && cp -r src/contracts/* dist/src/contracts/",
+    "build": "prisma generate && echo 'Prisma client generated.' && tsc && echo 'TypeScript compiled.' && cp -r src/contracts/* dist/src/contracts/ && echo 'Contracts copied. Build done.'",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
