@@ -112,8 +112,11 @@ interface PGATournamentResponse {
   };
 }
 
-/** Full weather object plus a human-readable formatted string for display. */
-export type FormattedWeather = PGATournamentWeather & { formatted: string };
+/** Full weather object plus caption and formatted string for display. */
+export type FormattedWeather = PGATournamentWeather & {
+  caption: string;
+  formatted: string;
+};
 
 function conditionCaption(condition: string): string {
   switch (true) {
@@ -146,32 +149,23 @@ function conditionCaption(condition: string): string {
 }
 
 export function formatWeather(
-  raw: PGATournamentWeather | null | undefined
+  raw: PGATournamentWeather | null | undefined,
 ): FormattedWeather | null {
   if (raw == null) return null;
-  const tempF = typeof raw.tempF === "number" ? raw.tempF : 0;
-  const windSpeedMPH = typeof raw.windSpeedMPH === "number" ? raw.windSpeedMPH : 0;
   const caption = conditionCaption(raw.condition ?? "");
-  const formatted = `${tempF} · ${caption} · ${windSpeedMPH}mph`;
+  const formatted = `${raw.tempF ?? ""} · ${caption} · ${raw.windSpeedMPH ?? ""}mph`;
   return {
     ...raw,
-    condition: raw.condition ?? "",
-    tempF,
-    tempC: typeof raw.tempC === "number" ? raw.tempC : 0,
-    windDirection: raw.windDirection ?? "",
-    windSpeedMPH,
-    windSpeedKPH: typeof raw.windSpeedKPH === "number" ? raw.windSpeedKPH : 0,
-    precipitation: typeof raw.precipitation === "number" ? raw.precipitation : 0,
-    humidity: typeof raw.humidity === "number" ? raw.humidity : 0,
+    caption,
     formatted,
   };
 }
 
-const PGA_API_URL = 'https://orchestrator.pgatour.com/graphql';
+const PGA_API_URL = "https://orchestrator.pgatour.com/graphql";
 
 function getPgaApiKey(): string {
   const key = process.env.PGA_API_KEY;
-  if (!key) throw new Error('PGA_API_KEY environment variable is required');
+  if (!key) throw new Error("PGA_API_KEY environment variable is required");
   return key;
 }
 
@@ -180,9 +174,7 @@ function getPgaApiKey(): string {
  * @param tournamentId - The ID of the tournament to fetch data for
  * @returns Promise containing the tournament data
  */
-export async function getTournament(
-  tournamentId: string
-): Promise<PGATournament> {
+export async function getTournament(tournamentId: string): Promise<PGATournament> {
   try {
     const query = `
       query Tournament($id: ID!) {
@@ -287,10 +279,10 @@ export async function getTournament(
     `;
 
     const response = await fetch(PGA_API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': getPgaApiKey(),
+        "Content-Type": "application/json",
+        "X-API-Key": getPgaApiKey(),
       },
       body: JSON.stringify({
         query,
@@ -307,15 +299,13 @@ export async function getTournament(
     const data = (await response.json()) as PGATournamentResponse;
 
     if (!data?.data?.tournaments?.[0]) {
-      throw new Error('Invalid response format from PGA Tour API');
+      throw new Error("Invalid response format from PGA Tour API");
     }
 
     return data.data.tournaments[0];
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(
-        `Failed to fetch PGA Tour tournament data: ${error.message}`
-      );
+      throw new Error(`Failed to fetch PGA Tour tournament data: ${error.message}`);
     }
     throw error;
   }
