@@ -165,7 +165,9 @@ export async function initTournament(pgaTourId: string) {
       select: { pga_pgaTourId: true },
     });
     const existingPlayerIds = new Set(
-      existingPlayers.map((p) => p.pga_pgaTourId).filter((id): id is string => id !== null),
+      existingPlayers
+        .map((p: { pga_pgaTourId: string | null }) => p.pga_pgaTourId)
+        .filter((id: string | null): id is string => id !== null),
     );
 
     // Find missing players (in field but not in database)

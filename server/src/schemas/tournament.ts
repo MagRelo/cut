@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RoundData } from "../types/player.js";
 
 // Enum for tournament status
 export const TournamentStatus = {
@@ -62,11 +63,11 @@ export type TournamentPlayer = {
   tournamentId: string;
   playerId: string;
   leaderboardPosition: string | null;
-  r1: any | null;
-  r2: any | null;
-  r3: any | null;
-  r4: any | null;
-  rCurrent: any | null;
+  r1: RoundData | null;
+  r2: RoundData | null;
+  r3: RoundData | null;
+  r4: RoundData | null;
+  rCurrent: RoundData | null;
   cut: number | null;
   bonus: number | null;
   stableford: number | null;

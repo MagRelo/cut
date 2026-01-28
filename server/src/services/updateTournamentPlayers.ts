@@ -78,7 +78,7 @@ function calculateStableford(par: number, score: string): number | null {
 
 function formatHolesFromRoundScores(
   roundScores: RoundScore[],
-  roundNumber: number
+  roundNumber: number,
 ): FormattedHoles | null {
   const round = roundScores.find((r) => r.roundNumber === roundNumber);
   if (!round?.firstNine?.holes || !round?.secondNine?.holes) return null;
@@ -87,24 +87,16 @@ function formatHolesFromRoundScores(
   return {
     round: roundNumber,
     par: allHoles.map((h) => (typeof h.par === "string" ? parseInt(h.par, 10) : h.par)),
-    scores: allHoles.map((h) =>
-      h.score === "-" || !h.score ? null : parseInt(h.score, 10)
-    ),
+    scores: allHoles.map((h) => (h.score === "-" || !h.score ? null : parseInt(h.score, 10))),
     stableford: allHoles.map((h) =>
-      calculateStableford(
-        typeof h.par === "string" ? parseInt(h.par, 10) : h.par,
-        h.score ?? "-"
-      )
+      calculateStableford(typeof h.par === "string" ? parseInt(h.par, 10) : h.par, h.score ?? "-"),
     ),
     total,
   };
 }
 
 function roundTotalFromHoles(holes: FormattedHoles): number {
-  return holes.stableford.reduce(
-    (acc: number, val: number | null) => acc + (val ?? 0),
-    0
-  );
+  return holes.stableford.reduce((acc: number, val: number | null) => acc + (val ?? 0), 0);
 }
 
 function holesRemainingRatio(holes: FormattedHoles, position?: string): number {
@@ -115,13 +107,13 @@ function holesRemainingRatio(holes: FormattedHoles, position?: string): number {
 
 /** Points per hole (PPH): projected round total per 18 holes. */
 function calcPointsPerHole(round: RoundUpdate): number {
-  return round.ratio > 0 ? (round.total / round.ratio) / 18 : 0;
+  return round.ratio > 0 ? round.total / round.ratio / 18 : 0;
 }
 
 function getPercentileCutoff(
   direction: "top" | "bottom",
   percent: number,
-  values: number[]
+  values: number[],
 ): number {
   if (values.length === 0) return 0;
   const ascending = (a: number, b: number) => a - b;
@@ -142,10 +134,7 @@ function getPercentileCutoff(
  * Sets rCurrent.icon on each payload using percentile-based cutoffs (top 10% = fire, bottom 10% = snow).
  * Only eligible players get an icon: not CUT, and ratio > MIN_RATIO_FOR_ICON.
  */
-function applyRoundIcons(
-  payloads: TournamentPlayerUpdate[],
-  _currentRound: number
-): void {
+function applyRoundIcons(payloads: TournamentPlayerUpdate[], _currentRound: number): void {
   const valueArray = payloads
     .filter((p) => p.leaderboardPosition !== "CUT")
     .filter((p) => p.rCurrent && p.rCurrent.ratio > MIN_RATIO_FOR_ICON)
@@ -172,7 +161,7 @@ function applyRoundIcons(
 function buildRoundUpdate(
   roundNumber: number,
   holes: FormattedHoles | null,
-  position?: string
+  position?: string,
 ): RoundUpdate {
   if (!holes) {
     return {
@@ -213,25 +202,23 @@ export function transformTournamentPlayer(
   leaderboardRow: PlayerRowV3,
   scorecardRaw: ScorecardData | null,
   allLeaderboardPlayers: PlayerRowV3[],
-  currentRound: number
+  currentRound: number,
 ): TournamentPlayerUpdate | null {
   const position = leaderboardRow.scoringData.position;
-  const cutHasBeenMade = allLeaderboardPlayers.some(
-    (p) => p.scoringData?.position === "CUT"
-  );
+  const cutHasBeenMade = allLeaderboardPlayers.some((p) => p.scoringData?.position === "CUT");
 
   const update: TournamentPlayerUpdate = {
     leaderboardPosition: position ?? null,
     leaderboardTotal: leaderboardRow.scoringData.total ?? null,
-  cut: cutBonus(position, cutHasBeenMade),
-  bonus: positionBonus(position),
-  stableford: null,
-  total: null,
-  r1: null,
-  r2: null,
-  r3: null,
-  r4: null,
-  rCurrent: null,
+    cut: cutBonus(position, cutHasBeenMade),
+    bonus: positionBonus(position),
+    stableford: null,
+    total: null,
+    r1: null,
+    r2: null,
+    r3: null,
+    r4: null,
+    rCurrent: null,
   };
 
   if (!scorecardRaw?.roundScores?.length) {
@@ -263,7 +250,7 @@ export function transformTournamentPlayer(
 
 async function fetchScorecardWithTimeout(
   playerId: string,
-  tournamentId: string
+  tournamentId: string,
 ): Promise<ScorecardData | null> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), SCORECARD_TIMEOUT_MS);
@@ -287,7 +274,7 @@ interface TransformResult {
 async function transformOnePlayer(
   tournamentPlayer: { playerId: string; player: { pga_pgaTourId: string | null } },
   currentTournament: { id: string; pgaTourId: string; currentRound: number | null },
-  rawLeaderboard: { players: PlayerRowV3[] }
+  rawLeaderboard: { players: PlayerRowV3[] },
 ): Promise<TransformResult | null> {
   const pgaTourId = tournamentPlayer.player.pga_pgaTourId;
   if (!pgaTourId) {
@@ -307,7 +294,7 @@ async function transformOnePlayer(
     leaderboardRow,
     scorecardRaw,
     rawLeaderboard.players,
-    currentRound
+    currentRound,
   );
   if (!payload) return null;
 
@@ -331,7 +318,9 @@ async function persistOnePlayer(result: TransformResult): Promise<string> {
     r2: (payload.r2 == null ? Prisma.JsonNull : payload.r2) as unknown as Prisma.InputJsonValue,
     r3: (payload.r3 == null ? Prisma.JsonNull : payload.r3) as unknown as Prisma.InputJsonValue,
     r4: (payload.r4 == null ? Prisma.JsonNull : payload.r4) as unknown as Prisma.InputJsonValue,
-    rCurrent: (payload.rCurrent == null ? Prisma.JsonNull : payload.rCurrent) as unknown as Prisma.InputJsonValue,
+    rCurrent: (payload.rCurrent == null
+      ? Prisma.JsonNull
+      : payload.rCurrent) as unknown as Prisma.InputJsonValue,
   };
   await prisma.tournamentPlayer.update({
     where: {
@@ -362,8 +351,11 @@ export async function updateTournamentPlayerScores() {
   const results: TransformResult[] = [];
   for (let i = 0; i < tournamentPlayers.length; i += CONCURRENCY) {
     const chunk = tournamentPlayers.slice(i, i + CONCURRENCY);
+    type TournamentPlayerItem = Parameters<typeof transformOnePlayer>[0];
     const chunkResults = await Promise.all(
-      chunk.map((tp) => transformOnePlayer(tp, currentTournament, rawLeaderboard))
+      chunk.map((tp: TournamentPlayerItem) =>
+        transformOnePlayer(tp, currentTournament, rawLeaderboard),
+      ),
     );
     for (const r of chunkResults) {
       if (r) results.push(r);

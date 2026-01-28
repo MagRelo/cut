@@ -133,9 +133,9 @@ export const playerSchema = z.object({
               value: z.string(),
               career: z.string(),
               wide: z.boolean(),
-            })
+            }),
           ),
-        })
+        }),
       ),
     })
     .optional(),
@@ -152,6 +152,7 @@ export const tournamentPlayerDataSchema = z.object({
   r2: z.record(z.unknown()).optional(),
   r3: z.record(z.unknown()).optional(),
   r4: z.record(z.unknown()).optional(),
+  rCurrent: z.record(z.unknown()).optional(),
   cut: z.number().optional(),
   bonus: z.number().optional(),
   total: z.number().optional(),

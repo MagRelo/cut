@@ -110,7 +110,7 @@ authRouter.post("/siwe/verify", async (c) => {
         try {
           await mintUSDCToUser(address!.toLowerCase(), 1000);
           console.log(
-            `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`
+            `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`,
           );
         } catch (mintError) {
           console.error("Failed to mint and transfer tokens to new user:", mintError);
@@ -120,7 +120,7 @@ authRouter.post("/siwe/verify", async (c) => {
         console.log("Token minting is disabled. Skipping token transfer to new user.");
       } else if (!isBaseSepolia) {
         console.log(
-          `Token minting only available on Base Sepolia testnet. User connected to chain ${chainId}.`
+          `Token minting only available on Base Sepolia testnet. User connected to chain ${chainId}.`,
         );
       }
     }
@@ -232,7 +232,7 @@ authRouter.get("/me", requireAuth, async (c) => {
     const formattedLineups = (tournamentLineups || []).map((lineup: any) => ({
       id: lineup.id,
       players: lineup.players.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, lineup.tournamentId)
+        transformLineupPlayer(lineupPlayer, lineup.tournamentId),
       ),
     }));
 
@@ -352,7 +352,8 @@ authRouter.get("/contests", requireAuth, async (c) => {
 
     // Group by contest ID to get unique contests (user may have multiple lineups in same contest)
     const contestMap = new Map();
-    contestLineups.forEach((lineup) => {
+    type LineupItem = (typeof contestLineups)[number];
+    contestLineups.forEach((lineup: LineupItem) => {
       const contestId = lineup.contestId;
       if (!contestMap.has(contestId)) {
         contestMap.set(contestId, {

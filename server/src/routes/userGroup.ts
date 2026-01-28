@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireUserGroupAdmin } from "../middleware/userGroup.js";
@@ -37,7 +38,8 @@ userGroupRouter.get("/", requireAuth, async (c) => {
       },
     });
 
-    const userGroups = userGroupMemberships.map((membership) => ({
+    type MembershipItem = (typeof userGroupMemberships)[number];
+    const userGroups = userGroupMemberships.map((membership: MembershipItem) => ({
       id: membership.userGroup.id,
       name: membership.userGroup.name,
       description: membership.userGroup.description,
@@ -93,7 +95,10 @@ userGroupRouter.get("/:id", requireAuth, async (c) => {
 
     // Check if current user is a member
     const user = c.get("user");
-    const currentUserMembership = userGroup.members.find((m) => m.userId === user.userId);
+    type MemberItem = (typeof userGroup.members)[number];
+    const currentUserMembership = userGroup.members.find(
+      (m: MemberItem) => m.userId === user.userId,
+    );
 
     return c.json({
       id: userGroup.id,
@@ -105,7 +110,7 @@ userGroupRouter.get("/:id", requireAuth, async (c) => {
       contestCount: userGroup._count.contests,
       currentUserRole: currentUserMembership?.role || null,
       isMember: !!currentUserMembership,
-      members: userGroup.members.map((member) => ({
+      members: userGroup.members.map((member: MemberItem) => ({
         id: member.id,
         userId: member.userId,
         user: member.user,
@@ -133,7 +138,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
           error: "Invalid request body",
           details: validation.error.errors,
         },
-        400
+        400,
       );
     }
 
@@ -172,6 +177,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
       },
     });
 
+    type CreateMemberItem = (typeof userGroup.members)[number];
     return c.json(
       {
         id: userGroup.id,
@@ -183,7 +189,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
         contestCount: userGroup._count.contests,
         currentUserRole: "ADMIN",
         isMember: true,
-        members: userGroup.members.map((member) => ({
+        members: userGroup.members.map((member: CreateMemberItem) => ({
           id: member.id,
           userId: member.userId,
           user: member.user,
@@ -191,7 +197,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
           joinedAt: member.joinedAt,
         })),
       },
-      201
+      201,
     );
   } catch (error) {
     console.error("Error creating userGroup:", error);
@@ -213,7 +219,7 @@ userGroupRouter.put("/:id", requireAuth, requireUserGroupAdmin, async (c) => {
           error: "Invalid request body",
           details: validation.error.errors,
         },
-        400
+        400,
       );
     }
 
@@ -261,7 +267,7 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
     const userGroupId = c.req.param("id");
 
     // Delete all members first, then delete the group
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Delete all UserGroupMember records for this group
       await tx.userGroupMember.deleteMany({
         where: { userGroupId },
@@ -311,8 +317,9 @@ userGroupRouter.get("/:id/members", requireAuth, async (c) => {
       },
     });
 
+    type MemberWithUser = (typeof members)[number];
     return c.json({
-      members: members.map((member) => ({
+      members: members.map((member: MemberWithUser) => ({
         id: member.id,
         userId: member.userId,
         user: member.user,
@@ -340,7 +347,7 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
           error: "Invalid request body",
           details: validation.error.errors,
         },
-        400
+        400,
       );
     }
 
@@ -375,7 +382,7 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
           error:
             "User not found. Please ensure the wallet address is correct and the user has signed in at least once.",
         },
-        404
+        404,
       );
     }
 
@@ -420,7 +427,7 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
         role: member.role,
         joinedAt: member.joinedAt,
       },
-      201
+      201,
     );
   } catch (error) {
     console.error("Error adding member to userGroup:", error);
@@ -474,7 +481,7 @@ userGroupRouter.delete("/:id/members/:userId", requireAuth, async (c) => {
         {
           error: "You must be an admin or removing yourself to remove a member",
         },
-        403
+        403,
       );
     }
 
@@ -492,7 +499,7 @@ userGroupRouter.delete("/:id/members/:userId", requireAuth, async (c) => {
           {
             error: "Cannot remove the last admin from the userGroup",
           },
-          400
+          400,
         );
       }
     }
