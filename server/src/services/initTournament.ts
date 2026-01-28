@@ -1,12 +1,11 @@
 // this service will run periodcally to keep the tournament up to date
 
 import { prisma } from "../lib/prisma.js";
-import { getTournament, formatWeather } from "../lib/pgaTournament.js";
 import { getActivePlayers } from "../lib/pgaField.js";
 import { fetchPGATourPlayers } from "../lib/pgaPlayers.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
-import { fromZonedTime } from "date-fns-tz";
-import { parse } from "date-fns";
+import { updateTournament } from "./updateTournament.js";
+// import { updateTournamentPlayerScores } from "./updateTournamentPlayers.js";
 
 // Helper function to chunk arrays for processing large datasets
 function chunk<T>(array: T[], size: number): T[][] {
@@ -15,85 +14,6 @@ function chunk<T>(array: T[], size: number): T[][] {
     chunks.push(array.slice(i, i + size));
   }
   return chunks;
-}
-
-/**
- * Parses PGA Tour displayDate and timezone to extract start and end dates with times
- * @param displayDate - Format: "Oct 23 - 26, 2025" or "Dec 30, 2024 - Jan 2, 2025"
- * @param timezone - IANA timezone string (e.g., "America/Denver") for the tournament location
- * @param _seasonYear - Year of the tournament season - reserved for future use
- * @returns Object with startDate (8AM local time converted to UTC) and endDate (6PM local time converted to UTC)
- */
-function parseTournamentDates(
-  displayDate: string,
-  timezone: string,
-  _seasonYear: number,
-): { startDate: Date; endDate: Date } | null {
-  try {
-    // Match: "Month Day - Day, Year" | "Month Day - Month Day, Year" | "Month Day, Year - Month Day, Year"
-    const singleMonthPattern = /^(\w+)\s+(\d+)\s*-\s*(\d+),\s*(\d{4})$/;
-    const twoMonthsSameYearPattern = /^(\w+)\s+(\d+)\s*-\s*(\w+)\s+(\d+),\s*(\d{4})$/;
-    const multiMonthPattern = /^(\w+)\s+(\d+),?\s+(\d{4})\s*-\s*(\w+)\s+(\d+),?\s+(\d{4})$/;
-
-    let startDateStr: string;
-    let endDateStr: string;
-
-    const singleMatch = displayDate.match(singleMonthPattern);
-    if (singleMatch) {
-      const [, month, startDay, endDay, year] = singleMatch;
-      startDateStr = `${month} ${startDay}, ${year}`;
-      endDateStr = `${month} ${endDay}, ${year}`;
-    } else {
-      const twoMonthsMatch = displayDate.match(twoMonthsSameYearPattern);
-      if (twoMonthsMatch) {
-        const [, startMonth, startDay, endMonth, endDay, year] = twoMonthsMatch;
-        startDateStr = `${startMonth} ${startDay}, ${year}`;
-        endDateStr = `${endMonth} ${endDay}, ${year}`;
-      } else {
-        const multiMatch = displayDate.match(multiMonthPattern);
-        if (multiMatch) {
-          const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = multiMatch;
-          startDateStr = `${startMonth} ${startDay}, ${startYear}`;
-          endDateStr = `${endMonth} ${endDay}, ${endYear}`;
-        } else {
-          console.warn(`Could not parse displayDate: "${displayDate}"`);
-          return null;
-        }
-      }
-    }
-
-    // Create start date at 8AM in the tournament's local timezone
-    // Parse the date and extract components to create a "naive" date
-    const startParsed = parse(startDateStr, "MMM d, yyyy", new Date());
-    const startNaive = new Date(
-      startParsed.getFullYear(),
-      startParsed.getMonth(),
-      startParsed.getDate(),
-      8,
-      0,
-      0,
-      0,
-    );
-    const startDate = fromZonedTime(startNaive, timezone);
-
-    // Create end date at 6PM in the tournament's local timezone
-    const endParsed = parse(endDateStr, "MMM d, yyyy", new Date());
-    const endNaive = new Date(
-      endParsed.getFullYear(),
-      endParsed.getMonth(),
-      endParsed.getDate(),
-      18,
-      0,
-      0,
-      0,
-    );
-    const endDate = fromZonedTime(endNaive, timezone);
-
-    return { startDate, endDate };
-  } catch (error) {
-    console.error(`Error parsing tournament dates:`, error);
-    return null;
-  }
 }
 
 export async function initTournament(pgaTourId: string) {
@@ -108,48 +28,8 @@ export async function initTournament(pgaTourId: string) {
       return;
     }
 
-    // update tournament meta-data from PGA
-    const tournamentData = await getTournament(pgaTourId);
-
-    // Parse start and end dates from displayDate
-    const parsedDates = parseTournamentDates(
-      tournamentData.displayDate,
-      tournamentData.timezone,
-      tournamentData.seasonYear,
-    );
-
-    const updateData: any = {
-      status: tournamentData.tournamentStatus,
-      roundStatusDisplay: tournamentData.roundStatusDisplay,
-      roundDisplay: tournamentData.roundDisplay,
-      currentRound: tournamentData.currentRound,
-      weather: formatWeather(tournamentData.weather) as any,
-      beautyImage: tournamentData.beautyImage,
-      ...(tournamentData.courses?.[0]?.courseName && {
-        course: tournamentData.courses[0].courseName,
-      }),
-      city: tournamentData.city,
-      state: tournamentData.state,
-      timezone: tournamentData.timezone,
-    };
-
-    // Add parsed dates if available
-    if (parsedDates) {
-      updateData.startDate = parsedDates.startDate;
-      updateData.endDate = parsedDates.endDate;
-      console.log(
-        `- initTournament: Parsed dates - Start: ${parsedDates.startDate.toISOString()}, End: ${parsedDates.endDate.toISOString()}`,
-      );
-    } else {
-      console.warn(
-        `- initTournament: Could not parse dates from displayDate: "${tournamentData.displayDate}"`,
-      );
-    }
-
-    await prisma.tournament.update({
-      where: { id: tournament.id },
-      data: updateData,
-    });
+    // Update tournament metadata (and start/end dates) via shared service
+    await updateTournament({ tournamentId: tournament.id });
     console.log(`- initTournament: Updated tournament data.`);
 
     // Update inField status for players in the field
