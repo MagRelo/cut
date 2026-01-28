@@ -14,8 +14,10 @@ export async function updateTournament() {
       return;
     }
 
-    // update tournament meta-data from PGA
+    // get tournament data from PGA
     const tournamentData = await getTournament(currentTournament.pgaTourId);
+
+    // update tournament meta-data
     await prisma.tournament.update({
       where: { id: currentTournament.id },
       data: {

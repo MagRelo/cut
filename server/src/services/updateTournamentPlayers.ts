@@ -10,20 +10,17 @@ import type { ScorecardData, RoundScore, FormattedHoles } from "../schemas/score
 
 const CONCURRENCY = 15;
 const SCORECARD_TIMEOUT_MS = 15_000;
+
 /** Minimum holes-played ratio for round icon eligibility (~3 holes). */
 const MIN_RATIO_FOR_ICON = 0.1675;
-
-function parsePercentFromEnv(key: string, defaultVal: number): number {
-  const raw = process.env[key];
-  if (raw == null || raw === "") return defaultVal;
-  const n = parseFloat(raw);
-  return Number.isFinite(n) && n >= 0 && n <= 1 ? n : defaultVal;
-}
-
 /** Top percentile for flame icon (e.g. 0.1 = top 10%). Env: ICON_FLAME_PERCENTILE. */
-const ICON_FLAME_PERCENTILE = parsePercentFromEnv("ICON_FLAME_PERCENTILE", 0.1);
+const ICON_FLAME_PERCENTILE = ((n) => (Number.isFinite(n) ? n : 0.1))(
+  parseFloat(process.env.ICON_FLAME_PERCENTILE ?? ""),
+);
 /** Bottom percentile for snow icon (e.g. 0.1 = bottom 10%). Env: ICON_SNOW_PERCENTILE. */
-const ICON_SNOW_PERCENTILE = parsePercentFromEnv("ICON_SNOW_PERCENTILE", 0.1);
+const ICON_SNOW_PERCENTILE = ((n) => (Number.isFinite(n) ? n : 0.1))(
+  parseFloat(process.env.ICON_SNOW_PERCENTILE ?? ""),
+);
 
 // ---- Types ----
 
@@ -32,15 +29,13 @@ export interface TournamentPlayerUpdate {
   leaderboardTotal: string | null;
   cut: number | null;
   bonus: number | null;
-  /** Total Stableford points from rounds (r1–r4) only. */
   stableford: number | null;
-  /** Total = cut bonus + position bonus + stableford. */
   total: number | null;
   r1: RoundUpdate | null;
   r2: RoundUpdate | null;
   r3: RoundUpdate | null;
   r4: RoundUpdate | null;
-  /** Current round data (alias of r1–r4 based on tournament currentRound). */
+  /** Current round (copy of r1–r4 based on tournament currentRound). Same shape as r1–r4. */
   rCurrent: RoundUpdate | null;
 }
 
@@ -226,22 +221,23 @@ export function transformTournamentPlayer(
     return update;
   }
 
+  // rounds
   const R1 = buildRoundUpdate(1, formatHolesFromRoundScores(scorecardRaw.roundScores, 1), position);
   const R2 = buildRoundUpdate(2, formatHolesFromRoundScores(scorecardRaw.roundScores, 2), position);
   const R3 = buildRoundUpdate(3, formatHolesFromRoundScores(scorecardRaw.roundScores, 3), position);
   const R4 = buildRoundUpdate(4, formatHolesFromRoundScores(scorecardRaw.roundScores, 4), position);
-
   update.r1 = R1;
   update.r2 = R2;
   update.r3 = R3;
   update.r4 = R4;
-  const stablefordTotal = R1.total + R2.total + R3.total + R4.total;
-  update.stableford = stablefordTotal;
-  update.total = (update.cut ?? 0) + (update.bonus ?? 0) + stablefordTotal;
-
   const roundMap: Record<number, RoundUpdate> = { 1: R1, 2: R2, 3: R3, 4: R4 };
   const roundNum = Math.min(4, Math.max(1, Math.round(currentRound)));
   update.rCurrent = roundMap[roundNum] ?? null;
+
+  // totals and stableford
+  const stablefordTotal = R1.total + R2.total + R3.total + R4.total;
+  update.stableford = stablefordTotal;
+  update.total = (update.cut ?? 0) + (update.bonus ?? 0) + stablefordTotal;
 
   return update;
 }
