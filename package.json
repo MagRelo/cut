@@ -36,7 +36,7 @@
     "verify:contracts": "node scripts/verify.js",
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base",
-    "ssh": "ssh root@45.55.136.214"
+    "ssh": "ssh deployer@45.55.136.214"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
