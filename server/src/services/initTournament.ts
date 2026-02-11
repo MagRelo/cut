@@ -18,16 +18,45 @@ function chunk<T>(array: T[], size: number): T[][] {
 }
 
 /**
+ * Maps Scandinavian/Nordic characters to ASCII equivalents for consistent name matching.
+ * Some sources use "Åberg", others "Aberg"; this ensures both normalize to the same form.
+ */
+const SCANDINAVIAN_NORMALIZE: [RegExp, string][] = [
+  [/å/g, "a"],
+  [/Å/g, "a"],
+  [/ä/g, "a"],
+  [/Ä/g, "a"],
+  [/ö/g, "o"],
+  [/Ö/g, "o"],
+  [/ø/g, "o"],
+  [/Ø/g, "o"],
+  [/æ/g, "ae"],
+  [/Æ/g, "ae"],
+  [/ü/g, "u"],
+  [/Ü/g, "u"],
+  [/ß/g, "ss"],
+];
+
+function normalizeScandinavianChars(str: string): string {
+  let result = str;
+  for (const [regex, replacement] of SCANDINAVIAN_NORMALIZE) {
+    result = result.replace(regex, replacement);
+  }
+  return result;
+}
+
+/**
  * Normalizes a player name for matching by:
+ * - Mapping Scandinavian characters to ASCII (å→a, ø→o, æ→ae, etc.)
  * - Converting to lowercase
  * - Trimming whitespace
  * - Removing common suffixes (Jr., Sr., III, etc.)
- * - Removing special characters
+ * - Removing remaining special characters
  */
 function normalizePlayerName(name: string | null | undefined): string {
   if (!name) return "";
 
-  return name
+  return normalizeScandinavianChars(name)
     .toLowerCase()
     .trim()
     .replace(/\s*,\s*(jr\.?|sr\.?|ii|iii|iv|v)$/i, "") // Remove suffixes
