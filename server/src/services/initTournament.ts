@@ -5,6 +5,7 @@ import { getActivePlayers } from "../lib/pgaField.js";
 import { fetchPGATourPlayers } from "../lib/pgaPlayers.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
 import { updateTournament } from "./updateTournament.js";
+import { fetchDataGolfRankings, type DataGolfRanking } from "../lib/dataGolfRankings.js";
 // import { updateTournamentPlayerScores } from "./updateTournamentPlayers.js";
 
 // Helper function to chunk arrays for processing large datasets
@@ -14,6 +15,134 @@ function chunk<T>(array: T[], size: number): T[][] {
     chunks.push(array.slice(i, i + size));
   }
   return chunks;
+}
+
+/**
+ * Normalizes a player name for matching by:
+ * - Converting to lowercase
+ * - Trimming whitespace
+ * - Removing common suffixes (Jr., Sr., III, etc.)
+ * - Removing special characters
+ */
+function normalizePlayerName(name: string | null | undefined): string {
+  if (!name) return "";
+
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s*,\s*(jr\.?|sr\.?|ii|iii|iv|v)$/i, "") // Remove suffixes
+    .replace(/[^\w\s]/g, "") // Remove special characters
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim();
+}
+
+/**
+ * Creates a lookup map from Data Golf rankings keyed by normalized player names.
+ * Returns a Map where keys are normalized names and values are DataGolfRanking objects.
+ */
+function createPlayerNameLookup(rankings: DataGolfRanking[]): Map<string, DataGolfRanking> {
+  const lookup = new Map<string, DataGolfRanking>();
+
+  for (const ranking of rankings) {
+    const rankingAny = ranking as any;
+    
+    // Data Golf structure uses 'first' and 'last' properties
+    if (rankingAny.first && rankingAny.last) {
+      const fullName = `${rankingAny.first} ${rankingAny.last}`;
+      const normalizedName = normalizePlayerName(fullName);
+      if (normalizedName) {
+        lookup.set(normalizedName, ranking);
+      }
+    }
+    // Fallback: try other possible property names
+    else {
+      const playerName = rankingAny.player || rankingAny.name || rankingAny.player_name;
+      if (playerName) {
+        const normalizedName = normalizePlayerName(playerName);
+        if (normalizedName) {
+          lookup.set(normalizedName, ranking);
+        }
+      }
+    }
+  }
+
+  return lookup;
+}
+
+/**
+ * Finds a Data Golf ranking for a player by matching normalized names.
+ * Tries multiple name combinations: firstName+lastName, displayName, shortName.
+ * Returns the ranking and the match method used for logging.
+ */
+function findDataGolfRanking(
+  player: {
+    pga_firstName?: string | null;
+    pga_lastName?: string | null;
+    pga_displayName?: string | null;
+    pga_shortName?: string | null;
+  },
+  dgLookup: Map<string, DataGolfRanking>,
+  playerDisplayName?: string | null
+): { ranking: DataGolfRanking | null; matchMethod: string | null } {
+  const playerName =
+    playerDisplayName ||
+    player.pga_displayName ||
+    `${player.pga_firstName || ""} ${player.pga_lastName || ""}`.trim() ||
+    "Unknown";
+
+  // Try firstName + lastName combination
+  if (player.pga_firstName && player.pga_lastName) {
+    const fullName = normalizePlayerName(`${player.pga_firstName} ${player.pga_lastName}`);
+    const ranking = dgLookup.get(fullName);
+    if (ranking) {
+      return { ranking, matchMethod: "fullName" };
+    }
+  }
+
+  // Try displayName
+  if (player.pga_displayName) {
+    const displayName = normalizePlayerName(player.pga_displayName);
+    const ranking = dgLookup.get(displayName);
+    if (ranking) {
+      return { ranking, matchMethod: "displayName" };
+    }
+  }
+
+  // Try shortName
+  if (player.pga_shortName) {
+    const shortName = normalizePlayerName(player.pga_shortName);
+    const ranking = dgLookup.get(shortName);
+    if (ranking) {
+      return { ranking, matchMethod: "shortName" };
+    }
+  }
+
+  // Try lastName only (as fallback)
+  if (player.pga_lastName) {
+    const lastName = normalizePlayerName(player.pga_lastName);
+    // Only match if it's a unique match (to avoid false positives)
+    const matches = Array.from(dgLookup.keys()).filter((key) => key.includes(lastName));
+    if (matches.length === 1 && matches[0]) {
+      const ranking = dgLookup.get(matches[0]);
+      if (ranking) {
+        return { ranking, matchMethod: "lastName" };
+      }
+    }
+  }
+
+  // Log failed match attempts
+  const attemptedNames = [
+    player.pga_firstName && player.pga_lastName
+      ? normalizePlayerName(`${player.pga_firstName} ${player.pga_lastName}`)
+      : null,
+    player.pga_displayName ? normalizePlayerName(player.pga_displayName) : null,
+    player.pga_shortName ? normalizePlayerName(player.pga_shortName) : null,
+  ].filter(Boolean);
+
+  console.log(
+    `  ✗ DG No Match: "${playerName}" (tried: ${attemptedNames.join(", ") || "no names available"})`
+  );
+  return { ranking: null, matchMethod: null };
 }
 
 export async function initTournament(pgaTourId: string) {
@@ -30,13 +159,66 @@ export async function initTournament(pgaTourId: string) {
 
     // Update tournament metadata (and start/end dates) via shared service
     await updateTournament({ tournamentId: tournament.id });
-    console.log(`- initTournament: Updated tournament data.`);
 
     // Update inField status for players in the field
     const fieldData = await getActivePlayers(pgaTourId);
     const fieldPlayerIds = fieldData.players.map((p) => p.id);
 
-    console.log(`- initTournament: Found ${fieldPlayerIds.length} players in the field.`);
+    // Fetch Data Golf rankings early (single API call for all players)
+    let dgRankingsLookup: Map<string, DataGolfRanking> = new Map();
+    try {
+      const dgRankingsData = await fetchDataGolfRankings();
+      
+      // Try to extract rankings array from various possible structures
+      let rankingsArray: DataGolfRanking[] | null = null;
+      
+      // Check if data is directly an array
+      if (Array.isArray(dgRankingsData?.data)) {
+        rankingsArray = dgRankingsData.data;
+      }
+      // Check if data is an object with rankings inside
+      else if (dgRankingsData?.data && typeof dgRankingsData.data === 'object') {
+        const dataObj = dgRankingsData.data as any;
+        
+        // Check for table_data.data structure (actual Data Golf structure)
+        if (dataObj.table_data && Array.isArray(dataObj.table_data.data)) {
+          rankingsArray = dataObj.table_data.data;
+        }
+        // Check common property names that might contain the array
+        else if (Array.isArray(dataObj.rankings)) {
+          rankingsArray = dataObj.rankings;
+        } else if (Array.isArray(dataObj.players)) {
+          rankingsArray = dataObj.players;
+        } else if (Array.isArray(dataObj.data)) {
+          rankingsArray = dataObj.data;
+        } else {
+          // Try to find any array property
+          const arrayKeys = Object.keys(dataObj).filter(key => Array.isArray(dataObj[key]));
+          const firstArrayKey = arrayKeys[0];
+          if (firstArrayKey) {
+            rankingsArray = dataObj[firstArrayKey];
+          }
+        }
+      }
+      // Fallback to rankings property
+      else if (Array.isArray(dgRankingsData?.rankings)) {
+        rankingsArray = dgRankingsData.rankings;
+      }
+      
+      if (rankingsArray && Array.isArray(rankingsArray)) {
+        dgRankingsLookup = createPlayerNameLookup(rankingsArray);
+        console.log(
+          `- initTournament: Fetched ${rankingsArray.length} Data Golf rankings, created lookup map with ${dgRankingsLookup.size} entries.`
+        );
+      } else {
+        console.warn(`- initTournament: Could not extract rankings array from Data Golf data structure.`);
+      }
+    } catch (error) {
+      console.warn(
+        `- initTournament: Failed to fetch Data Golf rankings (continuing without DG data):`,
+        error instanceof Error ? error.message : error
+      );
+    }
 
     // First, ensure all players from the field exist in the database
     // Find existing players by pga_pgaTourId
@@ -47,7 +229,7 @@ export async function initTournament(pgaTourId: string) {
     const existingPlayerIds = new Set(
       existingPlayers
         .map((p: { pga_pgaTourId: string | null }) => p.pga_pgaTourId)
-        .filter((id: string | null): id is string => id !== null),
+        .filter((id: string | null): id is string => id !== null)
     );
 
     // Find missing players (in field but not in database)
@@ -56,7 +238,7 @@ export async function initTournament(pgaTourId: string) {
     // Create missing Player records using fetchPGATourPlayers() for actual player info when available
     if (missingPlayerIds.length > 0) {
       console.log(
-        `- initTournament: Creating ${missingPlayerIds.length} missing Player records for players in the field.`,
+        `- initTournament: Creating ${missingPlayerIds.length} missing Player records for players in the field.`
       );
 
       const pgaPlayers = await fetchPGATourPlayers();
@@ -89,7 +271,6 @@ export async function initTournament(pgaTourId: string) {
           });
         }
       }
-      console.log(`- initTournament: Created ${missingPlayerIds.length} Player records.`);
     }
 
     // Batch update: set inField to true for players in the field
@@ -103,11 +284,18 @@ export async function initTournament(pgaTourId: string) {
       where: { pga_pgaTourId: { notIn: fieldPlayerIds } },
       data: { inField: false },
     });
-    console.log(`- initTournament: Updated inField status for ${fieldPlayerIds.length} players.`);
 
-    // Get players in the field
+    // Get players in the field (include name fields for DG ranking matching)
     const playersInField = await prisma.player.findMany({
       where: { inField: true },
+      select: {
+        id: true,
+        pga_pgaTourId: true,
+        pga_firstName: true,
+        pga_lastName: true,
+        pga_displayName: true,
+        pga_shortName: true,
+      },
     });
 
     // Batch update player profiles - process in chunks to avoid overwhelming the API
@@ -115,6 +303,13 @@ export async function initTournament(pgaTourId: string) {
     const playerChunks = chunk(playersInField, CHUNK_SIZE);
 
     let totalProfilesUpdated = 0;
+    let dgMatchesFound = 0;
+    let dgMatchesByMethod: Record<string, number> = {
+      fullName: 0,
+      displayName: 0,
+      shortName: 0,
+      lastName: 0,
+    };
 
     for (const playerChunk of playerChunks) {
       // Get player profiles for this chunk
@@ -122,28 +317,62 @@ export async function initTournament(pgaTourId: string) {
         playerChunk.map(async (player: any) => {
           const profile = await getPlayerProfileOverview(player.pga_pgaTourId || "");
           return { playerId: player.id, profile };
-        }),
+        })
       );
 
       // Filter players that have profiles and update each individually
       const playersWithProfiles = playerProfiles.filter((p) => p.profile);
 
       if (playersWithProfiles.length > 0) {
-        // Update each player with their own profile data
+        // Update each player with their own profile data, including DG ranking if available
         await Promise.all(
-          playersWithProfiles.map((playerProfile) =>
-            prisma.player.update({
+          playersWithProfiles.map(async (playerProfile) => {
+            // Find the player record to get name fields for DG matching
+            const player = playerChunk.find((p: any) => p.id === playerProfile.playerId);
+
+            // Try to find matching Data Golf ranking
+            let dgRanking: DataGolfRanking | null = null;
+            let matchMethod: string | null = null;
+            if (player && dgRankingsLookup.size > 0) {
+              const matchResult = findDataGolfRanking(
+                player,
+                dgRankingsLookup,
+                player.pga_displayName || undefined
+              );
+              dgRanking = matchResult.ranking;
+              matchMethod = matchResult.matchMethod;
+
+              if (dgRanking && matchMethod) {
+                dgMatchesFound++;
+                dgMatchesByMethod[matchMethod] = (dgMatchesByMethod[matchMethod] || 0) + 1;
+              }
+            }
+
+            // Build pga_performance object with DG ranking if found
+            const pgaPerformance: any = {
+              performance: playerProfile.profile?.performance,
+              standings: playerProfile.profile?.profileStandings?.find(
+                (s) => s.title === "FedExCup Standings"
+              ),
+            };
+
+            // Add DG ranking data if found
+            if (dgRanking) {
+              pgaPerformance.dataGolfRanking = {
+                rank: dgRanking.rank,
+                ...(dgRanking.index !== undefined && { index: dgRanking.index }),
+                ...(dgRanking.points !== undefined && { points: dgRanking.points }),
+                ...(dgRanking.tours && { tours: dgRanking.tours }),
+              };
+            }
+
+            return prisma.player.update({
               where: { id: playerProfile.playerId },
               data: {
-                pga_performance: {
-                  performance: playerProfile.profile?.performance,
-                  standings: playerProfile.profile?.profileStandings?.find(
-                    (s) => s.title === "FedExCup Standings",
-                  ),
-                },
+                pga_performance: pgaPerformance,
               },
-            }),
-          ),
+            });
+          })
         );
 
         totalProfilesUpdated += playersWithProfiles.length;
@@ -151,6 +380,12 @@ export async function initTournament(pgaTourId: string) {
     }
 
     console.log(`- initTournament: Updated ${totalProfilesUpdated} player profiles.`);
+    if (dgRankingsLookup.size > 0) {
+      console.log(
+        `- initTournament: Data Golf ranking matches: ${dgMatchesFound}/${totalProfilesUpdated} players matched.`
+      );
+      console.log(`- initTournament: Match methods breakdown:`, dgMatchesByMethod);
+    }
 
     // Batch create TournamentPlayer records for all players in the field
     const tournamentPlayerData = playersInField.map((player: any) => ({
@@ -166,12 +401,12 @@ export async function initTournament(pgaTourId: string) {
 
     const createdCount = tournamentPlayerData.length;
     console.log(
-      `- initTournament: Created TournamentPlayer records for ${createdCount} players in the field (expected ${fieldPlayerIds.length}).`,
+      `- initTournament: Created TournamentPlayer records for ${createdCount} players in the field (expected ${fieldPlayerIds.length}).`
     );
 
     if (createdCount !== fieldPlayerIds.length) {
       console.warn(
-        `- initTournament: WARNING - Mismatch between field players (${fieldPlayerIds.length}) and TournamentPlayer records created (${createdCount}).`,
+        `- initTournament: WARNING - Mismatch between field players (${fieldPlayerIds.length}) and TournamentPlayer records created (${createdCount}).`
       );
     }
 
@@ -186,8 +421,6 @@ export async function initTournament(pgaTourId: string) {
       where: { id: tournament.id },
       data: { manualActive: true },
     });
-
-    console.log(`initTournament: Completed init for ${tournament.name}`);
   } catch (error) {
     console.error("Error in initTournament:", error);
     throw error;
