@@ -108,11 +108,7 @@ export async function updateTournament(options?: UpdateTournamentOptions) {
       tournamentData.seasonYear,
     );
 
-    if (parsedDates) {
-      console.log(
-        `- updateTournament: Parsed dates - Start: ${parsedDates.startDate.toISOString()}, End: ${parsedDates.endDate.toISOString()}`,
-      );
-    } else {
+    if (!parsedDates) {
       console.warn(
         `- updateTournament: Could not parse dates from displayDate: "${tournamentData.displayDate}"`,
       );
