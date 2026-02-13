@@ -69,7 +69,7 @@ export async function fetchDataGolfRankings(): Promise<DataGolfRankingsData> {
   // Find script tags that contain pull_data function
   let rankingsData: DataGolfRankingsData | null = null;
 
-  $("script").each((_, element) => {
+  $("script").each((_, element): void | false => {
     const scriptContent = $(element).html() || "";
     
     // Look for pull_data function with JSON.parse containing "current_"
