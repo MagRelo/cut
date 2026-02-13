@@ -285,6 +285,11 @@ async function transformOnePlayer(
   }
 
   const scorecardRaw = await fetchScorecardWithTimeout(pgaTourId, currentTournament.pgaTourId);
+  // Skip update if scorecard fetch failed to preserve existing data
+  if (!scorecardRaw) {
+    console.warn(`[CRON] Failed to fetch scorecard for PGA id ${pgaTourId}, skipping update`);
+    return null;
+  }
   const currentRound = currentTournament.currentRound ?? 1;
   const payload = transformTournamentPlayer(
     leaderboardRow,
