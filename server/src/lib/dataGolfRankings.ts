@@ -1,11 +1,12 @@
 import * as cheerio from "cheerio";
 
 export interface DataGolfRanking {
-  rank: number;
-  player: string;
-  index?: number;
-  points?: number;
-  tours?: string[];
+  dg_rank: number;
+  dg_rank_change?: number;
+  dg_skill?: number;
+  dgp_rank?: number;
+  dgp_rank_change?: number;
+  player?: string;
   [key: string]: any; // Allow for additional fields
 }
 

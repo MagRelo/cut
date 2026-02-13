@@ -393,10 +393,11 @@ export async function initTournament(pgaTourId: string) {
             // Add DG ranking data if found
             if (dgRanking) {
               pgaPerformance.dataGolfRanking = {
-                rank: dgRanking.rank,
-                ...(dgRanking.index !== undefined && { index: dgRanking.index }),
-                ...(dgRanking.points !== undefined && { points: dgRanking.points }),
-                ...(dgRanking.tours && { tours: dgRanking.tours }),
+                dg_rank: dgRanking.dg_rank,
+                ...(dgRanking.dg_rank_change !== undefined && { dg_rank_change: dgRanking.dg_rank_change }),
+                ...(dgRanking.dg_skill !== undefined && { dg_skill: dgRanking.dg_skill }),
+                ...(dgRanking.dgp_rank !== undefined && { dgp_rank: dgRanking.dgp_rank }),
+                ...(dgRanking.dgp_rank_change !== undefined && { dgp_rank_change: dgRanking.dgp_rank_change }),
               };
             }
 
