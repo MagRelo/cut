@@ -5,7 +5,6 @@ import {
   useState,
   useMemo,
   useCallback,
-  useRef,
 } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -66,8 +65,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(false);
-  const initializingRef = useRef(false);
-  const lastAddressRef = useRef<string | undefined>(undefined);
+  const [chainSwitchingTo, setChainSwitchingTo] = useState<number | null>(null);
 
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
@@ -222,6 +220,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
    * Note: Preserves public data like tournaments that don't require auth
    */
   const clearAllUserData = useCallback(() => {
+    setLoading(false);
+    setChainSwitchingTo(null);
     // Clear user state
     setUser(null);
 
@@ -254,49 +254,23 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAllUserData]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const initializeAuth = async () => {
-      // Prevent multiple simultaneous initialization calls
-      if (initializingRef.current) {
-        return;
-      }
-
-      // If address hasn't changed, don't re-initialize
-      if (address === lastAddressRef.current) {
-        return;
-      }
-
-      if (!address) {
-        // If there's no address, we can't authenticate, so ensure loading is false
+      // Wallet isn't connected; can't authenticate.
+      if (status !== "connected" || !address) {
         setUser(null);
         setLoading(false);
-        lastAddressRef.current = undefined;
         return;
       }
-
-      // Skip if we're already initializing for this address
-      if (initializingRef.current && lastAddressRef.current === address) {
-        return;
-      }
-
-      initializingRef.current = true;
-      lastAddressRef.current = address;
 
       try {
         setLoading(true);
+
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
 
-        // Switch to authenticated chain if wallet is on a different chain.
-        // We intentionally do NOT require `currentChainId` to be truthy here, because
-        // wagmi can temporarily report `undefined` during connection flows.
-        if (address && currentChainId !== response.chainId) {
-          try {
-            await switchChain({ chainId: response.chainId as 8453 | 84532 });
-          } catch (switchError) {
-            console.warn("Failed to switch chain:", switchError);
-            // Continue with user setup even if chain switch fails
-          }
-        }
+        if (cancelled) return;
 
         setUser(response);
 
@@ -306,6 +280,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ["user"] });
         queryClient.invalidateQueries({ queryKey: ["balance"] });
       } catch (error) {
+        if (cancelled) return;
         console.error("Auth check failed:", error);
         if (
           error instanceof Error &&
@@ -315,21 +290,50 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           // Don't retry on 401/404 - user is not authenticated
         }
       } finally {
-        setLoading(false);
-        initializingRef.current = false;
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    // Add a small delay to prevent immediate auth checks during wallet connection
-    // This helps avoid conflicts with the wallet connection process
-    const timeoutId = setTimeout(() => {
-      initializeAuth();
-    }, 100);
+    initializeAuth();
 
-    // request is stable (only depends on config which is memoized), so it's safe to include
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => clearTimeout(timeoutId);
-  }, [address, currentChainId, status, request]);
+    return () => {
+      cancelled = true;
+      setLoading(false);
+    };
+  }, [address, status, request, queryClient]);
+
+  // Switch chains to the authenticated user's chain.
+  // Kept separate from the auth effect to avoid feedback loops.
+  useEffect(() => {
+    if (!user || !address) return;
+    if (typeof currentChainId !== "number") return;
+    const targetChainId = user.chainId;
+    if (currentChainId === targetChainId) return;
+    if (chainSwitchingTo === targetChainId) return;
+
+    let cancelled = false;
+    const run = async () => {
+      setChainSwitchingTo(targetChainId);
+      try {
+        await switchChain({ chainId: targetChainId as 8453 | 84532 });
+      } catch (switchError) {
+        console.warn("Failed to switch chain:", switchError);
+      } finally {
+        if (!cancelled) {
+          setChainSwitchingTo(null);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      setChainSwitchingTo(null);
+    };
+  }, [address, chainSwitchingTo, currentChainId, switchChain, user]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
