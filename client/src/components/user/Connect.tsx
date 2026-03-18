@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useConnectors, useSwitchChain, useDisconnect } from "wagmi";
+import { useConnectors, useDisconnect } from "wagmi";
 import { Hooks } from "porto/wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 
@@ -24,7 +24,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const [connector] = useConnectors();
   const { mutate: connect, error } = Hooks.useConnect();
   const { disconnect } = useDisconnect();
-  const { switchChain } = useSwitchChain();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
   const { user } = usePortoAuth();
@@ -67,22 +66,19 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
       // disconnect from any existing connections
       await disconnect();
 
+      const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
+
       // Connect the wallet first
       await connect(
         {
           connector,
+          // Ensure SIWE/auth happens on the chain the user selected.
+          // This prevents the backend cookie from being set for the wrong chain.
+          chainIds: [targetChainId],
         },
         {
           onSuccess: async () => {
             setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
-            // Switch to selected network after successful connection
-            const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
-            try {
-              await switchChain({ chainId: targetChainId as 8453 | 84532 });
-            } catch (switchError) {
-              console.log("Network switch failed after connect:", switchError);
-              // Don't fail the connection if network switch fails
-            }
           },
           onError: (error) => {
             console.log("connect OnError called", error);

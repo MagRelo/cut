@@ -286,8 +286,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
 
-        // Switch to preferred chain if user is connected and chain is different
-        if (address && currentChainId && currentChainId !== response.chainId) {
+        // Switch to authenticated chain if wallet is on a different chain.
+        // We intentionally do NOT require `currentChainId` to be truthy here, because
+        // wagmi can temporarily report `undefined` during connection flows.
+        if (address && currentChainId !== response.chainId) {
           try {
             await switchChain({ chainId: response.chainId as 8453 | 84532 });
           } catch (switchError) {
