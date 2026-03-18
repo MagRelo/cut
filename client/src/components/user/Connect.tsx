@@ -26,7 +26,29 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const { disconnect } = useDisconnect();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(true);
   const { user } = usePortoAuth();
+
+  // Ensure we start from a clean slate any time this component is shown.
+  // (Doing this at mount time avoids racing with the wallet popup/permissions flow.)
+  useEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      setIsDisconnecting(true);
+      try {
+        await disconnect();
+      } catch (e) {
+        console.log("disconnect on mount failed", e);
+      } finally {
+        if (isActive) setIsDisconnecting(false);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [disconnect]);
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -63,9 +85,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
 
     try {
-      // disconnect from any existing connections
-      await disconnect();
-
       const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
 
       // Connect the wallet first
@@ -165,7 +184,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                 </p>
                 <button
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  disabled={isConnecting || !tocAccepted}
+                  disabled={isConnecting || !tocAccepted || isDisconnecting}
                   onClick={() => handleConnect("testnet")}
                   type="button"
                 >
