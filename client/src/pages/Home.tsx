@@ -169,10 +169,8 @@ export const Home: React.FC = () => {
 
       {/* Contest Schedule */}
       <div className="w-full max-w-4xl px-4">
-        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">Weekly Contests</h3>
+        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">Weekly Schedule</h3>
         <div className="bg-white rounded-sm shadow p-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-4 font-display">Contest schedule:</h3>
-
           <div className="mb-4">
             <ContestStatusProgressBar />
           </div>

@@ -1,6 +1,4 @@
 import React from "react";
-import { useCurrentTournament } from "../../hooks/useTournamentData";
-import { type TournamentStatus } from "../../types/tournament";
 
 // SVG Icon Components
 const CheckmarkIcon: React.FC<{ className?: string }> = ({
@@ -34,59 +32,20 @@ const LockIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4 text-
   </svg>
 );
 
-// Calculate progress percentage based on tournament status and round
-function calculateProgress(status: TournamentStatus, roundDisplay?: string | null): number {
-  const sectionWidth = 100 / 7; // ~14.29% per section
-
-  if (status === "NOT_STARTED" || status === "CANCELLED") {
-    return 0; // No progress yet
-  }
-
-  if (status === "COMPLETED") {
-    return 100; // Fully complete
-  }
-
-  if (status === "IN_PROGRESS" && roundDisplay) {
-    const roundNum = parseInt(roundDisplay.replace("R", ""), 10);
-
-    if (roundNum === 1) {
-      // R1 - progress through Open (3 sections) + part of R1
-      return sectionWidth * 3 + sectionWidth * 0.5; // 42.86% + 7.14% = 50%
-    }
-
-    if (roundNum === 2) {
-      // R2 - progress through Open + R1 (4 sections) + part of R2
-      return sectionWidth * 4 + sectionWidth * 0.5; // 57.14% + 7.14% = 64.29%
-    }
-
-    if (roundNum === 3) {
-      // R3 - progress through Open + R1 + R2 (5 sections) + part of R3
-      return sectionWidth * 5 + sectionWidth * 0.5; // 71.43% + 7.14% = 78.57%
-    }
-
-    if (roundNum === 4) {
-      // R4 - progress through Open + R1 + R2 + R3 (6 sections) + part of R4
-      return sectionWidth * 6 + sectionWidth * 0.5; // 85.7% + 7.14% = ~92.86%
-    }
-  }
-
-  // Default for IN_PROGRESS without roundDisplay - assume R1
-  if (status === "IN_PROGRESS") {
-    return sectionWidth * 3 + sectionWidth * 0.5; // 50%
-  }
-
-  return 0;
+// TEMP: Calculate progress based purely on how far through the week we are.
+// Mon => 1/7, Tue => 2/7, ..., Sun => 7/7.
+function calculateWeekProgress(now: Date = new Date()): number {
+  // JS: getDay() => 0 (Sun) ... 6 (Sat)
+  const day = now.getDay();
+  const dayIndex = day === 0 ? 7 : day; // Mon=1 ... Sun=7
+  return (dayIndex / 7) * 100;
 }
 
 export const ContestStatusProgressBar: React.FC = () => {
-  const { tournament } = useCurrentTournament();
-  const roundDisplay = tournament?.roundDisplay ?? null;
-  const status = tournament?.status ?? "NOT_STARTED";
-
   // Seven sections representing days of the week
   const sections = 7;
   const sectionWidth = 100 / sections; // ~14.29% per section
-  const progressPercent = calculateProgress(status, roundDisplay);
+  const progressPercent = calculateWeekProgress();
 
   // Grid structure: left column for labels, right section for content
   // Each row represents: stage labels, progress bar, action rows
@@ -109,7 +68,7 @@ export const ContestStatusProgressBar: React.FC = () => {
           <div className="mt-2 mb-4 flex flex-col gap-2">
             {/* Row 3: "Contest" header */}
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-700 font-medium">Contest</span>
+              <span className="text-xs font-display text-green-600 font-medium">Contest</span>
             </div>
 
             {/* Row 4: "Enter/Leave" label */}
@@ -128,7 +87,7 @@ export const ContestStatusProgressBar: React.FC = () => {
           <div className="mb-0 flex flex-col gap-2">
             {/* Row 6: "Winner Market" header */}
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-700 font-medium">
+              <span className="text-xs font-display text-blue-600 font-medium">
                 Prediction Market
               </span>
             </div>
