@@ -19,10 +19,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   isOwnedByCurrentUser = false,
 }) => {
   // Calculate total points
-  const totalPoints =
-    (player.tournamentData?.total || 0) +
-    (player.tournamentData?.cut || 0) +
-    (player.tournamentData?.bonus || 0);
+  const totalPoints = player.tournamentData?.total || 0;
 
   // Get hot/cold icon from current round
   const getCurrentRoundIcon = () => {

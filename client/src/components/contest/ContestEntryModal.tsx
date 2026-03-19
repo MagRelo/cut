@@ -48,23 +48,12 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
   // Calculate total points for the lineup
   const totalPoints = lineupPlayers.reduce((sum, player) => {
-    return (
-      sum +
-      (player.tournamentData?.total || 0) +
-      (player.tournamentData?.cut || 0) +
-      (player.tournamentData?.bonus || 0)
-    );
+    return sum + (player.tournamentData?.total || 0);
   }, 0);
 
   const sortedPlayers = [...lineupPlayers].sort((a, b) => {
-    const aTotal =
-      (a.tournamentData?.total || 0) +
-      (a.tournamentData?.cut || 0) +
-      (a.tournamentData?.bonus || 0);
-    const bTotal =
-      (b.tournamentData?.total || 0) +
-      (b.tournamentData?.cut || 0) +
-      (b.tournamentData?.bonus || 0);
+    const aTotal = a.tournamentData?.total || 0;
+    const bTotal = b.tournamentData?.total || 0;
     return bTotal - aTotal;
   });
 

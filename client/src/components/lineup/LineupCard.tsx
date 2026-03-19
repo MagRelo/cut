@@ -33,14 +33,8 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable }) =>
         <div className="grid grid-cols-1 gap-3">
           {[...lineup.players]
             .sort((a, b) => {
-              const aTotal =
-                (a.tournamentData?.total || 0) +
-                (a.tournamentData?.cut || 0) +
-                (a.tournamentData?.bonus || 0);
-              const bTotal =
-                (b.tournamentData?.total || 0) +
-                (b.tournamentData?.cut || 0) +
-                (b.tournamentData?.bonus || 0);
+              const aTotal = a.tournamentData?.total || 0;
+              const bTotal = b.tournamentData?.total || 0;
               return bTotal - aTotal;
             })
             .map((player, index) => (

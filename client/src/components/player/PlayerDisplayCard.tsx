@@ -90,9 +90,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
           {/* Points */}
           <div className="text-right flex-shrink-0">
             <div className="text-3xl font-bold text-gray-900 leading-none">
-              {(player.tournamentData.total || 0) +
-                (player.tournamentData.cut || 0) +
-                (player.tournamentData.bonus || 0)}
+              {player.tournamentData.total || 0}
             </div>
             <div className="text-xs uppercase text-gray-500 font-semibold tracking-wide leading-none mt-1">
               PTS

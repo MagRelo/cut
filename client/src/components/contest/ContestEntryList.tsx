@@ -147,14 +147,8 @@ export const ContestEntryList = ({
         const lineupPlayers = lineup.tournamentLineup?.players ?? [];
         const sortedPlayerNames = [...lineupPlayers]
           .sort((a, b) => {
-            const aTotal =
-              (a.tournamentData?.total || 0) +
-              (a.tournamentData?.cut || 0) +
-              (a.tournamentData?.bonus || 0);
-            const bTotal =
-              (b.tournamentData?.total || 0) +
-              (b.tournamentData?.cut || 0) +
-              (b.tournamentData?.bonus || 0);
+            const aTotal = a.tournamentData?.total || 0;
+            const bTotal = b.tournamentData?.total || 0;
             return bTotal - aTotal;
           })
           .map((player) => player.pga_lastName)

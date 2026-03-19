@@ -105,10 +105,8 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
 
     // Convert map to array and sort by points (highest first)
     return Array.from(playerMap.values()).sort((a, b) => {
-      const aTotal =
-        a.totalScore + (a.player.tournamentData?.cut || 0) + (a.player.tournamentData?.bonus || 0);
-      const bTotal =
-        b.totalScore + (b.player.tournamentData?.cut || 0) + (b.player.tournamentData?.bonus || 0);
+      const aTotal = a.totalScore;
+      const bTotal = b.totalScore;
       return bTotal - aTotal;
     });
   };
