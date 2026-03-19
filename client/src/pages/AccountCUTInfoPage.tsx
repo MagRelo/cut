@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useReadContract, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 // import { PageHeader } from "../components/common/PageHeader.tsx";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 // import { TestnetWarning } from "../components/common/ChainWarning.tsx";
@@ -15,8 +15,6 @@ import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 import cUSDCContract from "../utils/contracts/cUSDC.json";
 import {
-  createExplorerLinkJSX,
-  useTokenSymbol,
   getContractAddress,
 } from "../utils/blockchainUtils.tsx";
 
@@ -51,7 +49,6 @@ export function CUTInfoPage() {
   // Get contract addresses dynamically
   const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
-  const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
 
   // Get USDC balance in Compound
   const { data: compoundUSDCBalance, isLoading: compoundUSDCBalanceLoading } = useReadContract({
@@ -83,22 +80,7 @@ export function CUTInfoPage() {
     ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
     : "0";
 
-  // Get payment token symbol
-  const { data: paymentTokenSymbol } = useTokenSymbol(paymentTokenAddress as string);
-
-  const {
-    data: platformTokenAddressFromContract,
-    isLoading: platformTokenAddressFromContractLoading,
-  } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "platformToken",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
-
-  const { data: cUSDCAddress, isLoading: cUSDCAddressLoading } = useReadContract({
+  const { data: cUSDCAddress } = useReadContract({
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
     functionName: "cUSDC",
@@ -294,76 +276,17 @@ export function CUTInfoPage() {
         </TabGroup>
       </div>
 
-      {/* Contract Addresses */}
       <div className="bg-white border border-gray-200 rounded-sm shadow p-4 mb-4">
         <div className="text-lg font-semibold text-gray-700 font-display mb-2">
           Contract Addresses
         </div>
 
-        <div className="grid grid-cols-1 gap-2 text-sm">
-          {/* Platform Token Address */}
-          <div className="flex justify-between">
-            <span className="font-medium">CUT Token:</span>
-            <span className="font-mono">
-              {platformTokenAddressFromContractLoading ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : chainId && platformTokenAddressFromContract ? (
-                createExplorerLinkJSX(
-                  platformTokenAddressFromContract as string,
-                  chainId,
-                  `${(platformTokenAddressFromContract as string)?.slice(0, 6)}...${(
-                    platformTokenAddressFromContract as string
-                  )?.slice(-4)}`,
-                  "text-blue-600 hover:text-blue-800 underline"
-                )
-              ) : (
-                `${(platformTokenAddressFromContract as string)?.slice(0, 6)}...${(
-                  platformTokenAddressFromContract as string
-                )?.slice(-4)}`
-              )}
-            </span>
-          </div>
-
-          {/* Deposit Manager Address */}
-          <div className="flex justify-between">
-            <span className="font-medium">CUT Token Manager:</span>
-            <span className="font-mono">
-              {chainId && depositManagerAddress ? (
-                createExplorerLinkJSX(
-                  depositManagerAddress as string,
-                  chainId,
-                  `${(depositManagerAddress as string)?.slice(0, 6)}...${(
-                    depositManagerAddress as string
-                  )?.slice(-4)}`,
-                  "text-blue-600 hover:text-blue-800 underline"
-                )
-              ) : (
-                <span className="text-gray-400">Loading...</span>
-              )}
-            </span>
-          </div>
-
-          {/* cUSDC Address */}
-          <div className="flex justify-between">
-            <span className="font-medium">Compound c{paymentTokenSymbol || "USDC"}:</span>
-            <span className="font-mono">
-              {cUSDCAddressLoading ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : chainId && cUSDCAddress ? (
-                createExplorerLinkJSX(
-                  cUSDCAddress as string,
-                  chainId,
-                  `${(cUSDCAddress as string)?.slice(0, 6)}...${(cUSDCAddress as string)?.slice(
-                    -4
-                  )}`,
-                  "text-blue-600 hover:text-blue-800 underline"
-                )
-              ) : (
-                `${(cUSDCAddress as string)?.slice(0, 6)}...${(cUSDCAddress as string)?.slice(-4)}`
-              )}
-            </span>
-          </div>
-        </div>
+        <Link
+          to="/contracts"
+          className="inline-flex items-center justify-center w-full bg-blue-500 hover:bg-blue-600 text-white font-display py-2 px-4 rounded border border-blue-500 transition-colors text-sm"
+        >
+          View Contracts
+        </Link>
       </div>
     </div>
   );

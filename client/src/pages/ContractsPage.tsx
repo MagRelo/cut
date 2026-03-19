@@ -62,19 +62,6 @@ const ContractsPage: React.FC = () => {
   const baseMainnetContracts = buildContractList(baseConfig, 8453);
   const baseSepoliaContracts = buildContractList(sepoliaConfig, 84532);
 
-  // Helper to get network name
-  const getNetworkName = (id: number | undefined) => {
-    if (!id) return "Not Connected";
-    switch (id) {
-      case 8453:
-        return "Base Mainnet";
-      case 84532:
-        return "Base Sepolia Testnet";
-      default:
-        return `Unsupported Network (Chain ID: ${id})`;
-    }
-  };
-
   const renderContractSection = (
     title: string,
     subtitle: string,
@@ -174,22 +161,10 @@ const ContractsPage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+    <div className="mt-4">
+      <div className="bg-white rounded-sm shadow p-4 sm:p-6">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Smart Contracts</h1>
-          <div className="flex items-center gap-2">
-            <p className="text-sm sm:text-base text-gray-600">Current Network:</p>
-            <span
-              className={`px-3 py-1 text-xs font-medium rounded-full ${
-                chainId === 8453 || chainId === 84532
-                  ? "bg-green-100 text-green-800"
-                  : "bg-yellow-100 text-yellow-800"
-              }`}
-            >
-              {getNetworkName(chainId)}
-            </span>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Contract Addresses</h1>
         </div>
 
         {renderContractSection(
