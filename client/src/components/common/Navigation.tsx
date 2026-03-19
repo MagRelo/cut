@@ -22,7 +22,7 @@ export const Navigation: React.FC = () => {
   return (
     <div className="flex flex-row items-center justify-between">
       {/* left side nav: Home + Contests */}
-      <div className="flex items-center gap-2 font-display">
+      <div className="flex items-center gap-4 font-display">
         {/* Show Home link only when NOT logged in */}
         {!user && (
           <Link to="/" className={getLinkClassName("/")}>
@@ -37,7 +37,7 @@ export const Navigation: React.FC = () => {
       </div>
 
       {/* right side nav: Lineups + Account */}
-      <div className="flex items-center gap-2 font-display">
+      <div className="flex items-center gap-4 font-display">
         {/* Show Lineups link only when logged in */}
         {user && (
           <Link to="/lineups" className={getLinkClassName("/lineups")}>
