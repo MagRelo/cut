@@ -125,12 +125,13 @@ export const LeaderboardPage: React.FC = () => {
         ) : (
           <div className="max-h-[70vh] overflow-y-auto px-2 py-3">
             {sortedPlayers.map((player) => (
-              <PlayerDisplayRow
-                key={player.id}
-                player={player}
-                roundDisplay={roundDisplay}
-                onClick={() => openPlayerModal(player)}
-              />
+              <div key={player.id} className="border-b border-gray-200">
+                <PlayerDisplayRow
+                  player={player}
+                  roundDisplay={roundDisplay}
+                  onClick={() => openPlayerModal(player)}
+                />
+              </div>
             ))}
           </div>
         )}

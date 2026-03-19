@@ -21,6 +21,36 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+const PLAYER_SORT_BUCKET = {
+  noData: 205,
+  wd: 203,
+  cut: 202,
+  noPosition: 201,
+} as const;
+
+const getPlayerSortIndex = (player?: PlayerWithTournamentData | null) => {
+  if (!player) return PLAYER_SORT_BUCKET.noData;
+
+  const score = player.tournamentData?.leaderboardTotal?.trim();
+  const position = player.tournamentData?.leaderboardPosition?.trim().toUpperCase();
+
+  if (!score) return PLAYER_SORT_BUCKET.noData;
+  if (position === "WD") return PLAYER_SORT_BUCKET.wd;
+  if (position === "CUT") return PLAYER_SORT_BUCKET.cut;
+  if (position === "-") return PLAYER_SORT_BUCKET.noPosition;
+  if (score === "E") return 0;
+
+  const numericScore = Number.parseInt(score, 10);
+  return Number.isNaN(numericScore) ? PLAYER_SORT_BUCKET.noData : numericScore;
+};
+
+const getNumericPosition = (player: PlayerWithTournamentData) => {
+  const rawPosition = player.tournamentData?.leaderboardPosition?.trim().toUpperCase() || "";
+  const normalizedPosition = rawPosition.startsWith("T") ? rawPosition.slice(1) : rawPosition;
+  const parsedPosition = Number.parseInt(normalizedPosition, 10);
+  return Number.isNaN(parsedPosition) ? Number.POSITIVE_INFINITY : parsedPosition;
+};
+
 interface ContestPlayerListProps {
   contest?: Contest;
   roundDisplay?: string;
@@ -103,11 +133,21 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
       }
     });
 
-    // Convert map to array and sort by points (highest first)
+    // Convert map to array and sort with leaderboard logic.
     return Array.from(playerMap.values()).sort((a, b) => {
-      const aTotal = a.totalScore;
-      const bTotal = b.totalScore;
-      return bTotal - aTotal;
+      const sortIndexDiff = getPlayerSortIndex(a.player) - getPlayerSortIndex(b.player);
+      if (sortIndexDiff !== 0) return sortIndexDiff;
+
+      const positionDiff = getNumericPosition(a.player) - getNumericPosition(b.player);
+      if (positionDiff !== 0) return positionDiff;
+
+      const aName =
+        a.player.pga_displayName ||
+        `${a.player.pga_lastName || ""} ${a.player.pga_firstName || ""}`.trim();
+      const bName =
+        b.player.pga_displayName ||
+        `${b.player.pga_lastName || ""} ${b.player.pga_firstName || ""}`.trim();
+      return aName.localeCompare(bName);
     });
   };
 
@@ -125,14 +165,15 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
     <>
       <div className="px-2 mt-3">
         {playersData.map((playerData) => (
-          <PlayerDisplayRow
-            key={playerData.player.id}
-            player={playerData.player}
-            roundDisplay={roundDisplay || "R1"}
-            onClick={() => openPlayerModal(playerData.player, playerData.lineups)}
-            ownershipPercentage={playerData.ownershipPercentage}
-            isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
-          />
+          <div key={playerData.player.id} className="border-b border-gray-200">
+            <PlayerDisplayRow
+              player={playerData.player}
+              roundDisplay={roundDisplay || "R1"}
+              onClick={() => openPlayerModal(playerData.player, playerData.lineups)}
+              ownershipPercentage={playerData.ownershipPercentage}
+              isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
+            />
+          </div>
         ))}
       </div>
 
