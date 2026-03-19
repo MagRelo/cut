@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { CountdownTimer } from "./CountdownTimer";
 import { Navigation } from "../common/Navigation";
@@ -88,7 +89,12 @@ export const TournamentHeaderPanel: React.FC = () => {
         {/* tournament name */}
         <div className="flex justify-between items-center mt-1">
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
-            {currentTournament.name}
+            <Link
+              to="/leaderboard"
+              className="hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-sm"
+            >
+              {currentTournament.name}
+            </Link>
           </h1>
         </div>
 
