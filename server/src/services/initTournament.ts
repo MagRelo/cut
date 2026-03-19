@@ -8,6 +8,46 @@ import { updateTournament } from "./updateTournament.js";
 import { fetchDataGolfRankings, type DataGolfRanking } from "../lib/dataGolfRankings.js";
 // import { updateTournamentPlayerScores } from "./updateTournamentPlayers.js";
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+type TournamentSummarySections = Array<{
+  title: string;
+  items: Array<{
+    label?: string;
+    body: string;
+  }>;
+}>;
+
+async function loadTournamentSummarySections(
+  pgaTourId: string,
+): Promise<TournamentSummarySections | undefined> {
+  const thisDir = path.dirname(fileURLToPath(import.meta.url));
+  const summaryFilePath = path.join(thisDir, "..", "tournamentSummaries", `${pgaTourId}.json`);
+
+  try {
+    const raw = await readFile(summaryFilePath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+
+    // Minimal validation: top-level must be an array of sections
+    if (!Array.isArray(parsed)) {
+      console.warn(`[initTournament] Invalid summary file format: expected array at ${summaryFilePath}`);
+      return undefined;
+    }
+
+    return parsed as TournamentSummarySections;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("ENOENT")) {
+      console.warn(`[initTournament] Summary file not found for pgaTourId=${pgaTourId} (${summaryFilePath})`);
+      return undefined;
+    }
+    console.warn(`[initTournament] Failed to load summary for pgaTourId=${pgaTourId}: ${message}`);
+    return undefined;
+  }
+}
+
 // Helper function to chunk arrays for processing large datasets
 function chunk<T>(array: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -191,6 +231,9 @@ export async function initTournament(pgaTourId: string) {
 
     // Update tournament metadata (and start/end dates) via shared service
     await updateTournament({ tournamentId: tournament.id });
+
+    // Load the per-tournament summary content (optional)
+    const summarySections = await loadTournamentSummarySections(pgaTourId);
     
     // Fetch updated tournament to get dates
     const updatedTournament = await prisma.tournament.findUnique({
@@ -446,7 +489,10 @@ export async function initTournament(pgaTourId: string) {
     // Update manualActive to true for the current tournament
     await prisma.tournament.update({
       where: { id: tournament.id },
-      data: { manualActive: true },
+      data: {
+        manualActive: true,
+        ...(summarySections ? { summarySections } : {}),
+      },
     });
 
     console.log(`\n✓ Tournament initialization completed: ${tournament.name}\n`);

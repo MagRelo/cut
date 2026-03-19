@@ -32,6 +32,7 @@ const tournamentBaseSchema = {
   beautyImage: z.string().optional(),
   cutLine: z.string().optional(),
   cutRound: z.string().optional(),
+  summarySections: z.any().optional(), // JSON type
   manualActive: z.boolean().default(false),
 };
 

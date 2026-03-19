@@ -61,10 +61,19 @@ export interface Tournament {
   beautyImage?: string;
   cutLine?: string;
   cutRound?: string;
+  summarySections?: TournamentSummarySections; // Json type in Prisma
   manualActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type TournamentSummarySections = Array<{
+  title: string;
+  items: Array<{
+    label?: string;
+    body: string;
+  }>;
+}>;
 
 // Zod Schema for validation
 export const tournamentSchema = z.object({
@@ -87,6 +96,7 @@ export const tournamentSchema = z.object({
   beautyImage: z.string().optional(),
   cutLine: z.string().optional(),
   cutRound: z.string().optional(),
+  summarySections: z.any().optional(),
   manualActive: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
