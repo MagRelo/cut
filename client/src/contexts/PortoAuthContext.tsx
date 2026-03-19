@@ -5,6 +5,7 @@ import {
   useState,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,7 +66,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(false);
-  const [chainSwitchingTo, setChainSwitchingTo] = useState<number | null>(null);
+  const initializingRef = useRef(false);
+  const lastAddressRef = useRef<string | undefined>(undefined);
 
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
@@ -220,8 +222,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
    * Note: Preserves public data like tournaments that don't require auth
    */
   const clearAllUserData = useCallback(() => {
-    setLoading(false);
-    setChainSwitchingTo(null);
     // Clear user state
     setUser(null);
 
@@ -254,23 +254,62 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAllUserData]);
 
   useEffect(() => {
-    let cancelled = false;
-
     const initializeAuth = async () => {
-      // Wallet isn't connected; can't authenticate.
-      if (status !== "connected" || !address) {
-        setUser(null);
-        setLoading(false);
+      // Prevent multiple simultaneous initialization calls
+      if (initializingRef.current) {
         return;
       }
 
+      // If address hasn't changed, don't re-initialize
+      if (address === lastAddressRef.current) {
+        return;
+      }
+
+      if (!address) {
+        // If there's no address, we can't authenticate, so ensure loading is false
+        setUser(null);
+        setLoading(false);
+        lastAddressRef.current = undefined;
+        return;
+      }
+
+      // Skip if we're already initializing for this address
+      if (initializingRef.current && lastAddressRef.current === address) {
+        return;
+      }
+
+      initializingRef.current = true;
+      lastAddressRef.current = address;
+
       try {
         setLoading(true);
-
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
 
-        if (cancelled) return;
+        // Switch to authenticated chain if wallet is on a different chain.
+        // We intentionally do NOT require `currentChainId` to be truthy here, because
+        // wagmi can temporarily report `undefined` during connection flows.
+        if (address && currentChainId !== response.chainId) {
+          const targetChainId = response.chainId as 8453 | 84532;
+
+          const switchToTargetChain = async () => {
+            try {
+              if (!document.hasFocus()) return;
+              await switchChain({ chainId: targetChainId });
+            } catch (switchError) {
+              console.warn("Failed to switch chain:", switchError);
+              // Continue with user setup even if chain switch fails
+            }
+          };
+
+          // On refresh or popup handoff, `document.hasFocus()` can be temporarily false.
+          // In that case, retry once when focus returns.
+          if (document.hasFocus()) {
+            await switchToTargetChain();
+          } else {
+            window.addEventListener("focus", switchToTargetChain, { once: true });
+          }
+        }
 
         setUser(response);
 
@@ -280,7 +319,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ["user"] });
         queryClient.invalidateQueries({ queryKey: ["balance"] });
       } catch (error) {
-        if (cancelled) return;
         console.error("Auth check failed:", error);
         if (
           error instanceof Error &&
@@ -290,50 +328,19 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           // Don't retry on 401/404 - user is not authenticated
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
+        initializingRef.current = false;
       }
     };
 
-    initializeAuth();
+    // Add a small delay to prevent immediate auth checks during wallet connection
+    // This helps avoid conflicts with the wallet connection process
+    const timeoutId = setTimeout(() => {
+      initializeAuth();
+    }, 100);
 
-    return () => {
-      cancelled = true;
-      setLoading(false);
-    };
-  }, [address, status, request, queryClient]);
-
-  // Switch chains to the authenticated user's chain.
-  // Kept separate from the auth effect to avoid feedback loops.
-  useEffect(() => {
-    if (!user || !address) return;
-    if (typeof currentChainId !== "number") return;
-    const targetChainId = user.chainId;
-    if (currentChainId === targetChainId) return;
-    if (chainSwitchingTo === targetChainId) return;
-
-    let cancelled = false;
-    const run = async () => {
-      setChainSwitchingTo(targetChainId);
-      try {
-        await switchChain({ chainId: targetChainId as 8453 | 84532 });
-      } catch (switchError) {
-        console.warn("Failed to switch chain:", switchError);
-      } finally {
-        if (!cancelled) {
-          setChainSwitchingTo(null);
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-      setChainSwitchingTo(null);
-    };
-  }, [address, chainSwitchingTo, currentChainId, switchChain, user]);
+    return () => clearTimeout(timeoutId);
+  }, [address, currentChainId, status, request, queryClient, switchChain]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
@@ -342,6 +349,39 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       clearAllUserData();
     }
   }, [address, user, clearAllUserData, status]);
+
+  /**
+   * Re-enforce the authenticated chain after refresh / connector state changes.
+   * Porto + wagmi can briefly report an incorrect `currentChainId` even though
+   * `/auth/me` (and therefore `user.chainId`) is correct.
+   */
+  useEffect(() => {
+    if (!user) return;
+    if (status !== "connected") return;
+    if (typeof currentChainId !== "number") return;
+    if (currentChainId === user.chainId) return;
+
+    const targetChainId = user.chainId as 8453 | 84532;
+
+    const run = async () => {
+      if (!document.hasFocus()) return;
+      try {
+        await switchChain({ chainId: targetChainId });
+      } catch (switchError) {
+        console.warn("Failed to switch chain to user.chainId:", switchError);
+      }
+    };
+
+    // If the popup has focus, wait for focus to return before switching chains.
+    // This avoids viem/porto errors that complain about `document is not focused`.
+    if (document.hasFocus()) {
+      run();
+      return;
+    }
+
+    window.addEventListener("focus", run);
+    return () => window.removeEventListener("focus", run);
+  }, [user, status, currentChainId, switchChain]);
 
   const contextValue = useMemo(
     () => ({
