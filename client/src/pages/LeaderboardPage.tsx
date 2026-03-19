@@ -123,7 +123,7 @@ export const LeaderboardPage: React.FC = () => {
             <p>No players found.</p>
           </div>
         ) : (
-          <div className="max-h-[70vh] overflow-y-auto px-2 py-3">
+          <div className="px-2 py-3">
             {sortedPlayers.map((player) => (
               <div key={player.id} className="border-b border-gray-200">
                 <PlayerDisplayRow
