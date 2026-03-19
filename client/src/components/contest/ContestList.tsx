@@ -33,7 +33,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   return (
     <div className="grid gap-2">
       {contests.map((contest) => (
-        <div key={contest.id} className="border bg-white rounded-sm p-3">
+        <div key={contest.id} className="bg-white rounded-md border border-green-600/50 p-3">
           <ContestCard contest={contest} />
         </div>
       ))}

@@ -34,9 +34,7 @@ export const Contests: React.FC = () => {
   return (
     <div className="space-y-4 p-4">
       <PageHeader title="Contests" className="" />
-      <div className="bg-white rounded-sm shadow p-2">
-        <ContestList contests={contests} loading={showLoading} error={error} />
-      </div>
+      <ContestList contests={contests} loading={showLoading} error={error} />
     </div>
   );
 };

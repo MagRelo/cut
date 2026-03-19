@@ -96,7 +96,7 @@ export const ContestLobby: React.FC = () => {
       />
 
       {/* contest lobby */}
-      <div className="bg-white rounded-sm shadow pb-3">
+      <div className="bg-white rounded-sm shadow pt-2">
         {/* header */}
 
         <div className="p-3 pb-1">
