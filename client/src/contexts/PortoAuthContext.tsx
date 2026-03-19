@@ -7,7 +7,9 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
+import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract, useConnectors } from "wagmi";
+import { Hooks } from "porto/wagmi";
+import { base, baseSepolia } from "wagmi/chains";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { handleApiResponse, ApiError } from "../utils/apiError";
@@ -47,6 +49,30 @@ interface PortoAuthContextData {
   platformTokenSymbol: string | undefined;
   platformTokenDecimals: number | undefined;
   balancesLoading: boolean;
+  authFlow: {
+    phase: AuthFlowPhase;
+    attemptId: number;
+    error: string | null;
+    isBusy: boolean;
+  };
+  startAuthFlow: (network: NetworkOption) => Promise<void>;
+}
+
+type NetworkOption = "mainnet" | "testnet";
+
+type AuthFlowPhase =
+  | "idle"
+  | "disconnecting"
+  | "wallet_connecting"
+  | "server_auth_pending"
+  | "chain_enforcing"
+  | "ready"
+  | "error";
+
+interface AuthFlowState {
+  phase: AuthFlowPhase;
+  attemptId: number;
+  error: string | null;
 }
 
 const PortoAuthContext = createContext<PortoAuthContextData | undefined>(undefined);
@@ -63,11 +89,35 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId, status } = useAccount();
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
+  const [connector] = useConnectors();
+  const { mutate: connectWallet } = Hooks.useConnect();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<PortoUser | null>(null);
   const [loading, setLoading] = useState(false);
+  const [authFlowState, setAuthFlowState] = useState<AuthFlowState>({
+    phase: "idle",
+    attemptId: 0,
+    error: null,
+  });
   const initializingRef = useRef(false);
   const lastAddressRef = useRef<string | undefined>(undefined);
+  const authAttemptRef = useRef(0);
+  const authFlowRef = useRef<AuthFlowState>({
+    phase: "idle",
+    attemptId: 0,
+    error: null,
+  });
+
+  const setAuthFlow = useCallback(
+    (next: AuthFlowState | ((prev: AuthFlowState) => AuthFlowState)) => {
+      setAuthFlowState((prev) => {
+        const resolved = typeof next === "function" ? next(prev) : next;
+        authFlowRef.current = resolved;
+        return resolved;
+      });
+    },
+    []
+  );
 
   // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
@@ -253,8 +303,117 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     clearAllUserData();
   }, [clearAllUserData]);
 
+  const waitForDocumentFocus = useCallback(async (): Promise<void> => {
+    if (document.hasFocus()) return;
+    await new Promise<void>((resolve) => {
+      const onFocus = () => resolve();
+      window.addEventListener("focus", onFocus, { once: true });
+    });
+  }, []);
+
+  const startAuthFlow = useCallback(
+    async (network: NetworkOption) => {
+      const nextAttemptId = authAttemptRef.current + 1;
+      authAttemptRef.current = nextAttemptId;
+
+      const isCurrentAttempt = () => authAttemptRef.current === nextAttemptId;
+      const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
+
+      setAuthFlow({
+        phase: "disconnecting",
+        attemptId: nextAttemptId,
+        error: null,
+      });
+
+      setLoading(true);
+      setUser(null);
+
+      try {
+        try {
+          await disconnect();
+        } catch (disconnectError) {
+          console.warn("Auth flow disconnect failed:", disconnectError);
+        }
+        if (!isCurrentAttempt()) return;
+
+        setAuthFlow((prev) => ({ ...prev, phase: "wallet_connecting" }));
+        await waitForDocumentFocus();
+        if (!isCurrentAttempt()) return;
+
+        await new Promise<void>((resolve, reject) => {
+          if (!connector) {
+            reject(new Error("No wallet connector available"));
+            return;
+          }
+          connectWallet(
+            {
+              connector,
+              chainIds: [targetChainId],
+            },
+            {
+              onSuccess: () => resolve(),
+              onError: (error) => reject(error),
+            }
+          );
+        });
+        if (!isCurrentAttempt()) return;
+
+        setAuthFlow((prev) => ({ ...prev, phase: "server_auth_pending" }));
+        const response = await request<PortoUser>("GET", "/auth/me");
+        if (!isCurrentAttempt()) return;
+        setUser(response);
+
+        setAuthFlow((prev) => ({ ...prev, phase: "chain_enforcing" }));
+        if (typeof response.chainId === "number" && currentChainId !== response.chainId) {
+          await waitForDocumentFocus();
+          if (!isCurrentAttempt()) return;
+          await switchChain({ chainId: response.chainId as 8453 | 84532 });
+        }
+        if (!isCurrentAttempt()) return;
+
+        queryClient.invalidateQueries({ queryKey: ["lineups"] });
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+        queryClient.invalidateQueries({ queryKey: ["balance"] });
+
+        setAuthFlow((prev) => ({ ...prev, phase: "ready", error: null }));
+      } catch (error) {
+        if (!isCurrentAttempt()) return;
+        const errorMessage = error instanceof Error ? error.message : "Authentication failed";
+        console.error("Auth flow failed:", error);
+        setAuthFlow((prev) => ({ ...prev, phase: "error", error: errorMessage }));
+      } finally {
+        if (isCurrentAttempt()) {
+          setLoading(false);
+        }
+      }
+    },
+    [
+      connectWallet,
+      connector,
+      currentChainId,
+      disconnect,
+      queryClient,
+      request,
+      setAuthFlow,
+      switchChain,
+      waitForDocumentFocus,
+    ]
+  );
+
   useEffect(() => {
     const initializeAuth = async () => {
+      const phase = authFlowRef.current.phase;
+      const isFlowBusy =
+        phase === "disconnecting" ||
+        phase === "wallet_connecting" ||
+        phase === "server_auth_pending" ||
+        phase === "chain_enforcing";
+
+      // The state machine owns auth changes while an explicit flow is in progress.
+      if (isFlowBusy) {
+        return;
+      }
+
       // Prevent multiple simultaneous initialization calls
       if (initializingRef.current) {
         return;
@@ -286,31 +445,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         // Check if auth cookie exists by making a request to /me
         const response = await request<PortoUser>("GET", "/auth/me");
 
-        // Switch to authenticated chain if wallet is on a different chain.
-        // We intentionally do NOT require `currentChainId` to be truthy here, because
-        // wagmi can temporarily report `undefined` during connection flows.
-        if (address && currentChainId !== response.chainId) {
-          const targetChainId = response.chainId as 8453 | 84532;
-
-          const switchToTargetChain = async () => {
-            try {
-              if (!document.hasFocus()) return;
-              await switchChain({ chainId: targetChainId });
-            } catch (switchError) {
-              console.warn("Failed to switch chain:", switchError);
-              // Continue with user setup even if chain switch fails
-            }
-          };
-
-          // On refresh or popup handoff, `document.hasFocus()` can be temporarily false.
-          // In that case, retry once when focus returns.
-          if (document.hasFocus()) {
-            await switchToTargetChain();
-          } else {
-            window.addEventListener("focus", switchToTargetChain, { once: true });
-          }
-        }
-
         setUser(response);
 
         // Invalidate only auth-dependent queries when auth refreshes
@@ -340,7 +474,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [address, currentChainId, status, request, queryClient, switchChain]);
+  }, [address, status, request, queryClient]);
 
   // Clear user data when wallet disconnects
   useEffect(() => {
@@ -350,37 +484,28 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [address, user, clearAllUserData, status]);
 
-  /**
-   * Re-enforce the authenticated chain after refresh / connector state changes.
-   * Porto + wagmi can briefly report an incorrect `currentChainId` even though
-   * `/auth/me` (and therefore `user.chainId`) is correct.
-   */
   useEffect(() => {
     if (!user) return;
     if (status !== "connected") return;
     if (typeof currentChainId !== "number") return;
     if (currentChainId === user.chainId) return;
 
-    const targetChainId = user.chainId as 8453 | 84532;
+    const phase = authFlowRef.current.phase;
+    if (phase === "wallet_connecting" || phase === "server_auth_pending") return;
 
     const run = async () => {
+      const latestPhase = authFlowRef.current.phase;
+      if (latestPhase === "wallet_connecting" || latestPhase === "server_auth_pending") return;
+
       if (!document.hasFocus()) return;
       try {
-        await switchChain({ chainId: targetChainId });
+        await switchChain({ chainId: user.chainId as 8453 | 84532 });
       } catch (switchError) {
         console.warn("Failed to switch chain to user.chainId:", switchError);
       }
     };
 
-    // If the popup has focus, wait for focus to return before switching chains.
-    // This avoids viem/porto errors that complain about `document is not focused`.
-    if (document.hasFocus()) {
-      run();
-      return;
-    }
-
-    window.addEventListener("focus", run);
-    return () => window.removeEventListener("focus", run);
+    run();
   }, [user, status, currentChainId, switchChain]);
 
   const contextValue = useMemo(
@@ -402,6 +527,17 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol: platformTokenSymbol as string | undefined,
       platformTokenDecimals: platformTokenDecimals as number | undefined,
       balancesLoading,
+      authFlow: {
+        phase: authFlowState.phase,
+        attemptId: authFlowState.attemptId,
+        error: authFlowState.error,
+        isBusy:
+          authFlowState.phase === "disconnecting" ||
+          authFlowState.phase === "wallet_connecting" ||
+          authFlowState.phase === "server_auth_pending" ||
+          authFlowState.phase === "chain_enforcing",
+      },
+      startAuthFlow,
     }),
     [
       user,
@@ -420,6 +556,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol,
       platformTokenDecimals,
       balancesLoading,
+      authFlowState.phase,
+      authFlowState.attemptId,
+      authFlowState.error,
+      startAuthFlow,
     ]
   );
 

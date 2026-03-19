@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
-import { useConnectors, useDisconnect } from "wagmi";
-import { Hooks } from "porto/wagmi";
-import { base, baseSepolia } from "wagmi/chains";
+import { useState, useEffect, useRef } from "react";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
@@ -21,34 +18,10 @@ interface ConnectProps {
 }
 
 export function Connect({ onSuccess }: ConnectProps = {}) {
-  const [connector] = useConnectors();
-  const { mutate: connect, error } = Hooks.useConnect();
-  const { disconnect } = useDisconnect();
+  const { user, authFlow, startAuthFlow } = usePortoAuth();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(true);
-  const { user } = usePortoAuth();
-
-  // Ensure we start from a clean slate any time this component is shown.
-  // (Doing this at mount time avoids racing with the wallet popup/permissions flow.)
-  useEffect(() => {
-    let isActive = true;
-
-    (async () => {
-      setIsDisconnecting(true);
-      try {
-        await disconnect();
-      } catch (e) {
-        console.log("disconnect on mount failed", e);
-      } finally {
-        if (isActive) setIsDisconnecting(false);
-      }
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [disconnect]);
+  const successTriggeredRef = useRef(false);
 
   // Helper function to get status display text
   const getStatusText = () => {
@@ -71,40 +44,47 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
     connectionStatus === ConnectionStatus.CONNECTING_WALLET ||
     connectionStatus === ConnectionStatus.CONNECTING_TO_CUT;
 
-  // Watch for successful authentication and call onSuccess callback
+  // Keep UI status in sync with orchestrated auth phases.
   useEffect(() => {
-    if (user && connectionStatus === ConnectionStatus.CONNECTING_TO_CUT) {
-      setConnectionStatus(ConnectionStatus.SUCCESS);
-      if (onSuccess) {
-        onSuccess();
-      }
+    switch (authFlow.phase) {
+      case "disconnecting":
+      case "wallet_connecting":
+        setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
+        break;
+      case "server_auth_pending":
+      case "chain_enforcing":
+        setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
+        break;
+      case "ready":
+        setConnectionStatus(ConnectionStatus.SUCCESS);
+        break;
+      case "error":
+        setConnectionStatus(ConnectionStatus.ERROR);
+        break;
+      default:
+        setConnectionStatus(ConnectionStatus.IDLE);
+    }
+  }, [authFlow.phase]);
+
+  // Watch for successful authentication and call onSuccess callback once per success transition.
+  useEffect(() => {
+    if (connectionStatus !== ConnectionStatus.SUCCESS || !user || successTriggeredRef.current) return;
+
+    successTriggeredRef.current = true;
+    if (onSuccess) {
+      onSuccess();
     }
   }, [user, connectionStatus, onSuccess]);
 
+  useEffect(() => {
+    if (connectionStatus !== ConnectionStatus.SUCCESS) {
+      successTriggeredRef.current = false;
+    }
+  }, [connectionStatus]);
+
   const handleConnect = async (network: NetworkOption) => {
-    setConnectionStatus(ConnectionStatus.CONNECTING_WALLET);
-
     try {
-      const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
-
-      // Connect the wallet first
-      await connect(
-        {
-          connector,
-          // Ensure SIWE/auth happens on the chain the user selected.
-          // This prevents the backend cookie from being set for the wrong chain.
-          chainIds: [targetChainId],
-        },
-        {
-          onSuccess: async () => {
-            setConnectionStatus(ConnectionStatus.CONNECTING_TO_CUT);
-          },
-          onError: (error) => {
-            console.log("connect OnError called", error);
-            setConnectionStatus(ConnectionStatus.ERROR);
-          },
-        }
-      );
+      await startAuthFlow(network);
     } catch (error) {
       console.log("Connection failed:", error);
       setConnectionStatus(ConnectionStatus.ERROR);
@@ -184,7 +164,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
                 </p>
                 <button
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  disabled={isConnecting || !tocAccepted || isDisconnecting}
+                  disabled={isConnecting || !tocAccepted || authFlow.isBusy}
                   onClick={() => handleConnect("testnet")}
                   type="button"
                 >
@@ -199,13 +179,13 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
       {/* Error display */}
       {connectionStatus === ConnectionStatus.ERROR && (
         <div className="px-6 py-4 bg-red-50 border-t border-red-100">
-          <p className="text-sm text-red-600 text-center">{error?.shortMessage}</p>
+          <p className="text-sm text-red-600 text-center">{authFlow.error ?? "Connection failed"}</p>
         </div>
       )}
       {/* Error display */}
       {connectionStatus === ConnectionStatus.ERROR && (
         <div className="px-6 py-4 bg-red-50 border-t border-red-100">
-          <p className="text-sm text-red-600 text-center">{error?.message}</p>
+          <p className="text-sm text-red-600 text-center">{authFlow.error ?? "Connection failed"}</p>
         </div>
       )}
     </div>
