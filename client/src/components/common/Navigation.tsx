@@ -21,19 +21,12 @@ export const Navigation: React.FC = () => {
 
   return (
     <div className="flex flex-row items-center justify-between">
-      {/* nav links */}
-      <div className="flex items-center gap-4 font-display">
+      {/* left side nav: Home + Contests */}
+      <div className="flex items-center gap-2 font-display">
         {/* Show Home link only when NOT logged in */}
         {!user && (
           <Link to="/" className={getLinkClassName("/")}>
             Home
-          </Link>
-        )}
-
-        {/* Show Lineups link only when logged in */}
-        {user && (
-          <Link to="/lineups" className={getLinkClassName("/lineups")}>
-            Lineups
           </Link>
         )}
 
@@ -43,31 +36,30 @@ export const Navigation: React.FC = () => {
         </Link>
       </div>
 
-      {/* account - with balance */}
-      <div className="flex items-center gap-2">
-        {/* Balance display - only show when logged in */}
+      {/* right side nav: Lineups + Account */}
+      <div className="flex items-center gap-2 font-display">
+        {/* Show Lineups link only when logged in */}
         {user && (
-          <Link
-            to="/account"
-            className="text-white/90 hover:text-white text-lg font-display transition-colors"
-          >
-            ${totalBalance}
+          <Link to="/lineups" className={getLinkClassName("/lineups")}>
+            Lineups
           </Link>
         )}
 
-        {/* Account icon */}
         <Link
           to="/account"
-          className={`inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
+          className={`inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium border-2 ${
             ["/account", "/connect"].includes(location.pathname)
               ? "border-white bg-black/40"
               : "border-white/50 bg-black/30"
-          } rounded-full transition-colors flex items-center justify-center`}
-          style={{ width: "31px", height: "31px" }}
+          } rounded transition-colors flex items-center justify-center px-3 py-1`}
         >
+          {/* Balance display - only show when logged in */}
+          {user && <span className="font-display transition-colors">${totalBalance}</span>}
+
+          {/* Account icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
+            className="h-4 w-4 shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
