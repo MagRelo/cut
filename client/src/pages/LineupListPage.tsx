@@ -112,7 +112,19 @@ export const LineupList: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title="Lineups" />
+      <PageHeader
+        title="Lineups"
+        actions={
+          isTournamentEditable ? (
+            <Link
+              to="/lineups/create"
+              className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm"
+            >
+              + Add Lineup
+            </Link>
+          ) : null
+        }
+      />
 
       {/* list of user lineups */}
       {isTournamentEditable
@@ -168,18 +180,6 @@ export const LineupList: React.FC = () => {
             </div>
           </div>
         )}
-
-      {/* Create/Add Lineup Button */}
-      {isTournamentEditable && (
-        <div className="text-center pt-4">
-          <Link
-            to="/lineups/create"
-            className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 text-white font-display py-2 px-4 rounded border border-blue-500 transition-colors"
-          >
-            + Add Lineup
-          </Link>
-        </div>
-      )}
 
       {/* Share Section */}
       {/* <div className="flex justify-center my-8">
