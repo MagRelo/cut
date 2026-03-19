@@ -47,11 +47,11 @@ export const Navigation: React.FC = () => {
 
         <Link
           to="/account"
-          className={`inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium border-2 ${
+          className={`inline-flex items-center gap-1 text-white/90 hover:text-white text-sm font-medium border-2 ${
             ["/account", "/connect"].includes(location.pathname)
               ? "border-white bg-black/40"
               : "border-white/50 bg-black/30"
-          } rounded transition-colors flex items-center justify-center px-3 py-1`}
+          } rounded transition-colors flex items-center justify-center px-2 py-1`}
         >
           {/* Balance display - only show when logged in */}
           {user && <span className="font-display transition-colors">${totalBalance}</span>}
