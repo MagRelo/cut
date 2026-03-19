@@ -110,15 +110,15 @@ export const ContestEntryList = ({
     setSelectedLineup(null);
   };
 
-  // Function to determine row background color
-  const getRowBackgroundColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
+  // Function to determine row border color
+  const getRowBorderColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
     if (isCurrentUser && isInTheMoney && primaryActionsLocked) {
-      return "bg-green-50"; // Green for current user in the money
+      return "border-green-200"; // Green for current user in the money
     }
     if (isCurrentUser) {
-      return "bg-slate-100"; // Gray for current user not in the money
+      return "border-blue-500/60"; // Blue for current user
     }
-    return "bg-white"; // White for other users
+    return "border-gray-300"; // Default for other users
   };
 
   // Use stored scores and sort by position (already calculated by backend)
@@ -185,10 +185,10 @@ export const ContestEntryList = ({
         return (
           <div
             key={lineup.id}
-            className={`${getRowBackgroundColor(
+            className={`${getRowBorderColor(
               isCurrentUser,
               isInTheMoney
-            )} rounded-sm p-3 mb-2  border border-gray-300 pb-2 shadow-sm`}
+            )} rounded-sm p-3 mb-2 border pb-2 shadow-sm`}
             onClick={() => openLineupModal(lineup)}
           >
             <div className="flex items-center justify-between gap-3 ">

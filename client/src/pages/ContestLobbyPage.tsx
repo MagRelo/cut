@@ -186,6 +186,20 @@ export const ContestLobby: React.FC = () => {
           </button>
         </div>
 
+        {/* Contest Status & Action (shown before tabs) */}
+        {!primaryActionsLocked && (
+          <div className="flex items-center justify-start gap-2 border-b border-t border-gray-200 py-3 px-4 mt-2">
+            <button
+              type="button"
+              onClick={() => setIsLineupModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+            >
+              Enter Contest
+            </button>
+            <span className="text-xs text-gray-400 font-display pr-1">0/1 Lineups Entered</span>
+          </div>
+        )}
+
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
@@ -237,22 +251,6 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES (Contest) */}
             <TabPanel>
               <div className="p-2 mt-1">
-                {/* Contest Status & Action */}
-                {!primaryActionsLocked && (
-                  <div className="flex items-center justify-center gap-2 border-b border-gray-200 pb-3">
-                    <span className="text-xs text-gray-400 font-display pr-1">
-                      Contest Starting Soon:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsLineupModalOpen(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                    >
-                      MANAGE LINEUPS
-                    </button>
-                  </div>
-                )}
-
                 {/* Contest Entry List */}
                 <ContestEntryList
                   contestLineups={contest?.contestLineups}

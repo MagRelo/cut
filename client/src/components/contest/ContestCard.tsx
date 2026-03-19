@@ -85,20 +85,27 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
       .join(" ");
   };
 
+  // Contest logo: `contest.settings.imageUrl` may or may not exist.
+  // Fallback to the CUT logo used elsewhere in this component.
+  const contestLogoSrc =
+    (contest.settings as unknown as { imageUrl?: string }).imageUrl ?? "/logo-transparent.png";
+
   return (
     <Link to={`/contest/${contest.id}`}>
       <div className="flex items-center justify-between gap-2.5">
-        {/* Left Section - Entry Fee Badge */}
+        {/* Left Section - Contest Circular Logo */}
         <div className="flex-shrink-0">
-          <div className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-md bg-gradient-to-br from-green-50 to-emerald-50 border border-green-500">
-            <span className="text-base font-bold text-green-700">${contest.settings?.fee}</span>
-          </div>
+          <img
+            src={contestLogoSrc}
+            alt="contest-logo"
+            className="h-10 w-10 rounded-full border border-gray-200 bg-white object-contain"
+          />
         </div>
 
         {/* Middle Section - Contest Info */}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
-            {contest.name}
+            ${contest.settings?.fee} - {contest.name}
           </h3>
           <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
             <span className="font-semibold">{formatStatus(contest.status)}</span>
