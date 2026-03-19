@@ -1,4 +1,5 @@
 import { type Contest } from "../../types/contest";
+import { Link } from "react-router-dom";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestCard } from "./ContestCard";
 
@@ -33,9 +34,11 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   return (
     <div className="grid gap-2">
       {contests.map((contest) => (
-        <div key={contest.id} className="bg-white rounded-md border border-gray-200 p-3">
-          <ContestCard contest={contest} />
-        </div>
+        <Link key={contest.id} to={`/contest/${contest.id}`} className="block">
+          <div className="bg-white rounded-md border border-gray-200 p-3">
+            <ContestCard contest={contest} />
+          </div>
+        </Link>
       ))}
     </div>
   );

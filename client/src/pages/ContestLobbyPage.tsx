@@ -261,17 +261,6 @@ export const ContestLobby: React.FC = () => {
                   contest={contest}
                 />
               </div>
-
-              {/* LINEUP MANAGEMENT MODAL */}
-              <Modal
-                isOpen={isLineupModalOpen}
-                onClose={() => setIsLineupModalOpen(false)}
-                title="Manage Lineups"
-                maxWidth="4xl"
-                contentClassName="p-0"
-              >
-                {user ? <LineupManagement contest={contest} /> : <Connect />}
-              </Modal>
             </TabPanel>
 
             {/* PLAYERS - Only shown when primary actions are locked */}
@@ -323,6 +312,17 @@ export const ContestLobby: React.FC = () => {
         onClose={() => setIsPayoutsModalOpen(false)}
         contest={contest}
       />
+
+      {/* LINEUP MANAGEMENT MODAL */}
+      <Modal
+        isOpen={isLineupModalOpen}
+        onClose={() => setIsLineupModalOpen(false)}
+        title="Manage Lineups"
+        maxWidth="4xl"
+        contentClassName="p-0"
+      >
+        {user ? <LineupManagement contest={contest} /> : <Connect />}
+      </Modal>
     </div>
   );
 };

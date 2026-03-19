@@ -1,6 +1,7 @@
 import React, { Fragment, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
+import { Link } from "react-router-dom";
 import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
@@ -145,7 +146,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
                       {/* Contest Card */}
                       <div className="flex-1 min-w-0">
-                        <ContestCard contest={contestInfo.contest} />
+                        <Link
+                          to={`/contest/${contestInfo.contest.id}`}
+                          className="block"
+                        >
+                          <ContestCard contest={contestInfo.contest} />
+                        </Link>
                       </div>
                     </div>
                   );

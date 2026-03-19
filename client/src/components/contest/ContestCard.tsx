@@ -1,5 +1,4 @@
 import { type Contest } from "../../types/contest";
-import { Link } from "react-router-dom";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
@@ -91,41 +90,39 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
     (contest.settings as unknown as { imageUrl?: string }).imageUrl ?? "/logo-transparent.png";
 
   return (
-    <Link to={`/contest/${contest.id}`}>
-      <div className="flex items-center justify-between gap-2.5">
-        {/* Left Section - Contest Circular Logo */}
-        <div className="flex-shrink-0">
-          <img
-            src={contestLogoSrc}
-            alt="contest-logo"
-            className="h-10 w-10 rounded-full border border-gray-200 bg-white object-contain"
-          />
-        </div>
-
-        {/* Middle Section - Contest Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
-            ${contest.settings?.fee} - {contest.name}
-          </h3>
-          <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
-            <span className="font-semibold">{formatStatus(contest.status)}</span>
-          </p>
-        </div>
-
-        {/* Right Section - Total Prize Pool */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900 leading-none">
-              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
-            </div>
-            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-              POT
-            </div>
-          </div>
-
-          <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
-        </div>
+    <div className="flex items-center justify-between gap-2.5">
+      {/* Left Section - Contest Circular Logo */}
+      <div className="flex-shrink-0">
+        <img
+          src={contestLogoSrc}
+          alt="contest-logo"
+          className="h-10 w-10 rounded-full border border-gray-200 bg-white object-contain"
+        />
       </div>
-    </Link>
+
+      {/* Middle Section - Contest Info */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
+          ${contest.settings?.fee} - {contest.name}
+        </h3>
+        <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
+          <span className="font-semibold">{formatStatus(contest.status)}</span>
+        </p>
+      </div>
+
+      {/* Right Section - Total Prize Pool */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="text-right">
+          <div className="text-lg font-bold text-gray-900 leading-none">
+            {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+          </div>
+          <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+            POT
+          </div>
+        </div>
+
+        <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
+      </div>
+    </div>
   );
 };
