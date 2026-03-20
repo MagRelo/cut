@@ -174,6 +174,14 @@ contestRouter.get("/:id/timeline", async (c) => {
   try {
     const contestId = c.req.param("id");
 
+    // Tailwind "gray-400" hex. Used when a user hasn't set a color.
+    const DEFAULT_USER_COLOR = "#9CA3AF";
+    const isValidHexColor = (value: unknown): value is string => {
+      if (typeof value !== "string") return false;
+      const v = value.trim();
+      return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+    };
+
     // Verify contest exists
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
@@ -195,6 +203,7 @@ contestRouter.get("/:id/timeline", async (c) => {
             user: {
               select: {
                 name: true,
+                settings: true,
               },
             },
             tournamentLineup: {
@@ -210,23 +219,6 @@ contestRouter.get("/:id/timeline", async (c) => {
       },
     });
 
-    // Helper function to generate distinct colors for each lineup
-    const generateColor = (index: number): string => {
-      const colors = [
-        "#3b82f6", // blue
-        "#ef4444", // red
-        "#10b981", // green
-        "#f59e0b", // amber
-        "#8b5cf6", // violet
-        "#ec4899", // pink
-        "#06b6d4", // cyan
-        "#f97316", // orange
-        "#6366f1", // indigo
-        "#14b8a6", // teal
-      ];
-      return colors[index % colors.length] || "#3b82f6";
-    };
-
     // Group snapshots by contest lineup
     const lineupMap = new Map();
 
@@ -236,11 +228,15 @@ contestRouter.get("/:id/timeline", async (c) => {
       if (!lineupMap.has(lineupId)) {
         // Use tournament lineup name and user name for display
         const userName = snapshot.contestLineup.user.name;
+        const userSettings = snapshot.contestLineup.user.settings as any;
+        const userColor = userSettings?.color;
+        const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
         const lineupName = snapshot.contestLineup.tournamentLineup.name;
         const displayName = `${userName} - ${lineupName}`;
 
         lineupMap.set(lineupId, {
           name: displayName,
+          color: resolvedColor,
           dataPoints: [],
         });
       }
@@ -255,9 +251,9 @@ contestRouter.get("/:id/timeline", async (c) => {
 
     // Convert to array and sort by latest score (descending)
     const teams = Array.from(lineupMap.entries())
-      .map(([_, lineup], index) => ({
+      .map(([_, lineup]) => ({
         name: lineup.name,
-        color: generateColor(index),
+        color: lineup.color,
         dataPoints: lineup.dataPoints,
       }))
       .sort((a, b) => {

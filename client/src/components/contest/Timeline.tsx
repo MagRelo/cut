@@ -144,8 +144,9 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
       >
         <Line data={data} options={options} />
       </div>
+
       {/* Legend */}
-      {topTeams.length > 0 && (
+      {/* {topTeams.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="text-xs font-medium text-gray-600 mb-2">Teams</div>
           <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto">
@@ -162,7 +163,7 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
             ))}
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

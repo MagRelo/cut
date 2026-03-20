@@ -46,7 +46,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const selectedEntryInfo = useMemo(
     () => entryData.find((entry) => entry.entryId === entryId) ?? null,
-    [entryData, entryId]
+    [entryData, entryId],
   );
 
   const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
@@ -55,11 +55,11 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const totalPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
     ? parsedSecondaryTotalFunds
     : Number.isFinite(parsedSecondaryPrizePool)
-    ? parsedSecondaryPrizePool
-    : entryData.reduce((sum, entry) => {
-        const supply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
-        return sum + (Number.isFinite(supply) ? supply : 0);
-      }, 0);
+      ? parsedSecondaryPrizePool
+      : entryData.reduce((sum, entry) => {
+          const supply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
+          return sum + (Number.isFinite(supply) ? supply : 0);
+        }, 0);
 
   const displayPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
     ? secondaryTotalFundsFormatted
@@ -117,6 +117,16 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     Number.isFinite(metrics.potentialReturn) && metrics.potentialReturn > 0
       ? metrics.potentialReturn.toFixed(2)
       : "0.00";
+
+  // Concept: each share is worth $1 winnings if the entry wins.
+  // Therefore, share "price" here is the cost per $1 of winnings:
+  //   sharePrice = $paid / $winnings
+  const sharesToPurchase = metrics.potentialReturn > 0 ? metrics.potentialReturn : 0;
+  const sharePrice =
+    Number.isFinite(parsedAmount) && parsedAmount > 0 && metrics.potentialReturn > 0
+      ? parsedAmount / metrics.potentialReturn
+      : 0;
+
   const approximateOddsRatio =
     Number.isFinite(metrics.potentialReturn) &&
     metrics.potentialReturn > 0 &&
@@ -165,7 +175,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         Number.parseInt(entryId, 10),
         amountBigInt,
         platformTokenBalance || 0n,
-        paymentTokenBalance || 0n
+        paymentTokenBalance || 0n,
       );
 
       await execute(calls);
@@ -220,6 +230,28 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 h-[269px]">
+      {/* details */}
+      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">Share Price</span>
+            <span className="font-bold text-gray-900 text-base">${sharePrice.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">Purchase Amount</span>
+            <span className="font-bold text-gray-900 text-base">${purchaseAmountDisplay}</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">Winnings if Entry Wins</span>
+            <span className="font-bold text-green-600 text-base">
+              ${sharesToPurchase.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div>
         <label
           htmlFor="position-amount"
@@ -240,46 +272,13 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         />
       </div>
 
-      {/* details */}
-      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Purchase Amount</span>
-            <span className="font-bold text-gray-900 text-base">${amount || "0"}</span>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700">Pool Share Value</span>
-              <span className="font-bold text-green-600 text-base">
-                ~${metrics.potentialReturn > 0 ? metrics.potentialReturn.toFixed(2) : "0"}
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 border-t border-gray-200 pt-1 mt-2 text-left">
-              <p>
-                <strong>Note:</strong> Final payouts are calculated based on overall participant
-                activity.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-3">
           <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
 
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-display font-semibold transition-colors"
-          disabled={isProcessing}
-        >
-          Cancel
-        </button>
+      <div>
         <button
           type="submit"
           disabled={
@@ -289,12 +288,12 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             Number.parseFloat(amount) <= 0 ||
             Boolean(
               platformTokenBalance &&
-                paymentTokenBalance &&
-                parseUnits(amount, 18) > platformTokenBalance &&
-                parseUnits(amount, 6) > paymentTokenBalance
+              paymentTokenBalance &&
+              parseUnits(amount, 18) > platformTokenBalance &&
+              parseUnits(amount, 6) > paymentTokenBalance,
             )
           }
-          className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
+          className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">

@@ -2,7 +2,14 @@ import React, { useMemo, useState } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-import { PredictionEntryModal } from "./PredictionEntryModal";
+import { ContestEntryModal } from "./ContestEntryModal";
+
+const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
 
 interface PredictionLineupsListProps {
   contest: Contest;
@@ -27,30 +34,43 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   const {
     entryData,
     canPredict,
+    canWithdraw,
     isLoading,
     secondaryPrizePoolFormatted,
     secondaryTotalFundsFormatted,
-  } =
-    useContestPredictionData({
-      contestAddress: contest.address,
-      entryIds,
-      enabled: true,
-      chainId: contest.chainId,
-    });
+  } = useContestPredictionData({
+    contestAddress: contest.address,
+    entryIds,
+    enabled: true,
+    chainId: contest.chainId,
+  });
+
+  const selectedLineup = useMemo(() => {
+    if (!selectedEntryId) return null;
+    return contest.contestLineups?.find((l) => l.entryId === selectedEntryId) ?? null;
+  }, [selectedEntryId, contest.contestLineups]);
+
+  const selectedUserName = selectedLineup?.user?.name || selectedLineup?.user?.email;
 
   // Calculate market stats
   const marketStats = useMemo(() => {
-    const totalPot = parseFloat(secondaryPrizePoolFormatted);
-    const totalSupplySum = entryData.reduce(
-      (sum, e) => sum + parseFloat(e.totalSupplyFormatted),
-      0
-    );
+    // Keep in sync with PredictionEntryForm:
+    // - Form uses `secondaryTotalFundsFormatted` (prize pool + subsidy) whenever it's a finite number.
+    // - Only falls back if it can't be parsed as a number.
+    const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
+    const parsedSecondaryPrizePool = Number.parseFloat(secondaryPrizePoolFormatted);
 
-    return {
-      totalPot,
-      totalSupplySum,
-    };
-  }, [entryData, secondaryPrizePoolFormatted]);
+    const totalPot = Number.isFinite(parsedSecondaryTotalFunds)
+      ? parsedSecondaryTotalFunds
+      : Number.isFinite(parsedSecondaryPrizePool)
+        ? parsedSecondaryPrizePool
+        : entryData.reduce((sum, e) => {
+            const supply = Number.parseFloat(e.totalSupplyFormatted ?? "0");
+            return sum + (Number.isFinite(supply) ? supply : 0);
+          }, 0);
+
+    return { totalPot };
+  }, [entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted]);
 
   // Calculate what a $10 position would win for each entry
   const calculateWinnings = (price: number, supply: number) => {
@@ -82,12 +102,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     return payout;
   };
 
-  // Calculate each entry's share of the market
-  const calculateMarketShare = (supply: number) => {
-    if (marketStats.totalSupplySum === 0) return 0;
-    return (supply / marketStats.totalSupplySum) * 100;
-  };
-
   if (!canPredict) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
@@ -108,6 +122,19 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   return (
     <div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h4 className="text-lg font-semibold text-gray-700 mb-1 font-display">Winner Market</h4>
+      </div>
+
+      {/* Info Panel */}
+      <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 mb-3">
+        <ul className="space-y-1 text-xs text-gray-600">
+          <li>• Buy shares in any team</li>
+          <li>• Each share represents $1 of winnings if the team wins</li>
+        </ul>
+      </div>
+
       {/* Lineups */}
       <div className="space-y-2 mt-2">
         {[...entryData]
@@ -115,48 +142,75 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
           .map((entry) => {
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || "Unknown";
-            const lineupName = lineup?.tournamentLineup?.name || "Lineup";
             const supply = parseFloat(entry.totalSupplyFormatted);
             const price = parseFloat(entry.priceFormatted);
-            const marketShare = calculateMarketShare(supply);
             const potentialWinnings = calculateWinnings(price, supply);
+            const costToBuyOneDollarOfWinnings =
+              potentialWinnings > 0 && Number.isFinite(potentialWinnings)
+                ? 10 / potentialWinnings
+                : 0;
+
+            const userSettings = lineup?.user?.settings;
+            const maybeColor =
+              typeof userSettings === "object" && userSettings !== null
+                ? (userSettings as { color?: unknown }).color
+                : undefined;
+            const resolvedLeftBorderColor = isValidHexColor(maybeColor)
+              ? maybeColor
+              : DEFAULT_USER_COLOR;
 
             return (
               <div
                 key={entry.entryId}
                 onClick={() => !secondaryActionsLocked && setSelectedEntryId(entry.entryId)}
-                className={`bg-white border-gray-200 border rounded-lg p-3 ${
+                className={`bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 ${
                   secondaryActionsLocked
                     ? "opacity-60 cursor-not-allowed"
                     : "cursor-pointer hover:shadow-md"
                 } transition-all`}
+                style={{
+                  borderLeftColor: resolvedLeftBorderColor,
+                  borderLeftWidth: "3px",
+                  borderLeftStyle: "solid",
+                }}
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center justify-between gap-3">
                   {/* Left - User & Lineup Info */}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
-                    <div className="text-xs text-gray-500 truncate">{lineupName}</div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {(() => {
+                        const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
+                        const sortedPlayerNames = [...lineupPlayers]
+                          .sort((a, b) => {
+                            const aTotal = a.tournamentData?.total || 0;
+                            const bTotal = b.tournamentData?.total || 0;
+                            return bTotal - aTotal;
+                          })
+                          .map((player) => player.pga_lastName)
+                          .filter(Boolean)
+                          .join(", ");
+
+                        return sortedPlayerNames || "No players";
+                      })()}
+                    </div>
                   </div>
 
                   {/* Right - CTA & Winnings */}
-                  <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                    <button
-                      disabled={secondaryActionsLocked}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      BUY SHARES
-                    </button>
-                    <div className="text-xs text-gray-700">
-                      <span className="font-medium">$10 wins</span>{" "}
-                      <span className="font-bold text-green-600">
-                        ~${potentialWinnings.toFixed(2)}
-                      </span>
+                  <div className="flex-shrink-0 flex items-center gap-2">
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-gray-900 leading-none">
+                        ${costToBuyOneDollarOfWinnings.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                        BUY
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Market Share Progress Bar */}
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-500">Support: {marketShare.toFixed(1)}%</span>
                   </div>
@@ -166,21 +220,25 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                       style={{ width: `${Math.min(marketShare, 100)}%` }}
                     />
                   </div>
-                </div>
+                </div> */}
               </div>
             );
           })}
       </div>
 
-      {/* Prediction Modal */}
-      <PredictionEntryModal
+      {/* Contest Entry Modal (Buy Shares tab selected by default) */}
+      <ContestEntryModal
         isOpen={!!selectedEntryId}
         onClose={() => setSelectedEntryId(null)}
         contest={contest}
-        entryId={selectedEntryId}
+        lineup={selectedLineup}
+        roundDisplay={contest.tournament?.roundDisplay ?? ""}
+        userName={selectedUserName}
         entryData={entryData}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
         secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+        canWithdraw={canWithdraw}
+        initialTab="buyShares"
       />
     </div>
   );

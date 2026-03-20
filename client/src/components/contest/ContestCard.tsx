@@ -7,9 +7,11 @@ import ContestContract from "../../utils/contracts/Contest.json";
 interface ContestCardProps {
   contest: Contest;
   preTournament?: boolean;
+  onPotClick?: () => void;
+  onSettingsClick?: () => void;
 }
 
-export const ContestCard = ({ contest }: ContestCardProps) => {
+export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCardProps) => {
   // Read primary prize pool from contract
   const primaryPrizePool = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -112,16 +114,60 @@ export const ContestCard = ({ contest }: ContestCardProps) => {
 
       {/* Right Section - Total Prize Pool */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        <div className="text-right">
-          <div className="text-lg font-bold text-gray-900 leading-none">
-            {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+        {onSettingsClick && (
+          <div className="flex items-center border-r border-gray-200 pr-1">
+            <button
+              type="button"
+              onClick={onSettingsClick}
+              aria-label="Contest Settings"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="h-4 w-4"
+              >
+                <path
+                  d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M8 2v4a2 2 0 002 2h4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+              </svg>
+            </button>
           </div>
-          <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-            POT
+        )}
+        {onPotClick ? (
+          <button
+            type="button"
+            onClick={onPotClick}
+            aria-label="Contest Payouts"
+            className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+          >
+            <div className="text-lg font-bold text-gray-900 leading-none">
+              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+            </div>
+            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+              POT
+            </div>
+          </button>
+        ) : (
+          <div className="text-right ml-2 mr-2">
+            <div className="text-lg font-bold text-gray-900 leading-none">
+              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+            </div>
+            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+              POT
+            </div>
           </div>
-        </div>
-
-        <img src="/logo-transparent.png" alt="cut-logo" className="h-8 w-8 object-contain" />
+        )}
       </div>
     </div>
   );

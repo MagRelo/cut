@@ -8,7 +8,6 @@ import { ContestCard } from "../components/contest/ContestCard";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
-import { ContestPlayerList } from "../components/contest/ContestPlayerList";
 import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
 import { arePrimaryActionsLocked } from "../types/contest";
@@ -17,6 +16,7 @@ import { Timeline } from "../components/contest/Timeline";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { Modal } from "../components/common/Modal";
 import { ContestPayoutsModal } from "../components/contest/ContestPayoutsModal";
+import { PredictionLineupsList } from "../components/contest/PredictionLineupsList";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -100,90 +100,11 @@ export const ContestLobby: React.FC = () => {
         {/* header */}
 
         <div className="p-3 pb-1">
-          <ContestCard contest={contest} />
-        </div>
-
-        {/* settings, timeline, and payouts buttons */}
-        <div className="flex justify-start px-2 my-1 gap-2">
-          {/* TIMELINE BUTTON */}
-          <button
-            type="button"
-            onClick={() => setIsTimelineModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Timeline"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4 text-gray-400 mr-1"
-            >
-              {/* X-axis */}
-              <line x1="2" y1="16" x2="18" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              {/* Y-axis */}
-              <line x1="2" y1="4" x2="2" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              {/* Green sine wave */}
-              <path
-                d="M 2 10 Q 4 6, 6 10 T 10 10 T 14 10 T 18 10"
-                stroke="#10b981"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="font-display text-gray-400">Timeline</span>
-          </button>
-
-          {/* PAYOUTS BUTTON */}
-          <button
-            type="button"
-            onClick={() => setIsPayoutsModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Payouts"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4 text-[#10b981] mr-1"
-            >
-              <path
-                d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"
-                fill="currentColor"
-              />
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                clipRule="evenodd"
-                fill="currentColor"
-              />
-            </svg>
-            <span className="font-display text-gray-400">Payouts</span>
-          </button>
-
-          {/* SETTINGS BUTTON */}
-          <button
-            type="button"
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Settings"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4 text-gray-400 mr-1"
-            >
-              <path
-                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-              />
-              <path d="M8 2v4a2 2 0 002 2h4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            </svg>
-            <span className="font-display text-gray-400">Settings</span>
-          </button>
+          <ContestCard
+            contest={contest}
+            onPotClick={() => setIsPayoutsModalOpen(true)}
+            onSettingsClick={() => setIsSettingsModalOpen(true)}
+          />
         </div>
 
         {/* Contest Status & Action (shown before tabs) */}
@@ -210,13 +131,13 @@ export const ContestLobby: React.FC = () => {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
                 )
               }
             >
-              Lineups
+              Contest
             </Tab>
-            {primaryActionsLocked && (
+            {/* {primaryActionsLocked && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
@@ -230,7 +151,22 @@ export const ContestLobby: React.FC = () => {
               >
                 Players
               </Tab>
-            )}
+            )} */}
+
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
+              Winner Market
+            </Tab>
+
             {contest.status === "SETTLED" && (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
@@ -239,7 +175,7 @@ export const ContestLobby: React.FC = () => {
                     "focus:outline-none",
                     selected
                       ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
                   )
                 }
               >
@@ -251,27 +187,44 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES (Contest) */}
             <TabPanel>
               <div className="p-2 mt-1">
+                <TimelineModalContent contestId={contestId} />
+
                 {/* Contest Entry List */}
-                <ContestEntryList
-                  contestLineups={contest?.contestLineups}
-                  roundDisplay={contest?.tournament?.roundDisplay}
-                  contestStatus={contest.status}
-                  contestAddress={contest.address}
-                  contestChainId={contest.chainId}
-                  contest={contest}
-                />
+                <div className="mt-3">
+                  <ContestEntryList
+                    contestLineups={contest?.contestLineups}
+                    roundDisplay={contest?.tournament?.roundDisplay}
+                    contestStatus={contest.status}
+                    contestAddress={contest.address}
+                    contestChainId={contest.chainId}
+                    contest={contest}
+                  />
+                </div>
               </div>
             </TabPanel>
 
             {/* PLAYERS - Only shown when primary actions are locked */}
-            {primaryActionsLocked && (
+            {/* {primaryActionsLocked && (
               <TabPanel>
                 <ContestPlayerList
                   contest={contest}
                   roundDisplay={contest?.tournament?.roundDisplay}
                 />
               </TabPanel>
-            )}
+            )} */}
+
+            {/*  Prediction Market Tab: PredictionPositionsList */}
+            <TabPanel>
+              <div className="p-2 mt-1">
+                <TimelineModalContent contestId={contestId} />
+
+                <div className="mt-3">
+                  <PredictionLineupsList contest={contest} />
+                </div>
+              </div>
+            </TabPanel>
+
+            {/* RESULTS - Only shown when contest is settled */}
             {contest.status === "SETTLED" && (
               <TabPanel>
                 <div className="p-3">
@@ -367,3 +320,34 @@ const TimelineModalContent: React.FC<{ contestId: string | undefined }> = ({ con
 
   return <Timeline timelineData={timelineData} />;
 };
+
+// NOTE: keep this svg comment for reference
+{
+  /* TIMELINE BUTTON */
+}
+{
+  /* <button
+            type="button"
+            onClick={() => setIsTimelineModalOpen(true)}
+            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            aria-label="Contest Timeline"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-4 w-4 text-gray-400 mr-1"
+            >
+              <line x1="2" y1="16" x2="18" y2="16" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="2" y1="4" x2="2" y2="16" stroke="currentColor" strokeWidth="1.5" />
+              <path
+                d="M 2 10 Q 4 6, 6 10 T 10 10 T 14 10 T 18 10"
+                stroke="#10b981"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="font-display text-gray-400">Timeline</span>
+          </button> */
+}

@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -28,6 +28,11 @@ interface ContestEntryModalProps {
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
   canWithdraw: boolean;
+  /**
+   * Which tab to show initially when opening.
+   * Defaults to "players" to preserve existing behavior.
+   */
+  initialTab?: "players" | "buyShares" | "position";
 }
 
 export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
@@ -41,10 +46,10 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   secondaryPrizePoolFormatted,
   secondaryTotalFundsFormatted,
   canWithdraw,
+  initialTab = "players",
 }) => {
-  if (!lineup) return null;
-
-  const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+  // NOTE: Do not early-return before hooks.
+  const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
 
   // Calculate total points for the lineup
   const totalPoints = lineupPlayers.reduce((sum, player) => {
@@ -57,9 +62,30 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     return bTotal - aTotal;
   });
 
-  const predictionEntry = entryData.find((entry) => entry.entryId === lineup.entryId);
+  const predictionEntry = lineup ? entryData.find((entry) => entry.entryId === lineup.entryId) : undefined;
   const hasPosition = Boolean(predictionEntry?.hasPosition);
   const hasPlayers = lineupPlayers.length > 0;
+
+  const buySharesTabIndex = hasPlayers ? 1 : 0;
+  const positionTabIndex = hasPlayers ? 2 : 1;
+
+  const getInitialTabIndex = () => {
+    if (initialTab === "buyShares") return buySharesTabIndex;
+    if (initialTab === "position") return hasPosition ? positionTabIndex : buySharesTabIndex;
+    // initialTab === "players"
+    return hasPlayers ? 0 : buySharesTabIndex;
+  };
+
+  const [selectedIndex, setSelectedIndex] = useState<number>(() => getInitialTabIndex());
+
+  // Reset tab when opening or when the lineup changes.
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedIndex(getInitialTabIndex());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, lineup?.id, initialTab, hasPlayers, hasPosition]);
+
+  if (!lineup) return null;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -101,7 +127,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                     />
                   </div>
 
-                  <TabGroup>
+                  <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
                     <TabList className="mb-3 flex gap-2 border-b border-gray-200 px-2">
                       {hasPlayers && (
                         <Tab

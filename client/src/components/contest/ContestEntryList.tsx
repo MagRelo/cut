@@ -7,6 +7,13 @@ import { arePrimaryActionsLocked, type ContestStatus, type Contest } from "../..
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type PredictionEntryData } from "./PredictionEntryForm";
 
+const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
+
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
@@ -44,54 +51,6 @@ export const ContestEntryList = ({
       chainId: contestChainId,
     });
 
-  const marketStats = useMemo(() => {
-    const parsedTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
-    const parsedTotalPot = Number.parseFloat(secondaryPrizePoolFormatted);
-    const totalPot = Number.isFinite(parsedTotalFunds)
-      ? parsedTotalFunds
-      : Number.isFinite(parsedTotalPot)
-      ? parsedTotalPot
-      : 0;
-
-    const totalSupplySum = entryData.reduce((sum, entry) => {
-      const parsedSupply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
-      return sum + (Number.isFinite(parsedSupply) ? parsedSupply : 0);
-    }, 0);
-
-    return {
-      totalPot,
-      totalSupplySum,
-    };
-  }, [entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted]);
-
-  const entryDataMap = useMemo(() => {
-    return entryData.reduce((map, entry) => {
-      map.set(entry.entryId, entry);
-      return map;
-    }, new Map<string, (typeof entryData)[number]>());
-  }, [entryData]);
-
-  const DEFAULT_PURCHASE_AMOUNT = 10;
-  const FEE_PERCENTAGE = 0.15;
-
-  const calculateWinnings = (price: number, supply: number) => {
-    const netPositionAmount = DEFAULT_PURCHASE_AMOUNT * (1 - FEE_PERCENTAGE);
-    const newTotalPot = marketStats.totalPot + netPositionAmount;
-
-    if (!Number.isFinite(price) || !Number.isFinite(supply) || price <= 0 || supply <= 0) {
-      return newTotalPot;
-    }
-
-    const tokensFromPosition = netPositionAmount / price;
-    const newSupply = supply + tokensFromPosition;
-
-    if (!Number.isFinite(newSupply) || newSupply <= 0) {
-      return 0;
-    }
-
-    return (tokensFromPosition / newSupply) * newTotalPot;
-  };
-
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
@@ -108,17 +67,6 @@ export const ContestEntryList = ({
   const closeLineupModal = () => {
     setIsModalOpen(false);
     setSelectedLineup(null);
-  };
-
-  // Function to determine row border color
-  const getRowBorderColor = (isCurrentUser: boolean, isInTheMoney: boolean): string => {
-    if (isCurrentUser && isInTheMoney && primaryActionsLocked) {
-      return "border-green-200"; // Green for current user in the money
-    }
-    if (isCurrentUser) {
-      return "border-blue-500/60"; // Blue for current user
-    }
-    return "border-gray-300"; // Default for other users
   };
 
   // Use stored scores and sort by position (already calculated by backend)
@@ -143,8 +91,11 @@ export const ContestEntryList = ({
       {sortedLineups.map((lineup) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const isCurrentUser = lineup.userId === user?.id;
-        const predictionEntry = lineup.entryId ? entryDataMap.get(lineup.entryId) : undefined;
         const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+        const userSettings = lineup.user?.settings;
+        const maybeColor =
+          typeof userSettings === "object" && userSettings !== null ? (userSettings as { color?: unknown }).color : undefined;
+        const resolvedBorderColor = isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
         const sortedPlayerNames = [...lineupPlayers]
           .sort((a, b) => {
             const aTotal = a.tournamentData?.total || 0;
@@ -155,35 +106,16 @@ export const ContestEntryList = ({
           .filter(Boolean)
           .join(", ");
 
-        const supplyValue = Number.parseFloat(predictionEntry?.totalSupplyFormatted ?? "0");
-        const priceValue = Number.parseFloat(predictionEntry?.priceFormatted ?? "0");
-        const normalizedSupply = Number.isFinite(supplyValue) ? supplyValue : 0;
-        const normalizedPrice = Number.isFinite(priceValue) ? priceValue : 0;
-        const potentialWinnings = calculateWinnings(normalizedPrice, normalizedSupply);
-        const safePotentialWinnings = Number.isFinite(potentialWinnings) ? potentialWinnings : 0;
-        const oddsMultiple =
-          safePotentialWinnings > 0 ? safePotentialWinnings / DEFAULT_PURCHASE_AMOUNT : 0;
-        const oddsDisplay =
-          Number.isFinite(oddsMultiple) && oddsMultiple > 0
-            ? `${oddsMultiple.toFixed(1)}x`
-            : "0.0x";
-
-        const shareValue = Number.parseFloat(predictionEntry?.impliedWinningsFormatted ?? "0");
-        const shareValueDisplay =
-          shareValue > 0 && shareValue >= 0.01
-            ? shareValue.toFixed(2)
-            : shareValue > 0
-            ? "< 0.01"
-            : "0.00";
-
         return (
           <div
             key={lineup.id}
-            className={`${getRowBorderColor(
-              isCurrentUser,
-              isInTheMoney
-            )} rounded-sm p-3 mb-2 border pb-2 shadow-sm`}
+            className="rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
             onClick={() => openLineupModal(lineup)}
+            style={{
+              borderLeftColor: resolvedBorderColor,
+              borderLeftWidth: "3px",
+              borderLeftStyle: "solid",
+            }}
           >
             <div className="flex items-center justify-between gap-3 ">
               {/* Left - Rank */}
@@ -236,37 +168,6 @@ export const ContestEntryList = ({
                 )}
               </div>
             </div>
-
-            {predictionEntry && (
-              <div className="mt-2 text-xs text-gray-600 border-t border-gray-200 pt-2">
-                <div className="flex items-center justify-end gap-2">
-                  <div className="flex-1 flex items-center justify-start gap-3 text-sm font-semibold text-emerald-700">
-                    {shareValue > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                          Share
-                        </span>
-                        <span className="text-[12px] text-green-600">${shareValueDisplay}</span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="inline-block h-4 w-px bg-gray-200" aria-hidden="true" />
-
-                  <span className="whitespace-nowrap font-semibold text-emerald-700">
-                    <span className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
-                      BUY SHARES
-                    </span>
-                  </span>
-
-                  {/* dummy button t olet people know its clickable*/}
-                  <button className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded transition-colors">
-                    <span className="text-[10px] tracking-wide text-white font-semibold">
-                      {oddsDisplay}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         );
       })}
