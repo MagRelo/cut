@@ -16,10 +16,10 @@ const PLATFORM_TOKEN_ABI = [
   "function depositManager() external view returns (address)",
 ];
 
-// DepositManager ABI - for related info
+// DepositManager ABI - for related info (Aave v3 via DepositManager)
 const DEPOSIT_MANAGER_ABI = [
   "function getTokenManagerUSDCBalance() external view returns (uint256)",
-  "function getCompoundUSDCBalance() external view returns (uint256)",
+  "function getAaveUSDCBalance() external view returns (uint256)",
   "function getTotalAvailableBalance() external view returns (uint256)",
 ];
 

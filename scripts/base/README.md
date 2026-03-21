@@ -92,7 +92,7 @@ The script includes comprehensive error handling for:
 
 ## emergencyWithdrawAll.js
 
-Emergency withdrawal script for the DepositManager contract on Base network. This withdraws all USDC from both the contract and Compound V3, regardless of token supply backing. **Use only in emergency situations.**
+Emergency withdrawal script for the DepositManager contract on Base network. This withdraws all USDC held by the manager (including USDC supplied to Aave), regardless of token supply backing. **Use only in emergency situations.**
 
 ### Prerequisites
 
@@ -133,7 +133,7 @@ node emergencyWithdrawAll.js
 1. **Connects to Base Network**: Uses your configured RPC URL
 2. **Verifies Ownership**: Only the contract owner can execute this function
 3. **Checks Balances**: Shows total available USDC before withdrawal
-4. **Withdraws All USDC**: Withdraws from both contract and Compound V3
+4. **Withdraws All USDC**: Withdraws from the contract’s holdings (including Aave position)
 5. **Transfers to Recipient**: Sends all USDC to the specified recipient address
 6. **Shows Results**: Displays balances before and after
 
@@ -165,7 +165,7 @@ The script includes error handling for:
 
 📊 Pre-withdrawal status:
 🏦 DepositManager USDC balance: 1000.0 USDC
-🏦 Compound USDC balance: 5000.0 USDC
+🏦 Aave USDC balance (via DepositManager): 5000.0 USDC
 🏦 Total available balance: 6000.0 USDC
 🎯 Total CUT supply: 5500.0 CUT
 💳 Recipient USDC balance before: 100.0 USDC
@@ -179,7 +179,7 @@ The script includes error handling for:
 💰 USDC withdrawn: 6000.0 USDC
 💳 Recipient USDC balance after: 6100.0 USDC
 🏦 DepositManager USDC balance after: 0.0 USDC
-🏦 Compound USDC balance after: 0.0 USDC
+🏦 Aave USDC balance (via DepositManager) after: 0.0 USDC
 🏦 Total available balance after: 0.0 USDC
 🎯 Total CUT supply after: 5500.0 CUT
 
@@ -238,7 +238,7 @@ node checkPlatformTokenBalance.js
 4. **DepositManager Information** (if available):
 
    - USDC in DepositManager contract
-   - USDC in Compound V3
+   - USDC supplied via Aave (as reported by DepositManager)
    - Total available USDC backing
    - Backing ratio (USDC backing vs CUT supply)
 
@@ -280,7 +280,7 @@ node checkPlatformTokenBalance.js
 ================================================================================
   Address: 0x...
   💵 USDC in DepositManager: 5000.0 USDC
-  💵 USDC in Compound: 5000.0 USDC
+  💵 USDC in Aave (via DepositManager): 5000.0 USDC
   💵 Total Available USDC: 10000.0 USDC
 
   📊 Backing Ratio:

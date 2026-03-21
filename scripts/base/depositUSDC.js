@@ -5,14 +5,14 @@ import path from "path";
 
 dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
-// DepositManager ABI - just the functions we need
+// DepositManager ABI - just the functions we need (Aave v3 via DepositManager)
 const DEPOSIT_MANAGER_ABI = [
   "function depositUSDC(uint256 amount) external",
   "function getTokenManagerUSDCBalance() external view returns (uint256)",
-  "function getCompoundUSDCBalance() external view returns (uint256)",
+  "function getAaveUSDCBalance() external view returns (uint256)",
   "function getTotalAvailableBalance() external view returns (uint256)",
-  "function isCompoundSupplyPaused() external view returns (bool)",
-  "function isCompoundWithdrawPaused() external view returns (bool)",
+  "function isAaveSupplyPaused() external view returns (bool)",
+  "function isAaveWithdrawPaused() external view returns (bool)",
 ];
 
 // Real USDC ABI (Base network)
@@ -202,10 +202,10 @@ async function depositUSDC() {
 
     // Get DepositManager stats before deposit (skip problematic functions)
     let tokenManagerBalanceBefore,
-      compoundBalanceBefore,
+      aaveUsdcBalanceBefore,
       totalAvailableBalanceBefore,
       platformTokenSupplyBefore;
-    let isCompoundSupplyPaused, isCompoundWithdrawPaused;
+    let isAaveSupplyPaused, isAaveWithdrawPaused;
 
     try {
       tokenManagerBalanceBefore = await depositManager.getTokenManagerUSDCBalance();
@@ -219,14 +219,14 @@ async function depositUSDC() {
     }
 
     try {
-      compoundBalanceBefore = await depositManager.getCompoundUSDCBalance();
+      aaveUsdcBalanceBefore = await depositManager.getAaveUSDCBalance();
       console.log(
-        "🏦 Compound USDC balance before:",
-        ethers.formatUnits(compoundBalanceBefore, 6),
+        "🏦 Aave USDC balance (via DepositManager) before:",
+        ethers.formatUnits(aaveUsdcBalanceBefore, 6),
         "USDC"
       );
     } catch (error) {
-      console.log("⚠️ Could not get Compound USDC balance:", error.message);
+      console.log("⚠️ Could not get Aave USDC balance:", error.message);
     }
 
     try {
@@ -251,14 +251,14 @@ async function depositUSDC() {
       console.log("⚠️ Could not get total CUT supply:", error.message);
     }
 
-    // Check Compound pause status
+    // Check Aave pause status (underlying pool)
     try {
-      isCompoundSupplyPaused = await depositManager.isCompoundSupplyPaused();
-      isCompoundWithdrawPaused = await depositManager.isCompoundWithdrawPaused();
-      console.log("⏸️ Compound supply paused:", isCompoundSupplyPaused);
-      console.log("⏸️ Compound withdraw paused:", isCompoundWithdrawPaused);
+      isAaveSupplyPaused = await depositManager.isAaveSupplyPaused();
+      isAaveWithdrawPaused = await depositManager.isAaveWithdrawPaused();
+      console.log("⏸️ Aave supply paused:", isAaveSupplyPaused);
+      console.log("⏸️ Aave withdraw paused:", isAaveWithdrawPaused);
     } catch (error) {
-      console.log("⚠️ Could not get Compound pause status:", error.message);
+      console.log("⚠️ Could not get Aave pause status:", error.message);
     }
 
     // Deposit USDC
@@ -317,10 +317,10 @@ async function depositUSDC() {
     }
 
     try {
-      compoundBalanceAfter = await depositManager.getCompoundUSDCBalance();
+      aaveUsdcBalanceAfter = await depositManager.getAaveUSDCBalance();
     } catch (error) {
-      console.log("⚠️ Could not get Compound USDC balance after:", error.message);
-      compoundBalanceAfter = BigInt(0);
+      console.log("⚠️ Could not get Aave USDC balance after:", error.message);
+      aaveUsdcBalanceAfter = BigInt(0);
     }
 
     try {
@@ -350,8 +350,8 @@ async function depositUSDC() {
       "USDC"
     );
     console.log(
-      "🏦 Compound USDC balance after:",
-      ethers.formatUnits(compoundBalanceAfter, 6),
+      "🏦 Aave USDC balance (via DepositManager) after:",
+      ethers.formatUnits(aaveUsdcBalanceAfter, 6),
       "USDC"
     );
     console.log(

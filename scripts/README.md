@@ -1,178 +1,136 @@
 # Scripts
 
-This directory contains scripts for the Cut project, including deployment and interaction scripts.
+This directory contains scripts for the Cut project: deployment, verification, and ad hoc chain interaction.
 
-## Scripts Overview
+## Scripts overview
 
-### Deployment Script (`deploy.js`)
+### Deployment (`deploy.js`)
 
-The deployment script automates the entire contract deployment process including:
+Automates Foundry deployment and follow-up steps:
 
-1. **Environment Validation** - Checks for required environment variables
-2. **Contract Deployment** - Deploys contracts using Foundry
-3. **Contract Verification** - Verifies contracts on the blockchain explorer
-4. **Configuration Updates** - Updates contract addresses in both client and server config files
-5. **Artifact Copying** - Copies contract ABIs to the server directory
+1. **Environment validation** — required variables (see `contracts/env.example`)
+2. **Contract deployment** — `forge script` for `Deploy_sepolia.s.sol` or `Deploy_base.s.sol`
+3. **Config updates** — writes `client/src/utils/contracts/{sepolia|base}.json` and matching `server/src/contracts/*.json` with addresses (`paymentTokenAddress`, `platformTokenAddress`, `depositManagerAddress`, `contestFactoryAddress`, `aavePoolAddress`, `referralGraphAddress`, `rewardDistributorAddress`)
+4. **Artifact copy** — copies compiled ABIs to **both** `server/src/contracts/` and `client/src/utils/contracts/` (see `ARTIFACT_COPY` in `deploy.js`: MockUSDC, DepositManager, ContestFactory, ContestController, PlatformToken, ReferralGraph, RewardDistributor)
+5. **Verification** — optional Blockscout verification via `forge verify-contract` for deployed contracts
 
-### Verification Script (`verify.js`)
+**Copy artifacts only** (after `forge build` in `contracts/`, no deploy):
 
-The verification script allows you to verify already-deployed contracts on the blockchain explorer. This is useful when:
+```bash
+pnpm run deploy:copy-artifacts
+```
 
-- Verification failed during initial deployment
-- You want to re-verify contracts after updates
-- You need to verify contracts that were deployed manually
+### Verification (`verify.js`)
 
-The script:
+Re-verify already deployed contracts on Blockscout. Useful if verification failed during deploy or contracts were deployed manually.
 
-1. **Loads Contract Addresses** - Reads addresses from existing config files
-2. **Verifies Contracts** - Submits contract source code to the blockchain explorer (Blockscout)
-3. **Reports Results** - Shows success/failure for each contract verification
+### Sepolia (`sepolia/`)
 
-### Sepolia Interaction Scripts (`sepolia/`)
+Base Sepolia (chain 84532) helpers:
 
-The sepolia directory contains scripts for interacting with deployed contracts on Base Sepolia testnet:
+- `depositUSDC.js` — deposit mock USDC into `DepositManager`, receive CUT (`xCUT`)
+- `mintPaymentToken.js` — mint `MockUSDC` when your wallet is the token owner
 
-- `createEscrow.js` - Creates a new escrow using the EscrowFactory contract
-- `depositUSDC.js` - Deposits USDC into the DepositManager to receive CUT tokens
-- `mintPaymentToken.js` - Mints PaymentToken (Mock USDC) to a specified address
+### Base mainnet (`base/`)
 
-### Base Interaction Scripts (`base/`)
+Base (chain 8453) helpers:
 
-The base directory contains scripts for interacting with deployed contracts on Base mainnet:
+- `depositUSDC.js` — deposit real USDC for CUT
+- `checkPlatformTokenBalance.js` — read-only CUT / backing info
+- `emergencyWithdrawAll.js` — owner-only emergency pull (see script warnings)
 
-- `depositUSDC.js` - Deposits real USDC into the DepositManager to receive CUT tokens
-- `checkPlatformTokenBalance.js` - Checks PlatformToken (CUT) balances and token distribution
-- `emergencyWithdrawAll.js` - Emergency withdrawal of all USDC (owner only)
-- `cancelEscrow.js` - Cancels an escrow and refunds all participants (oracle only)
-
-See the [Base Scripts README](./base/README.md) for detailed documentation on each script.
+Details: [Base Scripts README](./base/README.md).
 
 ## Prerequisites
 
-### Environment Variables
+### Environment
 
-Copy `env.example` to `.env` in the `contracts/` directory and fill in your actual values:
+Copy and fill `contracts/env.example` → `contracts/.env`:
 
 ```bash
 cp contracts/env.example contracts/.env
 ```
 
-Required variables in `contracts/.env`:
+Typical variables include `PRIVATE_KEY`, `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`, and `BASESCAN_API_KEY` where needed. See `contracts/env.example` for the full list.
 
-```bash
-# Required for all deployments
-PRIVATE_KEY=your_private_key_here
-BASESCAN_API_KEY=your_basescan_api_key_here
-
-# For Sepolia deployment
-BASE_SEPOLIA_RPC_URL=your_sepolia_rpc_url_here
-
-# For Base mainnet deployment
-BASE_RPC_URL=your_base_rpc_url_here
-```
-
-### Dependencies
+### Tooling
 
 - Node.js 18+
-- Foundry (forge, cast)
-- Sufficient funds in the deployment wallet
+- Foundry (`forge`, `cast`)
+- Deployment wallet funded for gas
 
 ## Usage
 
-### Available Scripts
+### Deploy & verify (from repo root)
 
 ```bash
-# Deploy to Sepolia (default)
-npm run deploy:contracts
+# Default network in deploy.js (Sepolia)
+pnpm run deploy:contracts
 
-# Deploy to Sepolia explicitly
-npm run deploy:contracts:sepolia
+pnpm run deploy:contracts:sepolia
+pnpm run deploy:contracts:base
 
-# Deploy to Base mainnet
-npm run deploy:contracts:base
+# Direct
+node scripts/deploy.js [sepolia|base]
 
-# Deploy contracts and then deploy the full application
-npm run deploy:full
+# ABIs only (no deploy)
+pnpm run deploy:copy-artifacts
 
-# Run the deploy script directly
-node scripts/deploy.js [network]
+pnpm run verify:contracts
+pnpm run verify:contracts:sepolia
+pnpm run verify:contracts:base
 
-# Verify contracts on Sepolia (default)
-npm run verify:contracts
-
-# Verify contracts on Sepolia explicitly
-npm run verify:contracts:sepolia
-
-# Verify contracts on Base mainnet
-npm run verify:contracts:base
-
-# Run the verify script directly
-node scripts/verify.js [network]
-
-# Run sepolia interaction scripts
-cd scripts
-npm run mint                    # Mint payment tokens
-npm run create-escrow          # Create an escrow
-npm run deposit-usdc           # Deposit USDC to get CUT tokens
-
-# Run base interaction scripts
-cd scripts
-npm run deposit-usdc-base      # Deposit real USDC to get CUT tokens
-npm run check-balance-base     # Check PlatformToken balances
-npm run emergency-withdraw-base # Emergency withdraw (owner only)
+node scripts/verify.js [sepolia|base]
 ```
 
-### Network Options
+### Interaction scripts
 
-- `sepolia` - Base Sepolia testnet (default)
-- `base` - Base mainnet
+```bash
+# Sepolia
+pnpm run mint-tokens
+pnpm run deposit-usdc
 
-## What Gets Deployed
+# Base mainnet
+pnpm run base:deposit-usdc
 
-### Sepolia Deployment
+# Or run files directly
+node scripts/base/checkPlatformTokenBalance.js
+node scripts/base/emergencyWithdrawAll.js
+```
 
-- MockUSDC (payment token)
-- MockCompound (compound protocol mock)
-- PlatformToken (platform token)
-- DepositManager (deposit management)
-- EscrowFactory (escrow factory)
+Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base mainnet (8453).
 
-### Base Mainnet Deployment
+## What gets deployed
 
-- PlatformToken (platform token)
-- DepositManager (deposit management)
-- Uses real USDC and Compound addresses
+### Base Sepolia (`Deploy_sepolia.s.sol`)
 
-## Configuration Files Updated
+- **MockUSDC** — mintable test USDC  
+- **PlatformToken** (`xCUT`)  
+- **DepositManager** — USDC → Aave V3 pool on Sepolia (see script constants)  
+- **ContestFactory**  
+- **ReferralGraph**  
+- **RewardDistributor**
 
-The script automatically updates the following configuration files:
+### Base mainnet (`Deploy_base.s.sol`)
 
-### Client Configuration
+- **PlatformToken** (`CUT`)  
+- **DepositManager** — canonical Base USDC + Aave V3 pool addresses (in script)  
+- **ContestFactory**  
+- **ReferralGraph**  
+- **RewardDistributor**
 
-- `client/src/utils/contracts/sepolia.json`
-- `client/src/utils/contracts/base.json`
+`ContestController` is not deployed by these scripts; instances are created via `ContestFactory`. Its ABI is still copied for app/server use.
 
-### Server Configuration
+## Configuration & artifacts
 
-- `server/src/contracts/sepolia.json`
-- `server/src/contracts/base.json`
-- `server/src/contracts/DepositManager.json`
-- `server/src/contracts/EscrowFactory.json`
-- `server/src/contracts/Escrow.json`
-- `server/src/contracts/PlatformToken.json`
-- `server/src/contracts/MockUSDC.json`
-- `server/src/contracts/MockCompound.json`
+**Per-network JSON** (client + server, same shape):
 
-## Output
+- `client/src/utils/contracts/sepolia.json` / `base.json`
+- `server/src/contracts/sepolia.json` / `base.json`
 
-The script provides colored console output with:
+**Copied ABIs** (after deploy or `deploy:copy-artifacts`): listed in `ARTIFACT_COPY` inside `deploy.js` — includes `ContestController.json`, not legacy escrow/compound artifacts.
 
-- ✅ Success messages (green)
-- ❌ Error messages (red)
-- ⚠️ Warning messages (yellow)
-- ℹ️ Info messages (cyan)
-
-## Example Output
+## Example deploy output (illustrative)
 
 ```
 🚀 Starting deployment to base_sepolia
@@ -181,128 +139,37 @@ The script provides colored console output with:
 ✅ Environment variables check passed
 
 === Deploying contracts to base_sepolia ===
-ℹ️ Running: forge script script/Deploy_sepolia.s.sol --rpc-url https://sepolia.base.org --broadcast --verify
-✅ Deployed 5 contracts
-ℹ️ Deployed addresses:
-  MockUSDC: 0x7150669d6aD21be53D2d71c09138D46381b90b5b
-  MockCompound: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
-  PlatformToken: 0x772c846Ac2BC1CF0733331e76912d90479c0481d
-  DepositManager: 0x14138DC74022AE1290132cd4945381e94aCE2A88
-  EscrowFactory: 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
+ℹ️ Running: forge script script/Deploy_sepolia.s.sol ...
+✅ Deployed contracts
 
 === Updating configuration files for base_sepolia ===
-✅ Updated client config: /path/to/client/src/utils/contracts/sepolia.json
-✅ Updated server config: /path/to/server/src/contracts/sepolia.json
+✅ Updated client config: .../client/src/utils/contracts/sepolia.json
+✅ Updated server config: .../server/src/contracts/sepolia.json
 
-=== Copying contract artifacts to server ===
-✅ Copied DepositManager.json
-✅ Copied EscrowFactory.json
-✅ Copied Escrow.json
-✅ Copied PlatformToken.json
-✅ Copied MockUSDC.json
-✅ Copied MockCompound.json
-✅ Copied 6 contract artifacts to server
-
-=== Verifying contracts on https://sepolia.basescan.org ===
-ℹ️ Verifying MockUSDC at 0x7150669d6aD21be53D2d71c09138D46381b90b5b
-✅ Verified MockUSDC
+=== Copying contract artifacts to server and client ===
+✅ Copied MockUSDC.json to server
+✅ Copied ContestController.json to client
 ...
 
-=== Deployment Summary ===
-✅ Successfully deployed to base_sepolia
-ℹ️ Chain ID: 84532
-ℹ️ Explorer: https://sepolia.basescan.org
-ℹ️ Contract addresses:
-  paymentTokenAddress: 0x7150669d6aD21be53D2d71c09138D46381b90b5b
-  platformTokenAddress: 0x772c846Ac2BC1CF0733331e76912d90479c0481d
-  depositManagerAddress: 0x14138DC74022AE1290132cd4945381e94aCE2A88
-  escrowFactoryAddress: 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
-  aavePoolAddress: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
-
-🎉 Deployment completed successfully!
-```
-
-### Verification Script Example
-
-```
-🔍 Starting contract verification on base_sepolia
-
-=== Loading contract addresses for base_sepolia ===
-✅ Loaded 5 contract addresses
-ℹ️ Contract addresses:
-  MockUSDC: 0x7150669d6aD21be53D2d71c09138D46381b90b5b
-  PlatformToken: 0x772c846Ac2BC1CF0733331e76912d90479c0481d
-  DepositManager: 0x14138DC74022AE1290132cd4945381e94aCE2A88
-  EscrowFactory: 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
-  MockCompound: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
-
 === Verifying contracts on https://base-sepolia.blockscout.com ===
-ℹ️ Verifying MockUSDC at 0x7150669d6aD21be53D2d71c09138D46381b90b5b
+ℹ️ Verifying MockUSDC at 0x...
 ✅ Verified MockUSDC
-ℹ️ Verifying PlatformToken at 0x772c846Ac2BC1CF0733331e76912d90479c0481d
-✅ Verified PlatformToken
-ℹ️ Verifying DepositManager at 0x14138DC74022AE1290132cd4945381e94aCE2A88
-✅ Verified DepositManager
-ℹ️ Verifying EscrowFactory at 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
-✅ Verified EscrowFactory
-ℹ️ Verifying MockCompound at 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
-✅ Verified MockCompound
-
-=== Verification Summary ===
-ℹ️ Chain ID: 84532
-ℹ️ Explorer: https://sepolia.basescan.org
-✅ Successfully verified: 5 contract(s)
-✅ 🎉 Verification completed!
+...
 ```
+
+Verification order in `deploy.js`: MockUSDC (Sepolia only), PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor.
 
 ## Troubleshooting
 
-### Common Issues
+1. **Missing env vars** — ensure `contracts/.env` exists and matches `env.example`.
+2. **Insufficient ETH** — fund the deployer wallet on the target network.
+3. **RPC errors** — check `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`.
+4. **Verification warnings** — deploy continues; retry with `verify.js` if needed.
+5. **Missing artifacts for copy** — run `forge build` in `contracts/`, then `pnpm run deploy:copy-artifacts`.
+6. **`verify.js` address errors** — deploy first; configs must exist under `server/src/contracts/`.
 
-1. **Missing Environment Variables**
+## Security
 
-   - Ensure all required environment variables are set
-   - Check that the `.env` file is in the `contracts/` directory
-
-2. **Insufficient Funds**
-
-   - Ensure the deployment wallet has sufficient ETH for gas fees
-   - For mainnet, ensure you have enough ETH for deployment costs
-
-3. **RPC URL Issues**
-
-   - Verify your RPC URLs are correct and accessible
-   - Check that your RPC provider is working
-
-4. **Verification Failures**
-
-   - Verification failures are logged as warnings and don't stop deployment
-   - Check the explorer manually if verification fails
-   - You can use the `verify.js` script to retry verification separately
-
-5. **Permission Denied**
-
-   - Ensure the scripts are executable:
-     - `chmod +x scripts/deploy.js`
-     - `chmod +x scripts/verify.js`
-
-6. **Contract Addresses Not Found (verify.js)**
-   - Ensure contracts have been deployed first
-   - Check that the config files exist in `server/src/contracts/`
-   - Verify you're using the correct network argument
-
-### Getting Help
-
-If you encounter issues:
-
-1. Check the console output for specific error messages
-2. Verify all environment variables are set correctly
-3. Ensure you have sufficient funds in your deployment wallet
-4. Check that Foundry is properly installed and configured
-
-## Security Notes
-
-- Never commit your `contracts/.env` file to version control
-- Keep your private key secure and never share it
-- Use a dedicated deployment wallet, not your main wallet
-- Test deployments on Sepolia before deploying to mainnet
+- Never commit `contracts/.env`.
+- Use a dedicated deployer wallet; protect private keys.
+- Prefer testnet deploys before mainnet.
