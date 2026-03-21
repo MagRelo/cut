@@ -303,12 +303,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       }
     }
 
-    // Handle endDate conversion - it can be a string datetime or number timestamp
-    const endTime = endDate
-      ? typeof endDate === "number"
-        ? new Date(endDate)
-        : new Date(endDate)
-      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days from now
+    const endTime = new Date(endDate);
 
     const contestData: any = {
       name,

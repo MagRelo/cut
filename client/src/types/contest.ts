@@ -18,12 +18,15 @@ export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean
 
 /**
  * Mirrors immutable `ContestController` constructor parameters (see on-chain `paymentToken()`, `oracle()`, etc.).
- * Expiry is stored on the contest row as `endTime` (`_expiryTimestamp` on-chain).
+ * The DB `endTime` column should match `new Date(expiryTimestamp * 1000)`.
  */
 export interface ContestSettings {
   contestType: ContestType;
   chainId: number;
   maxEntry?: number;
+
+  /** `_expiryTimestamp` (Unix seconds, uint256 on-chain) */
+  expiryTimestamp: number;
 
   /** `_paymentToken` */
   paymentTokenAddress: string;
@@ -85,7 +88,6 @@ export interface Contest {
 
 export interface CreateContestInput {
   name: string;
-  endTime: number;
   tournamentId: string;
   transactionId: string;
   address: string;

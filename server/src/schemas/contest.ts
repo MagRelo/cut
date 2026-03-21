@@ -25,7 +25,8 @@ export const createContestSchema = z.object({
   tournamentId: z.string().cuid("Invalid tournament ID"),
   userGroupId: z.string().cuid("Invalid user group ID").optional(),
   startDate: z.string().datetime("Invalid start date").optional(),
-  endDate: z.union([z.string().datetime("Invalid end date"), z.number()]).optional(),
+  /** Contest end: ISO datetime string or Unix ms (client sends `expiryTimestamp * 1000`). */
+  endDate: z.union([z.string().datetime("Invalid end date"), z.number()]),
   chainId: z
     .number()
     .int()
@@ -41,6 +42,7 @@ export const createContestSchema = z.object({
       paymentTokenAddress: z.string().optional(),
       paymentTokenSymbol: z.string().optional(),
       oracle: z.string().optional(),
+      expiryTimestamp: z.number().optional(),
       primaryDeposit: z.number().optional(),
       oracleFeeBps: z.number().optional(),
       positionBonusShareBps: z.number().optional(),
@@ -74,6 +76,7 @@ export const updateContestSchema = z.object({
       paymentTokenAddress: z.string().optional(),
       paymentTokenSymbol: z.string().optional(),
       oracle: z.string().optional(),
+      expiryTimestamp: z.number().optional(),
       primaryDeposit: z.number().optional(),
       oracleFeeBps: z.number().optional(),
       positionBonusShareBps: z.number().optional(),

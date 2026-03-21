@@ -28,12 +28,15 @@ export function contractStateToStatus(state: ContestState): ContestStatus {
   return mapping[state];
 }
 
-/** Stored JSON; matches `ContestController` constructor (expiry lives on contest `endTime`). */
+/** Stored JSON; matches `ContestController` constructor. */
 export interface ContestSettings {
   contestType?: string;
   chainId: number;
   maxPlayers?: number;
   scoringType?: "STABLEFORD" | "STROKE_PLAY";
+
+  /** `_expiryTimestamp` (Unix seconds) */
+  expiryTimestamp: number;
 
   paymentTokenAddress: string;
   paymentTokenSymbol: string;

@@ -28,7 +28,12 @@ export function useCreateContest() {
 
   return useMutation({
     mutationFn: async (params: CreateContestInput) => {
-      return await apiClient.post<Contest>("/contests", params);
+      const { settings, ...rest } = params;
+      return await apiClient.post<Contest>("/contests", {
+        ...rest,
+        endDate: settings.expiryTimestamp * 1000,
+        settings,
+      });
     },
 
     // Always refetch after success to ensure data is in sync
