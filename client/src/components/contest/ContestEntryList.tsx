@@ -43,13 +43,18 @@ export const ContestEntryList = ({
       .filter((entryId): entryId is string => typeof entryId === "string" && entryId.length > 0);
   }, [contestLineups]);
 
-  const { entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted, canWithdraw } =
-    useContestPredictionData({
-      contestAddress,
-      entryIds,
-      enabled: Boolean(contestAddress && entryIds.length > 0),
-      chainId: contestChainId,
-    });
+  const {
+    entryData,
+    secondaryPrizePoolFormatted,
+    secondaryTotalFundsFormatted,
+    poolSnapshot,
+    canWithdraw,
+  } = useContestPredictionData({
+    contestAddress,
+    entryIds,
+    enabled: Boolean(contestAddress && entryIds.length > 0),
+    chainId: contestChainId,
+  });
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -183,6 +188,7 @@ export const ContestEntryList = ({
         entryData={entryData as PredictionEntryData[]}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
         secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+        poolSnapshot={poolSnapshot}
         canWithdraw={canWithdraw}
       />
     </>

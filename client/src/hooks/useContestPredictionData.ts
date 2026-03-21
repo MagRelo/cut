@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { useAccount, useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatUnits, type Abi } from "viem";
+import {
+  sharesForSecondaryPricing,
+  type SecondaryPoolSnapshot,
+} from "@cut/secondary-pricing";
 import ContestContract from "../utils/contracts/Contest.json";
 
 // Contract state enum matching Contest.sol
@@ -25,7 +29,7 @@ interface UseContestPredictionDataOptions {
 
 /**
  * Hook to read prediction market data from the Contest contract
- * Fetches LMSR prices, user balances, and contest state
+ * Fetches secondary curve prices, user balances, contest state, and pool snapshot for simulations
  */
 export function useContestPredictionData(options: UseContestPredictionDataOptions) {
   const { contestAddress, entryIds = [], enabled = true, chainId: providedChainId } = options;
@@ -86,6 +90,55 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     chainId,
     query: {
       enabled: enabled && !!contestAddress,
+    },
+  });
+
+  const poolConfigContracts = useMemo(
+    () =>
+      contestAddress
+        ? [
+            {
+              address: contestAddress as `0x${string}`,
+              abi: contestAbi,
+              functionName: "primaryPrizePool" as const,
+              chainId,
+            },
+            {
+              address: contestAddress as `0x${string}`,
+              abi: contestAbi,
+              functionName: "oracleFeeBps" as const,
+              chainId,
+            },
+            {
+              address: contestAddress as `0x${string}`,
+              abi: contestAbi,
+              functionName: "positionBonusShareBps" as const,
+              chainId,
+            },
+            {
+              address: contestAddress as `0x${string}`,
+              abi: contestAbi,
+              functionName: "targetPrimaryShareBps" as const,
+              chainId,
+            },
+            {
+              address: contestAddress as `0x${string}`,
+              abi: contestAbi,
+              functionName: "maxCrossSubsidyBps" as const,
+              chainId,
+            },
+          ]
+        : [],
+    [contestAddress, chainId, contestAbi]
+  );
+
+  const { data: poolConfigResults, isLoading: isLoadingPoolConfig } = useReadContracts({
+    contracts: poolConfigContracts,
+    query: {
+      enabled: enabled && !!contestAddress && poolConfigContracts.length > 0,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
     },
   });
 
@@ -196,13 +249,49 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
   const totalSecondaryFunds =
     ((secondaryPrizePool as bigint) || 0n) + ((secondaryPrizePoolSubsidy as bigint) || 0n);
 
+  const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => {
+    const primaryPrizePool = poolConfigResults?.[0]?.result as bigint | undefined;
+    const oracleFeeBps = poolConfigResults?.[1]?.result as bigint | undefined;
+    const positionBonusShareBps = poolConfigResults?.[2]?.result as bigint | undefined;
+    const targetPrimaryShareBps = poolConfigResults?.[3]?.result as bigint | undefined;
+    const maxCrossSubsidyBps = poolConfigResults?.[4]?.result as bigint | undefined;
+    if (
+      primaryPrizePool === undefined ||
+      oracleFeeBps === undefined ||
+      positionBonusShareBps === undefined ||
+      targetPrimaryShareBps === undefined ||
+      maxCrossSubsidyBps === undefined
+    ) {
+      return undefined;
+    }
+    return {
+      primaryPrizePool,
+      primaryPrizePoolSubsidy: (primaryPrizePoolSubsidy as bigint) || 0n,
+      totalPrimaryPositionSubsidies: (totalPrimaryPositionSubsidies as bigint) || 0n,
+      secondaryPrizePool: (secondaryPrizePool as bigint) || 0n,
+      secondaryPrizePoolSubsidy: (secondaryPrizePoolSubsidy as bigint) || 0n,
+      oracleFeeBps,
+      positionBonusShareBps,
+      targetPrimaryShareBps,
+      maxCrossSubsidyBps,
+    };
+  }, [
+    poolConfigResults,
+    primaryPrizePoolSubsidy,
+    totalPrimaryPositionSubsidies,
+    secondaryPrizePool,
+    secondaryPrizePoolSubsidy,
+  ]);
+
   // Format the data for easier consumption
   const entryData = entryIds.map((entryId, index) => {
     const price = priceResults?.[index]?.result as bigint | undefined;
     const balance = shouldFetchBalances
       ? (balanceResults?.[index]?.result as bigint | undefined)
       : undefined;
-    const supply = supplyResults?.[index]?.result as bigint | undefined;
+    const supplyRaw = supplyResults?.[index]?.result as bigint | undefined;
+    const supply =
+      supplyRaw !== undefined ? sharesForSecondaryPricing(supplyRaw) : undefined;
     const positionSubsidy = positionSubsidyResults?.[index]?.result as bigint | undefined;
 
     // Calculate implied winnings if this entry wins
@@ -210,7 +299,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     let impliedWinnings = 0n;
     let impliedWinningsFormatted = "0";
 
-    if (balance && balance > 0n && supply && supply > 0n && totalSecondaryFunds > 0n) {
+    if (balance && balance > 0n && supply !== undefined && supply > 0n && totalSecondaryFunds > 0n) {
       impliedWinnings = (balance * totalSecondaryFunds) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
@@ -221,8 +310,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       priceFormatted: price ? formatUnits(price, 6) : "0", // Price uses 6 decimals (PRICE_PRECISION = 1e6)
       balance: balance || 0n,
       balanceFormatted: balance ? formatUnits(balance, 18) : "0",
-      totalSupply: supply || 0n,
-      totalSupplyFormatted: supply ? formatUnits(supply, 18) : "0",
+      totalSupply: supply ?? 0n,
+      totalSupplyFormatted: supply !== undefined ? formatUnits(supply, 18) : "0",
       positionSubsidy: positionSubsidy || 0n,
       positionSubsidyFormatted: positionSubsidy ? formatUnits(positionSubsidy, 18) : "0",
       impliedWinnings,
@@ -239,7 +328,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     isLoadingPrices ||
     isLoadingBalances ||
     isLoadingSupplies ||
-    isLoadingPositionSubsidies;
+    isLoadingPositionSubsidies ||
+    isLoadingPoolConfig;
 
   return {
     contestState: contestState as ContestState | undefined,
@@ -266,6 +356,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
         ((totalPrimaryPositionSubsidies as bigint) || 0n),
       18
     ),
+    poolSnapshot,
     isLoading,
   };
 }

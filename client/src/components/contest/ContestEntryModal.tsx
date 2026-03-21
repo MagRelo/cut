@@ -13,6 +13,7 @@ import {
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { EntryHeader } from "./EntryHeader";
 import { type ContestLineup } from "../../types/lineup";
+import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
 import { PredictionEntryPosition } from "./PredictionEntryPosition";
 import { type Contest } from "../../types/contest";
@@ -27,6 +28,7 @@ interface ContestEntryModalProps {
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
+  poolSnapshot: SecondaryPoolSnapshot | undefined;
   canWithdraw: boolean;
   /**
    * Which tab to show initially when opening.
@@ -45,6 +47,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   entryData,
   secondaryPrizePoolFormatted,
   secondaryTotalFundsFormatted,
+  poolSnapshot,
   canWithdraw,
   initialTab = "players",
 }) => {
@@ -190,6 +193,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                             entryData={entryData}
                             secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
                             secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+                            poolSnapshot={poolSnapshot}
                             onClose={onClose}
                           />
                         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { parseUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
+import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
@@ -27,6 +28,8 @@ interface PredictionEntryFormProps {
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
+  /** On-chain snapshot for ContestCatalyst secondary math (undefined while loading). */
+  poolSnapshot: SecondaryPoolSnapshot | undefined;
   onClose: () => void;
 }
 
@@ -36,6 +39,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   entryData,
   secondaryPrizePoolFormatted,
   secondaryTotalFundsFormatted,
+  poolSnapshot,
   onClose,
 }) => {
   const { platformTokenBalance, paymentTokenBalance, user } = usePortoAuth();
@@ -50,55 +54,52 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
-  const parsedSecondaryPrizePool = Number.parseFloat(secondaryPrizePoolFormatted);
-
-  const totalPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
-    ? parsedSecondaryTotalFunds
-    : Number.isFinite(parsedSecondaryPrizePool)
-      ? parsedSecondaryPrizePool
-      : entryData.reduce((sum, entry) => {
-          const supply = Number.parseFloat(entry.totalSupplyFormatted ?? "0");
-          return sum + (Number.isFinite(supply) ? supply : 0);
-        }, 0);
 
   const displayPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
     ? secondaryTotalFundsFormatted
     : secondaryPrizePoolFormatted;
 
   const metrics = useMemo(() => {
-    if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo) {
+    if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo || !poolSnapshot) {
       return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
     }
 
     const positionAmount = Number.parseFloat(amount);
-    const feePercentage = 0.15;
-    const netPosition = positionAmount * (1 - feePercentage);
-
-    const price = Number.parseFloat(selectedEntryInfo.priceFormatted);
-    const currentSupply = Number.parseFloat(selectedEntryInfo.totalSupplyFormatted);
-
-    const newPrizePool = totalPrizePool + netPosition;
-
-    if (currentSupply === 0 || price === 0) {
-      return {
-        ownershipPercent: 100,
-        potentialReturn: newPrizePool,
-        tokensReceived: netPosition,
-      };
-    }
-
-    const tokensReceived = netPosition / price;
-    const newSupply = currentSupply + tokensReceived;
-
-    if (newSupply <= 0) {
+    if (!Number.isFinite(positionAmount) || positionAmount <= 0) {
       return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
     }
 
-    const ownershipPercent = (tokensReceived / newSupply) * 100;
-    const potentialReturn = (tokensReceived / newSupply) * newPrizePool;
+    let amountBigInt: bigint;
+    try {
+      amountBigInt = parseUnits(amount, 18);
+    } catch {
+      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+    }
+
+    const sim = simulateAddSecondaryPosition({
+      amount: amountBigInt,
+      entryShares: selectedEntryInfo.totalSupply,
+      ...poolSnapshot,
+    });
+
+    if (sim.tokensToMint === 0n) {
+      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+    }
+
+    const newTotal = sim.newSecondaryTotalFunds;
+    const newSupply = selectedEntryInfo.totalSupply + sim.tokensToMint;
+    if (newSupply === 0n) {
+      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+    }
+
+    const potentialReturnWei = (sim.tokensToMint * newTotal) / newSupply;
+    const potentialReturn = Number(formatUnits(potentialReturnWei, 18));
+    const tokensReceived = Number(formatUnits(sim.tokensToMint, 18));
+    const ownershipPercent =
+      newSupply > 0n ? (Number(sim.tokensToMint) / Number(newSupply)) * 100 : 0;
 
     return { ownershipPercent, potentialReturn, tokensReceived };
-  }, [amount, selectedEntryInfo, totalPrizePool]);
+  }, [amount, selectedEntryInfo, poolSnapshot]);
 
   const parsedAmount = Number.parseFloat(amount);
   const purchaseAmountDisplay =
@@ -126,6 +127,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     Number.isFinite(parsedAmount) && parsedAmount > 0 && metrics.potentialReturn > 0
       ? parsedAmount / metrics.potentialReturn
       : 0;
+
+  const metricsReady = Boolean(poolSnapshot);
 
   const approximateOddsRatio =
     Number.isFinite(metrics.potentialReturn) &&
@@ -235,7 +238,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Share Price</span>
-            <span className="font-bold text-gray-900 text-base">${sharePrice.toFixed(2)}</span>
+            <span className="font-bold text-gray-900 text-base">
+              {metricsReady ? `$${sharePrice.toFixed(2)}` : "—"}
+            </span>
           </div>
 
           <div className="flex justify-between items-center">

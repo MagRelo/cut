@@ -1,5 +1,6 @@
 import React, { Fragment } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild, DialogTitle } from "@headlessui/react";
+import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest } from "../../types/contest";
 import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
 
@@ -11,6 +12,7 @@ interface PredictionEntryModalProps {
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
+  poolSnapshot: SecondaryPoolSnapshot | undefined;
 }
 
 export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
@@ -21,6 +23,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   entryData,
   secondaryPrizePoolFormatted,
   secondaryTotalFundsFormatted,
+  poolSnapshot,
 }) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -63,6 +66,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                     entryData={entryData}
                     secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
                     secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+                    poolSnapshot={poolSnapshot}
                     onClose={onClose}
                   />
                 </div>

@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from "react";
+import { formatUnits, parseUnits } from "viem";
+import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
@@ -48,6 +50,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     isLoading,
     secondaryPrizePoolFormatted,
     secondaryTotalFundsFormatted,
+    poolSnapshot,
   } = useContestPredictionData({
     contestAddress: contest.address,
     entryIds,
@@ -62,54 +65,21 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   const selectedUserName = selectedLineup?.user?.name || selectedLineup?.user?.email;
 
-  // Calculate market stats
-  const marketStats = useMemo(() => {
-    // Keep in sync with PredictionEntryForm:
-    // - Form uses `secondaryTotalFundsFormatted` (prize pool + subsidy) whenever it's a finite number.
-    // - Only falls back if it can't be parsed as a number.
-    const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
-    const parsedSecondaryPrizePool = Number.parseFloat(secondaryPrizePoolFormatted);
+  const tenTokenAmount = useMemo(() => parseUnits("10", 18), []);
 
-    const totalPot = Number.isFinite(parsedSecondaryTotalFunds)
-      ? parsedSecondaryTotalFunds
-      : Number.isFinite(parsedSecondaryPrizePool)
-        ? parsedSecondaryPrizePool
-        : entryData.reduce((sum, e) => {
-            const supply = Number.parseFloat(e.totalSupplyFormatted ?? "0");
-            return sum + (Number.isFinite(supply) ? supply : 0);
-          }, 0);
-
-    return { totalPot };
-  }, [entryData, secondaryPrizePoolFormatted, secondaryTotalFundsFormatted]);
-
-  // Calculate what a $10 position would win for each entry
-  const calculateWinnings = (price: number, supply: number) => {
-    const positionAmount = 10;
-    const feePercentage = 0.15; // 15% fee
-
-    // Calculate net position amount after fees
-    const netPositionAmount = positionAmount * (1 - feePercentage);
-
-    // After your position, the prize pool increases by your net position amount
-    const newTotalPot = marketStats.totalPot + netPositionAmount;
-
-    // Special case: If no one has bought shares yet (supply = 0 and price = 0)
-    // You would own 100% of the tokens for this entry, so you'd win the entire pot
-    if (supply === 0 || price === 0) {
-      // If you're the only buyer and this entry wins, you get the entire new pot
-      return newTotalPot;
-    }
-
-    // Net position amount buys you (netPositionAmount / price) tokens
-    const tokensFromPosition = netPositionAmount / price;
-
-    // After your purchase, the supply increases
-    const newSupply = supply + tokensFromPosition;
-
-    // If entry wins, your payout = (your tokens / new total tokens) * new total pot
-    const payout = (tokensFromPosition / newSupply) * newTotalPot;
-
-    return payout;
+  // Expected payout if this entry wins after a fixed $10 buy (matches ContestCatalyst secondary math).
+  const calculateWinnings = (entry: (typeof entryData)[number]) => {
+    if (!poolSnapshot) return 0;
+    const sim = simulateAddSecondaryPosition({
+      amount: tenTokenAmount,
+      entryShares: entry.totalSupply,
+      ...poolSnapshot,
+    });
+    if (sim.tokensToMint === 0n) return 0;
+    const newSupply = entry.totalSupply + sim.tokensToMint;
+    if (newSupply === 0n) return 0;
+    const payoutWei = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
+    return Number(formatUnits(payoutWei, 18));
   };
 
   if (!canPredict) {
@@ -152,9 +122,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
           .map((entry) => {
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || "Unknown";
-            const supply = parseFloat(entry.totalSupplyFormatted);
-            const price = parseFloat(entry.priceFormatted);
-            const potentialWinnings = calculateWinnings(price, supply);
+            const potentialWinnings = calculateWinnings(entry);
             const costToBuyOneDollarOfWinnings =
               potentialWinnings > 0 && Number.isFinite(potentialWinnings)
                 ? 10 / potentialWinnings
@@ -268,6 +236,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         entryData={entryData}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
         secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+        poolSnapshot={poolSnapshot}
         canWithdraw={canWithdraw}
         initialTab="buyShares"
       />
