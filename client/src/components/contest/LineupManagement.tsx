@@ -253,7 +253,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       setWarningModal({
         open: true,
         message: `You do not have enough ${
-          contest?.settings?.platformTokenSymbol || "tokens"
+          contest?.settings?.paymentTokenSymbol || "tokens"
         } or USDC to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
       });
       return;
@@ -407,7 +407,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
                       {getStatusMessages("idle", isSending, isConfirming)}
                     </div>
                   ) : (
-                    `Join Contest - $${contest.settings?.fee || 0}`
+                    `Join Contest - $${contest.settings?.primaryDeposit ?? 0}`
                   )}
                 </button>
               )}

@@ -105,7 +105,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
       {/* Middle Section - Contest Info */}
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
-          ${contest.settings?.fee} - {contest.name}
+          ${contest.settings?.primaryDeposit} - {contest.name}
         </h3>
         <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
           <span className="font-semibold">{formatStatus(contest.status)}</span>

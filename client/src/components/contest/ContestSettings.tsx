@@ -24,7 +24,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as `0x${string}` | undefined;
 
-  const fallbackPaymentTokenAddress = contest?.settings?.platformTokenAddress as
+  const fallbackPaymentTokenAddress = contest?.settings?.paymentTokenAddress as
     | `0x${string}`
     | undefined;
 
@@ -212,7 +212,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
   const tokenSymbol =
-    paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.platformTokenSymbol ?? "";
+    paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.paymentTokenSymbol ?? "";
 
   const formatTokenAmount = (
     value?: bigint,

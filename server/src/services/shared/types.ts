@@ -28,26 +28,22 @@ export function contractStateToStatus(state: ContestState): ContestStatus {
   return mapping[state];
 }
 
-// Comprehensive contest settings (stored in DB as JSON)
+/** Stored JSON; matches `ContestController` constructor (expiry lives on contest `endTime`). */
 export interface ContestSettings {
-  // Basic settings
-  fee: number;
   contestType?: string;
   chainId: number;
-  platformTokenAddress: string;
-  platformTokenSymbol: string;
-  oracleFee: number; // basis points
   maxPlayers?: number;
   scoringType?: "STABLEFORD" | "STROKE_PLAY";
 
-  // Contract immutable parameters (from constructor)
-  primaryDepositAmount: string; // bigint as string
-  liquidityParameter: string; // bigint as string
-  demandSensitivityBps: number;
+  paymentTokenAddress: string;
+  paymentTokenSymbol: string;
+  oracle: string;
+  /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. */
+  primaryDeposit: number;
+  oracleFeeBps: number;
   positionBonusShareBps: number;
   targetPrimaryShareBps: number;
   maxCrossSubsidyBps: number;
-  expiryTimestamp: number; // Unix timestamp
 }
 
 // Snapshot of contest state at settlement time (for display purposes)

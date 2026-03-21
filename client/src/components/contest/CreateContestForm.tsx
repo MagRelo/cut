@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
-import { decodeEventLog } from "viem";
+import { decodeEventLog, isAddress } from "viem";
 
-import { type CreateContestInput } from "../../types/contest";
+import { type ContestSettings, type CreateContestInput } from "../../types/contest";
 import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateContest } from "../../hooks/useContestFactory";
@@ -14,22 +14,34 @@ import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
 
-// Helper function to get status messages
 const getStatusMessages = (
   defaultMessage: string = "idle",
   isUserWaiting: boolean = false,
   isBlockchainWaiting: boolean = false
 ): string => {
-  if (isUserWaiting) {
-    return "User confirmation...";
-  }
-
-  if (isBlockchainWaiting) {
-    return "Network confirmation...";
-  }
-
+  if (isUserWaiting) return "User confirmation...";
+  if (isBlockchainWaiting) return "Network confirmation...";
   return defaultMessage;
 };
+
+function buildContestSettings(
+  chainId: number,
+  paymentTokenAddress: string,
+  paymentTokenSymbol: string
+): ContestSettings {
+  return {
+    contestType: "PUBLIC",
+    chainId,
+    paymentTokenAddress,
+    paymentTokenSymbol,
+    oracle: import.meta.env.VITE_ORACLE_ADDRESS || "",
+    primaryDeposit: 10,
+    oracleFeeBps: Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500,
+    positionBonusShareBps: Number(import.meta.env.VITE_POSITION_BONUS_SHARE_BPS) || 5000,
+    targetPrimaryShareBps: Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000,
+    maxCrossSubsidyBps: Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500,
+  };
+}
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
@@ -37,12 +49,51 @@ export const CreateContestForm = () => {
   const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
-
-  // wagmi functions
-  // const { address: userAddress} = useAccount();
   const chainId = useChainId();
 
-  // Use Contest creation hook
+  const defaultExpiryDaysAfterTournament = 7;
+
+  const [formData, setFormData] = useState<CreateContestInput>(() => ({
+    name: "",
+    endTime: 0,
+    transactionId: "",
+    address: "",
+    chainId: chainId ?? 0,
+    tournamentId: currentTournament?.id ?? "",
+    settings: buildContestSettings(
+      chainId ?? 0,
+      platformTokenAddress || "",
+      platformTokenSymbol ?? ""
+    ),
+    description: undefined,
+    userGroupId: undefined,
+  }));
+
+  const [expiryDaysAfterTournament, setExpiryDaysAfterTournament] = useState(
+    defaultExpiryDaysAfterTournament
+  );
+  const [pendingContestData, setPendingContestData] = useState<CreateContestInput | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      endTime: 0,
+      transactionId: "",
+      address: "",
+      chainId: chainId ?? 0,
+      tournamentId: currentTournament?.id ?? "",
+      settings: buildContestSettings(
+        chainId ?? 0,
+        platformTokenAddress || "",
+        platformTokenSymbol ?? ""
+      ),
+      description: undefined,
+      userGroupId: undefined,
+    });
+  };
+
   const {
     execute,
     isProcessing,
@@ -58,18 +109,13 @@ export const CreateContestForm = () => {
 
       setLoading(true);
       try {
-        // Extract contest address from transaction logs
         let contestAddress: string | undefined;
-
-        // Get the contest factory address to find relevant logs
         const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
 
-        // Parse through receipts and logs to find ContestCreated event
         if (statusData.receipts && statusData.receipts.length > 0) {
           for (const receipt of statusData.receipts) {
             if (receipt.logs && receipt.logs.length > 0) {
               for (const log of receipt.logs) {
-                // Check if this log is from the ContestFactory
                 if (log.address?.toLowerCase() === contestFactoryAddress?.toLowerCase()) {
                   try {
                     const decodedLog = decodeEventLog({
@@ -78,7 +124,6 @@ export const CreateContestForm = () => {
                       topics: log.topics,
                     });
 
-                    // Check if this is the ContestCreated event
                     if (
                       decodedLog.eventName === "ContestCreated" &&
                       decodedLog.args &&
@@ -86,11 +131,9 @@ export const CreateContestForm = () => {
                       "contest" in decodedLog.args
                     ) {
                       contestAddress = decodedLog.args.contest as string;
-                      console.log("Found contest address:", contestAddress);
                       break;
                     }
                   } catch (decodeError) {
-                    // Skip logs that don't match the ABI
                     console.debug("Could not decode log, skipping:", decodeError);
                   }
                 }
@@ -104,7 +147,6 @@ export const CreateContestForm = () => {
           throw new Error("No contest address found in transaction logs");
         }
 
-        // Create contest in backend using mutation
         createContestMutation.mutate(
           {
             ...pendingContestData,
@@ -113,12 +155,10 @@ export const CreateContestForm = () => {
           },
           {
             onSuccess: (contest) => {
-              // Reset form after successful submission
-              setFormData(defaultFormData);
+              resetForm();
+              setExpiryDaysAfterTournament(defaultExpiryDaysAfterTournament);
               setPendingContestData(null);
               setLoading(false);
-
-              // Redirect to contest page
               navigate(`/contest/${contest.id}`);
             },
             onError: (err) => {
@@ -141,52 +181,15 @@ export const CreateContestForm = () => {
     },
   });
 
-  // Get parameters from environment variables (MUST be before defaultFormData)
-  const oracleFee = Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500;
-  // liquidityParameter controls LMSR price sensitivity
-  // Recommended: 10-50 CUT = 2.5e18 | 50-100 CUT = 5e18 | 100-500 CUT = 2.5e19 | 500+ CUT = 5e19
-  const liquidityParameter = import.meta.env.VITE_LIQUIDITY_PARAMETER || "5000000000000000000";
-  const demandSensitivity = Number(import.meta.env.VITE_DEMAND_SENSITIVITY_BPS) || 100;
-  const prizeShareBps = Number(import.meta.env.VITE_PRIZE_SHARE_BPS) || 750; // 7.5% default
-  const userShareBps = Number(import.meta.env.VITE_USER_SHARE_BPS) || 750; // 7.5% default
-  const targetPrimaryShareBps = Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000; // 60% default
-  const maxCrossSubsidyBps = Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500; // 15% default
+  const patchSettings = useCallback((patch: Partial<ContestSettings>) => {
+    setFormData((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, ...patch },
+    }));
+  }, []);
 
-  // Form management
-  const defaultFormData: CreateContestInput = {
-    name: "",
-    endTime: 0,
-    transactionId: "",
-    address: "",
-    chainId: chainId ?? 0,
-    tournamentId: currentTournament?.id ?? "",
-    settings: {
-      fee: 10,
-      contestType: "PUBLIC",
-      chainId: chainId ?? 0,
-      platformTokenAddress: (platformTokenAddress || "") as `0x${string}`,
-      platformTokenSymbol: platformTokenSymbol ?? "",
-      oracleFee: oracleFee,
-      oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-      liquidityParameter: liquidityParameter,
-      demandSensitivity: demandSensitivity,
-      prizeShareBps: prizeShareBps,
-      userShareBps: userShareBps,
-      targetPrimaryShareBps: targetPrimaryShareBps,
-      maxCrossSubsidyBps: maxCrossSubsidyBps,
-    },
-    description: undefined,
-    userGroupId: undefined,
-  };
-  const [formData, setFormData] = useState<CreateContestInput>(defaultFormData);
-  const [pendingContestData, setPendingContestData] = useState<CreateContestInput | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Effect to handle pending contest data state
   useEffect(() => {
     if (pendingContestData && isConfirmed) {
-      // The onSuccess callback in useCreateContest will handle the rest
       setPendingContestData(null);
     }
   }, [pendingContestData, isConfirmed]);
@@ -195,61 +198,72 @@ export const CreateContestForm = () => {
     e.preventDefault();
     setError(null);
 
-    // Get tournament endTime, add 7 days
-    const endTime = new Date(currentTournament?.endDate ?? "").getTime() + 7 * 24 * 60 * 60 * 1000;
+    const s = formData.settings;
+    const oracle = s.oracle.trim();
+    if (!oracle || !isAddress(oracle)) {
+      setError("Enter a valid oracle address.");
+      return;
+    }
 
-    // Store the form data for later use in the API call
-    setPendingContestData({
+    if (s.oracleFeeBps < 0 || s.oracleFeeBps > 1000) {
+      setError("Oracle fee must be between 0 and 1000 basis points (0–10%).");
+      return;
+    }
+
+    if (s.positionBonusShareBps < 0 || s.positionBonusShareBps > 10000) {
+      setError("Position bonus share must be between 0 and 10000 basis points.");
+      return;
+    }
+    if (s.targetPrimaryShareBps < 0 || s.targetPrimaryShareBps > 10000) {
+      setError("Target primary share must be between 0 and 10000 basis points.");
+      return;
+    }
+    if (s.maxCrossSubsidyBps < 0 || s.maxCrossSubsidyBps > 10000) {
+      setError("Max cross-subsidy must be between 0 and 10000 basis points.");
+      return;
+    }
+
+    const tournamentEndMs = new Date(currentTournament?.endDate ?? "").getTime();
+    if (Number.isNaN(tournamentEndMs)) {
+      setError("No valid tournament end date; cannot set contest expiry.");
+      return;
+    }
+
+    const endTime = tournamentEndMs + expiryDaysAfterTournament * 24 * 60 * 60 * 1000;
+
+    const paymentToken = platformTokenAddress || "";
+    if (!paymentToken) {
+      setError("Payment token is not configured.");
+      return;
+    }
+
+    const pending: CreateContestInput = {
       ...formData,
       endTime,
-      tournamentId: currentTournament?.id ?? "", // Ensure tournamentId is preserved
-      chainId: chainId ?? 0, // Ensure chainId is preserved
-      userGroupId: formData.userGroupId || undefined, // Ensure userGroupId is preserved
+      tournamentId: currentTournament?.id ?? "",
+      chainId: chainId ?? 0,
+      userGroupId: formData.userGroupId || undefined,
       settings: {
-        ...formData.settings,
-        fee: formData.settings?.fee ?? 10,
-        contestType: formData.settings?.contestType ?? "PUBLIC",
-        platformTokenAddress: (platformTokenAddress || "") as `0x${string}`,
-        platformTokenSymbol: platformTokenSymbol ?? "",
+        ...s,
+        paymentTokenAddress: paymentToken,
+        paymentTokenSymbol: platformTokenSymbol ?? "",
+        oracle,
         chainId: chainId ?? 0,
-        oracleFee: oracleFee,
-        oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-        liquidityParameter: liquidityParameter,
-        demandSensitivity: demandSensitivity,
-        prizeShareBps: prizeShareBps,
-        userShareBps: userShareBps,
-        targetPrimaryShareBps: targetPrimaryShareBps,
-        maxCrossSubsidyBps: maxCrossSubsidyBps,
       },
-    });
+    };
 
-    console.log("Initiating blockchain transaction with data:", {
-      name: formData.name,
-      depositAmount: formData.settings?.fee?.toString() ?? "0",
-      endTime,
-      oracle: import.meta.env.VITE_ORACLE_ADDRESS,
-      oracleFee,
-      liquidityParameter,
-      demandSensitivity,
-      positionBonusShareBps: userShareBps,
-      targetPrimaryShareBps,
-      maxCrossSubsidyBps,
-    });
+    setPendingContestData(pending);
 
-    // Create and execute the contest creation calls
-    // Convert fee to bigint with 18 decimals (platform token)
-    const depositAmount = BigInt(Math.floor((formData.settings?.fee ?? 10) * 1e18));
+    const primaryDepositAmount = BigInt(Math.floor(s.primaryDeposit * 1e18));
     const calls = createContestCalls(
-      platformTokenAddress as string, // paymentToken
-      import.meta.env.VITE_ORACLE_ADDRESS as string, // oracle
-      depositAmount, // contestantDepositAmount
-      oracleFee, // oracleFee in bps
-      BigInt(Math.floor(endTime / 1000)), // expiry timestamp (seconds)
-      BigInt(liquidityParameter), // liquidityParameter
-      demandSensitivity, // demandSensitivity in bps
-      userShareBps, // positionBonusShareBps (portion to position bonuses)
-      targetPrimaryShareBps, // targetPrimaryShareBps (60% target for primary pool)
-      maxCrossSubsidyBps // maxCrossSubsidyBps (15% max reallocation per deposit)
+      paymentToken,
+      oracle,
+      primaryDepositAmount,
+      s.oracleFeeBps,
+      BigInt(Math.floor(endTime / 1000)),
+      s.positionBonusShareBps,
+      s.targetPrimaryShareBps,
+      s.maxCrossSubsidyBps
     );
 
     await execute(calls);
@@ -265,15 +279,16 @@ export const CreateContestForm = () => {
     }));
   };
 
+  const s = formData.settings;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto p-4">
-      {/* Editable Section */}
       <div className="space-y-4 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-        <h3 className="text-lg font-semibold text-blue-900">Editable Parameters</h3>
+        <h3 className="text-lg font-semibold text-blue-900">Contest</h3>
 
         <div className="space-y-2">
           <label htmlFor="name" className="block font-medium">
-            Contest Name
+            Name
           </label>
           <input
             type="text"
@@ -288,7 +303,7 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="userGroupId" className="block font-medium">
-            User Group (Optional)
+            User group (optional)
           </label>
           <select
             id="userGroupId"
@@ -302,44 +317,27 @@ export const CreateContestForm = () => {
             }}
             className="w-full p-2 border rounded-md"
           >
-            <option value="">None (Public Contest)</option>
+            <option value="">None (public)</option>
             {userGroupsData?.userGroups?.map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name}
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-600 mt-1">
-            Select a user group to make this contest private to group members only. Leave as "None"
-            for a public contest.
-          </p>
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="settings.fee" className="block font-medium">
-            Entry Fee (Contestant Deposit Amount)
+          <label htmlFor="primaryDeposit" className="block font-medium">
+            Primary deposit (token amount, 18 decimals on-chain)
           </label>
           <div className="relative">
             <input
               type="number"
-              id="settings.fee"
-              name="settings.fee"
-              value={formData.settings?.fee ?? 0}
-              onChange={(e) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  settings: {
-                    ...prev.settings,
-                    fee: Number(e.target.value),
-                    contestType: prev.settings?.contestType ?? "PUBLIC",
-                    platformTokenAddress: prev.settings?.platformTokenAddress ?? "",
-                    platformTokenSymbol: prev.settings?.platformTokenSymbol ?? "",
-                    chainId: prev.settings?.chainId ?? 0,
-                  },
-                }));
-              }}
+              id="primaryDeposit"
               min="0"
               step="0.01"
+              value={s.primaryDeposit}
+              onChange={(e) => patchSettings({ primaryDeposit: Number(e.target.value) })}
               required
               className="w-full p-2 border rounded-md pr-12"
             />
@@ -350,63 +348,123 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
-          <label className="block font-medium">Contest Expiry</label>
+          <label htmlFor="expiryDaysAfterTournament" className="block font-medium">
+            Days after tournament end (expiry = tournament end + this)
+          </label>
+          <input
+            type="number"
+            id="expiryDaysAfterTournament"
+            min={0}
+            step={1}
+            value={expiryDaysAfterTournament}
+            onChange={(e) => setExpiryDaysAfterTournament(Number(e.target.value) || 0)}
+            className="w-full p-2 border rounded-md"
+          />
           <div className="p-2 bg-white border rounded-md text-sm">
             {currentTournament?.endDate
               ? new Date(
-                  new Date(currentTournament.endDate).getTime() + 7 * 24 * 60 * 60 * 1000
+                  new Date(currentTournament.endDate).getTime() +
+                    expiryDaysAfterTournament * 24 * 60 * 60 * 1000
                 ).toLocaleString()
               : "Tournament not selected"}
           </div>
-          <div className="text-sm text-gray-600">
-            Based on tournament end:{" "}
+          <p className="text-sm text-gray-600">
+            Tournament end:{" "}
             {currentTournament?.endDate
               ? new Date(currentTournament.endDate).toLocaleString()
-              : "Not available"}{" "}
-            + 7 days
-          </div>
+              : "Not available"}
+          </p>
         </div>
       </div>
 
-      {/* Read-Only Parameters Section */}
       <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900">Contract Parameters (Read-Only)</h3>
+        <h3 className="text-lg font-semibold text-gray-900">ContestController constructor</h3>
 
         <div className="space-y-2">
-          <label className="block font-medium">Payment Token Address</label>
+          <span className="block font-medium">Payment token</span>
           <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
             {platformTokenAddress || "Not configured"}
           </div>
-          <div className="text-sm text-gray-600">Symbol: {platformTokenSymbol}</div>
+          <p className="text-sm text-gray-600">{platformTokenSymbol}</p>
         </div>
 
         <div className="space-y-2">
-          <label className="block font-medium">Oracle Address</label>
-          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
-            {import.meta.env.VITE_ORACLE_ADDRESS || "Not configured"}
-          </div>
+          <label htmlFor="oracle" className="block font-medium">
+            Oracle
+          </label>
+          <input
+            type="text"
+            id="oracle"
+            value={s.oracle}
+            onChange={(e) => patchSettings({ oracle: e.target.value })}
+            required
+            className="w-full p-2 border rounded-md font-mono text-sm"
+            placeholder="0x…"
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="block font-medium">Oracle Fee</label>
-          <div className="p-2 bg-gray-100 rounded-md">
-            {oracleFee} basis points ({(oracleFee / 100).toFixed(2)}%)
-          </div>
+          <label htmlFor="oracleFeeBps" className="block font-medium">
+            Oracle fee BPS (0–1000)
+          </label>
+          <input
+            type="number"
+            id="oracleFeeBps"
+            min={0}
+            max={1000}
+            step={1}
+            value={s.oracleFeeBps}
+            onChange={(e) => patchSettings({ oracleFeeBps: Number(e.target.value) })}
+            className="w-full p-2 border rounded-md"
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="block font-medium">Liquidity Parameter</label>
-          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs">{liquidityParameter}</div>
-          <div className="text-xs text-gray-500">
-            Controls LMSR price sensitivity (higher = more stable prices)
-          </div>
+          <label htmlFor="positionBonusShareBps" className="block font-medium">
+            Position bonus share BPS (0–10000)
+          </label>
+          <input
+            type="number"
+            id="positionBonusShareBps"
+            min={0}
+            max={10000}
+            step={1}
+            value={s.positionBonusShareBps}
+            onChange={(e) => patchSettings({ positionBonusShareBps: Number(e.target.value) })}
+            className="w-full p-2 border rounded-md"
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="block font-medium">Demand Sensitivity</label>
-          <div className="p-2 bg-gray-100 rounded-md">
-            {demandSensitivity} basis points ({(demandSensitivity / 100).toFixed(2)}%)
-          </div>
+          <label htmlFor="targetPrimaryShareBps" className="block font-medium">
+            Target primary share BPS (0–10000)
+          </label>
+          <input
+            type="number"
+            id="targetPrimaryShareBps"
+            min={0}
+            max={10000}
+            step={1}
+            value={s.targetPrimaryShareBps}
+            onChange={(e) => patchSettings({ targetPrimaryShareBps: Number(e.target.value) })}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="maxCrossSubsidyBps" className="block font-medium">
+            Max cross-subsidy BPS (0–10000)
+          </label>
+          <input
+            type="number"
+            id="maxCrossSubsidyBps"
+            min={0}
+            max={10000}
+            step={1}
+            value={s.maxCrossSubsidyBps}
+            onChange={(e) => patchSettings({ maxCrossSubsidyBps: Number(e.target.value) })}
+            className="w-full p-2 border rounded-md"
+          />
         </div>
       </div>
 
@@ -427,17 +485,13 @@ export const CreateContestForm = () => {
         </button>
       </div>
 
-      {/* Add status display */}
       <div className="mt-2 text-sm text-center text-red-500">
-        {/* Transaction error */}
         {(transactionError || isFailed) && (
           <div>
             {transactionError ||
               "The transaction was rejected or failed to execute. Please try again."}
           </div>
         )}
-
-        {/* Server error */}
         {error && <div>Server Error: {error}</div>}
       </div>
     </form>

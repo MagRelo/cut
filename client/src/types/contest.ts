@@ -15,21 +15,41 @@ export function arePrimaryActionsLocked(contestStatus: ContestStatus): boolean {
 export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean {
   return contestStatus !== "OPEN" && contestStatus !== "ACTIVE";
 }
+
+/**
+ * Mirrors immutable `ContestController` constructor parameters (see on-chain `paymentToken()`, `oracle()`, etc.).
+ * Expiry is stored on the contest row as `endTime` (`_expiryTimestamp` on-chain).
+ */
 export interface ContestSettings {
-  fee: number;
-  maxEntry?: number;
   contestType: ContestType;
-  platformTokenAddress: string;
-  platformTokenSymbol: string;
   chainId: number;
-  oracleFee?: number; // Oracle fee in basis points (100 = 1%)
-  oracle?: string; // Oracle address
-  liquidityParameter?: string; // LMSR liquidity parameter
-  demandSensitivity?: number; // Demand sensitivity in basis points
-  prizeShareBps?: number; // Prize pool share in basis points
-  userShareBps?: number; // User position bonus share in basis points
-  targetPrimaryShareBps?: number; // Target primary pool share in basis points
-  maxCrossSubsidyBps?: number; // Max cross-subsidy in basis points
+  maxEntry?: number;
+
+  /** `_paymentToken` */
+  paymentTokenAddress: string;
+  /** ERC-20 symbol at creation (display; token metadata is not in the contest contract). */
+  paymentTokenSymbol: string;
+
+  /** `_oracle` */
+  oracle: string;
+
+  /**
+   * `_primaryDepositAmount` in human token units (18 decimals on chain).
+   * Same value used when calling `ContestFactory.createContest`.
+   */
+  primaryDeposit: number;
+
+  /** `_oracleFeeBps` */
+  oracleFeeBps: number;
+
+  /** `_positionBonusShareBps` */
+  positionBonusShareBps: number;
+
+  /** `_targetPrimaryShareBps` */
+  targetPrimaryShareBps: number;
+
+  /** `_maxCrossSubsidyBps` */
+  maxCrossSubsidyBps: number;
 }
 
 export interface Contest {
@@ -63,14 +83,13 @@ export interface Contest {
   };
 }
 
-// Optional: Create a type for creating a new contest
 export interface CreateContestInput {
   name: string;
   endTime: number;
   tournamentId: string;
   transactionId: string;
   address: string;
-  chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
+  chainId: number;
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;

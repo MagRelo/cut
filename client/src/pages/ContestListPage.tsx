@@ -22,8 +22,8 @@ export const Contests: React.FC = () => {
   const contests = useMemo(() => {
     const list = contestsWithLineupsData ?? [];
     return [...list].sort((a, b) => {
-      const feeA = a.settings?.fee ?? 0;
-      const feeB = b.settings?.fee ?? 0;
+      const feeA = a.settings?.primaryDeposit ?? 0;
+      const feeB = b.settings?.primaryDeposit ?? 0;
       return feeB - feeA;
     });
   }, [contestsWithLineupsData]);

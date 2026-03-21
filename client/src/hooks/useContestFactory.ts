@@ -4,7 +4,7 @@ import { getContractAddress } from "../utils/blockchainUtils";
 import ContestFactoryContract from "../utils/contracts/ContestFactory.json";
 
 interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: any) => void | Promise<void>;
+  onSuccess?: (data: unknown) => void | Promise<void>;
   onError?: (error: Error | string) => void;
   onSettled?: () => void;
 }
@@ -18,17 +18,16 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
 
   const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
 
+  /** Matches `ContestFactory.createContest(address,address,uint256,uint256,uint256,uint256,uint256,uint256)`. */
   const createContestCalls = (
     paymentToken: string,
     oracle: string,
-    contestantDepositAmount: bigint,
-    oracleFee: number,
-    expiry: bigint,
-    liquidityParameter: bigint,
-    demandSensitivity: number,
+    primaryDepositAmount: bigint,
+    oracleFeeBps: number,
+    expiryTimestamp: bigint,
     positionBonusShareBps: number,
-    targetPrimaryShareBps: number = 6000,
-    maxCrossSubsidyBps: number = 1500
+    targetPrimaryShareBps: number,
+    maxCrossSubsidyBps: number,
   ) => {
     return [
       {
@@ -36,14 +35,12 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
         args: [
           paymentToken as `0x${string}`,
           oracle as `0x${string}`,
-          contestantDepositAmount,
-          oracleFee,
-          expiry,
-          liquidityParameter,
-          demandSensitivity,
-          positionBonusShareBps,
-          targetPrimaryShareBps,
-          maxCrossSubsidyBps,
+          primaryDepositAmount,
+          BigInt(oracleFeeBps),
+          expiryTimestamp,
+          BigInt(positionBonusShareBps),
+          BigInt(targetPrimaryShareBps),
+          BigInt(maxCrossSubsidyBps),
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,
