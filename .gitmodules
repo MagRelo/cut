@@ -1,0 +1,9 @@
+[submodule "contracts/lib/yieldToken"]
+	path = contracts/lib/yieldToken
+	url = https://github.com/MagRelo/yieldToken.git
+[submodule "contracts/lib/contestCatalyst"]
+	path = contracts/lib/contestCatalyst
+	url = https://github.com/MagRelo/contestCatalyst.git
+[submodule "contracts/lib/referralTree"]
+	path = contracts/lib/referralTree
+	url = https://github.com/MagRelo/referralTree.git
