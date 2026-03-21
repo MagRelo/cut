@@ -1,7 +1,9 @@
 {
-  "paymentTokenAddress": "0x13f08EFFf6A27658a44c56Ae65b0585C2C58eA34",
-  "platformTokenAddress": "0x7B68bE1128bac69Ef12fD3F04D53d29114Ba2D33",
-  "depositManagerAddress": "0xC65A276879C37d35cF3895AC17b50190377C8ba9",
-  "contestFactoryAddress": "0x1d818155Ae3adD80509602c3f1B01C1342609005",
-  "aavePoolAddress": "0x94405a6D419c16C1BA6117Dea01A21ecc374375C"
+  "paymentTokenAddress": "0xB6c4036221647844AF7939236570C63b6031D3a4",
+  "platformTokenAddress": "0xD9210CB86d21eeEE1E17E2eF3E4C66f7e0Fb32Ca",
+  "depositManagerAddress": "0x4f3F079f8d46Daf8b61171D807EfA807eacE19e8",
+  "contestFactoryAddress": "0xCf93B64D782dd4b09697AB35e023CEeE38d4e0ab",
+  "aavePoolAddress": "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27",
+  "referralGraphAddress": "0x4CF12652b86c040d3639A2b479Ea0a8233649459",
+  "rewardDistributorAddress": "0xdBE1d769e449D9393157baEA34EC19aa80B66130"
 }

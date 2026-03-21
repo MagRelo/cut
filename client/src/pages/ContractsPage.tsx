@@ -11,38 +11,44 @@ interface Contract {
   blockExplorerUrl?: string;
 }
 
+/** Blockscout contract page with read/write tab (same explorer used for `forge verify` in deploy scripts). */
+const CONTRACT_EXPLORER_TAB = { tab: "read_write_contract" as const };
+
 const ContractsPage: React.FC = () => {
   const chainId = useChainId();
 
-  // Helper function to build contract list from a config
+  // Helper function to build contract list from deploy-generated JSON (sepolia.json / base.json)
   const buildContractList = (
     config: typeof sepoliaConfig | typeof baseConfig,
     networkChainId: number
   ): Contract[] => {
+    const explorer = (address: string) =>
+      getExplorerUrl(address, networkChainId, CONTRACT_EXPLORER_TAB) ?? undefined;
+
     const contracts: Contract[] = [
       {
         name: "Payment Token (USDC)",
         address: config.paymentTokenAddress,
         description: "USDC token contract for payments",
-        blockExplorerUrl: getExplorerUrl(config.paymentTokenAddress, networkChainId) ?? undefined,
+        blockExplorerUrl: explorer(config.paymentTokenAddress),
       },
       {
         name: "Platform Token",
         address: config.platformTokenAddress,
         description: "Platform's native token contract",
-        blockExplorerUrl: getExplorerUrl(config.platformTokenAddress, networkChainId) ?? undefined,
+        blockExplorerUrl: explorer(config.platformTokenAddress),
       },
       {
         name: "Deposit Manager",
         address: config.depositManagerAddress,
         description: "Manages user deposits and withdrawals",
-        blockExplorerUrl: getExplorerUrl(config.depositManagerAddress, networkChainId) ?? undefined,
+        blockExplorerUrl: explorer(config.depositManagerAddress),
       },
       {
         name: "Contest Factory",
         address: config.contestFactoryAddress,
         description: "Factory contract for creating contest contracts",
-        blockExplorerUrl: getExplorerUrl(config.contestFactoryAddress, networkChainId) ?? undefined,
+        blockExplorerUrl: explorer(config.contestFactoryAddress),
       },
     ];
 
@@ -51,7 +57,25 @@ const ContractsPage: React.FC = () => {
         name: "Lending pool",
         address: config.aavePoolAddress,
         description: "Aave V3 Pool (mainnet) or test pool used by DepositManager",
-        blockExplorerUrl: getExplorerUrl(config.aavePoolAddress, networkChainId) ?? undefined,
+        blockExplorerUrl: explorer(config.aavePoolAddress),
+      });
+    }
+
+    const extra = config as Record<string, string | undefined>;
+    if (extra.referralGraphAddress) {
+      contracts.push({
+        name: "Referral Graph",
+        address: extra.referralGraphAddress,
+        description: "Referral tree contract",
+        blockExplorerUrl: explorer(extra.referralGraphAddress),
+      });
+    }
+    if (extra.rewardDistributorAddress) {
+      contracts.push({
+        name: "Reward Distributor",
+        address: extra.rewardDistributorAddress,
+        description: "Referral reward distribution",
+        blockExplorerUrl: explorer(extra.rewardDistributorAddress),
       });
     }
 
@@ -119,7 +143,7 @@ const ContractsPage: React.FC = () => {
                       d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                     />
                   </svg>
-                  <span className="hidden sm:inline">View on Block Explorer</span>
+                  <span className="hidden sm:inline">View on Blockscout</span>
                   <span className="sm:hidden">View</span>
                 </a>
               </div>
@@ -143,7 +167,7 @@ const ContractsPage: React.FC = () => {
           </svg>
           <div className="min-w-0 flex-1">
             <p className="text-xs sm:text-sm text-blue-600 break-all">
-              Block Explorer:{" "}
+              Blockscout:{" "}
               <a
                 href={explorerBaseUrl}
                 target="_blank"
@@ -170,7 +194,7 @@ const ContractsPage: React.FC = () => {
           "Base Mainnet",
           "Production contracts on Base Layer 2",
           baseMainnetContracts,
-          "https://basescan.org",
+          "https://base.blockscout.com",
           chainId === 8453
         )}
 
@@ -180,7 +204,7 @@ const ContractsPage: React.FC = () => {
           "Base Sepolia Testnet",
           "Test contracts on Base Sepolia",
           baseSepoliaContracts,
-          "https://sepolia.basescan.org",
+          "https://base-sepolia.blockscout.com",
           chainId === 84532
         )}
       </div>

@@ -34,9 +34,9 @@ const EXPLORER_CONFIG: BlockchainExplorerConfig = {
   1: { name: "Etherscan", baseUrl: "https://etherscan.io" },
   11155111: { name: "Sepolia Etherscan", baseUrl: "https://sepolia.etherscan.io" },
 
-  // Base
-  8453: { name: "BaseScan", baseUrl: "https://basescan.org" },
-  84532: { name: "Base Sepolia", baseUrl: "https://sepolia.basescan.org" },
+  // Base — Blockscout (matches contract verification in scripts/deploy.js)
+  8453: { name: "Base (Blockscout)", baseUrl: "https://base.blockscout.com" },
+  84532: { name: "Base Sepolia (Blockscout)", baseUrl: "https://base-sepolia.blockscout.com" },
 
   // Polygon
   137: { name: "PolygonScan", baseUrl: "https://polygonscan.com" },
@@ -150,19 +150,34 @@ export function useTokenDecimals(tokenAddress: string | undefined) {
 // BLOCKCHAIN EXPLORER UTILITIES
 // ============================================================================
 
+export type ExplorerAddressOptions = {
+  /** Blockscout tab, e.g. `read_write_contract` for the contract interaction UI */
+  tab?: string;
+};
+
 /**
  * Generates a blockchain explorer URL for a given address and chain ID
  * @param address - The blockchain address (contract or wallet)
  * @param chainId - The chain ID
+ * @param options - Optional query params (e.g. Blockscout `tab`)
  * @returns The full explorer URL or null if chain is not supported
  */
-export function getExplorerUrl(address: string, chainId: number): string | null {
+export function getExplorerUrl(
+  address: string,
+  chainId: number,
+  options?: ExplorerAddressOptions
+): string | null {
   const config = EXPLORER_CONFIG[chainId];
   if (!config) {
     return null;
   }
 
-  return `${config.baseUrl}/address/${address}`;
+  let url = `${config.baseUrl}/address/${address}`;
+  if (options?.tab) {
+    const q = new URLSearchParams({ tab: options.tab });
+    url += `?${q.toString()}`;
+  }
+  return url;
 }
 
 /**

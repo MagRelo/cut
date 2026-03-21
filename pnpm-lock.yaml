@@ -11,6 +11,9 @@ importers:
       concurrently:
         specifier: ^8.2.2
         version: 8.2.2
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
 
   client:
     dependencies:

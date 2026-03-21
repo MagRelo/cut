@@ -40,6 +40,7 @@
     "ssh": "ssh deployer@45.55.136.214"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.4.5"
   }
 }
