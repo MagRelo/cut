@@ -10,10 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
-// Load environment variables from contracts/.env file
 dotenv.config({ path: path.join(projectRoot, "contracts", ".env") });
 
-// Configuration
 const NETWORKS = {
   sepolia: {
     name: "base_sepolia",
@@ -35,7 +33,9 @@ const NETWORKS = {
   },
 };
 
-// Colors for console output
+const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const BASE_MAINNET_CUSDC = "0xb125E6687d4313864e53df431d5425969c15Eb2F";
+
 const colors = {
   reset: "\x1b[0m",
   bright: "\x1b[1m",
@@ -71,7 +71,6 @@ function logInfo(message) {
   log(`ℹ️  ${message}`, "cyan");
 }
 
-// Utility functions
 function runCommand(command, cwd = projectRoot) {
   try {
     logInfo(`Running: ${command}`);
@@ -79,6 +78,7 @@ function runCommand(command, cwd = projectRoot) {
       cwd,
       stdio: "pipe",
       encoding: "utf8",
+      shell: true,
     });
     return output.trim();
   } catch (error) {
@@ -86,6 +86,26 @@ function runCommand(command, cwd = projectRoot) {
     logError(`Error: ${error.message}`);
     throw error;
   }
+}
+
+function getDeployerAddress() {
+  const pk = process.env.PRIVATE_KEY;
+  if (!pk) return null;
+  try {
+    return execSync(`cast wallet address ${pk}`, {
+      cwd: path.join(projectRoot, "contracts"),
+      encoding: "utf8",
+      shell: true,
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function getReferralOracleAddress() {
+  const o = process.env.REFERRAL_ORACLE;
+  if (!o || o === "") return "0x0000000000000000000000000000000000000000";
+  return o;
 }
 
 function loadContractAddresses(network) {
@@ -107,16 +127,16 @@ function loadContractAddresses(network) {
 
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
-  // Map config keys to contract names
   const addresses = {
     MockUSDC: config.paymentTokenAddress,
     PlatformToken: config.platformTokenAddress,
     DepositManager: config.depositManagerAddress,
     ContestFactory: config.contestFactoryAddress,
     MockCompound: config.mockCTokenAddress,
+    ReferralGraph: config.referralGraphAddress,
+    RewardDistributor: config.rewardDistributorAddress,
   };
 
-  // Filter out undefined addresses
   const filteredAddresses = Object.fromEntries(
     Object.entries(addresses).filter(
       ([_, addr]) => addr && addr !== "0x0000000000000000000000000000000000000000"
@@ -132,6 +152,44 @@ function loadContractAddresses(network) {
   return filteredAddresses;
 }
 
+function buildVerifyCommand(network, contractName, address, addresses) {
+  const deployer = getDeployerAddress();
+  const referralOracle = getReferralOracleAddress();
+
+  const paths = {
+    PlatformToken: "lib/yieldToken/src/PlatformToken.sol",
+    DepositManager: "lib/yieldToken/src/DepositManager.sol",
+    ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
+    ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
+    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    MockUSDC: "src/mocks/MockUSDC.sol",
+    MockCompound: "src/mocks/MockCompound.sol",
+  };
+
+  const contractPath = paths[contractName];
+  if (!contractPath) return null;
+
+  let constructorArgs = "";
+  if (contractName === "DepositManager") {
+    const usdc = addresses.MockUSDC || BASE_MAINNET_USDC;
+    const ctoken = addresses.MockCompound || BASE_MAINNET_CUSDC;
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${ctoken})`;
+  } else if (contractName === "MockCompound") {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
+  } else if (contractName === "PlatformToken") {
+    const isSepolia = network.name === "base_sepolia";
+    const name = isSepolia ? "xCUT" : "Cut Platform Token";
+    const sym = isSepolia ? "xCUT" : "CUT";
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
+  } else if (contractName === "ReferralGraph" && deployer) {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address)" ${deployer} ${referralOracle})`;
+  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${deployer} ${addresses.ReferralGraph} ${referralOracle})`;
+  }
+
+  return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
+}
+
 function verifyContracts(network, addresses) {
   logStep(`Verifying contracts on ${network.blockscoutUrl}`);
 
@@ -139,42 +197,42 @@ function verifyContracts(network, addresses) {
   let successCount = 0;
   let failCount = 0;
 
-  for (const [contractName, address] of Object.entries(addresses)) {
-    if (address && address !== "0x0000000000000000000000000000000000000000") {
-      try {
-        logInfo(`Verifying ${contractName} at ${address}`);
+  const order = [
+    "PlatformToken",
+    "DepositManager",
+    "MockUSDC",
+    "MockCompound",
+    "ContestFactory",
+    "ReferralGraph",
+    "RewardDistributor",
+  ];
 
-        // Determine contract path based on contract name
-        let contractPath = `src/${contractName}.sol`;
-        if (contractName === "MockUSDC" || contractName === "MockCompound") {
-          contractPath = `src/mocks/${contractName}.sol`;
-        }
+  for (const contractName of order) {
+    const address = addresses[contractName];
+    if (!address || address === "0x0000000000000000000000000000000000000000") continue;
 
-        // Get constructor arguments if needed
-        let constructorArgs = "";
-        if (contractName === "DepositManager") {
-          constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${
-            addresses.MockUSDC || addresses.USDC
-          } ${addresses.PlatformToken} ${addresses.MockCompound || addresses.CUSDC})`;
-        } else if (contractName === "MockCompound") {
-          constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
-        }
+    if (
+      network.name === "base" &&
+      (contractName === "MockUSDC" || contractName === "MockCompound")
+    ) {
+      logInfo(`Skipping verify for ${contractName} on Base (not deployed mocks)`);
+      continue;
+    }
 
-        // Use Blockscout verifier
-        const verifyCommand = `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
+    const cmd = buildVerifyCommand(network, contractName, address, addresses);
+    if (!cmd) {
+      logWarning(`No verify mapping for ${contractName}, skipping`);
+      continue;
+    }
 
-        try {
-          runCommand(verifyCommand, contractsDir);
-          logSuccess(`Verified ${contractName}`);
-          successCount++;
-        } catch (error) {
-          logWarning(`Failed to verify ${contractName}: ${error.message}`);
-          failCount++;
-        }
-      } catch (error) {
-        logWarning(`Skipping verification for ${contractName}: ${error.message}`);
-        failCount++;
-      }
+    try {
+      logInfo(`Verifying ${contractName} at ${address}`);
+      runCommand(cmd, contractsDir);
+      logSuccess(`Verified ${contractName}`);
+      successCount++;
+    } catch (error) {
+      logWarning(`Failed to verify ${contractName}: ${error.message}`);
+      failCount++;
     }
   }
 
@@ -198,7 +256,6 @@ function main() {
   );
 
   try {
-    // Load contract addresses from config
     const addresses = loadContractAddresses(network);
 
     if (Object.keys(addresses).length === 0) {
@@ -206,7 +263,6 @@ function main() {
       process.exit(1);
     }
 
-    // Verify contracts
     const { successCount, failCount } = verifyContracts(network, addresses);
 
     logStep("Verification Summary");
@@ -229,7 +285,6 @@ function main() {
   }
 }
 
-// Run the script
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }

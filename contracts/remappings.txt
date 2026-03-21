@@ -1,3 +1,5 @@
-@openzeppelin/=lib/openzeppelin-contracts/
 forge-std/=lib/forge-std/src/
-ds-test/=lib/forge-std/lib/ds-test/src/
+solmate/=lib/yieldToken/lib/solmate/src/
+solady/=lib/contestCatalyst/lib/solady/src/
+aave-v3/=lib/yieldToken/lib/aave-v3-core/contracts/
+@openzeppelin/contracts/=lib/referralTree/lib/openzeppelin-contracts/contracts/

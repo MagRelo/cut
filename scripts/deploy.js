@@ -10,10 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
-// Load environment variables from contracts/.env file
 dotenv.config({ path: path.join(projectRoot, "contracts", ".env") });
 
-// Configuration
 const NETWORKS = {
   sepolia: {
     name: "base_sepolia",
@@ -37,7 +35,21 @@ const NETWORKS = {
   },
 };
 
-// Colors for console output
+const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const BASE_MAINNET_CUSDC = "0xb125E6687d4313864e53df431d5425969c15Eb2F";
+
+/** Source artifact under contracts/out/<dir>/<file> copied to client + server as destName */
+const ARTIFACT_COPY = [
+  { dir: "DepositManager.sol", file: "DepositManager.json", dest: "DepositManager.json" },
+  { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
+  { dir: "ContestController.sol", file: "ContestController.json", dest: "Contest.json" },
+  { dir: "PlatformToken.sol", file: "PlatformToken.json", dest: "PlatformToken.json" },
+  { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
+  { dir: "MockCompound.sol", file: "MockCompound.json", dest: "MockCompound.json" },
+  { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
+  { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
+];
+
 const colors = {
   reset: "\x1b[0m",
   bright: "\x1b[1m",
@@ -73,7 +85,6 @@ function logInfo(message) {
   log(`ℹ️  ${message}`, "cyan");
 }
 
-// Utility functions
 function runCommand(command, cwd = projectRoot) {
   try {
     logInfo(`Running: ${command}`);
@@ -81,6 +92,7 @@ function runCommand(command, cwd = projectRoot) {
       cwd,
       stdio: "pipe",
       encoding: "utf8",
+      shell: true,
     });
     return output.trim();
   } catch (error) {
@@ -90,36 +102,36 @@ function runCommand(command, cwd = projectRoot) {
   }
 }
 
+function getDeployerAddress() {
+  const pk = process.env.PRIVATE_KEY;
+  if (!pk) return null;
+  try {
+    return execSync(`cast wallet address ${pk}`, {
+      cwd: path.join(projectRoot, "contracts"),
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function getReferralOracleAddress() {
+  const o = process.env.REFERRAL_ORACLE;
+  if (!o || o === "") return "0x0000000000000000000000000000000000000000";
+  return o;
+}
+
 function parseDeploymentOutput(output) {
   const addresses = {};
   const lines = output.split("\n");
 
   for (const line of lines) {
-    if (line.includes("deployed to:") || line.includes("deployed at:")) {
-      // Handle different output formats
-      let contractName, address;
+    if (!line.includes("deployed to:") && !line.includes("deployed at:")) continue;
 
-      // Format: "ContractName deployed to: 0x..."
-      const match1 = line.match(/(\w+)\s+deployed\s+(?:to|at):\s*(0x[a-fA-F0-9]{40})/);
-      if (match1) {
-        contractName = match1[1];
-        address = match1[2];
-      } else {
-        // Format: "ContractName deployed to: 0x..." (alternative parsing)
-        const parts = line.split("deployed");
-        if (parts.length >= 2) {
-          contractName = parts[0].trim();
-          const addressPart = parts[1].split(":");
-          if (addressPart.length >= 2) {
-            address = addressPart[1].trim();
-          }
-        }
-      }
-
-      if (contractName && address) {
-        addresses[contractName] = address;
-        logInfo(`Parsed: ${contractName} -> ${address}`);
-      }
+    const match = line.match(/(\w+)\s+deployed\s+(?:to|at):\s*(0x[a-fA-F0-9]{40})/);
+    if (match) {
+      addresses[match[1]] = match[2];
+      logInfo(`Parsed: ${match[1]} -> ${match[2]}`);
     }
   }
 
@@ -129,15 +141,21 @@ function parseDeploymentOutput(output) {
 function updateConfigFiles(network, addresses) {
   logStep(`Updating configuration files for ${network.name}`);
 
+  const isBase = network.name === "base";
+  const paymentTokenAddress =
+    addresses.MockUSDC || addresses.USDC || (isBase ? BASE_MAINNET_USDC : undefined);
+  const mockCTokenAddress = addresses.MockCompound || (isBase ? BASE_MAINNET_CUSDC : undefined);
+
   const config = {
-    paymentTokenAddress: addresses.MockUSDC || addresses.USDC,
+    paymentTokenAddress,
     platformTokenAddress: addresses.PlatformToken,
     depositManagerAddress: addresses.DepositManager,
     contestFactoryAddress: addresses.ContestFactory,
-    mockCTokenAddress: addresses.MockCompound,
+    mockCTokenAddress,
+    referralGraphAddress: addresses.ReferralGraph,
+    rewardDistributorAddress: addresses.RewardDistributor,
   };
 
-  // Update client config
   const clientConfigPath = path.join(
     projectRoot,
     "client",
@@ -149,7 +167,6 @@ function updateConfigFiles(network, addresses) {
   fs.writeFileSync(clientConfigPath, JSON.stringify(config, null, 2));
   logSuccess(`Updated client config: ${clientConfigPath}`);
 
-  // Update server config
   const serverConfigPath = path.join(
     projectRoot,
     "server",
@@ -170,7 +187,6 @@ function copyContractArtifacts() {
   const serverContractsDir = path.join(projectRoot, "server", "src", "contracts");
   const clientContractsDir = path.join(projectRoot, "client", "src", "utils", "contracts");
 
-  // Ensure directories exist
   if (!fs.existsSync(serverContractsDir)) {
     fs.mkdirSync(serverContractsDir, { recursive: true });
   }
@@ -178,44 +194,33 @@ function copyContractArtifacts() {
     fs.mkdirSync(clientContractsDir, { recursive: true });
   }
 
-  // List of contracts to copy artifacts for
-  const contractsToCopy = [
-    "DepositManager",
-    "ContestFactory",
-    "Contest",
-    "PlatformToken",
-    "MockUSDC",
-    "MockCompound",
-  ];
-
   let serverCopiedCount = 0;
   let clientCopiedCount = 0;
 
-  for (const contractName of contractsToCopy) {
-    const artifactPath = path.join(contractsOutDir, `${contractName}.sol`, `${contractName}.json`);
-    const serverDestPath = path.join(serverContractsDir, `${contractName}.json`);
-    const clientDestPath = path.join(clientContractsDir, `${contractName}.json`);
+  for (const { dir, file, dest } of ARTIFACT_COPY) {
+    const artifactPath = path.join(contractsOutDir, dir, file);
+    const serverDestPath = path.join(serverContractsDir, dest);
+    const clientDestPath = path.join(clientContractsDir, dest);
 
-    if (fs.existsSync(artifactPath)) {
-      try {
-        // Copy to server
-        fs.copyFileSync(artifactPath, serverDestPath);
-        logSuccess(`Copied ${contractName}.json to server`);
-        serverCopiedCount++;
-      } catch (error) {
-        logWarning(`Failed to copy ${contractName}.json to server: ${error.message}`);
-      }
+    if (!fs.existsSync(artifactPath)) {
+      logWarning(`Artifact not found (skip): ${artifactPath}`);
+      continue;
+    }
 
-      try {
-        // Copy to client
-        fs.copyFileSync(artifactPath, clientDestPath);
-        logSuccess(`Copied ${contractName}.json to client`);
-        clientCopiedCount++;
-      } catch (error) {
-        logWarning(`Failed to copy ${contractName}.json to client: ${error.message}`);
-      }
-    } else {
-      logWarning(`Artifact not found for ${contractName} at ${artifactPath}`);
+    try {
+      fs.copyFileSync(artifactPath, serverDestPath);
+      logSuccess(`Copied ${dest} to server`);
+      serverCopiedCount++;
+    } catch (error) {
+      logWarning(`Failed to copy ${dest} to server: ${error.message}`);
+    }
+
+    try {
+      fs.copyFileSync(artifactPath, clientDestPath);
+      logSuccess(`Copied ${dest} to client`);
+      clientCopiedCount++;
+    } catch (error) {
+      logWarning(`Failed to copy ${dest} to client: ${error.message}`);
     }
   }
 
@@ -223,44 +228,83 @@ function copyContractArtifacts() {
   logSuccess(`Copied ${clientCopiedCount} contract artifacts to client`);
 }
 
+function buildVerifyCommand(network, contractName, address, addresses) {
+  const contractsDir = path.join(projectRoot, "contracts");
+  const deployer = getDeployerAddress();
+  const referralOracle = getReferralOracleAddress();
+
+  const paths = {
+    PlatformToken: "lib/yieldToken/src/PlatformToken.sol",
+    DepositManager: "lib/yieldToken/src/DepositManager.sol",
+    ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
+    ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
+    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    MockUSDC: "src/mocks/MockUSDC.sol",
+    MockCompound: "src/mocks/MockCompound.sol",
+  };
+
+  const contractPath = paths[contractName];
+  if (!contractPath) return null;
+
+  let constructorArgs = "";
+  if (contractName === "DepositManager") {
+    const usdc = addresses.MockUSDC || addresses.USDC || BASE_MAINNET_USDC;
+    const ctoken = addresses.MockCompound || addresses.CUSDC || BASE_MAINNET_CUSDC;
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${ctoken})`;
+  } else if (contractName === "MockCompound") {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
+  } else if (contractName === "PlatformToken") {
+    const isSepolia = network.name === "base_sepolia";
+    const name = isSepolia ? "xCUT" : "Cut Platform Token";
+    const sym = isSepolia ? "xCUT" : "CUT";
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
+  } else if (contractName === "ReferralGraph" && deployer) {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address)" ${deployer} ${referralOracle})`;
+  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${deployer} ${addresses.ReferralGraph} ${referralOracle})`;
+  }
+
+  return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
+}
+
 function verifyContracts(network, addresses) {
   logStep(`Verifying contracts on ${network.blockscoutUrl}`);
 
   const contractsDir = path.join(projectRoot, "contracts");
+  const order = [
+    "PlatformToken",
+    "DepositManager",
+    "MockUSDC",
+    "MockCompound",
+    "ContestFactory",
+    "ReferralGraph",
+    "RewardDistributor",
+  ];
 
-  for (const [contractName, address] of Object.entries(addresses)) {
-    if (address && address !== "0x0000000000000000000000000000000000000000") {
-      try {
-        logInfo(`Verifying ${contractName} at ${address}`);
+  for (const contractName of order) {
+    const address = addresses[contractName];
+    if (!address || address === "0x0000000000000000000000000000000000000000") continue;
 
-        // Determine contract path based on contract name
-        let contractPath = `src/${contractName}.sol`;
-        if (contractName === "MockUSDC" || contractName === "MockCompound") {
-          contractPath = `src/mocks/${contractName}.sol`;
-        }
+    if (
+      network.name === "base" &&
+      (contractName === "MockUSDC" || contractName === "MockCompound")
+    ) {
+      logInfo(`Skipping verify for ${contractName} on Base (not deployed mocks)`);
+      continue;
+    }
 
-        // Get constructor arguments if needed
-        let constructorArgs = "";
-        if (contractName === "DepositManager") {
-          constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${
-            addresses.MockUSDC || addresses.USDC
-          } ${addresses.PlatformToken} ${addresses.MockCompound || addresses.CUSDC})`;
-        } else if (contractName === "MockCompound") {
-          constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
-        }
+    const cmd = buildVerifyCommand(network, contractName, address, addresses);
+    if (!cmd) {
+      logWarning(`No verify mapping for ${contractName}, skipping`);
+      continue;
+    }
 
-        // Use Blockscout verifier instead of deprecated Etherscan API V1
-        const verifyCommand = `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
-
-        try {
-          runCommand(verifyCommand, contractsDir);
-          logSuccess(`Verified ${contractName}`);
-        } catch (error) {
-          logWarning(`Failed to verify ${contractName}: ${error.message}`);
-        }
-      } catch (error) {
-        logWarning(`Skipping verification for ${contractName}: ${error.message}`);
-      }
+    try {
+      logInfo(`Verifying ${contractName} at ${address}`);
+      runCommand(cmd, contractsDir);
+      logSuccess(`Verified ${contractName}`);
+    } catch (error) {
+      logWarning(`Failed to verify ${contractName}: ${error.message}`);
     }
   }
 }
@@ -286,7 +330,6 @@ function deployContracts(network) {
 
   const contractsDir = path.join(projectRoot, "contracts");
 
-  // Set network-specific environment variables
   if (network.name === "base_sepolia") {
     if (!process.env.BASE_SEPOLIA_RPC_URL) {
       logError("BASE_SEPOLIA_RPC_URL environment variable is required for sepolia deployment");
@@ -299,11 +342,9 @@ function deployContracts(network) {
     }
   }
 
-  // Run deployment
   const deployCommand = `forge script script/${network.script} --rpc-url ${network.rpcUrl} --broadcast`;
   const output = runCommand(deployCommand, contractsDir);
 
-  // Parse deployment addresses
   const addresses = parseDeploymentOutput(output);
 
   if (Object.keys(addresses).length === 0) {
@@ -313,8 +354,8 @@ function deployContracts(network) {
 
   logSuccess(`Deployed ${Object.keys(addresses).length} contracts`);
   logInfo("Deployed addresses:");
-  Object.entries(addresses).forEach(([name, address]) => {
-    logInfo(`  ${name}: ${address}`);
+  Object.entries(addresses).forEach(([name, addr]) => {
+    logInfo(`  ${name}: ${addr}`);
   });
 
   return addresses;
@@ -335,19 +376,14 @@ function main() {
   log(`${colors.bright}${colors.magenta}🚀 Starting deployment to ${network.name}${colors.reset}`);
 
   try {
-    // Check environment
     checkEnvironment();
 
-    // Deploy contracts
     const addresses = deployContracts(network);
 
-    // Update configuration files
     const config = updateConfigFiles(network, addresses);
 
-    // Copy contract artifacts
     copyContractArtifacts();
 
-    // Verify contracts
     verifyContracts(network, addresses);
 
     logStep("Deployment Summary");
@@ -366,7 +402,6 @@ function main() {
   }
 }
 
-// Run the script
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
