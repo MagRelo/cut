@@ -5,6 +5,16 @@ import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { ContestEntryModal } from "./ContestEntryModal";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+
+const getOrdinalSuffix = (num: number): string => {
+  const j = num % 10;
+  const k = num % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+};
+
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -124,7 +134,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     <div>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-lg font-semibold text-gray-700 mb-1 font-display">Winner Market</h4>
+        <h4 className="text-lg font-semibold text-gray-700 mb-1 font-display">Winner Pool</h4>
       </div>
 
       {/* Info Panel */}
@@ -158,6 +168,9 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             const resolvedLeftBorderColor = isValidHexColor(maybeColor)
               ? maybeColor
               : DEFAULT_USER_COLOR;
+
+            const positionNum = lineup?.position ?? 0;
+            const positionOrdinalSuffix = getOrdinalSuffix(positionNum || 1);
 
             return (
               <div
@@ -193,6 +206,24 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                         return sortedPlayerNames || "No players";
                       })()}
+                    </div>
+                  </div>
+
+                  {/* Middle - Rank (over/under: position / line / pts) */}
+                  <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem]">
+                    <div className="text-sm font-bold text-gray-900 leading-tight tabular-nums">
+                      {positionNum > 0 ? (
+                        <>
+                          {positionNum}
+                          <sup className="text-[9px] font-bold">{positionOrdinalSuffix}</sup>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </div>
+                    <div className="w-full border-t border-gray-300 my-1" aria-hidden />
+                    <div className="text-sm font-semibold text-gray-600 leading-tight tabular-nums">
+                      {lineup?.score ?? 0} pts
                     </div>
                   </div>
 

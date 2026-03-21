@@ -164,7 +164,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Winner Market
+              Winner Pool
             </Tab>
 
             {contest.status === "SETTLED" && (
