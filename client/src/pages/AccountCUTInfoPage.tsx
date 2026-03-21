@@ -13,10 +13,12 @@ import { Send } from "../components/user/Send.tsx";
 import { Receive } from "../components/user/Receive.tsx";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
-import cUSDCContract from "../utils/contracts/cUSDC.json";
 import {
   getContractAddress,
 } from "../utils/blockchainUtils.tsx";
+
+/** Placeholder APY until pool metrics use the live lending market ABI again */
+const PLACEHOLDER_SUPPLY_APY_PERCENT = 3.5;
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -80,72 +82,6 @@ export function CUTInfoPage() {
     ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
     : "0";
 
-  const { data: cUSDCAddress } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "cUSDC",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
-
-  // Get cUSDC utilization rate
-  const { data: cUSDCUtilization } = useReadContract({
-    address: cUSDCAddress as `0x${string}`,
-    abi: cUSDCContract.abi,
-    functionName: "getUtilization",
-    query: {
-      enabled: !!cUSDCAddress,
-    },
-  });
-
-  // Debug logging (remove when confirmed working)
-  // console.log("🔍 Debug Info:");
-  // console.log("depositManagerAddress:", depositManagerAddress);
-  // console.log("cUSDCAddress:", cUSDCAddress);
-  // console.log("cUSDCUtilization:", cUSDCUtilization);
-  // console.log(
-  //   "cUSDCContract ABI functions:",
-  //   cUSDCContract.abi.map((f) => f.name)
-  // );
-
-  // Get cUSDC supply rate using utilization
-  const { data: cUSDCSupplyRate, isLoading: cUSDCSupplyRateLoading } = useReadContract({
-    address: cUSDCAddress as `0x${string}`,
-    abi: cUSDCContract.abi,
-    functionName: "getSupplyRate",
-    args: cUSDCUtilization ? [cUSDCUtilization] : undefined,
-    query: {
-      enabled: !!cUSDCAddress && !!cUSDCUtilization,
-    },
-  });
-
-  // console.log("cUSDCSupplyRate:", cUSDCSupplyRate);
-
-  // Calculate APR from rates (following the example calculation)
-  const secondsPerYear = 31536000n;
-  const weiPerEther = 1000000000000000000n; // 10^18
-
-  const calculateAPR = (ratePerSecond: bigint | undefined): number => {
-    if (!ratePerSecond) return 0;
-
-    // APR = (ratePerSecond * secondsPerYear) / 10^18
-    // Convert to number first to avoid precision issues with bigint division
-    const ratePerSecondNum = Number(ratePerSecond);
-    const secondsPerYearNum = Number(secondsPerYear);
-    const weiPerEtherNum = Number(weiPerEther);
-
-    const apr = (ratePerSecondNum * secondsPerYearNum) / weiPerEtherNum;
-    return apr * 100; // Convert decimal to percentage (0.0315 -> 3.15%)
-  };
-
-  const formattedSupplyAPR = calculateAPR(cUSDCSupplyRate as bigint | undefined);
-
-  // Debug logging (remove when confirmed working)
-  // console.log("📊 APR Calculations:");
-  // console.log("formattedSupplyAPR:", formattedSupplyAPR);
-  // console.log("Raw supply rate:", cUSDCSupplyRate);
-
   return (
     <div className="p-4">
       <Breadcrumbs
@@ -188,7 +124,7 @@ export function CUTInfoPage() {
 
           <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {cUSDCSupplyRateLoading ? "..." : `${formattedSupplyAPR.toFixed(2)}%`}
+              {PLACEHOLDER_SUPPLY_APY_PERCENT.toFixed(2)}%
             </div>
             <div className="text-sm text-gray-600 mt-1">Supply APY</div>
           </div>

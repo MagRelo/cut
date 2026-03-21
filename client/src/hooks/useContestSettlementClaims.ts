@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { formatUnits, type Abi } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 
-import ContestContract from "../utils/contracts/Contest.json";
+import ContestContract from "../utils/contracts/ContestController.json";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useContestPredictionData } from "./useContestPredictionData";
 import type { Contest } from "../types/contest";
@@ -45,7 +45,7 @@ interface UseContestSettlementClaimsResult {
 }
 
 export function useContestSettlementClaims(
-  options: UseContestSettlementClaimsOptions
+  options: UseContestSettlementClaimsOptions,
 ): UseContestSettlementClaimsResult {
   const { contest, contestLineups = [] } = options;
   const { user } = usePortoAuth();
@@ -62,7 +62,7 @@ export function useContestSettlementClaims(
       contestLineups
         .map((lineup) => lineup.entryId)
         .filter((entryId): entryId is string => Boolean(entryId && entryId.length > 0)),
-    [contestLineups]
+    [contestLineups],
   );
 
   const userLineups = useMemo(
@@ -70,11 +70,11 @@ export function useContestSettlementClaims(
       contestLineups.filter((lineup) => lineup.entryId && lineup.userId === user?.id) as Array<
         ContestLineup & { entryId: string }
       >,
-    [contestLineups, user?.id]
+    [contestLineups, user?.id],
   );
 
   const enabledPredictionReads = Boolean(
-    isSettled && contestAddress && entryIds.length > 0 && supportedChainId
+    isSettled && contestAddress && entryIds.length > 0 && supportedChainId,
   );
 
   const predictionData = useContestPredictionData({
@@ -121,17 +121,17 @@ export function useContestSettlementClaims(
       })
       .filter(
         (
-          value
+          value,
         ): value is {
           lineup: ContestLineup & { entryId: string };
           entryId: string;
           entryBigInt: bigint;
-        } => Boolean(value)
+        } => Boolean(value),
       );
   }, [userLineups]);
 
   const shouldFetchPrimary = Boolean(
-    isSettled && contestAddress && supportedChainId && primaryEntries.length > 0
+    isSettled && contestAddress && supportedChainId && primaryEntries.length > 0,
   );
 
   const primaryContracts = useMemo(() => {

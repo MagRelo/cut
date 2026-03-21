@@ -41,12 +41,19 @@ const BASE_MAINNET_AAVE_V3_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
 const BASE_SEPOLIA_USDC = "0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f";
 const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
 
-/** Source artifact under contracts/out/<dir>/<file> copied to client + server as destName */
+/**
+ * ABIs copied to client + server after `forge build`. Matches contracts deployed by
+ * `Deploy_sepolia.s.sol` and `Deploy_base.s.sol`, plus `ContestController` (instances are created
+ * via ContestFactory; not deployed in those root scripts).
+ *
+ * Deploy_sepolia: MockUSDC, PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor
+ * Deploy_base: PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor
+ */
 const ARTIFACT_COPY = [
   { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
   { dir: "DepositManager.sol", file: "DepositManager.json", dest: "DepositManager.json" },
   { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
-  { dir: "ContestController.sol", file: "ContestController.json", dest: "Contest.json" },
+  { dir: "ContestController.sol", file: "ContestController.json", dest: "ContestController.json" },
   { dir: "PlatformToken.sol", file: "PlatformToken.json", dest: "PlatformToken.json" },
   { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
   { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
@@ -174,7 +181,7 @@ function updateConfigFiles(network, addresses) {
     "src",
     "utils",
     "contracts",
-    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`
+    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`,
   );
   fs.writeFileSync(clientConfigPath, JSON.stringify(config, null, 2));
   logSuccess(`Updated client config: ${clientConfigPath}`);
@@ -184,7 +191,7 @@ function updateConfigFiles(network, addresses) {
     "server",
     "src",
     "contracts",
-    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`
+    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`,
   );
   fs.writeFileSync(serverConfigPath, JSON.stringify(config, null, 2));
   logSuccess(`Updated server config: ${serverConfigPath}`);
@@ -379,13 +386,32 @@ function deployContracts(network) {
   return addresses;
 }
 
+/** `forge build` + copy ABIs only (no deploy). Usage: `node scripts/deploy.js copy-artifacts` */
+function copyArtifactsOnly() {
+  const contractsDir = path.join(projectRoot, "contracts");
+  logStep("copy-artifacts: forge build + copy ABIs to client and server");
+  runCommand("forge build", contractsDir);
+  copyContractArtifacts();
+  logSuccess("copy-artifacts finished");
+}
+
 function main() {
   const args = process.argv.slice(2);
+  if (args[0] === "copy-artifacts") {
+    try {
+      copyArtifactsOnly();
+    } catch (error) {
+      logError(`copy-artifacts failed: ${error.message}`);
+      process.exit(1);
+    }
+    return;
+  }
+
   const networkArg = args[0] || "sepolia";
 
   if (!NETWORKS[networkArg]) {
     logError(`Invalid network: ${networkArg}`);
-    logError(`Supported networks: ${Object.keys(NETWORKS).join(", ")}`);
+    logError(`Supported networks: ${Object.keys(NETWORKS).join(", ")}, copy-artifacts`);
     process.exit(1);
   }
 

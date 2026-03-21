@@ -16,7 +16,7 @@ import {
 import { generateEntryId } from "../../utils/entryIdUtils";
 
 // Import contract ABIs
-import ContestContract from "../../utils/contracts/Contest.json";
+import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface LineupManagementProps {
   contest: Contest;
@@ -26,7 +26,7 @@ interface LineupManagementProps {
 const getStatusMessages = (
   defaultMessage: string = "idle",
   isUserWaiting: boolean = false,
-  isBlockchainWaiting: boolean = false
+  isBlockchainWaiting: boolean = false,
 ): string => {
   if (isUserWaiting) {
     return "User confirmation...";
@@ -92,7 +92,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         } catch (error) {
           console.error("Error joining contest:", error);
           setServerError(
-            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`
+            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`,
           );
           setPendingAction(null);
         }
@@ -130,7 +130,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
         } catch (error) {
           console.error("Error leaving contest:", error);
           setServerError(
-            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`
+            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`,
           );
           setPendingAction(null);
         }
@@ -216,7 +216,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
         // Get the tournament lineup for this contest lineup
         const contestTournamentLineup = lineups.find(
-          (l) => l.id === contestLineup.tournamentLineupId
+          (l) => l.id === contestLineup.tournamentLineupId,
         );
         if (!contestTournamentLineup) return false;
 
@@ -279,7 +279,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       entryId,
       contestantDepositAmount,
       platformTokenAmount,
-      paymentTokenAmount
+      paymentTokenAmount,
     );
 
     await executeJoinBlockchain(calls);
@@ -291,7 +291,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
     // Find the contest lineup to get the entryId
     const contestLineup = contest.contestLineups?.find(
-      (cl) => cl.tournamentLineupId === lineupId && cl.userId === user?.id
+      (cl) => cl.tournamentLineupId === lineupId && cl.userId === user?.id,
     );
 
     if (!contestLineup?.entryId) {

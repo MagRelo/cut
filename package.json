@@ -32,6 +32,7 @@
     "deploy:contracts": "node scripts/deploy.js",
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
     "deploy:contracts:base": "node scripts/deploy.js base",
+    "deploy:copy-artifacts": "node scripts/deploy.js copy-artifacts",
     "deploy:full": "pnpm run deploy:contracts && pnpm run deploy",
     "verify:contracts": "node scripts/verify.js",
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",

@@ -2,7 +2,7 @@ import { useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { useBlockchainTransaction } from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
-import ContestContract from "../utils/contracts/Contest.json";
+import ContestContract from "../utils/contracts/ContestController.json";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
@@ -38,7 +38,7 @@ export function useAddPrediction(options?: UseBlockchainTransactionOptions) {
     outcomeId: number,
     predictionAmount: bigint,
     platformTokenBalance: bigint = 0n,
-    paymentTokenBalance: bigint = 0n
+    paymentTokenBalance: bigint = 0n,
   ) => {
     const calls = [];
 
@@ -114,7 +114,7 @@ export function useWithdrawPrediction(options?: UseBlockchainTransactionOptions)
   const createWithdrawPredictionCalls = (
     contestAddress: string,
     outcomeId: number,
-    tokenAmount: bigint
+    tokenAmount: bigint,
   ) => {
     return [
       {

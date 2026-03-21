@@ -2,7 +2,7 @@ import { type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
-import ContestContract from "../../utils/contracts/Contest.json";
+import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface ContestCardProps {
   contest: Contest;

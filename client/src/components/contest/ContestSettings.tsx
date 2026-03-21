@@ -3,7 +3,7 @@ import { useBalance, useReadContract } from "wagmi";
 import { erc20Abi, formatUnits } from "viem";
 import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 import type { Contest } from "../../types/contest";
-import ContestContract from "../../utils/contracts/Contest.json";
+import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface ContestSettingsProps {
   contest: Contest;
@@ -219,7 +219,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     {
       fractionDigits = 2,
       decimals = tokenDecimals,
-    }: { fractionDigits?: number; decimals?: number } = {}
+    }: { fractionDigits?: number; decimals?: number } = {},
   ) => {
     if (value === undefined) return "...";
     try {
@@ -445,7 +445,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   oracleAddress,
                   chainId,
                   `${oracleAddress?.slice(0, 6)}...${oracleAddress?.slice(-4)}`,
-                  "text-blue-600 hover:text-blue-800 underline"
+                  "text-blue-600 hover:text-blue-800 underline",
                 )}
               </div>
             )}
@@ -489,7 +489,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               contest.address,
               chainId,
               "View Contract on Explorer →",
-              "text-blue-600 hover:text-blue-800 underline"
+              "text-blue-600 hover:text-blue-800 underline",
             )}
           </div>
         )}

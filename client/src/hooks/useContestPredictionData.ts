@@ -1,11 +1,8 @@
 import { useMemo } from "react";
 import { useAccount, useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatUnits, type Abi } from "viem";
-import {
-  sharesForSecondaryPricing,
-  type SecondaryPoolSnapshot,
-} from "@cut/secondary-pricing";
-import ContestContract from "../utils/contracts/Contest.json";
+import { sharesForSecondaryPricing, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
+import ContestContract from "../utils/contracts/ContestController.json";
 
 // Contract state enum matching Contest.sol
 export enum ContestState {
@@ -129,7 +126,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
             },
           ]
         : [],
-    [contestAddress, chainId, contestAbi]
+    [contestAddress, chainId, contestAbi],
   );
 
   const { data: poolConfigResults, isLoading: isLoadingPoolConfig } = useReadContracts({
@@ -161,7 +158,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
             chainId,
           }))
         : [],
-    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi],
   );
 
   const supplyContracts = useMemo(
@@ -175,7 +172,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
             chainId,
           }))
         : [],
-    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi],
   );
 
   const balanceContracts = useMemo(
@@ -189,7 +186,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
             chainId,
           }))
         : [],
-    [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress]
+    [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress],
   );
 
   const positionSubsidyContracts = useMemo(
@@ -203,7 +200,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
             chainId,
           }))
         : [],
-    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi]
+    [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi],
   );
 
   const { data: priceResults, isLoading: isLoadingPrices } = useReadContracts({
@@ -290,8 +287,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       ? (balanceResults?.[index]?.result as bigint | undefined)
       : undefined;
     const supplyRaw = supplyResults?.[index]?.result as bigint | undefined;
-    const supply =
-      supplyRaw !== undefined ? sharesForSecondaryPricing(supplyRaw) : undefined;
+    const supply = supplyRaw !== undefined ? sharesForSecondaryPricing(supplyRaw) : undefined;
     const positionSubsidy = positionSubsidyResults?.[index]?.result as bigint | undefined;
 
     // Calculate implied winnings if this entry wins
@@ -299,7 +295,13 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     let impliedWinnings = 0n;
     let impliedWinningsFormatted = "0";
 
-    if (balance && balance > 0n && supply !== undefined && supply > 0n && totalSecondaryFunds > 0n) {
+    if (
+      balance &&
+      balance > 0n &&
+      supply !== undefined &&
+      supply > 0n &&
+      totalSecondaryFunds > 0n
+    ) {
       impliedWinnings = (balance * totalSecondaryFunds) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
@@ -354,7 +356,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     combinedSubsidyFormatted: formatUnits(
       ((primaryPrizePoolSubsidy as bigint) || 0n) +
         ((totalPrimaryPositionSubsidies as bigint) || 0n),
-      18
+      18,
     ),
     poolSnapshot,
     isLoading,

@@ -2,7 +2,7 @@ import { useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { useBlockchainTransaction } from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
-import ContestContract from "../utils/contracts/Contest.json";
+import ContestContract from "../utils/contracts/ContestController.json";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 
@@ -38,7 +38,7 @@ export function useJoinContest(options?: UseBlockchainTransactionOptions) {
     entryId: number,
     primaryDepositAmount: bigint,
     platformTokenBalance: bigint = 0n,
-    paymentTokenBalance: bigint = 0n
+    paymentTokenBalance: bigint = 0n,
   ) => {
     const calls = [];
 

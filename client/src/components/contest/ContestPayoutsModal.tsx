@@ -4,7 +4,7 @@ import { formatUnits } from "viem";
 import { Modal } from "../common/Modal";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import type { Contest } from "../../types/contest";
-import ContestContract from "../../utils/contracts/Contest.json";
+import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface ContestPayoutsModalProps {
   isOpen: boolean;
@@ -78,7 +78,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
       query: {
         enabled: !!contest?.address && isOpen,
       },
-    }
+    },
   );
 
   // Calculate payout structure based on number of entries
@@ -178,8 +178,8 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                           payout.position === 1
                             ? "bg-yellow-100 text-yellow-800"
                             : payout.position === 2
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-orange-100 text-orange-800"
+                              ? "bg-gray-100 text-gray-800"
+                              : "bg-orange-100 text-orange-800"
                         }`}
                       >
                         {payout.position}
