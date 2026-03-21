@@ -5,7 +5,7 @@
 import { createWalletClient, http, getContract, type WalletClient } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
-import Contest from "../../contracts/Contest.json" with { type: "json" };
+import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 
 /**
  * Initialize wallet client for blockchain operations
@@ -46,7 +46,7 @@ export function getContestContract(contestAddress: string, chainId: number) {
 
   return getContract({
     address: contestAddress as `0x${string}`,
-    abi: Contest.abi,
+    abi: ContestController.abi,
     client: walletClient,
   });
 }
