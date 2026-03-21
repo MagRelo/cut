@@ -318,7 +318,7 @@ const TimelineModalContent: React.FC<{ contestId: string | undefined }> = ({ con
     );
   }
 
-  return <Timeline timelineData={timelineData} />;
+  return <Timeline timelineData={timelineData} defaultMetric="sharePrice" />;
 };
 
 // NOTE: keep this svg comment for reference

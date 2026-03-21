@@ -1,17 +1,26 @@
-import { ethers } from "ethers";
+import {
+  createPublicClient,
+  createWalletClient,
+  formatUnits,
+  getContract,
+  http,
+  isAddress,
+  parseAbi,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { baseSepolia } from "viem/chains";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 
 dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
-// PaymentToken ABI - just the mint function
-const PAYMENT_TOKEN_ABI = [
+const PAYMENT_TOKEN_ABI = parseAbi([
   "function mint(address to, uint256 amount) external",
   "function owner() external view returns (address)",
   "function balanceOf(address account) external view returns (uint256)",
   "function decimals() external pure returns (uint8)",
-];
+]);
 
 function getPaymentTokenAddressFromSepoliaJson() {
   const configPath = path.join(process.cwd(), "server", "src", "contracts", "sepolia.json");
@@ -25,8 +34,12 @@ function getPaymentTokenAddressFromSepoliaJson() {
   return config.paymentTokenAddress;
 }
 
+function normalizePrivateKey(key) {
+  const trimmed = key.trim();
+  return trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+}
+
 async function mintPaymentToken() {
-  // Get environment variables
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
   const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const RECIPIENT_ADDRESS = process.env.RECIPIENT_ADDRESS;
@@ -41,8 +54,7 @@ async function mintPaymentToken() {
     throw new Error("RECIPIENT_ADDRESS environment variable is required");
   }
 
-  // Validate recipient address
-  if (!ethers.isAddress(RECIPIENT_ADDRESS)) {
+  if (!isAddress(RECIPIENT_ADDRESS)) {
     throw new Error("Invalid RECIPIENT_ADDRESS");
   }
 
@@ -67,55 +79,62 @@ async function mintPaymentToken() {
     );
   }
 
-  // Validate contract address
-  if (!ethers.isAddress(PAYMENT_TOKEN_ADDRESS)) {
+  if (!isAddress(PAYMENT_TOKEN_ADDRESS)) {
     throw new Error("Invalid PAYMENT_TOKEN_ADDRESS");
   }
 
-  // Connect to the network
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+  const account = privateKeyToAccount(normalizePrivateKey(PRIVATE_KEY));
 
-  console.log("🔗 Connected to network:", await provider.getNetwork());
-  console.log("👛 Wallet address:", wallet.address);
+  const publicClient = createPublicClient({
+    chain: baseSepolia,
+    transport: http(RPC_URL),
+  });
+
+  const walletClient = createWalletClient({
+    account,
+    chain: baseSepolia,
+    transport: http(RPC_URL),
+  });
+
+  const chainId = await publicClient.getChainId();
+  console.log("🔗 Connected, chain id:", chainId);
+  console.log("👛 Wallet address:", account.address);
   console.log("🎯 PaymentToken address:", PAYMENT_TOKEN_ADDRESS);
   console.log("📤 Recipient address:", RECIPIENT_ADDRESS);
   console.log("💰 Amount to mint:", AMOUNT, "tokens (6 decimals)");
 
-  // Create contract instance
-  const paymentToken = new ethers.Contract(PAYMENT_TOKEN_ADDRESS, PAYMENT_TOKEN_ABI, wallet);
+  const paymentToken = getContract({
+    address: PAYMENT_TOKEN_ADDRESS,
+    abi: PAYMENT_TOKEN_ABI,
+    client: { public: publicClient, wallet: walletClient },
+  });
 
   try {
-    // Check if the wallet is the owner
-    const owner = await paymentToken.owner();
+    const owner = await paymentToken.read.owner();
     console.log("👑 Contract owner:", owner);
 
-    if (owner.toLowerCase() !== wallet.address.toLowerCase()) {
+    if (owner.toLowerCase() !== account.address.toLowerCase()) {
       throw new Error("Wallet is not the owner of the PaymentToken contract");
     }
 
-    // Get current balance of recipient
-    const currentBalance = await paymentToken.balanceOf(RECIPIENT_ADDRESS);
-    const decimals = await paymentToken.decimals();
-    console.log("💳 Current balance of recipient:", ethers.formatUnits(currentBalance, decimals));
+    const currentBalance = await paymentToken.read.balanceOf([RECIPIENT_ADDRESS]);
+    const decimals = await paymentToken.read.decimals();
+    console.log("💳 Current balance of recipient:", formatUnits(currentBalance, decimals));
 
-    // Mint tokens
     console.log("\n🪙 Minting tokens...");
-    const tx = await paymentToken.mint(RECIPIENT_ADDRESS, AMOUNT);
-    console.log("📝 Transaction hash:", tx.hash);
+    const hash = await paymentToken.write.mint([RECIPIENT_ADDRESS, BigInt(AMOUNT)]);
+    console.log("📝 Transaction hash:", hash);
 
-    // Wait for transaction to be mined
-    const receipt = await tx.wait();
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log("✅ Transaction confirmed in block:", receipt.blockNumber);
     console.log("⛽ Gas used:", receipt.gasUsed.toString());
 
-    // Get new balance
-    const newBalance = await paymentToken.balanceOf(RECIPIENT_ADDRESS);
-    console.log("💳 New balance of recipient:", ethers.formatUnits(newBalance, decimals));
+    const newBalance = await paymentToken.read.balanceOf([RECIPIENT_ADDRESS]);
+    console.log("💳 New balance of recipient:", formatUnits(newBalance, decimals));
 
     console.log(
       "\n🎉 Successfully minted",
-      ethers.formatUnits(AMOUNT, decimals),
+      formatUnits(BigInt(AMOUNT), decimals),
       "tokens to",
       RECIPIENT_ADDRESS
     );
@@ -125,5 +144,4 @@ async function mintPaymentToken() {
   }
 }
 
-// Run the script
 mintPaymentToken().catch(console.error);

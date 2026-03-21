@@ -39,9 +39,9 @@ function buildContestSettings(
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "", // `_oracle`: address that drives contest lifecycle (onlyOracle)
     primaryDeposit: 10, // `_primaryDepositAmount`: fixed stake per primary participant
     oracleFeeBps: Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500, // `_oracleFeeBps`: oracle cut of settlement, basis points (100 = 1%)
-    positionBonusShareBps: Number(import.meta.env.VITE_POSITION_BONUS_SHARE_BPS) || 5000, // `_positionBonusShareBps`: share of accumulated subsidy → position bonuses; rest → prize pool (at settlement)
-    targetPrimaryShareBps: Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 6000, // `_targetPrimaryShareBps`: target primary-side weight when balancing cross-subsidies between pools
-    maxCrossSubsidyBps: Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1500, // `_maxCrossSubsidyBps`: max fraction of any one deposit that may be reallocated to the other pool
+    positionBonusShareBps: Number(import.meta.env.VITE_POSITION_BONUS_SHARE_BPS) || 500, // `_positionBonusShareBps`: share of accumulated subsidy → position bonuses; rest → prize pool (at settlement)
+    targetPrimaryShareBps: Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 2000, // `_targetPrimaryShareBps`: target primary-side weight when balancing cross-subsidies between pools
+    maxCrossSubsidyBps: Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1000, // `_maxCrossSubsidyBps`: max fraction of any one deposit that may be reallocated to the other pool
   };
 }
 

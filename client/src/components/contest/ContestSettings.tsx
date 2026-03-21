@@ -188,10 +188,32 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
+  const positionBonusShareBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "positionBonusShareBps",
+    args: [],
+    chainId,
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
   const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "targetPrimaryShareBps",
+    args: [],
+    chainId,
+    query: {
+      enabled: !!contest?.address,
+    },
+  }).data as bigint | undefined;
+
+  const maxCrossSubsidyBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "maxCrossSubsidyBps",
     args: [],
     chainId,
     query: {
@@ -236,10 +258,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const resolvedTokenSymbol = tokenSymbol || "TOKEN";
 
+  const formatBpsLabel = (bps: bigint | undefined) =>
+    bps !== undefined ? `${bps.toString()} bps (${Number(bps) / 100}%)` : "…";
+
   const targetPrimarySharePercent =
     targetPrimaryShareBps !== undefined ? Number(targetPrimaryShareBps) / 100 : undefined;
   const currentPrimarySharePercent =
     currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
+  const currentSliderLeftPercent =
+    currentPrimarySharePercent !== undefined ? 100 - currentPrimarySharePercent : undefined;
 
   // const accumulatedOracleFee = useReadContract({
   //   address: contest?.address as `0x${string}`,
@@ -283,11 +310,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       {/* Contest Contract Details */}
       <div>
         {/* Contract panel */}
-        <div className="bg-gray-100 border-2 border-gray-300 shadow-inner p-3 min-h-[160px] mb-2">
+        <div className="bg-white p-3 min-h-[160px] mb-2">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
             {/* Contract Status */}
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Contract State:</span>
+              <span className="text-gray-600">Contract State</span>
               <span className={`${getStatusColor(contractState)}`}>
                 {getStatusLabel(contractState)}
               </span>
@@ -296,7 +323,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Contract Balance */}
             {contractBalance?.value !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Contract Balance:</span>
+                <span className="text-gray-600">Contract Balance</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(contractBalance.value, {
                     fractionDigits: 4,
@@ -312,7 +339,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Current Ratio - Visual Slider */}
             {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
               <div className="flex flex-col gap-1">
-                <span className="text-gray-600 mb-2">Pool Rebalancing:</span>
+                <span className="text-gray-600 mb-2">Pool Rebalancing</span>
 
                 {/* Slider Container */}
                 <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
@@ -324,11 +351,9 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
                   {/* Current Position Indicator */}
                   <div
-                    className="absolute top-0 bottom-0 w-1 bg-green-500 z-20 rounded-sm"
-                    style={{ left: `${currentPrimarySharePercent ?? 0}%` }}
-                  >
-                    <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-md" />
-                  </div>
+                    className="absolute top-0 bottom-0 w-0.5 bg-green-500 z-20 rounded-sm"
+                    style={{ left: `${currentSliderLeftPercent ?? 0}%` }}
+                  />
 
                   {/* Labels at the ends */}
                   <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
@@ -340,8 +365,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-2">
-                  <span>0%</span>
+                <div className="flex items-center justify-center text-[10px] text-gray-500 mt-2">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full" />
@@ -352,17 +376,25 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                       <span>Current</span>
                     </div>
                   </div>
-                  <span>100%</span>
                 </div>
               </div>
             )}
 
             <div className="mt-2" />
 
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600 shrink-0">
+                <span className="font-mono">Max Cross Subsidy</span>
+              </span>
+              <span className="text-gray-900 text-right break-all">
+                {formatBpsLabel(maxCrossSubsidyBps)}
+              </span>
+            </div>
+
             {/* Primary Side Balance (Total) */}
             {primarySideBalance !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Contest Prize Pool:</span>
+                <span className="text-gray-600">Contest Prize Pool</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -373,7 +405,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Primary Prize Pool (Base) */}
             {primaryPrizePool !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base Pool:</span>
+                <span className="text-gray-600 pl-4">↳ Base Pool</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
                 </span>
@@ -383,7 +415,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Primary Prize Pool Subsidy */}
             {primaryPrizePoolSubsidy !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
+                <span className="text-gray-600 pl-4">↳ Pool Subsidy</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -394,7 +426,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Secondary Side Balance */}
             {secondarySideBalance !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Prediction Prize Pool:</span>
+                <span className="text-gray-600">Prediction Prize Pool</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -405,7 +437,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Secondary Prize Pool */}
             {secondaryPrizePool !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base Pool:</span>
+                <span className="text-gray-600 pl-4">↳ Base Pool</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -416,7 +448,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Secondary Prize Pool Subsidy */}
             {secondaryPrizePoolSubsidy !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Pool Subsidy:</span>
+                <span className="text-gray-600 pl-4">↳ Pool Subsidy</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -424,10 +456,21 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
+            <hr className="my-2" />
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-gray-600 shrink-0">
+                <span className="font-mono">Team Owner Bonus %</span>
+              </span>
+              <span className="text-gray-900 text-right break-all">
+                {formatBpsLabel(positionBonusShareBps)}
+              </span>
+            </div>
+
             {/* Total Primary Position Subsidies */}
             {totalPrimaryPositionSubsidies !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Position Subsidies:</span>
+                <span className="text-gray-600">Team Owner Bonus Paid</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -440,7 +483,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Oracle Address */}
             {oracleAddress && chainId && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Oracle:</span>
+                <span className="text-gray-600">Oracle</span>
                 {createExplorerLinkJSX(
                   oracleAddress,
                   chainId,
@@ -453,7 +496,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Oracle Fee */}
             {contractOracleFee !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Oracle Fee:</span>
+                <span className="text-gray-600">Oracle Fee</span>
                 <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
               </div>
             )}
@@ -461,7 +504,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Accumulated Oracle Fee */}
             {/* {accumulatedOracleFee !== undefined && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-600 pl-4">↳ Accumulated:</span>
+                <span className="text-gray-600 pl-4">↳ Accumulated</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(accumulatedOracleFee, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
@@ -472,7 +515,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Expiration */}
             {expiryTimestamp && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Contract Expires:</span>
+                <span className="text-gray-600">Contract Expires</span>
                 <span className="text-gray-900">
                   {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
                 </span>
@@ -484,7 +527,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
         {/* Escrow Contract */}
         {contest?.address && chainId && (
           <div className="flex items-center gap-2 font-display text-sm">
-            {/* <span className="text-gray-600">Contract:</span> */}
+            {/* <span className="text-gray-600">Contract</span> */}
             {createExplorerLinkJSX(
               contest.address,
               chainId,

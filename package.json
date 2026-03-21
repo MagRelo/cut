@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "viem": "^2.38.3"
   }
 }
