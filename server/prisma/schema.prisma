@@ -182,6 +182,8 @@ model ContestLineupTimeline {
   roundNumber       Int
   score             Int
   position          Int
+  /// Cost per $1 of potential winnings from a fixed $10 secondary buy (matches PredictionLineupsList / secondary-pricing sim)
+  sharePrice        Float?
   createdAt         DateTime         @default(now())
   
   // Relations

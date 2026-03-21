@@ -98,10 +98,15 @@ export interface ContestSnapshot {
   totalPrimaryPositionSubsidies: string; // bigint as string
 }
 
+/** Which value from `TimelineDataPoint` to plot on the Y axis */
+export type TimelineMetric = "score" | "sharePrice";
+
 export interface TimelineDataPoint {
   timestamp: string;
   score: number;
   roundNumber?: number;
+  /** Cost per $1 of potential winnings (server; matches BUY column when set) */
+  sharePrice?: number | null;
 }
 
 export interface TimelineTeam {

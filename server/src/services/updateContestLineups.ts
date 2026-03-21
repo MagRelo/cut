@@ -1,6 +1,11 @@
 // this service will run periodcally to keep the tournament up to date
 
 import { prisma } from "../lib/prisma.js";
+import {
+  computeSharePriceUsdFromSnapshot,
+  fetchNetPosition,
+  fetchSecondaryPoolSnapshot,
+} from "../lib/secondarySharePrice.js";
 
 export async function updateContestLineups() {
   try {
@@ -21,6 +26,13 @@ export async function updateContestLineups() {
         },
       },
       include: {
+        contest: {
+          select: {
+            id: true,
+            address: true,
+            chainId: true,
+          },
+        },
         tournamentLineup: {
           include: {
             players: {
@@ -111,18 +123,55 @@ export async function updateContestLineups() {
     );
     await Promise.all(positionUpdatePromises);
 
-    // Save timeline snapshots for all contest lineups
+    // Save timeline snapshots for all contest lineups (include share price when chain + entryId allow)
     const currentRound = currentTournament.currentRound || 1;
     const timestamp = new Date();
 
-    const timelineSnapshots = contestLineups.map((contestLineup: any) => ({
-      contestLineupId: contestLineup.id,
-      contestId: contestLineup.contestId,
-      timestamp,
-      roundNumber: currentRound,
-      score: contestLineup.score || 0,
-      position: contestLineup.position || 999,
-    }));
+    const poolSnapshotByContestId = new Map<string, Awaited<ReturnType<typeof fetchSecondaryPoolSnapshot>>>();
+    const contestIdsUnique = [...new Set(contestLineups.map((cl: { contestId: string }) => cl.contestId))];
+    for (const cid of contestIdsUnique) {
+      const first = contestLineups.find((cl: { contestId: string }) => cl.contestId === cid) as
+        | (typeof contestLineups)[number]
+        | undefined;
+      if (!first?.contest?.address) continue;
+      try {
+        const snap = await fetchSecondaryPoolSnapshot(
+          first.contest.address as `0x${string}`,
+          first.contest.chainId,
+        );
+        poolSnapshotByContestId.set(cid, snap);
+      } catch (e) {
+        console.warn(`[updateContestLineups] Could not read pool snapshot for contest ${cid}:`, e);
+      }
+    }
+
+    const timelineSnapshots = await Promise.all(
+      contestLineups.map(async (contestLineup: (typeof contestLineups)[number]) => {
+        let sharePrice: number | null = null;
+        const pool = poolSnapshotByContestId.get(contestLineup.contestId);
+        const entryId = contestLineup.entryId;
+        const addr = contestLineup.contest?.address;
+        const chainId = contestLineup.contest?.chainId;
+        if (pool && addr && chainId !== undefined && entryId) {
+          try {
+            const net = await fetchNetPosition(addr as `0x${string}`, chainId, entryId);
+            sharePrice = computeSharePriceUsdFromSnapshot(pool, net);
+          } catch (e) {
+            console.warn(`[updateContestLineups] sharePrice skipped for lineup ${contestLineup.id}:`, e);
+          }
+        }
+
+        return {
+          contestLineupId: contestLineup.id,
+          contestId: contestLineup.contestId,
+          timestamp,
+          roundNumber: currentRound,
+          score: contestLineup.score || 0,
+          position: contestLineup.position || 999,
+          sharePrice,
+        };
+      }),
+    );
 
     if (timelineSnapshots.length > 0) {
       await prisma.contestLineupTimeline.createMany({

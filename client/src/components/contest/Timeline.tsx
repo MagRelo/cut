@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,18 +10,194 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import type { TimelineData } from "../../types/contest";
+import type { TimelineData, TimelineMetric } from "../../types/contest";
 
-// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+const METRIC_LABELS: Record<TimelineMetric, string> = {
+  score: "Tournament score",
+  sharePrice: "Secondary share price ($ per $1 of potential winnings, $10 buy)",
+};
 
 interface TimelineProps {
   className?: string;
   timelineData: TimelineData;
+  /** Initial Y-axis metric */
+  defaultMetric?: TimelineMetric;
+  /** Limit which metrics appear in the selector (default: both when data allows) */
+  allowedMetrics?: TimelineMetric[];
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData }) => {
-  if (!timelineData) {
+function teamHasSharePrice(team: TimelineData["teams"][number]): boolean {
+  return team.dataPoints.some((dp) => dp.sharePrice != null && Number.isFinite(dp.sharePrice));
+}
+
+export const Timeline: React.FC<TimelineProps> = ({
+  className = "",
+  timelineData,
+  defaultMetric = "score",
+  allowedMetrics,
+}) => {
+  const [metric, setMetric] = useState<TimelineMetric>(defaultMetric);
+
+  const hasSharePriceData = useMemo(
+    () => timelineData.teams.some(teamHasSharePrice),
+    [timelineData.teams],
+  );
+
+  const selectableMetrics = useMemo((): TimelineMetric[] => {
+    const base: TimelineMetric[] = ["score"];
+    if (hasSharePriceData) base.push("sharePrice");
+    if (!allowedMetrics?.length) return base;
+    return base.filter((m) => allowedMetrics.includes(m));
+  }, [hasSharePriceData, allowedMetrics]);
+
+  useEffect(() => {
+    if (!selectableMetrics.includes(metric)) {
+      setMetric("score");
+    }
+  }, [metric, selectableMetrics]);
+
+  const topTeams = useMemo(() => {
+    if (!timelineData.teams.length) return [];
+    return [...timelineData.teams]
+      .sort((a, b) => {
+        const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
+        const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
+        return bScore - aScore;
+      })
+      .slice(0, 10);
+  }, [timelineData.teams]);
+
+  const { labels, allTimestampsSorted } = useMemo(() => {
+    const seenRounds = new Set<string>();
+    const labelList = [...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp)))]
+      .sort()
+      .map((timestamp) => {
+        const dataPoint = topTeams
+          .flatMap((team) => team.dataPoints)
+          .find((dp) => dp.timestamp === timestamp);
+        const roundLabel = dataPoint?.roundNumber ? `Round ${dataPoint.roundNumber}` : "";
+        if (roundLabel && !seenRounds.has(roundLabel)) {
+          seenRounds.add(roundLabel);
+          return roundLabel;
+        }
+        return "";
+      });
+    const timestamps = [
+      ...new Set(topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))),
+    ].sort();
+    return { labels: labelList, allTimestampsSorted: timestamps };
+  }, [topTeams]);
+
+  const chartData = useMemo(() => {
+    if (metric === "score") {
+      return {
+        labels,
+        datasets: topTeams.map((team) => {
+          const scoreMap = new Map(team.dataPoints.map((dp) => [dp.timestamp, dp.score]));
+          return {
+            label: team.name,
+            data: allTimestampsSorted.map((timestamp) => scoreMap.get(timestamp) ?? null),
+            borderColor: team.color,
+            backgroundColor: team.color,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.4,
+            spanGaps: true,
+          };
+        }),
+      };
+    }
+
+    return {
+      labels,
+      datasets: topTeams.map((team) => {
+        const priceMap = new Map(
+          team.dataPoints.map((dp) => [dp.timestamp, dp.sharePrice ?? null]),
+        );
+        return {
+          label: team.name,
+          data: allTimestampsSorted.map((timestamp) => {
+            const v = priceMap.get(timestamp);
+            return v != null && Number.isFinite(v) ? v : null;
+          }),
+          borderColor: team.color,
+          backgroundColor: team.color,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+          spanGaps: true,
+        };
+      }),
+    };
+  }, [metric, labels, topTeams, allTimestampsSorted]);
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      events: [],
+      plugins: {
+        legend: {
+          display: false,
+        },
+        title: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          type: "category" as const,
+          display: true,
+          title: {
+            display: false,
+            text: "Round",
+          },
+          grid: {
+            display: false,
+          },
+          ticks: {
+            display: true,
+            font: {
+              family: "Inter, system-ui, -apple-system, sans-serif",
+              size: 9,
+            },
+            maxRotation: 0,
+            autoSkip: false,
+            maxTicksLimit: 10,
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: false,
+            text: metric === "score" ? "Score" : "Share price ($ / $1 winnings)",
+          },
+          grid: {
+            color: "#e5e7eb",
+          },
+          ticks: {
+            font: {
+              family: "Inter, system-ui, -apple-system, sans-serif",
+              size: 9,
+            },
+            callback: (value: string | number) =>
+              metric === "sharePrice" ? `$${Number(value).toFixed(2)}` : value,
+          },
+        },
+      },
+    }),
+    [metric],
+  );
+
+  const emptySharePrice =
+    metric === "sharePrice" &&
+    !topTeams.some((team) =>
+      team.dataPoints.some((dp) => dp.sharePrice != null && Number.isFinite(dp.sharePrice)),
+    );
+
+  if (!timelineData.teams.length) {
     return (
       <div className={className}>
         <div
@@ -34,136 +210,43 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
     );
   }
 
-  // Sort teams by their latest score (last data point) and take top 10
-  const topTeams = [...timelineData.teams]
-    .sort((a, b) => {
-      const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
-      const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
-      return bScore - aScore;
-    })
-    .slice(0, 10);
-
-  // Generate labels: only the first occurrence of each round gets a label
-  const seenRounds = new Set<string>();
-  const labels = [...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp)))]
-    .sort()
-    .map((timestamp) => {
-      const dataPoint = topTeams
-        .flatMap((team) => team.dataPoints)
-        .find((dp) => dp.timestamp === timestamp);
-      const roundLabel = dataPoint?.roundNumber ? `Round ${dataPoint.roundNumber}` : "";
-      if (roundLabel && !seenRounds.has(roundLabel)) {
-        seenRounds.add(roundLabel);
-        return roundLabel;
-      }
-      return "";
-    });
-
-  const data = {
-    labels,
-    datasets: topTeams.map((team) => {
-      // Create a map of timestamps to scores for this team
-      const scoreMap = new Map(team.dataPoints.map((dp) => [dp.timestamp, dp.score]));
-
-      // Get all unique timestamps
-      const allTimestamps = [
-        ...new Set(topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))),
-      ].sort();
-
-      return {
-        label: team.name,
-        data: allTimestamps.map((timestamp) => scoreMap.get(timestamp) || null),
-        borderColor: team.color,
-        backgroundColor: team.color,
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.4,
-        spanGaps: true, // This will connect lines across null values
-      };
-    }),
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    events: [], // This disables all interactions
-    plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: false,
-      },
-    },
-    scales: {
-      x: {
-        type: "category" as const,
-        display: true,
-        title: {
-          display: false,
-          text: "Round",
-        },
-        grid: {
-          display: false,
-        },
-        ticks: {
-          display: true,
-          font: {
-            family: "Inter, system-ui, -apple-system, sans-serif",
-            size: 9,
-          },
-          maxRotation: 0,
-          autoSkip: false,
-          maxTicksLimit: 10,
-        },
-      },
-      y: {
-        display: true,
-        title: {
-          display: false,
-          text: "Score",
-        },
-        grid: {
-          color: "#e5e7eb",
-        },
-        ticks: {
-          font: {
-            family: "Inter, system-ui, -apple-system, sans-serif",
-            size: 9,
-          },
-        },
-      },
-    },
-  };
-
   return (
     <div className={className}>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div className="text-xs font-medium text-gray-600 font-display">
+          {METRIC_LABELS[metric]}
+        </div>
+        {selectableMetrics.length > 1 && (
+          <label className="flex items-center gap-2 text-xs text-gray-600 font-display">
+            <span className="text-gray-500">Show</span>
+            <select
+              className="border border-gray-200 rounded-sm px-2 py-1 bg-white text-gray-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={metric}
+              onChange={(e) => setMetric(e.target.value as TimelineMetric)}
+            >
+              {selectableMetrics.includes("score") && (
+                <option value="score">Tournament score</option>
+              )}
+              {selectableMetrics.includes("sharePrice") && (
+                <option value="sharePrice">Share price</option>
+              )}
+            </select>
+          </label>
+        )}
+      </div>
+
       <div
         className="bg-white border border-gray-100 p-4 pb-3 timeline-chart"
         style={{ height: "250px" }}
       >
-        <Line data={data} options={options} />
-      </div>
-
-      {/* Legend */}
-      {/* {topTeams.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <div className="text-xs font-medium text-gray-600 mb-2">Teams</div>
-          <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto">
-            {topTeams.map((team, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
-                  style={{ backgroundColor: team.color }}
-                />
-                <span className="text-xs text-gray-700 font-display truncate max-w-[200px]">
-                  {team.name}
-                </span>
-              </div>
-            ))}
+        {emptySharePrice ? (
+          <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
+            No share price history yet. It appears after timeline snapshots include market data.
           </div>
-        </div>
-      )} */}
+        ) : (
+          <Line data={chartData} options={options} />
+        )}
+      </div>
     </div>
   );
 };

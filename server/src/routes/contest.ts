@@ -246,6 +246,7 @@ contestRouter.get("/:id/timeline", async (c) => {
         timestamp: snapshot.timestamp.toISOString(),
         score: snapshot.score,
         roundNumber: snapshot.roundNumber,
+        sharePrice: snapshot.sharePrice,
       });
     });
 
