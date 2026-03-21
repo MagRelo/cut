@@ -3,5 +3,5 @@
   "platformTokenAddress": "0x7B68bE1128bac69Ef12fD3F04D53d29114Ba2D33",
   "depositManagerAddress": "0xC65A276879C37d35cF3895AC17b50190377C8ba9",
   "contestFactoryAddress": "0x1d818155Ae3adD80509602c3f1B01C1342609005",
-  "mockCTokenAddress": "0x94405a6D419c16C1BA6117Dea01A21ecc374375C"
+  "aavePoolAddress": "0x94405a6D419c16C1BA6117Dea01A21ecc374375C"
 }

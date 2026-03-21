@@ -14,9 +14,9 @@ contract DeployScript is Script {
         console.log("PlatformToken deployed at:", address(platformToken));
 
         address usdcToken = vm.envAddress("USDC_TOKEN_ADDRESS");
-        address cUSDC = vm.envAddress("CUSDC_ADDRESS");
+        address aavePool = vm.envAddress("AAVE_V3_POOL_ADDRESS");
 
-        DepositManager depositManager = new DepositManager(usdcToken, address(platformToken), cUSDC);
+        DepositManager depositManager = new DepositManager(usdcToken, address(platformToken), aavePool);
         console.log("DepositManager deployed at:", address(depositManager));
 
         platformToken.setDepositManager(address(depositManager));

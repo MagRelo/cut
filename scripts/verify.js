@@ -34,7 +34,9 @@ const NETWORKS = {
 };
 
 const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const BASE_MAINNET_CUSDC = "0xb125E6687d4313864e53df431d5425969c15Eb2F";
+const BASE_MAINNET_AAVE_V3_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
+const BASE_SEPOLIA_USDC = "0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f";
+const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
 
 const colors = {
   reset: "\x1b[0m",
@@ -128,14 +130,16 @@ function loadContractAddresses(network) {
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
   const addresses = {
-    MockUSDC: config.paymentTokenAddress,
     PlatformToken: config.platformTokenAddress,
     DepositManager: config.depositManagerAddress,
     ContestFactory: config.contestFactoryAddress,
-    MockCompound: config.mockCTokenAddress,
     ReferralGraph: config.referralGraphAddress,
     RewardDistributor: config.rewardDistributorAddress,
   };
+
+  if (network.name === "base_sepolia" && config.paymentTokenAddress) {
+    addresses.MockUSDC = config.paymentTokenAddress;
+  }
 
   const filteredAddresses = Object.fromEntries(
     Object.entries(addresses).filter(
@@ -157,25 +161,35 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   const referralOracle = getReferralOracleAddress();
 
   const paths = {
+    MockUSDC: "src/mocks/MockUSDC.sol",
     PlatformToken: "lib/yieldToken/src/PlatformToken.sol",
     DepositManager: "lib/yieldToken/src/DepositManager.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
     RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
-    MockUSDC: "src/mocks/MockUSDC.sol",
-    MockCompound: "src/mocks/MockCompound.sol",
   };
 
   const contractPath = paths[contractName];
   if (!contractPath) return null;
 
   let constructorArgs = "";
+  if (contractName === "MockUSDC") {
+    return `forge verify-contract ${address} ${contractPath}:MockUSDC --verifier blockscout --verifier-url ${network.blockscoutApiUrl}`;
+  }
   if (contractName === "DepositManager") {
-    const usdc = addresses.MockUSDC || BASE_MAINNET_USDC;
-    const ctoken = addresses.MockCompound || BASE_MAINNET_CUSDC;
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${ctoken})`;
-  } else if (contractName === "MockCompound") {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
+    let usdc;
+    let pool;
+    if (network.name === "base_sepolia") {
+      usdc = addresses.MockUSDC;
+      pool = BASE_SEPOLIA_AAVE_POOL;
+    } else if (network.name === "base") {
+      usdc = BASE_MAINNET_USDC;
+      pool = BASE_MAINNET_AAVE_V3_POOL;
+    } else {
+      usdc = addresses.USDC;
+      pool = addresses.Pool;
+    }
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${pool})`;
   } else if (contractName === "PlatformToken") {
     const isSepolia = network.name === "base_sepolia";
     const name = isSepolia ? "xCUT" : "Cut Platform Token";
@@ -198,10 +212,9 @@ function verifyContracts(network, addresses) {
   let failCount = 0;
 
   const order = [
+    "MockUSDC",
     "PlatformToken",
     "DepositManager",
-    "MockUSDC",
-    "MockCompound",
     "ContestFactory",
     "ReferralGraph",
     "RewardDistributor",
@@ -210,14 +223,6 @@ function verifyContracts(network, addresses) {
   for (const contractName of order) {
     const address = addresses[contractName];
     if (!address || address === "0x0000000000000000000000000000000000000000") continue;
-
-    if (
-      network.name === "base" &&
-      (contractName === "MockUSDC" || contractName === "MockCompound")
-    ) {
-      logInfo(`Skipping verify for ${contractName} on Base (not deployed mocks)`);
-      continue;
-    }
 
     const cmd = buildVerifyCommand(network, contractName, address, addresses);
     if (!cmd) {

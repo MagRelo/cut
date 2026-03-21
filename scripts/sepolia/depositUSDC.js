@@ -5,14 +5,14 @@ import path from "path";
 
 dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
-// DepositManager ABI - just the functions we need
+// DepositManager ABI - just the functions we need (yieldToken / Aave v3)
 const DEPOSIT_MANAGER_ABI = [
   "function depositUSDC(uint256 amount) external",
   "function getTokenManagerUSDCBalance() external view returns (uint256)",
-  "function getCompoundUSDCBalance() external view returns (uint256)",
+  "function getAaveUSDCBalance() external view returns (uint256)",
   "function getTotalAvailableBalance() external view returns (uint256)",
-  "function isCompoundSupplyPaused() external view returns (bool)",
-  "function isCompoundWithdrawPaused() external view returns (bool)",
+  "function isAaveSupplyPaused() external view returns (bool)",
+  "function isAaveWithdrawPaused() external view returns (bool)",
 ];
 
 // PaymentToken (USDC) ABI
@@ -36,19 +36,19 @@ async function mintUSDCIfNeeded(paymentToken, wallet, requiredAmount) {
   const currentBalance = await paymentToken.balanceOf(wallet.address);
 
   if (currentBalance < BigInt(requiredAmount)) {
-    console.log("🪙 Insufficient USDC balance, checking if we can mint...");
+    console.log("🪙 Insufficient USDC balance, checking if we can mint (MockUSDC owner)...");
     console.log("  - Current balance:", ethers.formatUnits(currentBalance, 6), "USDC");
     console.log("  - Required amount:", ethers.formatUnits(requiredAmount, 6), "USDC");
 
-    // Check if the wallet is the owner of the PaymentToken contract
     try {
       const owner = await paymentToken.owner();
       if (owner.toLowerCase() !== wallet.address.toLowerCase()) {
         throw new Error(
-          `Cannot mint USDC. Only the owner (${owner}) can mint tokens. Current wallet: ${wallet.address}`
+          `Cannot mint USDC. Only the owner (${owner}) can mint. Current wallet: ${wallet.address}`
         );
       }
     } catch (error) {
+      if (error.message?.includes("Only the owner")) throw error;
       console.error("❌ Error checking PaymentToken ownership:", error.message);
       throw new Error(`Cannot mint USDC: ${error.message}`);
     }
@@ -71,13 +71,23 @@ async function mintUSDCIfNeeded(paymentToken, wallet, requiredAmount) {
       console.error("❌ Error minting USDC:", error.message);
       throw new Error(`Failed to mint USDC: ${error.message}`);
     }
-  } else {
-    console.log("✅ Sufficient USDC balance exists");
-    return false;
   }
+
+  console.log("✅ Sufficient USDC balance exists");
+  return false;
+}
+
+function loadSepoliaAddressesFromConfig() {
+  const configPath = path.join(process.cwd(), "server", "src", "contracts", "sepolia.json");
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Missing ${configPath}. Run deploy or copy contract addresses.`);
+  }
+  return JSON.parse(fs.readFileSync(configPath, "utf8"));
 }
 
 async function getLatestDeployment() {
+  const config = loadSepoliaAddressesFromConfig();
+
   const broadcastDir = path.join(process.cwd(), "contracts", "broadcast", "Deploy_sepolia.s.sol");
 
   if (!fs.existsSync(broadcastDir)) {
@@ -86,7 +96,6 @@ async function getLatestDeployment() {
     );
   }
 
-  // Find the latest deployment
   const deployments = fs
     .readdirSync(broadcastDir)
     .filter((dir) => fs.statSync(path.join(broadcastDir, dir)).isDirectory())
@@ -106,12 +115,8 @@ async function getLatestDeployment() {
 
   const deploymentData = JSON.parse(fs.readFileSync(latestRunFile, "utf8"));
 
-  // Find DepositManager, PaymentToken, and PlatformToken deployments
   const depositManagerDeployment = deploymentData.transactions.find(
     (tx) => tx.contractName === "DepositManager"
-  );
-  const paymentTokenDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "MockUSDC"
   );
   const platformTokenDeployment = deploymentData.transactions.find(
     (tx) => tx.contractName === "PlatformToken"
@@ -120,16 +125,13 @@ async function getLatestDeployment() {
   if (!depositManagerDeployment) {
     throw new Error("DepositManager deployment not found in latest deployment");
   }
-  if (!paymentTokenDeployment) {
-    throw new Error("MockUSDC deployment not found in latest deployment");
-  }
   if (!platformTokenDeployment) {
     throw new Error("PlatformToken deployment not found in latest deployment");
   }
 
   return {
     depositManager: depositManagerDeployment.contractAddress,
-    paymentToken: paymentTokenDeployment.contractAddress,
+    paymentToken: config.paymentTokenAddress,
     platformToken: platformTokenDeployment.contractAddress,
   };
 }
@@ -252,7 +254,7 @@ async function depositUSDC() {
 
     // Get DepositManager stats before deposit
     const tokenManagerBalanceBefore = await depositManager.getTokenManagerUSDCBalance();
-    const compoundBalanceBefore = await depositManager.getCompoundUSDCBalance();
+    const aaveBalanceBefore = await depositManager.getAaveUSDCBalance();
     const totalAvailableBalanceBefore = await depositManager.getTotalAvailableBalance();
     const platformTokenSupplyBefore = await platformToken.totalSupply();
     console.log(
@@ -261,8 +263,8 @@ async function depositUSDC() {
       "USDC"
     );
     console.log(
-      "🏦 Compound USDC balance before:",
-      ethers.formatUnits(compoundBalanceBefore, 6),
+      "🏦 Aave USDC balance before:",
+      ethers.formatUnits(aaveBalanceBefore, 6),
       "USDC"
     );
     console.log(
@@ -276,11 +278,10 @@ async function depositUSDC() {
       "CUT"
     );
 
-    // Check Compound pause status
-    const isCompoundSupplyPaused = await depositManager.isCompoundSupplyPaused();
-    const isCompoundWithdrawPaused = await depositManager.isCompoundWithdrawPaused();
-    console.log("⏸️ Compound supply paused:", isCompoundSupplyPaused);
-    console.log("⏸️ Compound withdraw paused:", isCompoundWithdrawPaused);
+    const isAaveSupplyPaused = await depositManager.isAaveSupplyPaused();
+    const isAaveWithdrawPaused = await depositManager.isAaveWithdrawPaused();
+    console.log("⏸️ Aave supply paused:", isAaveSupplyPaused);
+    console.log("⏸️ Aave withdraw paused:", isAaveWithdrawPaused);
 
     // Deposit USDC
     console.log("\n💸 Depositing USDC...");
@@ -306,7 +307,7 @@ async function depositUSDC() {
     const cutBalanceAfter = await platformToken.balanceOf(wallet.address);
     const usdcBalanceAfter = await paymentToken.balanceOf(wallet.address);
     const tokenManagerBalanceAfter = await depositManager.getTokenManagerUSDCBalance();
-    const compoundBalanceAfter = await depositManager.getCompoundUSDCBalance();
+    const aaveBalanceAfter = await depositManager.getAaveUSDCBalance();
     const totalAvailableBalanceAfter = await depositManager.getTotalAvailableBalance();
     const platformTokenSupplyAfter = await platformToken.totalSupply();
 
@@ -323,8 +324,8 @@ async function depositUSDC() {
       "USDC"
     );
     console.log(
-      "🏦 Compound USDC balance after:",
-      ethers.formatUnits(compoundBalanceAfter, 6),
+      "🏦 Aave USDC balance after:",
+      ethers.formatUnits(aaveBalanceAfter, 6),
       "USDC"
     );
     console.log(

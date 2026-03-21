@@ -12,7 +12,8 @@ export interface ContractConfig {
   platformTokenAddress: string;
   depositManagerAddress: string;
   contestFactoryAddress: string;
-  mockCTokenAddress?: string; // Only available on testnet
+  /** DepositManager pool: Aave V3 Pool (mainnet) or Sepolia test pool contract. */
+  aavePoolAddress?: string;
 }
 
 /**

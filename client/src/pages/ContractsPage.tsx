@@ -46,13 +46,12 @@ const ContractsPage: React.FC = () => {
       },
     ];
 
-    // Add Mock C Token only if it exists (testnet only)
-    if ("mockCTokenAddress" in config && config.mockCTokenAddress) {
+    if ("aavePoolAddress" in config && config.aavePoolAddress) {
       contracts.push({
-        name: "Mock C Token",
-        address: config.mockCTokenAddress,
-        description: "Mock Compound token for testing",
-        blockExplorerUrl: getExplorerUrl(config.mockCTokenAddress, networkChainId) ?? undefined,
+        name: "Lending pool",
+        address: config.aavePoolAddress,
+        description: "Aave V3 Pool (mainnet) or test pool used by DepositManager",
+        blockExplorerUrl: getExplorerUrl(config.aavePoolAddress, networkChainId) ?? undefined,
       });
     }
 

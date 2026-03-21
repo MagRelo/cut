@@ -36,16 +36,18 @@ const NETWORKS = {
 };
 
 const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const BASE_MAINNET_CUSDC = "0xb125E6687d4313864e53df431d5425969c15Eb2F";
+const BASE_MAINNET_AAVE_V3_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
+/** Base Sepolia: AaveV3BaseSepolia (bgd-labs/aave-address-book) */
+const BASE_SEPOLIA_USDC = "0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f";
+const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
 
 /** Source artifact under contracts/out/<dir>/<file> copied to client + server as destName */
 const ARTIFACT_COPY = [
+  { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
   { dir: "DepositManager.sol", file: "DepositManager.json", dest: "DepositManager.json" },
   { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
   { dir: "ContestController.sol", file: "ContestController.json", dest: "Contest.json" },
   { dir: "PlatformToken.sol", file: "PlatformToken.json", dest: "PlatformToken.json" },
-  { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
-  { dir: "MockCompound.sol", file: "MockCompound.json", dest: "MockCompound.json" },
   { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
   { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
 ];
@@ -142,16 +144,26 @@ function updateConfigFiles(network, addresses) {
   logStep(`Updating configuration files for ${network.name}`);
 
   const isBase = network.name === "base";
-  const paymentTokenAddress =
-    addresses.MockUSDC || addresses.USDC || (isBase ? BASE_MAINNET_USDC : undefined);
-  const mockCTokenAddress = addresses.MockCompound || (isBase ? BASE_MAINNET_CUSDC : undefined);
+  const isSepolia = network.name === "base_sepolia";
+
+  const paymentTokenAddress = isSepolia
+    ? addresses.MockUSDC
+    : isBase
+      ? BASE_MAINNET_USDC
+      : addresses.USDC;
+
+  const aavePoolAddress = isSepolia
+    ? BASE_SEPOLIA_AAVE_POOL
+    : isBase
+      ? BASE_MAINNET_AAVE_V3_POOL
+      : undefined;
 
   const config = {
     paymentTokenAddress,
     platformTokenAddress: addresses.PlatformToken,
     depositManagerAddress: addresses.DepositManager,
     contestFactoryAddress: addresses.ContestFactory,
-    mockCTokenAddress,
+    aavePoolAddress,
     referralGraphAddress: addresses.ReferralGraph,
     rewardDistributorAddress: addresses.RewardDistributor,
   };
@@ -234,25 +246,35 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   const referralOracle = getReferralOracleAddress();
 
   const paths = {
+    MockUSDC: "src/mocks/MockUSDC.sol",
     PlatformToken: "lib/yieldToken/src/PlatformToken.sol",
     DepositManager: "lib/yieldToken/src/DepositManager.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
     RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
-    MockUSDC: "src/mocks/MockUSDC.sol",
-    MockCompound: "src/mocks/MockCompound.sol",
   };
 
   const contractPath = paths[contractName];
   if (!contractPath) return null;
 
   let constructorArgs = "";
+  if (contractName === "MockUSDC") {
+    return `forge verify-contract ${address} ${contractPath}:MockUSDC --verifier blockscout --verifier-url ${network.blockscoutApiUrl}`;
+  }
   if (contractName === "DepositManager") {
-    const usdc = addresses.MockUSDC || addresses.USDC || BASE_MAINNET_USDC;
-    const ctoken = addresses.MockCompound || addresses.CUSDC || BASE_MAINNET_CUSDC;
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${ctoken})`;
-  } else if (contractName === "MockCompound") {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address)" ${addresses.MockUSDC})`;
+    let usdc;
+    let pool;
+    if (network.name === "base_sepolia") {
+      usdc = addresses.MockUSDC;
+      pool = BASE_SEPOLIA_AAVE_POOL;
+    } else if (network.name === "base") {
+      usdc = BASE_MAINNET_USDC;
+      pool = BASE_MAINNET_AAVE_V3_POOL;
+    } else {
+      usdc = addresses.USDC;
+      pool = addresses.Pool;
+    }
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${pool})`;
   } else if (contractName === "PlatformToken") {
     const isSepolia = network.name === "base_sepolia";
     const name = isSepolia ? "xCUT" : "Cut Platform Token";
@@ -272,10 +294,9 @@ function verifyContracts(network, addresses) {
 
   const contractsDir = path.join(projectRoot, "contracts");
   const order = [
+    "MockUSDC",
     "PlatformToken",
     "DepositManager",
-    "MockUSDC",
-    "MockCompound",
     "ContestFactory",
     "ReferralGraph",
     "RewardDistributor",
@@ -284,14 +305,6 @@ function verifyContracts(network, addresses) {
   for (const contractName of order) {
     const address = addresses[contractName];
     if (!address || address === "0x0000000000000000000000000000000000000000") continue;
-
-    if (
-      network.name === "base" &&
-      (contractName === "MockUSDC" || contractName === "MockCompound")
-    ) {
-      logInfo(`Skipping verify for ${contractName} on Base (not deployed mocks)`);
-      continue;
-    }
 
     const cmd = buildVerifyCommand(network, contractName, address, addresses);
     if (!cmd) {
@@ -349,6 +362,11 @@ function deployContracts(network) {
 
   if (Object.keys(addresses).length === 0) {
     logError("No contract addresses found in deployment output");
+    process.exit(1);
+  }
+
+  if (network.name === "base_sepolia" && !addresses.MockUSDC) {
+    logError("Sepolia deploy must include MockUSDC (check script logs for MockUSDC deployed to:)");
     process.exit(1);
   }
 

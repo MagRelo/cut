@@ -19,10 +19,11 @@ contract DeployBase is Script {
         PlatformToken platformToken = new PlatformToken("Cut Platform Token", "CUT");
         console2.log("PlatformToken deployed to:", address(platformToken));
 
+        // USDC + Aave V3 Pool on Base mainnet (yieldToken DepositManager uses IPool, not Compound cUSDC)
         DepositManager depositManager = new DepositManager(
             0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913,
             address(platformToken),
-            0xb125E6687d4313864e53df431d5425969c15Eb2F
+            0xA238Dd80C259a72e81d7e4664a9801593F98d1c5
         );
         console2.log("DepositManager deployed to:", address(depositManager));
 

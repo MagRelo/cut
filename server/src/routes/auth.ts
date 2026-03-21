@@ -105,16 +105,18 @@ authRouter.post("/siwe/verify", async (c) => {
       const isBaseSepolia = Number(chainId) === 84532; // Base Sepolia chain ID
 
       if (isTokenMintingEnabled && isBaseSepolia) {
-        // Mint $1000 USDC(x) to new user on Base Sepolia testnet
         pendingTokenMint = true;
         try {
-          await mintUSDCToUser(address!.toLowerCase(), 1000);
-          console.log(
-            `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`,
-          );
+          const result = await mintUSDCToUser(address!.toLowerCase(), 1000);
+          if (result.success) {
+            console.log(
+              `Minted $1000 USDC(x) to new user on Base Sepolia: ${address!.toLowerCase()}`,
+            );
+          } else {
+            console.error("Mint returned failure:", result.error);
+          }
         } catch (mintError) {
           console.error("Failed to mint and transfer tokens to new user:", mintError);
-          // Don't fail the user creation if token minting fails
         }
       } else if (!isTokenMintingEnabled) {
         console.log("Token minting is disabled. Skipping token transfer to new user.");

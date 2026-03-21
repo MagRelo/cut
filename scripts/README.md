@@ -217,7 +217,7 @@ The script provides colored console output with:
   platformTokenAddress: 0x772c846Ac2BC1CF0733331e76912d90479c0481d
   depositManagerAddress: 0x14138DC74022AE1290132cd4945381e94aCE2A88
   escrowFactoryAddress: 0x45DA62D53170e4d9DAE329FA31531ADaa312662b
-  mockCTokenAddress: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
+  aavePoolAddress: 0xdA8DAd6ac5CC5fD9b4f2D53B1bE04986f7e4F430
 
 🎉 Deployment completed successfully!
 ```

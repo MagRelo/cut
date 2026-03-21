@@ -13,45 +13,16 @@ const PAYMENT_TOKEN_ABI = [
   "function decimals() external pure returns (uint8)",
 ];
 
-async function getLatestDeployment() {
-  const broadcastDir = path.join(process.cwd(), "contracts", "broadcast", "Deploy_sepolia.s.sol");
-
-  if (!fs.existsSync(broadcastDir)) {
-    throw new Error(
-      "Deployment broadcast directory not found. Please run the deployment script first."
-    );
+function getPaymentTokenAddressFromSepoliaJson() {
+  const configPath = path.join(process.cwd(), "server", "src", "contracts", "sepolia.json");
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Missing ${configPath}. Run deploy or copy contract addresses.`);
   }
-
-  // Find the latest deployment
-  const deployments = fs
-    .readdirSync(broadcastDir)
-    .filter((dir) => fs.statSync(path.join(broadcastDir, dir)).isDirectory())
-    .sort()
-    .reverse();
-
-  if (deployments.length === 0) {
-    throw new Error("No deployments found in broadcast directory");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  if (!config.paymentTokenAddress) {
+    throw new Error("sepolia.json is missing paymentTokenAddress");
   }
-
-  const latestDeployment = deployments[0];
-  const latestRunFile = path.join(broadcastDir, latestDeployment, "run-latest.json");
-
-  if (!fs.existsSync(latestRunFile)) {
-    throw new Error("Latest deployment file not found");
-  }
-
-  const deploymentData = JSON.parse(fs.readFileSync(latestRunFile, "utf8"));
-
-  // Find PaymentToken deployment
-  const paymentTokenDeployment = deploymentData.transactions.find(
-    (tx) => tx.contractName === "MockUSDC"
-  );
-
-  if (!paymentTokenDeployment) {
-    throw new Error("MockUSDC deployment not found in latest deployment");
-  }
-
-  return paymentTokenDeployment.contractAddress;
+  return config.paymentTokenAddress;
 }
 
 async function mintPaymentToken() {
@@ -80,10 +51,10 @@ async function mintPaymentToken() {
 
   if (USE_LATEST_DEPLOYMENT) {
     try {
-      PAYMENT_TOKEN_ADDRESS = await getLatestDeployment();
-      console.log("📋 Using PaymentToken address from latest deployment:", PAYMENT_TOKEN_ADDRESS);
+      PAYMENT_TOKEN_ADDRESS = getPaymentTokenAddressFromSepoliaJson();
+      console.log("📋 Using payment token from server/src/contracts/sepolia.json:", PAYMENT_TOKEN_ADDRESS);
     } catch (error) {
-      console.error("Failed to get latest deployment:", error.message);
+      console.error("Failed to read sepolia.json:", error.message);
       console.log("Falling back to PAYMENT_TOKEN_ADDRESS environment variable");
       PAYMENT_TOKEN_ADDRESS = process.env.PAYMENT_TOKEN_ADDRESS;
     }
