@@ -62,7 +62,6 @@ export interface Env {
   ORACLE_PRIVATE_KEY: string;
   PLATFORM_TOKEN_ADDRESS: string;
   PAYMENT_TOKEN_ADDRESS: string;
-  ESCROW_FACTORY_ADDRESS: string;
   TREASURY_ADDRESS: string;
   MAILERSEND_API_KEY: string;
   MAILERSEND_FROM_EMAIL: string;

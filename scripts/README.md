@@ -92,8 +92,6 @@ pnpm run deposit-usdc
 
 # Base mainnet
 pnpm run base:deposit-usdc
-
-# Or run files directly
 node scripts/base/checkPlatformTokenBalance.js
 node scripts/base/emergencyWithdrawAll.js
 ```

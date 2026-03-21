@@ -139,8 +139,7 @@ async function getLatestDeployment() {
 async function depositUSDC() {
   // Get environment variables
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
-  const RPC_URL =
-    process.env.SEPOLIA_RPC_URL || process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+  const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const USE_LATEST_DEPLOYMENT = process.env.USE_LATEST_DEPLOYMENT === "true";
 
   // Deposit parameters

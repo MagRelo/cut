@@ -28,8 +28,7 @@ function getPaymentTokenAddressFromSepoliaJson() {
 async function mintPaymentToken() {
   // Get environment variables
   const PRIVATE_KEY = process.env.PRIVATE_KEY;
-  const RPC_URL =
-    process.env.SEPOLIA_RPC_URL || process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
+  const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const RECIPIENT_ADDRESS = process.env.RECIPIENT_ADDRESS;
   const AMOUNT = process.env.AMOUNT || "10000000000"; // 10000 USDC (6 decimals)
   const USE_LATEST_DEPLOYMENT = process.env.USE_LATEST_DEPLOYMENT === "true";
