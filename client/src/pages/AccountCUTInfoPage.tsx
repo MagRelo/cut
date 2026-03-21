@@ -52,19 +52,18 @@ export function CUTInfoPage() {
   const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
-  // Get USDC balance in Compound
-  const { data: compoundUSDCBalance, isLoading: compoundUSDCBalanceLoading } = useReadContract({
+  // USDC supplied on Aave via DepositManager (matches DepositManager.sol)
+  const { data: aaveUSDCBalance, isLoading: aaveUSDCBalanceLoading } = useReadContract({
     address: depositManagerAddress as `0x${string}`,
     abi: DepositManagerContract.abi,
-    functionName: "getCompoundUSDCBalance",
+    functionName: "getAaveUSDCBalance",
     query: {
       enabled: !!depositManagerAddress,
     },
   });
 
-  // Format compound USDC balance for display
-  const formattedCompoundUSDCBalance = compoundUSDCBalance
-    ? Number(formatUnits(compoundUSDCBalance as bigint, 6)).toFixed(2)
+  const formattedAaveUSDCBalance = aaveUSDCBalance
+    ? Number(formatUnits(aaveUSDCBalance as bigint, 6)).toFixed(2)
     : "0.00";
 
   // Get platform token supply directly from PlatformToken contract
@@ -102,7 +101,7 @@ export function CUTInfoPage() {
         <div className="text-sm text-gray-700 mb-4">
           <p>
             CUT is the currency of the Cut platform. Each CUT is backed by and convertible to USDC
-            at a 1:1 ratio. USDC deposits are held in Compound to generate yield.
+            at a 1:1 ratio. USDC deposits are supplied to Aave to generate yield.
           </p>
         </div>
 
@@ -131,9 +130,9 @@ export function CUTInfoPage() {
 
           <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {compoundUSDCBalanceLoading ? "..." : `$${formattedCompoundUSDCBalance}`}
+              {aaveUSDCBalanceLoading ? "..." : `$${formattedAaveUSDCBalance}`}
             </div>
-            <div className="text-sm text-gray-600 mt-1">cUSDC Balance</div>
+            <div className="text-sm text-gray-600 mt-1">USDC in Aave</div>
           </div>
         </div>
       </div>

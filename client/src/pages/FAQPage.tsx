@@ -398,7 +398,7 @@ export const FAQPage: React.FC = () => {
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>CUT is the platform's token used for contest entry fees and prizes</li>
                 <li>Each CUT token is backed 1:1 by USDC (a US dollar stablecoin)</li>
-                <li>Your USDC deposits are held in Compound Finance to earn yield</li>
+                <li>Your USDC deposits are supplied via Aave to earn yield</li>
                 <li>You can convert between CUT and USDC instantly at any time</li>
                 <li>
                   Learn more on the{" "}
@@ -497,7 +497,7 @@ export const FAQPage: React.FC = () => {
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>The Platform Token contract manages CUT token minting and burning</li>
                 <li>When you deposit USDC, the contract mints CUT at 1:1 ratio</li>
-                <li>Your USDC is deposited into Compound Finance to earn yield</li>
+                <li>Your USDC is supplied via Aave to earn yield</li>
                 <li>When you sell CUT, the contract burns your tokens and returns USDC</li>
                 <li>The contract ensures CUT is always fully backed by USDC reserves</li>
               </ul>
