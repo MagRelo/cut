@@ -14,15 +14,6 @@ function classNames(...classes: (string | boolean | undefined)[]) {
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 
-const getOrdinalSuffix = (num: number): string => {
-  const j = num % 10;
-  const k = num % 100;
-  if (j === 1 && k !== 11) return "st";
-  if (j === 2 && k !== 12) return "nd";
-  if (j === 3 && k !== 13) return "rd";
-  return "th";
-};
-
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -111,7 +102,11 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     <div>
       <TabGroup>
         <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-          <Tab className={tabClass}>Buy Shares</Tab>
+          <Tab className={tabClass}>
+            Buy Shares
+            {/* locked indicator based on canOpenLineupModal */}
+            {!canOpenLineupModal ? <span> 🔒</span> : null}
+          </Tab>
           <Tab className={tabClass}>Positions</Tab>
         </TabList>
         <TabPanels>
@@ -137,9 +132,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                     ? maybeColor
                     : DEFAULT_USER_COLOR;
 
-                  const positionNum = lineup?.position ?? 0;
-                  const positionOrdinalSuffix = getOrdinalSuffix(positionNum || 1);
-
                   return (
                     <div
                       key={entry.entryId}
@@ -158,7 +150,9 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                       <div className="flex items-center justify-between gap-3">
                         {/* Left - User & Lineup Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">
+                            {userName}
+                          </div>
                           <div className="text-xs text-gray-500 truncate">
                             {(() => {
                               const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
@@ -174,24 +168,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                               return sortedPlayerNames || "No players";
                             })()}
-                          </div>
-                        </div>
-
-                        {/* Middle - Rank (over/under: position / line / pts) */}
-                        <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem]">
-                          <div className="text-sm font-bold text-gray-900 leading-tight tabular-nums">
-                            {positionNum > 0 ? (
-                              <>
-                                {positionNum}
-                                <sup className="text-[9px] font-bold">{positionOrdinalSuffix}</sup>
-                              </>
-                            ) : (
-                              "—"
-                            )}
-                          </div>
-                          <div className="w-full border-t border-gray-300 my-1" aria-hidden />
-                          <div className="text-sm font-semibold text-gray-600 leading-tight tabular-nums">
-                            {lineup?.score ?? 0} pts
                           </div>
                         </div>
 

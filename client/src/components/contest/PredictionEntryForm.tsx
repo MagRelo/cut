@@ -19,6 +19,9 @@ export interface PredictionEntryData {
   positionSubsidyFormatted: string;
   impliedWinnings: bigint;
   impliedWinningsFormatted: string;
+  /** Cumulative payment token deposited for this secondary position (18 decimals). */
+  secondaryDepositedPerEntry: bigint;
+  secondaryDepositedFormatted: string;
   hasPosition: boolean;
 }
 

@@ -124,10 +124,13 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             ? maybeColor
             : DEFAULT_USER_COLOR;
 
-          const ownershipShare =
-            position.totalSupply > 0n
-              ? (Number(position.balance) / Number(position.totalSupply)) * 100
-              : 0;
+          const deposited = parseFloat(position.secondaryDepositedFormatted);
+          const depositedDisplay =
+            !Number.isFinite(deposited) || deposited <= 0
+              ? "0.00"
+              : deposited < 0.01
+                ? "< 0.01"
+                : deposited.toFixed(2);
 
           const impliedWinnings = parseFloat(position.impliedWinningsFormatted);
           const impliedDisplay =
@@ -153,12 +156,12 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                   <div className="text-xs text-gray-500 truncate">{lineupName}</div>
                 </div>
 
-                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3.5rem] gap-0.5">
+                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[4rem] gap-0.5">
                   <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
-                    {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
+                    ${depositedDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
-                    Share
+                    Invested
                   </div>
                 </div>
 

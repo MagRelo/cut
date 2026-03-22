@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogPanel,
@@ -200,14 +201,28 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       {hasPlayers && (
                         <TabPanel>
                           <div>
-                            {sortedPlayers.map((player) => (
-                              <PlayerDisplayRow
-                                key={player.id}
-                                player={player}
-                                roundDisplay={roundDisplay}
-                                showArrow={false}
-                              />
-                            ))}
+                            {sortedPlayers.map((player) => {
+                              const leaderboardHref = player.pga_pgaTourId
+                                ? `/leaderboard?${new URLSearchParams({
+                                    pgaTourId: player.pga_pgaTourId,
+                                  }).toString()}`
+                                : "/leaderboard";
+
+                              return (
+                                <Link
+                                  key={player.id}
+                                  to={leaderboardHref}
+                                  className="block text-inherit no-underline hover:opacity-90"
+                                  onClick={onClose}
+                                >
+                                  <PlayerDisplayRow
+                                    player={player}
+                                    roundDisplay={roundDisplay}
+                                    showArrow={false}
+                                  />
+                                </Link>
+                              );
+                            })}
                           </div>
                         </TabPanel>
                       )}

@@ -1,4 +1,5 @@
-import React, { Fragment, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -42,9 +43,25 @@ const getNumericPosition = (player: PlayerWithTournamentData) => {
 
 export const LeaderboardPage: React.FC = () => {
   const { currentTournament, players, isLoading, error } = useActiveTournament();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
+
+  const pgaTourIdParam = searchParams.get("pgaTourId");
+
+  useEffect(() => {
+    if (isLoading || !pgaTourIdParam || players.length === 0) return;
+
+    const match = players.find(
+      (p) =>
+        p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === pgaTourIdParam.trim(),
+    );
+    if (match) {
+      setSelectedPlayer(match);
+      setIsPlayerModalOpen(true);
+    }
+  }, [isLoading, pgaTourIdParam, players]);
 
   const openPlayerModal = (player: PlayerWithTournamentData) => {
     setSelectedPlayer(player);
@@ -54,6 +71,11 @@ export const LeaderboardPage: React.FC = () => {
   const closePlayerModal = () => {
     setIsPlayerModalOpen(false);
     setSelectedPlayer(null);
+    if (searchParams.has("pgaTourId")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("pgaTourId");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   const sortedPlayers = useMemo(() => {

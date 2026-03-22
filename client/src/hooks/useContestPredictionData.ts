@@ -189,6 +189,21 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress],
   );
 
+  /** Cumulative payment token deposited by user for this entry (used for refunds). */
+  const depositedPerEntryContracts = useMemo(
+    () =>
+      shouldFetchBalances
+        ? entryIds.map((entryId) => ({
+            address: contestAddress as `0x${string}`,
+            abi: contestAbi,
+            functionName: "secondaryDepositedPerEntry",
+            args: [userAddress as `0x${string}`, BigInt(entryId)],
+            chainId,
+          }))
+        : [],
+    [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress],
+  );
+
   const positionSubsidyContracts = useMemo(
     () =>
       shouldFetchEntries
@@ -227,6 +242,16 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     contracts: balanceContracts,
     query: {
       enabled: shouldFetchBalances,
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  });
+
+  const { data: depositedPerEntryResults, isLoading: isLoadingDepositedPerEntry } = useReadContracts({
+    contracts: depositedPerEntryContracts,
+    query: {
+      enabled: shouldFetchBalances && depositedPerEntryContracts.length > 0,
       staleTime: 30_000,
       gcTime: 5 * 60_000,
       refetchOnWindowFocus: false,
@@ -289,6 +314,10 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     const supplyRaw = supplyResults?.[index]?.result as bigint | undefined;
     const supply = supplyRaw !== undefined ? sharesForSecondaryPricing(supplyRaw) : undefined;
     const positionSubsidy = positionSubsidyResults?.[index]?.result as bigint | undefined;
+    const secondaryDepositedPerEntryRaw = shouldFetchBalances
+      ? (depositedPerEntryResults?.[index]?.result as bigint | undefined)
+      : undefined;
+    const secondaryDepositedPerEntry = secondaryDepositedPerEntryRaw ?? 0n;
 
     // Calculate implied winnings if this entry wins
     // Formula: (userBalance / totalSupply) * totalCollateral
@@ -318,6 +347,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       positionSubsidyFormatted: positionSubsidy ? formatUnits(positionSubsidy, 18) : "0",
       impliedWinnings,
       impliedWinningsFormatted,
+      secondaryDepositedPerEntry,
+      secondaryDepositedFormatted: formatUnits(secondaryDepositedPerEntry, 18),
       hasPosition: balance ? balance > 0n : false,
       isLoadingPrice: isLoadingPrices,
       isLoadingBalance: isLoadingBalances,
@@ -329,6 +360,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     isLoadingState ||
     isLoadingPrices ||
     isLoadingBalances ||
+    isLoadingDepositedPerEntry ||
     isLoadingSupplies ||
     isLoadingPositionSubsidies ||
     isLoadingPoolConfig;

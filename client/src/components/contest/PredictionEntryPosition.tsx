@@ -16,6 +16,8 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
   contest,
   entry,
   canWithdraw,
+  userName,
+  lineupName,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -32,10 +34,21 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
     },
   });
 
-  const ownershipShare =
-    entry.totalSupply > 0n ? (Number(entry.balance) / Number(entry.totalSupply)) * 100 : 0;
+  const deposited = parseFloat(entry.secondaryDepositedFormatted);
+  const depositedDisplay =
+    !Number.isFinite(deposited) || deposited <= 0
+      ? "0.00"
+      : deposited < 0.01
+        ? "< 0.01"
+        : deposited.toFixed(2);
 
-  const shareValue = Number.parseFloat(entry.impliedWinningsFormatted ?? "0");
+  const impliedWinnings = parseFloat(entry.impliedWinningsFormatted ?? "0");
+  const impliedDisplay =
+    !Number.isFinite(impliedWinnings) || impliedWinnings < 0
+      ? "0.00"
+      : impliedWinnings < 0.01
+        ? "< 0.01"
+        : impliedWinnings.toFixed(2);
 
   const handleWithdraw = async () => {
     if (!canWithdraw) return;
@@ -47,7 +60,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
       const calls = createWithdrawPredictionCalls(
         contest.address,
         Number.parseInt(entry.entryId, 10),
-        entry.balance
+        entry.balance,
       );
 
       await execute(calls);
@@ -60,23 +73,30 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
 
   return (
     <div className="space-y-3 h-[269px]">
-      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-4 text-sm">
-        <div className="space-y-2.5">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-500">Outcome Share</span>
-            <span className="font-semibold text-gray-900">
-              {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
-            </span>
+      <div className="rounded-none border border-gray-200 p-3 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 text-left">
+            <div className="truncate text-sm font-semibold text-gray-900">{userName}</div>
+            <div className="truncate text-xs text-gray-500">{lineupName}</div>
           </div>
 
-          {shareValue > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500">Current Share Value</span>
-              <span className="font-semibold text-green-600">
-                ~${shareValue < 0.01 ? "< 0.01" : shareValue.toFixed(2)}
-              </span>
+          <div className="flex min-w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 text-center">
+            <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
+              ${depositedDisplay}
             </div>
-          )}
+            <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-400">
+              Invested
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-col items-center text-center">
+            <div className="text-lg font-bold leading-none tabular-nums text-green-600">
+              ${impliedDisplay}
+            </div>
+            <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+              Value
+            </div>
+          </div>
         </div>
       </div>
 
@@ -105,12 +125,6 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
           </button>
         </div>
       )}
-
-      <div className="text-xs text-gray-500 border-t border-gray-200 pt-2">
-        <p>
-          <strong>Note:</strong> Final payouts are calculated based on overall participant activity.
-        </p>
-      </div>
     </div>
   );
 };
