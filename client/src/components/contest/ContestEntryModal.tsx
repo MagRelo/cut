@@ -69,14 +69,38 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   const hasPosition = Boolean(predictionEntry?.hasPosition);
   const hasPlayers = lineupPlayers.length > 0;
 
-  const buySharesTabIndex = hasPlayers ? 1 : 0;
-  const positionTabIndex = hasPlayers ? 2 : 1;
+  const showBuySharesTab =
+    contest.status !== "LOCKED" &&
+    contest.status !== "SETTLED" &&
+    contest.status !== "CANCELLED" &&
+    contest.status !== "CLOSED";
+
+  const buySharesTabIndex = showBuySharesTab ? (hasPlayers ? 1 : 0) : -1;
+  const positionTabIndex = showBuySharesTab
+    ? hasPlayers
+      ? 2
+      : 1
+    : hasPlayers
+      ? 1
+      : 0;
 
   const getInitialTabIndex = () => {
-    if (initialTab === "buyShares") return buySharesTabIndex;
-    if (initialTab === "position") return hasPosition ? positionTabIndex : buySharesTabIndex;
+    if (initialTab === "buyShares") {
+      if (showBuySharesTab) return buySharesTabIndex;
+      if (hasPlayers) return 0;
+      if (hasPosition) return positionTabIndex;
+      return 0;
+    }
+    if (initialTab === "position") {
+      if (hasPosition) return positionTabIndex;
+      if (showBuySharesTab) return buySharesTabIndex;
+      return hasPlayers ? 0 : 0;
+    }
     // initialTab === "players"
-    return hasPlayers ? 0 : buySharesTabIndex;
+    if (hasPlayers) return 0;
+    if (showBuySharesTab) return buySharesTabIndex;
+    if (hasPosition) return positionTabIndex;
+    return 0;
   };
 
   const [selectedIndex, setSelectedIndex] = useState<number>(() => getInitialTabIndex());
@@ -86,7 +110,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     if (!isOpen) return;
     setSelectedIndex(getInitialTabIndex());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, lineup?.id, initialTab, hasPlayers, hasPosition]);
+  }, [isOpen, lineup?.id, initialTab, hasPlayers, hasPosition, showBuySharesTab, contest.status]);
 
   if (!lineup) return null;
 
@@ -145,17 +169,19 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                           Players
                         </Tab>
                       )}
-                      <Tab
-                        className={({ selected }) =>
-                          `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
-                            selected
-                              ? "border-blue-500 text-blue-600"
-                              : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-                          }`
-                        }
-                      >
-                        Buy Shares
-                      </Tab>
+                      {showBuySharesTab && (
+                        <Tab
+                          className={({ selected }) =>
+                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
+                              selected
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
+                            }`
+                          }
+                        >
+                          Buy Shares
+                        </Tab>
+                      )}
                       {hasPosition && (
                         <Tab
                           className={({ selected }) =>
@@ -185,19 +211,21 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                           </div>
                         </TabPanel>
                       )}
-                      <TabPanel>
-                        <div className="pt-1">
-                          <PredictionEntryForm
-                            contest={contest}
-                            entryId={lineup.entryId ?? null}
-                            entryData={entryData}
-                            secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
-                            secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
-                            poolSnapshot={poolSnapshot}
-                            onClose={onClose}
-                          />
-                        </div>
-                      </TabPanel>
+                      {showBuySharesTab && (
+                        <TabPanel>
+                          <div className="pt-1">
+                            <PredictionEntryForm
+                              contest={contest}
+                              entryId={lineup.entryId ?? null}
+                              entryData={entryData}
+                              secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+                              secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+                              poolSnapshot={poolSnapshot}
+                              onClose={onClose}
+                            />
+                          </div>
+                        </TabPanel>
+                      )}
                       {hasPosition && predictionEntry && (
                         <TabPanel>
                           <div className="pt-1">

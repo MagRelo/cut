@@ -5,6 +5,14 @@ import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest } from "../../types/contest";
 
+const DEFAULT_USER_COLOR = "#9CA3AF";
+
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
+
 interface PredictionPositionsListProps {
   contest: Contest;
 }
@@ -93,10 +101,6 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   return (
     <div className="bg-white rounded-sm">
-      <h3 className="text-lg font-semibold text-gray-800 mb-2 font-display px-2 pt-4">
-        Your Predictions
-      </h3>
-
       {/* Error Message */}
       {error && (
         <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded-md p-3">
@@ -104,62 +108,76 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
         </div>
       )}
 
-      <div className="divide-y divide-gray-200">
+      <div className="space-y-2 mt-2">
         {userPositions.map((position) => {
           const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
-          const userName = lineup?.user?.name || "Unknown";
+          const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
           const lineupName = lineup?.tournamentLineup?.name || "Lineup";
           const isWithdrawing = withdrawingEntryId === position.entryId;
 
-          // Calculate ownership share percentage
+          const userSettings = lineup?.user?.settings;
+          const maybeColor =
+            typeof userSettings === "object" && userSettings !== null
+              ? (userSettings as { color?: unknown }).color
+              : undefined;
+          const resolvedLeftBorderColor = isValidHexColor(maybeColor)
+            ? maybeColor
+            : DEFAULT_USER_COLOR;
+
           const ownershipShare =
             position.totalSupply > 0n
               ? (Number(position.balance) / Number(position.totalSupply)) * 100
               : 0;
 
+          const impliedWinnings = parseFloat(position.impliedWinningsFormatted);
+          const impliedDisplay =
+            !Number.isFinite(impliedWinnings) || impliedWinnings < 0
+              ? "0.00"
+              : impliedWinnings < 0.01
+                ? "< 0.01"
+                : impliedWinnings.toFixed(2);
+
           return (
-            <div key={position.entryId} className="p-4 border border-gray-300 rounded-sm mb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-md font-semibold text-gray-900 truncate leading-tight font-display">
-                    {userName}
-                  </div>
-                  <div className="text-xs text-gray-600 truncate leading-6">{lineupName}</div>
+            <div
+              key={position.entryId}
+              className="bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3"
+              style={{
+                borderLeftColor: resolvedLeftBorderColor,
+                borderLeftWidth: "3px",
+                borderLeftStyle: "solid",
+              }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
+                  <div className="text-xs text-gray-500 truncate">{lineupName}</div>
                 </div>
-                <div className="flex items-center px-2 py-1 bg-emerald-100 rounded text-emerald-700 text-xs font-semibold">
-                  ✓ Active
-                </div>
-              </div>
 
-              <div className="pt-2 space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Outcome Share:</span>
-                  <span className=" text-gray-500">
+                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3.5rem] gap-0.5">
+                  <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
                     {ownershipShare < 0.01 ? "< 0.01" : ownershipShare.toFixed(2)}%
-                  </span>
+                  </div>
+                  <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
+                    Share
+                  </div>
                 </div>
 
-                {parseFloat(position.impliedWinningsFormatted) > 0 && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Share Value:</span>
-                    <span className="font-semibold text-green-600">
-                      ~$
-                      {parseFloat(position.impliedWinningsFormatted) < 0.01
-                        ? "< 0.01"
-                        : parseFloat(position.impliedWinningsFormatted).toFixed(2)}{" "}
-                    </span>
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600 leading-none tabular-nums">
+                      ${impliedDisplay}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                      Value
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
-              {/* 
-              <div className="text-center text-xs text-gray-500 mt-2">
-                Entry #{position.entryId}
-              </div> */}
 
-              {/* Withdraw Button */}
               {canWithdraw && (
-                <div className="mt-4 border-t border-gray-200 pt-4">
+                <div className="mt-3 border-t border-gray-200 pt-3">
                   <button
+                    type="button"
                     onClick={() => handleWithdraw(position.entryId, position.balance)}
                     disabled={isProcessing}
                     className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
@@ -178,13 +196,6 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             </div>
           );
         })}
-      </div>
-
-      <div className="px-4 pb-4 text-xs text-gray-500 border-t border-gray-200 pt-4 mt-2">
-        <p>
-          <strong>Note:</strong> Current value is calculated using live LMSR pricing. Actual payout
-          depends on contest settlement.
-        </p>
       </div>
     </div>
   );

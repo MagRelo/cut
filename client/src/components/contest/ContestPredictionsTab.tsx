@@ -86,7 +86,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
 
   return (
     <div className="p-2 space-y-4 mt-1">
-      {/* Lineup Odds List (OPEN or ACTIVE states) */}
+      {/* Buy Shares + Positions (tabs); when chain is not OPEN/ACTIVE, lineups list only via lobby / other entry points */}
       {canPredict && <PredictionLineupsList contest={contest} />}
 
       {/* Locked State Message */}
@@ -101,8 +101,8 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
       {/* Claim Panel (SETTLED state) */}
       {canClaim && <PredictionClaimPanel contest={contest} />}
 
-      {/* User's Current Positions (always show if wallet connected) */}
-      <PredictionPositionsList contest={contest} />
+      {/* Positions list when predictions UI is the standalone view (no Buy Shares tab) */}
+      {!canPredict && <PredictionPositionsList contest={contest} />}
 
       {/* Info Panel */}
       {/* {canPredict && (

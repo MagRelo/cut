@@ -37,8 +37,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   contest,
   entryId,
   entryData,
-  secondaryPrizePoolFormatted,
-  secondaryTotalFundsFormatted,
   poolSnapshot,
   onClose,
 }) => {
@@ -52,12 +50,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     () => entryData.find((entry) => entry.entryId === entryId) ?? null,
     [entryData, entryId],
   );
-
-  const parsedSecondaryTotalFunds = Number.parseFloat(secondaryTotalFundsFormatted);
-
-  const displayPrizePool = Number.isFinite(parsedSecondaryTotalFunds)
-    ? secondaryTotalFundsFormatted
-    : secondaryPrizePoolFormatted;
 
   const metrics = useMemo(() => {
     if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo || !poolSnapshot) {
@@ -104,20 +96,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const parsedAmount = Number.parseFloat(amount);
   const purchaseAmountDisplay =
     Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount.toFixed(2) : "0.00";
-  const tokensReceivedDisplay =
-    Number.isFinite(metrics.tokensReceived) && metrics.tokensReceived > 0
-      ? metrics.tokensReceived >= 1
-        ? metrics.tokensReceived.toFixed(2)
-        : metrics.tokensReceived.toFixed(4)
-      : "0";
-  const ownershipPercentDisplay =
-    Number.isFinite(metrics.ownershipPercent) && metrics.ownershipPercent > 0
-      ? `${metrics.ownershipPercent.toFixed(2)}%`
-      : "0%";
-  const potentialReturnDisplay =
-    Number.isFinite(metrics.potentialReturn) && metrics.potentialReturn > 0
-      ? metrics.potentialReturn.toFixed(2)
-      : "0.00";
 
   // Concept: each share is worth $1 winnings if the entry wins.
   // Therefore, share "price" here is the cost per $1 of winnings:
@@ -129,16 +107,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       : 0;
 
   const metricsReady = Boolean(poolSnapshot);
-
-  const approximateOddsRatio =
-    Number.isFinite(metrics.potentialReturn) &&
-    metrics.potentialReturn > 0 &&
-    Number.isFinite(parsedAmount) &&
-    parsedAmount > 0
-      ? metrics.potentialReturn / parsedAmount
-      : 0;
-  const approximateOddsDisplay =
-    approximateOddsRatio > 0 ? Math.max(1, Math.round(approximateOddsRatio)).toString() : "0";
 
   useEffect(() => {
     setAmount("10");
@@ -191,34 +159,61 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   if (!user) {
     return (
       <div className="space-y-2 h-[269px]">
-        <div className="rounded-md border border-emerald-00 bg-emerald-50 p-4 text-sm text-emerald-700">
-          {/* title */}
-          <h3 className="text-lg font-semibold font-display mb-2">Winner Outcome Market</h3>
+        <form
+          className="space-y-2 pointer-events-none opacity-55"
+          aria-disabled="true"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Share Price</span>
+                <span className="font-bold text-gray-900 text-base">
+                  {metricsReady ? `$${sharePrice.toFixed(2)}` : "—"}
+                </span>
+              </div>
 
-          {/* Instuctions/examples */}
-          <p className="mb-2 leading-relaxed">
-            <span className="font-semibold text-emerald-700">${purchaseAmountDisplay}</span> can buy{" "}
-            {tokensReceivedDisplay} shares in this outcome (
-            <span className="font-semibold text-emerald-700">{ownershipPercentDisplay}</span> of the
-            supply).
-          </p>
-          <p className="mb-2 leading-relaxed">
-            {" "}
-            If this entry wins, you would receive{" "}
-            <span className="font-semibold text-emerald-700">{ownershipPercentDisplay}</span> of the
-            total prize pool (<span className="text-emerald-700">${displayPrizePool}</span>),
-            currently worth{" "}
-            <span className="font-semibold text-emerald-700">
-              ${potentialReturnDisplay} (~{approximateOddsDisplay}x)
-            </span>
-          </p>
-          <p>
-            <Link to="/connect" className="text-emerald-700 font-semibold underline">
-              Sign In
-            </Link>{" "}
-            to purchase shares.
-          </p>
-        </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Purchase Amount</span>
+                <span className="font-bold text-gray-900 text-base">${purchaseAmountDisplay}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Winnings if Entry Wins</span>
+                <span className="font-bold text-green-600 text-base">
+                  ${sharesToPurchase.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="position-amount-preview"
+              className="block text-left text-sm font-medium text-gray-500 mb-2"
+            >
+              Purchase Amount
+            </label>
+            <input
+              id="position-amount-preview"
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              readOnly
+              tabIndex={-1}
+              placeholder="Enter amount"
+              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+              disabled
+            />
+          </div>
+        </form>
+
+        <Link
+          to="/connect"
+          className="flex w-full justify-center bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-display font-semibold transition-colors"
+        >
+          Connect
+        </Link>
       </div>
     );
   }

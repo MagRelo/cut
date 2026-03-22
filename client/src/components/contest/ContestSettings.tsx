@@ -61,18 +61,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   });
 
-  // Get expiry timestamp from contract
-  const expiryTimestamp = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "expiryTimestamp",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   // Get contract state
   const contractState = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -84,30 +72,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       enabled: !!contest?.address,
     },
   }).data as number | undefined;
-
-  // Get oracle fee from contract
-  const contractOracleFee = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "oracleFeeBps",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  // Get oracle address from contract
-  const oracleAddress = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "oracle",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as `0x${string}` | undefined;
 
   // Layer 1: Primary Pool Data
   const primaryPrizePool = useReadContract({
@@ -285,7 +249,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
       {/* Contest Contract Details */}
       <div>
         {/* Contract panel */}
-        <div className="bg-white p-3 min-h-[160px] mb-2">
+        <div className="bg-white min-h-[160px]">
           <div className="flex flex-col gap-1.5 font-mono text-xs">
             {/* Contract Status */}
             <div className="flex items-center justify-between">
@@ -310,6 +274,48 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )}
 
             <hr className="my-2" />
+
+            {/* Current Ratio - Visual Slider */}
+            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
+              <div className="flex flex-col gap-1 mt-2">
+                {/* Slider Container */}
+                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
+                  {/* Target Indicator Line */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
+                    style={{ left: `${targetPrimarySharePercent ?? 0}%` }}
+                  ></div>
+
+                  {/* Current Position Indicator */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-green-500 z-20 rounded-sm"
+                    style={{ left: `${currentSliderLeftPercent ?? 0}%` }}
+                  />
+
+                  {/* Labels at the ends */}
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
+                    Contest
+                  </div>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-700 font-semibold">
+                    Prediction
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-center text-[10px] text-gray-500 mt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                      <span>Target</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>Current</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Primary Side Balance (Total) */}
             {primarySideBalance !== undefined && (
@@ -376,49 +382,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Current Ratio - Visual Slider */}
-            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
-              <div className="flex flex-col gap-1 mt-2">
-                {/* Slider Container */}
-                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
-                  {/* Target Indicator Line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
-                    style={{ left: `${targetPrimarySharePercent ?? 0}%` }}
-                  ></div>
-
-                  {/* Current Position Indicator */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-green-500 z-20 rounded-sm"
-                    style={{ left: `${currentSliderLeftPercent ?? 0}%` }}
-                  />
-
-                  {/* Labels at the ends */}
-                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
-                    Contest
-                  </div>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-700 font-semibold">
-                    Prediction
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center text-[10px] text-gray-500 mt-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                      <span>Target</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>Current</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <hr className="my-2" />
+            {/* <hr className="my-2" /> */}
 
             {/* Total Primary Position Subsidies */}
             {totalPrimaryPositionSubsidies !== undefined && (
@@ -431,10 +395,10 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            <hr className="my-2" />
+            {/* <hr className="my-2" /> */}
 
             {/* Oracle Address */}
-            {oracleAddress && chainId && (
+            {/* {oracleAddress && chainId && (
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Oracle</span>
                 {createExplorerLinkJSX(
@@ -444,15 +408,15 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                   "text-blue-600 hover:text-blue-800 underline",
                 )}
               </div>
-            )}
+            )} */}
 
             {/* Oracle Fee */}
-            {contractOracleFee !== undefined && (
+            {/* {contractOracleFee !== undefined && (
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Oracle Fee</span>
                 <span className="text-gray-900">{Number(contractOracleFee) / 100}%</span>
               </div>
-            )}
+            )} */}
 
             {/* Accumulated Oracle Fee */}
             {/* {accumulatedOracleFee !== undefined && (
@@ -466,29 +430,31 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )} */}
 
             {/* Expiration */}
-            {expiryTimestamp && (
+            {/* {expiryTimestamp && (
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Contract Expires</span>
                 <span className="text-gray-900">
                   {new Date(Number(expiryTimestamp) * 1000).toLocaleString()}
                 </span>
               </div>
-            )}
+            )} */}
           </div>
-        </div>
 
-        {/* Escrow Contract */}
-        {contest?.address && chainId && (
-          <div className="flex items-center gap-2 font-display text-sm">
-            {/* <span className="text-gray-600">Contract</span> */}
-            {createExplorerLinkJSX(
-              contest.address,
-              chainId,
-              "View Contract on Explorer →",
-              "text-blue-600 hover:text-blue-800 underline",
-            )}
-          </div>
-        )}
+          <hr className="mt-4 mb-2" />
+
+          {/* Escrow Contract */}
+          {contest?.address && chainId && (
+            <div className="flex items-center gap-2 font-display text-sm">
+              {/* <span className="text-gray-600">Contract</span> */}
+              {createExplorerLinkJSX(
+                contest.address,
+                chainId,
+                "View Contract",
+                "text-blue-600 hover:text-blue-800 underline",
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

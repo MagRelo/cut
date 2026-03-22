@@ -217,7 +217,7 @@ export const ContestLobby: React.FC = () => {
               <div className="p-2 mt-1">
                 <ContestTimelinesSection contestId={contestId} variant="sharePrice" />
 
-                <div className="mt-3">
+                <div className="mt-1">
                   <PredictionLineupsList contest={contest} />
                 </div>
               </div>
@@ -321,11 +321,5 @@ const ContestTimelinesSection: React.FC<{
     );
   }
 
-  return (
-    <Timeline
-      timelineData={timelineData}
-      defaultMetric="score"
-      allowedMetrics={["score"]}
-    />
-  );
+  return <Timeline timelineData={timelineData} defaultMetric="score" allowedMetrics={["score"]} />;
 };

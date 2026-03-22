@@ -97,6 +97,11 @@ export function UserPage() {
       {/* Token Balances */}
       <TokenBalances showManageLink={false} showCutTokenLink={true} showUsdcLink={true} />
 
+      {/* User Settings */}
+      <div className="mt-4">
+        <UserSettings />
+      </div>
+
       {/* User Groups Link */}
       <div className="bg-white rounded-sm shadow p-4 mt-4">
         {/* Header */}
@@ -143,11 +148,6 @@ export function UserPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
-      </div>
-
-      {/* User Settings */}
-      <div className="mt-4">
-        <UserSettings />
       </div>
 
       {/* Wallet Information - Below tabs */}

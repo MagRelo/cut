@@ -115,12 +115,12 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
       {/* Right Section - Total Prize Pool */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {onSettingsClick && (
-          <div className="flex items-center border-r border-gray-200 pr-1">
+          <div className="flex items-center border-r border-gray-300 pr-1">
             <button
               type="button"
               onClick={onSettingsClick}
               aria-label="Contest Settings"
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
