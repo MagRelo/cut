@@ -11,23 +11,23 @@ This directory contains all Docker-related files for building and deploying the 
 
 The build process follows this sequence:
 
-1. **Client Build**: `npm run client:build` - Builds the React frontend
-2. **Server Build**: `npm run server:build` - Compiles TypeScript and copies contracts
-3. **Static Copy**: `npm run copy-static` - Copies client build to server dist/public
-4. **Docker Build**: `npm run docker:build` - Builds and pushes Docker image
+1. **Client Build**: `pnpm run client:build` - Builds the React frontend
+2. **Server Build**: `pnpm run server:build` - Compiles TypeScript and copies contracts
+3. **Workspace package**: `@cut/secondary-pricing` must have `dist/` (built via normal `pnpm install` / `pnpm --filter @cut/secondary-pricing run build`)
+4. **Docker Build**: `pnpm run docker:build` - Builds and pushes Docker image (uses **pnpm** inside the image for `workspace:*` dependencies)
 
 ## Usage
 
 ### Full Deployment
 
 ```bash
-npm run deploy
+pnpm run deploy
 ```
 
 ### Docker Build Only
 
 ```bash
-npm run docker:build
+pnpm run docker:build
 ```
 
 ### Docker Compose (Local Development)
@@ -42,9 +42,10 @@ docker-compose up -d
 The Docker image is built with:
 
 - Node.js 22 Alpine
+- pnpm (Corepack) and a filtered workspace install for `server` + `@cut/secondary-pricing`
 - Prisma Client pre-generated
 - Built application files from `server/dist/`
-- Client static files in `server/dist/public/`
+- Client static files in `public/` (from `client/dist/`)
 
 ## Environment Variables
 
