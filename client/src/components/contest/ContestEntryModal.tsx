@@ -201,7 +201,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       {hasPlayers && (
                         <TabPanel>
                           <div>
-                            {sortedPlayers.map((player) => {
+                            {sortedPlayers.map((player, index) => {
                               const leaderboardHref = player.pga_pgaTourId
                                 ? `/leaderboard?${new URLSearchParams({
                                     pgaTourId: player.pga_pgaTourId,
@@ -209,18 +209,22 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                                 : "/leaderboard";
 
                               return (
-                                <Link
-                                  key={player.id}
-                                  to={leaderboardHref}
-                                  className="block text-inherit no-underline hover:opacity-90"
-                                  onClick={onClose}
-                                >
-                                  <PlayerDisplayRow
-                                    player={player}
-                                    roundDisplay={roundDisplay}
-                                    showArrow={false}
-                                  />
-                                </Link>
+                                <Fragment key={player.id}>
+                                  <Link
+                                    to={leaderboardHref}
+                                    className="block text-inherit no-underline hover:opacity-90"
+                                    onClick={onClose}
+                                  >
+                                    <PlayerDisplayRow
+                                      player={player}
+                                      roundDisplay={roundDisplay}
+                                      showArrow={false}
+                                    />
+                                  </Link>
+                                  {index < sortedPlayers.length - 1 && (
+                                    <hr className="my-0 border-0 border-t border-gray-200" />
+                                  )}
+                                </Fragment>
                               );
                             })}
                           </div>

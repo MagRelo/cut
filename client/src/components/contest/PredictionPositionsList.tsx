@@ -171,7 +171,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                       ${impliedDisplay}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                      Value
+                      payout
                     </div>
                   </div>
                 </div>

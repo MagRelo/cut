@@ -114,7 +114,7 @@ export const ContestEntryList = ({
         return (
           <div
             key={lineup.id}
-            className="rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
+            className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
             onClick={() => openLineupModal(lineup)}
             style={{
               borderLeftColor: resolvedBorderColor,
