@@ -41,7 +41,6 @@ export const ContestLobby: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
 
   if (isLoading) {
@@ -187,7 +186,7 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES (Contest) */}
             <TabPanel>
               <div className="p-2 mt-1">
-                <TimelineModalContent contestId={contestId} />
+                <ContestTimelinesSection contestId={contestId} variant="score" />
 
                 {/* Contest Entry List */}
                 <div className="mt-3">
@@ -216,7 +215,7 @@ export const ContestLobby: React.FC = () => {
             {/*  Prediction Market Tab: PredictionPositionsList */}
             <TabPanel>
               <div className="p-2 mt-1">
-                <TimelineModalContent contestId={contestId} />
+                <ContestTimelinesSection contestId={contestId} variant="sharePrice" />
 
                 <div className="mt-3">
                   <PredictionLineupsList contest={contest} />
@@ -249,16 +248,6 @@ export const ContestLobby: React.FC = () => {
         <ContestSettings contest={contest} />
       </Modal>
 
-      {/* Timeline Modal */}
-      <Modal
-        isOpen={isTimelineModalOpen}
-        onClose={() => setIsTimelineModalOpen(false)}
-        title="Timeline"
-        maxWidth="4xl"
-      >
-        <TimelineModalContent contestId={contestId} />
-      </Modal>
-
       {/* Payouts Modal */}
       <ContestPayoutsModal
         isOpen={isPayoutsModalOpen}
@@ -280,8 +269,12 @@ export const ContestLobby: React.FC = () => {
   );
 };
 
-// Timeline Modal Content Component
-const TimelineModalContent: React.FC<{ contestId: string | undefined }> = ({ contestId }) => {
+type ContestTimelinesVariant = "score" | "sharePrice";
+
+const ContestTimelinesSection: React.FC<{
+  contestId: string | undefined;
+  variant: ContestTimelinesVariant;
+}> = ({ contestId, variant }) => {
   const {
     data: timelineData,
     isLoading,
@@ -302,7 +295,7 @@ const TimelineModalContent: React.FC<{ contestId: string | undefined }> = ({ con
         className="flex flex-col items-center justify-center p-8 text-center"
         style={{ height: "300px" }}
       >
-        <p className="text-lg font-medium text-gray-800 mb-2">Unable to load timeline</p>
+        <p className="text-lg font-display text-gray-800 mb-2">Unable to load timeline</p>
         <p className="text-sm text-gray-500">
           {timelineError instanceof Error ? timelineError.message : "Failed to fetch timeline data"}
         </p>
@@ -313,41 +306,26 @@ const TimelineModalContent: React.FC<{ contestId: string | undefined }> = ({ con
   if (!timelineData || !timelineData.teams || timelineData.teams.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height: "300px" }}>
-        <div className="text-gray-500">No timeline data available</div>
+        <div className="text-gray-500 font-display">No timeline data available</div>
       </div>
     );
   }
 
-  return <Timeline timelineData={timelineData} defaultMetric="sharePrice" />;
-};
+  if (variant === "sharePrice") {
+    return (
+      <Timeline
+        timelineData={timelineData}
+        defaultMetric="sharePrice"
+        allowedMetrics={["sharePrice"]}
+      />
+    );
+  }
 
-// NOTE: keep this svg comment for reference
-{
-  /* TIMELINE BUTTON */
-}
-{
-  /* <button
-            type="button"
-            onClick={() => setIsTimelineModalOpen(true)}
-            className="flex items-center ml-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            aria-label="Contest Timeline"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4 text-gray-400 mr-1"
-            >
-              <line x1="2" y1="16" x2="18" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="2" y1="4" x2="2" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <path
-                d="M 2 10 Q 4 6, 6 10 T 10 10 T 14 10 T 18 10"
-                stroke="#10b981"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="font-display text-gray-400">Timeline</span>
-          </button> */
-}
+  return (
+    <Timeline
+      timelineData={timelineData}
+      defaultMetric="score"
+      allowedMetrics={["score"]}
+    />
+  );
+};

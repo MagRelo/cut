@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,17 +14,12 @@ import type { TimelineData, TimelineMetric } from "../../types/contest";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const METRIC_LABELS: Record<TimelineMetric, string> = {
-  score: "Tournament score",
-  sharePrice: "Secondary share price ($ per $1 of potential winnings, $10 buy)",
-};
-
 interface TimelineProps {
   className?: string;
   timelineData: TimelineData;
-  /** Initial Y-axis metric */
+  /** Y-axis metric to plot */
   defaultMetric?: TimelineMetric;
-  /** Limit which metrics appear in the selector (default: both when data allows) */
+  /** If set, defaultMetric must be one of these or it falls back to the first available metric */
   allowedMetrics?: TimelineMetric[];
 }
 
@@ -38,8 +33,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   defaultMetric = "score",
   allowedMetrics,
 }) => {
-  const [metric, setMetric] = useState<TimelineMetric>(defaultMetric);
-
   const hasSharePriceData = useMemo(
     () => timelineData.teams.some(teamHasSharePrice),
     [timelineData.teams],
@@ -52,11 +45,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     return base.filter((m) => allowedMetrics.includes(m));
   }, [hasSharePriceData, allowedMetrics]);
 
-  useEffect(() => {
-    if (!selectableMetrics.includes(metric)) {
-      setMetric("score");
+  const metric = useMemo((): TimelineMetric => {
+    if (allowedMetrics?.length === 1 && allowedMetrics[0]) {
+      return allowedMetrics[0];
     }
-  }, [metric, selectableMetrics]);
+    if (selectableMetrics.includes(defaultMetric)) return defaultMetric;
+    return selectableMetrics[0] ?? "score";
+  }, [selectableMetrics, defaultMetric, allowedMetrics]);
 
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
@@ -212,29 +207,6 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div className={className}>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <div className="text-xs font-medium text-gray-600 font-display">
-          {METRIC_LABELS[metric]}
-        </div>
-        {selectableMetrics.length > 1 && (
-          <label className="flex items-center gap-2 text-xs text-gray-600 font-display">
-            <span className="text-gray-500">Show</span>
-            <select
-              className="border border-gray-200 rounded-sm px-2 py-1 bg-white text-gray-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={metric}
-              onChange={(e) => setMetric(e.target.value as TimelineMetric)}
-            >
-              {selectableMetrics.includes("score") && (
-                <option value="score">Tournament score</option>
-              )}
-              {selectableMetrics.includes("sharePrice") && (
-                <option value="sharePrice">Share price</option>
-              )}
-            </select>
-          </label>
-        )}
-      </div>
-
       <div
         className="bg-white border border-gray-100 p-4 pb-3 timeline-chart"
         style={{ height: "250px" }}

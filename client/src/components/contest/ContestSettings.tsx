@@ -188,32 +188,10 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const positionBonusShareBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "positionBonusShareBps",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   const targetPrimaryShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "targetPrimaryShareBps",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const maxCrossSubsidyBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "maxCrossSubsidyBps",
     args: [],
     chainId,
     query: {
@@ -257,9 +235,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   };
 
   const resolvedTokenSymbol = tokenSymbol || "TOKEN";
-
-  const formatBpsLabel = (bps: bigint | undefined) =>
-    bps !== undefined ? `${bps.toString()} bps (${Number(bps) / 100}%)` : "…";
 
   const targetPrimarySharePercent =
     targetPrimaryShareBps !== undefined ? Number(targetPrimaryShareBps) / 100 : undefined;
@@ -336,11 +311,74 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             <hr className="my-2" />
 
+            {/* Primary Side Balance (Total) */}
+            {primarySideBalance !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Contest </span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Primary Prize Pool (Base) */}
+            {primaryPrizePool !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 pl-4">↳ Base</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Primary Prize Pool Subsidy */}
+            {primaryPrizePoolSubsidy !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 pl-4">↳ Subsidy</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Side Balance */}
+            {secondarySideBalance !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Prediction</span>
+                <span className="text-gray-900 font-semibold">
+                  {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Prize Pool */}
+            {secondaryPrizePool !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 pl-4">↳ Base</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
+            {/* Secondary Prize Pool Subsidy */}
+            {secondaryPrizePoolSubsidy !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 pl-4">↳ Subsidy</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
             {/* Current Ratio - Visual Slider */}
             {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-600 mb-2">Pool Rebalancing</span>
-
+              <div className="flex flex-col gap-1 mt-2">
                 {/* Slider Container */}
                 <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
                   {/* Target Indicator Line */}
@@ -380,97 +418,12 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            <div className="mt-2" />
-
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600 shrink-0">
-                <span className="font-mono">Max Cross Subsidy</span>
-              </span>
-              <span className="text-gray-900 text-right break-all">
-                {formatBpsLabel(maxCrossSubsidyBps)}
-              </span>
-            </div>
-
-            {/* Primary Side Balance (Total) */}
-            {primarySideBalance !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Contest Prize Pool</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Primary Prize Pool (Base) */}
-            {primaryPrizePool !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base Pool</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Primary Prize Pool Subsidy */}
-            {primaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Pool Subsidy</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Side Balance */}
-            {secondarySideBalance !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Prediction Prize Pool</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(secondarySideBalance, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Prize Pool */}
-            {secondaryPrizePool !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base Pool</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Prize Pool Subsidy */}
-            {secondaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Pool Subsidy</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
             <hr className="my-2" />
-
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-gray-600 shrink-0">
-                <span className="font-mono">Team Owner Bonus %</span>
-              </span>
-              <span className="text-gray-900 text-right break-all">
-                {formatBpsLabel(positionBonusShareBps)}
-              </span>
-            </div>
 
             {/* Total Primary Position Subsidies */}
             {totalPrimaryPositionSubsidies !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Team Owner Bonus Paid</span>
+                <span className="text-gray-600">Team Owner Bonuses</span>
                 <span className="text-gray-900 font-semibold">
                   {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
