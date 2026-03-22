@@ -10,7 +10,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.14.0
 
 # Workspace manifests (required for server dependency @cut/secondary-pricing: workspace:*)
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY server/package.json ./server/
 COPY packages/secondary-pricing/package.json ./packages/secondary-pricing/
 
@@ -23,10 +23,13 @@ COPY packages/secondary-pricing/dist ./packages/secondary-pricing/dist
 COPY server/prisma ./server/prisma/
 RUN cd server && pnpm exec prisma generate
 
-# Compiled server + client static assets (build on host before docker:build)
-COPY server/dist/ ./
-COPY client/dist/ ./public/
+# Compiled server + client static assets (build on host before docker:build).
+# Run from /app/server so Node resolves deps from server/node_modules and cwd matches static paths (public/).
+COPY server/dist/ ./server/dist/
+COPY client/dist/ ./server/public/
+
+WORKDIR /app/server
 
 EXPOSE 4000
 
-CMD ["node", "src/index.js"]
+CMD ["node", "dist/src/index.js"]
