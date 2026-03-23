@@ -80,6 +80,26 @@ export interface DetailedResult {
   position: number;
   score: number;
   payoutBasisPoints: number;
+  /**
+   * Last names of the players in the lineup, sorted by `player.total` descending.
+   * Filled in during settlement for display on the results panel.
+   */
+  playerLastNames?: string[];
+  /**
+   * Color resolved from the owning user's settings (Tailwind gray-400 fallback).
+   * Used for results panel row accent.
+   */
+  userColor?: string;
+  /**
+   * Total primary payout amount (winner pool part) at settlement time, in wei as string.
+   * Preserved so the UI can show the amount even after claimable state is zeroed on-chain.
+   */
+  payoutAmountWei?: string;
+  /**
+   * Position bonus amount at settlement time, in wei as string.
+   * Preserved so the UI can show the amount even after claimable state is zeroed on-chain.
+   */
+  positionBonusAmountWei?: string;
 }
 
 // Operation result types

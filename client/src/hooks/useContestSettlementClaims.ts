@@ -18,7 +18,13 @@ interface UseContestSettlementClaimsOptions {
 interface PrimaryClaimInfo {
   entryId: string;
   lineupId: string;
+  username: string;
   lineupName: string;
+  playerLastNames?: string[];
+  payoutAmount: bigint;
+  payoutAmountFormatted: string;
+  positionBonusAmount: bigint;
+  positionBonusAmountFormatted: string;
   claimableAmount: bigint;
   claimableAmountFormatted: string;
   payoutBasisPoints: number;
@@ -176,14 +182,31 @@ export function useContestSettlementClaims(
 
       const payout = payoutResult ?? 0n;
       const bonus = bonusResult ?? 0n;
-      const claimableAmount = payout + bonus;
 
       const lineupResult = resultsByEntry.get(entry.entryId);
+
+      // On-chain values may be zeroed after claim.
+      // Prefer settlement-preserved totals, but fall back to the live on-chain reads
+      // (useful for older already-settled contests that don't have these fields).
+      const payoutAtSettlementWei = lineupResult?.payoutAmountWei ? BigInt(lineupResult.payoutAmountWei) : payout;
+      const positionBonusAtSettlementWei = lineupResult?.positionBonusAmountWei
+        ? BigInt(lineupResult.positionBonusAmountWei)
+        : bonus;
+
+      const payoutAmount = payoutAtSettlementWei;
+      const positionBonusAmount = positionBonusAtSettlementWei;
+      const claimableAmount = payout + bonus;
 
       return {
         entryId: entry.entryId,
         lineupId: entry.lineup.id,
+        username: entry.lineup.user?.name || entry.lineup.user?.email || "Unknown User",
         lineupName: entry.lineup.tournamentLineup?.name || "Lineup",
+        playerLastNames: lineupResult?.playerLastNames,
+        payoutAmount,
+        payoutAmountFormatted: formatUnits(payoutAmount, DEFAULT_TOKEN_DECIMALS),
+        positionBonusAmount,
+        positionBonusAmountFormatted: formatUnits(positionBonusAmount, DEFAULT_TOKEN_DECIMALS),
         claimableAmount,
         claimableAmountFormatted: formatUnits(claimableAmount, DEFAULT_TOKEN_DECIMALS),
         payoutBasisPoints: lineupResult?.payoutBasisPoints ?? 0,

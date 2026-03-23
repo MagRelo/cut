@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useCallback } from "react";
-import { Transition } from "@headlessui/react";
+import { useMemo, useCallback } from "react";
+import { formatUnits } from "viem";
 
 import { useContestSettlementClaims } from "../../hooks/useContestSettlementClaims";
 import type { Contest } from "../../types/contest";
@@ -16,6 +16,15 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
   contest,
   onRefreshContest,
 }) => {
+  const formatTokenAmount = (valueWei: bigint, fractionDigits = 2) => {
+    const valueStr = formatUnits(valueWei, 18);
+    const [whole, fraction = ""] = valueStr.split(".");
+    const wholeWithCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    if (fractionDigits <= 0) return wholeWithCommas;
+    const fixedFraction = fraction.padEnd(fractionDigits, "0").slice(0, fractionDigits);
+    return `${wholeWithCommas}.${fixedFraction}`;
+  };
+
   const { primaryClaims, secondaryClaim, isLoading, refetchPrimary } = useContestSettlementClaims({
     contest,
     contestLineups: contest.contestLineups,
@@ -67,7 +76,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
       const calls = createClaimEntryPayoutCalls(contest.address, numericEntryId);
       await executePrimaryClaim(calls);
     },
-    [contest.address, createClaimEntryPayoutCalls, executePrimaryClaim]
+    [contest.address, createClaimEntryPayoutCalls, executePrimaryClaim],
   );
 
   const handleSecondaryClaim = useCallback(async () => {
@@ -85,36 +94,44 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
     return [...(contest.results?.detailedResults ?? [])].sort((a, b) => a.position - b.position);
   }, [contest.results?.detailedResults]);
 
-  const hasPrimaryClaims = primaryClaims.some((claim) => claim.claimableAmount > 0n);
+  const inTheMoneyResults = useMemo(() => {
+    return sortedResults.filter((result) => result.payoutBasisPoints > 0);
+  }, [sortedResults]);
+
+  // Base payouts are computed on-chain as:
+  // layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
+  // primaryPrizePoolPayouts[i] = layer1Pool * payoutBasisPoints[i] / 10000
+  const layer1PoolWei = useMemo(() => {
+    const snapshot = contest.results?.snapshot;
+    if (!snapshot) return null;
+    try {
+      return BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
+    } catch {
+      return null;
+    }
+  }, [contest.results?.snapshot]);
+
   const hasSecondaryClaim = Boolean(secondaryClaim && secondaryClaim.claimableAmount > 0n);
-  const explorerBaseUrl =
-    contest.chainId === 84532 ? "https://sepolia.basescan.org" : "https://basescan.org";
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900">Contest Results</h3>
-        {contest.results?.settleTx?.hash && (
-          <a
-            href={`${explorerBaseUrl}/tx/${contest.results.settleTx.hash}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-medium text-blue-600 hover:text-blue-800"
-          >
-            View Settlement Tx
-          </a>
-        )}
       </div>
-
-      <div className="bg-gray-50 border border-gray-200 rounded-sm p-3">
-        {sortedResults.length === 0 ? (
+      <div className="">
+        {inTheMoneyResults.length === 0 ? (
           <p className="text-sm text-gray-500">Results not available.</p>
         ) : (
           <div className="space-y-3">
-            {sortedResults.map((result, index) => (
+            {inTheMoneyResults.map((result, index) => (
               <div
                 key={`${result.entryId}-${index}`}
                 className="bg-white border border-gray-200 rounded-sm p-3 flex items-center gap-3"
+                style={{
+                  borderLeftWidth: "3px",
+                  borderLeftStyle: "solid",
+                  borderLeftColor: result.userColor ?? undefined,
+                }}
               >
                 <PositionBadge
                   position={result.position}
@@ -124,11 +141,28 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{result.username}</p>
-                  <p className="text-xs text-gray-500 truncate">{result.lineupName}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {result.playerLastNames?.length
+                      ? result.playerLastNames.join(", ")
+                      : result.lineupName}
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">{result.score} pts</p>
-                  <p className="text-xs text-gray-500">{result.payoutBasisPoints / 100}% payout</p>
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <div className="text-right">
+                    {layer1PoolWei ? (
+                      <>
+                        <div className="text-lg font-bold text-green-600 leading-none tabular-nums">
+                          $
+                          {formatTokenAmount(
+                            (layer1PoolWei * BigInt(Math.floor(result.payoutBasisPoints))) / 10000n,
+                          )}
+                        </div>
+                        <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                          {result.score} pts
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}
@@ -137,41 +171,51 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold text-gray-900 mb-2">Your Rewards</h4>
-        <Transition
-          as={Fragment}
-          show={!isLoading}
-          enter="transition-opacity duration-150"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="transition-opacity duration-100"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
+        {!isLoading && (
           <div className="space-y-3">
-            <div className="bg-white border border-gray-200 rounded-sm p-3">
-              <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Primary Entries
-              </h5>
-              {primaryClaims.length === 0 ? (
-                <p className="text-sm text-gray-500 mt-1">
-                  You did not enter this contest as a contestant.
-                </p>
-              ) : hasPrimaryClaims ? (
-                <ul className="mt-2 space-y-2">
-                  {primaryClaims.map((claim) => (
-                    <li
-                      key={claim.entryId}
-                      className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {claim.lineupName}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {claim.claimableAmountFormatted} CUT available
-                        </p>
+            <div className="">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Contest Rewards
+              </h4>
+              <ul className="mt-2 space-y-2">
+                {primaryClaims.map((claim) => (
+                  <li
+                    key={claim.entryId}
+                    className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {claim.username}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {claim.playerLastNames?.length
+                          ? claim.playerLastNames.join(", ")
+                          : claim.lineupName}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      {/* payout amount */}
+                      <div className="text-right">
+                        <div className="text-md font-bold text-green-600 leading-none tabular-nums">
+                          ${claim.payoutAmountFormatted}
+                        </div>
+                        <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                          payout
+                        </div>
                       </div>
+
+                      {/* position bonus amount */}
+                      <div className="text-right">
+                        <div className="text-md font-bold text-green-600 leading-none tabular-nums">
+                          ${claim.positionBonusAmountFormatted}
+                        </div>
+                        <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                          bonus
+                        </div>
+                      </div>
+
+                      {/* claim button */}
                       <button
                         type="button"
                         disabled={!claim.canClaim || isPrimaryProcessing}
@@ -180,51 +224,62 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                           void handlePrimaryClaim(claim.entryId);
                         }}
                       >
-                        Claim
+                        {!claim.canClaim && (claim.payoutAmount > 0n || claim.positionBonusAmount > 0n)
+                          ? "Claimed"
+                          : "Claim"}
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500 mt-1">All primary rewards have been claimed.</p>
-              )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-sm p-3">
-              <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Prediction Market
-              </h5>
+            <div className="">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Winner Pool Rewards
+              </h4>
               {!secondaryClaim ? (
                 <p className="text-sm text-gray-500 mt-1">
                   You did not hold the winning prediction token.
                 </p>
               ) : hasSecondaryClaim ? (
                 <div className="mt-2 flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-sm px-3 py-2">
-                  <div className="min-w-0">
+                  <div>
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      Winning Entry #{secondaryClaim.entryId}
+                      Winner Pool Ticket
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {secondaryClaim.claimableAmountFormatted} CUT available
-                    </p>
+                    <p className="text-xs text-gray-500">#{secondaryClaim.entryId}</p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={!secondaryClaim.canClaim || isSecondaryProcessing}
-                    className="bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
-                    onClick={() => {
-                      void handleSecondaryClaim();
-                    }}
-                  >
-                    Claim
-                  </button>
+
+                  <div className="flex items-center gap-6">
+                    {/* amount to claim */}
+                    <div className="text-right">
+                      <div className="text-md font-bold text-green-600 leading-none tabular-nums">
+                        ${secondaryClaim.claimableAmountFormatted}
+                      </div>
+                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                        payout
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={!secondaryClaim.canClaim || isSecondaryProcessing}
+                      className="bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
+                      onClick={() => {
+                        void handleSecondaryClaim();
+                      }}
+                    >
+                      Claim
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 mt-1">Prediction rewards already claimed.</p>
+                <p className="text-sm text-gray-500 mt-1"></p>
               )}
             </div>
           </div>
-        </Transition>
+        )}
 
         {isLoading && <p className="text-xs text-gray-500 mt-2">Loading claim data...</p>}
         {(primaryError || secondaryError) && (

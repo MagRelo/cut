@@ -132,9 +132,8 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       <TabGroup>
         <TabList className="flex space-x-1 border-b border-gray-200 px-4">
           <Tab className={tabClass}>
-            Buy Shares
             {/* locked indicator based on canOpenLineupModal */}
-            {!canOpenLineupModal ? <span> 🔒</span> : null}
+            {!canOpenLineupModal ? <span> 🔒</span> : null} Buy Shares
           </Tab>
           <Tab className={tabClass}>Positions</Tab>
         </TabList>

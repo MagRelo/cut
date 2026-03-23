@@ -17,6 +17,13 @@ import {
 import { getContract, createPublicClient, http, erc20Abi } from "viem";
 import { getChainConfig } from "../../lib/chainConfig.js";
 
+const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
+
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
     // console.log(`[settleContest] Starting settlement for contest ${contestId}`);
@@ -33,7 +40,19 @@ export async function settleContest(contestId: string): Promise<OperationResult>
                 wallets: true,
               },
             },
-            tournamentLineup: true,
+            tournamentLineup: {
+              include: {
+                players: {
+                  include: {
+                    tournamentPlayer: {
+                      include: {
+                        player: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -182,6 +201,30 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       currentPrimaryShareBps: snapshot.currentPrimaryShareBps,
     });
 
+    // Preserve payout/bonus totals at settlement time.
+    // These on-chain values may be zeroed after users claim, but we want to
+    // keep the UI display consistent by storing them in `contest.results`.
+    const layer1PoolWei = BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
+    const uniqueEntryIds = Array.from(new Set(detailedResults.map((r) => r.entryId)));
+    const uniqueEntryIdsBigInt = uniqueEntryIds.map((id) => BigInt(id));
+
+    const positionBonusByEntryId = new Map<string, bigint>();
+    const positionBonusResults = await Promise.all(
+      uniqueEntryIdsBigInt.map(
+        (entryBigInt) => contract.read.primaryPositionSubsidy!([entryBigInt]) as Promise<bigint>,
+      ),
+    );
+    uniqueEntryIds.forEach((id, i) => {
+      positionBonusByEntryId.set(id, positionBonusResults[i] ?? 0n);
+    });
+
+    detailedResults.forEach((r) => {
+      const payoutAmountWei = (layer1PoolWei * BigInt(r.payoutBasisPoints)) / 10000n;
+      const positionBonusAmountWei = positionBonusByEntryId.get(r.entryId) ?? 0n;
+      r.payoutAmountWei = payoutAmountWei.toString();
+      r.positionBonusAmountWei = positionBonusAmountWei.toString();
+    });
+
     // Convert entryIds to BigInt for contract call
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
@@ -304,6 +347,20 @@ async function calculatePayouts(lineups: any[]): Promise<{
     for (let j = 0; j < tiedLineups.length; j++) {
       const lineup = tiedLineups[j];
 
+      const playerLastNames = (lineup.tournamentLineup?.players ?? [])
+        .slice()
+        .sort((a: any, b: any) => {
+          const aTotal = a?.tournamentPlayer?.total ?? 0;
+          const bTotal = b?.tournamentPlayer?.total ?? 0;
+          return bTotal - aTotal;
+        })
+        .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
+        .filter((name: unknown): name is string => Boolean(name));
+
+      const userSettings = lineup.user?.settings as any | undefined;
+      const userColor = userSettings?.color;
+      const resolvedUserColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
+
       // Distribute remainder to first players in tie
       const payout = basePayoutPerPlayer + (j < remainderBasisPoints ? 1 : 0);
 
@@ -322,6 +379,8 @@ async function calculatePayouts(lineups: any[]): Promise<{
         position: currentPosition,
         score: currentScore,
         payoutBasisPoints: payout,
+        playerLastNames,
+        userColor: resolvedUserColor,
       });
     }
 
