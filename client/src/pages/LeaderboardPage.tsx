@@ -79,19 +79,34 @@ export const LeaderboardPage: React.FC = () => {
   };
 
   const sortedPlayers = useMemo(() => {
-    return [...players].sort((a, b) => {
-      const sortIndexDiff = getPlayerSortIndex(a) - getPlayerSortIndex(b);
-      if (sortIndexDiff !== 0) return sortIndexDiff;
-
-      const positionDiff = getNumericPosition(a) - getNumericPosition(b);
-      if (positionDiff !== 0) return positionDiff;
-
-      // Stable fallback: name sort for deterministic ordering.
-      const aName = a.pga_displayName || `${a.pga_lastName || ""} ${a.pga_firstName || ""}`.trim();
-      const bName = b.pga_displayName || `${b.pga_lastName || ""} ${b.pga_firstName || ""}`.trim();
-      return aName.localeCompare(bName);
+    const sortByNameOnly = currentTournament?.status === "NOT_STARTED";
+    const playersWithName = players.filter((player) => {
+      const hasLastName = Boolean((player.pga_lastName || "").trim());
+      const hasDisplayName = Boolean((player.pga_displayName || "").trim());
+      return hasLastName || hasDisplayName;
     });
-  }, [players]);
+
+    return [...playersWithName].sort((a, b) => {
+      if (!sortByNameOnly) {
+        const sortIndexDiff = getPlayerSortIndex(a) - getPlayerSortIndex(b);
+        if (sortIndexDiff !== 0) return sortIndexDiff;
+
+        const positionDiff = getNumericPosition(a) - getNumericPosition(b);
+        if (positionDiff !== 0) return positionDiff;
+      }
+
+      // Stable fallback: last name only (requested behavior).
+      const aLastName = (a.pga_lastName || "").trim();
+      const bLastName = (b.pga_lastName || "").trim();
+      const lastNameDiff = aLastName.localeCompare(bLastName);
+      if (lastNameDiff !== 0) return lastNameDiff;
+
+      // Final deterministic tie-break when last names match/missing.
+      const aFirstName = (a.pga_firstName || a.pga_displayName || "").trim();
+      const bFirstName = (b.pga_firstName || b.pga_displayName || "").trim();
+      return aFirstName.localeCompare(bFirstName);
+    });
+  }, [players, currentTournament?.status]);
 
   if (isLoading) {
     return (

@@ -26,7 +26,7 @@ export const LineupList: React.FC = () => {
   // Fetch contests with full contestLineups data
   const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
     currentTournament?.id,
-    undefined
+    undefined,
   );
 
   // Extract user's contest lineups from all contests
@@ -64,11 +64,11 @@ export const LineupList: React.FC = () => {
   const getContestsForLineup = (lineupId: string) => {
     return contests
       .filter((contest) =>
-        contest.contestLineups?.some((lineup) => lineup.tournamentLineupId === lineupId)
+        contest.contestLineups?.some((lineup) => lineup.tournamentLineupId === lineupId),
       )
       .map((contest) => {
         const lineupEntry = contest.contestLineups?.find(
-          (lineup) => lineup.tournamentLineupId === lineupId
+          (lineup) => lineup.tournamentLineupId === lineupId,
         );
         return {
           contest: contest,
@@ -118,9 +118,9 @@ export const LineupList: React.FC = () => {
           isTournamentEditable ? (
             <Link
               to="/lineups/create"
-              className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm"
+              className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
             >
-              + Add Lineup
+              Add Lineup
             </Link>
           ) : null
         }

@@ -4,7 +4,7 @@ import { formatUnits, parseUnits } from "viem";
 import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { type Contest, type ContestStatus, areSecondaryActionsLocked } from "../../types/contest";
+import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { PredictionPositionsList } from "./PredictionPositionsList";
 
@@ -19,33 +19,6 @@ const isValidHexColor = (value: unknown): value is string => {
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
-
-/**
- * Messages shown above the lineup list on the Buy Shares tab — edit per `ContestStatus`.
- * Values may include JSX (e.g. bold spans).
- */
-const WINNER_POOL_MESSAGE_BY_STATUS: Record<ContestStatus, React.ReactNode> = {
-  OPEN: (
-    <>
-      Team shares are worth <span className="font-semibold text-gray-900">$1</span> if the team
-      wins. Shares can be refunded until the tournament begins.
-    </>
-  ),
-  ACTIVE: (
-    <>
-      Team shares are worth <span className="font-semibold text-gray-900">$1</span> if the team
-      wins.
-    </>
-  ),
-  LOCKED: <>Winner Pool is locked at the beginning of round 4.</>,
-  SETTLED: <>This contest has settled. Payouts are final.</>,
-  CANCELLED: <>This contest was cancelled.</>,
-  CLOSED: <>This contest is closed.</>,
-};
-
-function getWinnerPoolMessage(status: ContestStatus): React.ReactNode {
-  return WINNER_POOL_MESSAGE_BY_STATUS[status];
-}
 
 interface PredictionLineupsListProps {
   contest: Contest;
@@ -125,8 +98,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
     );
 
-  const winnerPoolMessage = getWinnerPoolMessage(contest.status);
-
   return (
     <div>
       <TabGroup>
@@ -139,12 +110,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         </TabList>
         <TabPanels>
           <TabPanel className="focus:outline-none">
-            <div className="bg-gradient-to-r from-blue-300/30 to-white py-2.5 pl-3 pr-3">
-              <p className="text-xs font-display leading-tight text-gray-700">
-                {winnerPoolMessage}
-              </p>
-            </div>
-
             {/* list of entries */}
             <div className="space-y-2 mt-2">
               {[...entryData]
@@ -191,6 +156,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                           <div className="text-xs text-gray-500 truncate">
                             {(() => {
                               const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
+                              const name = lineup?.tournamentLineup?.name || "";
                               const sortedPlayerNames = [...lineupPlayers]
                                 .sort((a, b) => {
                                   const aTotal = a.tournamentData?.total || 0;
@@ -201,7 +167,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                                 .filter(Boolean)
                                 .join(", ");
 
-                              return sortedPlayerNames || "No players";
+                              return sortedPlayerNames || name || "No players";
                             })()}
                           </div>
                         </div>

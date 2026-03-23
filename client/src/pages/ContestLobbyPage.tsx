@@ -108,7 +108,7 @@ export const ContestLobby: React.FC = () => {
 
         {/* Contest Status & Action (shown before tabs) */}
         {!primaryActionsLocked && (
-          <div className="flex items-center justify-start gap-2 border-b border-t border-gray-200 py-3 px-4 mt-2">
+          <div className="flex items-center justify-start gap-2  border-gray-200 p-4">
             <button
               type="button"
               onClick={() => setIsLineupModalOpen(true)}
@@ -116,7 +116,6 @@ export const ContestLobby: React.FC = () => {
             >
               Enter Contest
             </button>
-            <span className="text-xs text-gray-400 font-display pr-1">0/1 Lineups Entered</span>
           </div>
         )}
 
@@ -185,11 +184,13 @@ export const ContestLobby: React.FC = () => {
           <div className="">
             {/* ENTRIES (Contest) */}
             <TabPanel>
-              <div className="p-2 mt-1">
-                <ContestTimelinesSection contestId={contestId} variant="score" />
+              <div className="p-2">
+                {contest.status !== "OPEN" && (
+                  <ContestTimelinesSection contestId={contestId} variant="score" />
+                )}
 
                 {/* Contest Entry List */}
-                <div className="mt-3">
+                <div className="mt-1">
                   <ContestEntryList
                     contestLineups={contest?.contestLineups}
                     roundDisplay={contest?.tournament?.roundDisplay}
@@ -214,12 +215,12 @@ export const ContestLobby: React.FC = () => {
 
             {/*  Prediction Market Tab: PredictionPositionsList */}
             <TabPanel>
-              <div className="p-2 mt-1">
-                <ContestTimelinesSection contestId={contestId} variant="sharePrice" />
+              <div className="p-2">
+                {contest.status !== "OPEN" && (
+                  <ContestTimelinesSection contestId={contestId} variant="sharePrice" />
+                )}
 
-                <div className="mt-1">
-                  <PredictionLineupsList contest={contest} />
-                </div>
+                <PredictionLineupsList contest={contest} />
               </div>
             </TabPanel>
 

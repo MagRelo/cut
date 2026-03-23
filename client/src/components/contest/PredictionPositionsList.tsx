@@ -91,10 +91,8 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   if (userPositions.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-        <p className="text-gray-600 text-sm font-display">
-          You haven't placed any predictions yet.
-        </p>
+      <div className=" p-4 text-center">
+        <p className="text-gray-400 text-sm font-display">No active positions</p>
       </div>
     );
   }
@@ -188,10 +186,10 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                     {isWithdrawing ? (
                       <span className="flex items-center justify-center gap-2">
                         <LoadingSpinnerSmall />
-                        Cancelling...
+                        Withdrawing...
                       </span>
                     ) : (
-                      "Cancel"
+                      "Withdraw"
                     )}
                   </button>
                 </div>
