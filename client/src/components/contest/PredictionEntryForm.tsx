@@ -56,19 +56,19 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const metrics = useMemo(() => {
     if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo || !poolSnapshot) {
-      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+      return { ownershipPercent: 0, tokensReceived: 0 };
     }
 
     const positionAmount = Number.parseFloat(amount);
     if (!Number.isFinite(positionAmount) || positionAmount <= 0) {
-      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+      return { ownershipPercent: 0, tokensReceived: 0 };
     }
 
     let amountBigInt: bigint;
     try {
       amountBigInt = parseUnits(amount, 18);
     } catch {
-      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+      return { ownershipPercent: 0, tokensReceived: 0 };
     }
 
     const sim = simulateAddSecondaryPosition({
@@ -78,38 +78,35 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     });
 
     if (sim.tokensToMint === 0n) {
-      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+      return { ownershipPercent: 0, tokensReceived: 0 };
     }
 
-    const newTotal = sim.newSecondaryTotalFunds;
     const newSupply = selectedEntryInfo.totalSupply + sim.tokensToMint;
     if (newSupply === 0n) {
-      return { ownershipPercent: 0, potentialReturn: 0, tokensReceived: 0 };
+      return { ownershipPercent: 0, tokensReceived: 0 };
     }
 
-    const potentialReturnWei = (sim.tokensToMint * newTotal) / newSupply;
-    const potentialReturn = Number(formatUnits(potentialReturnWei, 18));
     const tokensReceived = Number(formatUnits(sim.tokensToMint, 18));
     const ownershipPercent =
-      newSupply > 0n ? (Number(sim.tokensToMint) / Number(newSupply)) * 100 : 0;
+      newSupply > 0n ? Number((sim.tokensToMint * 10000n) / newSupply) / 100 : 0;
 
-    return { ownershipPercent, potentialReturn, tokensReceived };
+    return { ownershipPercent, tokensReceived };
   }, [amount, selectedEntryInfo, poolSnapshot]);
 
-  const parsedAmount = Number.parseFloat(amount);
-  const purchaseAmountDisplay =
-    Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount.toFixed(2) : "0.00";
-
-  // Concept: each share is worth $1 winnings if the entry wins.
-  // Therefore, share "price" here is the cost per $1 of winnings:
-  //   sharePrice = $paid / $winnings
-  const sharesToPurchase = metrics.potentialReturn > 0 ? metrics.potentialReturn : 0;
-  const sharePrice =
-    Number.isFinite(parsedAmount) && parsedAmount > 0 && metrics.potentialReturn > 0
-      ? parsedAmount / metrics.potentialReturn
-      : 0;
-
   const metricsReady = Boolean(poolSnapshot);
+
+  const pricePerShareRaw = selectedEntryInfo
+    ? Number.parseFloat(selectedEntryInfo.priceFormatted || "0")
+    : NaN;
+  const pricePerShareDisplay = Number.isFinite(pricePerShareRaw)
+    ? pricePerShareRaw.toFixed(5)
+    : "—";
+
+  const sharesToBuyDisplay =
+    metricsReady && selectedEntryInfo ? metrics.tokensReceived.toFixed(5) : "—";
+
+  const ownPercentAfterDisplay =
+    metricsReady && selectedEntryInfo ? `${metrics.ownershipPercent.toFixed(2)}%` : "—";
 
   useEffect(() => {
     setAmount("10");
@@ -170,21 +167,23 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Share Price</span>
-                <span className="font-bold text-gray-900 text-base">
-                  {metricsReady ? `$${sharePrice.toFixed(2)}` : "—"}
+                <span className="text-gray-700">Share price</span>
+                <span className="font-bold text-gray-900 text-base tabular-nums">
+                  {pricePerShareDisplay}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Purchase Amount</span>
-                <span className="font-bold text-gray-900 text-base">${purchaseAmountDisplay}</span>
+                <span className="text-gray-700">Shares to buy</span>
+                <span className="font-bold text-gray-900 text-base tabular-nums">
+                  {sharesToBuyDisplay}
+                </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Winnings if Entry Wins</span>
-                <span className="font-bold text-green-600 text-base">
-                  ${sharesToPurchase.toFixed(2)}
+                <span className="text-gray-700">Own % after</span>
+                <span className="font-bold text-gray-900 text-base tabular-nums">
+                  {ownPercentAfterDisplay}
                 </span>
               </div>
             </div>
@@ -235,21 +234,23 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Share Price</span>
-            <span className="font-bold text-gray-900 text-base">
-              {metricsReady ? `$${sharePrice.toFixed(2)}` : "—"}
+            <span className="text-gray-700">Share price</span>
+            <span className="font-bold text-gray-900 text-base tabular-nums">
+              ${pricePerShareDisplay}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Purchase Amount</span>
-            <span className="font-bold text-gray-900 text-base">${purchaseAmountDisplay}</span>
+            <span className="text-gray-700">Shares</span>
+            <span className="font-bold text-gray-900 text-base tabular-nums">
+              {sharesToBuyDisplay}
+            </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Winnings if Entry Wins</span>
-            <span className="font-bold text-green-600 text-base">
-              ${sharesToPurchase.toFixed(2)}
+            <span className="text-gray-700">% of Shares</span>
+            <span className="font-bold text-gray-900 text-base tabular-nums">
+              {ownPercentAfterDisplay}
             </span>
           </div>
         </div>

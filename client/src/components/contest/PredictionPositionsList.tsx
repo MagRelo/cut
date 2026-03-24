@@ -130,6 +130,17 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                 ? "< 0.01"
                 : deposited.toFixed(2);
 
+          const ownershipPercent =
+            position.totalSupply > 0n
+              ? Number((position.balance * 10000n) / position.totalSupply) / 100
+              : 0;
+          const ownershipDisplay =
+            !Number.isFinite(ownershipPercent) || ownershipPercent <= 0
+              ? "0.00"
+              : ownershipPercent < 0.01
+                ? "< 0.01"
+                : ownershipPercent.toFixed(0);
+
           const impliedWinnings = parseFloat(position.impliedWinningsFormatted);
           const impliedDisplay =
             !Number.isFinite(impliedWinnings) || impliedWinnings < 0
@@ -148,18 +159,27 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                 borderLeftStyle: "solid",
               }}
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
                   <div className="text-xs text-gray-500 truncate">{lineupName}</div>
                 </div>
 
-                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[4rem] gap-0.5">
+                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5">
+                  <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
+                    {ownershipDisplay}%
+                  </div>
+                  <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
+                    Own
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5">
                   <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
                     ${depositedDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
-                    Invested
+                    Cost
                   </div>
                 </div>
 

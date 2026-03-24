@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
+import { Tab, TabPanel, TabList, TabGroup, TabPanels } from "@headlessui/react";
+import { useReadContract } from "wagmi";
+import { formatUnits } from "viem";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
@@ -10,13 +12,18 @@ import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
-import { arePrimaryActionsLocked } from "../types/contest";
+import { arePrimaryActionsLocked, areSecondaryActionsLocked } from "../types/contest";
 import { ContestResultsPanel } from "../components/contest/ContestResultsPanel";
 import { Timeline } from "../components/contest/Timeline";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { Modal } from "../components/common/Modal";
 import { ContestPayoutsModal } from "../components/contest/ContestPayoutsModal";
+import { ContestSharesPieChart } from "../components/contest/ContestSharesPieChart";
 import { PredictionLineupsList } from "../components/contest/PredictionLineupsList";
+import { PredictionPositionsList } from "../components/contest/PredictionPositionsList";
+import { ContestState } from "../hooks/useContestPredictionData";
+import { CountdownTimer } from "../components/tournament/CountdownTimer";
+import ContestContract from "../utils/contracts/ContestController.json";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -26,7 +33,6 @@ export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
   const { user } = usePortoAuth();
 
-  // React Query - handles all fetching, caching, and refetching automatically!
   const {
     data: contest,
     isLoading,
@@ -36,6 +42,50 @@ export const ContestLobby: React.FC = () => {
 
   // Compute action locks based on contest status
   const primaryActionsLocked = contest ? arePrimaryActionsLocked(contest.status) : true;
+
+  const { data: primarySideBalance } = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getPrimarySideBalance",
+    chainId: contest?.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: Boolean(contest?.address),
+    },
+  });
+
+  const { data: secondarySideBalance } = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getSecondarySideBalance",
+    chainId: contest?.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: Boolean(contest?.address),
+    },
+  });
+
+  const primaryPoolLabel = Math.round(
+    Number(formatUnits((primarySideBalance as bigint | undefined) ?? 0n, 18)),
+  ).toLocaleString();
+  const secondaryPoolLabel = Math.round(
+    Number(formatUnits((secondarySideBalance as bigint | undefined) ?? 0n, 18)),
+  ).toLocaleString();
+
+  const { data: contestStateOnChain } = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "state",
+    chainId: contest?.chainId as 8453 | 84532 | undefined,
+    query: {
+      enabled: Boolean(contest?.address),
+    },
+  });
+
+  const secondaryActionsLockedForWinnerPool = contest
+    ? areSecondaryActionsLocked(contest.status)
+    : true;
+  const canPredictOnChain =
+    contestStateOnChain === ContestState.OPEN || contestStateOnChain === ContestState.ACTIVE;
+  const canOpenLineupModalForWinnerPool = canPredictOnChain && !secondaryActionsLockedForWinnerPool;
 
   // tabs - default to first tab (Contest)
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -106,19 +156,6 @@ export const ContestLobby: React.FC = () => {
           />
         </div>
 
-        {/* Contest Status & Action (shown before tabs) */}
-        {!primaryActionsLocked && (
-          <div className="flex items-center justify-start gap-2  border-gray-200 p-4">
-            <button
-              type="button"
-              onClick={() => setIsLineupModalOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-            >
-              Enter Contest
-            </button>
-          </div>
-        )}
-
         {/* tabs */}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
@@ -133,24 +170,8 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Contest
+              Contest – ${primaryPoolLabel}
             </Tab>
-            {/* {primaryActionsLocked && (
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  classNames(
-                    "w-full py-1.5 text-sm font-display leading-5",
-                    "focus:outline-none",
-                    selected
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
-                  )
-                }
-              >
-                Players
-              </Tab>
-            )} */}
-
             <Tab
               className={({ selected }: { selected: boolean }) =>
                 classNames(
@@ -162,7 +183,7 @@ export const ContestLobby: React.FC = () => {
                 )
               }
             >
-              Winner Pool
+              Winner Pool - ${secondaryPoolLabel}
             </Tab>
 
             {contest.status === "SETTLED" && (
@@ -185,8 +206,28 @@ export const ContestLobby: React.FC = () => {
             {/* ENTRIES (Contest) */}
             <TabPanel>
               <div className="p-2">
-                {contest.status !== "OPEN" && (
+                {primaryActionsLocked ? (
                   <ContestTimelinesSection contestId={contestId} variant="score" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-8">
+                    {contest.tournament?.status === "NOT_STARTED" &&
+                    contest.tournament.startDate ? (
+                      <p className="text-sm text-gray-600 text-center mb-2">
+                        Contest begins in{" "}
+                        <span className="font-semibold text-gray-800 tabular-nums inline">
+                          <CountdownTimer targetDate={contest.tournament.startDate} />
+                        </span>
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setIsLineupModalOpen(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                    >
+                      Add Lineup{" - "}
+                      <span className="text-xs">${contest.settings?.primaryDeposit}</span>
+                    </button>
+                  </div>
                 )}
 
                 {/* Contest Entry List */}
@@ -216,11 +257,47 @@ export const ContestLobby: React.FC = () => {
             {/*  Prediction Market Tab: PredictionPositionsList */}
             <TabPanel>
               <div className="p-2">
-                {contest.status !== "OPEN" && (
-                  <ContestTimelinesSection contestId={contestId} variant="sharePrice" />
-                )}
+                <ContestSharesPieChart contest={contest} />
+                {/* <ContestTimelinesSection contestId={contestId} variant="sharePrice" /> */}
 
-                <PredictionLineupsList contest={contest} />
+                <TabGroup>
+                  <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+                    <Tab
+                      className={({ selected }: { selected: boolean }) =>
+                        classNames(
+                          "w-full py-1.5 text-sm font-display leading-5",
+                          "focus:outline-none",
+                          selected
+                            ? "border-b-2 border-blue-500 text-blue-600"
+                            : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                        )
+                      }
+                    >
+                      {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Buy Shares
+                    </Tab>
+                    <Tab
+                      className={({ selected }: { selected: boolean }) =>
+                        classNames(
+                          "w-full py-1.5 text-sm font-display leading-5",
+                          "focus:outline-none",
+                          selected
+                            ? "border-b-2 border-blue-500 text-blue-600"
+                            : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                        )
+                      }
+                    >
+                      Positions
+                    </Tab>
+                  </TabList>
+                  <TabPanels>
+                    <TabPanel className="focus:outline-none">
+                      <PredictionLineupsList contest={contest} />
+                    </TabPanel>
+                    <TabPanel className="focus:outline-none">
+                      <PredictionPositionsList contest={contest} />
+                    </TabPanel>
+                  </TabPanels>
+                </TabGroup>
               </div>
             </TabPanel>
 

@@ -42,6 +42,15 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
         ? "< 0.01"
         : deposited.toFixed(2);
 
+  const ownershipPercent =
+    entry.totalSupply > 0n ? Number((entry.balance * 10000n) / entry.totalSupply) / 100 : 0;
+  const ownershipDisplay =
+    !Number.isFinite(ownershipPercent) || ownershipPercent <= 0
+      ? "0.00"
+      : ownershipPercent < 0.01
+        ? "< 0.01"
+        : ownershipPercent.toFixed(2);
+
   const impliedWinnings = parseFloat(entry.impliedWinningsFormatted ?? "0");
   const impliedDisplay =
     !Number.isFinite(impliedWinnings) || impliedWinnings < 0
@@ -85,7 +94,16 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
               ${depositedDisplay}
             </div>
             <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-400">
-              Invested
+              Cost
+            </div>
+          </div>
+
+          <div className="flex min-w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 text-center">
+            <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
+              {ownershipDisplay}%
+            </div>
+            <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-400">
+              Own %
             </div>
           </div>
 

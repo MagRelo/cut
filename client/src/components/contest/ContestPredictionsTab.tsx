@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useAccount } from "wagmi";
 import { Connect } from "../user/Connect";
 import { PredictionLineupsList } from "./PredictionLineupsList";
@@ -6,7 +7,11 @@ import { PredictionPositionsList } from "./PredictionPositionsList";
 import { PredictionClaimPanel } from "./PredictionClaimPanel";
 import { useContestPredictionData, ContestState } from "../../hooks/useContestPredictionData";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { type Contest } from "../../types/contest";
+import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
+
+function classNames(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 interface ContestPredictionsTabProps {
   contest: Contest;
@@ -84,10 +89,52 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
     );
   }
 
+  const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
+  const canOpenLineupModal = canPredict && !secondaryActionsLocked;
+
   return (
     <div className="p-2 space-y-4 mt-1">
       {/* Buy Shares + Positions (tabs); when chain is not OPEN/ACTIVE, lineups list only via lobby / other entry points */}
-      {canPredict && <PredictionLineupsList contest={contest} />}
+      {canPredict && (
+        <TabGroup>
+          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
+              {!canOpenLineupModal ? <span> 🔒</span> : null} Buy Shares
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
+              Positions
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel className="focus:outline-none">
+              <PredictionLineupsList contest={contest} />
+            </TabPanel>
+            <TabPanel className="focus:outline-none">
+              <PredictionPositionsList contest={contest} />
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
+      )}
 
       {/* Locked State Message */}
       {contestState === ContestState.LOCKED && (
