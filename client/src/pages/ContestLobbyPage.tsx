@@ -15,7 +15,7 @@ import { Connect } from "../components/user/Connect";
 import { arePrimaryActionsLocked, areSecondaryActionsLocked } from "../types/contest";
 import { ContestResultsPanel } from "../components/contest/ContestResultsPanel";
 import { Timeline } from "../components/contest/Timeline";
-import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
+import { type TimelineData } from "../types/contest";
 import { Modal } from "../components/common/Modal";
 import { ContestPayoutsModal } from "../components/contest/ContestPayoutsModal";
 import { ContestSharesPieChart } from "../components/contest/ContestSharesPieChart";
@@ -207,7 +207,7 @@ export const ContestLobby: React.FC = () => {
             <TabPanel>
               <div className="p-2">
                 {primaryActionsLocked ? (
-                  <ContestTimelinesSection contestId={contestId} variant="score" />
+                  <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-8">
                     <button
@@ -260,7 +260,7 @@ export const ContestLobby: React.FC = () => {
             <TabPanel>
               <div className="p-2">
                 <ContestSharesPieChart contest={contest} />
-                {/* <ContestTimelinesSection contestId={contestId} variant="sharePrice" /> */}
+                {/* <ContestTimelinesSection timelineData={contest.timeline} variant="sharePrice" /> */}
 
                 <TabGroup>
                   <TabList className="flex space-x-1 border-b border-gray-200 px-4">
@@ -352,37 +352,9 @@ export const ContestLobby: React.FC = () => {
 type ContestTimelinesVariant = "score" | "sharePrice";
 
 const ContestTimelinesSection: React.FC<{
-  contestId: string | undefined;
+  timelineData: TimelineData | undefined;
   variant: ContestTimelinesVariant;
-}> = ({ contestId, variant }) => {
-  const {
-    data: timelineData,
-    isLoading,
-    error: timelineError,
-  } = useContestTimelineQuery(contestId);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center" style={{ height: "300px" }}>
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (timelineError) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center p-8 text-center"
-        style={{ height: "300px" }}
-      >
-        <p className="text-lg font-display text-gray-800 mb-2">Unable to load timeline</p>
-        <p className="text-sm text-gray-500">
-          {timelineError instanceof Error ? timelineError.message : "Failed to fetch timeline data"}
-        </p>
-      </div>
-    );
-  }
-
+}> = ({ timelineData, variant }) => {
   if (!timelineData || !timelineData.teams || timelineData.teams.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height: "300px" }}>

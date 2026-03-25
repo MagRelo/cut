@@ -5,12 +5,12 @@ import apiClient from "../utils/apiClient";
 import { type Contest } from "../types/contest";
 
 /**
- * Fetches a single contest by ID
+ * Fetches a single contest by ID (includes `timeline` for charts).
  *
  * Benefits:
  * - Automatic caching by contest ID
  * - Shared data across all components viewing the same contest
- * - Automatic refetching when data becomes stale
+ * - Periodic refetch keeps lineup timeline data fresh
  * - Built-in loading and error states
  */
 export function useContestQuery(contestId: string | undefined) {
@@ -21,8 +21,9 @@ export function useContestQuery(contestId: string | undefined) {
       return await apiClient.get<Contest>(`/contests/${contestId}`);
     },
     enabled: !!contestId, // Only run query if contestId exists
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

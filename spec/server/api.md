@@ -111,14 +111,9 @@ Most endpoints require authentication via SIWE (Sign-In With Ethereum):
 - **Response**: `Contest[]`
 
 #### `GET /api/contests/:id`
-- **Description**: Get contest by ID
+- **Description**: Get contest by ID, including lineup timeline chart data (`timeline.teams` from `ContestLineupTimeline` snapshots).
 - **Auth**: None
-- **Response**: `Contest` (with lineups)
-
-#### `GET /api/contests/:id/timeline`
-- **Description**: Get contest timeline data
-- **Auth**: None
-- **Response**: `{ teams: TimelineTeam[] }`
+- **Response**: `Contest` (with lineups) and `timeline: { teams: TimelineTeam[] }`
 
 #### `POST /api/contests`
 - **Description**: Create new contest

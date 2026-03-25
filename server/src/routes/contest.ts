@@ -11,6 +11,7 @@ import {
   getPlayerIdsFromLineup,
 } from "../utils/lineupValidation.js";
 import { isUserGroupMember } from "../utils/userGroup.js";
+import { getContestTimelineData } from "../utils/contestTimeline.js";
 
 const contestRouter = new Hono();
 
@@ -161,112 +162,12 @@ contestRouter.get("/:id", async (c) => {
 
     // Format the contest.contestLineups.tournamentLineup.players
     const formattedContest = formatContestResponse(contest);
+    const timeline = await getContestTimelineData(contestId);
 
-    return c.json(formattedContest);
+    return c.json({ ...formattedContest, timeline });
   } catch (error) {
     console.error("Error fetching contest:", error);
     return c.json({ error: "Failed to fetch contest" }, 500);
-  }
-});
-
-// Get contest timeline data
-contestRouter.get("/:id/timeline", async (c) => {
-  try {
-    const contestId = c.req.param("id");
-
-    // Tailwind "gray-400" hex. Used when a user hasn't set a color.
-    const DEFAULT_USER_COLOR = "#9CA3AF";
-    const isValidHexColor = (value: unknown): value is string => {
-      if (typeof value !== "string") return false;
-      const v = value.trim();
-      return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
-    };
-
-    // Verify contest exists
-    const contest = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: { id: true },
-    });
-
-    if (!contest) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    // Fetch all timeline snapshots for this contest
-    const snapshots = await prisma.contestLineupTimeline.findMany({
-      where: {
-        contestId,
-      },
-      include: {
-        contestLineup: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                settings: true,
-              },
-            },
-            tournamentLineup: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        timestamp: "asc",
-      },
-    });
-
-    // Group snapshots by contest lineup
-    const lineupMap = new Map();
-
-    snapshots.forEach((snapshot: any) => {
-      const lineupId = snapshot.contestLineupId;
-
-      if (!lineupMap.has(lineupId)) {
-        // Use tournament lineup name and user name for display
-        const userName = snapshot.contestLineup.user.name;
-        const userSettings = snapshot.contestLineup.user.settings as any;
-        const userColor = userSettings?.color;
-        const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
-        const lineupName = snapshot.contestLineup.tournamentLineup.name;
-        const displayName = `${userName} - ${lineupName}`;
-
-        lineupMap.set(lineupId, {
-          name: displayName,
-          color: resolvedColor,
-          dataPoints: [],
-        });
-      }
-
-      const lineup = lineupMap.get(lineupId);
-      lineup.dataPoints.push({
-        timestamp: snapshot.timestamp.toISOString(),
-        score: snapshot.score,
-        roundNumber: snapshot.roundNumber,
-        sharePrice: snapshot.sharePrice,
-      });
-    });
-
-    // Convert to array and sort by latest score (descending)
-    const teams = Array.from(lineupMap.entries())
-      .map(([_, lineup]) => ({
-        name: lineup.name,
-        color: lineup.color,
-        dataPoints: lineup.dataPoints,
-      }))
-      .sort((a, b) => {
-        const aLatestScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
-        const bLatestScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
-        return bLatestScore - aLatestScore;
-      });
-
-    return c.json({ teams });
-  } catch (error) {
-    console.error("Error fetching contest timeline:", error);
-    return c.json({ error: "Failed to fetch contest timeline" }, 500);
   }
 });
 

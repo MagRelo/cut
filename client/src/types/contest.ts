@@ -84,6 +84,8 @@ export interface Contest {
     };
     snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time
   };
+  /** Present on `GET /contests/:id`; omitted on list responses. */
+  timeline?: TimelineData;
 }
 
 export interface CreateContestInput {
