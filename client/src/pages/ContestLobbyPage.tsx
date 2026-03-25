@@ -210,23 +210,25 @@ export const ContestLobby: React.FC = () => {
                   <ContestTimelinesSection contestId={contestId} variant="score" />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-8">
-                    {contest.tournament?.status === "NOT_STARTED" &&
-                    contest.tournament.startDate ? (
-                      <p className="text-sm text-gray-600 text-center mb-2">
-                        Contest begins in{" "}
-                        <span className="font-semibold text-gray-800 tabular-nums inline">
-                          <CountdownTimer targetDate={contest.tournament.startDate} />
-                        </span>
-                      </p>
-                    ) : null}
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
                       className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
                     >
-                      Add Lineup{" - "}
-                      <span className="text-xs">${contest.settings?.primaryDeposit}</span>
+                      Enter Contest{" - "}
+                      <span>${contest.settings?.primaryDeposit}</span>
                     </button>
+
+                    {contest.tournament?.status === "NOT_STARTED" &&
+                    contest.tournament.startDate ? (
+                      <p className="text-xs text-gray-500 text-center mb-2">
+                        <span>{contest.tournament.name} starts in</span>
+                        <br />
+                        <span className="inline-block min-w-[120px] whitespace-nowrap tabular-nums pt-1">
+                          <CountdownTimer targetDate={contest.tournament.startDate} />
+                        </span>
+                      </p>
+                    ) : null}
                   </div>
                 )}
 

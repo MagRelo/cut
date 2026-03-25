@@ -60,20 +60,77 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
       return { gradient: "" };
     }
 
+    // Percentage points gap between slices.
+    // Smaller values = tighter separators.
+    const GAP_PERCENT = 0.7;
+    const halfGap = GAP_PERCENT / 2;
+
     let startPercent = 0;
-    const chartSegments = segments.map((segment, index) => {
+    const boundaries = segments.map((segment, index) => {
       const isLast = index === segments.length - 1;
       const rawPercent = Number((segment.shares * 10000n) / totalShares) / 100;
       const percent = isLast ? Math.max(0, 100 - startPercent) : rawPercent;
       const endPercent = Math.min(100, startPercent + percent);
-      const gradientSlice = `${segment.color} ${startPercent.toFixed(2)}% ${endPercent.toFixed(2)}%`;
+
+      const sliceStart = startPercent;
+      const sliceEnd = endPercent;
       startPercent = endPercent;
 
-      return { gradientSlice };
+      return { color: segment.color, sliceStart, sliceEnd };
     });
 
+    const gradientStops: string[] = [];
+
+    const first = boundaries[0];
+    const firstColoredStart = first.sliceStart + halfGap;
+    const firstColoredEnd = first.sliceEnd - halfGap;
+    const firstRenderedStart = firstColoredEnd > firstColoredStart ? firstColoredStart : first.sliceStart;
+    if (firstRenderedStart > 0) {
+      gradientStops.push(`transparent 0.00% ${firstRenderedStart.toFixed(2)}%`);
+    }
+
+    for (let i = 0; i < boundaries.length; i++) {
+      const current = boundaries[i];
+      const next = boundaries[i + 1];
+
+      // Shrink colored arc to leave a separator gap.
+      const currentColoredStart = current.sliceStart + halfGap;
+      const currentColoredEnd = current.sliceEnd - halfGap;
+      const currentFits = currentColoredEnd > currentColoredStart;
+      const currentRenderedStart = currentFits ? currentColoredStart : current.sliceStart;
+      const currentRenderedEnd = currentFits ? currentColoredEnd : current.sliceEnd;
+
+      gradientStops.push(
+        `${current.color} ${currentRenderedStart.toFixed(2)}% ${currentRenderedEnd.toFixed(2)}%`,
+      );
+
+      // Explicitly insert transparent separator between slices.
+      if (next) {
+        const nextColoredStart = next.sliceStart + halfGap;
+        const nextColoredEnd = next.sliceEnd - halfGap;
+        const nextFits = nextColoredEnd > nextColoredStart;
+        const nextRenderedStart = nextFits ? nextColoredStart : next.sliceStart;
+
+        if (nextRenderedStart > currentRenderedEnd) {
+          gradientStops.push(
+            `transparent ${currentRenderedEnd.toFixed(2)}% ${nextRenderedStart.toFixed(2)}%`,
+          );
+        }
+      }
+    }
+
+    // Add the wrap-around transparent separator (last slice -> first slice).
+    const last = boundaries[boundaries.length - 1];
+    const lastColoredStart = last.sliceStart + halfGap;
+    const lastColoredEnd = last.sliceEnd - halfGap;
+    const lastFits = lastColoredEnd > lastColoredStart;
+    const lastRenderedEnd = lastFits ? lastColoredEnd : last.sliceEnd;
+    if (lastRenderedEnd < 100) {
+      gradientStops.push(`transparent ${lastRenderedEnd.toFixed(2)}% 100.00%`);
+    }
+
     return {
-      gradient: `conic-gradient(${chartSegments.map((s) => s.gradientSlice).join(", ")})`,
+      gradient: `conic-gradient(${gradientStops.join(", ")})`,
     };
   }, [contest.contestLineups, entryData]);
 
