@@ -67,8 +67,7 @@ components/
 
 ### Predictions
 - **ContestPredictionsTab.tsx**: Predictions tab
-- **PredictionEntryForm.tsx**: Prediction entry form
-- **PredictionEntryModal.tsx**: Prediction entry modal
+- **PredictionEntryForm.tsx**: Prediction entry form (embedded in **ContestEntryModal** “Buy Shares” tab)
 - **PredictionEntryPosition.tsx**: Prediction position display
 - **PredictionLineupsList.tsx**: List of prediction lineups
 - **PredictionPositionsList.tsx**: List of prediction positions
@@ -91,6 +90,7 @@ components/
 
 ## Player Components
 
+- **PlayerDetailModal.tsx**: Player detail dialog (card + scorecard)
 - **PlayerDisplayCard.tsx**: Player card display
 - **PlayerDisplayRow.tsx**: Player row display
 - **PlayerScorecard.tsx**: Player scorecard display

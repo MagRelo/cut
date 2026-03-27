@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { Fragment, useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useReadContract } from "wagmi";
-import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
 import { useLineupData } from "../../hooks/useLineupData";
@@ -305,27 +305,53 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   return (
     <div className="flex flex-col gap-4">
       {/* Warning Modal */}
-      <Dialog
-        open={warningModal.open}
-        onClose={() => setWarningModal({ open: false, message: "" })}
-        className="relative z-50"
-      >
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-md w-full bg-white rounded-sm shadow-lg">
-            <div className="p-6">
-              <DialogTitle className="text-lg font-semibold text-red-600 mb-2">Warning</DialogTitle>
-              <div className="text-gray-800 mb-4">{warningModal.message}</div>
-              <button
-                onClick={() => setWarningModal({ open: false, message: "" })}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+      <Transition appear show={warningModal.open} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setWarningModal({ open: false, message: "" })}
+        >
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
               >
-                Close
-              </button>
+                <DialogPanel className="w-full max-w-md transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
+                  <div className="p-6">
+                    <DialogTitle className="text-lg font-semibold text-red-600 mb-2">Warning</DialogTitle>
+                    <div className="text-gray-800 mb-4">{warningModal.message}</div>
+                    <button
+                      type="button"
+                      onClick={() => setWarningModal({ open: false, message: "" })}
+                      className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
             </div>
-          </DialogPanel>
-        </div>
-      </Dialog>
+          </div>
+        </Dialog>
+      </Transition>
 
       <h3 className="text-sm font-medium text-gray-900">My Lineups</h3>
 

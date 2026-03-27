@@ -1,13 +1,11 @@
-import React, { Fragment, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
+import { PlayerDetailModal } from "../components/player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../components/player/PlayerDisplayRow";
-import { PlayerDisplayCard } from "../components/player/PlayerDisplayCard";
-import { PlayerScorecard } from "../components/player/PlayerScorecard";
 import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
 import type { PlayerWithTournamentData } from "../types/player";
 
@@ -174,48 +172,12 @@ export const LeaderboardPage: React.FC = () => {
         )}
       </div>
 
-      <Transition appear show={isPlayerModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closePlayerModal}>
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-150"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/25" />
-          </TransitionChild>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-150"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden transition-all py-1">
-                  <div className="bg-gray-100 p-2">
-                    {selectedPlayer && (
-                      <div className="overflow-hidden border border-gray-300 rounded-sm">
-                        <PlayerDisplayCard player={selectedPlayer} roundDisplay={roundDisplay} />
-                        <div className="h-[184px] overflow-y-auto bg-slate-50">
-                          <PlayerScorecard player={selectedPlayer} roundDisplay={roundDisplay} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      <PlayerDetailModal
+        isOpen={isPlayerModalOpen}
+        onClose={closePlayerModal}
+        player={selectedPlayer}
+        roundDisplay={roundDisplay}
+      />
     </div>
   );
 };

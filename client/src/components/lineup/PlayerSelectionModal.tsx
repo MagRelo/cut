@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import React, { Fragment, useState } from "react";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import { PlayerSelectionButton } from "./PlayerSelectionButton";
 
@@ -73,102 +73,115 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <TransitionChild
+          as={Fragment}
+          enter="ease-out duration-200"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-150"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        </TransitionChild>
 
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel className="mx-auto max-w-4xl w-full bg-white rounded-md shadow-lg">
-          <div className="p-4 sm:p-6">
-            <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
-              Select a Golfer
-            </DialogTitle>
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <TransitionChild
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <DialogPanel className="w-full max-w-4xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
+                <div className="p-4 sm:p-6">
+                  <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
+                    Select a Golfer
+                  </DialogTitle>
 
-            {/* Player Grid and Controls */}
-            <div className="border border-gray-300 rounded-sm overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-200 p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
-                {filteredPlayers.map((player) => {
-                  const isAlreadySelected = selectedPlayers.includes(player.id);
-                  return (
-                    <PlayerSelectionButton
-                      key={player.id}
-                      player={player}
-                      isSelected={isAlreadySelected}
-                      onClick={() => onSelect(player.id)}
-                      iconType={isAlreadySelected ? "check" : undefined}
-                      disabled={isAlreadySelected}
-                    />
-                  );
-                })}
-              </div>
+                  <div className="border border-gray-300 rounded-sm overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-200 p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
+                      {filteredPlayers.map((player) => {
+                        const isAlreadySelected = selectedPlayers.includes(player.id);
+                        return (
+                          <PlayerSelectionButton
+                            key={player.id}
+                            player={player}
+                            isSelected={isAlreadySelected}
+                            onClick={() => onSelect(player.id)}
+                            iconType={isAlreadySelected ? "check" : undefined}
+                            disabled={isAlreadySelected}
+                          />
+                        );
+                      })}
+                    </div>
 
-              {/* Search and Sort Controls */}
-              <div className="p-3 bg-gray-100 border-t border-gray-300">
-                <div className="flex justify-center items-center gap-4">
-                  <button
-                    onClick={() => toggleSort("fedex")}
-                    className={`px-3 py-1.5 text-xs font-medium ${
-                      sortField === "fedex"
-                        ? "bg-blue-50 text-blue-600 border-blue-300"
-                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                    } rounded-md border transition-colors`}
-                  >
-                    FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
-                  </button>
-                  <button
-                    onClick={() => toggleSort("owgr")}
-                    className={`px-3 py-1.5 text-xs font-medium ${
-                      sortField === "owgr"
-                        ? "bg-blue-50 text-blue-600 border-blue-300"
-                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                    } rounded-md border transition-colors`}
-                  >
-                    OWGR {sortField === "owgr" && (sortDirection === "asc" ? "↑" : "↓")}
-                  </button>
-                  <button
-                    onClick={() => toggleSort("name")}
-                    className={`px-3 py-1.5 text-xs font-medium ${
-                      sortField === "name"
-                        ? "bg-blue-50 text-blue-600 border-blue-300"
-                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                    } rounded-md border transition-colors`}
-                  >
-                    Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
-                  </button>
+                    <div className="p-3 bg-gray-100 border-t border-gray-300">
+                      <div className="flex justify-center items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("fedex")}
+                          className={`px-3 py-1.5 text-xs font-medium ${
+                            sortField === "fedex"
+                              ? "bg-blue-50 text-blue-600 border-blue-300"
+                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                          } rounded-md border transition-colors`}
+                        >
+                          FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("owgr")}
+                          className={`px-3 py-1.5 text-xs font-medium ${
+                            sortField === "owgr"
+                              ? "bg-blue-50 text-blue-600 border-blue-300"
+                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                          } rounded-md border transition-colors`}
+                        >
+                          OWGR {sortField === "owgr" && (sortDirection === "asc" ? "↑" : "↓")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("name")}
+                          className={`px-3 py-1.5 text-xs font-medium ${
+                            sortField === "name"
+                              ? "bg-blue-50 text-blue-600 border-blue-300"
+                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
+                          } rounded-md border transition-colors`}
+                        >
+                          Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 sm:mt-6 flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(null)}
+                      className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
+                    >
+                      Leave Empty
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Search Input */}
-            {/* <div className='mt-4'>
-              <div className='relative'>
-                <input
-                  type='text'
-                  placeholder='Search players...'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                />
-              </div>
-            </div> */}
-
-            {/* Close Button */}
-            <div className="mt-4 sm:mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => onSelect(null)}
-                className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
-              >
-                Leave Empty
-              </button>
-              <button
-                onClick={handleClose}
-                className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
-              >
-                Close
-              </button>
-            </div>
+              </DialogPanel>
+            </TransitionChild>
           </div>
-        </DialogPanel>
-      </div>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Transition>
   );
 };

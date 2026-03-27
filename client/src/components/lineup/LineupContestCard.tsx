@@ -1,8 +1,7 @@
-import React, { Fragment, useState } from "react";
+import React, { useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { Link } from "react-router-dom";
-import { PlayerDisplayCard } from "../player/PlayerDisplayCard";
+import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
 import { EntryHeader } from "../contest/EntryHeader";
@@ -168,50 +167,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         </div>
       </TabGroup>
 
-      {/* Player Detail Modal */}
-      <Transition appear show={isModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closePlayerModal}>
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-150"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/25" />
-          </TransitionChild>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-150"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-slate-100 shadow-xl transition-all">
-                  {/* Content Section */}
-                  <div className="max-h-[70vh] overflow-y-auto p-2">
-                    {selectedPlayer && (
-                      <div className="overflow-hidden border border-gray-300 rounded-sm">
-                        <PlayerDisplayCard
-                          player={selectedPlayer}
-                          roundDisplay={roundDisplay || "R1"}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      <PlayerDetailModal
+        isOpen={isModalOpen}
+        onClose={closePlayerModal}
+        player={selectedPlayer}
+        roundDisplay={roundDisplay || "R1"}
+      />
     </div>
   );
 };
