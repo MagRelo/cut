@@ -13,6 +13,11 @@ const isValidHexColor = (value: unknown): value is string => {
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
+const getLineupNumberLabel = (lineupName?: string) => {
+  if (!lineupName) return null;
+  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
+  return match?.[1] ? `#${match[1]}` : null;
+};
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
@@ -110,6 +115,7 @@ export const ContestEntryList = ({
           .map((player) => player.pga_lastName)
           .filter(Boolean)
           .join(", ");
+        const lineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
 
         return (
           <div
@@ -137,6 +143,9 @@ export const ContestEntryList = ({
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
                   {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                  {lineupNumberLabel && (
+                    <span className="ml-1 text-xs font-medium text-gray-500">{lineupNumberLabel}</span>
+                  )}
                 </div>
 
                 <div className="text-xs text-gray-500 truncate">

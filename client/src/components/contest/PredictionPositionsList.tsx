@@ -12,6 +12,11 @@ const isValidHexColor = (value: unknown): value is string => {
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
+const getLineupNumberLabel = (lineupName?: string) => {
+  if (!lineupName) return null;
+  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
+  return match?.[1] ? `#${match[1]}` : null;
+};
 
 interface PredictionPositionsListProps {
   contest: Contest;
@@ -111,6 +116,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
           const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
           const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
           const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+          const lineupNumberLabel = getLineupNumberLabel(lineup?.tournamentLineup?.name);
           const isWithdrawing = withdrawingEntryId === position.entryId;
 
           const userSettings = lineup?.user?.settings;
@@ -161,7 +167,12 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate">{userName}</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate">
+                    {userName}
+                    {lineupNumberLabel && (
+                      <span className="ml-1 text-xs font-medium text-gray-500">{lineupNumberLabel}</span>
+                    )}
+                  </div>
                   <div className="text-xs text-gray-500 truncate">{lineupName}</div>
                 </div>
 
