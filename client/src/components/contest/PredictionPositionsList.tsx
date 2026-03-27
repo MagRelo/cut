@@ -184,7 +184,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
                 <div className="flex-shrink-0 flex items-center gap-2">
                   <div className="text-right">
-                    <div className="text-lg font-bold text-emerald-600 leading-none tabular-nums">
+                    <div className="text-xl font-bold text-emerald-600 leading-none tabular-nums">
                       ${impliedDisplay}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
