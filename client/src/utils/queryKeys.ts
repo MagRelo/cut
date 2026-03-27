@@ -21,9 +21,11 @@ export const queryKeys = {
   },
   lineups: {
     all: ["lineups"] as const,
-    byTournament: (tournamentId: string) =>
-      [...queryKeys.lineups.all, "tournament", tournamentId] as const,
-    byId: (id: string) => [...queryKeys.lineups.all, id] as const,
+    /** Scoped by user so cache cannot leak across account switches. */
+    byTournament: (userId: string, tournamentId: string) =>
+      [...queryKeys.lineups.all, "tournament", userId, tournamentId] as const,
+    byId: (userId: string, lineupId: string) =>
+      [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
   players: {
     all: ["players"] as const,

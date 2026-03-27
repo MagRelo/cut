@@ -23,18 +23,16 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
     error,
     isLoading,
     refetch,
-  } = useLineupsQuery(tournamentId, isEnabled);
+  } = useLineupsQuery(tournamentId, isEnabled, user?.id);
 
   const createMutation = useCreateLineup();
   const updateMutation = useUpdateLineup();
 
-  const getLineups = useCallback(
-    async (_tournamentId: string): Promise<TournamentLineup[]> => {
-      const result = await refetch();
-      return result.data ?? [];
-    },
-    [refetch]
-  );
+  /** Explicit network refresh (e.g. pull-to-refresh). Prefer relying on the query cache otherwise. */
+  const refetchLineups = useCallback(async (): Promise<TournamentLineup[]> => {
+    const result = await refetch();
+    return result.data ?? [];
+  }, [refetch]);
 
   const getLineupFromCache = useCallback(
     (lineupId: string): TournamentLineup | null =>
@@ -88,7 +86,7 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
     lineups,
     lineupError,
     isLoading,
-    getLineups,
+    refetchLineups,
     getLineupById,
     getLineupFromCache,
     createLineup,

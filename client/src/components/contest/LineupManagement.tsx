@@ -49,7 +49,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 };
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
-  const { lineups, getLineups } = useLineupData();
+  const { lineups } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
@@ -65,7 +65,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
 
   // Extract primitive values to prevent re-renders
   const contestId = contest.id;
-  const tournamentId = contest.tournamentId;
 
   // Use Contest blockchain hooks
   const {
@@ -86,7 +85,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
             tournamentLineupId: pendingAction.lineupId,
             entryId: pendingAction.entryId,
           });
-          await getLineups(tournamentId);
           setPendingAction(null);
           setServerError(null);
         } catch (error) {
@@ -124,7 +122,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
               contestLineupId,
             });
           }
-          await getLineups(tournamentId);
           setPendingAction(null);
           setServerError(null);
         } catch (error) {

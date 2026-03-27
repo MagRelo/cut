@@ -2,29 +2,32 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
 }
 
 /**
- * Fetches all lineups for a tournament (typically for the logged-in user)
+ * Fetches all lineups for a tournament for the logged-in user.
  *
- * Benefits:
- * - Automatic caching by tournament ID
- * - Shared data across all components
- * - Automatic refetching when data becomes stale
- * - Built-in loading and error states
+ * Query key includes `userId` so React Query cache does not leak across accounts.
  */
-export function useLineupsQuery(tournamentId: string | undefined, enabled: boolean = true) {
+export function useLineupsQuery(
+  tournamentId: string | undefined,
+  enabled: boolean = true,
+  userId: string | undefined
+) {
+  const canRun = !!tournamentId && !!userId && enabled;
+
   return useQuery({
-    queryKey: queryKeys.lineups.byTournament(tournamentId ?? ""),
+    queryKey: queryKeys.lineups.byTournament(userId ?? "_", tournamentId ?? "_"),
     queryFn: async () => {
       if (!tournamentId) throw new Error("Tournament ID is required");
       const data = await apiClient.get<LineupResponse>(`/lineup/${tournamentId}`);
       return data.lineups || [];
     },
-    enabled: !!tournamentId && enabled, // Only run if tournamentId exists and enabled
+    enabled: canRun,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -32,20 +35,23 @@ export function useLineupsQuery(tournamentId: string | undefined, enabled: boole
 }
 
 /**
- * Fetches a single lineup by ID
- *
- * @param lineupId - The lineup ID to fetch
- * @param enabled - Whether to enable the query (default: true)
+ * Fetches a single lineup by ID for the logged-in user.
  */
-export function useLineupQuery(lineupId: string | undefined, enabled: boolean = true) {
+export function useLineupQuery(
+  lineupId: string | undefined,
+  enabled: boolean = true,
+  userId: string | undefined
+) {
+  const canRun = !!lineupId && !!userId && enabled;
+
   return useQuery({
-    queryKey: queryKeys.lineups.byId(lineupId ?? ""),
+    queryKey: queryKeys.lineups.byId(userId ?? "_", lineupId ?? "_"),
     queryFn: async () => {
       if (!lineupId) throw new Error("Lineup ID is required");
       const data = await apiClient.get<LineupResponse>(`/lineup/lineup/${lineupId}`);
-      return data.lineups[0] || null;
+      return data.lineups[0] ?? null;
     },
-    enabled: !!lineupId && enabled,
+    enabled: canRun,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -53,13 +59,10 @@ export function useLineupQuery(lineupId: string | undefined, enabled: boolean = 
 }
 
 /**
- * Hook to get a lineup from the cache without fetching
- *
- * Useful when you need to access lineup data that's already been fetched
- * without triggering a new network request.
+ * Read a lineup from an already-fetched tournament list (no fetch; `enabled: false` on list query).
  */
 export function useLineupFromCache(lineupId: string, tournamentId: string) {
-  const { data: lineups } = useLineupsQuery(tournamentId, false);
-  return lineups?.find((lineup) => lineup.id === lineupId) || null;
+  const { user } = usePortoAuth();
+  const { data: lineups } = useLineupsQuery(tournamentId, false, user?.id);
+  return lineups?.find((lineup) => lineup.id === lineupId) ?? null;
 }
-

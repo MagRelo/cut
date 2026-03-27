@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
+import { formatUnits, parseUnits } from "viem";
+import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { ContestEntryModal } from "./ContestEntryModal";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
-
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -72,22 +73,51 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
           .map((entry) => {
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || "Unknown";
-            const sharePrice = Number.parseFloat(entry.priceFormatted || "0");
-            const sharePriceLabel = Number.isFinite(sharePrice) ? `$${sharePrice.toFixed(5)}` : "$0.00000";
+            const tenDollarWinsLabel = (() => {
+              if (!poolSnapshot) return "—";
+
+              let tenDollarAmount: bigint;
+              try {
+                tenDollarAmount = parseUnits("10", 18);
+              } catch {
+                return "—";
+              }
+
+              const sim = simulateAddSecondaryPosition({
+                amount: tenDollarAmount,
+                entryShares: entry.totalSupply,
+                ...poolSnapshot,
+              });
+
+              if (sim.tokensToMint <= 0n) return "0.00";
+
+              const newSupply = entry.totalSupply + sim.tokensToMint;
+              if (newSupply <= 0n) return "0.00";
+
+              // Simulate a fresh $10 buy so list rows are comparable across entries.
+              const impliedAfter = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
+              const impliedRaw = Number(formatUnits(impliedAfter, 18));
+              if (!Number.isFinite(impliedRaw)) return "—";
+              return impliedRaw.toFixed(2);
+            })();
 
             const userSettings = lineup?.user?.settings;
             const maybeColor =
               typeof userSettings === "object" && userSettings !== null
                 ? (userSettings as { color?: unknown }).color
                 : undefined;
-            const resolvedLeftBorderColor = isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
+            const resolvedLeftBorderColor = isValidHexColor(maybeColor)
+              ? maybeColor
+              : DEFAULT_USER_COLOR;
 
             return (
               <div
                 key={entry.entryId}
                 onClick={() => canOpenLineupModal && setSelectedEntryId(entry.entryId)}
                 className={`bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 ${
-                  canOpenLineupModal ? "cursor-pointer hover:shadow-md" : "opacity-60 cursor-not-allowed"
+                  canOpenLineupModal
+                    ? "cursor-pointer hover:shadow-md"
+                    : "opacity-60 cursor-not-allowed"
                 } transition-all`}
                 style={{
                   borderLeftColor: resolvedLeftBorderColor,
@@ -119,12 +149,16 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <div className="text-right">
-                      <div className="text-lg font-bold text-gray-900 leading-none">{sharePriceLabel}</div>
-                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                        SHARE PRICE
+                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
+                        $10 wins
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600 leading-none mt-0.5">
+                        ${tenDollarWinsLabel}
                       </div>
                     </div>
                   </div>
+                  
+
                 </div>
               </div>
             );

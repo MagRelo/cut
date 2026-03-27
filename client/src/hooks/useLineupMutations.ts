@@ -1,7 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
+import { usePortoAuth } from "../contexts/PortoAuthContext";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -19,17 +20,36 @@ interface UpdateLineupParams {
   name?: string;
 }
 
+/** Find which tournament list cache contains this lineup (for optimistic updates). */
+function findLineupListContext(
+  queryClient: QueryClient,
+  lineupId: string
+): { userId: string; tournamentId: string } | null {
+  const entries = queryClient.getQueriesData<TournamentLineup[]>({
+    queryKey: queryKeys.lineups.all,
+  });
+  for (const [queryKey, lineups] of entries) {
+    if (!lineups?.some((l) => l.id === lineupId)) continue;
+    if (
+      Array.isArray(queryKey) &&
+      queryKey[0] === "lineups" &&
+      queryKey[1] === "tournament" &&
+      typeof queryKey[2] === "string" &&
+      typeof queryKey[3] === "string"
+    ) {
+      return { userId: queryKey[2], tournamentId: queryKey[3] };
+    }
+  }
+  return null;
+}
+
 /**
  * Mutation hook for creating a lineup
- *
- * Features:
- * - Optimistic updates: UI updates immediately before server confirms
- * - Automatic rollback on error
- * - Cache invalidation on success
- * - Better UX with instant feedback
  */
 export function useCreateLineup() {
   const queryClient = useQueryClient();
+  const { user } = usePortoAuth();
+  const userId = user?.id;
 
   return useMutation({
     mutationFn: async ({ tournamentId, playerIds, name }: CreateLineupParams) => {
@@ -40,51 +60,47 @@ export function useCreateLineup() {
       return data.lineups[0];
     },
 
-    // Optimistic update: Add lineup to cache before server responds
     onMutate: async ({ tournamentId, name }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
+      if (!userId) {
+        return { previousLineups: undefined, tournamentId };
+      }
 
-      // Snapshot the previous value
+      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
+
       const previousLineups = queryClient.getQueryData<TournamentLineup[]>(
-        queryKeys.lineups.byTournament(tournamentId)
+        queryKeys.lineups.byTournament(userId, tournamentId)
       );
 
-      // Optimistically add the new lineup
       if (previousLineups !== undefined) {
         const optimisticLineup: TournamentLineup = {
           id: `temp-${Date.now()}`,
           name: name || "New Lineup",
-          players: [], // Will be populated by server
+          players: [],
         };
 
-        queryClient.setQueryData<TournamentLineup[]>(queryKeys.lineups.byTournament(tournamentId), [
-          ...previousLineups,
-          optimisticLineup,
-        ]);
+        queryClient.setQueryData<TournamentLineup[]>(
+          queryKeys.lineups.byTournament(userId, tournamentId),
+          [...previousLineups, optimisticLineup]
+        );
       }
 
       return { previousLineups, tournamentId };
     },
 
-    // If mutation fails, rollback
     onError: (err, { tournamentId }, context) => {
       console.error("Failed to create lineup:", err);
-      if (context?.previousLineups !== undefined) {
+      if (context?.previousLineups !== undefined && userId) {
         queryClient.setQueryData(
-          queryKeys.lineups.byTournament(tournamentId),
+          queryKeys.lineups.byTournament(userId, tournamentId),
           context.previousLineups
         );
       }
     },
 
-    // Always refetch after success
     onSuccess: (_data, { tournamentId }) => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-
-      // Also invalidate contests that might include this lineup
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
   });
@@ -92,14 +108,11 @@ export function useCreateLineup() {
 
 /**
  * Mutation hook for updating a lineup
- *
- * Features:
- * - Optimistic updates: Changes visible immediately
- * - Automatic rollback on error
- * - Cache invalidation on success
  */
 export function useUpdateLineup() {
   const queryClient = useQueryClient();
+  const { user } = usePortoAuth();
+  const userId = user?.id;
 
   return useMutation({
     mutationFn: async ({ lineupId, playerIds, name }: UpdateLineupParams) => {
@@ -110,74 +123,56 @@ export function useUpdateLineup() {
       return data.lineups[0];
     },
 
-    // Optimistic update: Update lineup in cache before server responds
     onMutate: async ({ lineupId, name }) => {
-      // Find tournament ID from the lineups cache
-      let tournamentId: string | undefined;
-      const allLineupQueries = queryClient.getQueriesData<TournamentLineup[]>({
-        queryKey: queryKeys.lineups.all,
-      });
-
-      for (const [, lineups] of allLineupQueries) {
-        if (lineups) {
-          const lineup = lineups.find((l) => l.id === lineupId);
-          if (lineup) {
-            // Extract tournament ID from query key or use a placeholder
-            tournamentId = "current"; // Will be updated by server response
-            break;
-          }
-        }
+      const ctx = findLineupListContext(queryClient, lineupId);
+      if (!ctx) {
+        return { previousLineups: undefined, tournamentId: undefined as string | undefined, lineupId };
       }
 
-      if (!tournamentId) {
-        return { previousLineups: undefined, previousLineup: undefined };
-      }
+      const { userId: uid, tournamentId } = ctx;
 
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(tournamentId) });
-      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byId(lineupId) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(uid, tournamentId) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byId(uid, lineupId) });
 
-      // Snapshot the previous values
       const previousLineups = queryClient.getQueryData<TournamentLineup[]>(
-        queryKeys.lineups.byTournament(tournamentId)
+        queryKeys.lineups.byTournament(uid, tournamentId)
       );
 
-      // Optimistically update the lineup in the list
       if (previousLineups) {
         queryClient.setQueryData<TournamentLineup[]>(
-          queryKeys.lineups.byTournament(tournamentId),
+          queryKeys.lineups.byTournament(uid, tournamentId),
           previousLineups.map((lineup) =>
             lineup.id === lineupId
               ? {
                   ...lineup,
                   name: name || lineup.name,
-                  // Note: players will be updated by server response
                 }
               : lineup
           )
         );
       }
 
-      return { previousLineups, tournamentId, lineupId };
+      return { previousLineups, tournamentId, lineupId, userId: uid };
     },
 
-    // If mutation fails, rollback
     onError: (err, _variables, context) => {
       console.error("Failed to update lineup:", err);
-      if (context?.tournamentId && context?.previousLineups) {
+      if (context?.tournamentId && context?.previousLineups && context?.userId) {
         queryClient.setQueryData(
-          queryKeys.lineups.byTournament(context.tournamentId),
+          queryKeys.lineups.byTournament(context.userId, context.tournamentId),
           context.previousLineups
         );
       }
     },
 
-    // Always refetch after success
-    onSuccess: () => {
-      // Invalidate all lineup queries to ensure everything is in sync
-      queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-
-      // Also invalidate contests that might include this lineup
+    onSuccess: (data) => {
+      const tid = data?.players?.[0]?.tournamentId;
+      if (userId) {
+        if (tid) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tid) });
+        }
+        queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
   });
@@ -185,17 +180,6 @@ export function useUpdateLineup() {
 
 /**
  * Combined hook that provides both create and update mutations
- *
- * Usage:
- * ```typescript
- * const { create, update } = useLineupActions();
- *
- * // Create lineup
- * create.mutate({ tournamentId: "123", playerIds: ["1", "2", "3", "4"] });
- *
- * // Update lineup
- * update.mutate({ lineupId: "456", playerIds: ["5", "6", "7", "8"] });
- * ```
  */
 export function useLineupActions() {
   const create = useCreateLineup();

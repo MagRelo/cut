@@ -349,6 +349,17 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
+            {/* Total Primary Position Subsidies */}
+            {totalPrimaryPositionSubsidies !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 pl-4">↳ Winner Bonuses</span>
+                <span className="text-gray-900">
+                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
+                  {resolvedTokenSymbol}
+                </span>
+              </div>
+            )}
+
             {/* Secondary Side Balance */}
             {secondarySideBalance !== undefined && (
               <div className="flex items-center justify-between">
@@ -383,17 +394,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )}
 
             {/* <hr className="my-2" /> */}
-
-            {/* Total Primary Position Subsidies */}
-            {totalPrimaryPositionSubsidies !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Team Owner Bonuses</span>
-                <span className="text-gray-900 font-semibold">
-                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
 
             {/* <hr className="my-2" /> */}
 
@@ -450,7 +450,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
                 contest.address,
                 chainId,
                 "View Contract",
-                "text-blue-600 hover:text-blue-800 underline",
+                "text-gray-600 hover:text-gray-800 underline",
               )}
             </div>
           )}

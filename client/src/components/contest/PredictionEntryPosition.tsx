@@ -8,16 +8,12 @@ interface PredictionEntryPositionProps {
   contest: Contest;
   entry: PredictionEntryData;
   canWithdraw: boolean;
-  userName: string;
-  lineupName: string;
 }
 
 export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = ({
   contest,
   entry,
   canWithdraw,
-  userName,
-  lineupName,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -81,14 +77,9 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
   };
 
   return (
-    <div className="space-y-3 h-[269px]">
-      <div className="rounded-none border border-gray-200 p-3 text-sm">
+    <div className="space-y-3">
+      <div className="p-3 text-sm">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 text-left">
-            <div className="truncate text-sm font-semibold text-gray-900">{userName}</div>
-            <div className="truncate text-xs text-gray-500">{lineupName}</div>
-          </div>
-
           <div className="flex min-w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 text-center">
             <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
               ${depositedDisplay}

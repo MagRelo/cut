@@ -167,19 +167,19 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5">
                   <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
-                    {ownershipDisplay}%
+                    ${depositedDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
-                    Own
+                    Paid
                   </div>
                 </div>
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5">
                   <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
-                    ${depositedDisplay}
+                    {ownershipDisplay}%
                   </div>
                   <div className="text-[10px] uppercase text-gray-400 font-medium tracking-wide leading-none">
-                    Cost
+                    Own
                   </div>
                 </div>
 

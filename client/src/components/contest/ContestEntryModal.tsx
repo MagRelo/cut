@@ -105,6 +105,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   };
 
   const [selectedIndex, setSelectedIndex] = useState<number>(() => getInitialTabIndex());
+  const entryTabContentHeightClass = "min-h-[280px]";
 
   // Reset tab when opening or when the lineup changes.
   useEffect(() => {
@@ -232,7 +233,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       )}
                       {showBuySharesTab && (
                         <TabPanel>
-                          <div className="pt-1">
+                          <div className={`pt-1 ${entryTabContentHeightClass}`}>
                             <PredictionEntryForm
                               contest={contest}
                               entryId={lineup.entryId ?? null}
@@ -247,13 +248,11 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                       )}
                       {hasPosition && predictionEntry && (
                         <TabPanel>
-                          <div className="pt-1">
+                          <div className={`pt-1 ${entryTabContentHeightClass}`}>
                             <PredictionEntryPosition
                               contest={contest}
                               entry={predictionEntry}
                               canWithdraw={canWithdraw}
-                              userName={userName || lineup.user?.email || "Unknown User"}
-                              lineupName={lineup.tournamentLineup?.name || "Lineup"}
                             />
                           </div>
                         </TabPanel>

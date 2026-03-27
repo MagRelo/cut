@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { usePortoAuth } from "../contexts/PortoAuthContext";
 import { useLineupData } from "../hooks/useLineupData";
@@ -21,7 +21,7 @@ export const LineupList: React.FC = () => {
     isTournamentEditable,
     tournamentStatusDisplay,
   } = useActiveTournament();
-  const { lineups, lineupError, getLineups } = useLineupData();
+  const { lineups, lineupError } = useLineupData();
 
   // Fetch contests with full contestLineups data
   const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
@@ -76,23 +76,6 @@ export const LineupList: React.FC = () => {
         };
       });
   };
-
-  useEffect(() => {
-    const fetchLineups = async () => {
-      if (!currentTournament?.id) return;
-
-      // Only fetch if we don't have lineups for this tournament
-      if (lineups.length === 0) {
-        try {
-          await getLineups(currentTournament.id);
-        } catch (error) {
-          console.error("Failed to fetch lineups:", error);
-        }
-      }
-    };
-
-    fetchLineups();
-  }, [currentTournament?.id, getLineups, lineups.length]);
 
   if (isAuthLoading || isTournamentLoading) {
     return (

@@ -233,7 +233,7 @@ export const ContestLobby: React.FC = () => {
                 )}
 
                 {/* Contest Entry List */}
-                <div className="mt-1">
+                <div className="mt-2">
                   <ContestEntryList
                     contestLineups={contest?.contestLineups}
                     roundDisplay={contest?.tournament?.roundDisplay}

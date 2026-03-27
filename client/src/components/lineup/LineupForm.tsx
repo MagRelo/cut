@@ -5,6 +5,7 @@ import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 
 import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { useLineupData } from "../../hooks/useLineupData";
+import { useLineupQuery } from "../../hooks/useLineupQueries";
 import { useActiveTournament } from "../../hooks/useTournamentData";
 import { ErrorMessage } from "../common/ErrorMessage";
 
@@ -31,7 +32,7 @@ interface LineupFormProps {
 
 export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   const navigate = useNavigate();
-  const { loading: isAuthLoading } = usePortoAuth();
+  const { loading: isAuthLoading, user } = usePortoAuth();
   const {
     players: fieldPlayers,
     currentTournament,
@@ -39,14 +40,23 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   } = useActiveTournament();
 
   const {
-    getLineupById,
     getLineupFromCache,
     createLineup,
     updateLineup,
     lineupError,
     lineups,
-    getLineups,
+    isLoading: isLineupsLoading,
   } = useLineupData();
+
+  const {
+    data: lineupFromDetail,
+    isLoading: isLineupDetailLoading,
+    error: lineupDetailError,
+  } = useLineupQuery(
+    lineupId,
+    Boolean(lineupId && user?.id && currentTournament?.id && !isAuthLoading),
+    user?.id
+  );
 
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
@@ -83,43 +93,22 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   }, [getNextLineupNumber]);
 
   useEffect(() => {
-    const fetchLineup = async () => {
-      if (!isAuthLoading && currentTournament?.id && lineupId) {
-        // First try to get from cache
-        const cachedLineup = getLineupFromCache(lineupId);
-        if (cachedLineup) {
-          setCurrentLineup(cachedLineup);
-          return;
-        }
-
-        // If not in cache, fetch from API
-        try {
-          const lineup = await getLineupById(lineupId);
-          setCurrentLineup(lineup);
-        } catch (error) {
-          console.error("Failed to fetch lineup:", error);
-        }
-      }
-    };
-
-    fetchLineup();
-  }, [currentTournament?.id, isAuthLoading, getLineupById, getLineupFromCache, lineupId]);
-
-  // Load lineups when creating a new lineup to ensure we have the latest data
-  useEffect(() => {
-    const loadLineups = async () => {
-      if (!isAuthLoading && currentTournament?.id && !lineupId && lineups.length === 0) {
-        try {
-          console.log("Loading lineups for new lineup creation...");
-          await getLineups(currentTournament.id);
-        } catch (error) {
-          console.error("Failed to load lineups:", error);
-        }
-      }
-    };
-
-    loadLineups();
-  }, [currentTournament?.id, isAuthLoading, lineupId, lineups.length, getLineups]);
+    if (!lineupId || isAuthLoading || !currentTournament?.id) return;
+    const cachedLineup = getLineupFromCache(lineupId);
+    if (cachedLineup) {
+      setCurrentLineup(cachedLineup);
+      return;
+    }
+    if (lineupFromDetail) {
+      setCurrentLineup(lineupFromDetail);
+    }
+  }, [
+    lineupId,
+    isAuthLoading,
+    currentTournament?.id,
+    getLineupFromCache,
+    lineupFromDetail,
+  ]);
 
   const handlePlayerSelect = (playerId: string | null) => {
     if (selectedPlayerIndex === null) return;
@@ -213,6 +202,28 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
 
   if (isAuthLoading || isTournamentLoading) {
     return <div className="p-4">Loading...</div>;
+  }
+
+  if (
+    lineupId &&
+    !currentLineup &&
+    (isLineupsLoading || isLineupDetailLoading)
+  ) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (lineupId && lineupDetailError && !currentLineup) {
+    return (
+      <div className="p-4">
+        <ErrorMessage
+          message={
+            lineupDetailError instanceof Error
+              ? lineupDetailError.message
+              : "Failed to load lineup"
+          }
+        />
+      </div>
+    );
   }
 
   if (lineupError) {

@@ -55,20 +55,26 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const metrics = useMemo(() => {
+    const empty = {
+      ownershipPercent: 0,
+      tokensReceived: 0,
+      impliedValueAfterPurchaseDisplay: "—" as string,
+    };
+
     if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo || !poolSnapshot) {
-      return { ownershipPercent: 0, tokensReceived: 0 };
+      return empty;
     }
 
     const positionAmount = Number.parseFloat(amount);
     if (!Number.isFinite(positionAmount) || positionAmount <= 0) {
-      return { ownershipPercent: 0, tokensReceived: 0 };
+      return empty;
     }
 
     let amountBigInt: bigint;
     try {
       amountBigInt = parseUnits(amount, 18);
     } catch {
-      return { ownershipPercent: 0, tokensReceived: 0 };
+      return empty;
     }
 
     const sim = simulateAddSecondaryPosition({
@@ -78,35 +84,35 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     });
 
     if (sim.tokensToMint === 0n) {
-      return { ownershipPercent: 0, tokensReceived: 0 };
+      return { ...empty, impliedValueAfterPurchaseDisplay: "0.00" };
     }
 
     const newSupply = selectedEntryInfo.totalSupply + sim.tokensToMint;
     if (newSupply === 0n) {
-      return { ownershipPercent: 0, tokensReceived: 0 };
+      return empty;
     }
 
     const tokensReceived = Number(formatUnits(sim.tokensToMint, 18));
     const ownershipPercent =
       newSupply > 0n ? Number((sim.tokensToMint * 10000n) / newSupply) / 100 : 0;
 
-    return { ownershipPercent, tokensReceived };
+    // Buy-only implied value: value only the newly minted shares from this purchase.
+    const impliedAfter = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
+    const impliedRaw = Number(formatUnits(impliedAfter, 18));
+    const impliedValueAfterPurchaseDisplay = Number.isFinite(impliedRaw)
+      ? impliedRaw.toFixed(2)
+      : "—";
+
+    return { ownershipPercent, tokensReceived, impliedValueAfterPurchaseDisplay };
   }, [amount, selectedEntryInfo, poolSnapshot]);
 
   const metricsReady = Boolean(poolSnapshot);
 
-  const pricePerShareRaw = selectedEntryInfo
-    ? Number.parseFloat(selectedEntryInfo.priceFormatted || "0")
-    : NaN;
-  const pricePerShareDisplay = Number.isFinite(pricePerShareRaw)
-    ? pricePerShareRaw.toFixed(5)
-    : "—";
-
-  const sharesToBuyDisplay =
-    metricsReady && selectedEntryInfo ? metrics.tokensReceived.toFixed(5) : "—";
-
   const ownPercentAfterDisplay =
     metricsReady && selectedEntryInfo ? `${metrics.ownershipPercent.toFixed(2)}%` : "—";
+
+  const impliedValueDisplay =
+    metricsReady && selectedEntryInfo ? metrics.impliedValueAfterPurchaseDisplay : "—";
 
   useEffect(() => {
     setAmount("10");
@@ -156,38 +162,40 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     }
   };
 
+  const predictionDetailsCard = (
+    <div className="rounded-sm border border-gray-200 bg-gray-50 p-3 space-y-2 text-sm">
+      <div className="space-y-2">
+        {/* purchase amount  */}
+
+        <div className="flex justify-between items-center gap-3">
+          <span className="text-gray-500">Purchase amount</span>
+          <span className="text-gray-700 font-medium tabular-nums">${amount}</span>
+        </div>
+
+        <div className="flex justify-between items-center gap-3">
+          <span className="text-gray-500">% of Pool</span>
+          <span className="text-gray-700 font-medium tabular-nums">{ownPercentAfterDisplay}</span>
+        </div>
+
+        <hr className="my-2 border-t border-gray-200" />
+
+        <div className="flex justify-between items-center gap-3">
+          <span className="text-gray-500">Current Value</span>
+          <span className="font-bold tabular-nums text-emerald-600">${impliedValueDisplay}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!user) {
     return (
-      <div className="space-y-2 h-[269px]">
+      <div className="space-y-2">
         <form
           className="space-y-2 pointer-events-none opacity-55"
           aria-disabled="true"
           onSubmit={(event) => event.preventDefault()}
         >
-          <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Share price</span>
-                <span className="font-bold text-gray-900 text-base tabular-nums">
-                  {pricePerShareDisplay}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Shares to buy</span>
-                <span className="font-bold text-gray-900 text-base tabular-nums">
-                  {sharesToBuyDisplay}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Own % after</span>
-                <span className="font-bold text-gray-900 text-base tabular-nums">
-                  {ownPercentAfterDisplay}
-                </span>
-              </div>
-            </div>
-          </div>
+          {predictionDetailsCard}
 
           <div>
             <label
@@ -204,7 +212,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+              className="w-full px-4 py-3 text-base border border-gray-200 rounded-md bg-gray-50/80 text-gray-600 font-normal cursor-not-allowed"
               disabled
             />
           </div>
@@ -229,32 +237,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 h-[269px]">
-      {/* details */}
-      <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-md p-3 space-y-2 text-sm">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">Share price</span>
-            <span className="font-bold text-gray-900 text-base tabular-nums">
-              ${pricePerShareDisplay}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">Shares</span>
-            <span className="font-bold text-gray-900 text-base tabular-nums">
-              {sharesToBuyDisplay}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">% of Shares</span>
-            <span className="font-bold text-gray-900 text-base tabular-nums">
-              {ownPercentAfterDisplay}
-            </span>
-          </div>
-        </div>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-2">
+      {predictionDetailsCard}
 
       <div>
         <label
@@ -270,7 +254,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full px-4 py-3 text-base border border-gray-200 rounded-md text-gray-700 font-normal placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/80 focus:border-emerald-300"
           disabled={isProcessing}
           autoFocus
         />

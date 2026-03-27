@@ -66,7 +66,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const { labels, allTimestampsSorted } = useMemo(() => {
     const seenRounds = new Set<string>();
-    const labelList = [...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp)))]
+    const labelList = [
+      ...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp))),
+    ]
       .sort()
       .map((timestamp) => {
         const dataPoint = topTeams
@@ -207,10 +209,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div className={className}>
-      <div
-        className="bg-white border border-gray-100 p-4 pb-3 timeline-chart"
-        style={{ height: "250px" }}
-      >
+      <div className="bg-white  p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
         {emptySharePrice ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
             No share price history yet. It appears after timeline snapshots include market data.
