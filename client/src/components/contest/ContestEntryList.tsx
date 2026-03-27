@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
-import { PositionBadge } from "./PositionBadge";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
 import { arePrimaryActionsLocked, type ContestStatus, type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type PredictionEntryData } from "./PredictionEntryForm";
@@ -36,8 +34,6 @@ export const ContestEntryList = ({
   contestChainId,
   contest,
 }: ContestEntryListProps) => {
-  const { user } = usePortoAuth();
-
   // Compute action locks based on contest status
   const primaryActionsLocked = arePrimaryActionsLocked(contestStatus);
 
@@ -98,13 +94,17 @@ export const ContestEntryList = ({
 
   return (
     <>
-      {sortedLineups.map((lineup) => {
+      {sortedLineups.map((lineup, index) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
-        const isCurrentUser = lineup.userId === user?.id;
+        const nextLineup = sortedLineups[index + 1];
+        const nextInTheMoney = nextLineup != null && (nextLineup.position || 0) <= paidPositions;
+        const showPaidCutoffDivider = isInTheMoney && nextLineup != null && !nextInTheMoney;
         const lineupPlayers = lineup.tournamentLineup?.players ?? [];
         const userSettings = lineup.user?.settings;
         const maybeColor =
-          typeof userSettings === "object" && userSettings !== null ? (userSettings as { color?: unknown }).color : undefined;
+          typeof userSettings === "object" && userSettings !== null
+            ? (userSettings as { color?: unknown }).color
+            : undefined;
         const resolvedBorderColor = isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
         const sortedPlayerNames = [...lineupPlayers]
           .sort((a, b) => {
@@ -118,70 +118,72 @@ export const ContestEntryList = ({
         const lineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
 
         return (
-          <div
-            key={lineup.id}
-            className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
-            onClick={() => openLineupModal(lineup)}
-            style={{
-              borderLeftColor: resolvedBorderColor,
-              borderLeftWidth: "3px",
-              borderLeftStyle: "solid",
-            }}
-          >
-            <div className="flex items-center justify-between gap-3 ">
-              {/* Left - Rank */}
-              <div className="flex-shrink-0">
-                <PositionBadge
-                  position={lineup.position || 0}
-                  isInTheMoney={isInTheMoney}
-                  isUser={isCurrentUser}
-                  primaryActionsLocked={primaryActionsLocked}
-                />
-              </div>
+          <div key={lineup.id}>
+            <div
+              className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
+              onClick={() => openLineupModal(lineup)}
+              style={{
+                borderLeftColor: resolvedBorderColor,
+                borderLeftWidth: "3px",
+                borderLeftStyle: "solid",
+              }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                    {lineup.user?.name || lineup.user?.email || "Unknown User"}
+                    {lineupNumberLabel && (
+                      <span className="ml-1 text-xs font-medium text-gray-500">
+                        {lineupNumberLabel}
+                      </span>
+                    )}
+                  </div>
 
-              {/* Middle - User Info */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
-                  {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                  {lineupNumberLabel && (
-                    <span className="ml-1 text-xs font-medium text-gray-500">{lineupNumberLabel}</span>
+                  <div className="text-xs text-gray-500 truncate">
+                    {!primaryActionsLocked
+                      ? lineup.tournamentLineup?.name || "Lineup"
+                      : sortedPlayerNames || "No players"}
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900 leading-none">
+                      {lineup.score || 0}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                      PTS
+                    </div>
+                  </div>
+
+                  {/* chevron right icon */}
+                  {primaryActionsLocked && (
+                    <svg
+                      className="w-4 h-4 text-gray-400 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   )}
                 </div>
-
-                <div className="text-xs text-gray-500 truncate">
-                  {!primaryActionsLocked
-                    ? lineup.tournamentLineup?.name || "Lineup"
-                    : sortedPlayerNames || "No players"}
-                </div>
-              </div>
-
-              {/* Right - Points */}
-              <div className="flex-shrink-0 flex items-center gap-2">
-                <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900 leading-none">
-                    {lineup.score || 0}
-                  </div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                    PTS
-                  </div>
-                </div>
-                {primaryActionsLocked && (
-                  <svg
-                    className="w-4 h-4 text-gray-400 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                )}
               </div>
             </div>
+            {showPaidCutoffDivider && (
+              <div className="my-2 flex items-center gap-2" role="separator" aria-hidden>
+                <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
+                <span className="flex h-6 w-4 shrink-0 items-center justify-center text-sm font-semibold leading-none text-green-600 opacity-80">
+                  $
+                </span>
+                <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
+              </div>
+            )}
           </div>
         );
       })}

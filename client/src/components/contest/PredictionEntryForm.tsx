@@ -177,8 +177,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           <span className="text-gray-700 font-medium tabular-nums">{ownPercentAfterDisplay}</span>
         </div>
 
-        <hr className="my-2 border-t border-gray-200" />
-
         <div className="flex justify-between items-center gap-3">
           <span className="text-gray-500">Current Value</span>
           <span className="font-bold tabular-nums text-emerald-600">${impliedValueDisplay}</span>
