@@ -8,6 +8,64 @@ const CELL = `px-2 py-2.5 text-center text-xs tabular-nums ${BLINE}`;
 /** Sticky first-column row labels (matches Par row) */
 const ROW_LABEL = `sticky left-0 z-10 border-r border-slate-200 px-3 py-2.5 text-left align-top min-w-[3.5rem] w-[3.5rem] text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)] ${BLINE}`;
 
+/**
+ * Five visual treatments in `ScoreDisplay` (score vs hole par).
+ * `par` is plain text; chip states set shape, border, and optional fill independently.
+ */
+const SCORE_DISPLAY_STATE = {
+  par: null,
+  /** Two or more under par (eagle, albatross, …) */
+  eagleOrBetter: {
+    shape: "rounded-full",
+    borderWidth: "border-2",
+    borderColor: "border-emerald-500",
+    background: "bg-emerald-400/10",
+  },
+  birdie: {
+    shape: "rounded-full",
+    borderWidth: "border-2",
+    borderColor: "border-emerald-500",
+    background: "",
+  },
+  bogey: {
+    shape: "",
+    borderWidth: "border-2",
+    borderColor: "border-red-400",
+    background: "",
+  },
+  /** Two or more over par */
+  doubleBogeyOrWorse: {
+    shape: "",
+    borderWidth: "border-2",
+    borderColor: "border-red-400",
+    background: "bg-red-400/10",
+  },
+} as const;
+
+type ScoreDisplayStateKey = keyof typeof SCORE_DISPLAY_STATE;
+
+function scoreDisplayStateKey(scoreDiff: number): ScoreDisplayStateKey {
+  if (scoreDiff === 0) return "par";
+  if (scoreDiff < -1) return "eagleOrBetter";
+  if (scoreDiff === -1) return "birdie";
+  if (scoreDiff === 1) return "bogey";
+  return "doubleBogeyOrWorse";
+}
+
+function scoreDisplayChipClass(
+  chip: NonNullable<(typeof SCORE_DISPLAY_STATE)[Exclude<ScoreDisplayStateKey, "par">]>,
+): string {
+  return [
+    "inline-flex h-7 w-7 items-center justify-center",
+    chip.shape,
+    chip.borderWidth,
+    chip.borderColor,
+    chip.background,
+  ]
+    .filter((part) => part.length > 0)
+    .join(" ");
+}
+
 interface StablefordDisplayProps {
   points: number;
   cellClassName?: string;
@@ -21,14 +79,12 @@ export const StablefordDisplay: React.FC<StablefordDisplayProps> = ({
   hideZero = false,
 }) => {
   if (hideZero && points === 0) {
-    return (
-      <td className={`${CELL} min-w-[2.25rem] w-[2.25rem] ${cellClassName}`.trim()} />
-    );
+    return <td className={`${CELL} min-w-[2.25rem] w-[2.25rem] ${cellClassName}`.trim()} />;
   }
 
   let pointsClass = "text-slate-700";
-  if (points > 0) pointsClass = "font-semibold text-emerald-700";
-  else if (points < 0) pointsClass = "font-semibold text-red-600";
+  if (points > 0) pointsClass = "font-semibold text-emerald-600/90";
+  else if (points < 0) pointsClass = "font-semibold text-red-500/90";
 
   const displayValue = points > 0 ? `+${points}` : points.toString();
 
@@ -48,41 +104,15 @@ interface ScoreDisplayProps {
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, par, cellClassName = "" }) => {
   const scoreDiff = score - par;
   const numClass = "text-xs font-medium tabular-nums text-slate-500";
-  let content: React.ReactNode = <span className={numClass}>{score}</span>;
+  const stateKey = scoreDisplayStateKey(scoreDiff);
+  const state = SCORE_DISPLAY_STATE[stateKey];
 
-  if (scoreDiff < -1) {
-    content = (
-      <span
-        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-600 bg-emerald-50 ${numClass}`}
-      >
-        {score}
-      </span>
+  const content: React.ReactNode =
+    state === null ? (
+      <span className={numClass}>{score}</span>
+    ) : (
+      <span className={`${scoreDisplayChipClass(state)} ${numClass}`}>{score}</span>
     );
-  } else if (scoreDiff === -1) {
-    content = (
-      <span
-        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-600 ${numClass}`}
-      >
-        {score}
-      </span>
-    );
-  } else if (scoreDiff === 1) {
-    content = (
-      <span
-        className={`inline-flex h-7 w-7 items-center justify-center border-2 border-red-500 ${numClass}`}
-      >
-        {score}
-      </span>
-    );
-  } else if (scoreDiff > 1) {
-    content = (
-      <span
-        className={`inline-flex h-7 w-7 items-center justify-center border-2 border-red-500 bg-red-50 ${numClass}`}
-      >
-        {score}
-      </span>
-    );
-  }
 
   return (
     <td className={`${CELL} text-slate-500 min-w-[2.25rem] w-[2.25rem] ${cellClassName}`.trim()}>
@@ -209,10 +239,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
         {roundData.holes.stableford.map((points: number | null, i: number) => {
           if (points === null) {
             return (
-              <td
-                key={i}
-                className={`${CELL} bg-white min-w-[2.25rem] w-[2.25rem] ${pointsPad}`}
-              />
+              <td key={i} className={`${CELL} bg-white min-w-[2.25rem] w-[2.25rem] ${pointsPad}`} />
             );
           }
           return (
@@ -225,12 +252,12 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
           );
         })}
         <td
-          className={`${BLINE} border-l border-slate-200 bg-white px-3 py-3.5 text-center text-xs font-bold tabular-nums text-slate-900 min-w-[3.5rem] w-[3.5rem]`}
+          className={`${BLINE} border-l border-slate-200 bg-white px-3 py-3.5 text-center text-xs tabular-nums text-slate-900 min-w-[3.5rem] w-[3.5rem]`}
         >
           {(() => {
             const total = roundData.holes.stableford.reduce(
               (sum: number, p: number | null) => sum + (p === null ? 0 : p),
-              0
+              0,
             );
             return total === 0 ? "" : total;
           })()}

@@ -89,7 +89,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
 
           {/* Points */}
           <div className="text-right flex-shrink-0">
-            <div className="text-3xl font-bold text-gray-900 leading-none">
+            <div className="text-3xl font-display font-bold tabular-nums text-gray-900 leading-none">
               {player.tournamentData.total || 0}
             </div>
             <Label className="mt-1 block leading-none">PTS</Label>
