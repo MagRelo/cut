@@ -45,23 +45,14 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
-  const [selectedPlayerLineups, setSelectedPlayerLineups] = useState<
-    Array<{ userName: string; lineupName: string }>
-  >([]);
-
-  const openPlayerModal = (
-    player: PlayerWithTournamentData,
-    lineups: Array<{ userName: string; lineupName: string }>,
-  ) => {
+  const openPlayerModal = (player: PlayerWithTournamentData) => {
     setSelectedPlayer(player);
-    setSelectedPlayerLineups(lineups);
     setIsModalOpen(true);
   };
 
   const closePlayerModal = () => {
     setIsModalOpen(false);
     setSelectedPlayer(null);
-    setSelectedPlayerLineups([]);
   };
 
   const processPlayersData = () => {
@@ -86,7 +77,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
               totalScore: player.tournamentData?.total || 0,
               leaderboardPosition: player.tournamentData?.leaderboardPosition || "–",
               leaderboardTotal: player.tournamentData?.leaderboardTotal || "–",
-              lineups: [],
               isOwnedByCurrentUser: false,
             });
           }
@@ -101,11 +91,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
           if (lineup.userId === user?.id) {
             playerData.isOwnedByCurrentUser = true;
           }
-
-          playerData.lineups.push({
-            userName: lineup.user?.name || "Unknown User",
-            lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
-          });
         });
       }
     });
@@ -145,7 +130,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
             <PlayerDisplayRow
               player={playerData.player}
               roundDisplay={roundDisplay || "R1"}
-              onClick={() => openPlayerModal(playerData.player, playerData.lineups)}
+              onClick={() => openPlayerModal(playerData.player)}
               ownershipPercentage={playerData.ownershipPercentage}
               isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
             />
@@ -158,7 +143,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
         onClose={closePlayerModal}
         player={selectedPlayer}
         roundDisplay={roundDisplay || "R1"}
-        playerLineups={selectedPlayerLineups}
       />
     </>
   );

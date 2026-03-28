@@ -1,9 +1,11 @@
 import React from "react";
 import type { PlayerWithTournamentData, TournamentPlayerData } from "../../types/player";
+import { roundHasBeenPlayed } from "./playerRoundUtils";
 
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
-  roundDisplay: string;
+  selectedScorecardRound: number;
+  onScorecardRoundChange: (round: number) => void;
 }
 
 interface LabelProps {
@@ -12,16 +14,29 @@ interface LabelProps {
 }
 
 const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
-  <span className={`text-xs uppercase text-slate-600 font-medium tracking-wide ${className}`}>
+  <span
+    className={`text-[10px] uppercase text-gray-400 font-medium font-display tracking-wide leading-none ${className}`}
+  >
     {children}
   </span>
 );
 
-export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDisplay }) => {
+/** Shared layout: value (font-display) + label strip with optional bottom rule — keeps row aligned. */
+const STAT_VALUE_CLASS =
+  "flex min-h-[1.5rem] items-center justify-center font-display text-lg leading-none tabular-nums";
+const STAT_CELL_OUTER = "flex w-full min-w-0 flex-col px-1 pb-px";
+const STAT_LABEL_STRIP_BASE =
+  "mt-0.5 w-full border-b-2 pt-0.5 pb-1 text-center transition-[border-color] duration-150";
+
+export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
+  player,
+  selectedScorecardRound,
+  onScorecardRoundChange,
+}) => {
   const getCurrentRound = (player: PlayerWithTournamentData) => {
     if (!player?.tournamentData) return null;
 
-    const roundNumber = roundDisplay.replace("R", "");
+    const roundNumber = String(selectedScorecardRound);
     const roundData = player.tournamentData[`r${roundNumber}` as keyof TournamentPlayerData];
 
     if (
@@ -60,7 +75,6 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
               {player.pga_lastName && player.pga_firstName
                 ? `${player.pga_lastName}, ${player.pga_firstName}`
                 : player.pga_displayName || ""}
-              {/* optionally add the round icon of the current round */}
               {currentRound?.round && currentRound.data.icon !== "" && (
                 <span className="text-xl text-gray-600 font-bold ml-2">
                   {currentRound.data.icon}
@@ -92,87 +106,96 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({ player, roundDis
             <div className="text-3xl font-bold text-gray-900 leading-none">
               {player.tournamentData.total || 0}
             </div>
-            <div className="text-xs uppercase text-gray-500 font-semibold tracking-wide leading-none mt-1">
-              PTS
-            </div>
+            <Label className="mt-1 block leading-none">PTS</Label>
           </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="mt-3 border-t border-slate-300">
-          <div className="flex items-center justify-between gap-x-2 pt-4">
-            {/* Round Scores and Bonuses */}
-            <div className="flex items-center flex-1 justify-around gap-x-3">
-              {/* R1 */}
-              <div className="text-center">
-                <div className="font-bold text-base text-gray-700 leading-none">
-                  {player.tournamentData.r1?.total !== undefined
-                    ? player.tournamentData.r1.total
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">R1</Label>
-              </div>
+        {/* Bottom Row: R1–R4, CUT, POS */}
+        <div className="">
+          <div
+            className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start gap-x-1 pt-3 pb-1"
+            role="presentation"
+          >
+            {(
+              [
+                [1, player.tournamentData.r1],
+                [2, player.tournamentData.r2],
+                [3, player.tournamentData.r3],
+                [4, player.tournamentData.r4],
+              ] as const
+            ).map(([roundNum, data]) => {
+              const played = roundHasBeenPlayed(data);
+              const selected = selectedScorecardRound === roundNum;
+              const label = `R${roundNum}`;
+              const value = played && data?.total !== undefined ? data.total : "–";
 
-              {/* R2 */}
-              <div className="text-center">
-                <div className="font-bold text-base text-gray-700 leading-none">
-                  {player.tournamentData.r2?.total !== undefined
-                    ? player.tournamentData.r2.total
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">R2</Label>
-              </div>
+              const valueClass = played ? "font-bold text-gray-900" : "font-medium text-gray-300";
 
-              {/* Cut Bonus */}
-              <div className="text-center">
-                <div
-                  className={`font-bold text-base leading-none ${
-                    player.tournamentData.cut && player.tournamentData.cut > 0
-                      ? "text-green-600"
-                      : "text-gray-400"
-                  }`}
+              if (!played) {
+                return (
+                  <div
+                    key={label}
+                    className={`${STAT_CELL_OUTER} cursor-default text-center`}
+                    aria-label={`${label}, no round data`}
+                  >
+                    <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value}</div>
+                    <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
+                      <Label className="block">{label}</Label>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onScorecardRoundChange(roundNum)}
+                  className={`group ${STAT_CELL_OUTER} text-center focus:outline-none`}
                 >
-                  {player.tournamentData.cut && player.tournamentData.cut > 0
-                    ? `+${player.tournamentData.cut}`
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">CUT</Label>
-              </div>
+                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value}</div>
+                  <div
+                    className={`${STAT_LABEL_STRIP_BASE} ${
+                      selected ? "border-blue-500" : "border-gray-200 group-hover:border-gray-400"
+                    }`}
+                  >
+                    <Label className={`block ${selected ? "!text-blue-500" : ""}`}>{label}</Label>
+                  </div>
+                </button>
+              );
+            })}
 
-              {/* R3 */}
-              <div className="text-center">
-                <div className="font-bold text-base text-gray-700 leading-none">
-                  {player.tournamentData.r3?.total !== undefined
-                    ? player.tournamentData.r3.total
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">R3</Label>
+            <div className={`${STAT_CELL_OUTER} text-center`}>
+              <div
+                className={`${STAT_VALUE_CLASS} ${
+                  player.tournamentData.cut && player.tournamentData.cut > 0
+                    ? "font-bold text-green-600"
+                    : "font-medium text-gray-300"
+                }`}
+              >
+                {player.tournamentData.cut && player.tournamentData.cut > 0
+                  ? `+${player.tournamentData.cut}`
+                  : "–"}
               </div>
-
-              {/* R4 */}
-              <div className="text-center">
-                <div className="font-bold text-base text-gray-700 leading-none">
-                  {player.tournamentData.r4?.total !== undefined
-                    ? player.tournamentData.r4.total
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">R4</Label>
+              <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
+                <Label className="block">CUT</Label>
               </div>
+            </div>
 
-              {/* Position Bonus */}
-              <div className="text-center">
-                <div
-                  className={`font-bold text-base leading-none ${
-                    player.tournamentData.bonus && player.tournamentData.bonus > 0
-                      ? "text-green-600"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {player.tournamentData.bonus && player.tournamentData.bonus > 0
-                    ? `+${player.tournamentData.bonus}`
-                    : "–"}
-                </div>
-                <Label className="mt-0.5">POS</Label>
+            <div className={`${STAT_CELL_OUTER} text-center`}>
+              <div
+                className={`${STAT_VALUE_CLASS} ${
+                  player.tournamentData.bonus && player.tournamentData.bonus > 0
+                    ? "font-bold text-green-600"
+                    : "font-medium text-gray-300"
+                }`}
+              >
+                {player.tournamentData.bonus && player.tournamentData.bonus > 0
+                  ? `+${player.tournamentData.bonus}`
+                  : "–"}
+              </div>
+              <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
+                <Label className="block">POS</Label>
               </div>
             </div>
           </div>

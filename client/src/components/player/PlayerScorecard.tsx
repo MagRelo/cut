@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import type { PlayerWithTournamentData, RoundData, TournamentPlayerData } from "../../types/player";
 
 interface StablefordDisplayProps {
@@ -10,7 +10,6 @@ export const StablefordDisplay: React.FC<StablefordDisplayProps> = ({ points }) 
   if (points > 0) pointsClass = "text-emerald-600 font-semibold";
   else if (points < 0) pointsClass = "text-red-600 font-semibold";
 
-  // Format display: add + for positive, keep - for negative, show 0 as-is
   const displayValue = points > 0 ? `+${points}` : points.toString();
 
   return (
@@ -66,46 +65,10 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, par }) => {
 
 interface PlayerScorecardProps {
   player: PlayerWithTournamentData;
-  roundDisplay: string;
+  selectedRound: number;
 }
 
-export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundDisplay }) => {
-  // Function to get available rounds for this player
-  const getAvailableRounds = () => {
-    const rounds: number[] = [];
-    [1, 2, 3, 4].forEach((roundNum) => {
-      const roundKey = `r${roundNum}` as keyof Pick<
-        TournamentPlayerData,
-        "r1" | "r2" | "r3" | "r4"
-      >;
-      const roundData = player.tournamentData[roundKey] as RoundData | undefined;
-      // Check if round has meaningful data
-      if (roundData) {
-        // Has hole-by-hole scores
-        const hasScores = roundData.holes?.scores?.some((score) => score !== null);
-        // Has a valid total score (not just undefined, but actually a number)
-        const hasTotal = typeof roundData.total === "number" && roundData.total !== 0;
-        // Has some completion ratio
-        const hasProgress = typeof roundData.ratio === "number" && roundData.ratio > 0;
-
-        if (hasScores || hasTotal || hasProgress) {
-          rounds.push(roundNum);
-        }
-      }
-    });
-    return rounds;
-  };
-
-  const availableRounds = getAvailableRounds();
-
-  // State to manage which round is currently selected
-  const [selectedRound, setSelectedRound] = useState<number>(() => {
-    const requestedRound = parseInt(roundDisplay.replace("R", ""));
-    // If the requested round has data, use it; otherwise use the first available round
-    return availableRounds.includes(requestedRound) ? requestedRound : availableRounds[0] || 1;
-  });
-
-  // Get the round data for the selected round (using selectedRound state instead of prop)
+export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, selectedRound }) => {
   const getRoundData = (roundNumber: number) => {
     const roundKey = `r${roundNumber}` as keyof Pick<
       TournamentPlayerData,
@@ -117,7 +80,6 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   const roundData = getRoundData(selectedRound);
   const hasHoleData = roundData?.holes?.scores && roundData.holes.scores.length > 0;
 
-  // Function to render hole numbers (1-18)
   const renderHoleNumbers = () => (
     <tr className="bg-gray-200">
       <th className="sticky left-0 z-10 bg-gray-200 px-3 py-2 text-left text-xs font-bold font-display text-gray-500 min-w-[3.5rem] w-[3.5rem] border-t border-b border-r border-gray-300">
@@ -137,12 +99,9 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
     </tr>
   );
 
-  // Function to render par values
   const renderPars = () => {
-    // If we have scores, we should have pars
     if (!roundData?.holes) return null;
 
-    // Get pars from the API data, show '-' if not available
     const pars = Array(18)
       .fill(null)
       .map((_, i) => roundData.holes?.par?.[i] ?? null);
@@ -169,16 +128,13 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
     );
   };
 
-  // Function to render scores
   const renderScores = () => {
     if (!roundData?.holes?.scores?.length) return null;
 
-    // Get pars for score comparison
     const pars = Array(18)
       .fill(null)
       .map((_, i) => roundData.holes?.par?.[i] ?? null);
 
-    // Calculate total of actual scores
     const scoreTotal = roundData.holes.scores
       .filter((score: number | null): score is number => score !== null)
       .reduce((sum: number, score: number) => sum + score, 0);
@@ -209,7 +165,6 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
     );
   };
 
-  // Function to render stableford scores
   const renderStableford = () => {
     if (!roundData?.holes?.stableford?.length) return null;
     return (
@@ -241,12 +196,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
   };
 
   return (
-    <div className={`bg-gray-100 `}>
-      {/* <p className='text-sm text-gray-500 px-4 py-2'>
-        {player.player.pga_displayName}
-      </p> */}
-
-      {/* Scorecard table */}
+    <div className="bg-white">
       <div className="overflow-x-auto">
         {hasHoleData ? (
           <table className="min-w-full divide-y">
@@ -263,45 +213,6 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, roundD
           </div>
         )}
       </div>
-
-      {/* Round selector */}
-      {availableRounds.length > 0 && (
-        <div className="bg-white">
-          <div className="flex items-center justify-between px-3 py-2 pt-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs uppercase text-slate-600 font-thin tracking-wide mr-1">
-                Round
-              </span>
-              <div className="flex space-x-2">
-                {availableRounds.map((round) => {
-                  const isActive = selectedRound === round;
-                  return (
-                    <button
-                      key={round}
-                      onClick={() => setSelectedRound(round)}
-                      className={`
-                        px-1.5 py-0.5 text-xs font-thin font-display border rounded-sm transition-colors min-w-[1.75rem]
-                        ${
-                          isActive
-                            ? "bg-gray-50 text-blue-600 border-blue-600 shadow-sm font-semibold"
-                            : "bg-gray-50 text-gray-500 border-gray-300"
-                        }
-                      `}
-                    >
-                      {round}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {roundData?.ratio !== undefined && roundData.ratio < 1 && (
-              <span className="text-xs font-bold text-gray-400">
-                thru {Math.round(roundData.ratio * 18)}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
