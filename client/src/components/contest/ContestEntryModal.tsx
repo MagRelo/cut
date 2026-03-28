@@ -1,5 +1,4 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogPanel,
@@ -12,6 +11,8 @@ import {
   TabPanel,
 } from "@headlessui/react";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
+import { PlayerDetailModal } from "../player/PlayerDetailModal";
+import { type PlayerWithTournamentData } from "../../types/player";
 import { EntryHeader } from "./EntryHeader";
 import { type ContestLineup } from "../../types/lineup";
 import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
@@ -105,6 +106,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   };
 
   const [selectedIndex, setSelectedIndex] = useState<number>(() => getInitialTabIndex());
+  const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
   const entryTabContentHeightClass = "min-h-[280px]";
 
   // Reset tab when opening or when the lineup changes.
@@ -114,9 +116,14 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, lineup?.id, initialTab, hasPlayers, hasPosition, showBuySharesTab, contest.status]);
 
+  useEffect(() => {
+    if (!isOpen) setDetailPlayer(null);
+  }, [isOpen]);
+
   if (!lineup) return null;
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <TransitionChild
@@ -203,25 +210,19 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         <TabPanel>
                           <div>
                             {sortedPlayers.map((player, index) => {
-                              const leaderboardHref = player.pga_pgaTourId
-                                ? `/leaderboard?${new URLSearchParams({
-                                    pgaTourId: player.pga_pgaTourId,
-                                  }).toString()}`
-                                : "/leaderboard";
-
                               return (
                                 <Fragment key={player.id}>
-                                  <Link
-                                    to={leaderboardHref}
-                                    className="block text-inherit no-underline hover:opacity-90"
-                                    onClick={onClose}
+                                  <button
+                                    type="button"
+                                    className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
+                                    onClick={() => setDetailPlayer(player)}
                                   >
                                     <PlayerDisplayRow
                                       player={player}
                                       roundDisplay={roundDisplay}
                                       showArrow={false}
                                     />
-                                  </Link>
+                                  </button>
                                   {index < sortedPlayers.length - 1 && (
                                     <hr className="my-0 border-0 border-t border-gray-200" />
                                   )}
@@ -266,5 +267,12 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
         </div>
       </Dialog>
     </Transition>
+    <PlayerDetailModal
+      isOpen={detailPlayer != null}
+      onClose={() => setDetailPlayer(null)}
+      player={detailPlayer}
+      roundDisplay={roundDisplay}
+    />
+    </>
   );
 };
