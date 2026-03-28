@@ -68,37 +68,23 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
             </div>
           )}
 
-          {/* Player Name and Position/Score stacked */}
-          <div className="flex-1 min-w-0  text-left">
-            {/* Player Name */}
-            <div className="text-lg font-semibold text-gray-800 truncate leading-tight">
+          {/* Player Name + country */}
+          <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
+            <div className="truncate font-display text-2xl font-semibold leading-tight text-gray-800">
               {player.pga_lastName && player.pga_firstName
                 ? `${player.pga_lastName}, ${player.pga_firstName}`
                 : player.pga_displayName || ""}
               {currentRound?.round && currentRound.data.icon !== "" && (
-                <span className="text-xl text-gray-600 font-bold ml-2">
+                <span className="ml-2 text-2xl font-bold text-gray-600">
                   {currentRound.data.icon}
                 </span>
               )}
             </div>
-
-            {/* Leaderboard Position and Total */}
-            <div className="text-sm text-gray-700 font-bold flex items-center gap-2 mt-1">
-              <span className="min-w-[24px]">
-                {player.tournamentData.leaderboardPosition || "–"}
-              </span>
-              <span className="text-slate-400 font-thin">|</span>
-              <span
-                className={`min-w-[24px] text-center
-                  ${
-                    player.tournamentData.leaderboardTotal?.startsWith("-")
-                      ? "text-red-600 font-medium"
-                      : ""
-                  }`}
-              >
-                {player.tournamentData.leaderboardTotal || "E"}
-              </span>
-            </div>
+            {player.pga_country?.trim() ? (
+              <div className="mt-0.5 truncate text-sm font-normal text-gray-500">
+                {player.pga_country.trim()}
+              </div>
+            ) : null}
           </div>
 
           {/* Points */}
@@ -113,7 +99,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
         {/* Bottom Row: R1–R4, CUT, POS */}
         <div className="">
           <div
-            className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start gap-x-1 pt-3 pb-1"
+            className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start gap-x-1 pt-3 pb-0.5"
             role="presentation"
           >
             {(
