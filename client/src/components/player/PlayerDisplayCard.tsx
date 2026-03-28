@@ -113,7 +113,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
               const played = roundHasBeenPlayed(data);
               const selected = selectedScorecardRound === roundNum;
               const label = `R${roundNum}`;
-              const value = played && data?.total !== undefined ? data.total : "–";
+              const value = played && data?.total !== undefined ? data.total : null;
 
               const valueClass = played ? "font-bold text-gray-900" : "font-medium text-gray-300";
 
@@ -124,7 +124,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
                     className={`${STAT_CELL_OUTER} cursor-default text-center`}
                     aria-label={`${label}, no round data`}
                   >
-                    <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value}</div>
+                    <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
                     <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
                       <Label className="block">{label}</Label>
                     </div>
@@ -139,7 +139,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
                   onClick={() => onScorecardRoundChange(roundNum)}
                   className={`group ${STAT_CELL_OUTER} text-center focus:outline-none`}
                 >
-                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value}</div>
+                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
                   <div
                     className={`${STAT_LABEL_STRIP_BASE} ${
                       selected ? "border-blue-500" : "border-gray-200 group-hover:border-gray-400"
@@ -161,7 +161,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
               >
                 {player.tournamentData.cut && player.tournamentData.cut > 0
                   ? `+${player.tournamentData.cut}`
-                  : "–"}
+                  : ""}
               </div>
               <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
                 <Label className="block">CUT</Label>
@@ -178,7 +178,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
               >
                 {player.tournamentData.bonus && player.tournamentData.bonus > 0
                   ? `+${player.tournamentData.bonus}`
-                  : "–"}
+                  : ""}
               </div>
               <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
                 <Label className="block">POS</Label>
