@@ -14,7 +14,7 @@ const totalCol = "min-w-[3.5rem] w-[3.5rem]";
 
 /** Sticky first column; shadow separates from scrolling body */
 const rowLabelBase =
-  "sticky left-0 z-10 border-r border-slate-200 px-3 text-left align-top text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
+  "sticky left-0 z-10 border-r border-slate-200 px-3 text-left align-middle text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
 
 const rowLabelBand = `${rowLabelBase} ${cellY} ${band} py-2.5 ${totalCol}`;
 /** Points row: taller cells than band (overrides scoreCell py-2.5) */
@@ -28,11 +28,16 @@ const scoreCell = `px-2 py-2.5 text-center text-xs tabular-nums ${cellY}`;
 /** Hole number headers — slightly tighter vertical padding than score cells */
 const holeHeader = `${cellY} ${band} px-2 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
 
-/** Par row body cells */
-const parCell = `${cellY} ${band} px-2 py-2 text-center text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
+/** Par row body cells — match hole number cells (`holeHeader`) */
+const parCell = `${cellY} ${band} px-2 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
 
 /** Total column in band (hole row, par row, score row) */
 const bandTotal = `${cellY} border-l border-slate-200 ${band} px-3 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-600 ${totalCol}`;
+
+/**
+ * Score row inner slot: `min-height` on table cells is unreliable with border-collapse; reserve chip height (h-7) in a flex slot instead.
+ */
+const scoreRowSlot = "flex h-7 w-full shrink-0 items-center justify-center";
 
 /** Points row numeric cells */
 const pointsCell = `${scoreCell} bg-white ${holeCol} ${pointsRowY}`;
@@ -42,7 +47,7 @@ const pointsTotal = `${cellY} border-l border-slate-200 bg-white px-3 py-3.5 tex
 /* Score vs par — chip appearance (full strings, no runtime concat filter)      */
 /* -------------------------------------------------------------------------- */
 
-const scoreNum = "text-xs font-medium tabular-nums text-slate-500";
+const scoreNum = "text-xs font-medium tabular-nums text-slate-600";
 
 const scoreChip = {
   eagleOrBetter:
@@ -108,8 +113,8 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ score, par, cellClas
     );
 
   return (
-    <td className={`${scoreCell} text-slate-500 ${holeCol} ${cellClassName}`.trim()}>
-      {inner}
+    <td className={`${scoreCell} text-slate-600 ${holeCol} align-middle ${cellClassName}`.trim()}>
+      <div className={scoreRowSlot}>{inner}</div>
     </td>
   );
 };
@@ -177,22 +182,26 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
 
       return (
         <tr className={`${band} ${rowDivider}`}>
-          <th className={rowLabelBand} scope="row">
-            Score
+          <th className={`${rowLabelBand} align-middle`} scope="row">
+            <div className={`${scoreRowSlot} justify-start`}>Score</div>
           </th>
           {roundData.holes.scores.map((score: number | null, i: number) => {
             const par = pars[i];
             if (score === null || par === null) {
               return (
-                <td key={i} className={`${scoreCell} ${band} text-slate-500 ${holeCol}`}>
-                  –
+                <td key={i} className={`${scoreCell} ${band} text-slate-600 ${holeCol} align-middle`}>
+                  <div className={scoreRowSlot}>
+                    <span className="text-slate-500">–</span>
+                  </div>
                 </td>
               );
             }
             return <ScoreDisplay key={i} score={score} par={par} cellClassName={band} />;
           })}
-          <td className={bandTotal}>
-            {roundData.holes.scores.some((s: number | null) => s !== null) ? scoreTotal : "–"}
+          <td className={`${bandTotal} !py-2.5 align-middle`}>
+            <div className={scoreRowSlot}>
+              {roundData.holes.scores.some((s: number | null) => s !== null) ? scoreTotal : "–"}
+            </div>
           </td>
         </tr>
       );
