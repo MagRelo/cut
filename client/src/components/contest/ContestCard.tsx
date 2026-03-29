@@ -98,7 +98,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         <img
           src={contestLogoSrc}
           alt="contest-logo"
-          className="h-10 w-10 rounded-full border border-gray-200 bg-white object-contain"
+          className="h-10 w-10 rounded-full bg-white object-contain"
         />
       </div>
 
@@ -107,8 +107,8 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
           ${contest.settings?.primaryDeposit} - {contest.name}
         </h3>
-        <p className="text-xs text-gray-500 font-medium leading-tight mt-0.5">
-          <span className="font-semibold">{formatStatus(contest.status)}</span>
+        <p className="text-xs text-gray-400 font-medium leading-tight mt-0.5">
+          <span className="">{formatStatus(contest.status)}</span>
         </p>
       </div>
 

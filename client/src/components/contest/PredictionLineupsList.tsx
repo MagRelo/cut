@@ -136,7 +136,9 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                     <div className="text-sm font-semibold text-gray-900 truncate">
                       {userName}
                       {lineupNumberLabel && (
-                        <span className="ml-1 text-xs font-medium text-gray-500">{lineupNumberLabel}</span>
+                        <span className="ml-1 text-xs font-medium text-gray-500">
+                          {lineupNumberLabel}
+                        </span>
                       )}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
@@ -163,13 +165,11 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                       <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
                         $10 wins
                       </div>
-                      <div className="text-xl font-bold text-emerald-600 leading-none mt-0.5">
+                      <div className="text-lg font-bold text-emerald-600 leading-none mt-0.5">
                         ${tenDollarWinsLabel}
                       </div>
                     </div>
                   </div>
-                  
-
                 </div>
               </div>
             );
