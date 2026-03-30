@@ -1,24 +1,10 @@
 import React, { Fragment, useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogPanel,
-  Transition,
-  TransitionChild,
-  Tab,
-  TabGroup,
-  TabList,
-  TabPanels,
-  TabPanel,
-} from "@headlessui/react";
+import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { type PlayerWithTournamentData } from "../../types/player";
 import { EntryHeader } from "./EntryHeader";
 import { type ContestLineup } from "../../types/lineup";
-import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
-import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
-import { PredictionEntryPosition } from "./PredictionEntryPosition";
-import { type Contest } from "../../types/contest";
 
 interface ContestEntryModalProps {
   isOpen: boolean;
@@ -26,17 +12,6 @@ interface ContestEntryModalProps {
   lineup: ContestLineup | null;
   roundDisplay: string;
   userName?: string;
-  contest: Contest;
-  entryData: PredictionEntryData[];
-  secondaryPrizePoolFormatted: string;
-  secondaryTotalFundsFormatted: string;
-  poolSnapshot: SecondaryPoolSnapshot | undefined;
-  canWithdraw: boolean;
-  /**
-   * Which tab to show initially when opening.
-   * Defaults to "players" to preserve existing behavior.
-   */
-  initialTab?: "players" | "buyShares" | "position";
 }
 
 export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
@@ -45,13 +20,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   lineup,
   roundDisplay,
   userName,
-  contest,
-  entryData,
-  secondaryPrizePoolFormatted,
-  secondaryTotalFundsFormatted,
-  poolSnapshot,
-  canWithdraw,
-  initialTab = "players",
 }) => {
   // NOTE: Do not early-return before hooks.
   const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
@@ -67,54 +35,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     return bTotal - aTotal;
   });
 
-  const predictionEntry = lineup ? entryData.find((entry) => entry.entryId === lineup.entryId) : undefined;
-  const hasPosition = Boolean(predictionEntry?.hasPosition);
-  const hasPlayers = lineupPlayers.length > 0;
-
-  const showBuySharesTab =
-    contest.status !== "LOCKED" &&
-    contest.status !== "SETTLED" &&
-    contest.status !== "CANCELLED" &&
-    contest.status !== "CLOSED";
-
-  const buySharesTabIndex = showBuySharesTab ? (hasPlayers ? 1 : 0) : -1;
-  const positionTabIndex = showBuySharesTab
-    ? hasPlayers
-      ? 2
-      : 1
-    : hasPlayers
-      ? 1
-      : 0;
-
-  const getInitialTabIndex = () => {
-    if (initialTab === "buyShares") {
-      if (showBuySharesTab) return buySharesTabIndex;
-      if (hasPlayers) return 0;
-      if (hasPosition) return positionTabIndex;
-      return 0;
-    }
-    if (initialTab === "position") {
-      if (hasPosition) return positionTabIndex;
-      if (showBuySharesTab) return buySharesTabIndex;
-      return hasPlayers ? 0 : 0;
-    }
-    // initialTab === "players"
-    if (hasPlayers) return 0;
-    if (showBuySharesTab) return buySharesTabIndex;
-    if (hasPosition) return positionTabIndex;
-    return 0;
-  };
-
-  const [selectedIndex, setSelectedIndex] = useState<number>(() => getInitialTabIndex());
   const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
-  const entryTabContentHeightClass = "min-h-[280px]";
-
-  // Reset tab when opening or when the lineup changes.
-  useEffect(() => {
-    if (!isOpen) return;
-    setSelectedIndex(getInitialTabIndex());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, lineup?.id, initialTab, hasPlayers, hasPosition, showBuySharesTab, contest.status]);
 
   useEffect(() => {
     if (!isOpen) setDetailPlayer(null);
@@ -124,155 +45,84 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
   return (
     <>
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <TransitionChild
-          as={Fragment}
-          enter="ease-out duration-200"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-150"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/30" />
-        </TransitionChild>
+      <Transition appear show={isOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={onClose}>
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" />
+          </TransitionChild>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <TransitionChild
-              as={Fragment}
-              enter="ease-out duration-200"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-150"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-gray-100 shadow-xl transition-all p-2">
-                {/* Content Section */}
-                <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
-                  {/* Header */}
-                  <div className="pr-3 pl-3 py-3 border-b border-slate-300 mb-2">
-                    <EntryHeader
-                      userName={userName}
-                      lineupName={lineup.tournamentLineup?.name}
-                      totalPoints={totalPoints || 0}
-                      position={lineup.position}
-                      isInTheMoney={lineup.position <= 1}
-                    />
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-gray-100 shadow-xl transition-all p-2">
+                  {/* Content Section */}
+                  <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
+                    {/* Header */}
+                    <div className="pr-3 pl-3 py-3 border-b border-slate-300 mb-2">
+                      <EntryHeader
+                        userName={userName}
+                        lineupName={lineup.tournamentLineup?.name}
+                        totalPoints={totalPoints || 0}
+                        position={lineup.position}
+                        isInTheMoney={lineup.position <= 1}
+                      />
+                    </div>
+
+                    <div>
+                      {sortedPlayers.length === 0 ? (
+                        <p className="text-sm text-gray-500 px-2 py-4 text-center">No players</p>
+                      ) : (
+                        sortedPlayers.map((player, index) => {
+                          return (
+                            <Fragment key={player.id}>
+                              <button
+                                type="button"
+                                className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
+                                onClick={() => setDetailPlayer(player)}
+                              >
+                                <PlayerDisplayRow
+                                  player={player}
+                                  roundDisplay={roundDisplay}
+                                  showArrow={false}
+                                />
+                              </button>
+                              {index < sortedPlayers.length - 1 && (
+                                <hr className="my-0 border-0 border-t border-gray-200" />
+                              )}
+                            </Fragment>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-
-                  <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-                    <TabList className="mb-3 flex gap-2 border-b border-gray-200 px-2">
-                      {hasPlayers && (
-                        <Tab
-                          className={({ selected }) =>
-                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
-                              selected
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-                            }`
-                          }
-                        >
-                          Players
-                        </Tab>
-                      )}
-                      {showBuySharesTab && (
-                        <Tab
-                          className={({ selected }) =>
-                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
-                              selected
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-                            }`
-                          }
-                        >
-                          Buy Shares
-                        </Tab>
-                      )}
-                      {hasPosition && (
-                        <Tab
-                          className={({ selected }) =>
-                            `flex-1 py-1.5 text-sm font-display leading-5 focus:outline-none border-b-2 transition-colors ${
-                              selected
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300"
-                            }`
-                          }
-                        >
-                          Position
-                        </Tab>
-                      )}
-                    </TabList>
-                    <TabPanels>
-                      {hasPlayers && (
-                        <TabPanel>
-                          <div>
-                            {sortedPlayers.map((player, index) => {
-                              return (
-                                <Fragment key={player.id}>
-                                  <button
-                                    type="button"
-                                    className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
-                                    onClick={() => setDetailPlayer(player)}
-                                  >
-                                    <PlayerDisplayRow
-                                      player={player}
-                                      roundDisplay={roundDisplay}
-                                      showArrow={false}
-                                    />
-                                  </button>
-                                  {index < sortedPlayers.length - 1 && (
-                                    <hr className="my-0 border-0 border-t border-gray-200" />
-                                  )}
-                                </Fragment>
-                              );
-                            })}
-                          </div>
-                        </TabPanel>
-                      )}
-                      {showBuySharesTab && (
-                        <TabPanel>
-                          <div className={`pt-1 ${entryTabContentHeightClass}`}>
-                            <PredictionEntryForm
-                              contest={contest}
-                              entryId={lineup.entryId ?? null}
-                              entryData={entryData}
-                              secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
-                              secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
-                              poolSnapshot={poolSnapshot}
-                              onClose={onClose}
-                            />
-                          </div>
-                        </TabPanel>
-                      )}
-                      {hasPosition && predictionEntry && (
-                        <TabPanel>
-                          <div className={`pt-1 ${entryTabContentHeightClass}`}>
-                            <PredictionEntryPosition
-                              contest={contest}
-                              entry={predictionEntry}
-                              canWithdraw={canWithdraw}
-                            />
-                          </div>
-                        </TabPanel>
-                      )}
-                    </TabPanels>
-                  </TabGroup>
-                </div>
-              </DialogPanel>
-            </TransitionChild>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
           </div>
-        </div>
-      </Dialog>
-    </Transition>
-    <PlayerDetailModal
-      isOpen={detailPlayer != null}
-      onClose={() => setDetailPlayer(null)}
-      player={detailPlayer}
-      roundDisplay={roundDisplay}
-    />
+        </Dialog>
+      </Transition>
+      <PlayerDetailModal
+        isOpen={detailPlayer != null}
+        onClose={() => setDetailPlayer(null)}
+        player={detailPlayer}
+        roundDisplay={roundDisplay}
+      />
     </>
   );
 };

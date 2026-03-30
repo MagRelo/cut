@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
-import { arePrimaryActionsLocked, type ContestStatus, type Contest } from "../../types/contest";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { type PredictionEntryData } from "./PredictionEntryForm";
+import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -21,41 +19,15 @@ interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
   contestStatus: ContestStatus;
-  contestAddress: string;
-  contestChainId: number;
-  contest: Contest;
 }
 
 export const ContestEntryList = ({
   contestLineups,
   roundDisplay,
   contestStatus,
-  contestAddress,
-  contestChainId,
-  contest,
 }: ContestEntryListProps) => {
   // Compute action locks based on contest status
   const primaryActionsLocked = arePrimaryActionsLocked(contestStatus);
-
-  const entryIds = useMemo(() => {
-    if (!contestLineups) return [] as string[];
-    return contestLineups
-      .map((lineup) => lineup.entryId)
-      .filter((entryId): entryId is string => typeof entryId === "string" && entryId.length > 0);
-  }, [contestLineups]);
-
-  const {
-    entryData,
-    secondaryPrizePoolFormatted,
-    secondaryTotalFundsFormatted,
-    poolSnapshot,
-    canWithdraw,
-  } = useContestPredictionData({
-    contestAddress,
-    entryIds,
-    enabled: Boolean(contestAddress && entryIds.length > 0),
-    chainId: contestChainId,
-  });
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,12 +167,6 @@ export const ContestEntryList = ({
         lineup={selectedLineup || null}
         roundDisplay={roundDisplay || ""}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
-        contest={contest}
-        entryData={entryData as PredictionEntryData[]}
-        secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
-        secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
-        poolSnapshot={poolSnapshot}
-        canWithdraw={canWithdraw}
       />
     </>
   );

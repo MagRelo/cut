@@ -4,7 +4,7 @@ import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-import { ContestEntryModal } from "./ContestEntryModal";
+import { PredictionEntryModal } from "./PredictionEntryModal";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -41,7 +41,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   const {
     entryData,
     canPredict,
-    canWithdraw,
     isLoading,
     secondaryPrizePoolFormatted,
     secondaryTotalFundsFormatted,
@@ -52,13 +51,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     enabled: true,
     chainId: contest.chainId,
   });
-
-  const selectedLineup = useMemo(() => {
-    if (!selectedEntryId) return null;
-    return contest.contestLineups?.find((l) => l.entryId === selectedEntryId) ?? null;
-  }, [selectedEntryId, contest.contestLineups]);
-
-  const selectedUserName = selectedLineup?.user?.name || selectedLineup?.user?.email;
 
   const canOpenLineupModal = canPredict && !secondaryActionsLocked;
 
@@ -176,20 +168,15 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
           })}
       </div>
 
-      {/* Contest Entry Modal */}
-      <ContestEntryModal
+      <PredictionEntryModal
         isOpen={!!selectedEntryId}
         onClose={() => setSelectedEntryId(null)}
         contest={contest}
-        lineup={selectedLineup}
-        roundDisplay={contest.tournament?.roundDisplay ?? ""}
-        userName={selectedUserName}
+        entryId={selectedEntryId}
         entryData={entryData}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
         secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
         poolSnapshot={poolSnapshot}
-        canWithdraw={canWithdraw}
-        initialTab="buyShares"
       />
     </div>
   );

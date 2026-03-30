@@ -238,9 +238,6 @@ export const ContestLobby: React.FC = () => {
                     contestLineups={contest?.contestLineups}
                     roundDisplay={contest?.tournament?.roundDisplay}
                     contestStatus={contest.status}
-                    contestAddress={contest.address}
-                    contestChainId={contest.chainId}
-                    contest={contest}
                   />
                 </div>
               </div>
