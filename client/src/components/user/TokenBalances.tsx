@@ -1,6 +1,6 @@
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Logo components using CSS background images (cached by browser)
 const CutLogo = () => (
@@ -31,7 +31,7 @@ export function TokenBalances({
   showUsdcLink = false,
 }: TokenBalancesProps) {
   const { platformTokenBalance, paymentTokenBalance, paymentTokenSymbol, platformTokenSymbol } =
-    usePortoAuth();
+    useAuth();
 
   // round balance to 2 decimal points for payment tokens (6 decimals)
   const formattedPaymentBalance = (balance: bigint) => {

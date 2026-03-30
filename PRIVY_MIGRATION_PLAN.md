@@ -1,199 +1,143 @@
 ---
 name: Privy Migration Plan
-overview: Replace Porto with Privy for a fresh deploy using Privy-native auth (SIWE not required), smart wallets, paymaster/bundler gas sponsorship, and client-initiated bundled transactions via Privy + wagmi—with optional later migration of selected flows to Privy server-side Wallet API.
+overview: Replace Porto with Privy for a new deploy—Privy-native auth and Bearer tokens, new auth context replacing PortoAuthContext, smart wallets, gas sponsorship, client batched txs by default, optional server Wallet API later.
 todos:
   - id: privy-dashboard-setup
-    content: 'Configure Privy app: auth methods, Base chains, smart wallet, bundler/paymaster, gas sponsorship; define policies mirroring porto.ts sponsor allowlist.'
+    content: 'Privy app: login methods, Base + Base Sepolia, smart wallet, bundler/paymaster, gas sponsorship; policies mirroring porto.ts sponsor allowlist.'
     status: pending
   - id: policy-design
-    content: 'Design Privy gas/sponsorship policies (or custom paymaster) to replace porto.ts allowlist for deposit manager, factory, tokens, and contest contracts.'
+    content: 'Privy policies or custom paymaster for deposit manager, factory, tokens, contests (including dynamic contest addresses).'
     status: pending
-  - id: client-provider-migration
-    content: Swap Porto providers/connectors to PrivyProvider + @privy-io/wagmi in App and wagmi config.
+  - id: client-privy-wiring
+    content: 'App.tsx PrivyProvider + QueryClient + WagmiProvider; wagmi.ts createConfig from @privy-io/wagmi; env VITE_PRIVY_APP_ID.'
     status: pending
-  - id: auth-context-refactor
-    content: Replace PortoAuthContext and Connect flow with Privy-backed auth context/hook contracts.
+  - id: auth-context-and-connect
+    content: 'Replace PortoAuthContext with AuthProvider/useAuth; getAccessToken + Bearer on API calls; update Connect, ProtectedRoute, and all usePortoAuth sites.'
     status: pending
   - id: server-auth-privy
-    content: Remove SIWE routes and Porto RelayClient; verify Privy access tokens with @privy-io/node; provision User + UserWallet from Privy-linked wallets.
+    content: 'Remove SIWE + Porto relay; verify Privy tokens with @privy-io/node; provision User + UserWallet; align with client Bearer.'
     status: pending
   - id: bundled-tx-validation
-    content: Adapt and verify batched transaction hooks under smart wallet sponsorship path (default client useSendCalls).
-    status: pending
-  - id: txn-strategy-optional
-    content: 'Optional—evaluate server Wallet API (sendTransaction + authorization_context) for selected flows after client path is stable.'
+    content: 'Validate useBlockchainTransaction, useTokenOperations, useContestFactory under smart wallet + sponsorship.'
     status: pending
   - id: porto-removal
-    content: Remove Porto routes, SDK deps, merchant env, and user-facing Porto references (FAQ, Account).
+    content: 'Delete porto.ts sponsor route, SDK deps, merchant env; FAQ/Account/Debug copy.'
+    status: pending
+  - id: txn-strategy-optional
+    content: 'Optional—server Wallet API for selected flows after client path is stable.'
     status: pending
   - id: launch-verification
-    content: Run auth + blockchain + sponsorship verification checklist for new deploy readiness.
+    content: 'Auth, chain switching, bundled ops, sponsorship, security checks; new deploy.'
     status: pending
 isProject: false
 ---
 
-# Porto to Privy Migration (New Deploy)
+# Porto to Privy migration
 
-## Auth decisions (locked)
+Single plan for a **new deploy**: no Porto compatibility layer, no legacy user merge. Work below is the full scope; nothing here is implied as already done.
 
-- **Use Privy’s auth end-to-end** (embedded wallet, external wallet, email/SMS, etc.—per dashboard configuration).
-- **SIWE is not a requirement.** Remove `/auth/siwe/*`, `RelayClient` / `RelayActions`, and Porto-specific SIWE verification. Do not re-implement a parallel SIWE layer.
-- **Session model:** Privy access tokens verified with `@privy-io/node`; map linked wallet addresses to Prisma `User` / `UserWallet` on authenticated requests. Replace the current JWT-in-cookie flow that follows SIWE verify.
+---
 
-## Scope
+## 1. Principles
 
-- Full replacement of Porto in both client and server.
-- No backward compatibility, migration shims, or legacy user/account merge logic.
-- Use Privy smart wallets with paymaster/bundler so bundled transactions are first-class.
+| Topic | Decision |
+|-------|----------|
+| **Auth** | Privy end-to-end (embedded wallet, external wallet, email/SMS—per dashboard). |
+| **SIWE** | Not used. Remove `/auth/siwe/*`, `RelayClient` / `RelayActions`, and custom SIWE verification. |
+| **Session** | Privy access tokens on the client; server verifies with `@privy-io/node`. Replace JWT-in-cookie after SIWE. |
+| **Identity on API calls** | `Authorization: Bearer <privy-token>` via `getAccessToken()` from the new auth layer—not cookie-only `fetch`. |
+| **Transactions** | Default: **client** `useSendCalls` + smart wallet + sponsorship. Optional later: Privy **server** Wallet API for selected flows. |
 
-## What Porto provides today (feature inventory)
+---
 
-Concrete integration points in this codebase (not an exhaustive Porto product list).
+## 2. What exists today (Porto)
 
-| Area | What the app uses today | Where it lives |
-|------|-------------------------|----------------|
-| **Embedded / smart wallet + wagmi** | Single `porto(...)` connector; `Mode.dialog` UI; chains Base + Base Sepolia; `feeToken: "USDC"`. | [client/src/wagmi.ts](client/src/wagmi.ts) |
-| **SIWE wired to your API** | Connector `authUrl` → nonce, verify, logout (to be **removed** in favor of Privy auth). | [client/src/wagmi.ts](client/src/wagmi.ts) |
-| **Wallet connect hook** | `Hooks.useConnect` from `porto/wagmi` with `chainIds`. | [client/src/contexts/PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx) |
-| **Server: SIWE verify** | `RelayClient.fromPorto` + `RelayActions.verifySignature` on SIWE messages. | [server/src/routes/auth.ts](server/src/routes/auth.ts) |
-| **Server: session** | JWT in httpOnly cookie `cutAuthToken` after SIWE; user + `UserWallet` provisioning. | [server/src/routes/auth.ts](server/src/routes/auth.ts), [server/src/middleware/auth.ts](server/src/middleware/auth.ts) |
-| **Gas sponsorship** | `merchantUrl` → `/api/porto/sponsor`: Porto `Route.merchant` + **allowlist**—only `to` addresses that are deposit manager, contest factory, payment/platform tokens, or contests in DB. | [server/src/routes/porto.ts](server/src/routes/porto.ts), [server/src/routes/api.ts](server/src/routes/api.ts) |
-| **Client: batched calls** | `useSendCalls` + `useWaitForCallsStatus` (EIP-5792-style). | [client/src/hooks/useBlockchainTransaction.ts](client/src/hooks/useBlockchainTransaction.ts) |
-| **App auth context** | `PortoAuthProvider`: `/auth/me` hydration, chain enforcement, ERC20 balances, logout. | [client/src/contexts/PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx) |
+| Area | Today | Location |
+|------|--------|----------|
+| Wallet + wagmi | `porto(...)` connector, dialog UI, Base / Base Sepolia, `feeToken: USDC` | [client/src/wagmi.ts](client/src/wagmi.ts) |
+| SIWE | `authUrl` → nonce / verify / logout | [client/src/wagmi.ts](client/src/wagmi.ts) |
+| Connect + auth orchestration | `Hooks.useConnect`, `authFlow` / `startAuthFlow` | [client/src/contexts/PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx), [Connect.tsx](client/src/components/user/Connect.tsx) |
+| App user/session UI | `PortoAuthProvider`: `/auth/me`, balances, chain lock, logout | [PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx) |
+| Server SIWE | `RelayClient` + `RelayActions.verifySignature` | [server/src/routes/auth.ts](server/src/routes/auth.ts) |
+| Session cookie | JWT `cutAuthToken` after SIWE | [auth.ts](server/src/routes/auth.ts), [middleware/auth.ts](server/src/middleware/auth.ts) |
+| Gas sponsorship | `/api/porto/sponsor` + merchant keys; **allowlist** on `to` (factory, deposit manager, tokens, DB contests) | [server/src/routes/porto.ts](server/src/routes/porto.ts) |
+| Batched calls | `useSendCalls` + `useWaitForCallsStatus` | [useBlockchainTransaction.ts](client/src/hooks/useBlockchainTransaction.ts) |
+| Cron | Skips Porto routes | [server/src/cron-app.ts](server/src/cron-app.ts) |
 
-**Coupled behavior:** [server/src/cron-app.ts](server/src/cron-app.ts) avoids loading Porto routes; keep a clean split after migration so cron does not need sponsorship/auth routes.
+---
 
-## Privy equivalents (mapping)
+## 3. Target state (Privy)
 
-| Need | Privy direction | Notes |
-|------|-----------------|-------|
-| Wallet + wagmi | `PrivyProvider` + [`@privy-io/wagmi`](https://docs.privy.io) | Replaces Porto connector and `Hooks.useConnect`; login via Privy APIs. |
-| SIWE | **Dropped** | Privy login + access tokens via `@privy-io/node`; external wallets still go through Privy. |
-| Server auth | `verifyAuthToken` / Privy Node SDK | Map verified identity to Prisma `User` + `UserWallet`. |
-| Gas sponsorship | Dashboard + smart wallets; see [Privy gas docs](https://docs.privy.io/wallets/gas-and-asset-management/gas/overview) | Replaces `merchantUrl` + [server/src/routes/porto.ts](server/src/routes/porto.ts). **Re-express allowlist** as Privy policies or a **custom paymaster** if policies are insufficient (dynamic contest addresses). |
-| USDC fee token | Privy / chain config | Not a direct `feeToken` string—confirm in dashboard for Base / Base Sepolia. |
-| Batching | **Default:** client `useSendCalls` + sponsored smart wallet. **Optional:** [server-side transactions](https://docs.privy.io/controls/authorization-keys/owners/configuration/user/server-transactions) via Wallet API. | See “Transaction architecture” below. |
+| Area | Target |
+|------|--------|
+| Wallet + wagmi | `PrivyProvider` + [`@privy-io/wagmi`](https://docs.privy.io) `createConfig`; Base + Base Sepolia. |
+| Login / connect | Privy `login` + chain switch; no Porto `Hooks.useConnect`. |
+| **Auth context** | **New module** (e.g. `AuthContext.tsx` / `AuthProvider` + `useAuth`) **replaces** [PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx). Composes `usePrivy`, wagmi (`useAccount`, `useSwitchChain`, `useDisconnect`), and Cut `user` from `/auth/me`. Uses `getAccessToken()` for every API request. Keeps the same **surface** the app needs: `user`, `loading`, `logout`, `updateUser`, `updateUserSettings`, `isAdmin`, `getCurrentUser`, token balances/metadata, `balancesLoading`, and an **`authFlow` / `startAuthFlow`** that maps to Privy login + network (Base vs Base Sepolia) instead of Porto. Logout: Privy `logout` + clear local user + React Query invalidation; avoid blanket cookie clearing unless a non-Privy cookie still requires it. |
+| Server | Verify Privy tokens; **remove** SIWE routes and Porto relay; keep `/auth/me`, `/auth/update`, `/auth/settings` response shapes. |
+| Sponsorship | Privy dashboard + policies; **re-express** [porto.ts](server/src/routes/porto.ts) allowlist (policies or **custom paymaster** if dynamic contest `to` cannot be expressed). |
+| Fee token | Confirm in Privy / chain config (not Porto’s `feeToken` string). |
+| Optional txs | [Server-side Wallet API](https://docs.privy.io/controls/authorization-keys/owners/configuration/user/server-transactions) only if needed later. |
 
-## Target architecture
+**Call-site migration:** Rename `usePortoAuth` → `useAuth` (or keep a temporary alias during migration—prefer full rename). Update every importer: `Connect`, `ProtectedRoute`, `Navigation`, `Footer`, contest/lineup/user components, hooks, `DebugPage` (rename labels from “PortoAuth”), etc.
 
 ```mermaid
 flowchart LR
-  user[User] --> client[Client React App]
-  client --> privyAuth[PrivyProvider Auth]
-  client --> privyWagmi[WagmiProvider via @privy-io/wagmi]
-  privyWagmi --> smartWallet[Privy SmartWallet]
-  smartWallet --> bundler[Bundler URL]
-  bundler --> paymaster[Paymaster URL]
-  paymaster --> baseChain[Base or BaseSepolia]
-  client --> api[Hono API]
-  api --> privyVerify[Privy Token Verification]
-  api --> prisma[Prisma User Tables]
+  subgraph client [Client]
+    P[PrivyProvider]
+    W[WagmiProvider]
+    A[AuthProvider]
+    P --> W --> A
+    A --> api["Hono API Bearer"]
+  end
+  api --> verify[Privy verifyAuthToken]
+  verify --> db[(Prisma)]
 ```
 
-## Transaction architecture: client vs server (optional fork)
-
-This plan **defaults to client-initiated** transactions (smallest change vs [useBlockchainTransaction.ts](client/src/hooks/useBlockchainTransaction.ts)).
+**Transaction default (optional fork later):**
 
 ```mermaid
 flowchart LR
-  subgraph clientPath [Default client path]
-    UI[React] --> wagmiSend[useSendCalls]
-    wagmiSend --> bundler2[Bundler or wallet RPC]
+  subgraph clientPath [Client default path]
+    UI[UI] --> sc[useSendCalls]
+    sc --> b[Bundler]
   end
   subgraph serverPath [Optional server path]
-    UI2[React] --> api2[Hono API]
-    api2 --> privyWallet[Privy Wallet API sendTransaction]
-    privyWallet --> chain[Base]
+    UI2[UI] --> r[Hono route]
+    r --> w[Privy Wallet API]
   end
 ```
 
-| Dimension | Client-initiated (Privy + wagmi) | Server-side (Privy Wallet API) |
-|-----------|----------------------------------|--------------------------------|
-| Code churn | Lower: keep existing hooks | Higher: new routes, calldata on server, client polls status |
-| UX | User signs in wallet UI | Can simplify client; approval via Privy session / policies |
-| Abuse / allowlist | Policies must constrain callees (as today) | Server can enforce allowlist before submit |
+---
 
-**Recommendation:** Ship auth + smart wallet + sponsorship on the **client `useSendCalls` path** first. Optionally move **selected** flows (e.g. high-value contest actions) to server `sendTransaction` with `authorization_context` if policies or UX warrant it.
+## 4. Phase sequence
 
-## Phase 1: Privy Platform Setup
+Phases are ordered for **dependency clarity**. **Client auth context (Bearer)** and **server token verification** must ship together so `/auth/me` works end-to-end.
 
-- Create Privy app and configure:
-  - Login methods for launch (wallet / email / SMS as desired)—**no custom SIWE endpoints**.
-  - Supported chains: Base and Base Sepolia.
-  - Smart wallet type and network-level bundler + paymaster URLs.
-  - Gas sponsorship for configured chains; **policies** that mirror the intent of [server/src/routes/porto.ts](server/src/routes/porto.ts) (deposit manager, factory, tokens, known contests).
-- Enable identity / access token strategy for backend authentication.
+| Phase | Focus |
+|-------|--------|
+| **A** | Privy dashboard: app, chains, smart wallet, bundler/paymaster, sponsorship, policies aligned with old allowlist; access tokens for backend. |
+| **B** | Client shell: [App.tsx](client/src/App.tsx) — `PrivyProvider` → `QueryClientProvider` → `WagmiProvider` per Privy docs; [wagmi.ts](client/src/wagmi.ts) — `createConfig` from `@privy-io/wagmi`; `VITE_PRIVY_APP_ID`. |
+| **C** | **Auth context + Connect:** new `AuthProvider` / `useAuth` replacing `PortoAuthContext`; [Connect.tsx](client/src/components/user/Connect.tsx) driven by Privy; all `usePortoAuth` imports updated. |
+| **D** | Server auth: [middleware/auth.ts](server/src/middleware/auth.ts), [auth.ts](server/src/routes/auth.ts) — remove SIWE + Porto relay; `@privy-io/node` verification; `User` + `UserWallet` from Privy-linked wallets; Bearer aligned with Phase C. |
+| **E** | Blockchain hooks: [useBlockchainTransaction.ts](client/src/hooks/useBlockchainTransaction.ts), [useTokenOperations.ts](client/src/hooks/useTokenOperations.ts), [useContestFactory.ts](client/src/hooks/useContestFactory.ts) under smart wallet + sponsorship. |
+| **F** | Remove Porto: delete [porto.ts](server/src/routes/porto.ts), unmount `/porto`, remove `porto` + merchant env from client/server, copy updates (FAQ, Account, Debug). |
+| **G** | Verification: login/logout, protected routes, chains, bundled flows, sponsored gas, abuse limits; new environment. |
+| **H (optional)** | Server `sendTransaction` + `authorization_context` for chosen flows only. |
 
-## Phase 2: Client Auth and Provider Rewire
+---
 
-- Replace Porto provider wiring in [client/src/App.tsx](client/src/App.tsx):
-  - Add `PrivyProvider`.
-  - Move wagmi provider to `@privy-io/wagmi` provider stack.
-  - Keep `QueryClientProvider` placement compatible with Privy docs.
-- Replace Porto wagmi config in [client/src/wagmi.ts](client/src/wagmi.ts):
-  - Remove `porto(...)` connector and Porto `authUrl/merchantUrl` config.
-  - Create config with `createConfig` from `@privy-io/wagmi` and Base/Base Sepolia transports.
-- Replace auth context in [client/src/contexts/PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx):
-  - New context backed by Privy auth state/hooks.
-  - Preserve app-facing contract (`user`, `loading`, `logout`, settings updates, balances where applicable).
-  - Attach Privy access token to API requests per Privy’s recommended pattern (update `credentials` / `Authorization` vs legacy cookie-only flow).
-- Update connection UI in [client/src/components/user/Connect.tsx](client/src/components/user/Connect.tsx):
-  - Trigger Privy login/connect wallet flow.
-  - Remove Porto-specific flow phases and error assumptions.
+## 5. Risks
 
-## Phase 3: Client Blockchain Bundling + Sponsorship
+- **Sponsorship parity:** Today’s allowlist in [porto.ts](server/src/routes/porto.ts) is explicit; **every** batched `to` (including **new contest contracts**) must be covered by Privy policy or a custom paymaster / server-side guard.
+- **Phase C + D coordination:** Until both the new auth context sends Bearer tokens and the server verifies them, `/auth/me` will fail—plan and test them as one integration slice.
 
-- **Default:** keep client-initiated transaction model with wagmi hooks.
-- Validate and adapt bundling hooks:
-  - [client/src/hooks/useBlockchainTransaction.ts](client/src/hooks/useBlockchainTransaction.ts)
-  - [client/src/hooks/useTokenOperations.ts](client/src/hooks/useTokenOperations.ts)
-  - [client/src/hooks/useContestFactory.ts](client/src/hooks/useContestFactory.ts)
-- Ensure batched calls route through smart wallet + bundler and receive sponsorship.
-- Add wallet selection handling where needed using Privy active-wallet APIs.
+---
 
-## Phase 4: Server Auth Replacement
+## 6. Acceptance criteria
 
-- In [server/src/middleware/auth.ts](server/src/middleware/auth.ts) and [server/src/routes/auth.ts](server/src/routes/auth.ts):
-  - **Remove** SIWE routes (`/siwe/nonce`, `/siwe/verify`, `/siwe/logout`) and Porto `RelayClient` / `RelayActions` usage.
-  - Verify **Privy access tokens** with `@privy-io/node` (Bearer header and/or cookie—match client).
-  - Resolve/create `User` + `UserWallet` from Privy user and linked wallet addresses.
-- Keep existing application endpoints (`/auth/me`, `/auth/update`, `/auth/settings`) with stable response shape for UI compatibility.
-
-## Phase 5: Remove Porto and Legacy Sponsorship Code
-
-- Delete [server/src/routes/porto.ts](server/src/routes/porto.ts).
-- Remove Porto route mount from [server/src/routes/api.ts](server/src/routes/api.ts).
-- Remove Porto dependencies from [client/package.json](client/package.json) and [server/package.json](server/package.json).
-- Update env examples and [server/src/index.ts](server/src/index.ts) for Privy credentials; drop `VITE_PORTO_*`, `MERCHANT_ADDRESS`, `MERCHANT_PRIVATE_KEY` and related Porto env vars.
-- Update user-facing copy that references Porto (e.g. [client/src/pages/Account.tsx](client/src/pages/Account.tsx), [client/src/pages/FAQPage.tsx](client/src/pages/FAQPage.tsx), [client/src/pages/DebugPage.tsx](client/src/pages/DebugPage.tsx)).
-
-## Phase 6: Verification and Launch Readiness
-
-- Functional checks:
-  - Auth login/logout, protected routes, `/auth/me` hydration.
-  - Chain selection/switching for Base + Base Sepolia.
-  - Bundled contest/token operations through smart wallet.
-  - Sponsored gas on configured networks.
-- Security checks:
-  - Sponsorship abuse protections (limits/monitoring) per Privy best practices.
-  - Confirm sponsorship policy covers all batched `to` addresses—including **dynamic contest contract** addresses—or compensate with custom paymaster / server-side checks.
-- Deploy as new environment with new user base.
-
-## Phase 7 (optional): Server-submitted transactions
-
-- For chosen flows, add Hono routes that call Privy Wallet API (`sendTransaction` with `authorization_context`).
-- Narrow client to HTTP + status polling for those flows only.
-
-## Risks and open decisions
-
-- **Sponsorship parity:** [server/src/routes/porto.ts](server/src/routes/porto.ts) allowlist is explicit; Privy policies must be validated for every contract `to` your batches hit. If the dashboard cannot express this, plan for a **custom paymaster** or **server-side submission** with explicit checks.
-- **Identity transport:** Moving from JWT cookie after SIWE to Privy tokens may change how [client/src/contexts/PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx) sends credentials—follow Privy’s client SDK guidance.
-
-## Acceptance Criteria
-
-- No `porto` imports remain in client/server runtime code.
-- No SIWE-specific routes or Porto relay verification remain; auth is Privy token–based.
-- All auth-protected API routes use Privy-backed auth middleware.
-- Core transaction flows (buy/sell/send/create contest) work with bundled calls on the default client path.
-- Sponsored transactions succeed with configured paymaster/bundler on target chains.
-- App runs end-to-end in new deployment without legacy compatibility code.
+- [PortoAuthContext.tsx](client/src/contexts/PortoAuthContext.tsx) removed; **AuthProvider** / **useAuth** (or chosen names) in place; API calls authenticated with Privy access tokens (Bearer), not SIWE/JWT cookie flow.
+- No `porto` usage in client or server runtime; no SIWE routes or Porto relay verification.
+- `useAuth`-protected routes and middleware use Privy-backed identity.
+- **Core flows:** buy / sell / send / create contest via bundled `useSendCalls` on the default path.
+- Sponsored transactions succeed on target chains with configured paymaster/bundler.
+- No legacy compatibility code required for this deploy.

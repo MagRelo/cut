@@ -1,16 +1,21 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import { WagmiProvider } from "wagmi";
+import { WagmiProvider } from "@privy-io/wagmi";
+import { PrivyProvider } from "@privy-io/react-auth";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
 import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useTournamentData";
-// import { config } from "./wagmi-base";
 
-import { PortoAuthProvider } from "./contexts/PortoAuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
+
+const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
+if (!privyAppId && import.meta.env.DEV) {
+  console.warn("VITE_PRIVY_APP_ID is not set");
+}
 
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
@@ -53,11 +58,12 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <WagmiProvider config={config}>
+    <PrivyProvider appId={privyAppId ?? ""}>
       <QueryClientProvider client={queryClient}>
-        <GlobalErrorProvider>
-          <PortoAuthProvider>
-            <Router>
+        <WagmiProvider config={config}>
+          <GlobalErrorProvider>
+            <AuthProvider>
+              <Router>
               <div className="min-h-screen bg-gray-100 flex flex-col">
                 {/* TODO: Remove this when we're ready to go live */}
                 {/* <MaintenanceOverlay /> */}
@@ -162,11 +168,12 @@ export const App: React.FC = () => {
                 <Footer />
               </div>
             </Router>
-          </PortoAuthProvider>
-        </GlobalErrorProvider>
+            </AuthProvider>
+          </GlobalErrorProvider>
+        </WagmiProvider>
         {/* React Query DevTools - only loads in development */}
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
-    </WagmiProvider>
+    </PrivyProvider>
   );
 };

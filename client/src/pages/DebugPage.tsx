@@ -1,11 +1,11 @@
 import React from "react";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useTournamentData, useActiveTournament } from "../hooks/useTournamentData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
-  const portoAuth = usePortoAuth();
+  const auth = useAuth();
   const tournamentQuery = useTournamentData();
   const activeTournament = useActiveTournament();
 
@@ -29,58 +29,58 @@ export const DebugPage: React.FC = () => {
         </div>
       </div>
 
-      {/* PortoAuth Context */}
+      {/* Auth context (Cut / Privy) */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-3 text-green-600">PortoAuth Context</h2>
+        <h2 className="text-lg font-semibold mb-3 text-green-600">Auth context</h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Loading:</strong> {portoAuth.loading ? "true" : "false"}
+            <strong>Loading:</strong> {auth.loading ? "true" : "false"}
           </div>
           <div>
-            <strong>User:</strong> {portoAuth.user ? "Logged in" : "Not logged in"}
+            <strong>User:</strong> {auth.user ? "Logged in" : "Not logged in"}
           </div>
-          {portoAuth.user && (
+          {auth.user && (
             <>
               <div>
-                <strong>User ID:</strong> {portoAuth.user.id}
+                <strong>User ID:</strong> {auth.user.id}
               </div>
               <div>
-                <strong>Name:</strong> {portoAuth.user.name}
+                <strong>Name:</strong> {auth.user.name}
               </div>
               <div>
-                <strong>Email:</strong> {portoAuth.user.email || "Not set"}
+                <strong>Email:</strong> {auth.user.email || "Not set"}
               </div>
               <div>
-                <strong>User Type:</strong> {portoAuth.user.userType}
+                <strong>User Type:</strong> {auth.user.userType}
               </div>
               <div>
-                <strong>Chain ID:</strong> {portoAuth.user.chainId}
+                <strong>Chain ID:</strong> {auth.user.chainId}
               </div>
               <div>
-                <strong>Wallet Address:</strong> {portoAuth.user.walletAddress}
+                <strong>Wallet Address:</strong> {auth.user.walletAddress}
               </div>
               <div>
-                <strong>Is Verified:</strong> {portoAuth.user.isVerified ? "true" : "false"}
+                <strong>Is Verified:</strong> {auth.user.isVerified ? "true" : "false"}
               </div>
             </>
           )}
           <div>
             <strong>Platform Token Balance:</strong>{" "}
-            {portoAuth.platformTokenBalance?.toString() || "Loading..."}
+            {auth.platformTokenBalance?.toString() || "Loading..."}
           </div>
           <div>
             <strong>Payment Token Balance:</strong>{" "}
-            {portoAuth.paymentTokenBalance?.toString() || "Loading..."}
+            {auth.paymentTokenBalance?.toString() || "Loading..."}
           </div>
           <div>
             <strong>Platform Token Address:</strong>{" "}
-            {portoAuth.platformTokenAddress || "Not loaded"}
+            {auth.platformTokenAddress || "Not loaded"}
           </div>
           <div>
-            <strong>Payment Token Address:</strong> {portoAuth.paymentTokenAddress || "Not loaded"}
+            <strong>Payment Token Address:</strong> {auth.paymentTokenAddress || "Not loaded"}
           </div>
           <div>
-            <strong>Balances Loading:</strong> {portoAuth.balancesLoading ? "true" : "false"}
+            <strong>Balances Loading:</strong> {auth.balancesLoading ? "true" : "false"}
           </div>
         </div>
       </div>
@@ -148,10 +148,10 @@ export const DebugPage: React.FC = () => {
 
       {/* Raw JSON for debugging */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-3 text-red-600">Raw PortoAuth State (JSON)</h2>
+        <h2 className="text-lg font-semibold mb-3 text-red-600">Raw auth state (JSON)</h2>
         <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
           {JSON.stringify(
-            portoAuth,
+            auth,
             (key, value) => {
               // Don't show the token in the raw JSON for security
               if (key === "token") return "[REDACTED]";

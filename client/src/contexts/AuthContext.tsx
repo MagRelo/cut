@@ -7,15 +7,16 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract, useConnectors } from "wagmi";
-import { Hooks } from "porto/wagmi";
+import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
 import { base, baseSepolia } from "wagmi/chains";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { handleApiResponse, ApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
+import { registerAuthTokenHandlers } from "../lib/authToken";
 
-interface PortoUser {
+export interface AuthUser {
   id: string;
   name: string;
   userType: string;
@@ -24,22 +25,21 @@ interface PortoUser {
   email: string | null;
   isVerified: boolean;
   userGroups: Array<unknown>;
-  token: string;
+  tournamentLineups?: unknown[];
   chainId: number;
   walletAddress: string;
   pendingTokenMint?: boolean;
   createdAt?: string;
 }
 
-interface PortoAuthContextData {
-  user: PortoUser | null;
+interface AuthContextData {
+  user: AuthUser | null;
   loading: boolean;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAdmin: () => boolean;
-  getCurrentUser: () => PortoUser | null;
-  // Token balance and metadata
+  getCurrentUser: () => AuthUser | null;
   platformTokenBalance: bigint | undefined;
   paymentTokenBalance: bigint | undefined;
   platformTokenAddress: string | null;
@@ -75,24 +75,23 @@ interface AuthFlowState {
   error: string | null;
 }
 
-const PortoAuthContext = createContext<PortoAuthContextData | undefined>(undefined);
+const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
-export function usePortoAuth() {
-  const context = useContext(PortoAuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("usePortoAuth must be used within a PortoAuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
 
-export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId, status } = useAccount();
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
-  const [connector] = useConnectors();
-  const { mutate: connectWallet } = Hooks.useConnect();
+  const { ready, authenticated, login, logout: privyLogout, getAccessToken } = usePrivy();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<PortoUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [authFlowState, setAuthFlowState] = useState<AuthFlowState>({
     phase: "idle",
@@ -116,44 +115,37 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         return resolved;
       });
     },
-    []
+    [],
   );
 
-  // Get contract addresses for current chain
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
-  // Fetch platform token balance with 30-second polling
-  // Only poll when user is connected and authenticated
   const { data: platformTokenBalanceData, isLoading: platformBalanceLoading } = useBalance({
     address: address,
     token: platformTokenAddress as `0x${string}`,
     query: {
       enabled: !!address && !!platformTokenAddress && !!user,
-      refetchInterval: user ? 30000 : false, // Only poll if user is authenticated
+      refetchInterval: user ? 30000 : false,
     },
   });
 
-  // Fetch payment token balance with 30-second polling
-  // Only poll when user is connected and authenticated
   const { data: paymentTokenBalanceData, isLoading: paymentBalanceLoading } = useBalance({
     address: address,
     token: paymentTokenAddress as `0x${string}`,
     query: {
       enabled: !!address && !!paymentTokenAddress && !!user,
-      refetchInterval: user ? 30000 : false, // Only poll if user is authenticated
+      refetchInterval: user ? 30000 : false,
     },
   });
 
-  // Fetch payment token metadata
-  // These values are immutable (never change), so cache indefinitely
   const { data: paymentTokenSymbol } = useReadContract({
     address: paymentTokenAddress as `0x${string}`,
     abi: erc20Abi,
     functionName: "symbol",
     query: {
       enabled: !!paymentTokenAddress,
-      staleTime: Infinity, // Token symbol never changes, cache forever
+      staleTime: Infinity,
     },
   });
 
@@ -163,19 +155,17 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     functionName: "decimals",
     query: {
       enabled: !!paymentTokenAddress,
-      staleTime: Infinity, // Token decimals never change, cache forever
+      staleTime: Infinity,
     },
   });
 
-  // Fetch platform token metadata
-  // These values are immutable (never change), so cache indefinitely
   const { data: platformTokenSymbol } = useReadContract({
     address: platformTokenAddress as `0x${string}`,
     abi: erc20Abi,
     functionName: "symbol",
     query: {
       enabled: !!platformTokenAddress,
-      staleTime: Infinity, // Token symbol never changes, cache forever
+      staleTime: Infinity,
     },
   });
 
@@ -185,11 +175,18 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     functionName: "decimals",
     query: {
       enabled: !!platformTokenAddress,
-      staleTime: Infinity, // Token decimals never change, cache forever
+      staleTime: Infinity,
     },
   });
 
   const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
+
+  useEffect(() => {
+    registerAuthTokenHandlers(
+      () => getAccessToken(),
+      () => (typeof currentChainId === "number" ? currentChainId : undefined),
+    );
+  }, [getAccessToken, currentChainId]);
 
   const config = useMemo(
     () => ({
@@ -198,40 +195,56 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         "Content-Type": "application/json",
       },
     }),
-    []
+    [],
   );
 
   const request = useCallback(
-    async <T,>(method: string, endpoint: string, data?: unknown): Promise<T> => {
+    async <T,>(
+      method: string,
+      endpoint: string,
+      data?: unknown,
+      chainOverride?: number,
+    ): Promise<T> => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new ApiError(401, "Not authenticated");
+      }
       const headers: Record<string, string> = {
         ...config.headers,
+        Authorization: `Bearer ${token}`,
       };
+      const cid = chainOverride ?? currentChainId;
+      if (typeof cid === "number") {
+        headers["X-Cut-Chain-Id"] = String(cid);
+      }
 
       const response = await fetch(`${config.baseURL}${endpoint}`, {
         method,
         headers,
         body: data ? JSON.stringify(data) : undefined,
-        credentials: "include", // Include cookies in the request
+        credentials: "omit",
       });
 
       try {
         return await handleApiResponse<T>(response);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
-          // Clear all user data on 401 (unauthorized)
-          // Don't clear queryClient here as it can cause infinite loops
           setUser(null);
         }
         throw error;
       }
     },
-    [config]
+    [config, getAccessToken, currentChainId],
   );
 
   const updateUser = useCallback(
     async (updatedUser: { name?: string }) => {
       try {
-        const response = await request<{ user: PortoUser }>("PUT", "/auth/update", updatedUser);
+        const response = await request<{ user: { id: string; name: string; userType: string } }>(
+          "PUT",
+          "/auth/update",
+          updatedUser,
+        );
         setUser((prev) => (prev ? { ...prev, name: response.user.name } : null));
       } catch (error) {
         if (error instanceof ApiError) {
@@ -240,7 +253,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         throw new ApiError(500, "Failed to update user");
       }
     },
-    [request]
+    [request],
   );
 
   const updateUserSettings = useCallback(
@@ -255,10 +268,10 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         throw new ApiError(500, "Failed to update user settings");
       }
     },
-    [request]
+    [request],
   );
 
-  const getCurrentUser = useCallback((): PortoUser | null => {
+  const getCurrentUser = useCallback((): AuthUser | null => {
     return user;
   }, [user]);
 
@@ -266,17 +279,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user?.userType === "ADMIN");
   }, [user]);
 
-  /**
-   * Clear user data, auth state, and user-specific cached data
-   * Used both for manual logout and when wallet disconnects
-   * Note: Preserves public data like tournaments that don't require auth
-   */
-  const clearAllUserData = useCallback(() => {
-    // Clear user state
+  const clearLocalCache = useCallback(() => {
     setUser(null);
-
-    // Clear user-specific React Query cache (lineups, user data, balances, etc.)
-    // but preserve public data (tournaments, contests, players, scores)
     queryClient.invalidateQueries({ queryKey: ["auth"] });
     queryClient.invalidateQueries({ queryKey: ["user"] });
     queryClient.invalidateQueries({ queryKey: ["lineups"] });
@@ -285,23 +289,21 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.removeQueries({ queryKey: ["user"] });
     queryClient.removeQueries({ queryKey: ["lineups"] });
     queryClient.removeQueries({ queryKey: ["balance"] });
+  }, [queryClient]);
 
-    // Clear all cookies (including auth token)
-    document.cookie.split(";").forEach((cookie) => {
-      const name = cookie.split("=")[0].trim();
-      // Clear for current path
-      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      // Clear for root
-      document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    });
-
-    // Disconnect wagmi wallet
-    disconnect();
-  }, [queryClient, disconnect]);
-
-  const logout = useCallback(() => {
-    clearAllUserData();
-  }, [clearAllUserData]);
+  const logout = useCallback(async () => {
+    try {
+      await privyLogout();
+    } catch (e) {
+      console.warn("Privy logout:", e);
+    }
+    clearLocalCache();
+    try {
+      await disconnect();
+    } catch (e) {
+      console.warn("Wagmi disconnect:", e);
+    }
+  }, [privyLogout, clearLocalCache, disconnect]);
 
   const waitForDocumentFocus = useCallback(async (): Promise<void> => {
     if (document.hasFocus()) return;
@@ -334,42 +336,35 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         } catch (disconnectError) {
           console.warn("Auth flow disconnect failed:", disconnectError);
         }
+        try {
+          await privyLogout();
+        } catch (e) {
+          console.warn("Privy logout before login:", e);
+        }
         if (!isCurrentAttempt()) return;
 
         setAuthFlow((prev) => ({ ...prev, phase: "wallet_connecting" }));
         await waitForDocumentFocus();
         if (!isCurrentAttempt()) return;
 
-        await new Promise<void>((resolve, reject) => {
-          if (!connector) {
-            reject(new Error("No wallet connector available"));
-            return;
-          }
-          connectWallet(
-            {
-              connector,
-              chainIds: [targetChainId],
-            },
-            {
-              onSuccess: () => resolve(),
-              onError: (error) => reject(error),
-            }
-          );
-        });
+        await login();
+        if (!isCurrentAttempt()) return;
+
+        setAuthFlow((prev) => ({ ...prev, phase: "chain_enforcing" }));
+        await waitForDocumentFocus();
+        if (!isCurrentAttempt()) return;
+
+        try {
+          await switchChain({ chainId: targetChainId });
+        } catch (switchErr) {
+          console.warn("switchChain in auth flow:", switchErr);
+        }
         if (!isCurrentAttempt()) return;
 
         setAuthFlow((prev) => ({ ...prev, phase: "server_auth_pending" }));
-        const response = await request<PortoUser>("GET", "/auth/me");
+        const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
         if (!isCurrentAttempt()) return;
         setUser(response);
-
-        setAuthFlow((prev) => ({ ...prev, phase: "chain_enforcing" }));
-        if (typeof response.chainId === "number" && currentChainId !== response.chainId) {
-          await waitForDocumentFocus();
-          if (!isCurrentAttempt()) return;
-          await switchChain({ chainId: response.chainId as 8453 | 84532 });
-        }
-        if (!isCurrentAttempt()) return;
 
         queryClient.invalidateQueries({ queryKey: ["lineups"] });
         queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -387,17 +382,7 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [
-      connectWallet,
-      connector,
-      currentChainId,
-      disconnect,
-      queryClient,
-      request,
-      setAuthFlow,
-      switchChain,
-      waitForDocumentFocus,
-    ]
+    [disconnect, privyLogout, login, queryClient, request, setAuthFlow, switchChain, waitForDocumentFocus],
   );
 
   useEffect(() => {
@@ -409,30 +394,36 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
         phase === "server_auth_pending" ||
         phase === "chain_enforcing";
 
-      // The state machine owns auth changes while an explicit flow is in progress.
       if (isFlowBusy) {
         return;
       }
 
-      // Prevent multiple simultaneous initialization calls
-      if (initializingRef.current) {
+      if (!ready) {
         return;
       }
 
-      // If address hasn't changed, don't re-initialize
-      if (address === lastAddressRef.current) {
-        return;
-      }
-
-      if (!address) {
-        // If there's no address, we can't authenticate, so ensure loading is false
+      if (!authenticated) {
         setUser(null);
         setLoading(false);
         lastAddressRef.current = undefined;
         return;
       }
 
-      // Skip if we're already initializing for this address
+      if (initializingRef.current) {
+        return;
+      }
+
+      if (address === lastAddressRef.current) {
+        return;
+      }
+
+      if (!address) {
+        setUser(null);
+        setLoading(false);
+        lastAddressRef.current = undefined;
+        return;
+      }
+
       if (initializingRef.current && lastAddressRef.current === address) {
         return;
       }
@@ -442,13 +433,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         setLoading(true);
-        // Check if auth cookie exists by making a request to /me
-        const response = await request<PortoUser>("GET", "/auth/me");
-
+        const response = await request<AuthUser>("GET", "/auth/me");
         setUser(response);
-
-        // Invalidate only auth-dependent queries when auth refreshes
-        // Don't invalidate public queries (tournaments) that don't depend on auth state
         queryClient.invalidateQueries({ queryKey: ["lineups"] });
         queryClient.invalidateQueries({ queryKey: ["user"] });
         queryClient.invalidateQueries({ queryKey: ["balance"] });
@@ -459,7 +445,6 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
           (error.message.includes("401") || error.message.includes("404"))
         ) {
           setUser(null);
-          // Don't retry on 401/404 - user is not authenticated
         }
       } finally {
         setLoading(false);
@@ -467,22 +452,18 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Add a small delay to prevent immediate auth checks during wallet connection
-    // This helps avoid conflicts with the wallet connection process
     const timeoutId = setTimeout(() => {
       initializeAuth();
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [address, status, request, queryClient]);
+  }, [address, status, request, queryClient, ready, authenticated]);
 
-  // Clear user data when wallet disconnects
   useEffect(() => {
     if (status === "disconnected" && !address && user) {
-      // Only clear if we had a user (prevents clearing on initial load)
-      clearAllUserData();
+      clearLocalCache();
     }
-  }, [address, user, clearAllUserData, status]);
+  }, [address, user, clearLocalCache, status]);
 
   useEffect(() => {
     if (!user) return;
@@ -508,16 +489,17 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     run();
   }, [user, status, currentChainId, switchChain]);
 
+  const effectiveLoading = loading || !ready;
+
   const contextValue = useMemo(
     () => ({
       user,
-      loading,
+      loading: effectiveLoading,
       updateUser,
       updateUserSettings,
       logout,
       isAdmin,
       getCurrentUser,
-      // Token balance and metadata
       platformTokenBalance: platformTokenBalanceData?.value,
       paymentTokenBalance: paymentTokenBalanceData?.value,
       platformTokenAddress,
@@ -541,7 +523,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       user,
-      loading,
+      effectiveLoading,
+      ready,
       updateUser,
       updateUserSettings,
       logout,
@@ -560,8 +543,8 @@ export function PortoAuthProvider({ children }: { children: React.ReactNode }) {
       authFlowState.attemptId,
       authFlowState.error,
       startAuthFlow,
-    ]
+    ],
   );
 
-  return <PortoAuthContext.Provider value={contextValue}>{children}</PortoAuthContext.Provider>;
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

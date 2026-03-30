@@ -7,12 +7,12 @@ import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemb
 import { useUserGroupQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export const UserGroupDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const { data: userGroup, isLoading, error, refetch } = useUserGroupQuery(id);
 
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;

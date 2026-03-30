@@ -1,9 +1,9 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const Footer: React.FC = () => {
-  const { user, isAdmin } = usePortoAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {

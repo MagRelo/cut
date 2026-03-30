@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-q
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -48,7 +48,7 @@ function findLineupListContext(
  */
 export function useCreateLineup() {
   const queryClient = useQueryClient();
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const userId = user?.id;
 
   return useMutation({
@@ -111,7 +111,7 @@ export function useCreateLineup() {
  */
 export function useUpdateLineup() {
   const queryClient = useQueryClient();
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const userId = user?.id;
 
   return useMutation({

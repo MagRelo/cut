@@ -10,6 +10,7 @@ The database uses PostgreSQL with Prisma ORM. The schema is defined in `server/p
 - **Purpose**: User accounts
 - **Key Fields**:
   - `id`: Unique identifier (CUID)
+  - `privyUserId`: Privy user id (optional, unique) — links the Cut user to Privy for login and provisioning
   - `email`: Email address (optional, unique)
   - `phone`: Phone number (optional, unique)
   - `name`: Display name

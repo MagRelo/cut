@@ -176,7 +176,7 @@ interface ComponentProps {
 - Form state managed by React Hook Form
 
 ### Context State
-- `usePortoAuth()` for user/auth state
+- `useAuth()` for user profile, balances, and connect flow
 - `useGlobalError()` for error state
 
 ### Server State

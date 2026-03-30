@@ -2,8 +2,7 @@
  * Cron-Only Application Entry Point
  * 
  * This is a dedicated entry point for running cron jobs only (e.g., on Raspberry Pi).
- * It does NOT start the web server or load Porto routes, avoiding the need for
- * MERCHANT_ADDRESS and MERCHANT_PRIVATE_KEY environment variables.
+ * It does NOT start the web server or load full web API routes.
  * 
  * This shares all service/prisma code from the main application via imports.
  * 

@@ -8,7 +8,7 @@ import { useCreateContest as useCreateContestMutation } from "../../hooks/useCon
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateContest } from "../../hooks/useContestFactory";
 import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentTournament } from "../../hooks/useTournamentData";
 import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 
@@ -49,7 +49,7 @@ export const CreateContestForm = () => {
   const navigate = useNavigate();
   const { tournament: currentTournament } = useCurrentTournament();
   const createContestMutation = useCreateContestMutation();
-  const { platformTokenSymbol, platformTokenAddress } = usePortoAuth();
+  const { platformTokenSymbol, platformTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();
 

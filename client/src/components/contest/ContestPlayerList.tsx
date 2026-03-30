@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
 
@@ -41,7 +41,7 @@ interface ContestPlayerListProps {
 }
 
 export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListProps) => {
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);

@@ -8,20 +8,18 @@ The server layer provides the backend API and services for Bet the Cut:
 - **PGA Tour Integration**: Scraping and syncing PGA Tour data
 - **Contest Management**: Server-side contest operations and state management
 - **Automated Updates**: Cron jobs for tournament and contest updates
-- **Authentication**: SIWE (Sign-In With Ethereum) authentication
+- **Authentication**: Privy access tokens (Bearer) verified on protected routes; users and wallets provisioned from Privy identities
 
 ## Key Components
 
 ### API Routes (`server/src/routes/`)
 - **api.ts**: Main API router, mounts all route modules
-- **auth.ts**: Authentication (SIWE), user management
+- **auth.ts**: Authenticated user routes (`/me`, profile updates, contest history)
 - **tournament.ts**: Tournament data endpoints
 - **lineup.ts**: Tournament lineup CRUD operations
 - **contest.ts**: Contest management and operations
 - **userGroup.ts**: User group management
 - **cron.ts**: Cron job triggers (admin)
-- **porto.ts**: Porto wallet integration
-
 ### Services (`server/src/services/`)
 - **initTournament.ts**: Initialize new tournament
 - **updateTournament.ts**: Update tournament data from PGA Tour
@@ -50,13 +48,15 @@ The server layer provides the backend API and services for Bet the Cut:
 - Runs every 5 minutes: Tournament → Activate → Lock → Players → Lineups → Settle → Close
 
 ### Middleware (`server/src/middleware/`)
-- **auth.ts**: Authentication middleware (JWT)
+- **auth.ts**: `requireAuth` — verifies `Authorization: Bearer` with Privy and sets user context
 - **errorHandler.ts**: Error handling middleware
 - **tournamentStatus.ts**: Tournament status checks
 - **userGroup.ts**: User group membership checks
 
 ### Libraries (`server/src/lib/`)
 - **prisma.ts**: Prisma client instance
+- **privyClient.ts**: Privy server client for access token verification
+- **privyUserProvisioning.ts**: Maps Privy users to Cut `User` / `UserWallet` rows
 - **pga*.ts**: PGA Tour data scraping utilities
 - **chainConfig.ts**: Blockchain configuration
 - **email.ts**: Email utilities
@@ -68,7 +68,7 @@ The server layer provides the backend API and services for Bet the Cut:
 - **PostgreSQL**: Database
 - **PGA Tour**: Data source (web scraping)
 - **Base Blockchain**: Contract interactions via RPC
-- **Porto**: Wallet infrastructure
+- **Privy**: Access token verification for API authentication
 
 ### Key Libraries
 - **Hono**: Web framework (lightweight Express alternative)
@@ -81,7 +81,7 @@ The server layer provides the backend API and services for Bet the Cut:
 
 ### With Client
 - **REST API**: JSON over HTTP
-- **Authentication**: SIWE with JWT cookies
+- **Authentication**: `Authorization: Bearer` (Privy access token); optional `X-Cut-Chain-Id`
 - **CORS**: Configured for allowed origins
 - **Static Files**: Serves client build files
 
@@ -98,12 +98,10 @@ The server layer provides the backend API and services for Bet the Cut:
 ## Key Concepts
 
 ### Authentication Flow
-1. Client requests SIWE nonce
-2. Client signs message with wallet
-3. Server verifies signature via Porto
-4. Server creates/updates user and wallet
-5. Server issues JWT cookie
-6. Subsequent requests include JWT cookie
+1. Client obtains a Privy access token after login
+2. Client sends the token on each protected request
+3. Middleware verifies the token with Privy and attaches the Cut user (provisioning `User` / `UserWallet` as needed)
+4. Route handlers read user id, wallet address, and chain from context
 
 ### Contest Lifecycle Management
 - Server monitors contest states

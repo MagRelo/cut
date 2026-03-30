@@ -3,7 +3,7 @@ import { formatUnits, type Abi } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 
 import ContestContract from "../utils/contracts/ContestController.json";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useContestPredictionData } from "./useContestPredictionData";
 import type { Contest } from "../types/contest";
 import type { ContestLineup } from "../types/lineup";
@@ -54,7 +54,7 @@ export function useContestSettlementClaims(
   options: UseContestSettlementClaimsOptions,
 ): UseContestSettlementClaimsResult {
   const { contest, contestLineups = [] } = options;
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const { address: walletAddress } = useAccount();
 
   const isSettled = contest?.status === "SETTLED";

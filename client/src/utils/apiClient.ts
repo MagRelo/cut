@@ -1,4 +1,5 @@
 import { handleApiResponse, ApiError } from "./apiError";
+import { getBearerForApi, getOptionalChainIdForApi } from "../lib/authToken";
 
 interface ApiConfig {
   baseURL: string;
@@ -24,14 +25,23 @@ export class ApiClient {
     };
   }
 
-  private getHeaders(options: RequestOptions = {}): Record<string, string> {
+  private async buildHeaders(options: RequestOptions = {}): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       ...this.config.headers,
     };
 
-    // Add public API flag if specified
     if (options.isPublic) {
       headers["X-Public-Api"] = "true";
+    }
+
+    const token = await getBearerForApi();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const chainId = getOptionalChainIdForApi();
+    if (typeof chainId === "number") {
+      headers["X-Cut-Chain-Id"] = String(chainId);
     }
 
     return headers;
@@ -41,27 +51,25 @@ export class ApiClient {
     method: string,
     endpoint: string,
     data?: unknown,
-    options: RequestOptions = {}
+    options: RequestOptions = {},
   ): Promise<T> {
     try {
       const response = await fetch(`${this.config.baseURL}${endpoint}`, {
         method,
-        headers: this.getHeaders(options),
+        headers: await this.buildHeaders(options),
         body: data ? JSON.stringify(data) : undefined,
-        credentials: "include", // Include cookies in the request
+        credentials: "omit",
       });
 
       return await handleApiResponse<T>(response);
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
-        // Handle unauthorized error - cookies will be handled by the server
         console.error("Unauthorized request");
       }
       throw error;
     }
   }
 
-  // Convenience methods
   async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>("GET", endpoint, undefined, options);
   }
@@ -79,7 +87,6 @@ export class ApiClient {
   }
 }
 
-// Create a singleton instance
 const apiClient = new ApiClient({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
 });

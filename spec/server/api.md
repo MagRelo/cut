@@ -7,10 +7,14 @@
 
 ## Authentication
 
-Most endpoints require authentication via SIWE (Sign-In With Ethereum):
-1. POST `/api/auth/siwe/nonce` - Get nonce
-2. POST `/api/auth/siwe/verify` - Verify signature and get JWT
-3. JWT stored in HTTP-only cookie: `cutAuthToken`
+Protected endpoints expect:
+
+- **Header**: `Authorization: Bearer <privy_access_token>`
+- **Optional**: `X-Cut-Chain-Id` — preferred chain when resolving the user’s wallet for that request
+
+The server verifies the token with Privy, attaches the Cut user to the request context, and provisions `User` / `UserWallet` records from the Privy user when needed.
+
+Unauthenticated routes are explicitly noted below (e.g. health, some tournament reads).
 
 ## API Routes
 
@@ -22,22 +26,6 @@ Most endpoints require authentication via SIWE (Sign-In With Ethereum):
 - **Response**: `{ status: "healthy", service: "API", timestamp: string }`
 
 ### Authentication (`/api/auth`)
-
-#### `POST /api/auth/siwe/nonce`
-- **Description**: Generate SIWE nonce
-- **Auth**: None
-- **Response**: `{ nonce: string }`
-
-#### `POST /api/auth/siwe/verify`
-- **Description**: Verify SIWE signature and authenticate
-- **Auth**: None
-- **Body**: `{ message: string, signature: string }`
-- **Response**: `{ success: boolean, user: User, token: string }`
-
-#### `POST /api/auth/siwe/logout`
-- **Description**: Logout user
-- **Auth**: Required
-- **Response**: `{ success: boolean, message: string }`
 
 #### `GET /api/auth/me`
 - **Description**: Get current user information

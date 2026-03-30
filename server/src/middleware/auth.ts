@@ -1,8 +1,7 @@
 import { Context, Next } from "hono";
-import { getCookie } from "hono/cookie";
-import jwt from "jsonwebtoken";
+import { getPrivyClient } from "../lib/privyClient.js";
+import { ensureCutUserFromPrivy } from "../lib/privyUserProvisioning.js";
 
-// Extend Hono's context to include user information
 declare module "hono" {
   interface ContextVariableMap {
     user: {
@@ -14,47 +13,41 @@ declare module "hono" {
   }
 }
 
+function parsePreferredChainId(c: Context): number | undefined {
+  const raw = c.req.header("x-cut-chain-id");
+  if (!raw) return undefined;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
-    // Check for token in Authorization header first
-    let token: string | undefined;
-
     const authHeader = c.req.header("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
+    if (!authHeader?.startsWith("Bearer ")) {
+      return c.json({ error: "No token provided" }, 401);
     }
-
-    // If no token in header, check for cookie
-    if (!token) {
-      token = getCookie(c, "cutAuthToken");
-    }
-
+    const token = authHeader.split(" ")[1];
     if (!token) {
       return c.json({ error: "No token provided" }, 401);
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "temporary-secret-key") as {
-        userId: string;
-        address: string;
-        chainId: number;
-        userType: string;
-      };
+    const preferredChainId = parsePreferredChainId(c);
 
-      // Add user information to context
-      c.set("user", {
-        userId: decoded.userId,
-        address: decoded.address,
-        chainId: decoded.chainId,
-        userType: decoded.userType,
-      });
+    const privy = getPrivyClient();
+    const access = await privy.utils().auth().verifyAccessToken(token);
+    const privyUser = await privy.users()._get(access.user_id);
+    const resolved = await ensureCutUserFromPrivy(privyUser, preferredChainId);
 
-      await next();
-    } catch (error) {
-      return c.json({ error: "Invalid token" }, 401);
-    }
+    c.set("user", {
+      userId: resolved.userId,
+      address: resolved.address,
+      chainId: resolved.chainId,
+      userType: resolved.userType,
+    });
+
+    await next();
   } catch (error) {
     console.error("Auth middleware error:", error);
-    return c.json({ error: "Authentication failed" }, 500);
+    return c.json({ error: "Invalid or expired token" }, 401);
   }
 };

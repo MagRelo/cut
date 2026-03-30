@@ -29,7 +29,7 @@ The application is organized into three main layers:
 
 3. **Client** (`spec/client/`) - React frontend (Vite)
    - User interface and interactions
-   - Blockchain wallet integration (Wagmi)
+   - Privy for authentication and wallets; Wagmi for chain operations
    - State management (React Query)
    - Component architecture
 

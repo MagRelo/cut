@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup, TabPanels } from "@headlessui/react";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 import { ContestCard } from "../components/contest/ContestCard";
@@ -31,7 +31,7 @@ function classNames(...classes: string[]) {
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
 
   const {
     data: contest,

@@ -3,7 +3,7 @@ import { useAccount } from "wagmi";
 import { formatUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTransferTokens } from "../../hooks/useTokenOperations";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface SendProps {
   tokenName?: "CUT" | "USDC";
@@ -20,7 +20,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     paymentTokenSymbol,
     platformTokenDecimals,
     paymentTokenDecimals,
-  } = usePortoAuth();
+  } = useAuth();
 
   // Select the appropriate token address, balance, decimals, and symbol based on tokenName
   const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;

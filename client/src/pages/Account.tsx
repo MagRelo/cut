@@ -9,7 +9,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { MintingUserFundsPanel } from "../components/user/MintingUserFundsPanel";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 // Wallet Info Component (below tabs)
 const WalletInfo = ({
@@ -40,24 +40,6 @@ const WalletInfo = ({
           <NetworkStatus />
         </div>
       </div>
-
-      {/* Wallet Provider */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center font-display">
-        <span className="text-sm font-medium text-gray-700 ">Wallet</span>
-        <div className="flex justify-end">
-          <a
-            href={`https://id.porto.sh/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-700 text-sm font-semibold transition-colors inline-flex items-center gap-1"
-          >
-            Porto Wallet
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
-      </div>
     </div>
 
     {/* Sign Out Button */}
@@ -81,7 +63,7 @@ const WalletInfo = ({
 );
 
 export function UserPage() {
-  const { logout } = usePortoAuth();
+  const { logout } = useAuth();
   const { address } = useAccount();
 
   return (

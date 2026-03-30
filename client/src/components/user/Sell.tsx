@@ -5,12 +5,12 @@ import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { createTransactionLinkJSX } from "../../utils/blockchainUtils.tsx";
 import { useSellTokens } from "../../hooks/useTokenOperations";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const Sell = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
-  const { platformTokenBalance, paymentTokenSymbol } = usePortoAuth();
+  const { platformTokenBalance, paymentTokenSymbol } = useAuth();
 
   // Sell form state
   const [sellAmount, setSellAmount] = useState("");

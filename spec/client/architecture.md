@@ -5,10 +5,11 @@
 ```mermaid
 graph TB
     subgraph providers[Providers]
-        WAGMI[WagmiProvider]
+        PRIVY[PrivyProvider]
         QUERY[QueryClientProvider]
+        WAGMI[WagmiProvider]
         ERROR[GlobalErrorProvider]
-        AUTH[PortoAuthProvider]
+        AUTH[AuthProvider]
         ROUTER[BrowserRouter]
     end
     
@@ -35,9 +36,10 @@ graph TB
         BLOCKCHAIN[Base Blockchain]
     end
     
-    WAGMI --> ROUTER
-    QUERY --> ROUTER
-    ERROR --> ROUTER
+    PRIVY --> QUERY
+    QUERY --> WAGMI
+    WAGMI --> ERROR
+    ERROR --> AUTH
     AUTH --> ROUTER
     ROUTER --> ROUTES
     ROUTES --> PAGES
@@ -73,11 +75,12 @@ graph TD
 
 ```mermaid
 graph LR
-    A[WagmiProvider] --> B[QueryClientProvider]
-    B --> C[GlobalErrorProvider]
-    C --> D[PortoAuthProvider]
-    D --> E[BrowserRouter]
-    E --> F[App Content]
+    A[PrivyProvider] --> B[QueryClientProvider]
+    B --> C[WagmiProvider]
+    C --> D[GlobalErrorProvider]
+    D --> E[AuthProvider]
+    E --> F[BrowserRouter]
+    F --> G[App Content]
 ```
 
 ## Data Flow Patterns
@@ -111,21 +114,23 @@ sequenceDiagram
     participant Wagmi
     participant Blockchain
     
-    Component->>Hook: useBlockchainTransaction
-    Hook->>Wagmi: useSendCalls
-    Wagmi->>Blockchain: Transaction
-    Blockchain-->>Wagmi: Transaction Hash
-    Wagmi-->>Hook: Status
+    Component->>Hook: execute(calls)
+    Hook->>Wagmi: walletClient.writeContract (per call)
+    Wagmi->>Blockchain: Broadcast transaction
+    Blockchain-->>Wagmi: Transaction hash
+    Hook->>Wagmi: waitForTransactionReceipt
+    Wagmi-->>Hook: Receipt
     Hook-->>Component: Loading/Success/Error
 ```
 
 ## Key Architectural Patterns
 
 ### Provider Pattern
-- **WagmiProvider**: Blockchain wallet and contract access
+- **PrivyProvider**: Privy app id and login/session
 - **QueryClientProvider**: React Query for server state
+- **WagmiProvider**: Blockchain wallet and contract access (Privy-integrated config)
 - **GlobalErrorProvider**: Centralized error handling
-- **PortoAuthProvider**: Authentication state
+- **AuthProvider**: Cut user profile, balances, connect flow (`startAuthFlow`), and API token registration
 - **BrowserRouter**: Client-side routing
 
 ### Custom Hooks Pattern
@@ -156,7 +161,7 @@ sequenceDiagram
 - **Refetching**: Automatic refetch on focus/reconnect
 
 ### Client State (Context API)
-- **PortoAuthContext**: User authentication state
+- **AuthContext** (`useAuth`): Privy session, Cut `user` from `/auth/me`, token balances, `authFlow` / `startAuthFlow` for network selection
 - **GlobalErrorContext**: Error messages and handling
 - **Component State**: Local component state (useState)
 
@@ -213,9 +218,9 @@ sequenceDiagram
 ## Security Considerations
 
 ### Authentication
-- SIWE (Sign-In With Ethereum) for wallet auth
-- JWT tokens in HTTP-only cookies
-- Automatic token refresh
+- Privy handles wallet login and sessions
+- API calls use short-lived Privy access tokens in the `Authorization` header (Bearer)
+- `AuthProvider` wires `getAccessToken()` into `apiClient` via `registerAuthTokenHandlers`
 
 ### Input Validation
 - Yup/Zod schemas for form validation

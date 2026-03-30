@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { TournamentLineup, PlayerWithTournamentData } from "../../types/player";
 
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useLineupQuery } from "../../hooks/useLineupQueries";
 import { useActiveTournament } from "../../hooks/useTournamentData";
@@ -32,7 +32,7 @@ interface LineupFormProps {
 
 export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   const navigate = useNavigate();
-  const { loading: isAuthLoading, user } = usePortoAuth();
+  const { loading: isAuthLoading, user } = useAuth();
   const {
     players: fieldPlayers,
     currentTournament,

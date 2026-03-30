@@ -48,11 +48,14 @@ The client layer provides the user interface for Bet the Cut:
 - **useContestPredictionData.ts**: Prediction market data
 
 ### Contexts (`client/src/contexts/`)
-- **PortoAuthContext.tsx**: Authentication and user state
+- **AuthContext.tsx** (`AuthProvider`, `useAuth`): Authentication, Cut user profile from `/auth/me`, token balances, and connect/network flow
 - **GlobalErrorContext.tsx**: Global error handling
 
+### Libraries (`client/src/lib/`)
+- **authToken.ts**: Registers Privy `getAccessToken` (and optional chain id) so `apiClient` can attach `Authorization: Bearer` and `X-Cut-Chain-Id` headers
+
 ### Utilities (`client/src/utils/`)
-- **apiClient.ts**: HTTP client for API calls
+- **apiClient.ts**: HTTP client for API calls (Bearer auth, no cookies)
 - **blockchainUtils.tsx**: Blockchain utility functions
 - **queryKeys.ts**: React Query key factories
 - **contracts/**: Contract ABIs and addresses
@@ -68,10 +71,11 @@ The client layer provides the user interface for Bet the Cut:
 - **@tanstack/react-query**: Server state management
 - **React Context API**: App-level state (auth, errors)
 
-### Blockchain
-- **wagmi**: Ethereum wallet integration
+### Blockchain & authentication
+- **@privy-io/react-auth**: Login, embedded wallet, and access tokens
+- **@privy-io/wagmi**: Wagmi config wired for Privy wallets
+- **wagmi**: Ethereum wallet integration (Base, Base Sepolia)
 - **viem**: Ethereum utilities
-- **Porto**: Wallet infrastructure
 
 ### UI Libraries
 - **Tailwind CSS**: Styling
@@ -89,13 +93,13 @@ The client layer provides the user interface for Bet the Cut:
 
 ### With Server
 - **REST API**: HTTP requests via `apiClient`
-- **Authentication**: SIWE with JWT cookies
+- **Authentication**: Privy access token on each request as `Authorization: Bearer <token>`; optional `X-Cut-Chain-Id` when the client needs the server to resolve the user for a specific chain
 - **CORS**: Configured for server origin
 
 ### With Blockchain
 - **Wagmi**: Wallet connections and contract reads
 - **Viem**: Contract writes and transaction handling
-- **Porto**: Signature verification and wallet management
+- **Privy**: Embedded wallet and signing for connected users
 
 ## Key Concepts
 

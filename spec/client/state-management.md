@@ -53,19 +53,18 @@ const mutation = useMutation({
 
 ## Client State (Context API)
 
-### PortoAuthContext
-- **Purpose**: Authentication and user state
+### AuthContext (`AuthProvider` / `useAuth`)
+- **Purpose**: Privy session, Cut user from `/auth/me`, token balances, and guided connect flow
 - **State**:
-  - `user`: Current user object
-  - `loading`: Authentication loading state
-  - `platformTokenBalance`: CUT token balance
-  - `paymentTokenBalance`: USDC balance
-  - Token addresses and metadata
+  - `user`: Current Cut user object (from API)
+  - `loading`: Auth / profile loading
+  - `platformTokenBalance`, `paymentTokenBalance`: ERC-20 balances for configured tokens
+  - Token addresses, symbols, decimals
+  - `authFlow`: Phase, busy flag, and error for connect/network steps
 - **Methods**:
-  - `updateUser()`: Update user profile
-  - `updateUserSettings()`: Update user settings
-  - `logout()`: Logout user
-  - `isAdmin()`: Check if user is admin
+  - `startAuthFlow(network)`: Privy login + enforce Base vs Base Sepolia
+  - `updateUser()`, `updateUserSettings()`, `logout()`
+  - `isAdmin()`, `getCurrentUser()`
 
 ### GlobalErrorContext
 - **Purpose**: Global error handling
@@ -102,9 +101,9 @@ const { register, handleSubmit, formState: { errors } } = useForm({
 - **Custom Hooks**: Wrap Wagmi for specific contracts
 
 ### Contract Writes
-- **useSendCalls**: Send transactions
-- **useWaitForCallsStatus**: Wait for transaction confirmation
-- **useBlockchainTransaction**: Custom hook for transaction handling
+- **useWalletClient** + **writeContract**: Used by `useBlockchainTransaction` for sequential contract calls
+- **usePublicClient** + **waitForTransactionReceipt**: Confirms each transaction
+- **useBlockchainTransaction**: Batches multiple `writeContract` calls in order (e.g. approve then deposit)
 
 ## Local State (useState)
 
@@ -143,11 +142,10 @@ graph LR
 ### Context State Flow
 ```mermaid
 graph TD
-    A[Provider] --> B[Context]
+    A[AuthProvider] --> B[AuthContext]
     B --> C[Components]
-    C --> D[Hook]
+    C --> D[useAuth]
     D --> B
-    B --> A
 ```
 
 ## State Synchronization
@@ -221,15 +219,15 @@ graph TD
 ## State Persistence
 
 ### Session Storage
-- JWT token in HTTP-only cookie
+- Privy persists its own session (embedded wallet / login state)
 - User preferences (if implemented)
 
 ### Local Storage
-- Wallet connection state (via Wagmi)
+- Wallet connection state (via Wagmi / Privy)
 - UI preferences (if implemented)
 
 ### No Persistence
-- Server data: Fetched fresh on load
+- Cut user profile: Loaded from `/auth/me` when authenticated
 - Blockchain data: Fetched from chain
 - Form data: Not persisted
 

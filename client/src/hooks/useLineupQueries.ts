@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -62,7 +62,7 @@ export function useLineupQuery(
  * Read a lineup from an already-fetched tournament list (no fetch; `enabled: false` on list query).
  */
 export function useLineupFromCache(lineupId: string, tournamentId: string) {
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const { data: lineups } = useLineupsQuery(tournamentId, false, user?.id);
   return lineups?.find((lineup) => lineup.id === lineupId) ?? null;
 }

@@ -161,7 +161,7 @@ Services contain business logic and are used by both API routes and cron jobs. T
 ### External Services
 - **PGA Tour**: Web scraping for tournament data
 - **Base Blockchain**: RPC calls for contract interactions
-- **Porto**: Wallet signature verification
+- **Privy**: Not called directly from services; token verification happens in auth middleware before route handlers run
 
 ## Testing Considerations
 

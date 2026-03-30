@@ -23,7 +23,7 @@ graph TB
     
     subgraph external[External Services]
         PGA[PGA Tour]
-        PORTO[Porto Wallet]
+        PRIVY[Privy]
     end
     
     UI -->|HTTP| API
@@ -36,8 +36,8 @@ graph TB
     SVC -->|Read/Write| CONTRACTS
     CRON -->|Triggers| SVC
     
-    UI -->|SIWE| PORTO
-    API -->|Verify| PORTO
+    UI -->|Auth + wallet| PRIVY
+    API -->|Verify token| PRIVY
 ```
 
 ## Layer Interactions
@@ -45,12 +45,11 @@ graph TB
 ### Client ↔ Server
 
 #### Authentication Flow
-1. Client requests SIWE nonce from server
-2. Client signs message with wallet
-3. Client sends signature to server
-4. Server verifies signature via Porto
-5. Server issues JWT cookie
-6. Client includes cookie in subsequent requests
+1. User signs in with Privy in the client (embedded or external wallet)
+2. Client obtains a Privy access token (`getAccessToken`)
+3. Client sends `Authorization: Bearer <token>` on API requests; may send `X-Cut-Chain-Id` for chain-specific wallet resolution
+4. Server verifies the token with Privy and attaches the Cut user context
+5. Protected routes use middleware that re-verifies the token per request
 
 #### Data Flow
 - **Client → Server**: HTTP requests (GET, POST, PUT, DELETE)
@@ -91,10 +90,10 @@ graph TB
 - **PGA Tour → Server**: Tournament data, player scores
 - **Frequency**: Every 5 minutes via cron
 
-#### Porto Integration
-- **Server → Porto**: Signature verification
-- **Porto → Server**: Verification result
-- **Usage**: SIWE authentication
+#### Privy
+- **Client → Privy**: Login, wallet, signing
+- **Server → Privy**: Access token verification (Privy server SDK)
+- **Usage**: Authenticated API access and user provisioning (`User`, `UserWallet`)
 
 ## Data Flow Across Layers
 
@@ -166,9 +165,9 @@ sequenceDiagram
 ## Integration Points
 
 ### Authentication Integration
-- **Client**: Wallet connection (Wagmi)
-- **Server**: SIWE verification (Porto)
-- **Blockchain**: Wallet address validation
+- **Client**: Privy + Wagmi for wallet and transactions
+- **Server**: Bearer token verification via Privy
+- **Blockchain**: Wallet address tied to Cut user via `UserWallet`
 
 ### Contest State Synchronization
 - **Blockchain**: Source of truth for contest state
@@ -223,14 +222,14 @@ sequenceDiagram
 ## Security Considerations
 
 ### Authentication
-- **Client**: Wallet signature
-- **Server**: Signature verification via Porto
+- **Client**: Privy session and wallet
+- **Server**: Privy access token verification
 - **Blockchain**: Address validation
 
 ### Authorization
-- **Server**: JWT-based authorization
+- **Server**: User context from verified token (user id, wallet, chain)
 - **Blockchain**: Contract-based permissions
-- **Client**: Route protection
+- **Client**: Route protection (`ProtectedRoute`)
 
 ### Data Validation
 - **Client**: Form validation (Yup/Zod)

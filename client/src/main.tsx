@@ -1,3 +1,7 @@
+import { Buffer } from "buffer";
+// Privy / wallet signing paths expect Node's Buffer in some code paths
+globalThis.Buffer = Buffer;
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";

@@ -24,7 +24,7 @@ graph TB
     subgraph external[External Services]
         PGA[PGA Tour Website]
         BLOCKCHAIN[Base Blockchain]
-        PORTO[Porto Wallet]
+        PRIVY[Privy]
     end
     
     UI -->|HTTP/REST| APP
@@ -38,7 +38,7 @@ graph TB
     SVC -->|scrapes| PGA
     SVC -->|reads/writes| BLOCKCHAIN
     
-    MW -->|verifies| PORTO
+    MW -->|verifies token| PRIVY
 ```
 
 ## Request Flow
@@ -90,7 +90,7 @@ sequenceDiagram
 ### Middleware Pattern
 - **CORS**: Cross-origin resource sharing
 - **Logging**: Request/response logging
-- **Authentication**: JWT verification
+- **Authentication**: Privy access token verification
 - **Error Handling**: Centralized error responses
 
 ### Service Pattern
@@ -160,9 +160,8 @@ Cron Scheduler → Service → PGA Scraping → Transform → Prisma → Databas
 ## Security Patterns
 
 ### Authentication
-- SIWE (Sign-In With Ethereum) for wallet-based auth
-- JWT tokens stored in HTTP-only cookies
-- Porto integration for signature verification
+- Privy access tokens in the `Authorization` header
+- `requireAuth` middleware verifies tokens and provisions or resolves Cut users
 
 ### Authorization
 - Middleware checks user permissions

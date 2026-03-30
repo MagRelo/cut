@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "../hooks/useLineupData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 import { useActiveTournament } from "../hooks/useTournamentData";
@@ -14,7 +14,7 @@ import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import type { ContestLineup } from "../types/lineup";
 
 export const LineupList: React.FC = () => {
-  const { loading: isAuthLoading, user } = usePortoAuth();
+  const { loading: isAuthLoading, user } = useAuth();
   const {
     isLoading: isTournamentLoading,
     currentTournament,

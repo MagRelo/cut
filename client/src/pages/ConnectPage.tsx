@@ -1,11 +1,11 @@
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { Connect } from "../components/user/Connect";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { PageHeader } from "../components/common/PageHeader";
 
 export function ConnectPage() {
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useAccount, useBalance } from "wagmi";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { getContractAddress } from "../../utils/blockchainUtils";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export function MintingUserFundsPanel() {
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const { address, chainId } = useAccount();
   const [isDismissed, setIsDismissed] = useState(false);
   const [hasFundsArrived, setHasFundsArrived] = useState(false);

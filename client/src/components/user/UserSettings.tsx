@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function UserSettings() {
-  const { user, updateUser, updateUserSettings } = usePortoAuth();
+  const { user, updateUser, updateUserSettings } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [settings, setSettings] = useState<Record<string, unknown>>(user?.settings || {});
   const [isLoading, setIsLoading] = useState(false);

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
@@ -43,7 +43,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   poolSnapshot,
   onClose,
 }) => {
-  const { platformTokenBalance, paymentTokenBalance, user } = usePortoAuth();
+  const { platformTokenBalance, paymentTokenBalance, user } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 

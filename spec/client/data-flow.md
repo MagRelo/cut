@@ -82,8 +82,8 @@ sequenceDiagram
     participant Wagmi
     participant Blockchain
     
-    Component->>Context: usePortoAuth()
-    Context->>Wagmi: useBalance(token)
+    Component->>Context: useAuth()
+    Context->>Wagmi: useBalance / useReadContract (tokens)
     Wagmi->>Blockchain: RPC Call
     Blockchain-->>Wagmi: Balance
     Wagmi-->>Context: Balance Data
@@ -119,17 +119,14 @@ sequenceDiagram
     participant Blockchain
     
     Component->>Hook: execute(calls)
-    Hook->>Wagmi: useSendCalls(calls)
-    Wagmi->>Wallet: Request Signature
-    Wallet-->>Wagmi: Signed Transaction
-    Wagmi->>Blockchain: Send Transaction
-    Blockchain-->>Wagmi: Transaction Hash
-    Wagmi-->>Hook: Pending State
-    Hook->>Wagmi: useWaitForCallsStatus(hash)
-    Wagmi->>Blockchain: Poll Status
-    Blockchain-->>Wagmi: Confirmed
-    Wagmi-->>Hook: Success State
-    Hook-->>Component: Transaction Complete
+    Hook->>Wagmi: writeContract (each call)
+    Wagmi->>Wallet: Request signature
+    Wallet-->>Wagmi: Signed tx
+    Wagmi->>Blockchain: Broadcast
+    Blockchain-->>Wagmi: Transaction hash
+    Hook->>Wagmi: waitForTransactionReceipt
+    Wagmi-->>Hook: Receipt
+    Hook-->>Component: Transaction complete
 ```
 
 ## Authentication Flow
@@ -138,28 +135,26 @@ sequenceDiagram
 sequenceDiagram
     participant User
     participant Component
+    participant Privy
     participant Context
     participant ApiClient
     participant Server
-    participant Porto
     
-    User->>Component: Connect Wallet
-    Component->>Context: SIWE Flow
-    Context->>ApiClient: POST /api/auth/siwe/nonce
-    ApiClient->>Server: Request Nonce
-    Server-->>ApiClient: Nonce
-    ApiClient-->>Context: Nonce
-    Context->>Porto: Sign Message
-    Porto-->>Context: Signature
-    Context->>ApiClient: POST /api/auth/siwe/verify
-    ApiClient->>Server: Verify Signature
-    Server->>Porto: Verify Signature
-    Porto-->>Server: Valid
-    Server-->>ApiClient: JWT Token
-    ApiClient-->>Context: User + Token
-    Context->>Context: Set User State
+    User->>Component: Connect / login
+    Component->>Privy: login()
+    Privy-->>Component: Session + wallet
+    Component->>Context: startAuthFlow / AuthProvider effects
+    Context->>Privy: getAccessToken()
+    Privy-->>Context: Bearer token
+    Context->>ApiClient: GET /auth/me (Authorization: Bearer)
+    ApiClient->>Server: Verify token, load Cut user
+    Server-->>ApiClient: User + lineups + groups
+    ApiClient-->>Context: Profile
+    Context->>Context: Set user state
     Context-->>Component: Authenticated
 ```
+
+The server verifies the Privy access token on each protected request, provisions or updates the Cut `User` and `UserWallet` records from the Privy user, and uses optional `X-Cut-Chain-Id` when resolving the active wallet for a chain.
 
 ## Data Transformation
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 enum ConnectionStatus {
   IDLE = "idle",
@@ -18,7 +18,7 @@ interface ConnectProps {
 }
 
 export function Connect({ onSuccess }: ConnectProps = {}) {
-  const { user, authFlow, startAuthFlow } = usePortoAuth();
+  const { user, authFlow, startAuthFlow } = useAuth();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.IDLE);
   const [tocAccepted, setTocAccepted] = useState(false);
   const successTriggeredRef = useRef(false);
@@ -176,12 +176,6 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </div>
       )}
 
-      {/* Error display */}
-      {connectionStatus === ConnectionStatus.ERROR && (
-        <div className="px-6 py-4 bg-red-50 border-t border-red-100">
-          <p className="text-sm text-red-600 text-center">{authFlow.error ?? "Connection failed"}</p>
-        </div>
-      )}
       {/* Error display */}
       {connectionStatus === ConnectionStatus.ERROR && (
         <div className="px-6 py-4 bg-red-50 border-t border-red-100">

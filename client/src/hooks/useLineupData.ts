@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 
 import { useLineupsQuery } from "./useLineupQueries";
 import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
-import { usePortoAuth } from "../contexts/PortoAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useCurrentTournament } from "./useTournamentData";
 import { type TournamentLineup } from "../types/player";
 
@@ -12,7 +12,7 @@ interface UseLineupDataOptions {
 }
 
 export function useLineupData(options: UseLineupDataOptions = {}) {
-  const { user } = usePortoAuth();
+  const { user } = useAuth();
   const { tournament: currentTournament } = useCurrentTournament();
 
   const tournamentId = options.tournamentId ?? currentTournament?.id;

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useSendCalls, useWaitForCallsStatus } from "wagmi";
+import { useCallback, useState } from "react";
+import { useWalletClient, usePublicClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Abi } from "viem";
 
 interface TransactionCall {
   abi: readonly unknown[];
@@ -15,119 +16,125 @@ interface UseBlockchainTransactionOptions {
   onSettled?: () => void;
 }
 
+/** Shape expected by CreateContestForm and similar onSuccess handlers */
+export type BatchTransactionStatusData = {
+  status: "success";
+  receipts: Array<{
+    transactionHash: `0x${string}`;
+    logs: readonly {
+      address: `0x${string}`;
+      topics: readonly `0x${string}`[];
+      data: `0x${string}`;
+    }[];
+  }>;
+};
+
 export function useBlockchainTransaction(options?: UseBlockchainTransactionOptions) {
   const { onSuccess, onError, onSettled } = options || {};
   const queryClient = useQueryClient();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
 
-  const {
-    sendCalls,
-    data: sendCallsData,
-    isPending: isSending,
-    error: sendCallsError,
-    reset,
-  } = useSendCalls();
-
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    error: confirmationError,
-    data: statusData,
-  } = useWaitForCallsStatus({
-    id: sendCallsData?.id,
-  });
-
+  const [isSending, setIsSending] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userFriendlyError, setUserFriendlyError] = useState<string | null>(null);
+  const [confirmedSuccess, setConfirmedSuccess] = useState(false);
+  const [confirmedFailure, setConfirmedFailure] = useState(false);
+  const [lastTxHash, setLastTxHash] = useState<`0x${string}` | undefined>();
+  const [lastStatusData, setLastStatusData] = useState<BatchTransactionStatusData | undefined>();
 
-  // Handle transaction completion
-  useEffect(() => {
-    const handleCompletion = async () => {
-      if (!isConfirmed || !statusData) {
-        return;
-      }
-
-      // Transaction failed
-      if (statusData.status === "failure") {
-        const errorMsg = "Blockchain transaction failed. Please try again.";
-        setUserFriendlyError(errorMsg);
-        onError?.(errorMsg);
-        setIsProcessing(false);
-        onSettled?.();
-        console.log("Blockchain transaction failed. Status data:", statusData);
-        return;
-      }
-
-      // Transaction succeeded
-      if (statusData.status === "success") {
-        try {
-          // Clear any previous errors
-          setUserFriendlyError(null);
-
-          // Call the custom success handler
-          await onSuccess?.(statusData);
-
-          // Automatically refresh all balances and contract reads after successful transaction
-          await Promise.all([
-            // Invalidate balance queries (wagmi useBalance hook)
-            queryClient.invalidateQueries({
-              queryKey: ["balance"],
-            }),
-            // Invalidate all contract read queries (wagmi useReadContract hook)
-            queryClient.invalidateQueries({
-              queryKey: ["readContract"],
-            }),
-            // Invalidate all contract multi-read queries (wagmi useReadContracts hook)
-            queryClient.invalidateQueries({
-              queryKey: ["readContracts"],
-            }),
-          ]);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          setUserFriendlyError(errorMsg);
-          onError?.(error instanceof Error ? error : new Error(String(error)));
-        } finally {
-          setIsProcessing(false);
-          onSettled?.();
-        }
-      }
-    };
-
-    handleCompletion();
-  }, [isConfirmed, statusData, onSuccess, onError, onSettled, queryClient]);
-
-  // Handle send errors
-  useEffect(() => {
-    if (sendCallsError) {
-      const errorMsg = sendCallsError.message || "Transaction was rejected or failed to send.";
-      setUserFriendlyError(errorMsg);
-      onError?.(sendCallsError);
-      setIsProcessing(false);
-      onSettled?.();
-    }
-  }, [sendCallsError, onError, onSettled]);
-
-  // Handle confirmation errors
-  useEffect(() => {
-    if (confirmationError) {
-      const errorMsg = confirmationError.message || "Transaction confirmation failed.";
-      setUserFriendlyError(errorMsg);
-      onError?.(confirmationError);
-      setIsProcessing(false);
-      onSettled?.();
-    }
-  }, [confirmationError, onError, onSettled]);
+  const reset = useCallback(() => {
+    setUserFriendlyError(null);
+    setConfirmedSuccess(false);
+    setConfirmedFailure(false);
+    setLastTxHash(undefined);
+    setLastStatusData(undefined);
+    setIsProcessing(false);
+    setIsSending(false);
+    setIsConfirming(false);
+  }, []);
 
   const execute = async (calls: TransactionCall[]) => {
+    if (!walletClient) {
+      const msg = "Wallet not connected";
+      setUserFriendlyError(msg);
+      onError?.(msg);
+      onSettled?.();
+      return;
+    }
+    if (!publicClient) {
+      const msg = "Network client not available";
+      setUserFriendlyError(msg);
+      onError?.(msg);
+      onSettled?.();
+      return;
+    }
+
     try {
       setIsProcessing(true);
-      setUserFriendlyError(null); // Clear previous errors
-      await sendCalls({ calls });
+      setUserFriendlyError(null);
+      setConfirmedSuccess(false);
+      setConfirmedFailure(false);
+      setLastTxHash(undefined);
+      setLastStatusData(undefined);
+
+      const receipts: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>>[] = [];
+
+      for (const call of calls) {
+        setIsSending(true);
+        setIsConfirming(false);
+        const hash = await walletClient.writeContract({
+          address: call.to,
+          abi: call.abi as Abi,
+          functionName: call.functionName,
+          args: [...call.args] as never,
+        });
+        setIsSending(false);
+        setIsConfirming(true);
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        if (receipt.status === "reverted") {
+          throw new Error("Transaction reverted");
+        }
+        receipts.push(receipt);
+        setLastTxHash(receipt.transactionHash);
+        setIsConfirming(false);
+      }
+
+      const statusData: BatchTransactionStatusData = {
+        status: "success",
+        receipts: receipts.map((r) => ({
+          transactionHash: r.transactionHash,
+          logs: r.logs,
+        })),
+      };
+      setLastStatusData(statusData);
+
+      try {
+        setUserFriendlyError(null);
+        await onSuccess?.(statusData);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["balance"] }),
+          queryClient.invalidateQueries({ queryKey: ["readContract"] }),
+          queryClient.invalidateQueries({ queryKey: ["readContracts"] }),
+        ]);
+        setConfirmedSuccess(true);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setUserFriendlyError(errorMsg);
+        onError?.(error instanceof Error ? error : new Error(String(error)));
+        setConfirmedFailure(true);
+      }
     } catch (error) {
       console.error("Error executing blockchain transaction:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       setUserFriendlyError(errorMsg);
       onError?.(error instanceof Error ? error : new Error(String(error)));
+      setConfirmedFailure(true);
+    } finally {
       setIsProcessing(false);
+      setIsSending(false);
+      setIsConfirming(false);
       onSettled?.();
     }
   };
@@ -137,11 +144,11 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
     isProcessing: isProcessing || isSending || isConfirming,
     isSending,
     isConfirming,
-    isConfirmed: isConfirmed && statusData?.status === "success",
-    isFailed: isConfirmed && statusData?.status === "failure",
-    transactionHash: statusData?.receipts?.[0]?.transactionHash,
-    statusData,
-    error: userFriendlyError || sendCallsError?.message || confirmationError?.message,
+    isConfirmed: confirmedSuccess,
+    isFailed: confirmedFailure,
+    transactionHash: lastTxHash,
+    statusData: lastStatusData,
+    error: userFriendlyError,
     reset,
   };
 }

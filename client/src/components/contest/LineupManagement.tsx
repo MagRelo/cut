@@ -6,7 +6,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@
 
 import { Contest } from "src/types/contest";
 import { useLineupData } from "../../hooks/useLineupData";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useJoinContest, useLeaveContest } from "../../hooks/useContestMutations";
 import {
@@ -50,7 +50,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
   const { lineups } = useLineupData();
-  const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
+  const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
 

@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
-import { usePortoAuth } from "../../contexts/PortoAuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const Navigation: React.FC = () => {
-  const { user, platformTokenBalance, paymentTokenBalance } = usePortoAuth();
+  const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const location = useLocation();
 
   // Calculate total balance

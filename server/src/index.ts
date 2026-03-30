@@ -16,10 +16,10 @@ import app from "./app.js";
 import CronScheduler from "./cron/scheduler.js";
 const requiredEnvVars = [
   "DATABASE_URL",
+  "PRIVY_APP_ID",
+  "PRIVY_APP_SECRET",
   "ORACLE_ADDRESS",
   "ORACLE_PRIVATE_KEY",
-  "MERCHANT_ADDRESS",
-  "MERCHANT_PRIVATE_KEY",
 ];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
