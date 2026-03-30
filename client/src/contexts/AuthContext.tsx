@@ -5,16 +5,15 @@ import {
   useState,
   useMemo,
   useCallback,
-  useRef,
 } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
-import { usePrivy } from "@privy-io/react-auth";
-import { base, baseSepolia } from "wagmi/chains";
+import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { handleApiResponse, ApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
+import { getTargetChainIdFromEnv } from "../config/targetChain";
 
 export interface AuthUser {
   id: string;
@@ -34,7 +33,14 @@ export interface AuthUser {
 
 interface AuthContextData {
   user: AuthUser | null;
+  /** Privy not ready, or loading server user from `/auth/me`. */
   loading: boolean;
+  /** True while fetching `/auth/me` (after Privy session exists). */
+  serverUserSyncing: boolean;
+  /** Opens Privy login (see `useLogin` in Privy docs). */
+  login: () => void;
+  loginError: string | null;
+  clearLoginError: () => void;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
   logout: () => Promise<void>;
@@ -49,30 +55,6 @@ interface AuthContextData {
   platformTokenSymbol: string | undefined;
   platformTokenDecimals: number | undefined;
   balancesLoading: boolean;
-  authFlow: {
-    phase: AuthFlowPhase;
-    attemptId: number;
-    error: string | null;
-    isBusy: boolean;
-  };
-  startAuthFlow: (network: NetworkOption) => Promise<void>;
-}
-
-type NetworkOption = "mainnet" | "testnet";
-
-type AuthFlowPhase =
-  | "idle"
-  | "disconnecting"
-  | "wallet_connecting"
-  | "server_auth_pending"
-  | "chain_enforcing"
-  | "ready"
-  | "error";
-
-interface AuthFlowState {
-  phase: AuthFlowPhase;
-  attemptId: number;
-  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -89,34 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId, status } = useAccount();
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
-  const { ready, authenticated, login, logout: privyLogout, getAccessToken } = usePrivy();
+  const { ready, authenticated, logout: privyLogout, getAccessToken } = usePrivy();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [authFlowState, setAuthFlowState] = useState<AuthFlowState>({
-    phase: "idle",
-    attemptId: 0,
-    error: null,
-  });
-  const initializingRef = useRef(false);
-  const lastAddressRef = useRef<string | undefined>(undefined);
-  const authAttemptRef = useRef(0);
-  const authFlowRef = useRef<AuthFlowState>({
-    phase: "idle",
-    attemptId: 0,
-    error: null,
-  });
-
-  const setAuthFlow = useCallback(
-    (next: AuthFlowState | ((prev: AuthFlowState) => AuthFlowState)) => {
-      setAuthFlowState((prev) => {
-        const resolved = typeof next === "function" ? next(prev) : next;
-        authFlowRef.current = resolved;
-        return resolved;
-      });
-    },
-    [],
-  );
+  const [userSyncLoading, setUserSyncLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
@@ -181,6 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
 
+  // Keep apiClient / non-React fetch helpers in sync with Privy JWT + wagmi chain for Authorization and X-Cut-Chain-Id.
+  // Necessary if anything outside this tree calls those helpers; remove only if all API calls go through `request` here.
   useEffect(() => {
     registerAuthTokenHandlers(
       () => getAccessToken(),
@@ -305,179 +266,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [privyLogout, clearLocalCache, disconnect]);
 
-  const waitForDocumentFocus = useCallback(async (): Promise<void> => {
-    if (document.hasFocus()) return;
-    await new Promise<void>((resolve) => {
-      const onFocus = () => resolve();
-      window.addEventListener("focus", onFocus, { once: true });
-    });
-  }, []);
+  const clearLoginError = useCallback(() => setLoginError(null), []);
 
-  const startAuthFlow = useCallback(
-    async (network: NetworkOption) => {
-      const nextAttemptId = authAttemptRef.current + 1;
-      authAttemptRef.current = nextAttemptId;
-
-      const isCurrentAttempt = () => authAttemptRef.current === nextAttemptId;
-      const targetChainId = network === "mainnet" ? base.id : baseSepolia.id;
-
-      setAuthFlow({
-        phase: "disconnecting",
-        attemptId: nextAttemptId,
-        error: null,
-      });
-
-      setLoading(true);
-      setUser(null);
-
-      try {
-        try {
-          await disconnect();
-        } catch (disconnectError) {
-          console.warn("Auth flow disconnect failed:", disconnectError);
-        }
-        try {
-          await privyLogout();
-        } catch (e) {
-          console.warn("Privy logout before login:", e);
-        }
-        if (!isCurrentAttempt()) return;
-
-        setAuthFlow((prev) => ({ ...prev, phase: "wallet_connecting" }));
-        await waitForDocumentFocus();
-        if (!isCurrentAttempt()) return;
-
-        await login();
-        if (!isCurrentAttempt()) return;
-
-        setAuthFlow((prev) => ({ ...prev, phase: "chain_enforcing" }));
-        await waitForDocumentFocus();
-        if (!isCurrentAttempt()) return;
-
+  const { login } = useLogin({
+    onComplete: () => {
+      setLoginError(null);
+      const targetChainId = getTargetChainIdFromEnv();
+      void (async () => {
         try {
           await switchChain({ chainId: targetChainId });
-        } catch (switchErr) {
-          console.warn("switchChain in auth flow:", switchErr);
+        } catch (e) {
+          console.warn("switchChain after login:", e);
         }
-        if (!isCurrentAttempt()) return;
-
-        setAuthFlow((prev) => ({ ...prev, phase: "server_auth_pending" }));
-        const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
-        if (!isCurrentAttempt()) return;
-        setUser(response);
-
-        queryClient.invalidateQueries({ queryKey: ["lineups"] });
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-        queryClient.invalidateQueries({ queryKey: ["balance"] });
-
-        setAuthFlow((prev) => ({ ...prev, phase: "ready", error: null }));
-      } catch (error) {
-        if (!isCurrentAttempt()) return;
-        const errorMessage = error instanceof Error ? error.message : "Authentication failed";
-        console.error("Auth flow failed:", error);
-        setAuthFlow((prev) => ({ ...prev, phase: "error", error: errorMessage }));
-      } finally {
-        if (isCurrentAttempt()) {
-          setLoading(false);
-        }
-      }
+      })();
     },
-    [disconnect, privyLogout, login, queryClient, request, setAuthFlow, switchChain, waitForDocumentFocus],
-  );
+    onError: (error) => {
+      setLoginError(`Login failed (${String(error)})`);
+    },
+  });
 
+  // Core: load Cut `user` from GET /auth/me whenever Privy is ready, the user is authenticated, and we have a wallet address.
+  // Refetches when `address` changes (new wallet) or `request` identity changes (e.g. chain). Safe to drop only if you move this to React Query / router loader.
   useEffect(() => {
-    const initializeAuth = async () => {
-      const phase = authFlowRef.current.phase;
-      const isFlowBusy =
-        phase === "disconnecting" ||
-        phase === "wallet_connecting" ||
-        phase === "server_auth_pending" ||
-        phase === "chain_enforcing";
+    if (!ready) return;
 
-      if (isFlowBusy) {
-        return;
-      }
+    if (!authenticated) {
+      setUser(null);
+      setUserSyncLoading(false);
+      return;
+    }
 
-      if (!ready) {
-        return;
-      }
+    if (!address) {
+      setUser(null);
+      setUserSyncLoading(false);
+      return;
+    }
 
-      if (!authenticated) {
-        setUser(null);
-        setLoading(false);
-        lastAddressRef.current = undefined;
-        return;
-      }
+    let cancelled = false;
+    setUserSyncLoading(true);
 
-      if (initializingRef.current) {
-        return;
-      }
+    const targetChainId = getTargetChainIdFromEnv();
 
-      if (address === lastAddressRef.current) {
-        return;
-      }
-
-      if (!address) {
-        setUser(null);
-        setLoading(false);
-        lastAddressRef.current = undefined;
-        return;
-      }
-
-      if (initializingRef.current && lastAddressRef.current === address) {
-        return;
-      }
-
-      initializingRef.current = true;
-      lastAddressRef.current = address;
-
+    void (async () => {
       try {
-        setLoading(true);
-        const response = await request<AuthUser>("GET", "/auth/me");
-        setUser(response);
-        queryClient.invalidateQueries({ queryKey: ["lineups"] });
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-        queryClient.invalidateQueries({ queryKey: ["balance"] });
+        const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+        if (!cancelled) {
+          setUser(response);
+          queryClient.invalidateQueries({ queryKey: ["lineups"] });
+          queryClient.invalidateQueries({ queryKey: ["user"] });
+          queryClient.invalidateQueries({ queryKey: ["balance"] });
+        }
       } catch (error) {
-        console.error("Auth check failed:", error);
-        if (
-          error instanceof Error &&
-          (error.message.includes("401") || error.message.includes("404"))
-        ) {
-          setUser(null);
+        console.error("GET /auth/me failed:", error);
+        if (!cancelled) {
+          if (
+            error instanceof Error &&
+            (error.message.includes("401") || error.message.includes("404"))
+          ) {
+            setUser(null);
+          }
         }
       } finally {
-        setLoading(false);
-        initializingRef.current = false;
+        if (!cancelled) setUserSyncLoading(false);
       }
+    })();
+
+    return () => {
+      cancelled = true;
+      setUserSyncLoading(false);
     };
+  }, [ready, authenticated, address, request, queryClient]);
 
-    const timeoutId = setTimeout(() => {
-      initializeAuth();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [address, status, request, queryClient, ready, authenticated]);
-
+  // Wagmi can disconnect (e.g. wallet revoke) while React still holds `user`; clear local server user + RQ caches so UI matches wallet.
+  // Could be merged into the effect above if you prefer a single “auth state” effect, but keep if you want an explicit wallet-disconnect edge.
   useEffect(() => {
     if (status === "disconnected" && !address && user) {
       clearLocalCache();
     }
   }, [address, user, clearLocalCache, status]);
 
+  // If the wallet is on the wrong chain vs `user.chainId` (e.g. user switched network in the wallet app), nudge back to the chain the server expects.
+  // Optional UX polish; remove if you handle chain mismatch only in transaction flows or don’t auto-switch.
   useEffect(() => {
     if (!user) return;
     if (status !== "connected") return;
     if (typeof currentChainId !== "number") return;
     if (currentChainId === user.chainId) return;
 
-    const phase = authFlowRef.current.phase;
-    if (phase === "wallet_connecting" || phase === "server_auth_pending") return;
-
     const run = async () => {
-      const latestPhase = authFlowRef.current.phase;
-      if (latestPhase === "wallet_connecting" || latestPhase === "server_auth_pending") return;
-
       if (!document.hasFocus()) return;
       try {
         await switchChain({ chainId: user.chainId as 8453 | 84532 });
@@ -486,15 +362,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    run();
+    void run();
   }, [user, status, currentChainId, switchChain]);
 
-  const effectiveLoading = loading || !ready;
+  const loading = !ready || userSyncLoading;
 
   const contextValue = useMemo(
     () => ({
       user,
-      loading: effectiveLoading,
+      loading,
+      serverUserSyncing: userSyncLoading,
+      login,
+      loginError,
+      clearLoginError,
       updateUser,
       updateUserSettings,
       logout,
@@ -509,22 +389,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol: platformTokenSymbol as string | undefined,
       platformTokenDecimals: platformTokenDecimals as number | undefined,
       balancesLoading,
-      authFlow: {
-        phase: authFlowState.phase,
-        attemptId: authFlowState.attemptId,
-        error: authFlowState.error,
-        isBusy:
-          authFlowState.phase === "disconnecting" ||
-          authFlowState.phase === "wallet_connecting" ||
-          authFlowState.phase === "server_auth_pending" ||
-          authFlowState.phase === "chain_enforcing",
-      },
-      startAuthFlow,
     }),
     [
       user,
-      effectiveLoading,
-      ready,
+      loading,
+      userSyncLoading,
+      login,
+      loginError,
+      clearLoginError,
       updateUser,
       updateUserSettings,
       logout,
@@ -539,10 +411,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol,
       platformTokenDecimals,
       balancesLoading,
-      authFlowState.phase,
-      authFlowState.attemptId,
-      authFlowState.error,
-      startAuthFlow,
     ],
   );
 

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 import { CopyToClipboard } from "../components/common/CopyToClipboard";
 import { NetworkStatus } from "../components/common/NetworkStatus";
-import { TestnetWarning } from "../components/common/ChainWarning";
 
 import { PageHeader } from "../components/common/PageHeader";
 import { UserSettings } from "../components/user/UserSettings";
@@ -69,9 +68,6 @@ export function UserPage() {
   return (
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
-
-      {/* Testnet Warning */}
-      <TestnetWarning />
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
       <MintingUserFundsPanel />
