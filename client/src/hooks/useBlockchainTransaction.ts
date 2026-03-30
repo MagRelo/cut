@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
-import { useWalletClient, usePublicClient } from "wagmi";
+import { useCallback, useMemo, useState } from "react";
+import { useSendTransaction, useWallets } from "@privy-io/react-auth";
+import { useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Abi } from "viem";
+import { encodeFunctionData, type Abi } from "viem";
 
-interface TransactionCall {
+export interface TransactionCall {
   abi: readonly unknown[];
   args: readonly unknown[];
   functionName: string;
@@ -29,11 +30,34 @@ export type BatchTransactionStatusData = {
   }>;
 };
 
+function isPrivyEmbeddedWallet(
+  address: string | undefined,
+  wallets: ReturnType<typeof useWallets>["wallets"],
+): boolean {
+  if (!address) return false;
+  const normalized = address.toLowerCase();
+  return wallets.some(
+    (w) =>
+      w.type === "ethereum" &&
+      w.address.toLowerCase() === normalized &&
+      w.walletClientType === "privy",
+  );
+}
+
 export function useBlockchainTransaction(options?: UseBlockchainTransactionOptions) {
   const { onSuccess, onError, onSettled } = options || {};
   const queryClient = useQueryClient();
+  const { address } = useAccount();
+  const chainId = useChainId();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
+  const { sendTransaction } = useSendTransaction();
+  const { wallets, ready: walletsReady } = useWallets();
+
+  const useSponsoredPrivyTx = useMemo(
+    () => walletsReady && isPrivyEmbeddedWallet(address, wallets),
+    [walletsReady, address, wallets],
+  );
 
   const [isSending, setIsSending] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -56,15 +80,22 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   }, []);
 
   const execute = async (calls: TransactionCall[]) => {
-    if (!walletClient) {
-      const msg = "Wallet not connected";
+    if (!publicClient) {
+      const msg = "Network client not available";
       setUserFriendlyError(msg);
       onError?.(msg);
       onSettled?.();
       return;
     }
-    if (!publicClient) {
-      const msg = "Network client not available";
+    if (!walletsReady) {
+      const msg = "Wallet is still initializing. Please try again in a moment.";
+      setUserFriendlyError(msg);
+      onError?.(msg);
+      onSettled?.();
+      return;
+    }
+    if (!useSponsoredPrivyTx && !walletClient) {
+      const msg = "Wallet not connected";
       setUserFriendlyError(msg);
       onError?.(msg);
       onSettled?.();
@@ -84,12 +115,34 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       for (const call of calls) {
         setIsSending(true);
         setIsConfirming(false);
-        const hash = await walletClient.writeContract({
-          address: call.to,
-          abi: call.abi as Abi,
-          functionName: call.functionName,
-          args: [...call.args] as never,
-        });
+        let hash: `0x${string}`;
+        if (useSponsoredPrivyTx) {
+          const data = encodeFunctionData({
+            abi: call.abi as Abi,
+            functionName: call.functionName,
+            args: [...call.args] as never,
+          });
+          const result = await sendTransaction(
+            {
+              to: call.to,
+              data,
+              chainId,
+              value: 0n,
+            },
+            { sponsor: true, address: address ?? undefined },
+          );
+          hash = result.hash;
+        } else {
+          if (!walletClient) {
+            throw new Error("Wallet not connected");
+          }
+          hash = await walletClient.writeContract({
+            address: call.to,
+            abi: call.abi as Abi,
+            functionName: call.functionName,
+            args: [...call.args] as never,
+          });
+        }
         setIsSending(false);
         setIsConfirming(true);
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
