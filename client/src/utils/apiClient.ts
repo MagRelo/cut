@@ -35,6 +35,9 @@ export class ApiClient {
     }
 
     const token = await getBearerForApi();
+    if (options.requiresAuth && !token) {
+      throw new ApiError(401, "Not authenticated");
+    }
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

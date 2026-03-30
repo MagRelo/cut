@@ -2,6 +2,14 @@ import type { User as PrivyApiUser } from "@privy-io/node";
 import { prisma } from "./prisma.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
 
+/** Wallet already bound to a different Privy user — respond with 403, not a generic 401. */
+export class PrivyWalletIdentityConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PrivyWalletIdentityConflictError";
+  }
+}
+
 export type CutAuthUser = {
   userId: string;
   address: string;
@@ -93,6 +101,10 @@ export async function ensureCutUserFromPrivy(
   });
 
   if (existingWallet) {
+    const existingPrivyId = existingWallet.user.privyUserId;
+    if (existingPrivyId && existingPrivyId !== privyId) {
+      throw new PrivyWalletIdentityConflictError("Wallet is already linked to another Privy account");
+    }
     await prisma.user.update({
       where: { id: existingWallet.userId },
       data: { privyUserId: privyId },

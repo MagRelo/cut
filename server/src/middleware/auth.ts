@@ -1,6 +1,9 @@
 import { Context, Next } from "hono";
 import { getPrivyClient } from "../lib/privyClient.js";
-import { ensureCutUserFromPrivy } from "../lib/privyUserProvisioning.js";
+import {
+  ensureCutUserFromPrivy,
+  PrivyWalletIdentityConflictError,
+} from "../lib/privyUserProvisioning.js";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -48,6 +51,9 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
     await next();
   } catch (error) {
     console.error("Auth middleware error:", error);
+    if (error instanceof PrivyWalletIdentityConflictError) {
+      return c.json({ error: error.message }, 403);
+    }
     return c.json({ error: "Invalid or expired token" }, 401);
   }
 };
