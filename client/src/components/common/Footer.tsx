@@ -24,7 +24,7 @@ export const Footer: React.FC = () => {
             <Link
               to="/faq"
               className={`text-sm font-medium ${
-                isActive("/faq") ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+                isActive("/faq") ? "text-blue-600" : "text-gray-400 hover:text-gray-700"
               }`}
             >
               FAQ
@@ -32,7 +32,7 @@ export const Footer: React.FC = () => {
             <Link
               to="/terms"
               className={`text-sm font-medium ${
-                isActive("/terms") ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+                isActive("/terms") ? "text-blue-600" : "text-gray-400 hover:text-gray-700"
               }`}
             >
               Terms
@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
               <Link
                 to="/admin"
                 className={`text-lg font-medium ${
-                  isActive("/admin") ? "text-emerald-500" : "text-gray-500 hover:text-gray-700"
+                  isActive("/admin") ? "text-emerald-500" : "text-gray-400 hover:text-gray-700"
                 }`}
               >
                 Admin

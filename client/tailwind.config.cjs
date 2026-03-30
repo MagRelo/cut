@@ -36,6 +36,8 @@ module.exports = {
         'body-lg': ['1.125rem', { lineHeight: '1.5', fontWeight: '400' }],
         body: ['1rem', { lineHeight: '1.5', fontWeight: '400' }],
         'body-sm': ['0.875rem', { lineHeight: '1.5', fontWeight: '400' }],
+        /** Between `text-sm` and `text-lg`; used for medium body emphasis */
+        md: ['1rem', { lineHeight: '1.5' }],
         stats: [
           '1rem',
           { lineHeight: '1.5', fontWeight: '600', letterSpacing: '0.02em' },

@@ -331,7 +331,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Primary Prize Pool (Base) */}
             {primaryPrizePool !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base</span>
+                <span className="text-gray-600 pl-4">↳ Deposits</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(primaryPrizePool, { fractionDigits: 4 })} {resolvedTokenSymbol}
                 </span>
@@ -374,7 +374,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             {/* Secondary Prize Pool */}
             {secondaryPrizePool !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Base</span>
+                <span className="text-gray-600 pl-4">↳ Deposits</span>
                 <span className="text-gray-900">
                   {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}

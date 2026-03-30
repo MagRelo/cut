@@ -198,7 +198,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                       {/* payout amount */}
                       <div className="text-right">
                         <div className="text-md font-bold text-green-600 leading-none tabular-nums">
-                          ${claim.payoutAmountFormatted}
+                          ${formatTokenAmount(claim.payoutAmount, 2)}
                         </div>
                         <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
                           payout
@@ -208,7 +208,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                       {/* position bonus amount */}
                       <div className="text-right">
                         <div className="text-md font-bold text-green-600 leading-none tabular-nums">
-                          ${claim.positionBonusAmountFormatted}
+                          ${formatTokenAmount(claim.positionBonusAmount, 2)}
                         </div>
                         <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
                           bonus
@@ -255,7 +255,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                     {/* amount to claim */}
                     <div className="text-right">
                       <div className="text-md font-bold text-green-600 leading-none tabular-nums">
-                        ${secondaryClaim.claimableAmountFormatted}
+                        ${formatTokenAmount(secondaryClaim.claimableAmount, 2)}
                       </div>
                       <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
                         payout

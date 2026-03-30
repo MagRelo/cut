@@ -1,5 +1,11 @@
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
+import {
+  formatRoundStrokesVsPar,
+  getRoundDataForDisplay,
+  getRoundHoleProgress,
+  getRoundShortLabel,
+} from "./playerRoundUtils";
 
 interface PlayerDisplayRowProps {
   player: PlayerWithTournamentData;
@@ -32,8 +38,41 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
   const icon = getCurrentRoundIcon();
 
+  const roundData = getRoundDataForDisplay(player.tournamentData, roundDisplay);
+  const roundShortLabel = getRoundShortLabel(roundDisplay);
+  const holeProgress = getRoundHoleProgress(roundData);
+  const roundVsPar = formatRoundStrokesVsPar(roundData);
+  const scoreThruLabel = (() => {
+    if (holeProgress == null) return "";
+    if (holeProgress.played === 0) return "Not Started";
+    const roundComplete = holeProgress.remaining === 0 && holeProgress.played > 0;
+    if (roundComplete) {
+      return roundVsPar != null ? `${roundShortLabel}: ${roundVsPar}` : `${roundShortLabel}: –`;
+    }
+    const thruPart = `thru ${holeProgress.played}`;
+    if (roundVsPar == null) return thruPart;
+    return `${roundVsPar} ${thruPart}`;
+  })();
+
+  const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;
+  const leaderboardTotalDisplay = leaderboardTotalRaw || "E";
+
   const content = (
     <div className="flex items-center justify-between gap-3">
+      {/* Leaderboard total (top) + position (bottom), beside photo */}
+      <div className="flex w-4 shrink-0 flex-col items-center justify-center gap-1.5 text-center tabular-nums">
+        <span className="text-xs font-semibold leading-none text-gray-800">
+          {player.tournamentData?.leaderboardPosition || "–"}
+        </span>
+        <span
+          className={`text-xs font-semibold leading-none ${
+            leaderboardTotalRaw?.startsWith("-") ? "text-red-600" : "text-gray-900"
+          }`}
+        >
+          {leaderboardTotalDisplay}
+        </span>
+      </div>
+
       {/* Profile Picture */}
       {player.pga_imageUrl && (
         <div className="flex-shrink-0">
@@ -45,10 +84,10 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
         </div>
       )}
 
-      {/* Left - Player Info */}
-      <div className="flex-1 min-w-0">
+      {/* Player name + status; thru below */}
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+          <div className="text-md font-semibold text-gray-900 truncate leading-tight">
             {player.pga_lastName && player.pga_firstName
               ? `${player.pga_lastName}, ${player.pga_firstName}`
               : player.pga_displayName || ""}
@@ -59,28 +98,20 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
             </span>
           )}
         </div>
-
-        {/* Leaderboard Position and Total */}
-        <div className="text-xs text-gray-700 font-bold flex items-center gap-2 mt-0.5">
-          <span className="min-w-[20px]">{player.tournamentData?.leaderboardPosition || "–"}</span>
-          <span className="text-gray-300 font-medium">|</span>
-          <span
-            className={`min-w-[20px] text-center
-              ${
-                player.tournamentData?.leaderboardTotal?.startsWith("-")
-                  ? "text-red-600 font-medium"
-                  : ""
-              }`}
-          >
-            {player.tournamentData?.leaderboardTotal || "E"}
-          </span>
+        <div
+          className="flex min-h-5 items-center text-xs  tabular-nums text-gray-700"
+          title="This round vs par and holes completed"
+        >
+          {scoreThruLabel || "\u00A0"}
         </div>
       </div>
 
       {/* Middle - Ownership (optional) */}
       {ownershipPercentage !== undefined && (
         <div className="flex-shrink-0 text-center min-w-[3.25rem] rounded bg-slate-100 px-2 py-1">
-          <div className="text-xs font-semibold text-slate-700 leading-none">{ownershipPercentage}%</div>
+          <div className="text-xs font-semibold text-slate-700 leading-none">
+            {ownershipPercentage}%
+          </div>
           <div className="text-[9px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-0.5">
             OWN
           </div>
@@ -111,11 +142,15 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
   if (onClick) {
     return (
-      <button onClick={onClick} className="w-full p-3 mb-1 text-left cursor-pointer">
+      <button
+        type="button"
+        onClick={onClick}
+        className="font-display w-full p-3 mb-1 text-left cursor-pointer"
+      >
         {content}
       </button>
     );
   }
 
-  return <div className="w-full p-3 mb-1">{content}</div>;
+  return <div className="font-display w-full p-3 mb-1">{content}</div>;
 };
