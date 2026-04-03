@@ -1,5 +1,6 @@
 import { useAccount } from "wagmi";
 import { Link } from "react-router-dom";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyToClipboard } from "../components/common/CopyToClipboard";
 import { NetworkStatus } from "../components/common/NetworkStatus";
@@ -10,27 +11,55 @@ import { TokenBalances } from "../components/user/TokenBalances";
 import { MintingUserFundsPanel } from "../components/user/MintingUserFundsPanel";
 import { useAuth } from "../contexts/AuthContext";
 
+function addressesEqual(a: string | undefined, b: string | undefined): boolean {
+  return !!a && !!b && a.toLowerCase() === b.toLowerCase();
+}
+
 // Wallet Info Component (below tabs)
 const WalletInfo = ({
   address,
+  smartWalletAddress,
   disconnect,
 }: {
   address: string | undefined;
+  smartWalletAddress: string | undefined;
   disconnect: () => void;
-}) => (
+}) => {
+  const showBoth = !!smartWalletAddress && !addressesEqual(address, smartWalletAddress);
+
+  return (
   <div className="bg-white rounded-sm shadow p-4 mt-4">
     {/* Header */}
     <div className="text-lg font-semibold text-gray-700 mb-4 font-display">Account Information</div>
 
     {/* Wallet Info Grid */}
     <div className="space-y-3">
-      {/* Address */}
+      {showBoth ? (
+        <>
+          <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-700 font-display">Smart wallet</span>
+            <div className="flex justify-end text-gray-600 text-sm font-semibold">
+              <CopyToClipboard text={smartWalletAddress || ""} />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            USDC and CUT balances above apply to this address. Fund this address for in-app purchases.
+          </p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-700 font-display">Signer (EOA)</span>
+            <div className="flex justify-end text-gray-600 text-sm font-semibold">
+              <CopyToClipboard text={address || ""} />
+            </div>
+          </div>
+        </>
+      ) : (
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
         <span className="text-sm font-medium text-gray-700 font-display">Address</span>
         <div className="flex justify-end text-gray-600 text-sm font-semibold">
           <CopyToClipboard text={address || ""} />
         </div>
       </div>
+      )}
 
       {/* Network */}
       <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
@@ -59,11 +88,14 @@ const WalletInfo = ({
       </>
     )}
   </div>
-);
+  );
+};
 
 export function UserPage() {
   const { logout } = useAuth();
   const { address } = useAccount();
+  const { client: smartWalletClient } = useSmartWallets();
+  const smartWalletAddress = smartWalletClient?.account?.address;
 
   return (
     <div className="p-4">
@@ -129,7 +161,11 @@ export function UserPage() {
       </div>
 
       {/* Wallet Information - Below tabs */}
-      <WalletInfo address={address} disconnect={logout} />
+      <WalletInfo
+        address={address}
+        smartWalletAddress={smartWalletAddress}
+        disconnect={logout}
+      />
     </div>
   );
 }

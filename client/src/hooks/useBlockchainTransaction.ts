@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useSendTransaction, useWallets } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { encodeFunctionData, type Abi } from "viem";
@@ -61,6 +62,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
   const publicClient = usePublicClient();
   const { sendTransaction } = useSendTransaction();
   const { wallets, ready: walletsReady } = useWallets();
+  const { getClientForChain } = useSmartWallets();
 
   const useSponsoredPrivyTx = useMemo(
     () => walletsReady && isPrivyEmbeddedWallet(address, wallets),
@@ -102,7 +104,14 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       callbacksRef.current.onSettled?.();
       return;
     }
-    if (!useSponsoredPrivyTx && !walletClient) {
+    let smartWalletClient: Awaited<ReturnType<typeof getClientForChain>> | undefined;
+    try {
+      smartWalletClient = await getClientForChain({ id: chainId });
+    } catch {
+      smartWalletClient = undefined;
+    }
+
+    if (!smartWalletClient && !useSponsoredPrivyTx && !walletClient) {
       const msg = "Wallet not connected";
       setUserFriendlyError(msg);
       callbacksRef.current.onError?.(msg);
@@ -120,37 +129,21 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
 
       const receipts: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>>[] = [];
 
-      for (const call of calls) {
+      if (smartWalletClient) {
+        const batchCalls = calls.map((call) => ({
+          to: call.to,
+          data: encodeFunctionData({
+            abi: call.abi as Abi,
+            functionName: call.functionName,
+            args: [...call.args] as never,
+          }),
+          value: 0n,
+        }));
         setIsSending(true);
         setIsConfirming(false);
-        let hash: `0x${string}`;
-        if (useSponsoredPrivyTx) {
-          const data = encodeFunctionData({
-            abi: call.abi as Abi,
-            functionName: call.functionName,
-            args: [...call.args] as never,
-          });
-          const result = await sendTransaction(
-            {
-              to: call.to,
-              data,
-              chainId,
-              value: 0n,
-            },
-            { sponsor: true, address: address ?? undefined },
-          );
-          hash = result.hash;
-        } else {
-          if (!walletClient) {
-            throw new Error("Wallet not connected");
-          }
-          hash = await walletClient.writeContract({
-            address: call.to,
-            abi: call.abi as Abi,
-            functionName: call.functionName,
-            args: [...call.args] as never,
-          });
-        }
+        const hash = await smartWalletClient.sendTransaction({
+          calls: batchCalls,
+        });
         setIsSending(false);
         setIsConfirming(true);
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -160,6 +153,48 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
         receipts.push(receipt);
         setLastTxHash(receipt.transactionHash);
         setIsConfirming(false);
+      } else {
+        for (const call of calls) {
+          setIsSending(true);
+          setIsConfirming(false);
+          let hash: `0x${string}`;
+          if (useSponsoredPrivyTx) {
+            const data = encodeFunctionData({
+              abi: call.abi as Abi,
+              functionName: call.functionName,
+              args: [...call.args] as never,
+            });
+            const result = await sendTransaction(
+              {
+                to: call.to,
+                data,
+                chainId,
+                value: 0n,
+              },
+              { sponsor: true, address: address ?? undefined },
+            );
+            hash = result.hash;
+          } else {
+            if (!walletClient) {
+              throw new Error("Wallet not connected");
+            }
+            hash = await walletClient.writeContract({
+              address: call.to,
+              abi: call.abi as Abi,
+              functionName: call.functionName,
+              args: [...call.args] as never,
+            });
+          }
+          setIsSending(false);
+          setIsConfirming(true);
+          const receipt = await publicClient.waitForTransactionReceipt({ hash });
+          if (receipt.status === "reverted") {
+            throw new Error("Transaction reverted");
+          }
+          receipts.push(receipt);
+          setLastTxHash(receipt.transactionHash);
+          setIsConfirming(false);
+        }
       }
 
       const statusData: BatchTransactionStatusData = {

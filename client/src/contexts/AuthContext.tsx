@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { handleApiResponse, ApiError } from "../utils/apiError";
@@ -69,6 +70,9 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { address, chainId: currentChainId, status } = useAccount();
+  const { client: smartWalletClient } = useSmartWallets();
+  /** Sponsored smart-account txs debit ERC20s from the smart wallet, not always the wagmi EOA. */
+  const balanceAddress = smartWalletClient?.account?.address ?? address;
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
   const { ready, authenticated, logout: privyLogout, getAccessToken } = usePrivy();
@@ -81,19 +85,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
   const { data: platformTokenBalanceData, isLoading: platformBalanceLoading } = useBalance({
-    address: address,
+    address: balanceAddress,
     token: platformTokenAddress as `0x${string}`,
     query: {
-      enabled: !!address && !!platformTokenAddress && !!user,
+      enabled: !!balanceAddress && !!platformTokenAddress && !!user,
       refetchInterval: user ? 30000 : false,
     },
   });
 
   const { data: paymentTokenBalanceData, isLoading: paymentBalanceLoading } = useBalance({
-    address: address,
+    address: balanceAddress,
     token: paymentTokenAddress as `0x${string}`,
     query: {
-      enabled: !!address && !!paymentTokenAddress && !!user,
+      enabled: !!balanceAddress && !!paymentTokenAddress && !!user,
       refetchInterval: user ? 30000 : false,
     },
   });

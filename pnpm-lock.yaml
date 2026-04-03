@@ -46,10 +46,10 @@ importers:
         version: 7.3.7(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@privy-io/react-auth':
         specifier: ^3.18.0
-        version: 3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@privy-io/wagmi':
         specifier: ^4.0.3
-        version: 4.0.3(41d8d29d01f3c9cd9c5746e857d0cd10)
+        version: 4.0.3(e231ebd08cdb5774229806ad21dd43b2)
       '@stream-io/stream-chat-css':
         specifier: ^5.8.0
         version: 5.16.1
@@ -65,6 +65,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      permissionless:
+        specifier: ^0.2.47
+        version: 0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       posthog-js:
         specifier: ^1.240.6
         version: 1.335.5
@@ -4540,6 +4543,15 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
+  permissionless@0.2.57:
+    resolution: {integrity: sha512-QrzAoQGYPV/NJ2x5Sj18h7qed6f+kCyQAojrncN091UPiGqHjFNjgdsgreiv8pxlQgF4UcpuJUvsHLpOEBd6cQ==}
+    peerDependencies:
+      ox: ^0.8.0
+      viem: ^2.28.1
+    peerDependenciesMeta:
+      ox:
+        optional: true
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -7090,7 +7102,7 @@ snapshots:
     dependencies:
       viem: 2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
-  '@privy-io/js-sdk-core@0.60.6(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@privy-io/js-sdk-core@0.60.6(permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
       '@privy-io/api-base': 1.8.2
       '@privy-io/api-types': 0.7.0
@@ -7106,6 +7118,7 @@ snapshots:
       set-cookie-parser: 2.7.2
       uuid: 9.0.1
     optionalDependencies:
+      permissionless: 0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       viem: 2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
   '@privy-io/node@0.11.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
@@ -7125,7 +7138,7 @@ snapshots:
 
   '@privy-io/popup@0.0.2': {}
 
-  '@privy-io/react-auth@3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@privy-io/react-auth@3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@base-org/account': 1.1.1(@types/react@19.2.10)(bufferutil@4.1.0)(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@coinbase/wallet-sdk': 4.3.2
@@ -7139,7 +7152,7 @@ snapshots:
       '@privy-io/are-addresses-equal': 0.0.2(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@privy-io/chains': 0.1.2
       '@privy-io/ethereum': 0.0.9(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@privy-io/js-sdk-core': 0.60.6(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@privy-io/js-sdk-core': 0.60.6(permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@privy-io/popup': 0.0.2
       '@privy-io/routes': 0.0.9
       '@privy-io/urls': 0.0.3
@@ -7173,6 +7186,7 @@ snapshots:
       '@solana-program/system': 0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))
       '@solana-program/token': 0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))
       '@solana/kit': 5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)
+      permissionless: 0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -7218,9 +7232,9 @@ snapshots:
 
   '@privy-io/urls@0.0.3': {}
 
-  '@privy-io/wagmi@4.0.3(41d8d29d01f3c9cd9c5746e857d0cd10)':
+  '@privy-io/wagmi@4.0.3(e231ebd08cdb5774229806ad21dd43b2)':
     dependencies:
-      '@privy-io/react-auth': 3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@privy-io/react-auth': 3.18.0(@solana-program/system@0.10.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana-program/token@0.9.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)))(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.0(typescript@5.7.3))(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.7.3)(use-sync-external-store@1.4.0(react@19.2.4))(utf-8-validate@5.0.10)(zod@3.25.76)
       react: 19.2.4
       viem: 2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       wagmi: 2.19.5(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.20(react@19.2.4))(@types/react@19.2.10)(bufferutil@4.1.0)(react@19.2.4)(typescript@5.7.3)(utf-8-validate@5.0.10)(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
@@ -11851,6 +11865,10 @@ snapshots:
   pathval@1.1.1: {}
 
   pathval@2.0.1: {}
+
+  permissionless@0.2.57(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)):
+    dependencies:
+      viem: 2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
   picocolors@1.1.1: {}
 
