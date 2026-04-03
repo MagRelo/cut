@@ -77,17 +77,39 @@ export const LineupList: React.FC = () => {
       });
   };
 
+  const showAddLineup = isTournamentEditable && !isAuthLoading && !isTournamentLoading;
+
+  const header = (
+    <PageHeader
+      title="Lineups"
+      actions={
+        showAddLineup ? (
+          <Link
+            to="/lineups/create"
+            className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
+          >
+            Add Lineup
+          </Link>
+        ) : null
+      }
+    />
+  );
+
   if (isAuthLoading || isTournamentLoading) {
     return (
-      <div className="px-4 py-4">
-        <LoadingSpinner />
+      <div className="p-4 space-y-4">
+        {header}
+        <div className="flex justify-center py-8">
+          <LoadingSpinner />
+        </div>
       </div>
     );
   }
 
   if (lineupError) {
     return (
-      <div className="px-4 py-4">
+      <div className="p-4 space-y-4">
+        {header}
         <ErrorMessage message={lineupError} />
       </div>
     );
@@ -95,19 +117,7 @@ export const LineupList: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader
-        title="Lineups"
-        actions={
-          isTournamentEditable ? (
-            <Link
-              to="/lineups/create"
-              className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
-            >
-              Add Lineup
-            </Link>
-          ) : null
-        }
-      />
+      {header}
 
       {/* list of user lineups */}
       {isTournamentEditable
@@ -163,11 +173,6 @@ export const LineupList: React.FC = () => {
             </div>
           </div>
         )}
-
-      {/* Share Section */}
-      {/* <div className="flex justify-center my-8">
-        <Share url={window.location.href} title="Share the Cut" subtitle="" />
-      </div> */}
     </div>
   );
 };

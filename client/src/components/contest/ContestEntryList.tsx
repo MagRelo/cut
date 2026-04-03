@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
@@ -32,11 +32,17 @@ export const ContestEntryList = ({
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
+  /** Clears selected lineup after close so leave transition can finish (matches `duration-150` on the dialog). */
+  const clearLineupAfterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
     // if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
 
     if (contestLineup.tournamentLineup) {
+      if (clearLineupAfterCloseTimeoutRef.current != null) {
+        clearTimeout(clearLineupAfterCloseTimeoutRef.current);
+        clearLineupAfterCloseTimeoutRef.current = null;
+      }
       setSelectedLineup(contestLineup);
       setIsModalOpen(true);
     }
@@ -44,7 +50,13 @@ export const ContestEntryList = ({
 
   const closeLineupModal = () => {
     setIsModalOpen(false);
-    setSelectedLineup(null);
+    if (clearLineupAfterCloseTimeoutRef.current != null) {
+      clearTimeout(clearLineupAfterCloseTimeoutRef.current);
+    }
+    clearLineupAfterCloseTimeoutRef.current = setTimeout(() => {
+      setSelectedLineup(null);
+      clearLineupAfterCloseTimeoutRef.current = null;
+    }, 200);
   };
 
   // Use stored scores and sort by position (already calculated by backend)

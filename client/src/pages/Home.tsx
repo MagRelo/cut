@@ -181,7 +181,7 @@ export const Home: React.FC = () => {
 
       {/* Share component */}
       <Share
-        url="https://thecut.gg"
+        url="https://cut-v2.mattlovan.dev"
         title="the Cut Fantasy Golf"
         subtitle="Play the Cut Fantasy Golf"
       />

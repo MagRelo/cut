@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogPanel,
@@ -8,6 +8,9 @@ import {
 import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
 import { type Contest } from "../../types/contest";
+
+/** Matches `leave="ease-in duration-150"` + small buffer so the form keeps a valid entry during exit. */
+const CLEAR_DISPLAY_ENTRY_ID_MS = 200;
 
 interface PredictionEntryModalProps {
   isOpen: boolean;
@@ -30,6 +33,36 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   secondaryTotalFundsFormatted,
   poolSnapshot,
 }) => {
+  const [displayEntryId, setDisplayEntryId] = useState<string | null>(entryId);
+  const clearDisplayEntryIdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (entryId) setDisplayEntryId(entryId);
+  }, [entryId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (clearDisplayEntryIdTimeoutRef.current != null) {
+        clearTimeout(clearDisplayEntryIdTimeoutRef.current);
+      }
+      clearDisplayEntryIdTimeoutRef.current = setTimeout(() => {
+        setDisplayEntryId(null);
+        clearDisplayEntryIdTimeoutRef.current = null;
+      }, CLEAR_DISPLAY_ENTRY_ID_MS);
+    } else {
+      if (clearDisplayEntryIdTimeoutRef.current != null) {
+        clearTimeout(clearDisplayEntryIdTimeoutRef.current);
+        clearDisplayEntryIdTimeoutRef.current = null;
+      }
+    }
+    return () => {
+      if (clearDisplayEntryIdTimeoutRef.current != null) {
+        clearTimeout(clearDisplayEntryIdTimeoutRef.current);
+        clearDisplayEntryIdTimeoutRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -61,7 +94,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                   <div className="min-h-[280px] pt-1">
                     <PredictionEntryForm
                       contest={contest}
-                      entryId={entryId}
+                      entryId={displayEntryId}
                       entryData={entryData}
                       secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
                       secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
