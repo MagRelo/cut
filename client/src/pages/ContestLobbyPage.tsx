@@ -152,7 +152,8 @@ export const ContestLobby: React.FC = () => {
           <ContestCard
             contest={contest}
             onPotClick={() => setIsPayoutsModalOpen(true)}
-            onSettingsClick={() => setIsSettingsModalOpen(true)}
+            // onSettingsClick={() => setIsSettingsModalOpen(true)}
+            onSettingsClick={undefined}
           />
         </div>
 

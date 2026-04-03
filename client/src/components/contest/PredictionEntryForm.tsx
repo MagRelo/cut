@@ -50,6 +50,11 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
 
+  const lineupForEntry = useMemo(
+    () => contest.contestLineups?.find((l) => l.entryId === entryId) ?? null,
+    [contest.contestLineups, entryId],
+  );
+
   const selectedEntryInfo = useMemo(
     () => entryData.find((entry) => entry.entryId === entryId) ?? null,
     [entryData, entryId],
@@ -167,7 +172,19 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const predictionDetailsCard = (
     <div className="rounded-sm border border-gray-200 bg-gray-50 p-3 space-y-2 text-sm">
       <div className="space-y-2">
-        {/* purchase amount  */}
+        <div className="flex justify-between items-center gap-3">
+          <span className="text-gray-500">User</span>
+          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">
+            {lineupForEntry?.user?.name || lineupForEntry?.user?.email || "—"}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center gap-3">
+          <span className="text-gray-500">Lineup</span>
+          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">
+            {lineupForEntry?.tournamentLineup?.name || "—"}
+          </span>
+        </div>
 
         <div className="flex justify-between items-center gap-3">
           <span className="text-gray-500">Purchase amount</span>
@@ -238,6 +255,11 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
+      {/* title*/}
+      <div className="text-lg font-semibold text-gray-700 mb-2 font-display text-left">
+        Buy Shares
+      </div>
+
       {predictionDetailsCard}
 
       <div>
@@ -259,12 +281,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           autoFocus
         />
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
 
       <div>
         <button
@@ -292,14 +308,13 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             "Buy Shares"
           )}
         </button>
-      </div>
 
-      {/* <div className="text-xs text-gray-500 pt-3 border-t border-gray-200">
-        <p>
-          <strong>Note:</strong> Payouts are calculated using live LMSR pricing. Actual payout
-          depends on contest settlement.
-        </p>
-      </div> */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+      </div>
     </form>
   );
 };
