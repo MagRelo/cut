@@ -24,43 +24,11 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     },
   }).data as bigint | undefined;
 
-  // Read primary prize pool subsidy from contract
-  const primaryPrizePoolSubsidy = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePoolSubsidy",
-    args: [],
-    chainId: contest.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  // Read total primary position subsidies from contract
-  const totalPrimaryPositionSubsidies = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalPrimaryPositionSubsidies",
-    args: [],
-    chainId: contest.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   // Calculate pot amount from contract data (with 18 decimals)
   const potAmount = primaryPrizePool ? Math.round(Number(formatUnits(primaryPrizePool, 18))) : 0;
 
-  // Combined subsidy from contract
-  const prizeBonus =
-    primaryPrizePoolSubsidy !== undefined && totalPrimaryPositionSubsidies !== undefined
-      ? Math.round(Number(formatUnits(primaryPrizePoolSubsidy + totalPrimaryPositionSubsidies, 18)))
-      : 0;
-
   // Fetch speculator pot - don't need entryIds to get total pot
   const {
-    secondaryPrizePoolFormatted,
-    secondaryPrizePoolSubsidyFormatted,
     secondaryTotalFundsFormatted,
     isLoading: isPredictionDataLoading,
   } = useContestPredictionData({
@@ -70,14 +38,9 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     chainId: contest.chainId, // Use the contest's chainId, not the wallet's
   });
 
-  // Parse and format the speculator pot (pool + subsidy)
-  const rawSecondaryPot = parseFloat(secondaryPrizePoolFormatted || "0");
-  const rawSecondarySubsidy = parseFloat(secondaryPrizePoolSubsidyFormatted || "0");
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
 
-  const speculatorPot = Number.isFinite(rawSecondaryTotal)
-    ? Math.round(rawSecondaryTotal)
-    : Math.round(rawSecondaryPot + rawSecondarySubsidy);
+  const speculatorPot = Number.isFinite(rawSecondaryTotal) ? Math.round(rawSecondaryTotal) : 0;
 
   const formatStatus = (status: string) => {
     return status
@@ -152,7 +115,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
           >
             <div className="text-lg font-bold text-gray-900 leading-none">
-              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+              {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               POT
@@ -161,7 +124,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         ) : (
           <div className="text-right ml-2 mr-2">
             <div className="text-lg font-bold text-gray-900 leading-none">
-              {isPredictionDataLoading ? "..." : `$${potAmount + prizeBonus + speculatorPot}`}
+              {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               POT

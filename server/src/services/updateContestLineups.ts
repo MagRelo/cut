@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import {
   computeSharePriceUsdFromSnapshot,
   fetchNetPosition,
+  fetchSecondaryLiquidityPerEntry,
   fetchSecondaryPoolSnapshot,
 } from "../lib/secondarySharePrice.js";
 
@@ -155,7 +156,8 @@ export async function updateContestLineups() {
         if (pool && addr && chainId !== undefined && entryId) {
           try {
             const net = await fetchNetPosition(addr as `0x${string}`, chainId, entryId);
-            sharePrice = computeSharePriceUsdFromSnapshot(pool, net);
+            const liq = await fetchSecondaryLiquidityPerEntry(addr as `0x${string}`, chainId, entryId);
+            sharePrice = computeSharePriceUsdFromSnapshot(pool, net, liq);
           } catch (e) {
             console.warn(`[updateContestLineups] sharePrice skipped for lineup ${contestLineup.id}:`, e);
           }

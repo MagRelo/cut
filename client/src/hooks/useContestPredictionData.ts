@@ -46,98 +46,35 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  // Read secondary prize pool (total collateral backing secondary positions)
-  const { data: secondaryPrizePool } = useReadContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "secondaryPrizePool",
-    chainId,
-    query: {
-      enabled: enabled && !!contestAddress,
-    },
-  });
+  // Total liquidity backing all secondary ERC1155 tokens.
+  const { data: totalSecondaryLiquidity, isLoading: isLoadingTotalSecondaryLiquidity } =
+    useReadContract({
+      address: contestAddress as `0x${string}`,
+      abi: ContestContract.abi,
+      functionName: "totalSecondaryLiquidity",
+      chainId,
+      query: {
+        enabled: enabled && !!contestAddress,
+      },
+    });
 
-  // Read secondary prize pool subsidy (cross-subsidy allocated to secondary side)
-  const { data: secondaryPrizePoolSubsidy } = useReadContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "secondaryPrizePoolSubsidy",
-    chainId,
-    query: {
-      enabled: enabled && !!contestAddress,
-    },
-  });
+  // Contract config needed for secondary split during `addSecondaryPosition`.
+  const { data: primaryEntryInvestmentShareBpsRaw, isLoading: isLoadingPrimaryEntryInvestmentShareBps } =
+    useReadContract({
+      address: contestAddress as `0x${string}`,
+      abi: ContestContract.abi,
+      functionName: "primaryEntryInvestmentShareBps",
+      chainId,
+      query: {
+        enabled: enabled && !!contestAddress,
+      },
+    });
+  const primaryEntryInvestmentShareBps = primaryEntryInvestmentShareBpsRaw as bigint | undefined;
 
-  // Read primary prize pool subsidy (from secondary participants)
-  const { data: primaryPrizePoolSubsidy } = useReadContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePoolSubsidy",
-    chainId,
-    query: {
-      enabled: enabled && !!contestAddress,
-    },
-  });
-
-  // Read total primary position subsidies (bonuses for popular entries)
-  const { data: totalPrimaryPositionSubsidies } = useReadContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalPrimaryPositionSubsidies",
-    chainId,
-    query: {
-      enabled: enabled && !!contestAddress,
-    },
-  });
-
-  const poolConfigContracts = useMemo(
-    () =>
-      contestAddress
-        ? [
-            {
-              address: contestAddress as `0x${string}`,
-              abi: contestAbi,
-              functionName: "primaryPrizePool" as const,
-              chainId,
-            },
-            {
-              address: contestAddress as `0x${string}`,
-              abi: contestAbi,
-              functionName: "oracleFeeBps" as const,
-              chainId,
-            },
-            {
-              address: contestAddress as `0x${string}`,
-              abi: contestAbi,
-              functionName: "positionBonusShareBps" as const,
-              chainId,
-            },
-            {
-              address: contestAddress as `0x${string}`,
-              abi: contestAbi,
-              functionName: "targetPrimaryShareBps" as const,
-              chainId,
-            },
-            {
-              address: contestAddress as `0x${string}`,
-              abi: contestAbi,
-              functionName: "maxCrossSubsidyBps" as const,
-              chainId,
-            },
-          ]
-        : [],
-    [contestAddress, chainId, contestAbi],
-  );
-
-  const { data: poolConfigResults, isLoading: isLoadingPoolConfig } = useReadContracts({
-    contracts: poolConfigContracts,
-    query: {
-      enabled: enabled && !!contestAddress && poolConfigContracts.length > 0,
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-    },
-  });
+  const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => {
+    if (primaryEntryInvestmentShareBps === undefined) return undefined;
+    return { primaryEntryInvestmentShareBps };
+  }, [primaryEntryInvestmentShareBps]);
 
   // Helper to determine if predictions are available
   const canPredict = contestState === ContestState.OPEN || contestState === ContestState.ACTIVE;
@@ -189,7 +126,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress],
   );
 
-  /** Cumulative payment token deposited by user for this entry (used for refunds). */
+  // Cumulative payment token deposited by the connected wallet for this entry (used for cost/paid UI).
   const depositedPerEntryContracts = useMemo(
     () =>
       shouldFetchBalances
@@ -204,13 +141,13 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     [shouldFetchBalances, entryIds, contestAddress, chainId, contestAbi, userAddress],
   );
 
-  const positionSubsidyContracts = useMemo(
+  const liquidityContracts = useMemo(
     () =>
       shouldFetchEntries
         ? entryIds.map((entryId) => ({
             address: contestAddress as `0x${string}`,
             abi: contestAbi,
-            functionName: "primaryPositionSubsidy",
+            functionName: "secondaryLiquidityPerEntry",
             args: [BigInt(entryId)],
             chainId,
           }))
@@ -258,8 +195,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const { data: positionSubsidyResults, isLoading: isLoadingPositionSubsidies } = useReadContracts({
-    contracts: positionSubsidyContracts,
+  const { data: liquidityResults, isLoading: isLoadingLiquidity } = useReadContracts({
+    contracts: liquidityContracts,
     query: {
       enabled: shouldFetchEntries,
       staleTime: 30_000,
@@ -268,42 +205,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const totalSecondaryFunds =
-    ((secondaryPrizePool as bigint) || 0n) + ((secondaryPrizePoolSubsidy as bigint) || 0n);
-
-  const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => {
-    const primaryPrizePool = poolConfigResults?.[0]?.result as bigint | undefined;
-    const oracleFeeBps = poolConfigResults?.[1]?.result as bigint | undefined;
-    const positionBonusShareBps = poolConfigResults?.[2]?.result as bigint | undefined;
-    const targetPrimaryShareBps = poolConfigResults?.[3]?.result as bigint | undefined;
-    const maxCrossSubsidyBps = poolConfigResults?.[4]?.result as bigint | undefined;
-    if (
-      primaryPrizePool === undefined ||
-      oracleFeeBps === undefined ||
-      positionBonusShareBps === undefined ||
-      targetPrimaryShareBps === undefined ||
-      maxCrossSubsidyBps === undefined
-    ) {
-      return undefined;
-    }
-    return {
-      primaryPrizePool,
-      primaryPrizePoolSubsidy: (primaryPrizePoolSubsidy as bigint) || 0n,
-      totalPrimaryPositionSubsidies: (totalPrimaryPositionSubsidies as bigint) || 0n,
-      secondaryPrizePool: (secondaryPrizePool as bigint) || 0n,
-      secondaryPrizePoolSubsidy: (secondaryPrizePoolSubsidy as bigint) || 0n,
-      oracleFeeBps,
-      positionBonusShareBps,
-      targetPrimaryShareBps,
-      maxCrossSubsidyBps,
-    };
-  }, [
-    poolConfigResults,
-    primaryPrizePoolSubsidy,
-    totalPrimaryPositionSubsidies,
-    secondaryPrizePool,
-    secondaryPrizePoolSubsidy,
-  ]);
+  const totalSecondaryFunds = (totalSecondaryLiquidity as bigint) || 0n;
 
   // Format the data for easier consumption
   const entryData = entryIds.map((entryId, index) => {
@@ -313,7 +215,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       : undefined;
     const supplyRaw = supplyResults?.[index]?.result as bigint | undefined;
     const supply = supplyRaw !== undefined ? sharesForSecondaryPricing(supplyRaw) : undefined;
-    const positionSubsidy = positionSubsidyResults?.[index]?.result as bigint | undefined;
+    const entryLiquidityRaw = liquidityResults?.[index]?.result as bigint | undefined;
+    const entryLiquidity = entryLiquidityRaw ?? 0n;
+
     const secondaryDepositedPerEntryRaw = shouldFetchBalances
       ? (depositedPerEntryResults?.[index]?.result as bigint | undefined)
       : undefined;
@@ -329,9 +233,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       balance > 0n &&
       supply !== undefined &&
       supply > 0n &&
-      totalSecondaryFunds > 0n
+      entryLiquidity > 0n
     ) {
-      impliedWinnings = (balance * totalSecondaryFunds) / supply;
+      impliedWinnings = (balance * entryLiquidity) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
 
@@ -343,16 +247,17 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       balanceFormatted: balance ? formatUnits(balance, 18) : "0",
       totalSupply: supply ?? 0n,
       totalSupplyFormatted: supply !== undefined ? formatUnits(supply, 18) : "0",
-      positionSubsidy: positionSubsidy || 0n,
-      positionSubsidyFormatted: positionSubsidy ? formatUnits(positionSubsidy, 18) : "0",
-      impliedWinnings,
-      impliedWinningsFormatted,
+      entryLiquidity,
+      entryLiquidityFormatted: formatUnits(entryLiquidity, 18),
       secondaryDepositedPerEntry,
       secondaryDepositedFormatted: formatUnits(secondaryDepositedPerEntry, 18),
+      impliedWinnings,
+      impliedWinningsFormatted,
       hasPosition: balance ? balance > 0n : false,
       isLoadingPrice: isLoadingPrices,
       isLoadingBalance: isLoadingBalances,
       isLoadingSupply: isLoadingSupplies,
+      isLoadingLiquidity,
     };
   });
 
@@ -362,8 +267,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     isLoadingBalances ||
     isLoadingDepositedPerEntry ||
     isLoadingSupplies ||
-    isLoadingPositionSubsidies ||
-    isLoadingPoolConfig;
+    isLoadingLiquidity ||
+    isLoadingTotalSecondaryLiquidity ||
+    isLoadingPrimaryEntryInvestmentShareBps;
 
   return {
     contestState: contestState as ContestState | undefined,
@@ -371,25 +277,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     canWithdraw,
     canClaim,
     entryData,
-    secondaryPrizePool: (secondaryPrizePool as bigint) || 0n,
-    secondaryPrizePoolFormatted: secondaryPrizePool
-      ? formatUnits(secondaryPrizePool as bigint, 18)
-      : "0",
-    secondaryPrizePoolSubsidy: (secondaryPrizePoolSubsidy as bigint) || 0n,
-    secondaryPrizePoolSubsidyFormatted: secondaryPrizePoolSubsidy
-      ? formatUnits(secondaryPrizePoolSubsidy as bigint, 18)
-      : "0",
+    secondaryPrizePool: totalSecondaryFunds,
+    secondaryPrizePoolFormatted: formatUnits(totalSecondaryFunds, 18),
+    secondaryPrizePoolSubsidy: 0n,
+    secondaryPrizePoolSubsidyFormatted: "0",
     secondaryTotalFunds: totalSecondaryFunds,
     secondaryTotalFundsFormatted: formatUnits(totalSecondaryFunds, 18),
-    // Combined subsidy is the sum of prize pool subsidy and position subsidies
-    combinedSubsidy:
-      ((primaryPrizePoolSubsidy as bigint) || 0n) +
-      ((totalPrimaryPositionSubsidies as bigint) || 0n),
-    combinedSubsidyFormatted: formatUnits(
-      ((primaryPrizePoolSubsidy as bigint) || 0n) +
-        ((totalPrimaryPositionSubsidies as bigint) || 0n),
-      18,
-    ),
     poolSnapshot,
     isLoading,
   };

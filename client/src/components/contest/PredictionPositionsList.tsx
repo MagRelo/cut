@@ -121,14 +121,6 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             ? maybeColor
             : DEFAULT_USER_COLOR;
 
-          const deposited = parseFloat(position.secondaryDepositedFormatted);
-          const depositedDisplay =
-            !Number.isFinite(deposited) || deposited <= 0
-              ? "0.00"
-              : deposited < 0.01
-                ? "< 0.01"
-                : deposited.toFixed(2);
-
           const ownershipPercent =
             position.totalSupply > 0n
               ? Number((position.balance * 10000n) / position.totalSupply) / 100
@@ -139,6 +131,14 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
               : ownershipPercent < 0.01
                 ? "< 0.01"
                 : ownershipPercent.toFixed(0);
+
+          const deposited = parseFloat(position.secondaryDepositedFormatted);
+          const depositedDisplay =
+            !Number.isFinite(deposited) || deposited <= 0
+              ? "0.00"
+              : deposited < 0.01
+                ? "< 0.01"
+                : deposited.toFixed(2);
 
           const impliedWinnings = parseFloat(position.impliedWinningsFormatted);
           const impliedDisplay =

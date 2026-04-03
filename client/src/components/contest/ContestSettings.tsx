@@ -85,28 +85,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const primaryPrizePoolSubsidy = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePoolSubsidy",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const totalPrimaryPositionSubsidies = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalPrimaryPositionSubsidies",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   const primarySideBalance = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
@@ -118,11 +96,10 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  // Layer 2: Secondary/Prediction Market Data
-  const secondaryPrizePool = useReadContract({
+  const totalSecondaryLiquidity = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "secondaryPrizePool",
+    functionName: "totalSecondaryLiquidity",
     args: [],
     chainId,
     query: {
@@ -130,10 +107,10 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const secondaryPrizePoolSubsidy = useReadContract({
+  const primaryEntryInvestmentShareBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "secondaryPrizePoolSubsidy",
+    functionName: "primaryEntryInvestmentShareBps",
     args: [],
     chainId,
     query: {
@@ -145,17 +122,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "getSecondarySideBalance",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
-  const targetPrimaryShareBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "targetPrimaryShareBps",
     args: [],
     chainId,
     query: {
@@ -200,12 +166,12 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const resolvedTokenSymbol = tokenSymbol || "TOKEN";
 
-  const targetPrimarySharePercent =
-    targetPrimaryShareBps !== undefined ? Number(targetPrimaryShareBps) / 100 : undefined;
   const currentPrimarySharePercent =
     currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
-  const currentSliderLeftPercent =
-    currentPrimarySharePercent !== undefined ? 100 - currentPrimarySharePercent : undefined;
+  const primaryEntryInvestmentSharePercent =
+    primaryEntryInvestmentShareBps !== undefined
+      ? Number(primaryEntryInvestmentShareBps) / 100
+      : undefined;
 
   // const accumulatedOracleFee = useReadContract({
   //   address: contest?.address as `0x${string}`,
@@ -275,45 +241,21 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
             <hr className="my-2" />
 
-            {/* Current Ratio - Visual Slider */}
-            {currentPrimaryShareBps !== undefined && targetPrimaryShareBps !== undefined && (
-              <div className="flex flex-col gap-1 mt-2">
-                {/* Slider Container */}
-                <div className="relative h-8 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border border-gray-300">
-                  {/* Target Indicator Line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10"
-                    style={{ left: `${targetPrimarySharePercent ?? 0}%` }}
-                  ></div>
+            {currentPrimaryShareBps !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Primary side share</span>
+                <span className="text-gray-900 font-semibold">
+                  {currentPrimarySharePercent?.toFixed(2) ?? "..."}%
+                </span>
+              </div>
+            )}
 
-                  {/* Current Position Indicator */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-green-500 z-20 rounded-sm"
-                    style={{ left: `${currentSliderLeftPercent ?? 0}%` }}
-                  />
-
-                  {/* Labels at the ends */}
-                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-blue-700 font-semibold">
-                    Contest
-                  </div>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-700 font-semibold">
-                    Prediction
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center text-[10px] text-gray-500 mt-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                      <span>Target</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>Current</span>
-                    </div>
-                  </div>
-                </div>
+            {primaryEntryInvestmentShareBps !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Secondary → owner mint leg</span>
+                <span className="text-gray-900 font-semibold">
+                  {primaryEntryInvestmentSharePercent?.toFixed(2) ?? "..."}%
+                </span>
               </div>
             )}
 
@@ -338,28 +280,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Primary Prize Pool Subsidy */}
-            {primaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Subsidy</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(primaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Total Primary Position Subsidies */}
-            {totalPrimaryPositionSubsidies !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Winner Bonuses</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(totalPrimaryPositionSubsidies, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
             {/* Secondary Side Balance */}
             {secondarySideBalance !== undefined && (
               <div className="flex items-center justify-between">
@@ -371,23 +291,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {/* Secondary Prize Pool */}
-            {secondaryPrizePool !== undefined && (
+            {totalSecondaryLiquidity !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Deposits</span>
+                <span className="text-gray-600 pl-4">↳ Winner pool liquidity</span>
                 <span className="text-gray-900">
-                  {formatTokenAmount(secondaryPrizePool, { fractionDigits: 4 })}{" "}
-                  {resolvedTokenSymbol}
-                </span>
-              </div>
-            )}
-
-            {/* Secondary Prize Pool Subsidy */}
-            {secondaryPrizePoolSubsidy !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 pl-4">↳ Subsidy</span>
-                <span className="text-gray-900">
-                  {formatTokenAmount(secondaryPrizePoolSubsidy, { fractionDigits: 4 })}{" "}
+                  {formatTokenAmount(totalSecondaryLiquidity, { fractionDigits: 4 })}{" "}
                   {resolvedTokenSymbol}
                 </span>
               </div>

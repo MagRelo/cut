@@ -31,55 +31,16 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     },
   });
 
-  // Read primary prize pool subsidy from contract
-  const { data: primaryPrizePoolSubsidy, isLoading: isLoadingSubsidy } = useReadContract({
+  const { data: totalSecondaryLiquidity, isLoading: isLoadingSecondaryLiquidity } = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "primaryPrizePoolSubsidy",
+    functionName: "totalSecondaryLiquidity",
     args: [],
     chainId,
     query: {
       enabled: !!contest?.address && isOpen,
     },
   });
-
-  // Read total primary position subsidies from contract
-  const { data: totalPrimaryPositionSubsidies } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalPrimaryPositionSubsidies",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address && isOpen,
-    },
-  });
-
-  // Read secondary prize pool from contract
-  const { data: secondaryPrizePool, isLoading: isLoadingSecondary } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "secondaryPrizePool",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address && isOpen,
-    },
-  });
-
-  // Read secondary prize pool subsidy from contract
-  const { data: secondaryPrizePoolSubsidy, isLoading: isLoadingSecondarySubsidy } = useReadContract(
-    {
-      address: contest?.address as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "secondaryPrizePoolSubsidy",
-      args: [],
-      chainId,
-      query: {
-        enabled: !!contest?.address && isOpen,
-      },
-    },
-  );
 
   // Calculate payout structure based on number of entries
   const entryCount = contest?.contestLineups?.length ?? 0;
@@ -97,32 +58,21 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   // Calculate primary prize pool breakdown
   const primaryPrizePoolData = useMemo(() => {
-    const base = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
-    const subsidy = primaryPrizePoolSubsidy
-      ? Number(formatUnits(primaryPrizePoolSubsidy as bigint, 18))
-      : 0;
-    const positionSubsidies = totalPrimaryPositionSubsidies
-      ? Number(formatUnits(totalPrimaryPositionSubsidies as bigint, 18))
-      : 0;
-    const total = base + subsidy + positionSubsidies;
-    return { base, subsidy, positionSubsidies, total };
-  }, [primaryPrizePool, primaryPrizePoolSubsidy, totalPrimaryPositionSubsidies]);
+    const total = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
+    return { total };
+  }, [primaryPrizePool]);
 
-  // Calculate secondary prize pool breakdown
-  const secondaryPrizePoolData = useMemo(() => {
-    const base = secondaryPrizePool ? Number(formatUnits(secondaryPrizePool as bigint, 18)) : 0;
-    const subsidy = secondaryPrizePoolSubsidy
-      ? Number(formatUnits(secondaryPrizePoolSubsidy as bigint, 18))
+  const secondaryLiquidityData = useMemo(() => {
+    const total = totalSecondaryLiquidity
+      ? Number(formatUnits(totalSecondaryLiquidity as bigint, 18))
       : 0;
-    const total = base + subsidy;
-    return { base, subsidy, total };
-  }, [secondaryPrizePool, secondaryPrizePoolSubsidy]);
+    return { total };
+  }, [totalSecondaryLiquidity]);
 
   // Calculate total prize pool (for display)
-  const totalPrizePool = primaryPrizePoolData.total + secondaryPrizePoolData.total;
+  const totalPrizePool = primaryPrizePoolData.total + secondaryLiquidityData.total;
 
-  const isLoading =
-    isLoadingPrimary || isLoadingSubsidy || isLoadingSecondary || isLoadingSecondarySubsidy;
+  const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
 
   return (
     <Modal
@@ -160,7 +110,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
             <div className="text-xs text-gray-500 mt-1 mb-3">
               Distributed based on final scores and position. In case of ties, payouts are split
-              evenly among tied participants. Position bonuses are added to the winner's payout.
+              evenly among tied participants.
             </div>
 
             {/* Primary Payout Structure */}
@@ -206,7 +156,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Prediction Payouts</h3>
               <div className="text-sm font-medium text-gray-600">
-                ${Math.round(secondaryPrizePoolData.total).toLocaleString()}
+                ${Math.round(secondaryLiquidityData.total).toLocaleString()}
               </div>
             </div>
 
@@ -226,10 +176,10 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-gray-900">
-                    ${Math.round(secondaryPrizePoolData.total).toLocaleString()}
+                    ${Math.round(secondaryLiquidityData.total).toLocaleString()}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {secondaryPrizePoolData.total.toFixed(2)} CUT
+                    {secondaryLiquidityData.total.toFixed(2)} CUT
                   </div>
                 </div>
               </div>

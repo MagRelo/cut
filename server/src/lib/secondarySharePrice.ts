@@ -23,75 +23,13 @@ export async function fetchSecondaryPoolSnapshot(
   const { chain, rpcUrl } = getChainConfig(chainId);
   const client = createPublicClient({ chain, transport: http(rpcUrl) });
 
-  const [
-    primaryPrizePool,
-    oracleFeeBps,
-    positionBonusShareBps,
-    targetPrimaryShareBps,
-    maxCrossSubsidyBps,
-    primaryPrizePoolSubsidy,
-    totalPrimaryPositionSubsidies,
-    secondaryPrizePool,
-    secondaryPrizePoolSubsidy,
-  ] = await Promise.all([
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "primaryPrizePool",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "oracleFeeBps",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "positionBonusShareBps",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "targetPrimaryShareBps",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "maxCrossSubsidyBps",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "primaryPrizePoolSubsidy",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "totalPrimaryPositionSubsidies",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "secondaryPrizePool",
-    }) as Promise<bigint>,
-    client.readContract({
-      address: contestAddress,
-      abi,
-      functionName: "secondaryPrizePoolSubsidy",
-    }) as Promise<bigint>,
-  ]);
+  const primaryEntryInvestmentShareBps = (await client.readContract({
+    address: contestAddress,
+    abi,
+    functionName: "primaryEntryInvestmentShareBps",
+  })) as bigint;
 
-  return {
-    primaryPrizePool,
-    primaryPrizePoolSubsidy,
-    totalPrimaryPositionSubsidies,
-    secondaryPrizePool,
-    secondaryPrizePoolSubsidy,
-    oracleFeeBps,
-    positionBonusShareBps,
-    targetPrimaryShareBps,
-    maxCrossSubsidyBps,
-  };
+  return { primaryEntryInvestmentShareBps };
 }
 
 export async function fetchNetPosition(
@@ -110,17 +48,35 @@ export async function fetchNetPosition(
   }) as Promise<bigint>;
 }
 
+export async function fetchSecondaryLiquidityPerEntry(
+  contestAddress: `0x${string}`,
+  chainId: number,
+  entryIdStr: string,
+): Promise<bigint> {
+  const { chain, rpcUrl } = getChainConfig(chainId);
+  const client = createPublicClient({ chain, transport: http(rpcUrl) });
+  const entryId = BigInt(entryIdStr);
+  return client.readContract({
+    address: contestAddress,
+    abi,
+    functionName: "secondaryLiquidityPerEntry",
+    args: [entryId],
+  }) as Promise<bigint>;
+}
+
 /**
  * @returns USD cost per $1 of winnings for a marginal $10 buy, or null if undefined / no tokens minted
  */
 export function computeSharePriceUsdFromSnapshot(
   pool: SecondaryPoolSnapshot,
   netPositionRaw: bigint,
+  entryLiquidityWei: bigint,
 ): number | null {
   const entryShares = sharesForSecondaryPricing(netPositionRaw);
   const sim = simulateAddSecondaryPosition({
     amount: TEN_DOLLAR_POSITION,
     entryShares,
+    entryLiquidity: entryLiquidityWei,
     ...pool,
   });
   if (sim.tokensToMint === 0n) {

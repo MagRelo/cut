@@ -15,13 +15,14 @@ export interface PredictionEntryData {
   balanceFormatted: string;
   totalSupply: bigint;
   totalSupplyFormatted: string;
-  positionSubsidy: bigint;
-  positionSubsidyFormatted: string;
-  impliedWinnings: bigint;
-  impliedWinningsFormatted: string;
+  /** Liquidity backing this entry's secondary side (from `secondaryLiquidityPerEntry(entryId)`). */
+  entryLiquidity: bigint;
+  entryLiquidityFormatted: string;
   /** Cumulative payment token deposited for this secondary position (18 decimals). */
   secondaryDepositedPerEntry: bigint;
   secondaryDepositedFormatted: string;
+  impliedWinnings: bigint;
+  impliedWinningsFormatted: string;
   hasPosition: boolean;
 }
 
@@ -80,6 +81,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     const sim = simulateAddSecondaryPosition({
       amount: amountBigInt,
       entryShares: selectedEntryInfo.totalSupply,
+      entryLiquidity: selectedEntryInfo.entryLiquidity,
       ...poolSnapshot,
     });
 
@@ -87,7 +89,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       return { ...empty, impliedValueAfterPurchaseDisplay: "0.00" };
     }
 
-    const newSupply = selectedEntryInfo.totalSupply + sim.tokensToMint;
+    const newSupply = sim.newSupply;
     if (newSupply === 0n) {
       return empty;
     }

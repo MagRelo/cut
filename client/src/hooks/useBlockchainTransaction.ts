@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useSendTransaction, useWallets } from "@privy-io/react-auth";
 import { useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,7 +45,15 @@ function isPrivyEmbeddedWallet(
 }
 
 export function useBlockchainTransaction(options?: UseBlockchainTransactionOptions) {
-  const { onSuccess, onError, onSettled } = options || {};
+  /**
+   * `execute()` is async; when the tx completes it must call the *latest* success/error handlers.
+   * Inline handlers from parents close over state from the render where `execute` was invoked —
+   * before `setState` for "pending" payloads has committed — so always read callbacks from a ref
+   * updated every render.
+   */
+  const callbacksRef = useRef<UseBlockchainTransactionOptions>(options ?? {});
+  callbacksRef.current = options ?? {};
+
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const chainId = useChainId();
@@ -83,22 +91,22 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
     if (!publicClient) {
       const msg = "Network client not available";
       setUserFriendlyError(msg);
-      onError?.(msg);
-      onSettled?.();
+      callbacksRef.current.onError?.(msg);
+      callbacksRef.current.onSettled?.();
       return;
     }
     if (!walletsReady) {
       const msg = "Wallet is still initializing. Please try again in a moment.";
       setUserFriendlyError(msg);
-      onError?.(msg);
-      onSettled?.();
+      callbacksRef.current.onError?.(msg);
+      callbacksRef.current.onSettled?.();
       return;
     }
     if (!useSponsoredPrivyTx && !walletClient) {
       const msg = "Wallet not connected";
       setUserFriendlyError(msg);
-      onError?.(msg);
-      onSettled?.();
+      callbacksRef.current.onError?.(msg);
+      callbacksRef.current.onSettled?.();
       return;
     }
 
@@ -165,7 +173,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
 
       try {
         setUserFriendlyError(null);
-        await onSuccess?.(statusData);
+        await callbacksRef.current.onSuccess?.(statusData);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["balance"] }),
           queryClient.invalidateQueries({ queryKey: ["readContract"] }),
@@ -175,20 +183,20 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         setUserFriendlyError(errorMsg);
-        onError?.(error instanceof Error ? error : new Error(String(error)));
+        callbacksRef.current.onError?.(error instanceof Error ? error : new Error(String(error)));
         setConfirmedFailure(true);
       }
     } catch (error) {
       console.error("Error executing blockchain transaction:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       setUserFriendlyError(errorMsg);
-      onError?.(error instanceof Error ? error : new Error(String(error)));
+      callbacksRef.current.onError?.(error instanceof Error ? error : new Error(String(error)));
       setConfirmedFailure(true);
     } finally {
       setIsProcessing(false);
       setIsSending(false);
       setIsConfirming(false);
-      onSettled?.();
+      callbacksRef.current.onSettled?.();
     }
   };
 

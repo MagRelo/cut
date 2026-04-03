@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BPS_DENOMINATOR,
-  BASE_PRICE,
-  calculateSecondaryCrossSubsidy,
-  calculateSecondaryPrice,
-  calculateTokensFromCollateral,
-  simulateAddSecondaryPosition,
-} from "./secondaryPricing.js";
+import { BASE_PRICE, calculateSecondaryPrice, calculateTokensFromCollateral, simulateAddSecondaryPosition } from "./secondaryPricing.js";
 
 describe("calculateSecondaryPrice", () => {
   it("matches documented spot checks (scaled quadratic)", () => {
@@ -31,53 +24,34 @@ describe("calculateTokensFromCollateral", () => {
   });
 });
 
-describe("calculateSecondaryCrossSubsidy", () => {
-  it("returns 0 when max bps is 0", () => {
-    expect(
-      calculateSecondaryCrossSubsidy(10n ** 18n, {
-        primaryBefore: 0n,
-        secondaryBefore: 0n,
-        targetPrimaryShareBps: 3000n,
-        maxCrossSubsidyBps: 0n,
-      }),
-    ).toBe(0n);
-  });
-});
-
 describe("simulateAddSecondaryPosition", () => {
-  it("matches fee pipeline and increases secondary total by collateral only", () => {
+  it("splits deposits between owner-mint leg and buyer-mint leg (new controller)", () => {
     const amount = 10n ** 19n; // 10e18
-    const oracleFeeBps = 500n;
-    const positionBonusShareBps = 500n;
-    const targetPrimaryShareBps = 3000n;
-    const maxCrossSubsidyBps = 1500n;
-
-    const primaryPrizePool = 100n * 10n ** 18n;
-    const primaryPrizePoolSubsidy = 0n;
-    const totalPrimaryPositionSubsidies = 0n;
-    const secondaryPrizePool = 50n * 10n ** 18n;
-    const secondaryPrizePoolSubsidy = 0n;
+    const primaryEntryInvestmentShareBps = 2000n; // 20%
+    const entryLiquidity = 5n * 10n ** 18n;
 
     const r = simulateAddSecondaryPosition({
       amount,
       entryShares: 0n,
-      primaryPrizePool,
-      primaryPrizePoolSubsidy,
-      totalPrimaryPositionSubsidies,
-      secondaryPrizePool,
-      secondaryPrizePoolSubsidy,
-      oracleFeeBps,
-      positionBonusShareBps,
-      targetPrimaryShareBps,
-      maxCrossSubsidyBps,
+      entryLiquidity,
+      primaryEntryInvestmentShareBps,
     });
 
-    const expectedOracle = (amount * oracleFeeBps) / BPS_DENOMINATOR;
-    expect(r.oracleFee).toBe(expectedOracle);
-    expect(r.amountAfterFee).toBe(amount - expectedOracle);
-    expect(r.positionBonus).toBe((r.amountAfterFee * positionBonusShareBps) / BPS_DENOMINATOR);
-    expect(r.remainingAmount).toBe(r.amountAfterFee - r.positionBonus);
-    expect(r.crossSubsidy + r.collateral).toBe(r.remainingAmount);
-    expect(r.newSecondaryTotalFunds).toBe(secondaryPrizePool + secondaryPrizePoolSubsidy + r.collateral);
+    const expectedInvestment = (amount * primaryEntryInvestmentShareBps) / 10_000n;
+    const expectedRemaining = amount - expectedInvestment;
+    expect(r.investmentAmount).toBe(expectedInvestment);
+    expect(r.remainingAmount).toBe(expectedRemaining);
+    expect(r.newSecondaryTotalFunds).toBe(entryLiquidity + amount);
+
+    const expectedOwnerMint =
+      expectedInvestment > 0n ? calculateTokensFromCollateral(0n, expectedInvestment) : 0n;
+    const expectedBuyerMint =
+      expectedRemaining > 0n
+        ? calculateTokensFromCollateral(0n + expectedOwnerMint, expectedRemaining)
+        : 0n;
+
+    expect(r.ownerTokensToMint).toBe(expectedOwnerMint);
+    expect(r.tokensToMint).toBe(expectedBuyerMint);
+    expect(r.newSupply).toBe(expectedOwnerMint + expectedBuyerMint);
   });
 });

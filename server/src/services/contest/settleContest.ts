@@ -16,6 +16,7 @@ import {
 } from "../shared/types.js";
 import { getContract, createPublicClient, http, erc20Abi } from "viem";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -147,23 +148,19 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     console.log(`[settleContest] Capturing snapshot values...`);
     const [
       primaryPrizePool,
-      primaryPrizePoolSubsidy,
       primarySideBalance,
-      secondaryPrizePool,
-      secondaryPrizePoolSubsidy,
       secondarySideBalance,
       currentPrimaryShareBps,
-      totalPrimaryPositionSubsidies,
+      totalSecondaryLiquidity,
+      primaryEntryInvestmentShareBps,
       paymentTokenAddress,
     ] = await Promise.all([
       contract.read.primaryPrizePool!() as Promise<bigint>,
-      contract.read.primaryPrizePoolSubsidy!() as Promise<bigint>,
       contract.read.getPrimarySideBalance!() as Promise<bigint>,
-      contract.read.secondaryPrizePool!() as Promise<bigint>,
-      contract.read.secondaryPrizePoolSubsidy!() as Promise<bigint>,
       contract.read.getSecondarySideBalance!() as Promise<bigint>,
       contract.read.getPrimarySideShareBps!() as Promise<bigint>,
-      contract.read.totalPrimaryPositionSubsidies!() as Promise<bigint>,
+      contract.read.totalSecondaryLiquidity!() as Promise<bigint>,
+      contract.read.primaryEntryInvestmentShareBps!() as Promise<bigint>,
       contract.read.paymentToken!() as Promise<`0x${string}`>,
     ]);
 
@@ -186,13 +183,11 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     const snapshot: ContestSnapshot = {
       contractBalance: contractBalance.toString(),
       primaryPrizePool: primaryPrizePool.toString(),
-      primaryPrizePoolSubsidy: primaryPrizePoolSubsidy.toString(),
       primarySideBalance: primarySideBalance.toString(),
-      secondaryPrizePool: secondaryPrizePool.toString(),
-      secondaryPrizePoolSubsidy: secondaryPrizePoolSubsidy.toString(),
       secondarySideBalance: secondarySideBalance.toString(),
       currentPrimaryShareBps: Number(currentPrimaryShareBps),
-      totalPrimaryPositionSubsidies: totalPrimaryPositionSubsidies.toString(),
+      totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
+      primaryEntryInvestmentShareBps: Number(primaryEntryInvestmentShareBps),
     };
 
     console.log(`[settleContest] Snapshot captured:`, {
@@ -204,25 +199,66 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     // Preserve payout/bonus totals at settlement time.
     // These on-chain values may be zeroed after users claim, but we want to
     // keep the UI display consistent by storing them in `contest.results`.
-    const layer1PoolWei = BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
-    const uniqueEntryIds = Array.from(new Set(detailedResults.map((r) => r.entryId)));
-    const uniqueEntryIdsBigInt = uniqueEntryIds.map((id) => BigInt(id));
+    const layer1PoolWei = BigInt(snapshot.primaryPrizePool);
+    const winningEntriesBigIntForPreview = winningEntries.map((id) => BigInt(id));
+    const payoutBpsBigIntForPreview = payoutBps.map((bp) => BigInt(bp));
 
-    const positionBonusByEntryId = new Map<string, bigint>();
-    const positionBonusResults = await Promise.all(
-      uniqueEntryIdsBigInt.map(
-        (entryBigInt) => contract.read.primaryPositionSubsidy!([entryBigInt]) as Promise<bigint>,
-      ),
-    );
-    uniqueEntryIds.forEach((id, i) => {
-      positionBonusByEntryId.set(id, positionBonusResults[i] ?? 0n);
-    });
+    const primaryPayoutPreview = new Map<string, bigint>();
+    for (let i = 0; i < winningEntries.length; i++) {
+      const entryId = winningEntries[i];
+      const payoutBps = payoutBpsBigIntForPreview[i];
+      if (!entryId || payoutBps === undefined) continue;
+      const payout = (layer1PoolWei * payoutBps) / 10000n;
+      primaryPayoutPreview.set(entryId, payout);
+    }
+
+    const secondaryWinningEntryBigInt = winningEntriesBigIntForPreview[0];
+    if (secondaryWinningEntryBigInt === undefined) {
+      return {
+        success: false,
+        contestId,
+        error: "No secondary winning entry available for settlement preview",
+      };
+    }
+    const [winnerNetPositionWord, winnerEntryLiquidity] = await Promise.all([
+      contract.read.netPosition!([secondaryWinningEntryBigInt]) as Promise<bigint>,
+      contract.read.secondaryLiquidityPerEntry!([secondaryWinningEntryBigInt]) as Promise<bigint>,
+    ]);
+    const winnerSupply = sharesForSecondaryPricing(winnerNetPositionWord);
+
+    if (winnerEntryLiquidity > 0n && winnerSupply === 0n) {
+      const poolToDistribute = winnerEntryLiquidity;
+      let distributed = 0n;
+      for (let i = 0; i < winningEntries.length; i++) {
+        const eid = winningEntries[i];
+        const bps = payoutBpsBigIntForPreview[i];
+        if (!eid || bps === undefined) continue;
+        const extra = (poolToDistribute * bps) / 10000n;
+        if (extra > 0n) {
+          distributed += extra;
+          primaryPayoutPreview.set(eid, (primaryPayoutPreview.get(eid) ?? 0n) + extra);
+        }
+      }
+      if (distributed < poolToDistribute) {
+        const first = winningEntries[0];
+        if (!first) {
+          return {
+            success: false,
+            contestId,
+            error: "No winner entry id available for remainder distribution preview",
+          };
+        }
+        primaryPayoutPreview.set(
+          first,
+          (primaryPayoutPreview.get(first) ?? 0n) + (poolToDistribute - distributed),
+        );
+      }
+    }
 
     detailedResults.forEach((r) => {
-      const payoutAmountWei = (layer1PoolWei * BigInt(r.payoutBasisPoints)) / 10000n;
-      const positionBonusAmountWei = positionBonusByEntryId.get(r.entryId) ?? 0n;
+      const payoutAmountWei = primaryPayoutPreview.get(r.entryId) ?? 0n;
       r.payoutAmountWei = payoutAmountWei.toString();
-      r.positionBonusAmountWei = positionBonusAmountWei.toString();
+      r.positionBonusAmountWei = "0";
     });
 
     // Convert entryIds to BigInt for contract call

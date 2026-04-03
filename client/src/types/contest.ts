@@ -45,14 +45,13 @@ export interface ContestSettings {
   /** `_oracleFeeBps` */
   oracleFeeBps: number;
 
-  /** `_positionBonusShareBps` */
-  positionBonusShareBps: number;
+  /** `_primaryEntryInvestmentShareBps` */
+  primaryEntryInvestmentShareBps: number;
 
-  /** `_targetPrimaryShareBps` */
-  targetPrimaryShareBps: number;
-
-  /** `_maxCrossSubsidyBps` */
-  maxCrossSubsidyBps: number;
+  /** Legacy catalytic contest params (older contracts / older stored JSON). */
+  positionBonusShareBps?: number;
+  targetPrimaryShareBps?: number;
+  maxCrossSubsidyBps?: number;
 }
 
 export interface Contest {
@@ -126,13 +125,17 @@ export interface DetailedResult {
 export interface ContestSnapshot {
   contractBalance: string; // bigint as string
   primaryPrizePool: string; // bigint as string
-  primaryPrizePoolSubsidy: string; // bigint as string
   primarySideBalance: string; // bigint as string (total)
-  secondaryPrizePool: string; // bigint as string
-  secondaryPrizePoolSubsidy: string; // bigint as string
   secondarySideBalance: string; // bigint as string (total)
   currentPrimaryShareBps: number;
-  totalPrimaryPositionSubsidies: string; // bigint as string
+  totalSecondaryLiquidity: string; // bigint as string
+  primaryEntryInvestmentShareBps: number;
+
+  /** Legacy catalytic contest snapshot fields (older settled contests). */
+  primaryPrizePoolSubsidy?: string; // bigint as string
+  secondaryPrizePool?: string; // bigint as string
+  secondaryPrizePoolSubsidy?: string; // bigint as string
+  totalPrimaryPositionSubsidies?: string; // bigint as string
 }
 
 /** Which value from `TimelineDataPoint` to plot on the Y axis */

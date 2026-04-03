@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
 import { decodeEventLog, isAddress } from "viem";
@@ -39,9 +39,8 @@ function buildContestSettings(
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "", // `_oracle`: address that drives contest lifecycle (onlyOracle)
     primaryDeposit: 10, // `_primaryDepositAmount`: fixed stake per primary participant
     oracleFeeBps: Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500, // `_oracleFeeBps`: oracle cut of settlement, basis points (100 = 1%)
-    positionBonusShareBps: Number(import.meta.env.VITE_POSITION_BONUS_SHARE_BPS) || 500, // `_positionBonusShareBps`: share of accumulated subsidy → position bonuses; rest → prize pool (at settlement)
-    targetPrimaryShareBps: Number(import.meta.env.VITE_TARGET_PRIMARY_SHARE_BPS) || 2000, // `_targetPrimaryShareBps`: target primary-side weight when balancing cross-subsidies between pools
-    maxCrossSubsidyBps: Number(import.meta.env.VITE_MAX_CROSS_SUBSIDY_BPS) || 1000, // `_maxCrossSubsidyBps`: max fraction of any one deposit that may be reallocated to the other pool
+    primaryEntryInvestmentShareBps:
+      Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) || 500, // `_primaryEntryInvestmentShareBps`: BPS of each secondary buy minted to entry owner first
   };
 }
 
@@ -73,7 +72,11 @@ export const CreateContestForm = () => {
   const [expiryDaysAfterTournament, setExpiryDaysAfterTournament] = useState(
     defaultExpiryDaysAfterTournament,
   );
-  const [pendingContestData, setPendingContestData] = useState<CreateContestInput | null>(null);
+  /**
+   * Set synchronously before `execute()`; `useBlockchainTransaction` invokes the latest `onSuccess`,
+   * which reads this ref (not React state) so the API payload is always available after the tx.
+   */
+  const pendingContestForApiRef = useRef<CreateContestInput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,13 +102,13 @@ export const CreateContestForm = () => {
     isProcessing,
     isSending,
     isConfirming,
-    isConfirmed,
     isFailed,
     error: transactionError,
     createContestCalls,
   } = useCreateContest({
     onSuccess: async (statusData: unknown) => {
-      if (!pendingContestData) return;
+      const pendingFromTx = pendingContestForApiRef.current;
+      if (!pendingFromTx) return;
 
       setLoading(true);
       try {
@@ -159,20 +162,21 @@ export const CreateContestForm = () => {
 
         createContestMutation.mutate(
           {
-            ...pendingContestData,
+            ...pendingFromTx,
             transactionId: tx.receipts?.[0]?.transactionHash || "",
             address: contestAddress,
           },
           {
             onSuccess: (contest) => {
+              pendingContestForApiRef.current = null;
               resetForm();
               setExpiryDaysAfterTournament(defaultExpiryDaysAfterTournament);
-              setPendingContestData(null);
               setLoading(false);
               navigate(`/contest/${contest.id}`);
             },
             onError: (err) => {
               console.error("Error creating contest in backend:", err);
+              pendingContestForApiRef.current = null;
               setError("Failed to create contest in backend");
               setLoading(false);
             },
@@ -180,13 +184,14 @@ export const CreateContestForm = () => {
         );
       } catch (err) {
         console.error("Error processing transaction:", err);
+        pendingContestForApiRef.current = null;
         setError("Failed to process transaction");
         setLoading(false);
       }
     },
     onError: () => {
       setError("Blockchain transaction failed. Please try again.");
-      setPendingContestData(null);
+      pendingContestForApiRef.current = null;
       setLoading(false);
     },
   });
@@ -216,12 +221,6 @@ export const CreateContestForm = () => {
     });
   }, [currentTournament?.endDate, expiryDaysAfterTournament]);
 
-  useEffect(() => {
-    if (pendingContestData && isConfirmed) {
-      setPendingContestData(null);
-    }
-  }, [pendingContestData, isConfirmed]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -238,16 +237,8 @@ export const CreateContestForm = () => {
       return;
     }
 
-    if (s.positionBonusShareBps < 0 || s.positionBonusShareBps > 10000) {
-      setError("Position bonus share must be between 0 and 10000 basis points.");
-      return;
-    }
-    if (s.targetPrimaryShareBps < 0 || s.targetPrimaryShareBps > 10000) {
-      setError("Target primary share must be between 0 and 10000 basis points.");
-      return;
-    }
-    if (s.maxCrossSubsidyBps < 0 || s.maxCrossSubsidyBps > 10000) {
-      setError("Max cross-subsidy must be between 0 and 10000 basis points.");
+    if (s.primaryEntryInvestmentShareBps < 0 || s.primaryEntryInvestmentShareBps > 10000) {
+      setError("Primary entry investment share must be between 0 and 10000 basis points.");
       return;
     }
 
@@ -279,7 +270,7 @@ export const CreateContestForm = () => {
       },
     };
 
-    setPendingContestData(pending);
+    pendingContestForApiRef.current = pending;
 
     const primaryDepositAmount = BigInt(Math.floor(s.primaryDeposit * 1e18));
     // `ContestFactory.createContest` → `ContestController` constructor (same order as Solidity NatSpec).
@@ -289,9 +280,7 @@ export const CreateContestForm = () => {
       primaryDepositAmount, // contestantDepositAmount / _primaryDepositAmount — fixed primary entry stake
       s.oracleFeeBps, // oracleFee — fee to oracle at settlement (bps, cap enforced on-chain)
       BigInt(s.expiryTimestamp), // expiry — unix seconds; after this, refund paths apply per contract rules
-      s.positionBonusShareBps, // positionBonusShareBps — subsidy split to primary position bonuses vs prize pool
-      s.targetPrimaryShareBps, // targetPrimaryShareBps — cross-subsidy balancing target for primary vs secondary pools
-      s.maxCrossSubsidyBps, // maxCrossSubsidyBps — per-deposit cap on redirecting funds between pools
+      s.primaryEntryInvestmentShareBps, // primaryEntryInvestmentShareBps — split for secondary buy minting
     );
 
     await execute(calls);
@@ -497,64 +486,24 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="positionBonusShareBps" className="block font-medium">
-            Position bonus share BPS (0–10000)
+          <label htmlFor="primaryEntryInvestmentShareBps" className="block font-medium">
+            Primary entry investment share BPS (0–10000)
           </label>
           <p className="text-xs text-gray-600">
-            <span className="font-mono">_positionBonusShareBps</span>: fraction of accumulated
-            cross-subsidy allocated to primary position bonuses; remainder boosts the primary prize
-            pool (applied at settlement, not per deposit).
+            <span className="font-mono">_primaryEntryInvestmentShareBps</span>: portion of each
+            secondary buy that mints ERC1155 to the entry owner first; the remainder mints to the
+            buyer.
           </p>
           <input
             type="number"
-            id="positionBonusShareBps"
+            id="primaryEntryInvestmentShareBps"
             min={0}
             max={10000}
             step={1}
-            value={s.positionBonusShareBps}
-            onChange={(e) => patchSettings({ positionBonusShareBps: Number(e.target.value) })}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="targetPrimaryShareBps" className="block font-medium">
-            Target primary share BPS (0–10000)
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_targetPrimaryShareBps</span>: target share of combined pool
-            weight on the primary (Layer 1) side when the contract rebalances cross-subsidies vs the
-            secondary pool.
-          </p>
-          <input
-            type="number"
-            id="targetPrimaryShareBps"
-            min={0}
-            max={10000}
-            step={1}
-            value={s.targetPrimaryShareBps}
-            onChange={(e) => patchSettings({ targetPrimaryShareBps: Number(e.target.value) })}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="maxCrossSubsidyBps" className="block font-medium">
-            Max cross-subsidy BPS (0–10000)
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_maxCrossSubsidyBps</span>: upper bound (basis points of
-            each deposit) on how much collateral can be redirected between primary and secondary
-            prize pools in one step.
-          </p>
-          <input
-            type="number"
-            id="maxCrossSubsidyBps"
-            min={0}
-            max={10000}
-            step={1}
-            value={s.maxCrossSubsidyBps}
-            onChange={(e) => patchSettings({ maxCrossSubsidyBps: Number(e.target.value) })}
+            value={s.primaryEntryInvestmentShareBps}
+            onChange={(e) =>
+              patchSettings({ primaryEntryInvestmentShareBps: Number(e.target.value) })
+            }
             className="w-full p-2 border rounded-md"
           />
         </div>

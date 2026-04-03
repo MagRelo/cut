@@ -23,8 +23,6 @@ interface PrimaryClaimInfo {
   playerLastNames?: string[];
   payoutAmount: bigint;
   payoutAmountFormatted: string;
-  positionBonusAmount: bigint;
-  positionBonusAmountFormatted: string;
   claimableAmount: bigint;
   claimableAmountFormatted: string;
   payoutBasisPoints: number;
@@ -90,7 +88,7 @@ export function useContestSettlementClaims(
     chainId: supportedChainId,
   });
 
-  const { entryData, secondaryTotalFunds, isLoading: predictionLoading } = predictionData;
+  const { entryData, isLoading: predictionLoading } = predictionData;
 
   const entryDataMap = useMemo(() => {
     return entryData.reduce((map, entry) => {
@@ -142,22 +140,16 @@ export function useContestSettlementClaims(
 
   const primaryContracts = useMemo(() => {
     if (!shouldFetchPrimary) return [];
-    return primaryEntries.flatMap((entry) => [
-      {
-        address: contestAddress as `0x${string}`,
-        abi: contestAbi,
-        functionName: "primaryPrizePoolPayouts",
-        args: [entry.entryBigInt],
-        chainId: supportedChainId,
-      } as const,
-      {
-        address: contestAddress as `0x${string}`,
-        abi: contestAbi,
-        functionName: "primaryPositionSubsidy",
-        args: [entry.entryBigInt],
-        chainId: supportedChainId,
-      } as const,
-    ]);
+    return primaryEntries.map(
+      (entry) =>
+        ({
+          address: contestAddress as `0x${string}`,
+          abi: contestAbi,
+          functionName: "primaryPrizePoolPayouts",
+          args: [entry.entryBigInt],
+          chainId: supportedChainId,
+        }) as const,
+    );
   }, [shouldFetchPrimary, primaryEntries, contestAddress, contestAbi, supportedChainId]);
 
   const {
@@ -177,11 +169,9 @@ export function useContestSettlementClaims(
     if (!primaryReadResults || primaryReadResults.length === 0) return [];
 
     return primaryEntries.map((entry, index) => {
-      const payoutResult = primaryReadResults?.[index * 2]?.result as bigint | undefined;
-      const bonusResult = primaryReadResults?.[index * 2 + 1]?.result as bigint | undefined;
+      const payoutResult = primaryReadResults?.[index]?.result as bigint | undefined;
 
       const payout = payoutResult ?? 0n;
-      const bonus = bonusResult ?? 0n;
 
       const lineupResult = resultsByEntry.get(entry.entryId);
 
@@ -189,13 +179,8 @@ export function useContestSettlementClaims(
       // Prefer settlement-preserved totals, but fall back to the live on-chain reads
       // (useful for older already-settled contests that don't have these fields).
       const payoutAtSettlementWei = lineupResult?.payoutAmountWei ? BigInt(lineupResult.payoutAmountWei) : payout;
-      const positionBonusAtSettlementWei = lineupResult?.positionBonusAmountWei
-        ? BigInt(lineupResult.positionBonusAmountWei)
-        : bonus;
-
       const payoutAmount = payoutAtSettlementWei;
-      const positionBonusAmount = positionBonusAtSettlementWei;
-      const claimableAmount = payout + bonus;
+      const claimableAmount = payout;
 
       return {
         entryId: entry.entryId,
@@ -205,15 +190,12 @@ export function useContestSettlementClaims(
         playerLastNames: lineupResult?.playerLastNames,
         payoutAmount,
         payoutAmountFormatted: formatUnits(payoutAmount, DEFAULT_TOKEN_DECIMALS),
-        positionBonusAmount,
-        positionBonusAmountFormatted: formatUnits(positionBonusAmount, DEFAULT_TOKEN_DECIMALS),
         claimableAmount,
         claimableAmountFormatted: formatUnits(claimableAmount, DEFAULT_TOKEN_DECIMALS),
         payoutBasisPoints: lineupResult?.payoutBasisPoints ?? 0,
         position: lineupResult?.position ?? entry.lineup.position ?? 0,
         score: lineupResult?.score ?? entry.lineup.score ?? 0,
-        canClaim:
-          isSettled && claimableAmount > 0n && Boolean(walletAddress) && payout + bonus > 0n,
+        canClaim: isSettled && claimableAmount > 0n && Boolean(walletAddress) && payout > 0n,
       };
     });
   }, [primaryReadResults, primaryEntries, resultsByEntry, isSettled, walletAddress]);
@@ -233,7 +215,7 @@ export function useContestSettlementClaims(
 
     const balance = winningEntryData.balance || 0n;
     const totalSupply = winningEntryData.totalSupply || 0n;
-    const totalSecondaryFunds = secondaryTotalFunds || 0n;
+    const entryLiquidity = winningEntryData.entryLiquidity || 0n;
 
     if (!isSettled || balance === 0n || totalSupply === 0n) {
       return {
@@ -246,7 +228,7 @@ export function useContestSettlementClaims(
       };
     }
 
-    const claimableAmount = (balance * totalSecondaryFunds) / totalSupply;
+    const claimableAmount = (balance * entryLiquidity) / totalSupply;
     return {
       entryId: winningEntryId,
       balance,
@@ -255,7 +237,7 @@ export function useContestSettlementClaims(
       claimableAmountFormatted: formatUnits(claimableAmount, DEFAULT_TOKEN_DECIMALS),
       canClaim: claimableAmount > 0n,
     };
-  }, [winningEntryId, winningEntryData, secondaryTotalFunds, isSettled]);
+  }, [winningEntryId, winningEntryData, isSettled]);
 
   const isLoading = Boolean(predictionLoading || isLoadingPrimary);
 

@@ -98,14 +98,14 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
     return sortedResults.filter((result) => result.payoutBasisPoints > 0);
   }, [sortedResults]);
 
-  // Base payouts are computed on-chain as:
-  // layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
-  // primaryPrizePoolPayouts[i] = layer1Pool * payoutBasisPoints[i] / 10000
   const layer1PoolWei = useMemo(() => {
     const snapshot = contest.results?.snapshot;
     if (!snapshot) return null;
     try {
-      return BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
+      if (snapshot.primaryPrizePoolSubsidy !== undefined) {
+        return BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
+      }
+      return BigInt(snapshot.primaryPrizePool);
     } catch {
       return null;
     }
@@ -205,16 +205,6 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                         </div>
                       </div>
 
-                      {/* position bonus amount */}
-                      <div className="text-right">
-                        <div className="text-md font-bold text-green-600 leading-none tabular-nums">
-                          ${formatTokenAmount(claim.positionBonusAmount, 2)}
-                        </div>
-                        <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                          bonus
-                        </div>
-                      </div>
-
                       {/* claim button */}
                       <button
                         type="button"
@@ -224,9 +214,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                           void handlePrimaryClaim(claim.entryId);
                         }}
                       >
-                        {!claim.canClaim && (claim.payoutAmount > 0n || claim.positionBonusAmount > 0n)
-                          ? "Claimed"
-                          : "Claim"}
+                        {!claim.canClaim && claim.payoutAmount > 0n ? "Claimed" : "Claim"}
                       </button>
                     </div>
                   </li>

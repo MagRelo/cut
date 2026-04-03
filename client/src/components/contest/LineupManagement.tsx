@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect, useMemo } from "react";
+import React, { Fragment, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useReadContract } from "wagmi";
@@ -72,7 +72,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     // isProcessing: isJoinProcessing,
     isSending: isJoinSending,
     isConfirming: isJoinConfirming,
-    isConfirmed: isJoinConfirmed,
     isFailed: isJoinFailed,
     error: joinError,
     createJoinContestCalls,
@@ -107,7 +106,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     // isProcessing: isLeaveProcessing,
     isSending: isLeaveSending,
     isConfirming: isLeaveConfirming,
-    isConfirmed: isLeaveConfirmed,
     isFailed: isLeaveFailed,
     error: leaveError,
     createLeaveContestCalls,
@@ -142,7 +140,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   // Combined processing states
   const isSending = isJoinSending || isLeaveSending;
   const isConfirming = isJoinConfirming || isLeaveConfirming;
-  const isConfirmed = isJoinConfirmed || isLeaveConfirmed;
   const isFailed = isJoinFailed || isLeaveFailed;
   const transactionError = joinError || leaveError;
 
@@ -185,14 +182,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     });
     return map;
   }, [userContestLineups]);
-
-  // Effect to handle pending action state
-  useEffect(() => {
-    if (pendingAction && isConfirmed) {
-      // The onSuccess callbacks in the hooks will handle the rest
-      setPendingAction(null);
-    }
-  }, [pendingAction, isConfirmed]);
 
   // Helper function to check if lineup with same players already exists in contest
   const checkForDuplicateInContest = (lineupId: string): boolean => {
@@ -283,10 +272,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   };
 
   const handleLeaveContest = async (lineupId: string) => {
-    setPendingAction({ type: "leave", lineupId });
     setSubmissionError(null);
 
-    // Find the contest lineup to get the entryId
     const contestLineup = contest.contestLineups?.find(
       (cl) => cl.tournamentLineupId === lineupId && cl.userId === user?.id,
     );
@@ -296,7 +283,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
       return;
     }
 
-    // Create and execute the leave contest calls
+    setPendingAction({ type: "leave", lineupId });
+
     const calls = createLeaveContestCalls(contest.address as string, Number(contestLineup.entryId));
 
     await executeLeaveBlockchain(calls);

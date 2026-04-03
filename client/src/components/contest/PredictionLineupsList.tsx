@@ -84,12 +84,13 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
               const sim = simulateAddSecondaryPosition({
                 amount: tenDollarAmount,
                 entryShares: entry.totalSupply,
+                entryLiquidity: entry.entryLiquidity,
                 ...poolSnapshot,
               });
 
               if (sim.tokensToMint <= 0n) return "0.00";
 
-              const newSupply = entry.totalSupply + sim.tokensToMint;
+              const newSupply = sim.newSupply;
               if (newSupply <= 0n) return "0.00";
 
               // Simulate a fresh $10 buy so list rows are comparable across entries.

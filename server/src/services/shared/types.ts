@@ -44,22 +44,29 @@ export interface ContestSettings {
   /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. */
   primaryDeposit: number;
   oracleFeeBps: number;
-  positionBonusShareBps: number;
-  targetPrimaryShareBps: number;
-  maxCrossSubsidyBps: number;
+  primaryEntryInvestmentShareBps: number;
+
+  /** Legacy catalytic contest params (older contracts / older stored JSON). */
+  positionBonusShareBps?: number;
+  targetPrimaryShareBps?: number;
+  maxCrossSubsidyBps?: number;
 }
 
 // Snapshot of contest state at settlement time (for display purposes)
 export interface ContestSnapshot {
   contractBalance: string; // bigint as string
   primaryPrizePool: string; // bigint as string
-  primaryPrizePoolSubsidy: string; // bigint as string
   primarySideBalance: string; // bigint as string (total)
-  secondaryPrizePool: string; // bigint as string
-  secondaryPrizePoolSubsidy: string; // bigint as string
   secondarySideBalance: string; // bigint as string (total)
   currentPrimaryShareBps: number;
-  totalPrimaryPositionSubsidies: string; // bigint as string
+  totalSecondaryLiquidity: string; // bigint as string
+  primaryEntryInvestmentShareBps: number;
+
+  /** Legacy catalytic contest snapshot fields (older settled contests). */
+  primaryPrizePoolSubsidy?: string; // bigint as string
+  secondaryPrizePool?: string; // bigint as string
+  secondaryPrizePoolSubsidy?: string; // bigint as string
+  totalPrimaryPositionSubsidies?: string; // bigint as string
 }
 
 // Contest results (stored in DB as JSON after settlement)

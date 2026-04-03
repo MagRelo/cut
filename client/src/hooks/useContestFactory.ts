@@ -18,16 +18,14 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
 
   const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
 
-  /** Matches `ContestFactory.createContest(address,address,uint256,uint256,uint256,uint256,uint256,uint256)`. */
+  /** Matches `ContestFactory.createContest` (6 uint256 args after addresses). */
   const createContestCalls = (
     paymentToken: string,
     oracle: string,
     primaryDepositAmount: bigint,
     oracleFeeBps: number,
     expiryTimestamp: bigint,
-    positionBonusShareBps: number,
-    targetPrimaryShareBps: number,
-    maxCrossSubsidyBps: number,
+    primaryEntryInvestmentShareBps: number,
   ) => {
     return [
       {
@@ -38,9 +36,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           primaryDepositAmount,
           BigInt(oracleFeeBps),
           expiryTimestamp,
-          BigInt(positionBonusShareBps),
-          BigInt(targetPrimaryShareBps),
-          BigInt(maxCrossSubsidyBps),
+          BigInt(primaryEntryInvestmentShareBps),
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,

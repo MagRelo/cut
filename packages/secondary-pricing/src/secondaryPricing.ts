@@ -1,6 +1,6 @@
 /**
- * Mirrors ContestCatalyst `SecondaryPricing.sol` and secondary deposit splitting in `ContestController.sol`
- * (oracle fee → position bonus → cross-subsidy → collateral → tokens via bonding curve).
+ * Mirrors ContestCatalyst `SecondaryPricing.sol` bonding curve math and the secondary deposit split in
+ * `ContestController.addSecondaryPosition` (primary entry investment leg → buyer leg).
  */
 
 export const PRICE_PRECISION = 1_000_000n;
@@ -114,35 +114,58 @@ export function calculateSecondaryCrossSubsidy(
 }
 
 export interface SecondaryPoolSnapshot {
-  primaryPrizePool: bigint;
-  primaryPrizePoolSubsidy: bigint;
-  totalPrimaryPositionSubsidies: bigint;
-  secondaryPrizePool: bigint;
-  secondaryPrizePoolSubsidy: bigint;
-  oracleFeeBps: bigint;
-  positionBonusShareBps: bigint;
-  targetPrimaryShareBps: bigint;
-  maxCrossSubsidyBps: bigint;
+  /**
+   * Contract config: BPS of each secondary payment used for primary entry-owner curve leg
+   * (see `ContestController.primaryEntryInvestmentShareBps`).
+   */
+  primaryEntryInvestmentShareBps: bigint;
 }
 
 export interface SimulateAddSecondaryPositionInput extends SecondaryPoolSnapshot {
+  /**
+   * Payment token amount the buyer deposits (passed as `amount` to `addSecondaryPosition`).
+   * In the new contract, oracle fees are charged at payout time, so this is not net of fees.
+   */
   amount: bigint;
-  /** Current nonnegative shares for the entry (from netPosition). */
+
+  /**
+   * Current nonnegative secondary supply shares for the entry (from `netPosition`).
+   * This represents total ERC1155 supply for the entry.
+   */
   entryShares: bigint;
+
+  /**
+   * Current liquidity backing the entry's secondary side (from `secondaryLiquidityPerEntry(entryId)`).
+   * In the new contract, liquidity increases by the full deposit `amount`.
+   */
+  entryLiquidity: bigint;
 }
 
 export interface SimulateAddSecondaryPositionResult {
-  oracleFee: bigint;
-  amountAfterFee: bigint;
-  positionBonus: bigint;
-  remainingAmount: bigint;
-  crossSubsidy: bigint;
-  collateral: bigint;
+  /**
+   * ERC1155 token amount minted to the participant (buyer leg) for this deposit.
+   * This is what the UI considers "tokens received" for the user.
+   */
   tokensToMint: bigint;
-  primaryBefore: bigint;
-  secondaryBefore: bigint;
-  /** `secondaryPrizePool + secondaryPrizePoolSubsidy` after this deposit (collateral only increases secondary pool). */
+
+  /** ERC1155 token amount minted to the entry owner as the primary investment leg. */
+  ownerTokensToMint: bigint;
+
+  /**
+   * Total secondary supply shares after deposit (owner + participant legs).
+   * Matches `uint256(netPosition[entryId])` after `addSecondaryPosition`.
+   */
+  newSupply: bigint;
+
+  /**
+   * Liquidity for the entry after deposit (`secondaryLiquidityPerEntry + amount`).
+   * Matches what `pushSecondaryPayouts` uses for winner distribution.
+   */
   newSecondaryTotalFunds: bigint;
+
+  /** For debugging/UI labels only. */
+  investmentAmount: bigint;
+  remainingAmount: bigint;
 }
 
 /**
@@ -151,34 +174,48 @@ export interface SimulateAddSecondaryPositionResult {
 export function simulateAddSecondaryPosition(
   input: SimulateAddSecondaryPositionInput,
 ): SimulateAddSecondaryPositionResult {
-  const oracleFee = (input.amount * input.oracleFeeBps) / BPS_DENOMINATOR;
-  const amountAfterFee = input.amount - oracleFee;
-  const positionBonus = (amountAfterFee * input.positionBonusShareBps) / BPS_DENOMINATOR;
-  const remainingAmount = amountAfterFee - positionBonus;
+  // Mirrors `ContestController.addSecondaryPosition` splitting logic.
+  const investmentAmount = (input.amount * input.primaryEntryInvestmentShareBps) / BPS_DENOMINATOR;
+  const remainingAmount = input.amount - investmentAmount;
 
-  const primaryBefore =
-    input.primaryPrizePool + input.primaryPrizePoolSubsidy + input.totalPrimaryPositionSubsidies;
-  const secondaryBefore = input.secondaryPrizePool + input.secondaryPrizePoolSubsidy;
+  const shares0 = input.entryShares;
 
-  const crossSubsidy = calculateSecondaryCrossSubsidy(remainingAmount, {
-    primaryBefore,
-    secondaryBefore,
-    targetPrimaryShareBps: input.targetPrimaryShareBps,
-    maxCrossSubsidyBps: input.maxCrossSubsidyBps,
-  });
-  const collateral = remainingAmount - crossSubsidy;
-  const tokensToMint = calculateTokensFromCollateral(input.entryShares, collateral);
+  const ownerTokensToMint =
+    investmentAmount > 0n ? calculateTokensFromCollateral(shares0, investmentAmount) : 0n;
+
+  // Contract requires owner leg to mint at least 1 token if investmentAmount > 0.
+  if (investmentAmount > 0n && ownerTokensToMint === 0n) {
+    return {
+      tokensToMint: 0n,
+      ownerTokensToMint: 0n,
+      newSupply: input.entryShares,
+      newSecondaryTotalFunds: input.entryLiquidity + input.amount,
+      investmentAmount,
+      remainingAmount,
+    };
+  }
+
+  const shares1 = shares0 + ownerTokensToMint;
+  const tokensToMint = remainingAmount > 0n ? calculateTokensFromCollateral(shares1, remainingAmount) : 0n;
+
+  // Contract requires buyer leg to mint at least 1 token if remainingAmount > 0.
+  if (remainingAmount > 0n && tokensToMint === 0n) {
+    return {
+      tokensToMint: 0n,
+      ownerTokensToMint,
+      newSupply: shares1,
+      newSecondaryTotalFunds: input.entryLiquidity + input.amount,
+      investmentAmount,
+      remainingAmount,
+    };
+  }
 
   return {
-    oracleFee,
-    amountAfterFee,
-    positionBonus,
-    remainingAmount,
-    crossSubsidy,
-    collateral,
     tokensToMint,
-    primaryBefore,
-    secondaryBefore,
-    newSecondaryTotalFunds: secondaryBefore + collateral,
+    ownerTokensToMint,
+    newSupply: shares1 + tokensToMint,
+    newSecondaryTotalFunds: input.entryLiquidity + input.amount,
+    investmentAmount,
+    remainingAmount,
   };
 }

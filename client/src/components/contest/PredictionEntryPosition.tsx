@@ -30,14 +30,6 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
     },
   });
 
-  const deposited = parseFloat(entry.secondaryDepositedFormatted);
-  const depositedDisplay =
-    !Number.isFinite(deposited) || deposited <= 0
-      ? "0.00"
-      : deposited < 0.01
-        ? "< 0.01"
-        : deposited.toFixed(2);
-
   const ownershipPercent =
     entry.totalSupply > 0n ? Number((entry.balance * 10000n) / entry.totalSupply) / 100 : 0;
   const ownershipDisplay =
@@ -46,6 +38,14 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
       : ownershipPercent < 0.01
         ? "< 0.01"
         : ownershipPercent.toFixed(2);
+
+  const deposited = parseFloat(entry.secondaryDepositedFormatted);
+  const depositedDisplay =
+    !Number.isFinite(deposited) || deposited <= 0
+      ? "0.00"
+      : deposited < 0.01
+        ? "< 0.01"
+        : deposited.toFixed(2);
 
   const impliedWinnings = parseFloat(entry.impliedWinningsFormatted ?? "0");
   const impliedDisplay =
