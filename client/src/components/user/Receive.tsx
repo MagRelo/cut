@@ -1,3 +1,4 @@
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId } from "wagmi";
 import { QRCodeSVG } from "qrcode.react";
 import { CopyToClipboard } from "../common/CopyToClipboard.tsx";
@@ -9,6 +10,8 @@ interface ReceiveProps {
 
 export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
   const { address, isConnected } = useAccount();
+  const { client: smartWalletClient } = useSmartWallets();
+  const receiveAddress = smartWalletClient?.account?.address ?? address;
   const chainId = useChainId();
 
   // Get contract addresses dynamically based on token type
@@ -22,7 +25,7 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
   const { data: tokenSymbol } = useTokenSymbol(tokenAddress as string);
   const displaySymbol = tokenSymbol || tokenName;
 
-  if (!isConnected || !address) {
+  if (!isConnected || !receiveAddress) {
     return (
       <div className="text-center py-8 text-gray-500">
         Please connect your wallet to view your address.
@@ -31,15 +34,16 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
   }
 
   // Format address with chain information using EIP-681 standard
-  // Format: ethereum:<address>@<chainId>
-  const qrCodeValue = `ethereum:${address}@${chainId}`;
+  // Format: ethereum:<address>@<chainId> — smart wallet (same as balances / Account ID)
+  const qrCodeValue = `ethereum:${receiveAddress}@${chainId}`;
 
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold text-gray-800 mb-3">Receive {displaySymbol}</h3>
 
       <p className="text-sm text-gray-600">
-        Share your wallet address or QR code to receive {displaySymbol} tokens from other users.
+        Share this address or QR code to receive {displaySymbol} on your in-app account (smart
+        wallet).
       </p>
 
       {/* QR Code */}
@@ -50,7 +54,7 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
       </div>
 
       <div className="border border-gray-200 rounded-md p-2 text-center">
-        <CopyToClipboard text={address} truncated={false} />
+        <CopyToClipboard text={receiveAddress} truncated={false} />
       </div>
     </div>
   );
