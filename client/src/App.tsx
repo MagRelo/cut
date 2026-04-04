@@ -46,6 +46,7 @@ import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
 import { DebugPage } from "./pages/DebugPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
@@ -91,6 +92,7 @@ export const App: React.FC = () => {
                             <Route path="/" element={<Home />} />
                             <Route path="/terms" element={<TermsOfService />} />
                             <Route path="/faq" element={<FAQPage />} />
+                            <Route path="/onboarding" element={<OnboardingPage />} />
                             <Route path="/connect" element={<ConnectPage />} />
                             <Route path="/contracts" element={<ContractsPage />} />
                             <Route
@@ -125,7 +127,14 @@ export const App: React.FC = () => {
                             <Route path="/contest/:id" element={<ContestLobby />} />
 
                             {/* Lineups */}
-                            <Route path="/lineups/create" element={<LineupCreatePage />} />
+                            <Route
+                              path="/lineups/create"
+                              element={
+                                <ProtectedRoute>
+                                  <LineupCreatePage />
+                                </ProtectedRoute>
+                              }
+                            />
                             <Route
                               path="/lineups/edit/:lineupId"
                               element={

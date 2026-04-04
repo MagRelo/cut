@@ -12,34 +12,24 @@ const cellY = "border-y border-slate-200";
 const holeCol = "min-w-[2.25rem] w-[2.25rem]";
 const totalCol = "min-w-[3.5rem] w-[3.5rem]";
 
-/** Sticky first column; shadow separates from scrolling body */
 const rowLabelBase =
   "sticky left-0 z-10 border-r border-slate-200 px-3 text-left align-middle text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
 
 const rowLabelBand = `${rowLabelBase} ${cellY} ${band} py-2.5 ${totalCol}`;
-/** Points row: taller cells than band (overrides scoreCell py-2.5) */
 const pointsRowY = "!py-3.5";
 
 const rowLabelPoints = `${rowLabelBase} ${cellY} bg-white ${pointsRowY} ${totalCol}`;
 
-/** Default numeric cell in score row (par height) */
 const scoreCell = `px-2 py-2.5 text-center text-xs tabular-nums ${cellY}`;
 
-/** Hole number headers — slightly tighter vertical padding than score cells */
 const holeHeader = `${cellY} ${band} px-2 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
 
-/** Par row body cells — match hole number cells (`holeHeader`) */
 const parCell = `${cellY} ${band} px-2 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
 
-/** Total column in band (hole row, par row, score row) */
 const bandTotal = `${cellY} border-l border-slate-200 ${band} px-3 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-600 ${totalCol}`;
 
-/**
- * Score row inner slot: `min-height` on table cells is unreliable with border-collapse; reserve chip height (h-7) in a flex slot instead.
- */
 const scoreRowSlot = "flex h-7 w-full shrink-0 items-center justify-center";
 
-/** Points row numeric cells */
 const pointsCell = `${scoreCell} bg-white ${holeCol} ${pointsRowY}`;
 const pointsTotal = `${cellY} border-l border-slate-200 bg-white px-3 py-3.5 text-center text-xs tabular-nums text-slate-900 ${totalCol}`;
 

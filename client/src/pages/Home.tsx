@@ -1,67 +1,45 @@
 import React from "react";
 import { Share } from "../components/common/Share";
-import { ContestStatusProgressBar } from "../components/contest/ContestStatusProgressBar";
 import { InfoScorecard } from "../components/common/InfoScorecard";
-
-const HARDCODED_PLAYERS = [
-  {
-    name: "Si Woo Kim",
-    pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_37455.jpg",
-  },
-  {
-    name: "Rico Hoey",
-    pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_51696.jpg",
-  },
-  {
-    name: "J.T. Poston",
-    pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_29939.jpg",
-  },
-  {
-    name: "Denny McCarthy",
-    pga_imageUrl:
-      "https://pga-tour-res.cloudinary.com/image/upload/c_fill,dpr_2.0,f_auto,g_center,h_350,q_auto,w_280,b_rgb:000000/e_trim:10/c_thumb,g_face,w_280,h_350,z_0.7/headshots_49771.jpg",
-  },
-];
+import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
 
 export const Home: React.FC = () => {
   return (
-    <div className="flex-1 w-full flex flex-col items-center  bg-gray-50 pt-8 pb-8">
-      <div>
-        {/* Title and Logo */}
-        <div className="flex items-center gap-3 pb-2" style={{ marginLeft: "-24px" }}>
-          <img src="/logo-transparent.png" alt="Cut Logo" className="h-32" />
+    <div className="flex-1 w-full min-w-0 flex flex-col items-center bg-gray-50 pt-8 pb-8 px-1 sm:px-0">
+      <div className="w-full min-w-0 max-w-full">
+        {/* Title and Logo — stack on narrow viewports so copy doesn’t collide with the logo */}
+        <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-center gap-4 sm:gap-5 pb-2">
+          <img
+            src="/logo-transparent.png"
+            alt="Cut Logo"
+            className="h-24 sm:h-32 w-auto flex-shrink-0"
+          />
 
-          <h1 className="text-6xl font-bold text-black">
+          <h1 className="text-center sm:text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
             the Cut
-            <div className="text-2xl font-bold text-gray-400">Fantasy Golf + </div>
-            <div className="text-2xl font-bold text-gray-400">Prediction Market</div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-400">Fantasy Golf + </div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-400">Prediction Market</div>
           </h1>
         </div>
-        {/* Features */}
-        <div className="max-w-84 font-display max-w-sm mt-2 mb-4">
+        {/* Features — stay centered at all breakpoints (sm:mx-0 had pulled this block left) */}
+        <div className="w-full max-w-sm mx-auto font-display mt-2 mb-4">
           <h3
-            className="text-xl font-medium italic text-green-600 text-center mb-3"
+            className="text-lg sm:text-xl font-medium italic text-green-600 text-center mb-3"
             style={{ fontFamily: "serif" }}
           >
             ~ featuring ~
           </h3>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-gray-800 text-sm font-medium px-1 mb-3">
             <span>Real Money</span>
             <span className="text-gray-500">•</span>
             <span>Live Scoring Updates</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-gray-800 text-sm font-medium px-1">
             <span>Earn Interest on Deposits</span>
             <span className="text-gray-500">•</span>
             <span>Weekly Contests</span>
           </div>
-          {/* <div className="flex flex-wrap items-center justify-center gap-3 text-gray-800 text-sm font-medium max-w-3xl px-4 mb-3">
-          <span>Multi-Level Referral Bonuses</span>
-        </div> */}
         </div>
       </div>
 
@@ -167,12 +145,39 @@ export const Home: React.FC = () => {
 
       <hr className="w-full border-gray-200 my-8" />
 
-      {/* Contest Schedule */}
+      {/* Referral Bonus */}
       <div className="w-full max-w-4xl px-4">
-        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">Weekly Schedule</h3>
-        <div className="bg-white rounded-sm shadow p-4">
-          <div className="mb-4">
-            <ContestStatusProgressBar />
+        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">Referral Bonus</h3>
+        <div className="bg-white rounded-sm shadow p-6 border-2 border-orange-200 hover:shadow-lg transition-shadow">
+          <p className="text-gray-700 leading-relaxed font-display text-center mb-5 max-w-2xl mx-auto">
+            Earn bonuses when you refer new players—and when <em>their</em> invites bring in more
+            users. Rewards can stack across multiple levels, so your network keeps paying you back.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="rounded-sm border border-orange-100 bg-orange-50/40 p-4">
+              <div className="text-xs font-display font-semibold uppercase tracking-wide text-orange-700 mb-2">
+                Level 1
+              </div>
+              <p className="text-sm text-gray-700 font-display leading-snug">
+                You refer someone—they sign up and play with your link.
+              </p>
+            </div>
+            <div className="rounded-sm border border-orange-100 bg-orange-50/40 p-4">
+              <div className="text-xs font-display font-semibold uppercase tracking-wide text-orange-700 mb-2">
+                Level 2
+              </div>
+              <p className="text-sm text-gray-700 font-display leading-snug">
+                They refer their own friends—you can earn again on that activity.
+              </p>
+            </div>
+            <div className="rounded-sm border border-orange-100 bg-orange-50/40 p-4">
+              <div className="text-xs font-display font-semibold uppercase tracking-wide text-orange-700 mb-2">
+                Deeper levels
+              </div>
+              <p className="text-sm text-gray-700 font-display leading-snug">
+                The chain keeps going—bonuses can apply down multiple tiers.
+              </p>
+            </div>
           </div>
         </div>
       </div>
