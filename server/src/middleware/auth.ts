@@ -3,6 +3,7 @@ import { getPrivyClient } from "../lib/privyClient.js";
 import {
   ensureCutUserFromPrivy,
   PrivyWalletIdentityConflictError,
+  ReferralProvisionError,
 } from "../lib/privyUserProvisioning.js";
 
 declare module "hono" {
@@ -23,6 +24,12 @@ function parsePreferredChainId(c: Context): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function parseReferrerAddressHeader(c: Context): string | undefined {
+  const raw = c.req.header("x-cut-referrer-address");
+  const t = raw?.trim();
+  return t || undefined;
+}
+
 export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     const authHeader = c.req.header("authorization");
@@ -35,11 +42,16 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
     }
 
     const preferredChainId = parsePreferredChainId(c);
+    const referrerAddress = parseReferrerAddressHeader(c);
 
     const privy = getPrivyClient();
     const access = await privy.utils().auth().verifyAccessToken(token);
     const privyUser = await privy.users()._get(access.user_id);
-    const resolved = await ensureCutUserFromPrivy(privyUser, preferredChainId);
+    const resolved = await ensureCutUserFromPrivy(
+      privyUser,
+      preferredChainId,
+      referrerAddress ? { referrerAddress } : {},
+    );
 
     c.set("user", {
       userId: resolved.userId,
@@ -53,6 +65,9 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
     console.error("Auth middleware error:", error);
     if (error instanceof PrivyWalletIdentityConflictError) {
       return c.json({ error: error.message }, 403);
+    }
+    if (error instanceof ReferralProvisionError) {
+      return c.json({ error: error.message, code: error.code }, 400);
     }
     return c.json({ error: "Invalid or expired token" }, 401);
   }

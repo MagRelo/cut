@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
@@ -45,6 +46,14 @@ export function UserPage() {
   const { client: smartWalletClient } = useSmartWallets();
   const smartWalletAddress = smartWalletClient?.account?.address;
 
+  const inviteLinkUrl = useMemo(
+    () =>
+      smartWalletAddress
+        ? `${window.location.origin}/?ref=${smartWalletAddress}`
+        : undefined,
+    [smartWalletAddress],
+  );
+
   return (
     <div className="p-4">
       <PageHeader title="Account" className="mb-3" />
@@ -60,6 +69,7 @@ export function UserPage() {
         showContestHistoryLink={false}
         accountIdRow={true}
         accountIdAddress={smartWalletAddress ?? ""}
+        inviteLinkUrl={inviteLinkUrl}
       />
 
       {/* User Settings */}

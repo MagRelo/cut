@@ -14,6 +14,9 @@ export interface ContractConfig {
   contestFactoryAddress: string;
   /** DepositManager pool: Aave V3 Pool (mainnet) or Sepolia test pool contract. */
   aavePoolAddress?: string;
+  /** ReferralGraph (same source of truth as `server/src/contracts/*.json`). */
+  referralGraphAddress?: string;
+  rewardDistributorAddress?: string;
 }
 
 /**

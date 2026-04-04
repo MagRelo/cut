@@ -2,7 +2,6 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { Connect } from "../components/user/Connect";
 import { useAuth } from "../contexts/AuthContext";
-import { PageHeader } from "../components/common/PageHeader";
 
 export function ConnectPage() {
   const { user } = useAuth();
@@ -28,10 +27,23 @@ export function ConnectPage() {
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <PageHeader title="Sign in" />
+    <div className="flex-1 w-full flex flex-col items-center  pt-8 pb-8">
+      <div>
+        {/* Title and Logo */}
+        <div className="flex items-center gap-3 pb-2" style={{ marginLeft: "-24px" }}>
+          <img src="/logo-transparent.png" alt="Cut Logo" className="h-32" />
 
-      <Connect onSuccess={handleConnectSuccess} />
+          <h1 className="text-6xl font-bold text-black">
+            the Cut
+            <div className="text-2xl font-bold text-gray-400">Fantasy Golf + </div>
+            <div className="text-2xl font-bold text-gray-400">Prediction Market</div>
+          </h1>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Connect onSuccess={handleConnectSuccess} />
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { config } from "./wagmi";
 import { prefetchTournamentMetadata, prefetchTournamentData } from "./hooks/useTournamentData";
 
 import { AuthProvider } from "./contexts/AuthContext";
+import { useReferralCapture } from "./hooks/useReferralCapture";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
   getSmartWalletsPaymasterConfig,
@@ -55,6 +56,11 @@ if (!privyAppId && import.meta.env.DEV) {
 const smartWalletsPaymasterConfig = getSmartWalletsPaymasterConfig();
 const smartWalletsProviderKey = getSmartWalletsProviderKey();
 
+function ReferralQueryCapture() {
+  useReferralCapture();
+  return null;
+}
+
 export const App: React.FC = () => {
   // Prefetch tournament data on app initialization for faster page loads
   // This runs in the background and caches data before components mount
@@ -73,6 +79,7 @@ export const App: React.FC = () => {
             <GlobalErrorProvider>
               <AuthProvider>
                 <Router>
+                  <ReferralQueryCapture />
                   <div className="min-h-screen bg-gray-100 flex flex-col">
                     {/* TODO: Remove this when we're ready to go live */}
                     {/* <MaintenanceOverlay /> */}

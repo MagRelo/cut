@@ -1,20 +1,14 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
-import { handleApiResponse, ApiError } from "../utils/apiError";
+import { ApiError, handleApiResponse, isApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
+import { clearStoredReferrerAddress, getStoredReferrerAddress } from "../lib/referralCapture";
 
 export interface AuthUser {
   id: string;
@@ -41,6 +35,8 @@ interface AuthContextData {
   /** Opens Privy login (see `useLogin` in Privy docs). */
   login: () => void;
   loginError: string | null;
+  /** Shown when Privy login succeeded but `/auth/me` failed (e.g. referral required). */
+  serverSessionError: string | null;
   clearLoginError: () => void;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
@@ -80,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userSyncLoading, setUserSyncLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [serverSessionError, setServerSessionError] = useState<string | null>(null);
 
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
@@ -182,6 +179,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof cid === "number") {
         headers["X-Cut-Chain-Id"] = String(cid);
       }
+      const referrer = getStoredReferrerAddress();
+      if (referrer) {
+        headers["X-Cut-Referrer-Address"] = referrer;
+      }
 
       const response = await fetch(`${config.baseURL}${endpoint}`, {
         method,
@@ -244,8 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(user?.userType === "ADMIN");
   }, [user]);
 
-  const clearLocalCache = useCallback(() => {
-    setUser(null);
+  const flushAuthRelatedQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["auth"] });
     queryClient.invalidateQueries({ queryKey: ["user"] });
     queryClient.invalidateQueries({ queryKey: ["lineups"] });
@@ -255,6 +255,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.removeQueries({ queryKey: ["lineups"] });
     queryClient.removeQueries({ queryKey: ["balance"] });
   }, [queryClient]);
+
+  const clearLocalCache = useCallback(() => {
+    setUser(null);
+    setServerSessionError(null);
+    flushAuthRelatedQueries();
+  }, [flushAuthRelatedQueries]);
+
+  /** End Privy + wagmi without clearing `serverSessionError` (so Connect can show why signup failed). */
+  const endPrivyAndWagmiSession = useCallback(async () => {
+    try {
+      await privyLogout();
+    } catch (e) {
+      console.warn("Privy logout:", e);
+    }
+    try {
+      await disconnect();
+    } catch (e) {
+      console.warn("Wagmi disconnect:", e);
+    }
+    flushAuthRelatedQueries();
+  }, [privyLogout, disconnect, flushAuthRelatedQueries]);
 
   const logout = useCallback(async () => {
     try {
@@ -270,11 +291,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [privyLogout, clearLocalCache, disconnect]);
 
-  const clearLoginError = useCallback(() => setLoginError(null), []);
+  const clearLoginError = useCallback(() => {
+    setLoginError(null);
+    setServerSessionError(null);
+  }, []);
 
   const { login } = useLogin({
     onComplete: () => {
       setLoginError(null);
+      setServerSessionError(null);
       const targetChainId = getTargetChainIdFromEnv();
       void (async () => {
         try {
@@ -315,6 +340,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
         if (!cancelled) {
+          setServerSessionError(null);
+          clearStoredReferrerAddress();
           setUser(response);
           queryClient.invalidateQueries({ queryKey: ["lineups"] });
           queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -323,11 +350,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("GET /auth/me failed:", error);
         if (!cancelled) {
-          if (
-            error instanceof Error &&
-            (error.message.includes("401") || error.message.includes("404"))
-          ) {
-            setUser(null);
+          setUser(null);
+          if (isApiError(error)) {
+            if (error.statusCode === 401) {
+              setServerSessionError(null);
+            } else {
+              let msg = error.message;
+              if (error.code === "REFERRER_REQUIRED") {
+                msg +=
+                  "\n\nUse an invite link from a friend then refresh the page and sign in again.";
+              }
+              setServerSessionError(msg);
+              if (error.statusCode === 400 || error.statusCode === 403) {
+                void endPrivyAndWagmiSession();
+              }
+            }
+          } else {
+            setServerSessionError("Could not connect to Cut. Please try again.");
           }
         }
       } finally {
@@ -339,7 +378,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       setUserSyncLoading(false);
     };
-  }, [ready, authenticated, address, request, queryClient]);
+  }, [ready, authenticated, address, request, queryClient, endPrivyAndWagmiSession]);
 
   // Wagmi can disconnect (e.g. wallet revoke) while React still holds `user`; clear local server user + RQ caches so UI matches wallet.
   // Could be merged into the effect above if you prefer a single “auth state” effect, but keep if you want an explicit wallet-disconnect edge.
@@ -378,6 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       serverUserSyncing: userSyncLoading,
       login,
       loginError,
+      serverSessionError,
       clearLoginError,
       updateUser,
       updateUserSettings,
@@ -400,6 +440,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userSyncLoading,
       login,
       loginError,
+      serverSessionError,
       clearLoginError,
       updateUser,
       updateUserSettings,

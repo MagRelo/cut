@@ -25,16 +25,27 @@ model User {
   lockedUntil       DateTime?
   verificationCode  String?
   verificationCodeExpiresAt DateTime?
-  
+
+  referrerAddress         String?
+  referralGroupId         String?
+  referredByUserId        String?
+  referralChainId         Int?
+  referralRecordedAt      DateTime?
+  referralOnchainTxHash   String?
+
   // Relations
   userGroups        UserGroupMember[]
   tournamentLineups TournamentLineup[]
   contestLineups    ContestLineup[]
   wallets           UserWallet[]
+  referredBy        User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referredUsers     User[]             @relation("UserReferrals")
 
   @@index([email])
   @@index([phone])
   @@index([verificationCode])
+  @@index([referredByUserId])
+  @@index([referrerAddress])
 }
 
 model UserWallet {

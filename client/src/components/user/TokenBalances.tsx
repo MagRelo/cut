@@ -37,6 +37,8 @@ interface TokenBalancesProps {
   /** Renders Account ID row (same layout as Account page) below balance; pass smart wallet address. */
   accountIdRow?: boolean;
   accountIdAddress?: string;
+  /** Full invite URL to copy; shown below Account ID when set (same row layout as Account ID). */
+  inviteLinkUrl?: string;
   /** Row linking to /account/history. Default true. */
   showContestHistoryLink?: boolean;
   /** When false, hides the whole CUT row (logo, label, link, amount). Default true. */
@@ -53,6 +55,7 @@ export function TokenBalances({
   showManageLink = false,
   accountIdRow = false,
   accountIdAddress = "",
+  inviteLinkUrl,
   showContestHistoryLink = true,
   showCutRow = true,
   showUsdcRow = true,
@@ -68,7 +71,12 @@ export function TokenBalances({
   };
 
   const showBreakdown = showCutRow || showUsdcRow;
-  const hasLowerSection = showBreakdown || accountIdRow || showContestHistoryLink || showManageLink;
+  const hasLowerSection =
+    showBreakdown ||
+    accountIdRow ||
+    Boolean(inviteLinkUrl) ||
+    showContestHistoryLink ||
+    showManageLink;
 
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
@@ -133,10 +141,27 @@ export function TokenBalances({
         <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center mt-3">
           <span className="text-sm font-medium text-gray-700 font-display">Account ID</span>
           <div className="flex justify-end text-gray-700 text-sm font-medium">
-            <CopyToClipboard text={accountIdAddress || ""} />
+            <CopyToClipboard
+              text={accountIdAddress || ""}
+              displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
+            />
           </div>
         </div>
       )}
+
+      {inviteLinkUrl ? (
+        <div
+          className={`grid grid-cols-[auto_1fr] gap-x-4 items-center ${accountIdRow ? "mt-2" : "mt-3"}`}
+        >
+          <span className="text-sm font-medium text-gray-700 font-display">Invite Link</span>
+          <div className="flex justify-end text-gray-700 text-sm font-medium">
+            <CopyToClipboard
+              text={inviteLinkUrl}
+              displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {showContestHistoryLink && (
         <>

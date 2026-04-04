@@ -8,6 +8,7 @@ import { updateContestLineups } from "../services/updateContestLineups.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
+import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
 import { batchLockContests } from "../services/batch/batchLockContests.js";
 
 class CronScheduler {
@@ -108,6 +109,7 @@ class CronScheduler {
       await this.executeWithErrorHandling("Lock Contests", batchLockContests);
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests);
       await this.executeWithErrorHandling("Close Contests", batchCloseContests);
+      await this.executeWithErrorHandling("Sync Referral Graph", batchSyncReferralGraph);
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`[CRON] ========== Pipeline Complete (${duration}s) ==========`);
