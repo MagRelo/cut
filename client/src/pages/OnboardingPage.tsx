@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
-
 const ACCENT_COLORS = [
   "#0a73eb",
   "#A3A3A3",
@@ -29,10 +27,10 @@ function StepActions({ children, className = "" }: { children: ReactNode; classN
 }
 
 const primaryBtn =
-  "inline-flex shrink-0 items-center justify-center rounded-sm bg-emerald-600 px-5 py-2.5 text-center font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2";
+  "inline-flex shrink-0 items-center justify-center rounded-sm bg-emerald-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2";
 /** Match primary control height; reset default button padding so flex cross-axis centers line up on mobile */
 const ghostLink =
-  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline";
+  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline";
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -46,7 +44,7 @@ export function OnboardingPage() {
   const progressPct = ((step + 1) / STEP_COUNT) * 100;
 
   return (
-    <div className="flex-1 w-full min-w-0 flex flex-col px-4 pt-4 pb-2 sm:px-5 md:px-6 bg-gray-50 rounded-sm">
+    <div className="flex-1 w-full min-w-0 flex flex-col px-4 pt-4 pb-4 sm:px-5 md:px-6 bg-gray-50 rounded-sm">
       <div className="mb-5">
         <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
           <span>
@@ -67,27 +65,27 @@ export function OnboardingPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-sm shadow px-6 py-6 md:px-8 md:py-7 flex flex-col min-h-0 max-h-[min(78vh,820px)] overflow-y-auto">
+      <div className="bg-white rounded-sm shadow px-6 py-6 md:px-8 md:py-7 flex flex-col">
         {step === 0 && (
           <>
-            <div className="flex min-w-0 flex-row flex-nowrap items-center justify-center gap-3 pb-2 mb-2 sm:gap-5">
+            <div className="flex min-w-0 flex-row flex-nowrap items-center justify-center gap-4 pb-2 mb-2 sm:gap-6">
               <img
                 src="/logo-transparent.png"
                 alt="Cut Logo"
-                className="h-20 sm:h-24 w-auto flex-shrink-0"
+                className="h-28 sm:h-36 md:h-44 w-auto flex-shrink-0"
               />
-              <h1 className="min-w-0 text-left text-3xl sm:text-4xl md:text-5xl font-bold text-black">
+              <h1 className="min-w-0 text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
                 the Cut
-                <div className="text-lg sm:text-xl font-bold text-gray-400">Fantasy Golf + </div>
-                <div className="text-lg sm:text-xl font-bold text-gray-400">Prediction Market</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-400">
+                  Fantasy Golf{" "}
+                </div>
               </h1>
             </div>
 
-            <p className="text-gray-700 leading-relaxed font-display mb-4 text-center">
-              <strong>the Cut</strong> is a weekly fantasy golf game and prediction market. Pick
-              four PGA Tour players each week & compete in contests with real stakes.
+            <p className="text-gray-700 leading-relaxed font-display text-2xl mb-4 text-center">
+              Welcome to <strong>the Cut</strong>!
             </p>
-            <p className="text-gray-700 leading-relaxed font-display text-center">
+            <p className="text-gray-700 leading-relaxed font-display text-lg sm:text-xl text-center">
               This tour will get you started.
             </p>
             <StepActions>
@@ -102,6 +100,233 @@ export function OnboardingPage() {
         )}
 
         {step === 1 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
+              Build Lineups
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-4">
+              For each tournament, you build a lineup of <strong>four golfers</strong>. You can
+              choose any four golfers from the field - no salary caps or restrictions.
+            </p>
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Continue
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
+              Enter Contests
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-4">
+              A <strong>contest</strong> is a fantasy competition for a single tournament. Each
+              lineup you enter is a separate buy-in; those fees build the{" "}
+              <strong>prize pool</strong>. When the event wraps, <strong>payouts</strong> go to the
+              best-scoring lineups.
+            </p>
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              You can join <strong>multiple contests</strong> in a week and enter{" "}
+              <strong>more than one lineup</strong> in the same contest.
+            </p>
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Continue
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-2">
+              How scoring works
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-3">
+              Golfers earn points based on their performance on each hole:
+            </p>
+            <div className="rounded-sm border border-gray-200">
+              <table className="w-full border-collapse text-sm font-display">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-100">
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      Result
+                    </th>
+                    <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
+                      Points
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Eagle or better", "+5"],
+                    ["Birdie", "+2"],
+                    ["Par", "0"],
+                    ["Bogey", "−1"],
+                    ["Double bogey or worse", "−3"],
+                  ].map(([label, pts], i) => {
+                    const tone = pts.startsWith("+") ? "good" : pts === "0" ? "neutral" : "bad";
+                    const valueClass =
+                      tone === "good"
+                        ? "text-emerald-600"
+                        : tone === "bad"
+                          ? "text-red-600"
+                          : "text-gray-700";
+                    return (
+                      <tr key={label} className={i > 0 ? "border-t border-slate-100" : undefined}>
+                        <td className="px-3 py-2.5 text-left leading-snug text-gray-800">
+                          {label}
+                        </td>
+                        <td
+                          className={`px-3 py-2.5 text-right font-medium tabular-nums ${valueClass}`}
+                        >
+                          {pts}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-gray-700 leading-relaxed font-display text-base mt-4 mb-3">
+              There are also bonus points:
+            </p>
+            <div className="mb-4 rounded-sm border border-gray-200">
+              <table className="w-full border-collapse text-sm font-display">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-100">
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      Result
+                    </th>
+                    <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
+                      Points
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["1st place position", "+10"],
+                    ["2nd place position", "+5"],
+                    ["3rd place position", "+3"],
+                    ["Making the cut", "+3"],
+                  ].map(([label, pts], i) => {
+                    const tone = pts.startsWith("+") ? "good" : pts === "0" ? "neutral" : "bad";
+                    const valueClass =
+                      tone === "good"
+                        ? "text-emerald-600"
+                        : tone === "bad"
+                          ? "text-red-600"
+                          : "text-gray-700";
+                    return (
+                      <tr key={label} className={i > 0 ? "border-t border-slate-100" : undefined}>
+                        <td className="px-3 py-2.5 text-left leading-snug text-gray-800">
+                          {label}
+                        </td>
+                        <td
+                          className={`px-3 py-2.5 text-right font-medium tabular-nums ${valueClass}`}
+                        >
+                          {pts}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Got it
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
+              Contest Winner Pool
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              The <strong> Winner Pool</strong> is a separate market that lets you trade shares on
+              which lineup will win a contest. <strong>Buy early</strong> to get a better price -
+              shares get more expensive as the tournament progresses. You can buy shares until round
+              4 begins - keep an eye on the contest to optimize your investments.
+            </p>
+
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Continue
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 5 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
+              Referral bonuses
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-5">
+              When you win a contest, a portion of the prize pool is directed to your referral
+              network. The more people you refer, the more you earn. These bonuses travel up to 10
+              levels deep, so if you invite three people, and they invite three people - and so on -
+              you could easily have hundreds of people paying you bonuses.
+            </p>
+
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              You can find your personal invite link on the account page - share it with your
+              friends!
+            </p>
+
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Continue
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 6 && (
+          <>
+            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
+              Add funds to your account
+            </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              You&apos;ll need funds in your account to compete in contests. Any player can send you
+              funds at any time. Send your Account ID to the person that referred you to get
+              started.
+            </p>
+
+            <StepActions>
+              <button type="button" onClick={goBack} className={ghostLink}>
+                Back
+              </button>
+              <button type="button" onClick={goNext} className={primaryBtn}>
+                Continue
+              </button>
+            </StepActions>
+          </>
+        )}
+
+        {step === 7 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Your team name
@@ -137,7 +362,7 @@ export function OnboardingPage() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 8 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Your team color
@@ -147,8 +372,6 @@ export function OnboardingPage() {
               on leaderboards.
             </p>
             <div>
-              {/* <span className="block text-sm font-medium text-gray-700">COLOR</span> */}
-
               <div className="grid grid-cols-5 gap-3 mt-3">
                 {ACCENT_COLORS.map((color) => (
                   <label key={color} className="flex flex-col items-center cursor-pointer">
@@ -170,240 +393,6 @@ export function OnboardingPage() {
                 ))}
               </div>
             </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Create a new lineup each week
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-4">
-              For each tournament, you build a <strong>lineup</strong> of{" "}
-              <strong>four golfers</strong>. You can choose any four golfers from the field. Make
-              some sneaky picks to avoid splitting the pot with other teams.
-            </p>
-            <div className="bg-white rounded-sm shadow p-4 border border-gray-100">
-              <div className="grid grid-cols-2 gap-4">
-                {HARDCODED_PLAYERS.map((player, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                    {player.pga_imageUrl && (
-                      <div className="flex-shrink-0 mb-2">
-                        <img
-                          className="h-10 w-10 rounded-full object-cover border border-gray-300"
-                          src={player.pga_imageUrl}
-                          alt={player.name}
-                          style={{ objectPosition: "center top" }}
-                        />
-                      </div>
-                    )}
-                    <div className="text-sm font-semibold text-gray-900 text-center">
-                      {player.name}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 4 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Enter your lineup(s) into Contests
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              A <strong>contest</strong> is tied to <strong>one tournament</strong>. You{" "}
-              <strong>enter with a lineup</strong> and pay an <strong>entry fee in CUT</strong>.
-              Everyone&apos;s entries feed the <strong>primary prize pool</strong> for the{" "}
-              <strong>fantasy competition</strong>—<strong>highest lineup scores</strong> win that
-              pool; <strong>ties split</strong> their share.
-            </p>
-            <p className="text-sm text-center">
-              <Link
-                to="/faq#gameplay"
-                className="text-green-600 font-medium underline-offset-2 hover:underline"
-              >
-                Learn more in the FAQ
-              </Link>
-            </p>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 5 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-2">
-              How scoring works
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-3">
-              Each golfer earns points based on their performance on each hole:
-            </p>
-            <div className="mb-4 rounded-sm border border-gray-200">
-              <table className="w-full border-collapse text-sm font-display">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100">
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Result
-                    </th>
-                    <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
-                      Points
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="text-gray-800">
-                  {[
-                    ["Eagle or better", "+5"],
-                    ["Birdie", "+2"],
-                    ["Par", "0"],
-                    ["Bogey", "−1"],
-                    ["Double bogey or worse", "−3"],
-                  ].map(([label, pts], i) => (
-                    <tr key={label} className={i > 0 ? "border-t border-slate-100" : undefined}>
-                      <td className="px-3 py-2.5 text-left leading-snug">{label}</td>
-                      <td className="px-3 py-2.5 text-right font-medium tabular-nums text-slate-900">
-                        {pts}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Got it
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 6 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Contest Winner Pool
-            </h1>
-            <div className="bg-white rounded-sm shadow p-5 border-2 border-blue-200 mb-4">
-              <p className="text-xs font-display text-blue-600 font-medium mb-2">Winner Pool</p>
-              <p className="text-gray-700 leading-relaxed font-display text-sm">
-                A <strong>secondary prediction market</strong> on <strong>which lineup</strong> wins
-                the contest—not swapping golfers. You take <strong>positions</strong> (shares);{" "}
-                <strong>prices move</strong> with the event. When the contest{" "}
-                <strong>settles</strong>, winner pool payouts are <strong>separate</strong> from
-                primary lineup prizes.
-              </p>
-            </div>
-            <p className="text-gray-700 leading-relaxed font-display text-sm mb-4">
-              <strong>When you can buy, sell, or only buy</strong> follows contest status—see the
-              FAQ for the full timeline.
-            </p>
-            <p className="text-sm mb-2">
-              <Link
-                to="/faq#contest-status"
-                className="text-green-600 font-medium underline-offset-2 hover:underline"
-              >
-                Contest status &amp; timeline (FAQ)
-              </Link>
-            </p>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 7 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Referral bonuses
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-5">
-              Invite friends and earn when they join and play. The program is{" "}
-              <strong>multi-level</strong>: you can also earn when <em>they</em> refer people, and
-              when those invites keep spreading—so rewards aren&apos;t limited to only your direct
-              referrals.
-            </p>
-            <div className="rounded-sm border-2 border-orange-200 bg-white shadow-sm p-4 mb-2">
-              <div className="space-y-3 text-sm text-gray-700 font-display leading-snug">
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-                    1
-                  </span>
-                  <p>
-                    <strong>Direct referrals</strong> — someone uses your link, signs up, and plays.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-                    2
-                  </span>
-                  <p>
-                    <strong>Second level</strong> — your referrals invite their own friends; you can
-                    earn on that activity too.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-orange-400 text-xs font-bold text-white">
-                    +
-                  </span>
-                  <p>
-                    <strong>More levels</strong> — bonuses can continue down the chain; exact rates
-                    and rules are in your account when the program is live.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 8 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Add funds to your account
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You&apos;ll need funds in your account to compete in contests. Any player can send you
-              funds at any time. Send your Account ID to the person that referred you to get
-              started.
-            </p>
-
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back

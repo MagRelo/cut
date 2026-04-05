@@ -28,15 +28,13 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   const potAmount = primaryPrizePool ? Math.round(Number(formatUnits(primaryPrizePool, 18))) : 0;
 
   // Fetch speculator pot - don't need entryIds to get total pot
-  const {
-    secondaryTotalFundsFormatted,
-    isLoading: isPredictionDataLoading,
-  } = useContestPredictionData({
-    contestAddress: contest.address,
-    entryIds: [], // Empty array since we only need secondary prize pool data
-    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-  });
+  const { secondaryTotalFundsFormatted, isLoading: isPredictionDataLoading } =
+    useContestPredictionData({
+      contestAddress: contest.address,
+      entryIds: [], // Empty array since we only need secondary prize pool data
+      enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
+      chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+    });
 
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
 
@@ -67,7 +65,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
 
       {/* Middle Section - Contest Info */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 font-display truncate leading-tight">
+        <h3 className="text-lg font-bold text-gray-900 font-display truncate leading-tight">
           ${contest.settings?.primaryDeposit} - {contest.name}
         </h3>
         <p className="text-xs text-gray-400 font-medium leading-tight mt-0.5">
