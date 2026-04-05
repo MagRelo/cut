@@ -113,7 +113,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Got it
               </button>
             </StepActions>
           </>
@@ -139,7 +139,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Cool
               </button>
             </StepActions>
           </>
@@ -270,7 +270,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Sweet
               </button>
             </StepActions>
           </>
@@ -298,7 +298,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Kick Ass
               </button>
             </StepActions>
           </>
@@ -320,7 +320,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Nice
               </button>
             </StepActions>
           </>
@@ -356,7 +356,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Save & Continue
               </button>
             </StepActions>
           </>
@@ -398,7 +398,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Continue
+                Save & Continue
               </button>
             </StepActions>
           </>

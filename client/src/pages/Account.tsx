@@ -33,7 +33,7 @@ const WalletInfo = ({
       {userEmail ? (
         <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
           <span className="text-sm font-medium text-gray-700 font-display">Email</span>
-          <div className="flex justify-end text-gray-600 text-sm font-medium break-all text-right">
+          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
             {userEmail}
           </div>
         </div>
@@ -47,7 +47,7 @@ const WalletInfo = ({
           <div className="flex justify-end text-gray-700 text-sm font-medium">
             <CopyToClipboard
               text={accountIdAddress}
-              displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
+              // displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
             />
           </div>
         </div>
@@ -61,7 +61,7 @@ const WalletInfo = ({
           <div className="flex justify-end text-gray-700 text-sm font-medium">
             <CopyToClipboard
               text={inviteLinkUrl}
-              displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
+              // displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
             />
           </div>
         </div>
