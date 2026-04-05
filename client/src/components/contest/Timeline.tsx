@@ -157,7 +157,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           ticks: {
             display: true,
             font: {
-              family: "Inter, system-ui, -apple-system, sans-serif",
+              family: "'Outfit', sans-serif",
               size: 9,
             },
             maxRotation: 0,
@@ -176,7 +176,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           },
           ticks: {
             font: {
-              family: "Inter, system-ui, -apple-system, sans-serif",
+              family: "'Outfit', sans-serif",
               size: 9,
             },
             callback: (value: string | number) =>
@@ -196,7 +196,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   if (!timelineData.teams.length) {
     return (
-      <div className={className}>
+      <div className={`font-display ${className}`.trim()}>
         <div
           className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-center"
           style={{ height: "200px" }}
@@ -208,8 +208,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   }
 
   return (
-    <div className={className}>
-      <div className="bg-white  p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
+    <div className={`font-display ${className}`.trim()}>
+      <div className="bg-white p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
         {emptySharePrice ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
             No share price history yet. It appears after timeline snapshots include market data.

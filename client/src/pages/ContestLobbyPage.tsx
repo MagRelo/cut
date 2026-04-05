@@ -290,10 +290,10 @@ export const ContestLobby: React.FC = () => {
                     </Tab>
                   </TabList>
                   <TabPanels>
-                    <TabPanel className="focus:outline-none">
+                    <TabPanel className="focus:outline-none mt-2">
                       <PredictionLineupsList contest={contest} />
                     </TabPanel>
-                    <TabPanel className="focus:outline-none">
+                    <TabPanel className="focus:outline-none mt-2">
                       <PredictionPositionsList contest={contest} />
                     </TabPanel>
                   </TabPanels>

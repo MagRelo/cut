@@ -77,7 +77,7 @@ export const ContestEntryList = ({
   }
 
   return (
-    <>
+    <div className="px-3">
       {sortedLineups.map((lineup, index) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const nextLineup = sortedLineups[index + 1];
@@ -104,20 +104,20 @@ export const ContestEntryList = ({
         return (
           <div key={lineup.id}>
             <div
-              className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 shadow-sm"
+              className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 font-display shadow-sm"
               onClick={() => openLineupModal(lineup)}
               style={{
                 borderLeftColor: resolvedBorderColor,
-                borderLeftWidth: "3px",
+                borderLeftWidth: "5px",
                 borderLeftStyle: "solid",
               }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                  <div className="text-base font-semibold text-gray-900 truncate leading-tight sm:text-lg">
                     {lineup.user?.name || lineup.user?.email || "Unknown User"}
                     {lineupNumberLabel && (
-                      <span className="ml-1 text-xs font-medium text-gray-500">
+                      <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
                         {lineupNumberLabel}
                       </span>
                     )}
@@ -132,7 +132,7 @@ export const ContestEntryList = ({
 
                 <div className="flex-shrink-0 flex items-center gap-2">
                   <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900 leading-none">
+                    <div className="text-lg font-bold tabular-nums text-gray-900 leading-none">
                       {lineup.score || 0}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
@@ -162,7 +162,7 @@ export const ContestEntryList = ({
             {showPaidCutoffDivider && (
               <div className="my-2 flex items-center gap-2" role="separator" aria-hidden>
                 <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
-                <span className="flex h-6 w-4 shrink-0 items-center justify-center text-sm font-semibold leading-none text-green-600 opacity-80">
+                <span className="flex h-6 w-4 shrink-0 items-center justify-center font-display text-sm font-semibold leading-none text-green-600 opacity-80">
                   $
                 </span>
                 <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
@@ -180,6 +180,6 @@ export const ContestEntryList = ({
         roundDisplay={roundDisplay || ""}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
       />
-    </>
+    </div>
   );
 };

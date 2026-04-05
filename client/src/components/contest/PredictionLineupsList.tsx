@@ -64,7 +64,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   return (
     <div>
-      <div className="space-y-2 mt-2">
+      <div className="space-y-2 mt-2 px-2">
         {[...entryData]
           .sort((a, b) => parseFloat(b.priceFormatted) - parseFloat(a.priceFormatted))
           .map((entry) => {
@@ -113,23 +113,23 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
               <div
                 key={entry.entryId}
                 onClick={() => canOpenLineupModal && setSelectedEntryId(entry.entryId)}
-                className={`bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 ${
+                className={`bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display ${
                   canOpenLineupModal
                     ? "cursor-pointer hover:shadow-md"
                     : "opacity-60 cursor-not-allowed"
                 } transition-all`}
                 style={{
                   borderLeftColor: resolvedLeftBorderColor,
-                  borderLeftWidth: "3px",
+                  borderLeftWidth: "5px",
                   borderLeftStyle: "solid",
                 }}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">
+                    <div className="text-base font-semibold text-gray-900 truncate leading-tight sm:text-lg">
                       {userName}
                       {lineupNumberLabel && (
-                        <span className="ml-1 text-xs font-medium text-gray-500">
+                        <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
                           {lineupNumberLabel}
                         </span>
                       )}
@@ -158,7 +158,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                       <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
                         $10 wins
                       </div>
-                      <div className="text-lg font-bold text-emerald-600 leading-none mt-0.5">
+                      <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mt-0.5">
                         ${tenDollarWinsLabel}
                       </div>
                     </div>
