@@ -95,3 +95,37 @@ export function CopyToClipboard({
     </button>
   );
 }
+
+/** Visible "Copy" / "Copied!" control; use next to read-only value text. */
+export function CopyButton({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? "Copied" : "Copy to clipboard"}
+      className={`shrink-0 rounded-sm px-3 py-1.5 text-sm font-semibold text-white font-display transition-colors shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        copied ? "bg-blue-700 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+      } ${className}`}
+    >
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}

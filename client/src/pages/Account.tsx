@@ -6,10 +6,15 @@ import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 // import { MintingUserFundsPanel } from "../components/user/MintingUserFundsPanel";
 
 import { PageHeader } from "../components/common/PageHeader";
-import { CopyToClipboard } from "../components/common/CopyToClipboard";
+import { CopyButton } from "../components/common/CopyToClipboard";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
+
+function truncateMiddle(value: string, head = 8, tail = 6) {
+  if (value.length <= head + tail + 1) return value;
+  return `${value.slice(0, head)}…${value.slice(-tail)}`;
+}
 
 // Wallet Info Component (below tabs)
 const WalletInfo = ({
@@ -31,39 +36,45 @@ const WalletInfo = ({
     <div className="bg-white rounded-sm shadow p-4 mt-4">
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
 
+      {userEmail ? (
+        <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center mt-2">
+          <span className="text-sm font-medium text-gray-700 font-display">Email</span>
+          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
+            {userEmail}
+          </div>
+        </div>
+      ) : null}
+
       {accountIdAddress ? (
         <div
-          className={`grid grid-cols-[auto_1fr] gap-x-4 items-center ${userEmail ? "mt-2" : ""}`}
+          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail ? "mt-2" : ""}`}
         >
           <span className="text-sm font-medium text-gray-700 font-display">Account ID</span>
-          <div className="flex justify-end text-gray-700 text-sm font-medium">
-            <CopyToClipboard
-              text={accountIdAddress}
-              // displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
-            />
+          <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+            <span
+              className="font-mono text-xs text-gray-800 text-right break-all min-w-0"
+              title={accountIdAddress}
+            >
+              {truncateMiddle(accountIdAddress)}
+            </span>
+            <CopyButton text={accountIdAddress} />
           </div>
         </div>
       ) : null}
 
       {inviteLinkUrl ? (
         <div
-          className={`grid grid-cols-[auto_1fr] gap-x-4 items-center ${userEmail || accountIdAddress ? "mt-2" : ""}`}
+          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail || accountIdAddress ? "mt-2" : ""}`}
         >
           <span className="text-sm font-medium text-gray-700 font-display">Invite Link</span>
-          <div className="flex justify-end text-gray-700 text-sm font-medium">
-            <CopyToClipboard
-              text={inviteLinkUrl}
-              // displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {userEmail ? (
-        <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center mt-2">
-          <span className="text-sm font-medium text-gray-700 font-display">Email</span>
-          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
-            {userEmail}
+          <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+            <span
+              className="text-xs text-gray-800 text-right break-all min-w-0 max-w-full sm:max-w-[min(100%,20rem)]"
+              title={inviteLinkUrl}
+            >
+              {truncateMiddle(inviteLinkUrl, 16, 6)}
+            </span>
+            <CopyButton text={inviteLinkUrl} />
           </div>
         </div>
       ) : null}
