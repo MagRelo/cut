@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { useAccount, useReadContract, useReadContracts, useChainId } from "wagmi";
+import { useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatUnits, type Abi } from "viem";
 import { sharesForSecondaryPricing, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import ContestContract from "../utils/contracts/ContestController.json";
+import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 
 // Contract state enum matching Contest.sol
 export enum ContestState {
@@ -30,7 +31,7 @@ interface UseContestPredictionDataOptions {
  */
 export function useContestPredictionData(options: UseContestPredictionDataOptions) {
   const { contestAddress, entryIds = [], enabled = true, chainId: providedChainId } = options;
-  const { address: userAddress } = useAccount();
+  const userAddress = useEffectiveWalletAddress();
   const walletChainId = useChainId();
   const chainId = (providedChainId ?? walletChainId) as SupportedChainId;
   const contestAbi = ContestContract.abi as Abi;
@@ -223,8 +224,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       : undefined;
     const secondaryDepositedPerEntry = secondaryDepositedPerEntryRaw ?? 0n;
 
-    // Calculate implied winnings if this entry wins
-    // Formula: (userBalance / totalSupply) * totalCollateral
+    // Implied claim on the full secondary prize pool if this entry wins the secondary side:
+    // (your share of this entry's supply) × totalSecondaryLiquidity() across all entries.
     let impliedWinnings = 0n;
     let impliedWinningsFormatted = "0";
 
@@ -233,9 +234,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       balance > 0n &&
       supply !== undefined &&
       supply > 0n &&
-      entryLiquidity > 0n
+      totalSecondaryFunds > 0n
     ) {
-      impliedWinnings = (balance * entryLiquidity) / supply;
+      impliedWinnings = (balance * totalSecondaryFunds) / supply;
       impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
     }
 

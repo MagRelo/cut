@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { formatUnits, type Abi } from "viem";
-import { useAccount, useReadContracts } from "wagmi";
+import { useReadContracts } from "wagmi";
 
 import ContestContract from "../utils/contracts/ContestController.json";
 import { useAuth } from "../contexts/AuthContext";
 import { useContestPredictionData } from "./useContestPredictionData";
+import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
 import type { ContestLineup } from "../types/lineup";
 
@@ -53,7 +54,7 @@ export function useContestSettlementClaims(
 ): UseContestSettlementClaimsResult {
   const { contest, contestLineups = [] } = options;
   const { user } = useAuth();
-  const { address: walletAddress } = useAccount();
+  const walletAddress = useEffectiveWalletAddress();
 
   const isSettled = contest?.status === "SETTLED";
   const contestAddress = contest?.address ?? "0x0000000000000000000000000000000000000000";

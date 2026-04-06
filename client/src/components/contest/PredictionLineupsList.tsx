@@ -4,6 +4,7 @@ import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
+import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
@@ -44,6 +45,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     isLoading,
     secondaryPrizePoolFormatted,
     secondaryTotalFundsFormatted,
+    secondaryTotalFunds,
     poolSnapshot,
   } = useContestPredictionData({
     contestAddress: contest.address,
@@ -71,7 +73,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
             const lineupNumberLabel = getLineupNumberLabel(lineup?.tournamentLineup?.name);
-            const tenDollarWinsLabel = (() => {
+            const tenDollarBuysLabel = (() => {
               if (!poolSnapshot) return "—";
 
               let tenDollarAmount: bigint;
@@ -88,14 +90,15 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                 ...poolSnapshot,
               });
 
-              if (sim.tokensToMint <= 0n) return "0.00";
-
-              const newSupply = sim.newSupply;
-              if (newSupply <= 0n) return "0.00";
-
-              // Simulate a fresh $10 buy so list rows are comparable across entries.
-              const impliedAfter = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
-              const impliedRaw = Number(formatUnits(impliedAfter, 18));
+              const deltaWei = incrementalGlobalClaimDelta(
+                secondaryTotalFunds,
+                tenDollarAmount,
+                entry.balance,
+                entry.totalSupply,
+                sim,
+              );
+              if (deltaWei === null) return "—";
+              const impliedRaw = Number(formatUnits(deltaWei, 18));
               if (!Number.isFinite(impliedRaw)) return "—";
               return impliedRaw.toFixed(2);
             })();
@@ -156,10 +159,10 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <div className="text-right">
                       <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
-                        $10 wins
+                        $10 buys
                       </div>
                       <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mt-0.5">
-                        ${tenDollarWinsLabel}
+                        ${tenDollarBuysLabel}
                       </div>
                     </div>
                   </div>
@@ -177,6 +180,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
         entryData={entryData}
         secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
         secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+        totalSecondaryLiquidityBefore={secondaryTotalFunds}
         poolSnapshot={poolSnapshot}
       />
     </div>

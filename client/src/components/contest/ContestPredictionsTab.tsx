@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
-import { useAccount } from "wagmi";
 import { Connect } from "../user/Connect";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { PredictionLineupsList } from "./PredictionLineupsList";
 import { PredictionPositionsList } from "./PredictionPositionsList";
 import { PredictionClaimPanel } from "./PredictionClaimPanel";
@@ -18,7 +18,7 @@ interface ContestPredictionsTabProps {
 }
 
 export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ contest }) => {
-  const { address: userAddress } = useAccount();
+  const userAddress = useEffectiveWalletAddress();
 
   // Get entry IDs from contest lineups
   const entryIds = useMemo(() => {

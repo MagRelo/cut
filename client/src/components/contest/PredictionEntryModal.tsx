@@ -20,6 +20,8 @@ interface PredictionEntryModalProps {
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
+  /** Sum of `secondaryLiquidityPerEntry` over entries (`totalSecondaryLiquidity()`), before this purchase. */
+  totalSecondaryLiquidityBefore: bigint | undefined;
   poolSnapshot: SecondaryPoolSnapshot | undefined;
 }
 
@@ -31,6 +33,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
   entryData,
   secondaryPrizePoolFormatted,
   secondaryTotalFundsFormatted,
+  totalSecondaryLiquidityBefore,
   poolSnapshot,
 }) => {
   const [displayEntryId, setDisplayEntryId] = useState<string | null>(entryId);
@@ -98,6 +101,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
                       entryData={entryData}
                       secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
                       secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+                      totalSecondaryLiquidityBefore={totalSecondaryLiquidityBefore}
                       poolSnapshot={poolSnapshot}
                       onClose={onClose}
                     />

@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import apiClient from "../../utils/apiClient";
+import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export interface PredictionEntryData {
@@ -34,6 +35,8 @@ interface PredictionEntryFormProps {
   entryData: PredictionEntryData[];
   secondaryPrizePoolFormatted: string;
   secondaryTotalFundsFormatted: string;
+  /** Contest-wide sum of secondary liquidity (`totalSecondaryLiquidity()`) before this purchase. */
+  totalSecondaryLiquidityBefore: bigint | undefined;
   /** On-chain snapshot for ContestCatalyst secondary math (undefined while loading). */
   poolSnapshot: SecondaryPoolSnapshot | undefined;
   onClose: () => void;
@@ -43,6 +46,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   contest,
   entryId,
   entryData,
+  totalSecondaryLiquidityBefore,
   poolSnapshot,
   onClose,
 }) => {
@@ -63,14 +67,25 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     [entryData, entryId],
   );
 
+  /**
+   * Ownership after = (balance + buyer mint) / newSupply on this entry.
+   * Incremental claim = Δ((pot × balance) / supply) for an additional purchase; at 100% pre-ownership
+   * that nets exactly the purchase amount ("$10 buys $10").
+   */
   const metrics = useMemo(() => {
     const empty = {
-      ownershipPercent: 0,
-      tokensReceived: 0,
-      impliedValueAfterPurchaseDisplay: "—" as string,
+      ownershipDisplay: "—" as string,
+      purchaseAmountDisplay: "—" as string,
+      incrementalNetDisplay: "—" as string,
     };
 
-    if (!amount || Number.parseFloat(amount) <= 0 || !selectedEntryInfo || !poolSnapshot) {
+    if (
+      !amount ||
+      Number.parseFloat(amount) <= 0 ||
+      !selectedEntryInfo ||
+      !poolSnapshot ||
+      totalSecondaryLiquidityBefore === undefined
+    ) {
       return empty;
     }
 
@@ -86,6 +101,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       return empty;
     }
 
+    const balanceBefore = selectedEntryInfo.balance ?? 0n;
+    const supplyBefore = selectedEntryInfo.totalSupply;
+
     const sim = simulateAddSecondaryPosition({
       amount: amountBigInt,
       entryShares: selectedEntryInfo.totalSupply,
@@ -93,36 +111,41 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       ...poolSnapshot,
     });
 
-    if (sim.tokensToMint === 0n) {
-      return { ...empty, impliedValueAfterPurchaseDisplay: "0.00" };
-    }
-
     const newSupply = sim.newSupply;
+    const userSharesAfter = balanceBefore + sim.tokensToMint;
+
+    const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : "—");
+    const fmtWei = (w: bigint) => fmt(Number(formatUnits(w, 18)));
+
     if (newSupply === 0n) {
       return empty;
     }
 
-    const tokensReceived = Number(formatUnits(sim.tokensToMint, 18));
-    const ownershipPercent =
-      newSupply > 0n ? Number((sim.tokensToMint * 10000n) / newSupply) / 100 : 0;
+    const ownershipPercent = Number((userSharesAfter * 10000n) / newSupply) / 100;
 
-    // Buy-only implied value: value only the newly minted shares from this purchase.
-    const impliedAfter = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
-    const impliedRaw = Number(formatUnits(impliedAfter, 18));
-    const impliedValueAfterPurchaseDisplay = Number.isFinite(impliedRaw)
-      ? impliedRaw.toFixed(2)
-      : "—";
+    const incrementalWei = incrementalGlobalClaimDelta(
+      totalSecondaryLiquidityBefore,
+      amountBigInt,
+      balanceBefore,
+      supplyBefore,
+      sim,
+    );
 
-    return { ownershipPercent, tokensReceived, impliedValueAfterPurchaseDisplay };
-  }, [amount, selectedEntryInfo, poolSnapshot]);
+    return {
+      ownershipDisplay: `${fmt(ownershipPercent)}%`,
+      purchaseAmountDisplay: fmtWei(amountBigInt),
+      incrementalNetDisplay: incrementalWei === null ? "—" : fmtWei(incrementalWei),
+    };
+  }, [amount, selectedEntryInfo, poolSnapshot, totalSecondaryLiquidityBefore]);
 
-  const metricsReady = Boolean(poolSnapshot);
+  const metricsReady = Boolean(poolSnapshot) && totalSecondaryLiquidityBefore !== undefined;
 
-  const ownPercentAfterDisplay =
-    metricsReady && selectedEntryInfo ? `${metrics.ownershipPercent.toFixed(2)}%` : "—";
-
-  const impliedValueDisplay =
-    metricsReady && selectedEntryInfo ? metrics.impliedValueAfterPurchaseDisplay : "—";
+  const ownershipDisplay =
+    metricsReady && selectedEntryInfo ? metrics.ownershipDisplay : "—";
+  const purchaseAmountDisplay =
+    metricsReady && selectedEntryInfo ? metrics.purchaseAmountDisplay : "—";
+  const incrementalNetDisplay =
+    metricsReady && selectedEntryInfo ? metrics.incrementalNetDisplay : "—";
 
   useEffect(() => {
     setAmount("10");
@@ -212,13 +235,15 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         </div>
 
         <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">% of Pool</span>
-          <span className="text-gray-700 font-medium tabular-nums">{ownPercentAfterDisplay}</span>
+          <span className="text-gray-500">Ownership</span>
+          <span className="text-gray-700 font-medium tabular-nums">{ownershipDisplay}</span>
         </div>
 
-        <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">Current Value</span>
-          <span className="font-bold tabular-nums text-emerald-600">${impliedValueDisplay}</span>
+        <div className="flex justify-between items-center gap-3 border-t border-gray-200 pt-2 mt-1">
+          <span className="text-gray-500">Purchase nets</span>
+          <span className="font-bold tabular-nums text-emerald-600">
+            ${purchaseAmountDisplay} buys ${incrementalNetDisplay}
+          </span>
         </div>
       </div>
     </div>

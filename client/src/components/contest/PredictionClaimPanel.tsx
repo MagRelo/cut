@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { useAccount } from "wagmi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { useClaimPredictionPayout } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest } from "../../types/contest";
@@ -10,7 +10,7 @@ interface PredictionClaimPanelProps {
 }
 
 export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ contest }) => {
-  const { address: userAddress } = useAccount();
+  const userAddress = useEffectiveWalletAddress();
   const [claimingEntryId, setClaimingEntryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

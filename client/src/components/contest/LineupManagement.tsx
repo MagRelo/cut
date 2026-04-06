@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useMemo } from "react";
+import React, { Fragment, useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useReadContract } from "wagmi";
@@ -20,6 +20,10 @@ import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface LineupManagementProps {
   contest: Contest;
+  /** When false, resets single-lineup auto-join so reopening the modal can retry. */
+  isModalOpen?: boolean;
+  /** Called after a successful join when all user lineups are entered (including the single-lineup case). */
+  onCloseModal?: () => void;
 }
 
 // Helper function to get status messages
@@ -48,7 +52,11 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
   return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
 };
 
-export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) => {
+export const LineupManagement: React.FC<LineupManagementProps> = ({
+  contest,
+  isModalOpen = true,
+  onCloseModal,
+}) => {
   const { lineups } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const joinContest = useJoinContest();
@@ -66,6 +74,18 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   // Extract primitive values to prevent re-renders
   const contestId = contest.id;
 
+  const userContestLineups = useMemo(() => {
+    return contest?.contestLineups?.filter((lineup) => lineup.userId === user?.id) || [];
+  }, [contest?.contestLineups, user?.id]);
+
+  const enteredLineupsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    userContestLineups.forEach((cl) => {
+      map.set(cl.tournamentLineupId, cl.id);
+    });
+    return map;
+  }, [userContestLineups]);
+
   // Use Contest blockchain hooks
   const {
     execute: executeJoinBlockchain,
@@ -78,14 +98,22 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
   } = useJoinContestBlockchain({
     onSuccess: async () => {
       if (pendingAction?.type === "join" && pendingAction?.lineupId && pendingAction?.entryId) {
+        const joinedLineupId = pendingAction.lineupId;
         try {
           await joinContest.mutateAsync({
             contestId,
-            tournamentLineupId: pendingAction.lineupId,
+            tournamentLineupId: joinedLineupId,
             entryId: pendingAction.entryId,
           });
           setPendingAction(null);
           setServerError(null);
+
+          const allLineupsEntered = lineups.every(
+            (l) => enteredLineupsMap.has(l.id) || l.id === joinedLineupId,
+          );
+          if (allLineupsEntered) {
+            onCloseModal?.();
+          }
         } catch (error) {
           console.error("Error joining contest:", error);
           setServerError(
@@ -169,52 +197,36 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     return totalAvailableBalance >= contestantDepositAmount;
   }, [platformTokenBalance, paymentTokenBalance, contestantDepositAmount]);
 
-  // Get user's contest lineups
-  const userContestLineups = useMemo(() => {
-    return contest?.contestLineups?.filter((lineup) => lineup.userId === user?.id) || [];
-  }, [contest?.contestLineups, user?.id]);
-
-  // Map of entered lineup IDs to contest lineup IDs
-  const enteredLineupsMap = useMemo(() => {
-    const map = new Map<string, string>();
-    userContestLineups.forEach((cl) => {
-      map.set(cl.tournamentLineupId, cl.id);
-    });
-    return map;
-  }, [userContestLineups]);
-
   // Helper function to check if lineup with same players already exists in contest
-  const checkForDuplicateInContest = (lineupId: string): boolean => {
-    const lineup = lineups.find((l) => l.id === lineupId);
-    if (!lineup) return false;
+  const checkForDuplicateInContest = useCallback(
+    (lineupId: string): boolean => {
+      const lineup = lineups.find((l) => l.id === lineupId);
+      if (!lineup) return false;
 
-    // Normalize player IDs by sorting
-    const normalizedPlayerIds = lineup.players
-      .map((p) => p.id)
-      .sort()
-      .join(",");
+      const normalizedPlayerIds = lineup.players
+        .map((p) => p.id)
+        .sort()
+        .join(",");
 
-    // Check if any contest lineup has the same player set
-    return (
-      contest.contestLineups?.some((contestLineup) => {
-        // Only check user's own lineups
-        if (contestLineup.userId !== user?.id) return false;
+      return (
+        contest.contestLineups?.some((contestLineup) => {
+          if (contestLineup.userId !== user?.id) return false;
 
-        // Get the tournament lineup for this contest lineup
-        const contestTournamentLineup = lineups.find(
-          (l) => l.id === contestLineup.tournamentLineupId,
-        );
-        if (!contestTournamentLineup) return false;
+          const contestTournamentLineup = lineups.find(
+            (l) => l.id === contestLineup.tournamentLineupId,
+          );
+          if (!contestTournamentLineup) return false;
 
-        // Normalize and compare player sets
-        const contestPlayerIds = contestTournamentLineup.players
-          .map((p) => p.id)
-          .sort()
-          .join(",");
-        return contestPlayerIds === normalizedPlayerIds;
-      }) || false
-    );
-  };
+          const contestPlayerIds = contestTournamentLineup.players
+            .map((p) => p.id)
+            .sort()
+            .join(",");
+          return contestPlayerIds === normalizedPlayerIds;
+        }) || false
+      );
+    },
+    [lineups, contest.contestLineups, user?.id],
+  );
 
   const handleJoinContest = async (lineupId: string) => {
     // Find the lineup being added
@@ -238,9 +250,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     if (!hasEnoughBalance) {
       setWarningModal({
         open: true,
-        message: `You do not have enough ${
-          contest?.settings?.paymentTokenSymbol || "tokens"
-        } or USDC to join this contest. You can view your balance on the "User" page. Contact your admin to fund your account.`,
+        message: `You do not have enough funds to join this contest.`,
       });
       return;
     }
@@ -290,6 +300,41 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
     await executeLeaveBlockchain(calls);
   };
 
+  const autoJoinSingleLineupRef = useRef(false);
+  const handleJoinContestRef = useRef(handleJoinContest);
+  handleJoinContestRef.current = handleJoinContest;
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      autoJoinSingleLineupRef.current = false;
+      return;
+    }
+    if (lineups.length !== 1) {
+      autoJoinSingleLineupRef.current = false;
+      return;
+    }
+    if (pendingAction) return;
+
+    const only = lineups[0];
+    if (enteredLineupsMap.has(only.id)) return;
+    if (!only.players?.length) return;
+    if (checkForDuplicateInContest(only.id)) return;
+    if (!hasEnoughBalance) return;
+    if (!contestantDepositAmount) return;
+    if (autoJoinSingleLineupRef.current) return;
+
+    autoJoinSingleLineupRef.current = true;
+    void handleJoinContestRef.current(only.id);
+  }, [
+    isModalOpen,
+    lineups,
+    enteredLineupsMap,
+    hasEnoughBalance,
+    contestantDepositAmount,
+    pendingAction,
+    checkForDuplicateInContest,
+  ]);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Warning Modal */}
@@ -324,8 +369,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest }) =
               >
                 <DialogPanel className="w-full max-w-md transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
                   <div className="p-6">
-                    <DialogTitle className="text-lg font-semibold text-red-600 mb-2">Warning</DialogTitle>
-                    <div className="text-gray-800 mb-4">{warningModal.message}</div>
+                    <DialogTitle className="text-lg font-semibold text-red-600 mb-2">
+                      Warning
+                    </DialogTitle>
+                    <div className="text-gray-800 mb-4 font-display">{warningModal.message}</div>
                     <button
                       type="button"
                       onClick={() => setWarningModal({ open: false, message: "" })}

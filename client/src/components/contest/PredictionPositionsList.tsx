@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { useAccount } from "wagmi";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -17,7 +17,7 @@ interface PredictionPositionsListProps {
 }
 
 export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = ({ contest }) => {
-  const { address: userAddress } = useAccount();
+  const userAddress = useEffectiveWalletAddress();
   const [withdrawingEntryId, setWithdrawingEntryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
