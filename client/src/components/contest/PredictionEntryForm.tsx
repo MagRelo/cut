@@ -1,6 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
+
+/** Matches `useSpectatorOperations` / `createAddPredictionCalls` funding rules. */
+function canCoverSecondaryPurchase(
+  purchaseAmountWei: bigint,
+  platformTokenBalance: bigint,
+  paymentTokenBalance: bigint,
+): boolean {
+  if (purchaseAmountWei <= 0n) return false;
+  if (platformTokenBalance >= purchaseAmountWei) return true;
+  const platformShortfall = purchaseAmountWei - platformTokenBalance;
+  const human = formatUnits(platformShortfall, 18);
+  const paymentNeeded = parseUnits(human, 6);
+  return paymentTokenBalance >= paymentNeeded;
+}
 import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useAuth } from "../../contexts/AuthContext";
@@ -147,6 +161,24 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const incrementalNetDisplay =
     metricsReady && selectedEntryInfo ? metrics.incrementalNetDisplay : "—";
 
+  const purchaseAmountWei = useMemo(() => {
+    try {
+      if (!amount || Number.parseFloat(amount) <= 0) return null;
+      return parseUnits(amount, 18);
+    } catch {
+      return null;
+    }
+  }, [amount]);
+
+  const canAffordPurchase = useMemo(() => {
+    if (purchaseAmountWei === null) return false;
+    return canCoverSecondaryPurchase(
+      purchaseAmountWei,
+      platformTokenBalance ?? 0n,
+      paymentTokenBalance ?? 0n,
+    );
+  }, [purchaseAmountWei, platformTokenBalance, paymentTokenBalance]);
+
   useEffect(() => {
     setAmount("10");
     setError(null);
@@ -195,8 +227,26 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       return;
     }
 
+    let amountBigInt: bigint;
     try {
-      const amountBigInt = parseUnits(amount, 18);
+      amountBigInt = parseUnits(amount, 18);
+    } catch {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    if (
+      !canCoverSecondaryPurchase(
+        amountBigInt,
+        platformTokenBalance ?? 0n,
+        paymentTokenBalance ?? 0n,
+      )
+    ) {
+      setError("Insufficient balance for this purchase amount.");
+      return;
+    }
+
+    try {
       const calls = createAddPredictionCalls(
         contest.address,
         Number.parseInt(entryId, 10),
@@ -336,12 +386,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             isProcessing ||
             !amount ||
             Number.parseFloat(amount) <= 0 ||
-            Boolean(
-              platformTokenBalance &&
-              paymentTokenBalance &&
-              parseUnits(amount, 18) > platformTokenBalance &&
-              parseUnits(amount, 6) > paymentTokenBalance,
-            )
+            !canAffordPurchase
           }
           className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-display font-semibold transition-colors"
         >
