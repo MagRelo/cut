@@ -53,15 +53,13 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
               <DialogPanel className="w-full max-w-2xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
                 <div className="p-4 sm:p-6">
                   <div className="space-y-1 pb-4 border-b border-gray-200">
-                    <DialogTitle className="text-xl font-bold text-gray-900">
+                    <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-gray-900">
                       {tournament?.name ?? "Tournament Summary"}
                     </DialogTitle>
                     <p className="text-sm font-semibold text-gray-700">
                       {tournament?.course ?? "—"}
                     </p>
-                    <p className="text-xs text-gray-500 font-medium">
-                      {headerLocation || "—"}
-                    </p>
+                    <p className="text-xs text-gray-500 font-medium">{headerLocation || "—"}</p>
                   </div>
 
                   <div className="max-h-[60vh] overflow-y-auto pt-4 -mx-2 px-2">
@@ -76,7 +74,9 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                               {section.items.map((item, itemIndex) => (
                                 <li key={`${item.label ?? "item"}-${itemIndex}`}>
                                   {item.label ? (
-                                    <span className="font-semibold text-gray-900">{item.label}</span>
+                                    <span className="font-semibold text-gray-900">
+                                      {item.label}
+                                    </span>
                                   ) : null}
                                   {item.label ? " " : null}
                                   {item.body}
