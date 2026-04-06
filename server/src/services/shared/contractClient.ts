@@ -2,7 +2,7 @@
  * Shared contract client initialization for Contest operations
  */
 
-import { createWalletClient, http, getContract, type WalletClient } from "viem";
+import { createPublicClient, createWalletClient, http, getContract, type WalletClient } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
@@ -36,6 +36,17 @@ export function getWalletClient(chainId: number): {
   });
 
   return { walletClient, account };
+}
+
+/**
+ * Read-only client for receipts and simulation (matches oracle RPC chain).
+ */
+export function getPublicClient(chainId: number) {
+  const chainConfig = getChainConfig(chainId);
+  return createPublicClient({
+    chain: chainConfig.chain,
+    transport: http(chainConfig.rpcUrl),
+  });
 }
 
 /**

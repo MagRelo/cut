@@ -37,6 +37,8 @@ model User {
   userGroups        UserGroupMember[]
   tournamentLineups TournamentLineup[]
   contestLineups    ContestLineup[]
+  onchainPayments   OnchainPayment[]
+  contestSecondaryParticipants ContestSecondaryParticipant[]
   wallets           UserWallet[]
   referredBy        User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referredUsers     User[]             @relation("UserReferrals")
@@ -255,6 +257,8 @@ model Contest {
   tournament      Tournament       @relation(fields: [tournamentId], references: [id])
   userGroup       UserGroup?       @relation(fields: [userGroupId], references: [id])
   contestLineups  ContestLineup[]
+  secondaryParticipants ContestSecondaryParticipant[]
+  onchainPayments OnchainPayment[]
   timelines       ContestLineupTimeline[]
 
   @@index([tournamentId])
@@ -262,6 +266,59 @@ model Contest {
   @@index([status])
   @@index([chainId])
   @@index([chainId, tournamentId])
+}
+
+enum PaymentKind {
+  PRIMARY
+  SECONDARY
+  REFERRAL
+}
+
+/// Oracle-pushed or referral payouts to users (contest primary/secondary or future RewardDistributor).
+model OnchainPayment {
+  id                String      @id @default(cuid())
+  kind              PaymentKind
+  walletAddress     String
+  userId            String?
+  contestId         String?
+  chainId           Int
+  tokenAddress      String
+  amountWei         String
+  transactionHash   String
+  logIndex          Int?
+  metadata          Json?
+  /// When the user was notified about this payout (`null` = not notified yet).
+  notifiedAt        DateTime?
+  createdAt         DateTime    @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contest Contest? @relation(fields: [contestId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([contestId])
+  @@index([transactionHash])
+  @@index([kind])
+  @@index([notifiedAt])
+}
+
+/// Wallets that opened a secondary position on a contest entry (for pushSecondaryPayouts).
+model ContestSecondaryParticipant {
+  id                  String   @id @default(cuid())
+  contestId           String
+  entryId             String
+  walletAddress       String
+  userId              String?
+  chainId             Int
+  lastTransactionHash String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([contestId, entryId, walletAddress])
+  @@index([contestId, entryId])
+  @@index([walletAddress])
 }
 
 model ContestLineup {

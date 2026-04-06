@@ -7,6 +7,7 @@
 
 import { prisma } from "../../lib/prisma.js";
 import { getContestContract, verifyOracle, readContestState } from "../shared/contractClient.js";
+import { executeContestPayoutPushes } from "./pushContestPayouts.js";
 import {
   ContestState,
   type OperationResult,
@@ -273,6 +274,14 @@ export async function settleContest(contestId: string): Promise<OperationResult>
 
     console.log(`[settleContest] Transaction hash: ${hash}`);
 
+    const pushResult = await executeContestPayoutPushes({
+      contestId,
+      contestAddress: contest.address,
+      chainId: contest.chainId,
+      winningEntries,
+      paymentTokenAddress,
+    });
+
     // Prepare results for database
     const results: ContestResults = {
       winningEntries,
@@ -280,6 +289,9 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       detailedResults,
       settleTx: { hash },
       snapshot,
+      pushPrimaryTxs: pushResult.primaryTxHashes.map((h) => ({ hash: h })),
+      pushSecondaryTxs: pushResult.secondaryTxHashes.map((h) => ({ hash: h })),
+      ...(pushResult.error ? { pushPayoutsError: pushResult.error } : {}),
     };
 
     // Update database

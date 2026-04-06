@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
-import { contestQuerySchema, createContestSchema } from "../schemas/contest.js";
+import {
+  contestQuerySchema,
+  createContestSchema,
+  recordContestSecondaryParticipantSchema,
+} from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
 import { contestLineupsInclude } from "../utils/prismaIncludes.js";
@@ -121,6 +125,63 @@ contestRouter.get("/", async (c) => {
   } catch (error) {
     console.error("Error fetching contests:", error);
     return c.json({ error: "Failed to fetch contests" }, 500);
+  }
+});
+
+// Record secondary (prediction) participant for push payouts after settlement
+contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
+  try {
+    const contestId = c.req.param("id");
+    const body = await c.req.json();
+    const validation = recordContestSecondaryParticipantSchema.safeParse(body);
+    if (!validation.success) {
+      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+    }
+    const { entryId, transactionHash, chainId } = validation.data;
+    const user = c.get("user");
+
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { id: true, chainId: true, status: true },
+    });
+    if (!contest) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+    if (contest.chainId !== chainId) {
+      return c.json({ error: "chainId does not match contest" }, 400);
+    }
+    if (contest.status !== "OPEN" && contest.status !== "ACTIVE") {
+      return c.json({ error: "Secondary positions are not open for this contest" }, 400);
+    }
+
+    const walletAddress = user.address.toLowerCase();
+
+    await prisma.contestSecondaryParticipant.upsert({
+      where: {
+        contestId_entryId_walletAddress: {
+          contestId,
+          entryId,
+          walletAddress,
+        },
+      },
+      create: {
+        contestId,
+        entryId,
+        walletAddress,
+        userId: user.userId,
+        chainId,
+        lastTransactionHash: transactionHash,
+      },
+      update: {
+        lastTransactionHash: transactionHash,
+        userId: user.userId,
+      },
+    });
+
+    return c.json({ ok: true }, 201);
+  } catch (error) {
+    console.error("Error recording secondary participant:", error);
+    return c.json({ error: "Failed to record secondary participant" }, 500);
   }
 });
 

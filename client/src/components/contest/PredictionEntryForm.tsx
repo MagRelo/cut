@@ -5,6 +5,8 @@ import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/s
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
+import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
+import apiClient from "../../utils/apiClient";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export interface PredictionEntryData {
@@ -128,7 +130,24 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   }, [entryId, contest.id]);
 
   const { execute, isProcessing, createAddPredictionCalls } = useAddPrediction({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      const statusData = data as BatchTransactionStatusData;
+      const lastReceipt = statusData.receipts[statusData.receipts.length - 1];
+      if (lastReceipt?.transactionHash && entryId && contest?.id) {
+        try {
+          await apiClient.post(
+            `/contests/${contest.id}/secondary-participants`,
+            {
+              entryId,
+              transactionHash: lastReceipt.transactionHash,
+              chainId: contest.chainId,
+            },
+            { requiresAuth: true },
+          );
+        } catch (e) {
+          console.error("[PredictionEntryForm] Failed to record secondary participant:", e);
+        }
+      }
       setAmount("10");
       setError(null);
       onClose();

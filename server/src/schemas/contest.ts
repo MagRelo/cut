@@ -95,6 +95,18 @@ export const contestIdSchema = z.object({
   id: z.string().cuid("Invalid contest ID"),
 });
 
+/** Record a wallet that added secondary (prediction) liquidity on an entry (for push payouts). */
+export const recordContestSecondaryParticipantSchema = z.object({
+  entryId: z.string().regex(/^\d+$/, "entryId must be a decimal string"),
+  transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Invalid transaction hash"),
+  chainId: z
+    .number()
+    .int()
+    .refine((val) => [8453, 84532].includes(val), {
+      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+    }),
+});
+
 // Schema for contest query parameters
 export const contestQuerySchema = z.object({
   tournamentId: z.string().cuid("Invalid tournament ID"),
@@ -116,3 +128,6 @@ export type CreateContestBody = z.infer<typeof createContestSchema>;
 export type UpdateContestBody = z.infer<typeof updateContestSchema>;
 export type ContestIdParam = z.infer<typeof contestIdSchema>;
 export type ContestQueryParams = z.infer<typeof contestQuerySchema>;
+export type RecordContestSecondaryParticipantBody = z.infer<
+  typeof recordContestSecondaryParticipantSchema
+>;

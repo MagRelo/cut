@@ -82,6 +82,9 @@ export interface Contest {
       hash: string;
     };
     snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time
+    pushPrimaryTxs?: { hash: string }[];
+    pushSecondaryTxs?: { hash: string }[];
+    pushPayoutsError?: string;
   };
   /** Present on `GET /contests/:id`; omitted on list responses. */
   timeline?: TimelineData;

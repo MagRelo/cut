@@ -78,6 +78,12 @@ export interface ContestResults {
     hash: string;
   };
   snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time
+  /** Oracle pushPrimaryPayouts tx hashes (after settlement). */
+  pushPrimaryTxs?: { hash: string }[];
+  /** Oracle pushSecondaryPayouts tx hashes. */
+  pushSecondaryTxs?: { hash: string }[];
+  /** Set when post-settlement push steps fail partially or fully (on-chain may still be settled). */
+  pushPayoutsError?: string;
 }
 
 export interface DetailedResult {
