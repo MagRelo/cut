@@ -112,7 +112,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             aria-label="Contest Payouts"
             className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
           >
-            <div className="text-lg font-bold text-gray-900 leading-none">
+            <div className="text-lg font-display font-bold text-gray-900 leading-none">
               {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
@@ -121,7 +121,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
           </button>
         ) : (
           <div className="text-right ml-2 mr-2">
-            <div className="text-lg font-bold text-gray-900 leading-none">
+            <div className="text-lg font-display font-bold text-gray-900 leading-none">
               {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">

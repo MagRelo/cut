@@ -3,14 +3,12 @@ import { useParams } from "react-router-dom";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { LineupForm } from "../components/lineup/LineupForm";
 import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
-import { useActiveTournament } from "../hooks/useTournamentData";
 
 const LineupCreatePage: React.FC = () => {
   const { lineupId } = useParams<{ lineupId: string }>();
   const isEditMode = Boolean(lineupId);
-  const { isTournamentEditable } = useActiveTournament();
   return (
-    <div className="space-y-2 p-4">
+    <div className="space-y-4 p-4">
       <Breadcrumbs
         items={[
           { label: "Lineups", path: "/lineups" },
@@ -22,7 +20,9 @@ const LineupCreatePage: React.FC = () => {
       />
 
       {/* Tournament Info Panel - only show when editable */}
-      {isTournamentEditable && <TournamentInfoPanel />}
+      <div>
+        <TournamentInfoPanel />
+      </div>
 
       <div className="bg-white rounded-sm shadow">
         <LineupForm lineupId={lineupId} />
