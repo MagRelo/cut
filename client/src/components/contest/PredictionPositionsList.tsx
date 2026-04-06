@@ -167,19 +167,19 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                 </div>
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
-                  <div className="text-sm font-medium text-gray-900 leading-tight tabular-nums">
+                  <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
                     ${depositedDisplay}
                   </div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
+                  <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
                     Paid
                   </div>
                 </div>
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
-                  <div className="text-sm font-medium text-gray-900 leading-tight tabular-nums">
+                  <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
                     {ownershipDisplay}%
                   </div>
-                  <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
+                  <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
                     Own
                   </div>
                 </div>

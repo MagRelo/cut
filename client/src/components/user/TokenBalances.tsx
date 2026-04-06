@@ -68,7 +68,10 @@ export function TokenBalances({
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
       {/* Balance Header */}
-      <div className={`flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`}>
+      <Link
+        to="/cut"
+        className={`flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`}
+      >
         <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
         <div className="text-xl font-semibold text-gray-900 font-display">
           $
@@ -77,7 +80,7 @@ export function TokenBalances({
             Number(formatUnits(paymentTokenBalance ?? 0n, 6))
           ).toFixed(2)}
         </div>
-      </div>
+      </Link>
 
       {/* Token Breakdown */}
       {showBreakdown && (

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useActiveTournament } from "../hooks/useTournamentData";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 
 const ACCENT_COLORS = [
@@ -38,6 +39,9 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser, updateUserSettings } = useAuth();
+  const { isTournamentEditable } = useActiveTournament();
+  /** Lineup create/edit closed (tournament in progress or completed). */
+  const editingNotAllowed = !isTournamentEditable;
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);
@@ -104,7 +108,8 @@ export function OnboardingPage() {
     setSaving(true);
     try {
       await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
-      navigate("/lineups/create", { replace: true });
+      const nextPath = editingNotAllowed ? "/contests" : "/lineups/create";
+      navigate(nextPath, { replace: true });
     } finally {
       setSaving(false);
     }
@@ -524,7 +529,7 @@ export function OnboardingPage() {
                 disabled={saving}
                 className={primaryBtn}
               >
-                Create a lineup
+                {editingNotAllowed ? "View contests" : "Create a lineup"}
               </button>
             </StepActions>
           </>
