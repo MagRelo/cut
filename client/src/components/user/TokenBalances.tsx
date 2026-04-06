@@ -62,14 +62,13 @@ export function TokenBalances({
   };
 
   const showBreakdown = showCutRow || showUsdcRow;
-  const hasLowerSection =
-    showBreakdown || showContestHistoryLink || showManageLink;
+  const hasLowerSection = showBreakdown || showContestHistoryLink || showManageLink;
 
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
       {/* Balance Header */}
       <Link
-        to="/cut"
+        to="/usdc"
         className={`flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`}
       >
         <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>

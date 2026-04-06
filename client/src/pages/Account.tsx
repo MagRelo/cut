@@ -37,9 +37,9 @@ const WalletInfo = ({
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
 
       {userEmail ? (
-        <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center mt-2">
-          <span className="text-sm font-medium text-gray-700 font-display">Email</span>
-          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mt-2">
+          <span className="text-sm font-medium text-gray-700 font-display shrink-0">Email</span>
+          <div className="flex min-w-0 justify-end text-gray-600 text-sm font-display break-all text-right">
             {userEmail}
           </div>
         </div>
@@ -47,12 +47,14 @@ const WalletInfo = ({
 
       {accountIdAddress ? (
         <div
-          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail ? "mt-3" : ""}`}
+          className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail ? "mt-3" : ""}`}
         >
-          <span className="text-sm font-medium text-gray-700 font-display">Account ID</span>
-          <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+          <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+            Account ID
+          </span>
+          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
             <span
-              className=" text-xs text-gray-800 text-right break-all min-w-0 font-display"
+              className="text-xs text-gray-800 text-right truncate font-display"
               title={accountIdAddress}
             >
               {truncateMiddle(accountIdAddress)}
@@ -64,12 +66,14 @@ const WalletInfo = ({
 
       {inviteLinkUrl ? (
         <div
-          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
+          className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
         >
-          <span className="text-sm font-medium text-gray-700 font-display">Invite Link</span>
-          <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
+          <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+            Invite Link
+          </span>
+          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
             <span
-              className="text-xs text-gray-800 text-right break-all min-w-0 max-w-full sm:max-w-[min(100%,20rem)] font-display"
+              className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
               title={inviteLinkUrl}
             >
               {truncateMiddle(inviteLinkUrl, 16, 6)}

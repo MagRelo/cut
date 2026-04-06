@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface CountdownTimerProps {
   targetDate: string;
@@ -19,9 +19,7 @@ const calculateTimeLeft = (targetDate: string) => {
   };
 };
 
-export const CountdownTimer: React.FC<CountdownTimerProps> = ({
-  targetDate,
-}) => {
+export const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft(targetDate));
 
   useEffect(() => {
@@ -34,12 +32,10 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
   return (
     <>
-      {timeLeft.days > 0 && (
-        <span className='font-medium'>{timeLeft.days}d </span>
-      )}
-      <span className='font-medium'>{timeLeft.hours}h </span>
-      <span className='font-medium'>{timeLeft.minutes}m </span>
-      <span className='font-medium'>{timeLeft.seconds}s</span>
+      {timeLeft.days > 0 && <span className="font-base">{timeLeft.days}d </span>}
+      <span className="font-base">{timeLeft.hours}h </span>
+      <span className="font-base">{timeLeft.minutes}m </span>
+      <span className="font-base">{timeLeft.seconds}s</span>
     </>
   );
 };

@@ -36,7 +36,7 @@ export const ContestEntryList = ({
   const clearLineupAfterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
-    // if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
+    if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
 
     if (contestLineup.tournamentLineup) {
       if (clearLineupAfterCloseTimeoutRef.current != null) {

@@ -210,11 +210,11 @@ export const ContestLobby: React.FC = () => {
                 {primaryActionsLocked ? (
                   <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-8">
+                  <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-6">
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
-                      className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                      className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
                     >
                       Enter Contest{" - "}
                       <span>${contest.settings?.primaryDeposit}</span>

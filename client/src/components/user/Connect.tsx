@@ -47,7 +47,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </div>
       ) : (
         <button
-          className="w-40 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md text-lg"
+          className="w-40 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md text-lg"
           disabled={loading}
           onClick={handleConnect}
           type="button"

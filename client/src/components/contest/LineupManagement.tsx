@@ -477,9 +477,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
       {lineups.length === 0 && (
         <Link
           to="/lineups/create"
-          className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold font-display rounded block text-center uppercase"
+          className="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
         >
-          + Add Lineup
+          Add Lineup
         </Link>
       )}
 
