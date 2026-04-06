@@ -395,6 +395,12 @@ export function OnboardingPage() {
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Add funds to your account
             </h1>
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              You&apos;ll need funds in your account to compete in contests. Most people get funds
+              from other players—share your Account ID with whoever referred you to receive a
+              transfer.
+            </p>
+            {/*
             <p className="text-gray-700 leading-relaxed font-display mb-3">
               You&apos;ll need funds in your account to compete in contests. There are two ways to
               get them:
@@ -410,6 +416,7 @@ export function OnboardingPage() {
                 on <strong>Base</strong>.
               </li>
             </ol>
+            */}
 
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
