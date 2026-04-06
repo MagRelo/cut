@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
@@ -44,6 +44,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   poolSnapshot,
   onClose,
 }) => {
+  const location = useLocation();
   const { platformTokenBalance, paymentTokenBalance, user } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
@@ -237,6 +238,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
         <Link
           to="/connect"
+          state={{ from: location }}
           className="flex w-full justify-center bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-display font-semibold transition-colors"
         >
           Connect

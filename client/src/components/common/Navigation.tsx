@@ -1,5 +1,12 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, type Location } from "react-router-dom";
+
+/** After Sign In from the nav, land on contests (not account). */
+const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
+  pathname: "/contests",
+  search: "",
+  hash: "",
+};
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -46,7 +53,8 @@ export const Navigation: React.FC = () => {
         )}
 
         <Link
-          to="/account"
+          to={user ? "/account" : "/connect"}
+          state={user ? undefined : { from: signInReturnFrom }}
           className={`inline-flex items-center gap-1 text-white/90 hover:text-white text-sm font-medium border-2 ${
             ["/account", "/connect"].includes(location.pathname)
               ? "border-white bg-black/40"

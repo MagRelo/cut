@@ -8,11 +8,11 @@ export function ConnectPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Get the return URL from location state, default to /account
+  // Get the return URL from location state, default to /contests (soft landing after sign-in)
   const returnLocation = (location.state as { from?: Location })?.from;
   const returnUrl = returnLocation
     ? `${returnLocation.pathname}${returnLocation.search}`
-    : "/account";
+    : "/contests";
 
   // Redirect if already connected
   if (user) {
