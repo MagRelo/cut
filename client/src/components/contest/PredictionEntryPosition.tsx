@@ -121,7 +121,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
             type="button"
             onClick={handleWithdraw}
             disabled={isProcessing || withdrawing}
-            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
+            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
           >
             {isProcessing || withdrawing ? (
               <span className="flex items-center justify-center gap-2">

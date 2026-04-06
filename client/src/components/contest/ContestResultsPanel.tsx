@@ -209,7 +209,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                       <button
                         type="button"
                         disabled={!claim.canClaim || isPrimaryProcessing}
-                        className="bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
                         onClick={() => {
                           void handlePrimaryClaim(claim.entryId);
                         }}
@@ -253,7 +253,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                     <button
                       type="button"
                       disabled={!secondaryClaim.canClaim || isSecondaryProcessing}
-                      className="bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
+                      className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-3 py-1.5 rounded-sm transition-colors"
                       onClick={() => {
                         void handleSecondaryClaim();
                       }}

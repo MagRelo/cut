@@ -21,7 +21,7 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable }) =>
         {isEditable && (
           <Link
             to={`/lineups/edit/${lineup.id}`}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+            className="inline-block bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
           >
             Edit
           </Link>

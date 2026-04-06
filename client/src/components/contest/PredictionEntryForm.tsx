@@ -299,7 +299,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               parseUnits(amount, 6) > paymentTokenBalance,
             )
           }
-          className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-display font-semibold transition-colors"
+          className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-display font-semibold transition-colors"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">

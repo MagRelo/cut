@@ -126,7 +126,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleSort("fedex")}
-                          className={`px-3 py-1.5 text-xs font-medium ${
+                          className={`px-3 py-1.5 text-xs font-medium font-display ${
                             sortField === "fedex"
                               ? "bg-blue-50 text-blue-600 border-blue-300"
                               : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
@@ -137,7 +137,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleSort("owgr")}
-                          className={`px-3 py-1.5 text-xs font-medium ${
+                          className={`px-3 py-1.5 text-xs font-medium font-display ${
                             sortField === "owgr"
                               ? "bg-blue-50 text-blue-600 border-blue-300"
                               : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
@@ -148,7 +148,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleSort("name")}
-                          className={`px-3 py-1.5 text-xs font-medium ${
+                          className={`px-3 py-1.5 text-xs font-medium font-display ${
                             sortField === "name"
                               ? "bg-blue-50 text-blue-600 border-blue-300"
                               : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
@@ -164,14 +164,14 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     <button
                       type="button"
                       onClick={() => onSelect(null)}
-                      className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
+                      className="px-3 py-1.5 text-xs font-display text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300 transition-colors"
                     >
                       Leave Empty
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="px-3 py-1.5 text-xs text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300"
+                      className="px-3 py-1.5 text-xs font-display text-gray-600 bg-gray-50 rounded-md hover:bg-gray-200 border border-gray-300 transition-colors"
                     >
                       Close
                     </button>

@@ -248,7 +248,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || draftPlayers.filter((p) => p !== null).length === 0}
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-2"
+          className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
         >
           {isSubmitting ? (
             <>
