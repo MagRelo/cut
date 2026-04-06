@@ -121,8 +121,8 @@ export function CopyButton({
       type="button"
       onClick={handleCopy}
       aria-label={copied ? "Copied" : "Copy to clipboard"}
-      className={`shrink-0 rounded-sm px-3 py-1.5 text-sm font-semibold text-white font-display transition-colors shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        copied ? "bg-blue-700 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+      className={`shrink-0 rounded px-3 py-1 text-sm font-medium text-white font-display transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
       } ${className}`}
     >
       {copied ? "Copied!" : "Copy"}

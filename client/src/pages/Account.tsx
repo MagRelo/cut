@@ -47,12 +47,12 @@ const WalletInfo = ({
 
       {accountIdAddress ? (
         <div
-          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail ? "mt-2" : ""}`}
+          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail ? "mt-3" : ""}`}
         >
           <span className="text-sm font-medium text-gray-700 font-display">Account ID</span>
           <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
             <span
-              className="font-mono text-xs text-gray-800 text-right break-all min-w-0"
+              className=" text-xs text-gray-800 text-right break-all min-w-0 font-display"
               title={accountIdAddress}
             >
               {truncateMiddle(accountIdAddress)}
@@ -64,12 +64,12 @@ const WalletInfo = ({
 
       {inviteLinkUrl ? (
         <div
-          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail || accountIdAddress ? "mt-2" : ""}`}
+          className={`grid grid-cols-1 sm:grid-cols-[minmax(0,auto)_1fr] gap-x-4 gap-y-2 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
         >
           <span className="text-sm font-medium text-gray-700 font-display">Invite Link</span>
           <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
             <span
-              className="text-xs text-gray-800 text-right break-all min-w-0 max-w-full sm:max-w-[min(100%,20rem)]"
+              className="text-xs text-gray-800 text-right break-all min-w-0 max-w-full sm:max-w-[min(100%,20rem)] font-display"
               title={inviteLinkUrl}
             >
               {truncateMiddle(inviteLinkUrl, 16, 6)}
@@ -84,8 +84,8 @@ const WalletInfo = ({
       {canSignOut && (
         <div className={`flex justify-center ${hasWalletRows ? "mt-4" : ""}`}>
           <button
-            className="min-w-[120px] bg-white hover:bg-gray-50 text-gray-600 font-display py-2 px-4 rounded border border-gray-300 transition-colors"
             type="button"
+            className="min-w-[120px] bg-white hover:bg-gray-50 text-gray-600 font-display py-1 px-4 rounded border border-gray-300 transition-colors"
             onClick={() => {
               void disconnect();
             }}
