@@ -1,5 +1,7 @@
-import { useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -27,16 +29,86 @@ function StepActions({ children, className = "" }: { children: ReactNode; classN
 }
 
 const primaryBtn =
-  "inline-flex shrink-0 items-center justify-center rounded-sm bg-emerald-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2";
+  "inline-flex shrink-0 items-center justify-center rounded-sm bg-emerald-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 /** Match primary control height; reset default button padding so flex cross-axis centers line up on mobile */
 const ghostLink =
-  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline";
+  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline disabled:opacity-50";
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, updateUser, updateUserSettings } = useAuth();
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setDisplayName(user.name || "");
+    const c = user.settings?.color;
+    if (typeof c === "string" && ACCENT_COLORS.includes(c)) {
+      setAccentColor(c);
+    }
+  }, [user]);
+
+  const mergeSettings = (patch: Record<string, unknown>) => ({
+    ...(user?.settings ?? {}),
+    ...patch,
+  });
+
+  const navigateAfterDismiss = () => {
+    const from = (location.state as { from?: Location })?.from;
+    const target = from ? `${from.pathname}${from.search || ""}${from.hash || ""}` : "/";
+    navigate(target, { replace: true });
+  };
+
+  const dismissOnboarding = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
+      navigateAfterDismiss();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNameContinue = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const nextName = displayName.trim() || user.name;
+      if (nextName !== user.name) {
+        await updateUser({ name: nextName });
+      }
+      setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveColorContinue = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateUserSettings(mergeSettings({ color: accentColor }));
+      setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCompleteCreateLineup = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
+      navigate("/lineups/create", { replace: true });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
@@ -50,12 +122,14 @@ export function OnboardingPage() {
           <span>
             Step {step + 1} of {STEP_COUNT}
           </span>
-          <Link
-            to="/"
+          <button
+            type="button"
+            onClick={() => void dismissOnboarding()}
+            disabled={saving}
             className="text-green-600 hover:text-green-700 font-medium underline-offset-2 hover:underline"
           >
             Exit
-          </Link>
+          </button>
         </div>
         <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
           <div
@@ -89,10 +163,15 @@ export function OnboardingPage() {
               Let's get started...
             </p>
             <StepActions>
-              <button type="button" onClick={() => navigate("/")} className={ghostLink}>
+              <button
+                type="button"
+                onClick={() => void dismissOnboarding()}
+                disabled={saving}
+                className={ghostLink}
+              >
                 Skip for now
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 Start
               </button>
             </StepActions>
@@ -112,7 +191,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 next
               </button>
             </StepActions>
@@ -138,7 +217,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 ok
               </button>
             </StepActions>
@@ -246,7 +325,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 got it
               </button>
             </StepActions>
@@ -270,7 +349,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 nice
               </button>
             </StepActions>
@@ -299,7 +378,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 sweet
               </button>
             </StepActions>
@@ -331,7 +410,7 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
                 lame
               </button>
             </StepActions>
@@ -367,7 +446,12 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button
+                type="button"
+                onClick={() => void handleSaveNameContinue()}
+                disabled={saving}
+                className={primaryBtn}
+              >
                 Save & Continue
               </button>
             </StepActions>
@@ -409,7 +493,12 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} className={primaryBtn}>
+              <button
+                type="button"
+                onClick={() => void handleSaveColorContinue()}
+                disabled={saving}
+                className={primaryBtn}
+              >
                 Save & Continue
               </button>
             </StepActions>
@@ -429,9 +518,14 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <Link to="/lineups/create" className={primaryBtn}>
+              <button
+                type="button"
+                onClick={() => void handleCompleteCreateLineup()}
+                disabled={saving}
+                className={primaryBtn}
+              >
                 Create a lineup
-              </Link>
+              </button>
             </StepActions>
           </>
         )}

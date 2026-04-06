@@ -37,6 +37,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { TournamentHeaderPanel } from "./components/tournament/TournamentHeaderPanel";
 
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
+import { OnboardingRedirectGate } from "./components/common/OnboardingRedirectGate";
 import { Footer } from "./components/common/Footer";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -86,13 +87,21 @@ export const App: React.FC = () => {
                     {/* <MaintenanceOverlay /> */}
                     <div className="flex flex-col flex-grow">
                       <div className="container mx-auto md:py-8">
-                        <div className="max-w-2xl mx-auto">
-                          <TournamentHeaderPanel />
-                          <Routes>
+                        <OnboardingRedirectGate>
+                          <div className="max-w-2xl mx-auto">
+                            <TournamentHeaderPanel />
+                            <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/terms" element={<TermsOfService />} />
                             <Route path="/faq" element={<FAQPage />} />
-                            <Route path="/onboarding" element={<OnboardingPage />} />
+                            <Route
+                              path="/onboarding"
+                              element={
+                                <ProtectedRoute>
+                                  <OnboardingPage />
+                                </ProtectedRoute>
+                              }
+                            />
                             <Route path="/connect" element={<ConnectPage />} />
                             <Route path="/contracts" element={<ContractsPage />} />
                             <Route
@@ -186,8 +195,9 @@ export const App: React.FC = () => {
 
                             {/* Debug */}
                             <Route path="/debug" element={<DebugPage />} />
-                          </Routes>
-                        </div>
+                            </Routes>
+                          </div>
+                        </OnboardingRedirectGate>
                       </div>
                     </div>
                     <Footer />
