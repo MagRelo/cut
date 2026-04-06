@@ -53,9 +53,6 @@ export const Navigation: React.FC = () => {
               : "border-white/50 bg-black/30"
           } rounded transition-colors flex items-center justify-center px-2 py-1`}
         >
-          {/* Balance display - only show when logged in */}
-          {user && <span className="font-display transition-colors">${totalBalance}</span>}
-
           {/* Account icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -71,6 +68,12 @@ export const Navigation: React.FC = () => {
               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
             />
           </svg>
+
+          {/* Balance display - only show when logged in */}
+          {user && <span className="font-display transition-colors">${totalBalance}</span>}
+
+          {/* label shown when logged out */}
+          {!user && <span className="font-display transition-colors">Sign In</span>}
         </Link>
       </div>
     </div>

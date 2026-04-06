@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useReadContract, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+// import { useReadContract, useChainId } from "wagmi";
+// import { formatUnits } from "viem";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Link, useSearchParams } from "react-router-dom";
 // import { PageHeader } from "../components/common/PageHeader.tsx";
@@ -11,21 +11,19 @@ import { Buy } from "../components/user/Buy.tsx";
 import { Sell } from "../components/user/Sell.tsx";
 import { Send } from "../components/user/Send.tsx";
 import { Receive } from "../components/user/Receive.tsx";
-import DepositManagerContract from "../utils/contracts/DepositManager.json";
-import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
-import {
-  getContractAddress,
-} from "../utils/blockchainUtils.tsx";
+// import DepositManagerContract from "../utils/contracts/DepositManager.json";
+// import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
+// import { getContractAddress } from "../utils/blockchainUtils.tsx";
 
 /** Placeholder APY until pool metrics use the live lending market ABI again */
-const PLACEHOLDER_SUPPLY_APY_PERCENT = 3.5;
+// const PLACEHOLDER_SUPPLY_APY_PERCENT = 3.5;
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
 export function CUTInfoPage() {
-  const chainId = useChainId();
+  // const chainId = useChainId();
   const [searchParams] = useSearchParams();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -49,37 +47,37 @@ export function CUTInfoPage() {
   }, [searchParams]);
 
   // Get contract addresses dynamically
-  const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
+  // const depositManagerAddress = getContractAddress(chainId ?? 0, "depositManagerAddress");
+  // const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
 
-  // USDC supplied on Aave via DepositManager (matches DepositManager.sol)
-  const { data: aaveUSDCBalance, isLoading: aaveUSDCBalanceLoading } = useReadContract({
-    address: depositManagerAddress as `0x${string}`,
-    abi: DepositManagerContract.abi,
-    functionName: "getAaveUSDCBalance",
-    query: {
-      enabled: !!depositManagerAddress,
-    },
-  });
+  // // USDC supplied on Aave via DepositManager (matches DepositManager.sol)
+  // const { data: aaveUSDCBalance, isLoading: aaveUSDCBalanceLoading } = useReadContract({
+  //   address: depositManagerAddress as `0x${string}`,
+  //   abi: DepositManagerContract.abi,
+  //   functionName: "getAaveUSDCBalance",
+  //   query: {
+  //     enabled: !!depositManagerAddress,
+  //   },
+  // });
 
-  const formattedAaveUSDCBalance = aaveUSDCBalance
-    ? Number(formatUnits(aaveUSDCBalance as bigint, 6)).toFixed(2)
-    : "0.00";
+  // const formattedAaveUSDCBalance = aaveUSDCBalance
+  //   ? Number(formatUnits(aaveUSDCBalance as bigint, 6)).toFixed(2)
+  //   : "0.00";
 
-  // Get platform token supply directly from PlatformToken contract
-  const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
-    address: platformTokenAddress as `0x${string}`,
-    abi: PlatformTokenContract.abi,
-    functionName: "totalSupply",
-    query: {
-      enabled: !!platformTokenAddress,
-    },
-  });
+  // // Get platform token supply directly from PlatformToken contract
+  // const { data: platformTokenSupply, isLoading: platformTokenSupplyLoading } = useReadContract({
+  //   address: platformTokenAddress as `0x${string}`,
+  //   abi: PlatformTokenContract.abi,
+  //   functionName: "totalSupply",
+  //   query: {
+  //     enabled: !!platformTokenAddress,
+  //   },
+  // });
 
-  // Format platform token supply for display
-  const formattedPlatformTokenSupply = platformTokenSupply
-    ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
-    : "0";
+  // // Format platform token supply for display
+  // const formattedPlatformTokenSupply = platformTokenSupply
+  //   ? Number(formatUnits(platformTokenSupply as bigint, 18)).toFixed(0)
+  //   : "0";
 
   return (
     <div className="p-4">
@@ -98,15 +96,15 @@ export function CUTInfoPage() {
         </div>
 
         {/* Token Description */}
-        <div className="text-sm text-gray-700 mb-4">
+        <div className="text-sm text-gray-700 font-display mb-4">
           <p>
             CUT is the currency of the Cut platform. Each CUT is backed by and convertible to USDC
-            at a 1:1 ratio. USDC deposits are supplied to Aave to generate yield.
+            at a 1:1 ratio.
           </p>
         </div>
 
         {/* Token Stats */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* <div className="grid grid-cols-2 gap-2">
           <div className="border border-gray-200 rounded-sm p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">
               ${platformTokenSupplyLoading ? "..." : formattedPlatformTokenSupply}
@@ -134,7 +132,7 @@ export function CUTInfoPage() {
             </div>
             <div className="text-sm text-gray-600 mt-1">USDC in Aave</div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Buy/Sell/Send/Receive Tabs */}
@@ -148,7 +146,7 @@ export function CUTInfoPage() {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800"
+                    : "text-gray-600 hover:text-gray-800",
                 )
               }
             >
@@ -161,7 +159,7 @@ export function CUTInfoPage() {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800"
+                    : "text-gray-600 hover:text-gray-800",
                 )
               }
             >
@@ -174,7 +172,7 @@ export function CUTInfoPage() {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800"
+                    : "text-gray-600 hover:text-gray-800",
                 )
               }
             >
@@ -187,7 +185,7 @@ export function CUTInfoPage() {
                   "focus:outline-none",
                   selected
                     ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800"
+                    : "text-gray-600 hover:text-gray-800",
                 )
               }
             >

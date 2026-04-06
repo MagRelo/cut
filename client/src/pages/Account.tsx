@@ -30,14 +30,6 @@ const WalletInfo = ({
   return (
     <div className="bg-white rounded-sm shadow p-4 mt-4">
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
-      {userEmail ? (
-        <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center">
-          <span className="text-sm font-medium text-gray-700 font-display">Email</span>
-          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
-            {userEmail}
-          </div>
-        </div>
-      ) : null}
 
       {accountIdAddress ? (
         <div
@@ -63,6 +55,15 @@ const WalletInfo = ({
               text={inviteLinkUrl}
               // displayText={<span className="text-gray-700 font-mono text-xs">(click to copy)</span>}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {userEmail ? (
+        <div className="grid grid-cols-[auto_1fr] gap-x-4 items-center mt-2">
+          <span className="text-sm font-medium text-gray-700 font-display">Email</span>
+          <div className="flex justify-end text-gray-600 text-sm font-display break-all text-right">
+            {userEmail}
           </div>
         </div>
       ) : null}
@@ -112,11 +113,6 @@ export function UserPage() {
         showContestHistoryLink={false}
       />
 
-      {/* User Settings */}
-      <div className="mt-4">
-        <UserSettings />
-      </div>
-
       {/* Wallet Information - Below tabs */}
       <WalletInfo
         disconnect={logout}
@@ -125,6 +121,11 @@ export function UserPage() {
         accountIdAddress={smartWalletAddress}
         inviteLinkUrl={inviteLinkUrl}
       />
+
+      {/* User Settings */}
+      <div className="mt-4">
+        <UserSettings />
+      </div>
     </div>
   );
 }

@@ -86,7 +86,7 @@ export function OnboardingPage() {
               Welcome to <strong>the Cut</strong>!
             </p>
             <p className="text-gray-700 leading-relaxed font-display text-lg sm:text-xl text-center">
-              This tour will get you started.
+              Let's get started...
             </p>
             <StepActions>
               <button type="button" onClick={() => navigate("/")} className={ghostLink}>
@@ -113,7 +113,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Got it
+                next
               </button>
             </StepActions>
           </>
@@ -139,7 +139,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Cool
+                ok
               </button>
             </StepActions>
           </>
@@ -205,7 +205,7 @@ export function OnboardingPage() {
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-100">
                     <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Result
+                      Bonus
                     </th>
                     <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
                       Points
@@ -247,7 +247,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Got it
+                got it
               </button>
             </StepActions>
           </>
@@ -256,13 +256,14 @@ export function OnboardingPage() {
         {step === 4 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Contest Winner Pool
+              the Winner Pool
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              The <strong> Winner Pool</strong> is a separate market that lets you trade shares on
-              which lineup will win a contest. <strong>Buy early</strong> to get a better price -
-              shares get more expensive as the tournament progresses. You can buy shares until round
-              4 begins - keep an eye on the contest to optimize your investments.
+              Each contest also contains a <strong> Winner Pool</strong> - a separate market that
+              lets you trade shares on <strong>which lineup you think will win</strong> the contest.{" "}
+              <strong>Buy early</strong> to get a better price - shares get more expensive as the
+              tournament progresses. The winner pool <strong>locks at the start of round 4</strong>{" "}
+              - keep an eye on the contest to optimize your investments.
             </p>
 
             <StepActions>
@@ -270,7 +271,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Sweet
+                nice
               </button>
             </StepActions>
           </>
@@ -283,9 +284,10 @@ export function OnboardingPage() {
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-5">
               When you win a contest, a portion of the prize pool is directed to your referral
-              network. The more people you refer, the more you earn. These bonuses travel up to 10
-              levels deep, so if you invite three people, and they invite three people - and so on -
-              you could easily have hundreds of people paying you bonuses.
+              network. <strong> The more people you refer, the more you earn.</strong> These bonuses
+              travel up to <strong>10 levels deep</strong>, so if you invite three people, and they
+              invite three people - and so on - you could easily have hundreds of people paying you
+              bonuses.
             </p>
 
             <p className="text-gray-700 leading-relaxed font-display mb-6">
@@ -298,7 +300,7 @@ export function OnboardingPage() {
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Kick Ass
+                sweet
               </button>
             </StepActions>
           </>
@@ -309,18 +311,28 @@ export function OnboardingPage() {
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Add funds to your account
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You&apos;ll need funds in your account to compete in contests. Any player can send you
-              funds at any time. Send your Account ID to the person that referred you to get
-              started.
+            <p className="text-gray-700 leading-relaxed font-display mb-3">
+              You&apos;ll need funds in your account to compete in contests. There are two ways to
+              get them:
             </p>
+            <ol className="mb-6 list-decimal list-outside space-y-3 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
+              <li className="pl-1">
+                <strong>Player-to-player.</strong> Most people receive funds from other players:{" "}
+                <strong>anyone</strong> can send you funds <strong>any time</strong>. Share your
+                Account ID with whoever referred you to receive a transfer.
+              </li>
+              <li className="pl-1">
+                <strong>Crypto.</strong> You can also add funds by depositing <strong>USDC</strong>{" "}
+                on <strong>Base</strong>.
+              </li>
+            </ol>
 
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
               <button type="button" onClick={goNext} className={primaryBtn}>
-                Nice
+                lame
               </button>
             </StepActions>
           </>
