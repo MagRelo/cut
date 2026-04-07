@@ -77,7 +77,7 @@ export const ContestEntryList = ({
   }
 
   return (
-    <div className="px-3">
+    <div className="px-2">
       {sortedLineups.map((lineup, index) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const nextLineup = sortedLineups[index + 1];

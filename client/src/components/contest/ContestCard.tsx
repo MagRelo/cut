@@ -47,26 +47,22 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
       .join(" ");
   };
 
-  // Contest logo: `contest.settings.imageUrl` may or may not exist.
-  // Fallback to the CUT logo used elsewhere in this component.
-  const contestLogoSrc =
-    (contest.settings as unknown as { imageUrl?: string }).imageUrl ?? "/logo-transparent.png";
-
   return (
     <div className="flex items-center justify-between gap-2.5">
-      {/* Left Section - Contest Circular Logo */}
-      <div className="flex-shrink-0">
-        <img
-          src={contestLogoSrc}
-          alt="contest-logo"
-          className="h-10 w-10 rounded-full bg-white object-contain"
-        />
+      {/* Left Section - Buy-in */}
+      <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
+        <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
+          ${contest.settings?.primaryDeposit ?? "—"}
+        </div>
+        <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
+          buy-in
+        </div>
       </div>
 
       {/* Middle Section - Contest Info */}
       <div className="flex-1 min-w-0">
         <h3 className="text-lg font-bold text-gray-900 font-display truncate leading-tight">
-          ${contest.settings?.primaryDeposit} - {contest.name}
+          {contest.name}
         </h3>
         <p className="text-xs text-gray-400 font-medium leading-tight mt-0.5">
           <span className="">{formatStatus(contest.status)}</span>
@@ -112,7 +108,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             aria-label="Contest Payouts"
             className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
           >
-            <div className="text-lg font-display font-bold text-gray-900 leading-none">
+            <div className="text-lg font-display font-bold text-emerald-700 leading-none">
               {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
@@ -121,7 +117,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
           </button>
         ) : (
           <div className="text-right ml-2 mr-2">
-            <div className="text-lg font-display font-bold text-gray-900 leading-none">
+            <div className="text-lg font-display font-bold text-emerald-700 leading-none">
               {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
