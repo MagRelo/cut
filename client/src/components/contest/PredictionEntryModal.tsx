@@ -1,10 +1,5 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import {
-  Dialog,
-  DialogPanel,
-  Transition,
-  TransitionChild,
-} from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { PredictionEntryForm, type PredictionEntryData } from "./PredictionEntryForm";
 import { type Contest } from "../../types/contest";
@@ -82,7 +77,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
         </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-4 text-left">
             <TransitionChild
               as={Fragment}
               enter="ease-out duration-200"
@@ -92,19 +87,26 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-gray-100 shadow-xl transition-all p-2">
-                <div className="px-2 sm:px-6 py-4 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
-                  <div className="min-h-[280px] pt-1">
-                    <PredictionEntryForm
-                      contest={contest}
-                      entryId={displayEntryId}
-                      entryData={entryData}
-                      secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
-                      secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
-                      totalSecondaryLiquidityBefore={totalSecondaryLiquidityBefore}
-                      poolSnapshot={poolSnapshot}
-                      onClose={onClose}
-                    />
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-gray-100 text-left align-middle shadow-xl transition-all p-2">
+                <div className="flex max-h-[70vh] flex-col overflow-hidden bg-white rounded-sm border border-gray-300">
+                  <div className="shrink-0 px-3 pt-3 sm:px-6 sm:pt-4">
+                    <DialogTitle className="text-lg font-medium text-gray-900">
+                      Buy Shares
+                    </DialogTitle>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 sm:px-6">
+                    <div className="min-h-[280px] pt-1">
+                      <PredictionEntryForm
+                        contest={contest}
+                        entryId={displayEntryId}
+                        entryData={entryData}
+                        secondaryPrizePoolFormatted={secondaryPrizePoolFormatted}
+                        secondaryTotalFundsFormatted={secondaryTotalFundsFormatted}
+                        totalSecondaryLiquidityBefore={totalSecondaryLiquidityBefore}
+                        poolSnapshot={poolSnapshot}
+                        onClose={onClose}
+                      />
+                    </div>
                   </div>
                 </div>
               </DialogPanel>

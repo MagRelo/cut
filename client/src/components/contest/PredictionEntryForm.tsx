@@ -154,8 +154,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const metricsReady = Boolean(poolSnapshot) && totalSecondaryLiquidityBefore !== undefined;
 
-  const ownershipDisplay =
-    metricsReady && selectedEntryInfo ? metrics.ownershipDisplay : "—";
+  const ownershipDisplay = metricsReady && selectedEntryInfo ? metrics.ownershipDisplay : "—";
   const purchaseAmountDisplay =
     metricsReady && selectedEntryInfo ? metrics.purchaseAmountDisplay : "—";
   const incrementalNetDisplay =
@@ -263,7 +262,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   };
 
   const predictionDetailsCard = (
-    <div className="rounded-sm border border-gray-200 bg-gray-50 p-3 space-y-2 text-sm">
+    <div className="rounded-sm border border-gray-200 bg-gray-50 p-3 space-y-2 text-sm font-display">
       <div className="space-y-2">
         <div className="flex justify-between items-center gap-3">
           <span className="text-gray-500">User</span>
@@ -280,21 +279,30 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         </div>
 
         <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">Purchase amount</span>
-          <span className="text-gray-700 font-medium tabular-nums">${amount}</span>
+          <span className="text-gray-500">Result</span>
+          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">To Win</span>
         </div>
+      </div>
+    </div>
+  );
 
-        <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">Ownership</span>
-          <span className="text-gray-700 font-medium tabular-nums">{ownershipDisplay}</span>
-        </div>
+  const predictionPurchaseSummary = (
+    <div className="space-y-2 text-sm pb-3">
+      <div className="flex justify-between items-center gap-3">
+        <span className="text-gray-500">Purchase amount</span>
+        <span className="text-gray-700 font-medium tabular-nums">${amount}</span>
+      </div>
 
-        <div className="flex justify-between items-center gap-3 border-t border-gray-200 pt-2 mt-1">
-          <span className="text-gray-500">Purchase nets</span>
-          <span className="font-bold tabular-nums text-emerald-600">
-            ${purchaseAmountDisplay} buys ${incrementalNetDisplay}
-          </span>
-        </div>
+      <div className="flex justify-between items-center gap-3">
+        <span className="text-gray-500">Ownership After Purchase</span>
+        <span className="text-gray-700 font-medium tabular-nums">{ownershipDisplay}</span>
+      </div>
+
+      <div className="flex justify-between items-center gap-3 ">
+        <span className="text-gray-500">Purchase Leverage</span>
+        <span className="font-bold tabular-nums text-emerald-600">
+          ${purchaseAmountDisplay} buys ${incrementalNetDisplay}
+        </span>
       </div>
     </div>
   );
@@ -308,13 +316,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           onSubmit={(event) => event.preventDefault()}
         >
           {predictionDetailsCard}
+          {predictionPurchaseSummary}
 
           <div>
             <label
               htmlFor="position-amount-preview"
-              className="block text-left text-sm font-medium text-gray-500 mb-2"
+              className="block text-left text-sm font-display font-normal uppercase tracking-wide text-gray-500"
             >
-              Purchase Amount
+              Purchase amount
             </label>
             <input
               id="position-amount-preview"
@@ -324,7 +333,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="w-full px-4 py-3 text-base border border-gray-200 rounded-md bg-gray-50/80 text-gray-600 font-normal cursor-not-allowed"
+              className="w-full px-4 py-3 text-right text-base tabular-nums border border-gray-200 rounded-md bg-gray-50/80 text-gray-600 font-normal cursor-not-allowed"
               disabled
             />
           </div>
@@ -333,7 +342,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         <Link
           to="/connect"
           state={{ from: location }}
-          className="flex w-full justify-center bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-display font-semibold transition-colors"
+          className="flex w-full justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded border border-blue-500 text-sm font-display font-medium transition-colors"
         >
           Connect
         </Link>
@@ -350,21 +359,17 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      {/* title*/}
-      <div className="text-lg font-semibold text-gray-700 mb-2 font-display text-left">
-        Buy Shares
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-3">
       {predictionDetailsCard}
+      {predictionPurchaseSummary}
 
       <div>
-        <label
+        {/* <label
           htmlFor="position-amount"
-          className="block text-left text-sm font-medium text-gray-500 mb-2"
+          className="block text-left text-sm font-display font-normal uppercase tracking-wide text-gray-500"
         >
-          Purchase Amount
-        </label>
+          Purchase amount
+        </label> */}
         <input
           id="position-amount"
           type="text"
@@ -372,7 +377,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full px-4 py-3 text-base border border-gray-200 rounded-md text-gray-700 font-normal placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/80 focus:border-emerald-300"
+          className="w-full px-4 py-3 text-right text-base tabular-nums border border-gray-200 rounded-md text-gray-700 font-normal placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-300"
           disabled={isProcessing}
           autoFocus
         />
@@ -388,7 +393,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             Number.parseFloat(amount) <= 0 ||
             !canAffordPurchase
           }
-          className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-display font-semibold transition-colors"
+          className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded border border-blue-500 text-sm font-display font-medium transition-colors"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">
