@@ -24,6 +24,7 @@ import { UserPage } from "./pages/Account";
 import { UserHistoryPage } from "./pages/UserHistoryPage";
 import { CUTInfoPage } from "./pages/AccountCUTInfoPage";
 import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
+import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { LineupList } from "./pages/LineupListPage";
 import LineupCreatePage from "./pages/LineupCreatePage";
@@ -117,6 +118,14 @@ export const App: React.FC = () => {
                               element={
                                 <ProtectedRoute>
                                   <UserHistoryPage />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/account/funds"
+                              element={
+                                <ProtectedRoute>
+                                  <TransferFundsPage />
                                 </ProtectedRoute>
                               }
                             />

@@ -19,6 +19,9 @@ const UsdcLogo = () => (
   />
 );
 
+/** Set true to make the Balance header row link to `/account/funds`. */
+const BALANCE_HEADER_LINK_ENABLED = false;
+
 const rowChevron = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -64,22 +67,26 @@ export function TokenBalances({
   const showBreakdown = showCutRow || showUsdcRow;
   const hasLowerSection = showBreakdown || showContestHistoryLink || showManageLink;
 
+  const balanceHeaderClass = `flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`;
+  const balanceTotal = (
+    Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
+    Number(formatUnits(paymentTokenBalance ?? 0n, 6))
+  ).toFixed(2);
+
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
       {/* Balance Header */}
-      <Link
-        to="/usdc"
-        className={`flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`}
-      >
-        <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
-        <div className="text-xl font-semibold text-gray-900 font-display">
-          $
-          {(
-            Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
-            Number(formatUnits(paymentTokenBalance ?? 0n, 6))
-          ).toFixed(2)}
+      {BALANCE_HEADER_LINK_ENABLED ? (
+        <Link to="/account/funds" className={balanceHeaderClass}>
+          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+        </Link>
+      ) : (
+        <div className={balanceHeaderClass}>
+          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
+          <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
         </div>
-      </Link>
+      )}
 
       {/* Token Breakdown */}
       {showBreakdown && (
@@ -151,7 +158,7 @@ export function TokenBalances({
               to="/account/funds"
               className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
             >
-              Manage Funds
+              Transfer funds
             </Link>
           </div>
         </>
