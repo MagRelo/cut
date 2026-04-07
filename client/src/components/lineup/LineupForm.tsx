@@ -55,14 +55,14 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   } = useLineupQuery(
     lineupId,
     Boolean(lineupId && user?.id && currentTournament?.id && !isAuthLoading),
-    user?.id
+    user?.id,
   );
 
   // Local State
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
   const [currentLineup, setCurrentLineup] = useState<TournamentLineup | null>(null);
   const [draftPlayers, setDraftPlayers] = useState<Array<PlayerWithTournamentData | null>>(
-    Array.from({ length: 4 }, () => null)
+    Array.from({ length: 4 }, () => null),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -102,13 +102,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     if (lineupFromDetail) {
       setCurrentLineup(lineupFromDetail);
     }
-  }, [
-    lineupId,
-    isAuthLoading,
-    currentTournament?.id,
-    getLineupFromCache,
-    lineupFromDetail,
-  ]);
+  }, [lineupId, isAuthLoading, currentTournament?.id, getLineupFromCache, lineupFromDetail]);
 
   const handlePlayerSelect = (playerId: string | null) => {
     if (selectedPlayerIndex === null) return;
@@ -204,11 +198,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     return <div className="p-4">Loading...</div>;
   }
 
-  if (
-    lineupId &&
-    !currentLineup &&
-    (isLineupsLoading || isLineupDetailLoading)
-  ) {
+  if (lineupId && !currentLineup && (isLineupsLoading || isLineupDetailLoading)) {
     return <div className="p-4">Loading...</div>;
   }
 
@@ -217,9 +207,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
       <div className="p-4">
         <ErrorMessage
           message={
-            lineupDetailError instanceof Error
-              ? lineupDetailError.message
-              : "Failed to load lineup"
+            lineupDetailError instanceof Error ? lineupDetailError.message : "Failed to load lineup"
           }
         />
       </div>
@@ -237,7 +225,7 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md pb-6">
       {/* Lineup header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-1">
         <div>
           <h3 className="text-lg font-semibold text-gray-600">
             {lineupId && currentLineup
@@ -268,15 +256,17 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {Array.from({ length: 4 }).map((_, index) => (
-          <PlayerSelectionButton
-            key={`slot-${index}`}
-            player={draftPlayers[index] || null}
-            isSelected={false}
-            onClick={() => handleCardClick(index)}
-            iconType="pencil"
-          />
+          <React.Fragment key={`slot-${index}`}>
+            <hr className="border-0 border-t border-slate-300 my-4" />
+            <PlayerSelectionButton
+              player={draftPlayers[index] || null}
+              isSelected={false}
+              onClick={() => handleCardClick(index)}
+              iconType="pencil"
+            />
+          </React.Fragment>
         ))}
       </div>
 

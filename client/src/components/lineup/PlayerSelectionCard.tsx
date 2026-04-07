@@ -86,13 +86,13 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
   }
 
   // Find the 2025 season performance data
-  const currentSeason = player.pga_performance?.performance?.find((p) => p.season === "2025");
+  const currentSeason = player.pga_performance?.performance?.find((p) => p.season === "2026");
   const currentStandings = player.pga_performance?.standings;
 
   return (
     <div className={className}>
       {/* Top Row - Image and Name */}
-      <div className="flex items-center space-x-4 mb-2">
+      <div className="flex items-center space-x-4 mb-1.5">
         {showImage && player.pga_imageUrl && (
           <div className="flex-shrink-0">
             <img
@@ -120,7 +120,7 @@ export const PlayerSelectionCard: React.FC<PlayerSelectionCardProps> = ({
       </div>
 
       {/* Bottom Row - Stats */}
-      <div className="flex items-center justify-around border-t border-gray-100 pt-2">
+      <div className="flex items-center justify-around">
         <div className="text-sm text-gray-500">
           <Label>Wins</Label>
           <span className="font-bold text-gray-600 ml-1">

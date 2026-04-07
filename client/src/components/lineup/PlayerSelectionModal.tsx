@@ -47,16 +47,20 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           aOwgr = Number(a.pga_performance?.standings?.owgr);
           bOwgr = Number(b.pga_performance?.standings?.owgr);
           if (!aOwgr && !bOwgr) comparison = 0;
-          else if (!aOwgr) comparison = 1; // Put missing data at bottom
-          else if (!bOwgr) comparison = -1; // Put missing data at bottom
+          else if (!aOwgr)
+            comparison = 1; // Put missing data at bottom
+          else if (!bOwgr)
+            comparison = -1; // Put missing data at bottom
           else comparison = aOwgr - bOwgr;
           break;
         case "fedex":
           aFedex = Number(a.pga_performance?.standings?.rank);
           bFedex = Number(b.pga_performance?.standings?.rank);
           if (!aFedex && !bFedex) comparison = 0;
-          else if (!aFedex) comparison = 1; // Put missing data at bottom
-          else if (!bFedex) comparison = -1; // Put missing data at bottom
+          else if (!aFedex)
+            comparison = 1; // Put missing data at bottom
+          else if (!bFedex)
+            comparison = -1; // Put missing data at bottom
           else comparison = aFedex - bFedex;
           break;
       }
@@ -104,13 +108,13 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     Select a Golfer
                   </DialogTitle>
 
-                  <div className="border border-gray-300 rounded-sm overflow-hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto bg-gray-200 p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
+                  <div className="border border-slate-300 rounded-md overflow-hidden">
+                    <div className=" bg-slate-900/40 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
                       {filteredPlayers.map((player) => {
                         const isAlreadySelected = selectedPlayers.includes(player.id);
                         return (
                           <PlayerSelectionButton
-                            key={player.id}
+                            key={player.id as string}
                             player={player}
                             isSelected={isAlreadySelected}
                             onClick={() => onSelect(player.id)}
@@ -121,7 +125,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                       })}
                     </div>
 
-                    <div className="p-3 bg-gray-100 border-t border-gray-300">
+                    <div className="p-3  border-t border-slate-800/30">
                       <div className="flex justify-center items-center gap-4">
                         <button
                           type="button"
