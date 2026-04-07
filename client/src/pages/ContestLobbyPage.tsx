@@ -344,7 +344,6 @@ export const ContestLobby: React.FC = () => {
         {user ? (
           <LineupManagement
             contest={contest}
-            isModalOpen={isLineupModalOpen}
             onCloseModal={() => setIsLineupModalOpen(false)}
           />
         ) : (

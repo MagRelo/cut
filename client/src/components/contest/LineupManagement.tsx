@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { Fragment, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
 import { useReadContract } from "wagmi";
@@ -20,9 +20,7 @@ import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface LineupManagementProps {
   contest: Contest;
-  /** When false, resets single-lineup auto-join so reopening the modal can retry. */
-  isModalOpen?: boolean;
-  /** Called after a successful join when all user lineups are entered (including the single-lineup case). */
+  /** Called after a successful join when all user lineups are entered. */
   onCloseModal?: () => void;
 }
 
@@ -52,11 +50,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
   return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
 };
 
-export const LineupManagement: React.FC<LineupManagementProps> = ({
-  contest,
-  isModalOpen = true,
-  onCloseModal,
-}) => {
+export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const { lineups } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const joinContest = useJoinContest();
@@ -299,41 +293,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
 
     await executeLeaveBlockchain(calls);
   };
-
-  const autoJoinSingleLineupRef = useRef(false);
-  const handleJoinContestRef = useRef(handleJoinContest);
-  handleJoinContestRef.current = handleJoinContest;
-
-  useEffect(() => {
-    if (!isModalOpen) {
-      autoJoinSingleLineupRef.current = false;
-      return;
-    }
-    if (lineups.length !== 1) {
-      autoJoinSingleLineupRef.current = false;
-      return;
-    }
-    if (pendingAction) return;
-
-    const only = lineups[0];
-    if (enteredLineupsMap.has(only.id)) return;
-    if (!only.players?.length) return;
-    if (checkForDuplicateInContest(only.id)) return;
-    if (!hasEnoughBalance) return;
-    if (!contestantDepositAmount) return;
-    if (autoJoinSingleLineupRef.current) return;
-
-    autoJoinSingleLineupRef.current = true;
-    void handleJoinContestRef.current(only.id);
-  }, [
-    isModalOpen,
-    lineups,
-    enteredLineupsMap,
-    hasEnoughBalance,
-    contestantDepositAmount,
-    pendingAction,
-    checkForDuplicateInContest,
-  ]);
 
   return (
     <div className="flex flex-col gap-4">
