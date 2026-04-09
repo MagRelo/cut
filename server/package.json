@@ -21,6 +21,7 @@
     "db:seed": "pnpm run prisma:seed",
     "db:seedPGA": "pnpm run prisma:seedPGA",
     "service:init-tournament": "tsx src/services/initTournament.ts",
+    "script:backfill-player-identity": "tsx src/scripts/backfillPlayerIdentity.ts",
     "service:update-tournament": "tsx src/services/updateTournament.ts",
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",

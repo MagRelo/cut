@@ -130,14 +130,16 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
     const normalizedPlayerIds = [...playerIds].sort().join(",");
 
     // Check all existing lineups for duplicates
-    return lineups.some((lineup) => {
+    const list = Array.isArray(lineups) ? lineups : [];
+    return list.some((lineup) => {
       // Skip the current lineup if updating
       if (lineupId && lineup.id === lineupId) {
         return false;
       }
 
       // Get player IDs from the lineup and normalize
-      const lineupPlayerIds = lineup.players
+      const players = Array.isArray(lineup.players) ? lineup.players : [];
+      const lineupPlayerIds = players
         .map((p) => p.id)
         .sort()
         .join(",");

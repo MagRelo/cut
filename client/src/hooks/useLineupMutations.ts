@@ -29,7 +29,8 @@ function findLineupListContext(
     queryKey: queryKeys.lineups.all,
   });
   for (const [queryKey, lineups] of entries) {
-    if (!lineups?.some((l) => l.id === lineupId)) continue;
+    // List queries store TournamentLineup[]; detail queries store a single lineup — skip non-arrays.
+    if (!Array.isArray(lineups) || !lineups.some((l) => l.id === lineupId)) continue;
     if (
       Array.isArray(queryKey) &&
       queryKey[0] === "lineups" &&

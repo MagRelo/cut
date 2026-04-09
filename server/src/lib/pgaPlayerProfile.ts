@@ -57,7 +57,7 @@ const playerProfileResponseSchema = z.object({
   }),
 });
 
-type PlayerProfileData = z.infer<typeof playerProfileSchema>;
+export type PlayerProfileData = z.infer<typeof playerProfileSchema>;
 
 async function fetchPlayerProfileData(playerId: string, currentTour = "R"): Promise<any> {
   const query = `

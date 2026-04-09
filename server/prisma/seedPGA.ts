@@ -4,6 +4,7 @@ import { fetchPGATourPlayers } from "../src/lib/pgaPlayers.js";
 import { getActivePlayers } from "../src/lib/pgaField.js";
 import { getTournament } from "../src/lib/pgaTournament.js";
 import { getPlayerProfileOverview } from "../src/lib/pgaPlayerProfile.js";
+import { mergeIdentityFromProfileHeadshot } from "../src/utils/mergePlayerIdentity.js";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -185,9 +186,11 @@ async function main() {
       try {
         const playerProfile = await getPlayerProfileOverview(player?.pga_pgaTourId || "");
         if (playerProfile) {
+          const identityPatch = mergeIdentityFromProfileHeadshot(player ?? {}, playerProfile);
           await prisma.player.update({
             where: { id: player?.id as string },
             data: {
+              ...identityPatch,
               pga_performance: {
                 performance: playerProfile.performance,
                 standings: playerProfile.profileStandings?.find(
