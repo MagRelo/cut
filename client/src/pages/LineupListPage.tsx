@@ -21,7 +21,7 @@ export const LineupList: React.FC = () => {
     isTournamentEditable,
     tournamentStatusDisplay,
   } = useActiveTournament();
-  const { lineups, lineupError } = useLineupData();
+  const { lineups, lineupError, isLoading: isLineupsLoading } = useLineupData();
 
   // Fetch contests with full contestLineups data
   const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
@@ -77,7 +77,8 @@ export const LineupList: React.FC = () => {
       });
   };
 
-  const showAddLineup = isTournamentEditable && !isAuthLoading && !isTournamentLoading;
+  const showAddLineup =
+    isTournamentEditable && !isAuthLoading && !isTournamentLoading && !isLineupsLoading;
 
   const header = (
     <PageHeader
@@ -95,7 +96,7 @@ export const LineupList: React.FC = () => {
     />
   );
 
-  if (isAuthLoading || isTournamentLoading) {
+  if (isAuthLoading || isTournamentLoading || isLineupsLoading) {
     return (
       <div className="p-4 space-y-4">
         {header}
