@@ -1,5 +1,8 @@
-import React from "react";
-import { Link, useLocation, type Location } from "react-router-dom";
+import React, { useMemo } from "react";
+import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import { formatUnits } from "viem";
+import { useAuth } from "../../contexts/AuthContext";
 
 /** After Sign In from the nav, land on contests (not account). */
 const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
@@ -7,83 +10,146 @@ const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
   search: "",
   hash: "",
 };
-import { formatUnits } from "viem";
-import { useAuth } from "../../contexts/AuthContext";
+
+const contestsMatch = (p: string) => p.startsWith("/contests") || p.startsWith("/contest/");
+const lineupsMatch = (p: string) => p.startsWith("/lineups");
+const accountMatch = (p: string) => p.startsWith("/account") || p === "/connect";
+
+type NavTab = {
+  key: string;
+  to: string;
+  label: React.ReactNode;
+  match: (pathname: string) => boolean;
+  /** Pushes this tab and the rest to the right (flex `margin-left: auto`). */
+  firstRight: boolean;
+  state?: Location["state"];
+};
+
+/** Tab pills: no border on the tab itself — the row rule comes from the wrapper below. */
+const tabBase =
+  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wide transition-colors bg-gray-100 shadow-sm relative border-0";
 
 export const Navigation: React.FC = () => {
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Calculate total balance
   const totalBalance = (
     Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
     Number(formatUnits(paymentTokenBalance ?? 0n, 6))
   ).toFixed(2);
 
-  const getLinkClassName = (path: string) => {
-    return `flex-1 md:flex-none inline-block text-white/90 hover:text-white text-sm font-medium border-2 ${
-      location.pathname === path ? "border-white bg-black/40" : "border-white/50 bg-black/30"
-    } rounded px-3 py-1 transition-colors flex items-center justify-center`;
-  };
+  const tabs: NavTab[] = useMemo(() => {
+    if (!user) {
+      return [
+        {
+          key: "contests",
+          to: "/contests",
+          label: "Contests",
+          match: contestsMatch,
+          firstRight: false,
+        },
+        {
+          key: "connect",
+          to: "/connect",
+          state: { from: signInReturnFrom },
+          label: "Sign In",
+          match: accountMatch,
+          firstRight: true,
+        },
+      ];
+    }
+    return [
+      {
+        key: "contests",
+        to: "/contests",
+        label: "Contests",
+        match: contestsMatch,
+        firstRight: false,
+      },
+      {
+        key: "lineups",
+        to: "/lineups",
+        label: "Lineups",
+        match: lineupsMatch,
+        firstRight: true,
+      },
+      {
+        key: "account",
+        to: "/account",
+        label: (
+          <>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <span className="font-display">${totalBalance}</span>
+          </>
+        ),
+        match: accountMatch,
+        firstRight: false,
+      },
+    ];
+  }, [user, totalBalance]);
+
+  const selectedIndex = useMemo(() => {
+    const i = tabs.findIndex((t) => t.match(location.pathname));
+    return i === -1 ? 0 : i;
+  }, [tabs, location.pathname]);
 
   return (
-    <div className="flex flex-row items-center justify-between">
-      {/* left side nav: Home + Contests */}
-      <div className="flex items-center gap-4 font-display">
-        {/* Show Home link only when NOT logged in */}
-        {!user && (
-          <Link to="/" className={getLinkClassName("/")}>
-            Home
-          </Link>
-        )}
-
-        {/* Always show Contests link */}
-        <Link to="/contests" className={getLinkClassName("/contests")}>
-          Contests
-        </Link>
+    <TabGroup
+      selectedIndex={selectedIndex}
+      onChange={(index) => {
+        const tab = tabs[index];
+        if (tab) navigate(tab.to, { state: tab.state });
+      }}
+    >
+      <div className="border-b-2 border-gray-700">
+        <TabList className="flex w-full min-w-0 flex-wrap items-end gap-2">
+          {tabs.map((tab) => (
+            <Tab
+              key={tab.key}
+              as={Link}
+              to={tab.to}
+              state={tab.state}
+              className={({ selected }) =>
+                [
+                  tabBase,
+                  "gap-1.5",
+                  tab.firstRight ? "ml-auto" : "",
+                  // Wrapper draws the bar; selected tab masks its segment with bg (no border on the pill).
+                  selected
+                    ? "z-10 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
+                    : "text-gray-700 hover:text-gray-900",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-0",
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+              }
+            >
+              {tab.label}
+            </Tab>
+          ))}
+        </TabList>
       </div>
-
-      {/* right side nav: Lineups + Account */}
-      <div className="flex items-center gap-4 font-display">
-        {/* Show Lineups link only when logged in */}
-        {user && (
-          <Link to="/lineups" className={getLinkClassName("/lineups")}>
-            Lineups
-          </Link>
-        )}
-
-        <Link
-          to={user ? "/account" : "/connect"}
-          state={user ? undefined : { from: signInReturnFrom }}
-          className={`inline-flex items-center gap-1 text-white/90 hover:text-white text-sm font-medium border-2 ${
-            ["/account", "/connect"].includes(location.pathname)
-              ? "border-white bg-black/40"
-              : "border-white/50 bg-black/30"
-          } rounded transition-colors flex items-center justify-center px-2 py-1`}
-        >
-          {/* Account icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-
-          {/* Balance display - only show when logged in */}
-          {user && <span className="font-display transition-colors">${totalBalance}</span>}
-
-          {/* label shown when logged out */}
-          {!user && <span className="font-display transition-colors">Sign In</span>}
-        </Link>
-      </div>
-    </div>
+      {/* Panels are route-driven; keep minimal a11y surface for Headless UI (cf. router + TabGroup patterns). */}
+      <TabPanels className="hidden">
+        {tabs.map((tab) => (
+          <TabPanel key={`panel-${tab.key}`}>{tab.key}</TabPanel>
+        ))}
+      </TabPanels>
+    </TabGroup>
   );
 };

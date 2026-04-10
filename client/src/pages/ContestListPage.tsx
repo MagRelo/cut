@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { PageHeader } from "../components/common/PageHeader";
 import { ContestList } from "../components/contest/ContestList";
 import { useCurrentTournament } from "../hooks/useTournamentData";
 import { useContestsQuery } from "../hooks/useContestQuery";
@@ -33,7 +32,7 @@ export const Contests: React.FC = () => {
 
   return (
     <div className="space-y-4 p-4">
-      <PageHeader title="Contests" className="" />
+      {/* <PageHeader title="Contests" className="" /> */}
       <ContestList contests={contests} loading={showLoading} error={error} />
     </div>
   );

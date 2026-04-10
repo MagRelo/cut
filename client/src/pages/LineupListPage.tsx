@@ -142,7 +142,7 @@ export const LineupList: React.FC = () => {
               {uniqueUserLineups.map((contestLineup) => (
                 <div
                   key={contestLineup.tournamentLineupId}
-                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6 mt-4"
+                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
                 >
                   <LineupContestCard
                     lineup={contestLineup}

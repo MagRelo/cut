@@ -2,10 +2,6 @@ import { useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
-// import { NetworkStatus } from "../components/common/NetworkStatus";
-// import { MintingUserFundsPanel } from "../components/user/MintingUserFundsPanel";
-
-import { PageHeader } from "../components/common/PageHeader";
 import { CopyButton } from "../components/common/CopyToClipboard";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
@@ -115,7 +111,7 @@ export function UserPage() {
 
   return (
     <div className="p-4">
-      <PageHeader title="Account" className="mb-3" />
+      {/* <PageHeader title="Account" className="mb-3" /> */}
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
       {/* <MintingUserFundsPanel /> */}
