@@ -62,16 +62,23 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     return bTotal - aTotal;
   });
 
+  const userSettings = lineup.user?.settings;
+  const maybeUserColor =
+    typeof userSettings === "object" && userSettings !== null
+      ? (userSettings as { color?: unknown }).color
+      : undefined;
+  const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
+
   return (
     <div className="">
       {/* Header */}
-      <div className="mb-3">
-        <EntryHeader
-          userName={lineup.user?.name || lineup.user?.email || "Unknown User"}
-          lineupName={lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
-          totalPoints={totalPoints || 0}
-        />
-      </div>
+
+      <EntryHeader
+        userName={lineup.user?.name || lineup.user?.email || "Unknown User"}
+        lineupName={lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
+        totalPoints={totalPoints || 0}
+        userColorHex={userColorHex}
+      />
 
       {/* Tabs */}
       <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
@@ -83,7 +90,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 "focus:outline-none",
                 selected
                   ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
               )
             }
           >
@@ -96,7 +103,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 "focus:outline-none",
                 selected
                   ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700"
+                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
               )
             }
           >
@@ -145,10 +152,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
                       {/* Contest Card */}
                       <div className="flex-1 min-w-0">
-                        <Link
-                          to={`/contest/${contestInfo.contest.id}`}
-                          className="block"
-                        >
+                        <Link to={`/contest/${contestInfo.contest.id}`} className="block">
                           <ContestCard contest={contestInfo.contest} />
                         </Link>
                       </div>

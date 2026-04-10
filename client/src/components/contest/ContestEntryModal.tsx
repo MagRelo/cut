@@ -43,6 +43,13 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
   if (!lineup) return null;
 
+  const userSettings = lineup.user?.settings;
+  const maybeUserColor =
+    typeof userSettings === "object" && userSettings !== null
+      ? (userSettings as { color?: unknown }).color
+      : undefined;
+  const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
+
   return (
     <>
       <Transition appear show={isOpen} as={Fragment}>
@@ -74,13 +81,12 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                   {/* Content Section */}
                   <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
                     {/* Header */}
-                    <div className="pr-3 pl-3 py-3 border-b border-slate-300 mb-2">
+                    <div className="mb-2 border-b border-slate-300 pb-2">
                       <EntryHeader
+                        userColorHex={userColorHex}
                         userName={userName}
                         lineupName={lineup.tournamentLineup?.name}
                         totalPoints={totalPoints || 0}
-                        position={lineup.position}
-                        isInTheMoney={lineup.position <= 1}
                       />
                     </div>
 
