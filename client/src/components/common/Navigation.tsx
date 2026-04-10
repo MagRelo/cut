@@ -116,7 +116,7 @@ export const Navigation: React.FC = () => {
         if (tab) navigate(tab.to, { state: tab.state });
       }}
     >
-      <div className="border-b-2 border-gray-500">
+      <div className="border-b-2 border-transparent">
         <TabList className="flex w-full min-w-0 flex-wrap items-end gap-2">
           {tabs.map((tab) => (
             <Tab
