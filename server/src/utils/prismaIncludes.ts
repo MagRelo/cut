@@ -48,3 +48,13 @@ export const contestLineupsInclude = {
     },
   },
 } as const;
+
+/**
+ * Contest lineups without tournament lineup players (avoids heavy joins when players are not needed, e.g. OPEN contests).
+ */
+export const contestLineupsIncludeWithoutPlayers = {
+  include: {
+    user: true,
+    tournamentLineup: true,
+  },
+} as const;

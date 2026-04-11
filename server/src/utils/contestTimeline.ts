@@ -21,37 +21,52 @@ export type ContestTimelineData = {
   }>;
 };
 
+type LineupMetaRow = {
+  id: string;
+  user: { name: string; settings: unknown };
+  tournamentLineup: { name: string };
+};
+
+function buildLineupLabelMap(rows: LineupMetaRow[]) {
+  const map = new Map<string, { name: string; color: string }>();
+  for (const row of rows) {
+    const userSettings = row.user.settings as { color?: string } | null;
+    const userColor = userSettings?.color;
+    const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
+    const displayName = `${row.user.name} - ${row.tournamentLineup.name}`;
+    map.set(row.id, { name: displayName, color: resolvedColor });
+  }
+  return map;
+}
+
 /**
  * Build timeline chart data from ContestLineupTimeline snapshots for a contest.
- * Caller should ensure the contest exists (e.g. after findUnique).
+ * Uses scalar snapshot rows plus one metadata query (avoids per-row joins on snapshots).
  */
 export async function getContestTimelineData(contestId: string): Promise<ContestTimelineData> {
-  const snapshots = await prisma.contestLineupTimeline.findMany({
-    where: {
-      contestId,
-    },
-    include: {
-      contestLineup: {
-        include: {
-          user: {
-            select: {
-              name: true,
-              settings: true,
-            },
-          },
-          tournamentLineup: {
-            select: {
-              name: true,
-            },
-          },
-        },
+  const [snapshots, lineupRows] = await Promise.all([
+    prisma.contestLineupTimeline.findMany({
+      where: { contestId },
+      select: {
+        contestLineupId: true,
+        timestamp: true,
+        score: true,
+        roundNumber: true,
+        sharePrice: true,
       },
-    },
-    orderBy: {
-      timestamp: "asc",
-    },
-  });
+      orderBy: { timestamp: "asc" },
+    }),
+    prisma.contestLineup.findMany({
+      where: { contestId },
+      select: {
+        id: true,
+        user: { select: { name: true, settings: true } },
+        tournamentLineup: { select: { name: true } },
+      },
+    }),
+  ]);
 
+  const metaByLineupId = buildLineupLabelMap(lineupRows as LineupMetaRow[]);
   const lineupMap = new Map<
     string,
     { name: string; color: string; dataPoints: ContestTimelineData["teams"][0]["dataPoints"] }
@@ -61,13 +76,9 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
     const lineupId = snapshot.contestLineupId;
 
     if (!lineupMap.has(lineupId)) {
-      const userName = snapshot.contestLineup.user.name;
-      const userSettings = snapshot.contestLineup.user.settings as { color?: string } | null;
-      const userColor = userSettings?.color;
-      const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
-      const lineupName = snapshot.contestLineup.tournamentLineup.name;
-      const displayName = `${userName} - ${lineupName}`;
-
+      const meta = metaByLineupId.get(lineupId);
+      const displayName = meta?.name ?? "Unknown";
+      const resolvedColor = meta?.color ?? DEFAULT_USER_COLOR;
       lineupMap.set(lineupId, {
         name: displayName,
         color: resolvedColor,

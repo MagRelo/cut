@@ -86,7 +86,7 @@ export interface Contest {
     pushSecondaryTxs?: { hash: string }[];
     pushPayoutsError?: string;
   };
-  /** Present on `GET /contests/:id`; omitted on list responses. */
+  /** Merged from `GET /contests/:id/timeline` in `useContestQuery`; omitted on list / mutation-only responses. */
   timeline?: TimelineData;
 }
 

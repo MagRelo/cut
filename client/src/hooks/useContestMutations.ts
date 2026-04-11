@@ -124,8 +124,10 @@ export function useJoinContest() {
 
     // Always refetch after success to ensure data is in sync with server
     onSuccess: (data, { contestId }) => {
-      // Update the cache with the real server data
-      queryClient.setQueryData(queryKeys.contests.byId(contestId), data);
+      queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (prev) => ({
+        ...data,
+        timeline: prev?.timeline,
+      }));
 
       // Also invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
@@ -185,8 +187,10 @@ export function useLeaveContest() {
 
     // Always refetch after success to ensure data is in sync
     onSuccess: (data, { contestId }) => {
-      // Update the cache with the real server data
-      queryClient.setQueryData(queryKeys.contests.byId(contestId), data);
+      queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (prev) => ({
+        ...data,
+        timeline: prev?.timeline,
+      }));
 
       // Also invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });

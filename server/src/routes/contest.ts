@@ -7,7 +7,10 @@ import {
 } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
-import { contestLineupsInclude } from "../utils/prismaIncludes.js";
+import {
+  contestLineupsInclude,
+  contestLineupsIncludeWithoutPlayers,
+} from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import {
   hasMinimumPlayers,
@@ -20,6 +23,78 @@ import { getContestTimelineData } from "../utils/contestTimeline.js";
 const contestRouter = new Hono();
 
 type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
+
+const contestDetailSelect = {
+  id: true,
+  name: true,
+  description: true,
+  tournamentId: true,
+  userGroupId: true,
+  endTime: true,
+  address: true,
+  chainId: true,
+  status: true,
+  settings: true,
+  results: true,
+  createdAt: true,
+  updatedAt: true,
+  tournament: true,
+  userGroup: true,
+  _count: {
+    select: {
+      contestLineups: true,
+    },
+  },
+} as const;
+
+/**
+ * Loads contest + lineups; skips heavy player joins when status is OPEN.
+ */
+async function loadFormattedContestById(contestId: string) {
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: {
+      ...contestDetailSelect,
+      contestLineups: contestLineupsIncludeWithoutPlayers,
+    },
+  });
+
+  if (!contest) {
+    return null;
+  }
+
+  let toFormat: typeof contest = contest;
+
+  if (contest.status !== "OPEN") {
+    const tlIds = [...new Set(contest.contestLineups.map((cl) => cl.tournamentLineupId))];
+    if (tlIds.length > 0) {
+      const tournamentLineupsWithPlayers = await prisma.tournamentLineup.findMany({
+        where: { id: { in: tlIds } },
+        include: {
+          players: {
+            include: {
+              tournamentPlayer: {
+                include: {
+                  player: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      const byId = new Map(tournamentLineupsWithPlayers.map((tl) => [tl.id, tl]));
+      toFormat = {
+        ...contest,
+        contestLineups: contest.contestLineups.map((cl) => ({
+          ...cl,
+          tournamentLineup: byId.get(cl.tournamentLineupId) ?? cl.tournamentLineup,
+        })),
+      };
+    }
+  }
+
+  return formatContestResponse(toFormat);
+}
 
 const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tournamentId?: string) => {
   if (!lineup?.tournamentLineup) {
@@ -185,47 +260,34 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
   }
 });
 
-// Get contest by ID
+// Timeline chart data only (keeps GET /:id payload small; client loads both in parallel)
+contestRouter.get("/:id/timeline", async (c) => {
+  try {
+    const contestId = c.req.param("id");
+    const exists = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+    const timeline = await getContestTimelineData(contestId);
+    return c.json(timeline);
+  } catch (error) {
+    console.error("Error fetching contest timeline:", error);
+    return c.json({ error: "Failed to fetch contest timeline" }, 500);
+  }
+});
+
+// Get contest by ID (no embedded timeline — use GET /:id/timeline)
 contestRouter.get("/:id", async (c) => {
   try {
     const contestId = c.req.param("id");
-
-    const contest = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        tournamentId: true,
-        userGroupId: true,
-        endTime: true,
-        address: true,
-        chainId: true,
-        status: true,
-        settings: true,
-        results: true,
-        createdAt: true,
-        updatedAt: true,
-        tournament: true,
-        userGroup: true,
-        _count: {
-          select: {
-            contestLineups: true,
-          },
-        },
-        contestLineups: contestLineupsInclude,
-      },
-    });
-
-    if (!contest) {
+    const formattedContest = await loadFormattedContestById(contestId);
+    if (!formattedContest) {
       return c.json({ error: "Contest not found" }, 404);
     }
-
-    // Format the contest.contestLineups.tournamentLineup.players
-    const formattedContest = formatContestResponse(contest);
-    const timeline = await getContestTimelineData(contestId);
-
-    return c.json({ ...formattedContest, timeline });
+    return c.json(formattedContest);
   } catch (error) {
     console.error("Error fetching contest:", error);
     return c.json({ error: "Failed to fetch contest" }, 500);
@@ -387,35 +449,10 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       },
     });
 
-    // Fetch the updated contest with all related data
-    const contest = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        tournamentId: true,
-        userGroupId: true,
-        endTime: true,
-        address: true,
-        chainId: true,
-        status: true,
-        settings: true,
-        results: true,
-        createdAt: true,
-        updatedAt: true,
-        tournament: true,
-        userGroup: true,
-        contestLineups: contestLineupsInclude,
-      },
-    });
-
-    if (!contest) {
+    const formattedContest = await loadFormattedContestById(contestId);
+    if (!formattedContest) {
       return c.json({ error: "Contest not found" }, 404);
     }
-
-    // Format the contest data
-    const formattedContest = formatContestResponse(contest);
 
     return c.json(formattedContest, 201);
   } catch (error) {
@@ -459,35 +496,10 @@ contestRouter.delete(
         },
       });
 
-      // Fetch the updated contest with all related data
-      const contest = await prisma.contest.findUnique({
-        where: { id: contestId },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          tournamentId: true,
-          userGroupId: true,
-          endTime: true,
-          address: true,
-          chainId: true,
-          status: true,
-          settings: true,
-          results: true,
-          createdAt: true,
-          updatedAt: true,
-          tournament: true,
-          userGroup: true,
-          contestLineups: contestLineupsInclude,
-        },
-      });
-
-      if (!contest) {
+      const formattedContest = await loadFormattedContestById(contestId);
+      if (!formattedContest) {
         return c.json({ error: "Contest not found" }, 404);
       }
-
-      // Format the contest data
-      const formattedContest = formatContestResponse(contest);
 
       return c.json(formattedContest);
     } catch (error) {

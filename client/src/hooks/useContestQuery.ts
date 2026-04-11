@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type Contest } from "../types/contest";
+import { type Contest, type TimelineData } from "../types/contest";
 
 /**
- * Fetches a single contest by ID (includes `timeline` for charts).
+ * Fetches a single contest by ID. Loads contest payload and timeline in parallel
+ * (`GET /contests/:id` + `GET /contests/:id/timeline`) and merges for charts.
  *
  * Benefits:
  * - Automatic caching by contest ID
@@ -18,7 +19,11 @@ export function useContestQuery(contestId: string | undefined) {
     queryKey: queryKeys.contests.byId(contestId ?? ""),
     queryFn: async () => {
       if (!contestId) throw new Error("Contest ID is required");
-      return await apiClient.get<Contest>(`/contests/${contestId}`);
+      const [contest, timeline] = await Promise.all([
+        apiClient.get<Contest>(`/contests/${contestId}`),
+        apiClient.get<TimelineData>(`/contests/${contestId}/timeline`),
+      ]);
+      return { ...contest, timeline };
     },
     enabled: !!contestId, // Only run query if contestId exists
     staleTime: 2 * 60 * 1000,
