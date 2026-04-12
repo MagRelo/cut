@@ -31,8 +31,8 @@ export const TournamentHeaderPanel: React.FC = () => {
   // This prevents getting stuck in loading state when refetching
   if (isFetching && !currentTournament) {
     return (
-      <div className="overflow-hidden min-h-[176px] bg-slate-700 animate-pulse">
-        <div className="flex flex-col min-h-[176px] p-4 pb-0">
+      <div className="overflow-hidden min-h-[162px] bg-slate-700 animate-pulse">
+        <div className="flex flex-col min-h-[162px] p-4 pb-0">
           {/* Tournament name skeleton */}
           <div className="h-9 bg-gray-600 rounded w-3/4 mb-2"></div>
           {/* Course skeleton */}
@@ -57,7 +57,7 @@ export const TournamentHeaderPanel: React.FC = () => {
   }
 
   if (queryError) {
-    return <div className="overflow-hidden min-h-[176px]" />;
+    return <div className="overflow-hidden min-h-[162px]" />;
   }
 
   if (!currentTournament) {
@@ -65,7 +65,7 @@ export const TournamentHeaderPanel: React.FC = () => {
   }
 
   return (
-    <div className="relative overflow-hidden min-h-[176px]">
+    <div className="relative overflow-hidden min-h-[162px]">
       {/* Subtle loading indicator when refetching in background */}
       {isFetching && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 animate-pulse z-50"></div>
@@ -83,8 +83,8 @@ export const TournamentHeaderPanel: React.FC = () => {
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700" />
       )}
-      <div className="relative z-10 flex flex-col min-h-[176px] text-white">
-        <div className="px-4 pt-4 pb-0">
+      <div className="relative z-10 flex flex-col min-h-[162px] text-white">
+        <div className="px-4 pt-4">
           {/* tournament name */}
           <div className="flex justify-between items-center mt-1">
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
@@ -119,7 +119,7 @@ export const TournamentHeaderPanel: React.FC = () => {
         </div>
 
         {/* Tab strip: page-colored tabs; gaps + flex spacer let the header image show through */}
-        <div className="mt-auto pt-4 px-4 pb-0">
+        <div className="mt-auto pt-2 px-4 pb-0">
           <Navigation />
         </div>
       </div>

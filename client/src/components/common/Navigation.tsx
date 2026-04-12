@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
-import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import { Link, useLocation, type Location } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -11,7 +10,9 @@ const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
   hash: "",
 };
 
-const contestsMatch = (p: string) => p.startsWith("/contests") || p.startsWith("/contest/");
+/** List + detail under `/contests`… or singular `/contest/:id` lobby — not other top-level routes. */
+const contestsMatch = (p: string) =>
+  p === "/contests" || p.startsWith("/contests/") || p.startsWith("/contest/");
 const lineupsMatch = (p: string) => p.startsWith("/lineups");
 const accountMatch = (p: string) => p.startsWith("/account") || p === "/connect";
 
@@ -32,7 +33,6 @@ const tabBase =
 export const Navigation: React.FC = () => {
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const totalBalance = (
     Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
@@ -103,53 +103,34 @@ export const Navigation: React.FC = () => {
     ];
   }, [user, totalBalance]);
 
-  const selectedIndex = useMemo(() => {
-    const i = tabs.findIndex((t) => t.match(location.pathname));
-    return i === -1 ? 0 : i;
-  }, [tabs, location.pathname]);
-
   return (
-    <TabGroup
-      selectedIndex={selectedIndex}
-      onChange={(index) => {
-        const tab = tabs[index];
-        if (tab) navigate(tab.to, { state: tab.state });
-      }}
-    >
-      <div className="">
-        <TabList className="flex w-full min-w-0 flex-wrap items-end gap-2">
-          {tabs.map((tab) => (
-            <Tab
+    <nav aria-label="Main" className="">
+      <div className="flex w-full min-w-0 flex-wrap items-end gap-2">
+        {tabs.map((tab) => {
+          const active = tab.match(location.pathname);
+          return (
+            <Link
               key={tab.key}
-              as={Link}
               to={tab.to}
               state={tab.state}
-              className={({ selected }) =>
-                [
-                  tabBase,
-                  "gap-1.5",
-                  tab.firstRight ? "ml-auto" : "",
-                  // Wrapper draws the bar; selected tab masks its segment with bg (no border on the pill).
-                  selected
-                    ? "z-10 bg-gray-100 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
-                    : "bg-gray-300 text-gray-700 hover:text-gray-900",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-0",
-                ]
-                  .filter(Boolean)
-                  .join(" ")
-              }
+              aria-current={active ? "page" : undefined}
+              className={[
+                tabBase,
+                "gap-1.5",
+                tab.firstRight ? "ml-auto" : "",
+                active
+                  ? "z-10 bg-gray-100 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
+                  : "bg-gray-300 text-gray-700 hover:text-gray-900",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-0",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               {tab.label}
-            </Tab>
-          ))}
-        </TabList>
+            </Link>
+          );
+        })}
       </div>
-      {/* Panels are route-driven; keep minimal a11y surface for Headless UI (cf. router + TabGroup patterns). */}
-      <TabPanels className="hidden">
-        {tabs.map((tab) => (
-          <TabPanel key={`panel-${tab.key}`}>{tab.key}</TabPanel>
-        ))}
-      </TabPanels>
-    </TabGroup>
+    </nav>
   );
 };
