@@ -33,12 +33,7 @@ export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
   const { user } = useAuth();
 
-  const {
-    data: contest,
-    isLoading,
-    error: queryError,
-    refetch: refetchContest,
-  } = useContestQuery(contestId);
+  const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
 
   // Compute action locks based on contest status
   const primaryActionsLocked = contest ? arePrimaryActionsLocked(contest.status) : true;
@@ -305,7 +300,7 @@ export const ContestLobby: React.FC = () => {
             {contest.status === "SETTLED" && (
               <TabPanel>
                 <div className="p-3">
-                  <ContestResultsPanel contest={contest} onRefreshContest={refetchContest} />
+                  <ContestResultsPanel contest={contest} />
                 </div>
               </TabPanel>
             )}
@@ -342,10 +337,7 @@ export const ContestLobby: React.FC = () => {
         contentClassName="p-0"
       >
         {user ? (
-          <LineupManagement
-            contest={contest}
-            onCloseModal={() => setIsLineupModalOpen(false)}
-          />
+          <LineupManagement contest={contest} onCloseModal={() => setIsLineupModalOpen(false)} />
         ) : (
           <Connect />
         )}

@@ -84,6 +84,26 @@ export interface ContestResults {
   pushSecondaryTxs?: { hash: string }[];
   /** Set when post-settlement push steps fail partially or fully (on-chain may still be settled). */
   pushPayoutsError?: string;
+  /**
+   * Winner-pool (secondary) payouts: one row per `SecondaryPayoutClaimed` participant.
+   * Identity fields denormalize the **ticket owner** (shareholder), not the primary lineup owner.
+   */
+  secondaryPayouts?: SecondaryPayoutResult[];
+}
+
+/** One secondary payout recipient at settlement push time (denormalized for Results UI). */
+export interface SecondaryPayoutResult {
+  walletAddress: string;
+  amountWei: string;
+  /** Entry the shares were on (winning prediction entry when paid). */
+  entryId: string;
+  userId: string | null;
+  username: string;
+  userColor: string;
+  /** Backing contest lineup name for `entryId` (what the ticket was on). */
+  ticketLineupName: string;
+  /** Player last names for that backing lineup, sorted by tournament total descending. */
+  ticketPlayerLastNames: string[];
 }
 
 export interface DetailedResult {

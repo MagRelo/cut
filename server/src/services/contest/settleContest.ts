@@ -291,6 +291,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       snapshot,
       pushPrimaryTxs: pushResult.primaryTxHashes.map((h) => ({ hash: h })),
       pushSecondaryTxs: pushResult.secondaryTxHashes.map((h) => ({ hash: h })),
+      secondaryPayouts: pushResult.secondaryPayouts,
       ...(pushResult.error ? { pushPayoutsError: pushResult.error } : {}),
     };
 

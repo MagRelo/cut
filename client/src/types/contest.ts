@@ -85,6 +85,7 @@ export interface Contest {
     pushPrimaryTxs?: { hash: string }[];
     pushSecondaryTxs?: { hash: string }[];
     pushPayoutsError?: string;
+    secondaryPayouts?: SecondaryPayoutResult[];
   };
   /** Merged from `GET /contests/:id/timeline` in `useContestQuery`; omitted on list / mutation-only responses. */
   timeline?: TimelineData;
@@ -99,6 +100,18 @@ export interface CreateContestInput {
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;
+}
+
+/** Secondary (winner pool) payout row; ticket owner identity, not primary lineup owner. */
+export interface SecondaryPayoutResult {
+  walletAddress: string;
+  amountWei: string;
+  entryId: string;
+  userId: string | null;
+  username: string;
+  userColor: string;
+  ticketLineupName: string;
+  ticketPlayerLastNames: string[];
 }
 
 export interface DetailedResult {
