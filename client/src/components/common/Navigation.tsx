@@ -27,7 +27,7 @@ type NavTab = {
 
 /** Tab pills: no border on the tab itself — the row rule comes from the wrapper below. */
 const tabBase =
-  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wide transition-colors bg-gray-100 shadow-sm relative border-0";
+  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wide transition-colors shadow-sm relative border-0";
 
 export const Navigation: React.FC = () => {
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
@@ -116,7 +116,7 @@ export const Navigation: React.FC = () => {
         if (tab) navigate(tab.to, { state: tab.state });
       }}
     >
-      <div className="border-b-2 border-transparent">
+      <div className="">
         <TabList className="flex w-full min-w-0 flex-wrap items-end gap-2">
           {tabs.map((tab) => (
             <Tab
@@ -131,8 +131,8 @@ export const Navigation: React.FC = () => {
                   tab.firstRight ? "ml-auto" : "",
                   // Wrapper draws the bar; selected tab masks its segment with bg (no border on the pill).
                   selected
-                    ? "z-10 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
-                    : "text-gray-700 hover:text-gray-900",
+                    ? "z-10 bg-gray-100 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
+                    : "bg-gray-300 text-gray-700 hover:text-gray-900",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-0",
                 ]
                   .filter(Boolean)
