@@ -75,6 +75,110 @@ export function pickEvmWallet(
   return null;
 }
 
+const BASE_CHAIN_IDS = [8453, 84532] as const;
+
+/**
+ * All Cut-relevant (Base / Base Sepolia) wallet rows implied by Privy's linked accounts.
+ * Smart wallet addresses are stored for both chains; EOAs use chain_id when present, else preferred/default.
+ */
+export function collectCutEvmWalletLinks(
+  privyUser: PrivyApiUser,
+  preferredChainId?: number,
+): { chainId: number; publicKey: string }[] {
+  const defaultChain =
+    preferredChainId && BASE_CHAIN_IDS.includes(preferredChainId as (typeof BASE_CHAIN_IDS)[number])
+      ? preferredChainId
+      : DEFAULT_SMART_CHAIN;
+
+  const out: { chainId: number; publicKey: string }[] = [];
+  const seen = new Set<string>();
+
+  const add = (chainId: number, addr: string) => {
+    if (!isAddress(addr)) return;
+    if (!BASE_CHAIN_IDS.includes(chainId as (typeof BASE_CHAIN_IDS)[number])) return;
+    const pk = addr.toLowerCase();
+    const key = `${chainId}:${pk}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ chainId, publicKey: pk });
+  };
+
+  for (const a of privyUser.linked_accounts) {
+    if (a.type === "smart_wallet" && "address" in a && typeof a.address === "string") {
+      for (const cid of BASE_CHAIN_IDS) {
+        add(cid, a.address);
+      }
+    }
+    if (
+      a.type === "wallet" &&
+      "chain_type" in a &&
+      a.chain_type === "ethereum" &&
+      "address" in a &&
+      typeof a.address === "string"
+    ) {
+      const raw = "chain_id" in a && a.chain_id != null ? String(a.chain_id) : "";
+      const parsed = raw ? parseInt(raw, 10) : NaN;
+      const resolved =
+        Number.isFinite(parsed) && BASE_CHAIN_IDS.includes(parsed as (typeof BASE_CHAIN_IDS)[number])
+          ? parsed
+          : defaultChain;
+      add(resolved, a.address);
+    }
+  }
+  return out;
+}
+
+/**
+ * Create missing `UserWallet` rows for every Base / Base Sepolia address Privy reports for this user,
+ * and set `isPrimary` on the row that matches {@link pickEvmWallet} (smart wallet preferred).
+ * Idempotent; skips addresses already bound to another user.
+ */
+export async function syncUserWalletsForPrivyUser(
+  userId: string,
+  privyUser: PrivyApiUser,
+  preferredChainId?: number,
+): Promise<void> {
+  const primary = pickEvmWallet(privyUser, preferredChainId);
+  if (!primary) return;
+
+  const links = collectCutEvmWalletLinks(privyUser, preferredChainId);
+
+  for (const { chainId, publicKey } of links) {
+    const existing = await prisma.userWallet.findUnique({
+      where: { chainId_publicKey: { chainId, publicKey } },
+    });
+    if (existing) {
+      if (existing.userId !== userId) {
+        console.warn(
+          `[privy] Wallet ${publicKey} on chain ${chainId} is linked to a different user; skipping`,
+        );
+      }
+      continue;
+    }
+    await prisma.userWallet.create({
+      data: {
+        userId,
+        chainId,
+        publicKey,
+        isPrimary: false,
+      },
+    });
+  }
+
+  const pAddr = primary.address.toLowerCase();
+  const pChain = primary.chainId;
+  await prisma.$transaction([
+    prisma.userWallet.updateMany({
+      where: { userId, chainId: pChain },
+      data: { isPrimary: false },
+    }),
+    prisma.userWallet.updateMany({
+      where: { userId, chainId: pChain, publicKey: pAddr },
+      data: { isPrimary: true },
+    }),
+  ]);
+}
+
 export function pickEmailFromPrivyUser(privyUser: PrivyApiUser): string | null {
   for (const a of privyUser.linked_accounts) {
     if (a.type !== "email") continue;
@@ -231,18 +335,11 @@ export async function ensureCutUserFromPrivy(
       await syncEmailFromPrivy(byPrivy.id, email);
     }
 
-    const wallet =
-      byPrivy.wallets.find((w) => w.chainId === chainId && w.publicKey === address) ??
-      byPrivy.wallets.find((w) => w.chainId === chainId) ??
-      byPrivy.wallets.find((w) => w.isPrimary) ??
-      byPrivy.wallets[0];
-    if (!wallet) {
-      throw new Error("User has no wallet records");
-    }
+    await syncUserWalletsForPrivyUser(byPrivy.id, privyUser, preferredChainId);
     return {
       userId: byPrivy.id,
-      address: wallet.publicKey,
-      chainId: wallet.chainId,
+      address,
+      chainId,
       userType: byPrivy.userType,
     };
   }
@@ -269,10 +366,12 @@ export async function ensureCutUserFromPrivy(
       await syncEmailFromPrivy(existingWallet.userId, email);
     }
 
+    await syncUserWalletsForPrivyUser(existingWallet.userId, privyUser, preferredChainId);
+
     return {
       userId: existingWallet.userId,
-      address: existingWallet.publicKey,
-      chainId: existingWallet.chainId,
+      address,
+      chainId,
       userType: existingWallet.user.userType,
     };
   }
@@ -332,6 +431,8 @@ export async function ensureCutUserFromPrivy(
       },
     },
   });
+
+  await syncUserWalletsForPrivyUser(user.id, privyUser, preferredChainId);
 
   return {
     userId: user.id,

@@ -31,7 +31,8 @@
     "service:batch-lock-contests": "tsx src/services/batch/batchLockContests.ts",
     "service:batch-settle-contests": "tsx src/services/batch/batchSettleContests.ts",
     "service:push-contest-payouts": "tsx src/scripts/pushContestPayouts.ts",
-    "service:batch-close-contests": "tsx src/services/batch/batchCloseContests.ts"
+    "service:batch-close-contests": "tsx src/services/batch/batchCloseContests.ts",
+    "script:sync-user-wallets-from-privy": "tsx src/scripts/syncUserWalletsFromPrivy.ts"
   },
   "dependencies": {
     "@cut/secondary-pricing": "workspace:*",
