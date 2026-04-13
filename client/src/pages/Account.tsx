@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
@@ -26,8 +27,6 @@ const WalletInfo = ({
   accountIdAddress: string | undefined;
   inviteLinkUrl: string | undefined;
 }) => {
-  const hasWalletRows = Boolean(userEmail || accountIdAddress || inviteLinkUrl);
-
   return (
     <div className="bg-white rounded-sm shadow p-4 mt-4">
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
@@ -79,10 +78,26 @@ const WalletInfo = ({
         </div>
       ) : null}
 
+      <div
+        className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress || inviteLinkUrl ? "mt-3" : ""}`}
+      >
+        <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+          Contest History
+        </span>
+        <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+          <Link
+            to="/account/history"
+            className="min-w-0 max-w-full truncate text-xs text-blue-600 hover:underline text-right font-display"
+          >
+            View contest history &gt;
+          </Link>
+        </div>
+      </div>
+
       <hr className="my-4 border-gray-200"></hr>
 
       {canSignOut && (
-        <div className={`flex justify-center ${hasWalletRows ? "mt-4" : ""}`}>
+        <div className="flex justify-center mt-4">
           <button
             type="button"
             className="min-w-[120px] bg-white hover:bg-gray-50 text-gray-600 font-display py-1 px-4 rounded border border-gray-300 transition-colors"

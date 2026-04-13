@@ -129,6 +129,8 @@ export const ContestLobby: React.FC = () => {
     return <div className="space-y-2 p-4 font-display">Contest not found</div>;
   }
 
+  const isPostSettlement = contest.status === "SETTLED" || contest.status === "CLOSED";
+
   return (
     <div className="space-y-2 p-4">
       {/* breadcrumbs */}
@@ -153,7 +155,11 @@ export const ContestLobby: React.FC = () => {
         </div>
 
         {/* tabs */}
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        <TabGroup
+          selectedIndex={selectedIndex}
+          onChange={setSelectedIndex}
+          key={`${contest.id}-${isPostSettlement}`}
+        >
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -168,21 +174,21 @@ export const ContestLobby: React.FC = () => {
             >
               Contest – ${primaryPoolLabel}
             </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
-              }
-            >
-              Winner Pool - ${secondaryPoolLabel}
-            </Tab>
-
-            {contest.status === "SETTLED" && (
+            {!isPostSettlement ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  classNames(
+                    "w-full py-1.5 text-sm font-display leading-5",
+                    "focus:outline-none",
+                    selected
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                  )
+                }
+              >
+                Winner Pool - ${secondaryPoolLabel}
+              </Tab>
+            ) : (
               <Tab
                 className={({ selected }: { selected: boolean }) =>
                   classNames(
@@ -249,55 +255,54 @@ export const ContestLobby: React.FC = () => {
               </TabPanel>
             )} */}
 
-            {/*  Prediction Market Tab: PredictionPositionsList */}
-            <TabPanel>
-              <div className="p-2">
-                <ContestSharesPieChart contest={contest} />
-                {/* <ContestTimelinesSection timelineData={contest.timeline} variant="sharePrice" /> */}
+            {!isPostSettlement ? (
+              /* Prediction Market (Winner Pool tab) */
+              <TabPanel>
+                <div className="p-2">
+                  <ContestSharesPieChart contest={contest} />
+                  {/* <ContestTimelinesSection timelineData={contest.timeline} variant="sharePrice" /> */}
 
-                <TabGroup>
-                  <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-                    <Tab
-                      className={({ selected }: { selected: boolean }) =>
-                        classNames(
-                          "w-full py-1.5 text-sm font-display leading-5",
-                          "focus:outline-none",
-                          selected
-                            ? "border-b-2 border-blue-500 text-blue-600"
-                            : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                        )
-                      }
-                    >
-                      {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Buy Shares
-                    </Tab>
-                    <Tab
-                      className={({ selected }: { selected: boolean }) =>
-                        classNames(
-                          "w-full py-1.5 text-sm font-display leading-5",
-                          "focus:outline-none",
-                          selected
-                            ? "border-b-2 border-blue-500 text-blue-600"
-                            : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                        )
-                      }
-                    >
-                      Positions
-                    </Tab>
-                  </TabList>
-                  <TabPanels>
-                    <TabPanel className="focus:outline-none mt-2">
-                      <PredictionLineupsList contest={contest} />
-                    </TabPanel>
-                    <TabPanel className="focus:outline-none mt-2">
-                      <PredictionPositionsList contest={contest} />
-                    </TabPanel>
-                  </TabPanels>
-                </TabGroup>
-              </div>
-            </TabPanel>
-
-            {/* RESULTS - Only shown when contest is settled */}
-            {contest.status === "SETTLED" && (
+                  <TabGroup>
+                    <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+                      <Tab
+                        className={({ selected }: { selected: boolean }) =>
+                          classNames(
+                            "w-full py-1.5 text-sm font-display leading-5",
+                            "focus:outline-none",
+                            selected
+                              ? "border-b-2 border-blue-500 text-blue-600"
+                              : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                          )
+                        }
+                      >
+                        {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Buy Shares
+                      </Tab>
+                      <Tab
+                        className={({ selected }: { selected: boolean }) =>
+                          classNames(
+                            "w-full py-1.5 text-sm font-display leading-5",
+                            "focus:outline-none",
+                            selected
+                              ? "border-b-2 border-blue-500 text-blue-600"
+                              : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                          )
+                        }
+                      >
+                        Positions
+                      </Tab>
+                    </TabList>
+                    <TabPanels>
+                      <TabPanel className="focus:outline-none mt-2">
+                        <PredictionLineupsList contest={contest} />
+                      </TabPanel>
+                      <TabPanel className="focus:outline-none mt-2">
+                        <PredictionPositionsList contest={contest} />
+                      </TabPanel>
+                    </TabPanels>
+                  </TabGroup>
+                </div>
+              </TabPanel>
+            ) : (
               <TabPanel>
                 <div className="p-3">
                   <ContestResultsPanel contest={contest} />
