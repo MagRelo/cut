@@ -189,19 +189,23 @@ authRouter.get("/contests", requireAuth, async (c) => {
     });
 
     // Convert to array and format response
-    const contests = Array.from(contestMap.values()).map((item) => ({
-      id: item.contest.id,
-      name: item.contest.name,
-      description: item.contest.description,
-      status: item.contest.status,
-      endTime: item.contest.endTime,
-      createdAt: item.contest.createdAt,
-      tournament: item.contest.tournament,
-      userGroup: item.contest.userGroup,
-      lineupCount: item.lineupCount,
-      totalEntries: item.contest._count.contestLineups,
-      firstParticipatedAt: item.firstParticipatedAt,
-    }));
+    const contests = Array.from(contestMap.values()).map((item) => {
+      const settings = item.contest.settings as { primaryDeposit?: number } | null;
+      return {
+        id: item.contest.id,
+        name: item.contest.name,
+        description: item.contest.description,
+        status: item.contest.status,
+        endTime: item.contest.endTime,
+        createdAt: item.contest.createdAt,
+        tournament: item.contest.tournament,
+        userGroup: item.contest.userGroup,
+        lineupCount: item.lineupCount,
+        totalEntries: item.contest._count.contestLineups,
+        firstParticipatedAt: item.firstParticipatedAt,
+        primaryDeposit: settings?.primaryDeposit ?? null,
+      };
+    });
 
     return c.json({ contests });
   } catch (error) {

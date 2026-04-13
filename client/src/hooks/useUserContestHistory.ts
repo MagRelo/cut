@@ -22,6 +22,7 @@ export interface UserContestHistoryItem {
   lineupCount: number;
   totalEntries: number;
   firstParticipatedAt: Date;
+  primaryDeposit: number | null;
 }
 
 interface UserContestHistoryResponse {

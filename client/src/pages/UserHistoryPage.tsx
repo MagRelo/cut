@@ -31,6 +31,14 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
       className="block border bg-white rounded-sm p-3 hover:bg-gray-50 transition-colors"
     >
       <div className="flex items-center justify-between gap-4">
+        <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
+          <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
+            ${contest.primaryDeposit ?? "—"}
+          </div>
+          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
+            buy-in
+          </div>
+        </div>
         {/* Left Section - Contest Info */}
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-bold text-gray-900 font-display truncate">
@@ -40,15 +48,7 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{contest.description}</p>
           )}
           <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-            {contest.tournament && (
-              <span className="font-medium">{contest.tournament.name}</span>
-            )}
-            {contest.userGroup && (
-              <span className="font-medium">• {contest.userGroup.name}</span>
-            )}
-            <span className="font-medium">
-              • {contest.lineupCount} {contest.lineupCount === 1 ? "entry" : "entries"}
-            </span>
+            {contest.userGroup && <span className="font-medium">• {contest.userGroup.name}</span>}
           </div>
         </div>
 
@@ -59,17 +59,16 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
               contest.status === "SETTLED"
                 ? "bg-green-100 text-green-800"
                 : contest.status === "ACTIVE" || contest.status === "LOCKED"
-                ? "bg-blue-100 text-blue-800"
-                : contest.status === "OPEN"
-                ? "bg-gray-100 text-gray-800"
-                : "bg-gray-100 text-gray-600"
+                  ? "bg-blue-100 text-blue-800"
+                  : contest.status === "OPEN"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-gray-100 text-gray-600"
             }`}
           >
             {formatStatus(contest.status)}
           </span>
           <div className="text-xs text-gray-500 text-right">
             <div>Ended: {formatDate(contest.endTime)}</div>
-            <div className="text-gray-400">Joined: {formatDate(contest.firstParticipatedAt)}</div>
           </div>
         </div>
       </div>
@@ -78,11 +77,7 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
 };
 
 export const UserHistoryPage: React.FC = () => {
-  const {
-    data: contests,
-    isLoading,
-    error,
-  } = useUserContestHistory();
+  const { data: contests, isLoading, error } = useUserContestHistory();
 
   if (isLoading) {
     return (
@@ -151,4 +146,3 @@ export const UserHistoryPage: React.FC = () => {
     </div>
   );
 };
-
