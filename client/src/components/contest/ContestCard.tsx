@@ -52,7 +52,11 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
       {/* Left Section - Buy-in */}
       <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
         <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
-          ${contest.settings?.primaryDeposit ?? "—"}
+          {contest.settings?.primaryDeposit === 0
+            ? "Free"
+            : contest.settings?.primaryDeposit != null
+              ? `$${contest.settings.primaryDeposit}`
+              : "—"}
         </div>
         <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
           buy-in

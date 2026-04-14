@@ -348,8 +348,8 @@ export const CreateContestForm = () => {
             Primary deposit (token amount, 18 decimals on-chain)
           </label>
           <p className="text-xs text-gray-600">
-            ContestController: fixed amount each Layer 1 (primary) participant must deposit to
-            enter.
+            Fixed Layer 1 stake per primary participant. Use <span className="font-medium">0</span> for
+            a free contest (no deposit; still uses the same contract flow).
           </p>
           <div className="relative">
             <input

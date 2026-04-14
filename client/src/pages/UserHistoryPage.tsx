@@ -33,7 +33,11 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
       <div className="flex items-center justify-between gap-4">
         <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
           <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
-            ${contest.primaryDeposit ?? "—"}
+            {contest.primaryDeposit === 0
+              ? "Free"
+              : contest.primaryDeposit != null
+                ? `$${contest.primaryDeposit}`
+                : "—"}
           </div>
           <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
             buy-in

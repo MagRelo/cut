@@ -217,8 +217,12 @@ export const ContestLobby: React.FC = () => {
                       onClick={() => setIsLineupModalOpen(true)}
                       className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
                     >
-                      Enter Contest{" - "}
-                      <span>${contest.settings?.primaryDeposit}</span>
+                      Enter Contest{" — "}
+                      <span>
+                        {contest.settings?.primaryDeposit === 0
+                          ? "Free"
+                          : `$${contest.settings?.primaryDeposit ?? 0}`}
+                      </span>
                     </button>
 
                     {contest.tournament?.status === "NOT_STARTED" &&

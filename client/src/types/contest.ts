@@ -39,6 +39,7 @@ export interface ContestSettings {
   /**
    * `_primaryDepositAmount` in human token units (18 decimals on chain).
    * Same value used when calling `ContestFactory.createContest`.
+   * Use `0` for a free Layer 1 (no primary stake; matches on-chain zero deposit).
    */
   primaryDeposit: number;
 

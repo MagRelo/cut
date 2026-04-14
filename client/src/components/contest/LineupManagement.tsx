@@ -165,13 +165,17 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   const isFailed = isJoinFailed || isLeaveFailed;
   const transactionError = joinError || leaveError;
 
-  // Get the deposit amount from the contest contract
-  const contestantDepositAmount = useReadContract({
+  // On-chain primary stake; `0n` means free Layer 1 (must not use falsy checks — `0n` is falsy in JS).
+  const {
+    data: contestantDepositAmount,
+    isPending: isPrimaryDepositLoading,
+    isError: isPrimaryDepositError,
+  } = useReadContract({
     address: contest.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "primaryDepositAmount",
     args: [],
-  }).data as bigint | undefined;
+  });
 
   // Modals
   const [warningModal, setWarningModal] = useState<{
@@ -179,9 +183,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     message: string;
   }>({ open: false, message: "" });
 
-  // Helper: check if user has enough balance
+  // Helper: check if user has enough balance (0 primary deposit always passes)
   const hasEnoughBalance = useMemo(() => {
-    if (!contestantDepositAmount) return false;
+    if (contestantDepositAmount === undefined) return false;
+    if (contestantDepositAmount === 0n) return true;
 
     const platformTokenAmount = platformTokenBalance ?? 0n;
     const paymentTokenAmount = paymentTokenBalance ?? 0n;
@@ -241,16 +246,19 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     // Clear validation error if checks pass
     setValidationError(null);
 
+    if (isPrimaryDepositLoading) {
+      return;
+    }
+    if (isPrimaryDepositError || contestantDepositAmount === undefined) {
+      setSubmissionError("Unable to read contest details from blockchain");
+      return;
+    }
+
     if (!hasEnoughBalance) {
       setWarningModal({
         open: true,
         message: `You do not have enough funds to join this contest.`,
       });
-      return;
-    }
-
-    if (!contestantDepositAmount) {
-      setSubmissionError("Unable to read contest details from blockchain");
       return;
     }
 
@@ -293,6 +301,11 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
     await executeLeaveBlockchain(calls);
   };
+
+  const joinPrimaryDepositLabel =
+    contest.settings?.primaryDeposit === 0
+      ? "Free"
+      : `$${contest.settings?.primaryDeposit ?? 0}`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -415,7 +428,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
               ) : (
                 <button
                   onClick={() => handleJoinContest(lineup.id)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isPrimaryDepositLoading}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isProcessing ? (
@@ -424,7 +437,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                       {getStatusMessages("idle", isSending, isConfirming)}
                     </div>
                   ) : (
-                    `Join Contest - $${contest.settings?.primaryDeposit ?? 0}`
+                    `Join Contest — ${joinPrimaryDepositLabel}`
                   )}
                 </button>
               )}
