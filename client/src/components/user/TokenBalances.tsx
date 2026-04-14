@@ -19,8 +19,10 @@ const UsdcLogo = () => (
   />
 );
 
-/** Set true to make the Balance header row link to `/account/funds`. */
-const BALANCE_HEADER_LINK_ENABLED = false;
+/** Inline secondary link next to a token label (e.g. "What's this?"). */
+const tokenInfoLinkClass = "text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium";
+/** Same as {@link tokenInfoLinkClass} with `text-sm` for the Balance header (`text-xl`). */
+const manageLinkClass = `${tokenInfoLinkClass} text-sm`;
 
 const rowChevron = (
   <svg
@@ -35,7 +37,6 @@ const rowChevron = (
 );
 
 interface TokenBalancesProps {
-  showManageLink?: boolean;
   /** Row linking to /account/history. Default true. */
   showContestHistoryLink?: boolean;
   /** When false, hides the whole CUT row (logo, label, link, amount). Default true. */
@@ -49,7 +50,6 @@ interface TokenBalancesProps {
 }
 
 export function TokenBalances({
-  showManageLink = false,
   showContestHistoryLink = true,
   showCutRow = true,
   showUsdcRow = true,
@@ -65,7 +65,7 @@ export function TokenBalances({
   };
 
   const showBreakdown = showCutRow || showUsdcRow;
-  const hasLowerSection = showBreakdown || showContestHistoryLink || showManageLink;
+  const hasLowerSection = showBreakdown || showContestHistoryLink;
 
   const balanceHeaderClass = `flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`;
   const balanceTotal = (
@@ -76,17 +76,15 @@ export function TokenBalances({
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
       {/* Balance Header */}
-      {BALANCE_HEADER_LINK_ENABLED ? (
-        <Link to="/account/funds" className={balanceHeaderClass}>
-          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
-          <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
-        </Link>
-      ) : (
-        <div className={balanceHeaderClass}>
-          <div className="text-xl font-semibold text-gray-700 font-display">Balance</div>
-          <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+      <div className={balanceHeaderClass}>
+        <div className="min-w-0 text-xl font-semibold text-gray-700 font-display">
+          Balance
+          <Link to="/cut" className={manageLinkClass}>
+            manage
+          </Link>
         </div>
-      )}
+        <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+      </div>
 
       {/* Token Breakdown */}
       {showBreakdown && (
@@ -97,11 +95,8 @@ export function TokenBalances({
               <div className="text-sm text-gray-600 font-semibold">
                 {platformTokenSymbol || "CUT"}
                 {showCutInfoLink && (
-                  <Link
-                    to="/cut"
-                    className="text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium"
-                  >
-                    What's this?
+                  <Link to="/cut" className={tokenInfoLinkClass}>
+                    {"What's this?"}
                   </Link>
                 )}
               </div>
@@ -117,11 +112,8 @@ export function TokenBalances({
               <div className="text-sm text-gray-600 font-semibold">
                 {paymentTokenSymbol || "USDC"}
                 {showUsdcInfoLink && (
-                  <Link
-                    to="/usdc"
-                    className="text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium"
-                  >
-                    What's this?
+                  <Link to="/usdc" className={tokenInfoLinkClass}>
+                    {"What's this?"}
                   </Link>
                 )}
               </div>
@@ -145,22 +137,6 @@ export function TokenBalances({
             </div>
             {rowChevron}
           </Link>
-        </>
-      )}
-
-      {showManageLink && (
-        <>
-          <hr className="my-3 border-gray-200" />
-
-          {/* Manage Link */}
-          <div className="flex justify-center mt-3">
-            <Link
-              to="/account/funds"
-              className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
-            >
-              Transfer funds
-            </Link>
-          </div>
         </>
       )}
     </div>

@@ -133,8 +133,8 @@ export function UserPage() {
 
       {/* Token Balances */}
       <TokenBalances
-        showManageLink={false}
         showCutRow={false}
+        showCutInfoLink={false}
         showUsdcRow={false}
         showContestHistoryLink={false}
       />
