@@ -2,7 +2,7 @@
   "paymentTokenAddress": "0xfa9FD8B813867eE95aE6F1551A62ef3AC5881B0C",
   "platformTokenAddress": "0xDe8B71D94d686E2B28d910AD87a4d2d72A289ADd",
   "depositManagerAddress": "0x08B73bA75138ffdeB23888e31bfDF4259e4ed67f",
-  "contestFactoryAddress": "0x6c07d47dc686Ad687dED1BABd71B41720A5EAF30",
+  "contestFactoryAddress": "0x5C91F3E774998F14c558A810AD15A8Cd46C0d040",
   "aavePoolAddress": "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27",
   "referralGraphAddress": "0xD11F317D12ECCd56926B2bDC3144dDA103BB1fd0",
   "rewardDistributorAddress": "0x344C21c7DAffB5Fb9442b27e1E53051aE7faf926"

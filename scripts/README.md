@@ -30,6 +30,7 @@ Base Sepolia (chain 84532) helpers:
 
 - `depositUSDC.js` — deposit mock USDC into `DepositManager`, receive CUT (`xCUT`)
 - `mintPaymentToken.js` — mint `MockUSDC` when your wallet is the token owner
+- `deployContestFactory.js` — deploy only `ContestFactory` via `Deploy_sepolia_contest_factory.s.sol` (no app config updates; copy `contestFactoryAddress` from forge output yourself or run `pnpm run deploy:copy-artifacts` after `forge build`)
 
 ### Base mainnet (`base/`)
 
