@@ -12,7 +12,6 @@ interface PlayerDisplayRowProps {
   roundDisplay: string;
   onClick?: () => void;
   ownershipPercentage?: number;
-  showArrow?: boolean;
   isOwnedByCurrentUser?: boolean;
 }
 
@@ -21,7 +20,6 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   roundDisplay,
   onClick,
   ownershipPercentage,
-  showArrow = true,
 }) => {
   // Calculate total points
   const totalPoints = player.tournamentData?.total || 0;
@@ -146,16 +144,6 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
             PTS
           </div>
         </div>
-        {showArrow && (
-          <svg
-            className="w-4 h-4 text-gray-400 flex-shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        )}
       </div>
     </div>
   );

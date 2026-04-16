@@ -87,7 +87,7 @@ export const App: React.FC = () => {
                     {/* TODO: Remove this when we're ready to go live */}
                     {/* <MaintenanceOverlay /> */}
                     <div className="flex flex-col flex-grow">
-                      <div className="container mx-auto md:py-8">
+                      <div className="container mx-auto">
                         <OnboardingRedirectGate>
                           <div className="max-w-2xl mx-auto">
                             <TournamentHeaderPanel />

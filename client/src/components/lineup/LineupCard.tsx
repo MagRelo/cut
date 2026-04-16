@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { PlayerSelectionCard } from "./PlayerSelectionCard";
 import { type TournamentLineup } from "../../types/player";
+import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface LineupCardProps {
   lineup: TournamentLineup;
@@ -31,12 +32,7 @@ export const LineupCard: React.FC<LineupCardProps> = ({ lineup, isEditable }) =>
       {/* Display players in the lineup */}
       {lineup.players && lineup.players.length > 0 ? (
         <div className="flex flex-col">
-          {[...lineup.players]
-            .sort((a, b) => {
-              const aTotal = a.tournamentData?.total || 0;
-              const bTotal = b.tournamentData?.total || 0;
-              return bTotal - aTotal;
-            })
+          {sortPlayersByLeaderboard(lineup.players)
             .map((player, index) => (
               <React.Fragment key={player.id ?? `${lineup.id}-player-${index}`}>
                 <hr className="border-0 border-t border-slate-300 mt-4 mb-5" />

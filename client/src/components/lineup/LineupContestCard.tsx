@@ -10,6 +10,7 @@ import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 import { arePrimaryActionsLocked } from "../../types/contest";
+import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestInfo {
   contest: Contest;
@@ -55,12 +56,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     return sum + (player.tournamentData?.total || 0);
   }, 0);
 
-  // Sort players by total points (descending)
-  const sortedPlayers = [...lineupPlayers].sort((a, b) => {
-    const aTotal = a.tournamentData?.total || 0;
-    const bTotal = b.tournamentData?.total || 0;
-    return bTotal - aTotal;
-  });
+  const sortedPlayers = sortPlayersByLeaderboard(lineupPlayers);
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =

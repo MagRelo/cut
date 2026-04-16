@@ -4,36 +4,7 @@ import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { useAuth } from "../../contexts/AuthContext";
 import type { Contest } from "../../types/contest";
 import type { PlayerWithTournamentData } from "../../types/player";
-
-const PLAYER_SORT_BUCKET = {
-  noData: 205,
-  wd: 203,
-  cut: 202,
-  noPosition: 201,
-} as const;
-
-const getPlayerSortIndex = (player?: PlayerWithTournamentData | null) => {
-  if (!player) return PLAYER_SORT_BUCKET.noData;
-
-  const score = player.tournamentData?.leaderboardTotal?.trim();
-  const position = player.tournamentData?.leaderboardPosition?.trim().toUpperCase();
-
-  if (!score) return PLAYER_SORT_BUCKET.noData;
-  if (position === "WD") return PLAYER_SORT_BUCKET.wd;
-  if (position === "CUT") return PLAYER_SORT_BUCKET.cut;
-  if (position === "-") return PLAYER_SORT_BUCKET.noPosition;
-  if (score === "E") return 0;
-
-  const numericScore = Number.parseInt(score, 10);
-  return Number.isNaN(numericScore) ? PLAYER_SORT_BUCKET.noData : numericScore;
-};
-
-const getNumericPosition = (player: PlayerWithTournamentData) => {
-  const rawPosition = player.tournamentData?.leaderboardPosition?.trim().toUpperCase() || "";
-  const normalizedPosition = rawPosition.startsWith("T") ? rawPosition.slice(1) : rawPosition;
-  const parsedPosition = Number.parseInt(normalizedPosition, 10);
-  return Number.isNaN(parsedPosition) ? Number.POSITIVE_INFINITY : parsedPosition;
-};
+import { comparePlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestPlayerListProps {
   contest?: Contest;
@@ -96,19 +67,7 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
     });
 
     return Array.from(playerMap.values()).sort((a, b) => {
-      const sortIndexDiff = getPlayerSortIndex(a.player) - getPlayerSortIndex(b.player);
-      if (sortIndexDiff !== 0) return sortIndexDiff;
-
-      const positionDiff = getNumericPosition(a.player) - getNumericPosition(b.player);
-      if (positionDiff !== 0) return positionDiff;
-
-      const aName =
-        a.player.pga_displayName ||
-        `${a.player.pga_lastName || ""} ${a.player.pga_firstName || ""}`.trim();
-      const bName =
-        b.player.pga_displayName ||
-        `${b.player.pga_lastName || ""} ${b.player.pga_firstName || ""}`.trim();
-      return aName.localeCompare(bName);
+      return comparePlayersByLeaderboard(a.player, b.player);
     });
   };
 

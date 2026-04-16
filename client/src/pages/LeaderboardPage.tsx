@@ -8,36 +8,7 @@ import { PlayerDetailModal } from "../components/player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../components/player/PlayerDisplayRow";
 import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
 import type { PlayerWithTournamentData } from "../types/player";
-
-const PLAYER_SORT_BUCKET = {
-  noData: 205,
-  wd: 203,
-  cut: 202,
-  noPosition: 201,
-} as const;
-
-const getPlayerSortIndex = (player?: PlayerWithTournamentData | null) => {
-  if (!player) return PLAYER_SORT_BUCKET.noData;
-
-  const score = player.tournamentData?.leaderboardTotal?.trim();
-  const position = player.tournamentData?.leaderboardPosition?.trim().toUpperCase();
-
-  if (!score) return PLAYER_SORT_BUCKET.noData;
-  if (position === "WD") return PLAYER_SORT_BUCKET.wd;
-  if (position === "CUT") return PLAYER_SORT_BUCKET.cut;
-  if (position === "-") return PLAYER_SORT_BUCKET.noPosition;
-  if (score === "E") return 0;
-
-  const numericScore = Number.parseInt(score, 10);
-  return Number.isNaN(numericScore) ? PLAYER_SORT_BUCKET.noData : numericScore;
-};
-
-const getNumericPosition = (player: PlayerWithTournamentData) => {
-  const rawPosition = player.tournamentData?.leaderboardPosition?.trim().toUpperCase() || "";
-  const normalizedPosition = rawPosition.startsWith("T") ? rawPosition.slice(1) : rawPosition;
-  const parsedPosition = Number.parseInt(normalizedPosition, 10);
-  return Number.isNaN(parsedPosition) ? Number.POSITIVE_INFINITY : parsedPosition;
-};
+import { sortPlayersByLeaderboard } from "../utils/playerSorting";
 
 export const LeaderboardPage: React.FC = () => {
   const { currentTournament, players, isLoading, error } = useActiveTournament();
@@ -83,26 +54,7 @@ export const LeaderboardPage: React.FC = () => {
       return hasLastName || hasDisplayName;
     });
 
-    return [...playersWithName].sort((a, b) => {
-      if (!sortByNameOnly) {
-        const sortIndexDiff = getPlayerSortIndex(a) - getPlayerSortIndex(b);
-        if (sortIndexDiff !== 0) return sortIndexDiff;
-
-        const positionDiff = getNumericPosition(a) - getNumericPosition(b);
-        if (positionDiff !== 0) return positionDiff;
-      }
-
-      // Stable fallback: last name only (requested behavior).
-      const aLastName = (a.pga_lastName || "").trim();
-      const bLastName = (b.pga_lastName || "").trim();
-      const lastNameDiff = aLastName.localeCompare(bLastName);
-      if (lastNameDiff !== 0) return lastNameDiff;
-
-      // Final deterministic tie-break when last names match/missing.
-      const aFirstName = (a.pga_firstName || a.pga_displayName || "").trim();
-      const bFirstName = (b.pga_firstName || b.pga_displayName || "").trim();
-      return aFirstName.localeCompare(bFirstName);
-    });
+    return sortPlayersByLeaderboard(playersWithName, { sortByNameOnly });
   }, [players, currentTournament?.status]);
 
   if (isLoading) {
@@ -164,7 +116,6 @@ export const LeaderboardPage: React.FC = () => {
                   player={player}
                   roundDisplay={roundDisplay}
                   onClick={() => openPlayerModal(player)}
-                  showArrow={false}
                 />
               </div>
             ))}

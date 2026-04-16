@@ -6,6 +6,7 @@ import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
+import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -141,12 +142,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                       {(() => {
                         const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
                         const name = lineup?.tournamentLineup?.name || "";
-                        const sortedPlayerNames = [...lineupPlayers]
-                          .sort((a, b) => {
-                            const aTotal = a.tournamentData?.total || 0;
-                            const bTotal = b.tournamentData?.total || 0;
-                            return bTotal - aTotal;
-                          })
+                        const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
                           .map((player) => player.pga_lastName)
                           .filter(Boolean)
                           .join(", ");

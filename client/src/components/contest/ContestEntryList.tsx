@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
+import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -90,12 +91,7 @@ export const ContestEntryList = ({
             ? (userSettings as { color?: unknown }).color
             : undefined;
         const resolvedBorderColor = isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
-        const sortedPlayerNames = [...lineupPlayers]
-          .sort((a, b) => {
-            const aTotal = a.tournamentData?.total || 0;
-            const bTotal = b.tournamentData?.total || 0;
-            return bTotal - aTotal;
-          })
+        const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
           .map((player) => player.pga_lastName)
           .filter(Boolean)
           .join(", ");
