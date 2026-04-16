@@ -167,7 +167,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
   // On-chain primary stake; `0n` means free Layer 1 (must not use falsy checks — `0n` is falsy in JS).
   const {
-    data: contestantDepositAmount,
+    data: primaryDepositRaw,
     isPending: isPrimaryDepositLoading,
     isError: isPrimaryDepositError,
   } = useReadContract({
@@ -176,6 +176,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     functionName: "primaryDepositAmount",
     args: [],
   });
+  const contestantDepositAmount: bigint | undefined =
+    typeof primaryDepositRaw === "bigint" ? primaryDepositRaw : undefined;
 
   // Modals
   const [warningModal, setWarningModal] = useState<{
