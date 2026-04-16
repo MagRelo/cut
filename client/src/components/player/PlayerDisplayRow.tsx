@@ -119,8 +119,28 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
       )}
 
       {/* Right - Points */}
-      <div className="flex-shrink-0 flex items-center gap-2">
-        <div className="text-right">
+      <div className="flex-shrink-0 flex items-center gap-3">
+        {/*scorecard icon svg */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4 text-gray-400 flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8z"
+          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2v6h6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17h6" />
+        </svg>
+
+        <div className="text-center">
           <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
           <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
             PTS

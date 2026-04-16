@@ -52,8 +52,7 @@ export const LeaderboardPage: React.FC = () => {
     if (isLoading || !pgaTourIdParam || players.length === 0) return;
 
     const match = players.find(
-      (p) =>
-        p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === pgaTourIdParam.trim(),
+      (p) => p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === pgaTourIdParam.trim(),
     );
     if (match) {
       setSelectedPlayer(match);
@@ -165,6 +164,7 @@ export const LeaderboardPage: React.FC = () => {
                   player={player}
                   roundDisplay={roundDisplay}
                   onClick={() => openPlayerModal(player)}
+                  showArrow={false}
                 />
               </div>
             ))}
