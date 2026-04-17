@@ -55,6 +55,8 @@ export function useContestsQuery(tournamentId: string | undefined, chainId: numb
     },
     enabled: !!tournamentId,
     staleTime: Infinity,
+    /** Keep list in memory long after leaving the page; data changes rarely. */
+    gcTime: 12 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
     placeholderData: (previousData) => previousData, // Keep previous data while refetching

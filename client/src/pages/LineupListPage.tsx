@@ -23,7 +23,6 @@ export const LineupList: React.FC = () => {
   } = useActiveTournament();
   const { lineups, lineupError, isLoading: isLineupsLoading } = useLineupData();
 
-  // Fetch contests with full contestLineups data
   const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
     currentTournament?.id,
     undefined,
@@ -59,6 +58,14 @@ export const LineupList: React.FC = () => {
 
     return Array.from(lineupMap.values());
   }, [userContestLineups]);
+
+  /** Contest list API omits nested tournamentLineup; attach roster from `useLineupData`. */
+  const uniqueUserLineupsWithPlayers = useMemo(() => {
+    return uniqueUserLineups.map((cl) => {
+      const tournamentLineup = lineups.find((l) => l.id === cl.tournamentLineupId);
+      return tournamentLineup ? { ...cl, tournamentLineup } : cl;
+    });
+  }, [uniqueUserLineups, lineups]);
 
   // Function to get contests for a specific lineup
   const getContestsForLineup = (lineupId: string) => {
@@ -137,10 +144,10 @@ export const LineupList: React.FC = () => {
             </div>
           )
         : // When not editable, show unique ContestLineup cards (deduplicated by tournamentLineupId)
-          uniqueUserLineups &&
-          uniqueUserLineups.length > 0 && (
+          uniqueUserLineupsWithPlayers &&
+          uniqueUserLineupsWithPlayers.length > 0 && (
             <div>
-              {uniqueUserLineups.map((contestLineup) => (
+              {uniqueUserLineupsWithPlayers.map((contestLineup) => (
                 <div
                   key={contestLineup.tournamentLineupId}
                   className="rounded-sm border border-gray-200 bg-white p-4 pb-6"

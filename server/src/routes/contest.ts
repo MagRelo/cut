@@ -7,10 +7,7 @@ import {
 } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
-import {
-  contestLineupsInclude,
-  contestLineupsIncludeWithoutPlayers,
-} from "../utils/prismaIncludes.js";
+import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import {
   hasMinimumPlayers,
@@ -182,12 +179,46 @@ contestRouter.get("/", async (c) => {
       whereClause.userGroupId = validUserGroupId;
     }
 
+    // List payload: scalars + slim contest lineups (no tournamentLineup / player joins).
+    // Include `user` (minimal) for lineup list headers; detail + players on `GET /contests/:id` and `GET /lineup/:tournamentId`.
     const contests = await prisma.contest.findMany({
       where: whereClause,
-      include: {
-        tournament: true,
-        userGroup: true,
-        contestLineups: contestLineupsInclude,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        tournamentId: true,
+        userGroupId: true,
+        endTime: true,
+        address: true,
+        chainId: true,
+        status: true,
+        settings: true,
+        results: true,
+        createdAt: true,
+        updatedAt: true,
+        contestLineups: {
+          select: {
+            id: true,
+            contestId: true,
+            userId: true,
+            tournamentLineupId: true,
+            position: true,
+            score: true,
+            status: true,
+            entryId: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                settings: true,
+              },
+            },
+          },
+        },
       },
     });
 

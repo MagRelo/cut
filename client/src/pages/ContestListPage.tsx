@@ -7,7 +7,6 @@ export const Contests: React.FC = () => {
   const { tournament, isLoading: isTournamentLoading, error: fetchError } = useCurrentTournament();
   const tournamentId = tournament?.id;
 
-  // Fetch contests with full lineup data to determine user participation
   const {
     data: contestsWithLineupsData,
     isLoading: isContestsLoading,
