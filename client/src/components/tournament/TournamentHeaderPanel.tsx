@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTournamentMetadata } from "../../hooks/useTournamentData";
+import { resolveTournamentBeautyImage } from "../../types/tournament";
 import { CountdownTimer } from "./CountdownTimer";
 import { Navigation } from "../common/Navigation";
 
@@ -64,25 +65,21 @@ export const TournamentHeaderPanel: React.FC = () => {
     return null;
   }
 
+  const headerImageUrl = resolveTournamentBeautyImage(currentTournament.beautyImage);
+
   return (
     <div className="relative overflow-hidden min-h-[162px]">
       {/* Subtle loading indicator when refetching in background */}
       {isFetching && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 animate-pulse z-50"></div>
       )}
-      {currentTournament.beautyImage ? (
-        <>
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${currentTournament.beautyImage})`,
-            }}
-          />
-          <div className="absolute inset-0 bg-black/50" />
-        </>
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-700" />
-      )}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${headerImageUrl})`,
+        }}
+      />
+      <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 flex flex-col min-h-[162px] text-white">
         <div className="px-4 pt-4">
           {/* tournament name */}

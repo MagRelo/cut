@@ -10,6 +10,18 @@ export const TournamentStatus = {
 
 export type TournamentStatus = (typeof TournamentStatus)[keyof typeof TournamentStatus];
 
+/** Used when `beautyImage` is unset, empty, or null (e.g. manual override not yet applied). */
+export const DEFAULT_TOURNAMENT_BEAUTY_IMAGE =
+  "https://res.cloudinary.com/pgatour-prod/ar_5,c_crop,g_north_east/d_placeholders:tournamentBackgroundSolid.png/pgatour/courses/r012/012/holes/hole18.jpg";
+
+/** Resolves the header/hero image URL; API may omit `beautyImage` or send null. */
+export function resolveTournamentBeautyImage(
+  beautyImage: string | null | undefined,
+): string {
+  const trimmed = beautyImage?.trim();
+  return trimmed || DEFAULT_TOURNAMENT_BEAUTY_IMAGE;
+}
+
 // Base Types
 export interface TournamentVenue {
   id: string;
@@ -58,7 +70,8 @@ export interface Tournament {
   roundDisplay?: string;
   currentRound?: number;
   weather?: Record<string, unknown>; // Json type in Prisma
-  beautyImage?: string;
+  /** Optional; when missing or null, UI uses {@link DEFAULT_TOURNAMENT_BEAUTY_IMAGE}. */
+  beautyImage?: string | null;
   cutLine?: string;
   cutRound?: string;
   summarySections?: TournamentSummarySections; // Json type in Prisma
@@ -93,7 +106,7 @@ export const tournamentSchema = z.object({
   roundDisplay: z.string().optional(),
   currentRound: z.number().optional(),
   weather: z.record(z.any()).optional(),
-  beautyImage: z.string().optional(),
+  beautyImage: z.string().nullable().optional(),
   cutLine: z.string().optional(),
   cutRound: z.string().optional(),
   summarySections: z.any().optional(),

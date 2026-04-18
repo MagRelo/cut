@@ -82,6 +82,7 @@ export interface UpdateTournamentOptions {
 
 /**
  * Updates tournament metadata from PGA (including start/end dates from displayDate).
+ * beautyImage is not synced here so it can be set manually without cron/init overwriting it.
  * When called with no options, updates the current manualActive tournament (cron).
  * When called with tournamentId, updates that tournament (used by initTournament).
  */
@@ -122,7 +123,6 @@ export async function updateTournament(options?: UpdateTournamentOptions) {
         roundDisplay: tournamentData.roundDisplay,
         currentRound: tournamentData.currentRound,
         weather: formatWeather(tournamentData.weather) as any,
-        beautyImage: tournamentData.beautyImage,
         ...(tournamentData.courses?.[0]?.courseName && {
           course: tournamentData.courses[0].courseName,
         }),
