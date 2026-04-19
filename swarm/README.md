@@ -10,6 +10,29 @@ docker stack deploy -c swarm/stack.yml cut
 
 (`cut` is an example stack name; it prefixes service and volume names.)
 
+## Copy `swarm/` to the droplet (`157.230.6.6`)
+
+From your **local machine**, at the **repository root** (adjust `USER` and remote path if your checkout is not `/opt/cut`):
+
+```bash
+REMOTE_USER=root
+REMOTE_HOST=157.230.6.6
+REMOTE_DIR=/opt/cut
+
+ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR}/swarm/env"
+rsync -avz ./swarm/ "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/swarm/"
+```
+
+After you create **`swarm/env/web.env`**, **`cron.env`**, and **`nginx.env`** locally (from the `*.example` files), push only those secrets:
+
+```bash
+scp ./swarm/env/web.env ./swarm/env/cron.env ./swarm/env/nginx.env \
+  "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/swarm/env/"
+ssh "${REMOTE_USER}@${REMOTE_HOST}" "chmod 600 ${REMOTE_DIR}/swarm/env/*.env"
+```
+
+On the server, **`git clone`** the full repo into `${REMOTE_DIR}` if you prefer a normal checkout there; then you can skip broad `rsync` of `swarm/` and use **`scp`** for env files only, or **`rsync`** to refresh `swarm/` after you change `stack.yml` / nginx templates on your laptop.
+
 ## 1. One-time: Swarm and files on the manager
 
 ```bash
