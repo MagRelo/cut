@@ -27,16 +27,16 @@ export function ConnectPage() {
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center  pt-8 pb-8">
+    <div className="flex-1 w-full flex flex-col items-center gap-4 pt-8">
       <div>
         {/* Title and Logo */}
-        <div className="flex items-center gap-3 pb-2" style={{ marginLeft: "-24px" }}>
-          <img src="/logo-transparent.png" alt="Cut Logo" className="h-32" />
+        <div className="-ml-4 flex items-center gap-2 pb-1.5">
+          <img src="/logo-transparent.png" alt="Cut Logo" className="h-20 w-auto" />
 
-          <h1 className="text-6xl font-bold text-black">
+          <h1 className="text-4xl leading-tight font-bold text-black">
             the Cut
-            <div className="text-2xl font-bold text-gray-400">Fantasy Golf + </div>
-            <div className="text-2xl font-bold text-gray-400">Prediction Market</div>
+            {/* <div className="text-base font-bold text-gray-400">Fantasy Golf + </div>
+            <div className="text-base font-bold text-gray-400">Prediction Market</div> */}
           </h1>
         </div>
       </div>

@@ -46,14 +46,25 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
           </div>
         </div>
       ) : (
-        <button
-          className="w-40 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md text-lg"
-          disabled={loading}
-          onClick={handleConnect}
-          type="button"
-        >
-          Sign in
-        </button>
+        <div className="flex w-48 flex-col gap-4 items-stretch">
+          <button
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-display font-semibold py-2.5 px-4 rounded-sm border border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
+            disabled={loading}
+            onClick={handleConnect}
+            type="button"
+          >
+            Sign in
+          </button>
+          <hr className="border-0 border-t border-gray-200" />
+          <button
+            className="w-full bg-white hover:bg-blue-50 text-blue-600 font-display font-semibold py-2.5 px-4 rounded-sm border border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
+            disabled={loading}
+            onClick={handleConnect}
+            type="button"
+          >
+            Create Account
+          </button>
+        </div>
       )}
 
       {(loginError || serverSessionError) && (
