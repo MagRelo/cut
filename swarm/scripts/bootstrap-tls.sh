@@ -39,6 +39,6 @@ docker run --rm \
 
 echo ""
 echo "Certificate issued. Next:"
-echo "  1. ${ROOT_DIR}/scripts/switch-to-https.sh   # sets stack.yml to use nginx/https.conf"
+echo "  1. ${ROOT_DIR}/scripts/switch-to-https.sh   # https.conf + new Swarm config key (nginx_site_https)"
 echo "  2. From repo root: docker stack deploy -c swarm/stack.yml ${STACK_NAME}"
 echo "  3. Optionally: docker service update --force ${STACK_NAME}_nginx"

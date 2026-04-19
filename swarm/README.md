@@ -1,8 +1,8 @@
 # Docker Swarm deployment (dedicated droplet)
 
-Single-node Swarm layout: **nginx** (80/443) → **web** (Hono + static, **2 replicas**) and a separate **cron** task (**1 replica**). **PostgreSQL is hosted outside** the stack; only the app containers connect via `DATABASE_URL`.
+Single-node Swarm layout: **nginx** (80/443) → **web** (Hono + static, **2 replicas**). The **`cron-app`** pipeline is **not** run on this stack for now (run it elsewhere, e.g. a Pi or another host — see [`env/cron.env.example`](env/cron.env.example)). **PostgreSQL is hosted outside** the stack; only the **web** tasks connect via `DATABASE_URL`.
 
-Paths in `stack.yml` are relative to the **`swarm/`** directory. **Always run `docker stack deploy` from the repository root** so those paths resolve correctly:
+Paths in `stack.yml` are relative to the **`swarm/`** directory. **Always run `docker stack deploy` from the directory that contains `swarm/` as a subdirectory** (after step 0 that is **`/opt/cut`** on the droplet, or your local repo root on a laptop):
 
 ```bash
 docker stack deploy -c swarm/stack.yml cut
@@ -10,62 +10,75 @@ docker stack deploy -c swarm/stack.yml cut
 
 (`cut` is an example stack name; it prefixes service and volume names.)
 
-## Copy `swarm/` to the droplet (`157.230.6.6`)
+## 0. Copy `swarm/` to the droplet (`157.230.6.6`)
 
-From your **local machine**, at the **repository root** (adjust `USER` and remote path if your checkout is not `/opt/cut`):
-
-```bash
-REMOTE_USER=root
-REMOTE_HOST=157.230.6.6
-REMOTE_DIR=/opt/cut
-
-ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR}/swarm/env"
-rsync -avz ./swarm/ "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/swarm/"
-```
-
-After you create **`swarm/env/web.env`**, **`cron.env`**, and **`nginx.env`** locally (from the `*.example` files), push only those secrets:
+From your **local machine**, at the **repository root**:
 
 ```bash
-scp ./swarm/env/web.env ./swarm/env/cron.env ./swarm/env/nginx.env \
-  "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/swarm/env/"
-ssh "${REMOTE_USER}@${REMOTE_HOST}" "chmod 600 ${REMOTE_DIR}/swarm/env/*.env"
+ssh root@157.230.6.6 "mkdir -p /opt/cut/swarm/env"
+rsync -avz ./swarm/ root@157.230.6.6:/opt/cut/swarm/
 ```
 
-On the server, **`git clone`** the full repo into `${REMOTE_DIR}` if you prefer a normal checkout there; then you can skip broad `rsync` of `swarm/` and use **`scp`** for env files only, or **`rsync`** to refresh `swarm/` after you change `stack.yml` / nginx templates on your laptop.
-
-## 1. One-time: Swarm and files on the manager
+After you create **`swarm/env/web.env`** and **`nginx.env`** locally (from the `*.example` files), push only those files:
 
 ```bash
-docker swarm init   # if not already a swarm
+scp ./swarm/env/web.env ./swarm/env/nginx.env \
+  root@157.230.6.6:/opt/cut/swarm/env/
+ssh root@157.230.6.6 "chmod 600 /opt/cut/swarm/env/*.env"
 ```
 
-On the manager, from your checkout:
+On the server, **`git clone`** the full repo into **`/opt/cut`** if you prefer a normal checkout there; then you can skip broad **`rsync`** of **`swarm/`** and use **`scp`** for env files only, or **`rsync`** to refresh **`swarm/`** after you change **`stack.yml`** / nginx templates on your laptop.
 
-1. **TLS / stack metadata (scripts + optional tooling)**  
-   Copy [`env/nginx.env.example`](env/nginx.env.example) → `env/nginx.env`, set `PRIMARY_HOSTNAME`, `LETSENCRYPT_EMAIL`, `STACK_NAME`.  
-   `chmod 600 env/nginx.env`
+## 1. One-time on the manager (after step 0)
 
-2. **Web (2 replicas share this file)**  
-   Copy [`env/web.env.example`](env/web.env.example) → `env/web.env`. Fill every variable your server needs (mirror [`server/.env.example`](../server/.env.example)). Use **`ENABLE_CRON=false`** (the stack also forces this in `stack.yml`). Set **`ALLOWED_ORIGINS`** to your real `https://` origin(s).  
-   `chmod 600 env/web.env`
+Step **0** already **`rsync`**’d **`swarm/`** (stack, nginx, scripts, `*.example` files) and **`scp`**’d **`web.env`** / **`nginx.env`** to **`/opt/cut/swarm/env/`** on **157.230.6.6**. SSH in and finish setup there.
 
-3. **Cron (1 replica)**  
-   Copy [`env/cron.env.example`](env/cron.env.example) → `env/cron.env`. Typically duplicate `DATABASE_URL`, oracle keys, and PGA/RPC settings from `web.env`. Set **`ENABLE_CRON=true`**.  
-   `chmod 600 env/cron.env`
+```bash
+ssh root@157.230.6.6
+cd /opt/cut
+```
 
-4. **App image**  
-   Build and push the image your stack will use (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). Default image in the stack is `magrelo/cut-v2:latest`. Override when deploying:
+**Install Docker** if the host does not have it yet (Ubuntu example — use [Docker Engine install](https://docs.docker.com/engine/install/ubuntu/) if you prefer CE from Docker’s repo):
+
+```bash
+apt update
+apt install -y docker.io
+systemctl enable --now docker
+docker --version
+```
+
+**Initialize Swarm** once on this machine. On **DigitalOcean** (and many clouds), **`eth0` has two addresses** (public + VPC, e.g. `157.230.6.6` and `10.10.0.5`). Docker will refuse to guess; pass **`--advertise-addr`** explicitly:
+
+```bash
+# See addresses on eth0 (or your primary NIC):
+ip -brief addr show
+
+# Typical single-node DO setup: advertise the VPC address
+docker swarm init --advertise-addr 10.10.0.5
+```
+
+Use your droplet’s **actual** VPC IP if it differs. **Alternative:** `docker swarm init --advertise-addr 157.230.6.6` (public) if you prefer the manager advertised on the public interface. **Do not share** `docker swarm join` tokens or paste them into git — treat them like passwords.
+
+If Swarm is already initialized, skip this block. To reset: `docker swarm leave --force` (destroys the local swarm state).
+
+1. **Env files** — They should already exist at **`swarm/env/web.env`** and **`swarm/env/nginx.env`**. Open them and confirm values (especially **`PRIMARY_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`** in `nginx.env`, and **`ALLOWED_ORIGINS`** / **`DATABASE_URL`** in `web.env`; mirror [`server/.env.example`](../server/.env.example) for anything missing). **`ENABLE_CRON=false`** in `web.env` is expected (the stack also forces it). Ensure permissions: **`chmod 600 swarm/env/*.env`**. If a file is missing, copy from the matching **`*.example`** in the same directory.
+
+2. **Cron (off Swarm)**  
+   Swarm does **not** run `cron-app`. For another machine, copy [`env/cron.env.example`](env/cron.env.example) → `cron.env` there and run `node dist/src/cron-app.js` (or `pnpm --filter server run start:cron`) with that env — not required on this droplet.
+
+3. **App image and first deploy**  
+   Build and push the image from your dev machine (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). On the droplet, still from **`/opt/cut`**:
 
    ```bash
-   export CUT_APP_IMAGE=your-registry/cut-v2:yourtag
+   export CUT_APP_IMAGE=your-registry/cut-v2:yourtag   # optional; default is magrelo/cut-v2:latest
    docker stack deploy -c swarm/stack.yml cut
    ```
 
 ## 2. Hosted PostgreSQL
 
-- Put the full connection string in **`web.env`** and **`cron.env`** (often duplicated). Use the provider’s TLS query flags if required (e.g. `?sslmode=require`).
-- **Allowlist** the droplet’s **outbound** IP (and any standby nodes) on the managed DB firewall if the product supports it.
-- **Connection limits:** you have **two web tasks + one cron**; size the provider’s `max_connections` and Prisma’s pool defaults so you do not exhaust the database.
+- Put the full connection string in **`web.env`**. If you run **`cron-app`** on another host, give that host its own **`DATABASE_URL`** (often the same string as in [`env/cron.env.example`](env/cron.env.example)). Use the provider’s TLS query flags if required (e.g. `?sslmode=require`).
+- **Allowlist** each client’s **outbound** IP (droplet for Swarm web; Pi/other host for cron if applicable) on the managed DB firewall if the product supports it.
+- **Connection limits:** Swarm runs **two web tasks**; size the provider’s `max_connections` and Prisma pool defaults accordingly (add headroom if a separate cron host also connects).
 
 ## 3. Build the client for production (CI or build host)
 
@@ -101,7 +114,7 @@ pnpm --filter server exec prisma migrate deploy
 
    This uses **certbot** with **`--cert-name cut`**, so certificate paths match [`nginx/https.conf`](nginx/https.conf) (`/etc/letsencrypt/live/cut/…`).
 
-4. Switch nginx to TLS: **`switch-to-https.sh`** updates `swarm/stack.yml` to mount [`nginx/https.conf`](nginx/https.conf) instead of `http-only.conf` (saves a one-time `stack.yml.bak` next to `stack.yml`). Then redeploy:
+4. Switch nginx to TLS: **`switch-to-https.sh`** updates `swarm/stack.yml` to use [`nginx/https.conf`](nginx/https.conf) and renames the Swarm config key to **`nginx_site_https`** (configs are immutable in Swarm; a new key avoids deploy errors). Saves a one-time **`stack.yml.bak`**. Then redeploy:
 
    ```bash
    ./swarm/scripts/switch-to-https.sh
@@ -122,7 +135,7 @@ pnpm --filter server exec prisma migrate deploy
 
 ## 6. Logs and backups
 
-- **App logs:** services use the **`json-file`** log driver with rotation (`max-size` / `max-file` in `stack.yml`). Inspect with `docker service logs cut_web`, `docker service logs cut_cron`, `docker service logs cut_nginx`.
+- **App logs:** services use the **`json-file`** log driver with rotation (`max-size` / `max-file` in `stack.yml`). Inspect with `docker service logs cut_web`, `docker service logs cut_nginx`.
 - **Postgres:** rely on the **managed provider** for backups, PITR, and HA; document their restore drill in your own runbook.
 
 ## 7. Operations cheatsheet
