@@ -1,0 +1,4 @@
+# Real env files (create on the manager; never commit)
+web.env
+cron.env
+nginx.env
