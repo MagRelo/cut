@@ -40,6 +40,8 @@ export const queryKeys = {
   user: {
     all: ["user"] as const,
     contests: () => [...queryKeys.user.all, "contests"] as const,
+    referralSummary: (userId: string) =>
+      [...queryKeys.user.all, "referralSummary", userId] as const,
   },
   userGroups: {
     all: ["userGroups"] as const,

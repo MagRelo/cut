@@ -4,6 +4,79 @@ import { requireAuth } from "../middleware/auth.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 
 const authRouter = new Hono();
+const MAX_REFERRAL_SUMMARY_DEPTH = 10;
+
+type ReferralDepthRow = {
+  depth: number;
+  count: number;
+};
+
+async function getReferralSummary(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      referralChainId: true,
+      referralGroupId: true,
+    },
+  });
+
+  const chainId = user?.referralChainId ?? null;
+  const groupId = user?.referralGroupId ?? null;
+
+  if (chainId == null || !groupId) {
+    return {
+      chainId: null,
+      groupId: null,
+      maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
+      levels: [] as ReferralDepthRow[],
+      grandTotal: 0,
+    };
+  }
+
+  const levels = await prisma.$queryRaw<ReferralDepthRow[]>`
+    WITH RECURSIVE referral_tree AS (
+      SELECT
+        u.id,
+        1::int AS depth,
+        ARRAY[u.id]::text[] AS path
+      FROM "User" u
+      WHERE
+        u."referredByUserId" = ${userId}
+        AND u."referralChainId" = ${chainId}
+        AND u."referralGroupId" = ${groupId}
+
+      UNION ALL
+
+      SELECT
+        child.id,
+        rt.depth + 1,
+        rt.path || child.id
+      FROM "User" child
+      JOIN referral_tree rt ON child."referredByUserId" = rt.id
+      WHERE
+        child."referralChainId" = ${chainId}
+        AND child."referralGroupId" = ${groupId}
+        AND rt.depth < ${MAX_REFERRAL_SUMMARY_DEPTH}
+        AND NOT child.id = ANY(rt.path)
+    )
+    SELECT
+      depth::int AS depth,
+      COUNT(*)::int AS count
+    FROM referral_tree
+    GROUP BY depth
+    ORDER BY depth ASC
+  `;
+
+  const grandTotal = levels.reduce((sum, level) => sum + level.count, 0);
+
+  return {
+    chainId,
+    groupId,
+    maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
+    levels,
+    grandTotal,
+  };
+}
 
 // Get current user information
 authRouter.get("/me", requireAuth, async (c) => {
@@ -78,6 +151,18 @@ authRouter.get("/me", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user:", error);
     return c.json({ error: "Failed to fetch user information" }, 500);
+  }
+});
+
+// Get referral-network summary by level for current user
+authRouter.get("/referrals/summary", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+    const summary = await getReferralSummary(user.userId);
+    return c.json(summary);
+  } catch (error) {
+    console.error("Error fetching referral summary:", error);
+    return c.json({ error: "Failed to fetch referral summary" }, 500);
   }
 });
 

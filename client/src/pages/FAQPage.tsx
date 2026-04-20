@@ -1,8 +1,26 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
 
 export const FAQPage: React.FC = () => {
+  const location = useLocation();
+
+  // React Router client navigations do not scroll to hash targets like a full page load.
+  useEffect(() => {
+    const id = location.hash.replace(/^#/, "");
+    if (!id) return;
+
+    const run = () => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    // Defer until the FAQ route has painted so the target element exists.
+    const handle = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(run);
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [location.pathname, location.hash]);
+
   return (
     <div className="p-4">
       <PageHeader title="FAQ" className="mb-3" />
@@ -24,6 +42,11 @@ export const FAQPage: React.FC = () => {
           <li>
             <a href="#account" className="text-blue-600 hover:underline">
               Account & Wallet
+            </a>
+          </li>
+          <li>
+            <a href="#referral-network" className="text-blue-600 hover:underline">
+              Referral Network
             </a>
           </li>
           <li>
@@ -377,8 +400,13 @@ export const FAQPage: React.FC = () => {
               </h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>The Cut uses Privy for sign-in and wallet connectivity</li>
-                <li>You can use email, SMS, or an external wallet—depending on how the app is configured</li>
-                <li>Privy helps secure your keys and session; you stay in control of your assets</li>
+                <li>
+                  You can use email, SMS, or an external wallet—depending on how the app is
+                  configured
+                </li>
+                <li>
+                  Privy helps secure your keys and session; you stay in control of your assets
+                </li>
                 <li>
                   You can manage recovery and linked accounts from your Privy session when available
                 </li>
@@ -467,6 +495,32 @@ export const FAQPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Referral Network Section */}
+        <div id="referral-network" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Referral Network</h2>
+
+          <div className="space-y-4 text-gray-700">
+            <p>
+              The Cut&apos;s referral network is built like a family tree. If you invite someone,
+              they become part of your first level. If that person invites someone else, that new
+              person is on the 2nd level, and so on <strong> up to 10 levels</strong>. This creates
+              a multi-level graph of relationships instead of just a single invite pair.
+            </p>
+
+            <p>
+              When it comes time to distribute rewards the process runs in reverse - a portion of
+              the reward is distributed to the original referrer, a portion is distributed to the
+              referrer's referrers, and so on up the chain.
+            </p>
+
+            <p>
+              The more people you invite—and the more they invite—the faster your network can grow.
+              Over time it can reach hundreds of people, all connected back to you through the
+              referral chain.
+            </p>
+          </div>
+        </div>
+
         {/* Contracts Section */}
         <div id="contracts" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Smart Contracts</h2>
@@ -514,6 +568,59 @@ export const FAQPage: React.FC = () => {
                 <li>No one (including the platform) can access escrowed funds early</li>
                 <li>After the tournament, winners are determined automatically</li>
                 <li>The escrow contract distributes prizes directly to winners' wallets</li>
+              </ul>
+            </div>
+
+            {/* Referral Network */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                How does the referral network contract work?
+              </h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>
+                  The referral network is tracked by the `ReferralGraph` contract as a tree of
+                  parent-child referral relationships.
+                </li>
+                <li>
+                  Each user is linked to a referrer inside a specific referral group, and the graph
+                  stores both directions: who referred a user and which children belong to a
+                  referrer.
+                </li>
+                <li>
+                  Registrations are restricted to authorized oracle addresses, and the contract
+                  blocks invalid states like self-referrals, duplicate registrations, or unknown
+                  referrers.
+                </li>
+                <li>
+                  The graph also exposes read functions for ancestry and children so downstream
+                  contracts can walk the referral chain safely.
+                </li>
+              </ul>
+            </div>
+
+            {/* Referral Reward Distribution */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                How does referral reward distribution work on-chain?
+              </h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>
+                  `RewardDistributor` receives signed reward payloads and verifies that the
+                  signature came from an authorized oracle.
+                </li>
+                <li>
+                  It references the `ReferralGraph` contract to resolve the user&apos;s referral
+                  chain for the provided group.
+                </li>
+                <li>
+                  A dedicated calculator contract determines how rewards are split across eligible
+                  recipients in that chain.
+                </li>
+                <li>
+                  The contract transfers tokens to recipients, emits a `ChainRewardsDistributed`
+                  event, and records the reward hash so the same payload cannot be distributed
+                  twice.
+                </li>
               </ul>
             </div>
 
