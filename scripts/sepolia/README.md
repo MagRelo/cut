@@ -20,6 +20,26 @@ Approves and deposits **MockUSDC** into **DepositManager** and receives **Platfo
 
 **Optional env:** `BASE_SEPOLIA_RPC_URL`, `USDC_AMOUNT` (6 decimals; default `1000000` = 1 USDC), `USE_LATEST_DEPLOYMENT`, `DEPOSIT_MANAGER_ADDRESS`, `PAYMENT_TOKEN_ADDRESS`, `PLATFORM_TOKEN_ADDRESS` (manual addresses when not using latest deployment)
 
+### `claimOracleFee.js`
+
+Calls **`ContestController.claimOracleFee()`** on a deployed contest. **Only the on-chain `oracle` address** can execute; `PRIVATE_KEY` must match that wallet. Transfers **`accumulatedOracleFee`** (from payout fees) to the oracle. If `accumulatedOracleFee` is zero, the script exits without sending a tx.
+
+**Required env:** `PRIVATE_KEY` (oracle key)
+
+**Optional env:** `CONTEST_CONTROLLER_ADDRESS` (if you omit the CLI argument), `BASE_SEPOLIA_RPC_URL`
+
+**Usage (contest address as first argument):**
+
+```bash
+pnpm run claim-oracle-fee -- 0xYourContestControllerAddress
+```
+
+Or:
+
+```bash
+node scripts/sepolia/claimOracleFee.js 0xYourContestControllerAddress
+```
+
 ## Environment variables
 
 See **`contracts/env.example`** for the full list and the quick-reference table. Commonly used here:
@@ -33,6 +53,7 @@ See **`contracts/env.example`** for the full list and the quick-reference table.
 | `AMOUNT` | `mintPaymentToken.js` |
 | `USDC_AMOUNT` | `depositUSDC.js` |
 | `DEPOSIT_MANAGER_ADDRESS`, `PAYMENT_TOKEN_ADDRESS`, `PLATFORM_TOKEN_ADDRESS` | `depositUSDC.js` (manual mode) |
+| `CONTEST_CONTROLLER_ADDRESS` | `claimOracleFee.js` (optional if you pass address on CLI) |
 
 ## Prerequisites
 
@@ -44,6 +65,7 @@ See **`contracts/env.example`** for the full list and the quick-reference table.
 ```bash
 pnpm run mint-tokens
 pnpm run deposit-usdc
+pnpm run claim-oracle-fee -- 0x<contestControllerAddress>
 ```
 
 Or:
@@ -51,6 +73,7 @@ Or:
 ```bash
 node scripts/sepolia/mintPaymentToken.js
 node scripts/sepolia/depositUSDC.js
+node scripts/sepolia/claimOracleFee.js 0x<contestControllerAddress>
 ```
 
 ## Notes

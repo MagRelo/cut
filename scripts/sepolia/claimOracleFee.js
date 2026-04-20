@@ -1,14 +1,14 @@
 /**
- * Oracle-only: call ContestController.claimOracleFee() on Base Sepolia.
- * Pulls accumulated oracle fees (from deposits) to the oracle wallet — not the same as contest close.
+ * Oracle-only: call ContestController.claimOracleFee() on Base Sepolia (chain 84532).
+ * Pulls accumulated oracle fees (accrued on primary/secondary payout pushes and claims) to the oracle wallet.
  *
  * Usage (from repo root):
- *   node scripts/sepolia/claimOracleFee.js <controllerAddress>
- *   pnpm run claim-oracle-fee -- 0x...
+ *   pnpm run claim-oracle-fee -- <contestControllerAddress>
+ *   node scripts/sepolia/claimOracleFee.js <contestControllerAddress>
  *
- * Env (contracts/.env): PRIVATE_KEY
+ * Env (contracts/.env): PRIVATE_KEY (must be the contest oracle account)
  * Optional: CONTEST_CONTROLLER_ADDRESS if you omit the CLI address
- * Optional: BASE_SEPOLIA_RPC_URL
+ * Optional: BASE_SEPOLIA_RPC_URL (default https://sepolia.base.org)
  */
 import {
   createPublicClient,
