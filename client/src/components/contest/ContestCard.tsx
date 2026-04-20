@@ -39,6 +39,23 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
 
   const speculatorPot = Number.isFinite(rawSecondaryTotal) ? Math.round(rawSecondaryTotal) : 0;
+  const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
+
+  const settledTotalPot = (() => {
+    const snapshot = contest.results?.snapshot;
+    if (!snapshot) return null;
+
+    try {
+      const primaryTotal = BigInt(snapshot.primarySideBalance);
+      const secondaryTotal = BigInt(snapshot.secondarySideBalance);
+      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, 18)));
+    } catch {
+      return null;
+    }
+  })();
+
+  const displayPot = isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
+  const showLoading = !isFinalizedContest && isPredictionDataLoading;
 
   const formatStatus = (status: string) => {
     return status
@@ -113,7 +130,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
           >
             <div className="text-lg font-display font-bold text-emerald-600 leading-none">
-              {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
+              {showLoading ? "..." : `$${displayPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               POT
@@ -122,7 +139,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         ) : (
           <div className="text-right ml-2 mr-2">
             <div className="text-lg font-display font-bold text-emerald-600 leading-none">
-              {isPredictionDataLoading ? "..." : `$${potAmount + speculatorPot}`}
+              {showLoading ? "..." : `$${displayPot}`}
             </div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               POT
