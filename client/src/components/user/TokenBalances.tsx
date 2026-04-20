@@ -79,7 +79,7 @@ export function TokenBalances({
       <div className={balanceHeaderClass}>
         <div className="min-w-0 text-xl font-semibold text-gray-700 font-display">
           Balance
-          <Link to="/cut" className={manageLinkClass}>
+          <Link to="/account/funds" className={manageLinkClass}>
             manage
           </Link>
         </div>

@@ -10,7 +10,7 @@ import { useAuth } from "../../contexts/AuthContext";
 export const Sell = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
-  const { platformTokenBalance, paymentTokenSymbol } = useAuth();
+  const { platformTokenBalance, paymentTokenSymbol, platformTokenSymbol } = useAuth();
 
   // Sell form state
   const [sellAmount, setSellAmount] = useState("");
@@ -83,7 +83,7 @@ export const Sell = () => {
       <div className="space-y-5">
         <div>
           <h3 className="text-base font-semibold text-gray-800 mb-3">
-            Sell CUT for {paymentTokenSymbol || "USDC"}
+            Exchange {platformTokenSymbol || "CUT"} for {paymentTokenSymbol || "USDC"}
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -180,7 +180,7 @@ export const Sell = () => {
               transactionHash,
               chainId,
               "View Transaction",
-              "text-green-600 hover:text-green-800 font-medium"
+              "text-green-600 hover:text-green-800 font-medium",
             )}
         </div>
       )}

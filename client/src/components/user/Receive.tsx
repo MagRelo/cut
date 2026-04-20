@@ -1,15 +1,26 @@
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId } from "wagmi";
-import { QRCodeSVG } from "qrcode.react";
-import { CopyToClipboard } from "../common/CopyToClipboard.tsx";
+import { base, baseSepolia } from "wagmi/chains";
+import { CopyButton } from "../common/CopyToClipboard.tsx";
 import { getContractAddress, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
+
+function truncateMiddle(value: string, head = 8, tail = 6) {
+  if (value.length <= head + tail + 1) return value;
+  return `${value.slice(0, head)}…${value.slice(-tail)}`;
+}
+
+function getNetworkLabel(chainId: number, chainName: string | undefined) {
+  if (chainId === base.id) return "Base Mainnet";
+  if (chainId === baseSepolia.id) return "Base Sepolia";
+  return chainName ?? `Chain ${chainId}`;
+}
 
 interface ReceiveProps {
   tokenName?: "CUT" | "USDC";
 }
 
 export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   const receiveAddress = smartWalletClient?.account?.address ?? address;
   const chainId = useChainId();
@@ -21,9 +32,10 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
   // Select the appropriate token address based on tokenName
   const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
 
-  // Get token symbol from contract
-  const { data: tokenSymbol } = useTokenSymbol(tokenAddress as string);
-  const displaySymbol = tokenSymbol || tokenName;
+  const { data: platformSymbolData } = useTokenSymbol(platformTokenAddress ?? undefined);
+  const { data: paymentSymbolData } = useTokenSymbol(paymentTokenAddress ?? undefined);
+  const platformTokenSymbol = platformSymbolData ?? "CUT";
+  const paymentTokenSymbol = paymentSymbolData ?? "USDC";
 
   if (!isConnected || !receiveAddress) {
     return (
@@ -35,26 +47,55 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
 
   // Format address with chain information using EIP-681 standard
   // Format: ethereum:<address>@<chainId> — smart wallet (same as balances / Account ID)
-  const qrCodeValue = `ethereum:${receiveAddress}@${chainId}`;
+  const networkLabel = getNetworkLabel(chainId, chain?.name);
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-semibold text-gray-800 mb-3">Receive {displaySymbol}</h3>
-
-      <p className="text-sm text-gray-600">
-        Share this address or QR code to receive {displaySymbol} on your in-app account (smart
-        wallet).
-      </p>
-
-      {/* QR Code */}
-      <div className="flex justify-center py-4">
-        <div className="p-4 bg-white rounded-lg border-2 border-gray-200 shadow-sm">
-          <QRCodeSVG value={qrCodeValue} size={140} />
-        </div>
+      <div className="space-y-2">
+        <h3 className="text-base font-semibold text-gray-800">
+          Receive {platformTokenSymbol} or {paymentTokenSymbol}
+        </h3>
+        <p className="text-sm text-gray-600 font-display">
+          You can fund your account by sending {platformTokenSymbol} or {paymentTokenSymbol} to your
+          Account ID. Be sure to confirm the details are correct before sending:
+        </p>
       </div>
 
-      <div className="border border-gray-200 rounded-md p-2 text-center">
-        <CopyToClipboard text={receiveAddress} truncated={false} />
+      {/* Neutral disclosure panel (matches FAQ-style factual blocks) */}
+      <div
+        className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+        role="region"
+        aria-label="Network and token details"
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Network</span>
+            <div className="text-sm text-gray-800 text-right font-display">{networkLabel}</div>
+          </div>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Token</span>
+            <div className="text-sm text-gray-800 text-right font-display">
+              {platformTokenSymbol} or {paymentTokenSymbol}
+            </div>
+          </div>
+
+          {tokenAddress ? (
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+              <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+                Token address
+              </span>
+              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+                <span
+                  className="text-xs text-gray-800 text-right truncate font-display"
+                  title={tokenAddress}
+                >
+                  {truncateMiddle(tokenAddress)}
+                </span>
+                <CopyButton text={tokenAddress} />
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
