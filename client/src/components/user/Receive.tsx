@@ -15,22 +15,14 @@ function getNetworkLabel(chainId: number, chainName: string | undefined) {
   return chainName ?? `Chain ${chainId}`;
 }
 
-interface ReceiveProps {
-  tokenName?: "CUT" | "USDC";
-}
-
-export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
+export const Receive = () => {
   const { address, isConnected, chain } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   const receiveAddress = smartWalletClient?.account?.address ?? address;
   const chainId = useChainId();
 
-  // Get contract addresses dynamically based on token type
   const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
-
-  // Select the appropriate token address based on tokenName
-  const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
 
   const { data: platformSymbolData } = useTokenSymbol(platformTokenAddress ?? undefined);
   const { data: paymentSymbolData } = useTokenSymbol(paymentTokenAddress ?? undefined);
@@ -50,8 +42,8 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
   const networkLabel = getNetworkLabel(chainId, chain?.name);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
+    <div className="space-y-6">
+      <div className="space-y-1">
         <h3 className="text-base font-semibold text-gray-800">
           Receive {platformTokenSymbol} or {paymentTokenSymbol}
         </h3>
@@ -79,22 +71,20 @@ export const Receive = ({ tokenName = "CUT" }: ReceiveProps) => {
             </div>
           </div>
 
-          {tokenAddress ? (
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-              <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-                Token address
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+              Account ID
+            </span>
+            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+              <span
+                className="text-xs text-gray-800 text-right truncate font-display"
+                title={receiveAddress}
+              >
+                {truncateMiddle(receiveAddress)}
               </span>
-              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-                <span
-                  className="text-xs text-gray-800 text-right truncate font-display"
-                  title={tokenAddress}
-                >
-                  {truncateMiddle(tokenAddress)}
-                </span>
-                <CopyButton text={tokenAddress} />
-              </div>
+              <CopyButton text={receiveAddress} />
             </div>
-          ) : null}
+          </div>
         </div>
       </div>
     </div>

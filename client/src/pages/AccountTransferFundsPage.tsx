@@ -65,7 +65,7 @@ export function TransferFundsPage() {
             </TabList>
             <div className="p-4">
               <TabPanel>
-                <Receive tokenName="USDC" />
+                <Receive />
               </TabPanel>
               <TabPanel>
                 <Sell />
