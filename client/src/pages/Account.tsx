@@ -69,16 +69,10 @@ const ReferralNetworkPanel = ({
 
       {loading ? (
         <div className="space-y-2" aria-busy="true">
-          <span className="sr-only">Loading referral stats</span>
-          {[0, 1].map((key) => (
-            <div
-              key={key}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
-            >
-              <div className="h-4 w-16 shrink-0 rounded bg-gray-200 animate-pulse" />
-              <div className="h-4 w-10 justify-self-end rounded bg-gray-200 animate-pulse" />
-            </div>
-          ))}
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+            <div className="h-4 w-16 shrink-0 rounded bg-gray-200 animate-pulse" />
+            <div className="h-4 w-10 justify-self-end rounded bg-gray-200 animate-pulse" />
+          </div>
         </div>
       ) : null}
 
@@ -86,32 +80,27 @@ const ReferralNetworkPanel = ({
 
       {!loading && !error ? (
         levels && levels.length > 0 ? (
-          <>
-            <div className="space-y-2">
-              {levels.map((level) => (
-                <div
-                  key={level.depth}
-                  className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
-                >
-                  <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-                    {depthLabel(level.depth)}
-                  </span>
-                  <span className="text-sm text-gray-800 text-right font-display">
-                    {level.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {inviteLinkUrl ? <InviteLinkRow inviteLinkUrl={inviteLinkUrl} /> : null}
-          </>
+          <div className="space-y-2">
+            {levels.map((level) => (
+              <div
+                key={level.depth}
+                className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
+              >
+                <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+                  {depthLabel(level.depth)}
+                </span>
+                <span className="text-sm text-gray-800 text-right font-display">
+                  {level.count}
+                </span>
+              </div>
+            ))}
+          </div>
         ) : (
-          <>
-            <p className="text-sm text-gray-500 font-display">No referrals yet.</p>
-            {inviteLinkUrl ? <InviteLinkRow inviteLinkUrl={inviteLinkUrl} /> : null}
-          </>
+          <p className="text-sm text-gray-500 font-display">No referrals yet.</p>
         )
       ) : null}
+
+      {inviteLinkUrl ? <InviteLinkRow inviteLinkUrl={inviteLinkUrl} /> : null}
     </div>
   );
 };
