@@ -28,7 +28,7 @@ type NavTab = {
 
 /** Tab pills: no border on the tab itself — the row rule comes from the wrapper below. */
 const tabBase =
-  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wide transition-colors shadow-sm relative border-0";
+  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-colors shadow-sm relative border-0";
 
 export const Navigation: React.FC = () => {
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
