@@ -5,6 +5,7 @@ import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import { hasMinimumPlayers, isDuplicateLineup } from "../utils/lineupValidation.js";
+import { formatContestResponse } from "./contest.js";
 
 const lineupRouter = new Hono();
 
@@ -236,6 +237,45 @@ lineupRouter.get("/lineup/:lineupId", requireAuth, async (c) => {
   }
 });
 
+/** Nested contest payload aligned with GET /contests list (for entry counts, etc.). */
+const contestSelectForLineupList = {
+  id: true,
+  name: true,
+  description: true,
+  tournamentId: true,
+  userGroupId: true,
+  endTime: true,
+  address: true,
+  chainId: true,
+  status: true,
+  settings: true,
+  results: true,
+  createdAt: true,
+  updatedAt: true,
+  contestLineups: {
+    select: {
+      id: true,
+      contestId: true,
+      userId: true,
+      tournamentLineupId: true,
+      position: true,
+      score: true,
+      status: true,
+      entryId: true,
+      createdAt: true,
+      updatedAt: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          settings: true,
+        },
+      },
+    },
+  },
+} as const;
+
 // Get all lineups for a tournament
 lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
   const tournamentId = c.req.param("tournamentId");
@@ -244,16 +284,49 @@ lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
   try {
     const lineups = await prisma.tournamentLineup.findMany({
       where: { tournamentId, userId: user.userId },
-      include: lineupPlayersInclude,
+      include: {
+        ...lineupPlayersInclude,
+        contestLineups: {
+          where: {
+            contest: { tournamentId },
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                settings: true,
+              },
+            },
+            contest: {
+              select: contestSelectForLineupList,
+            },
+          },
+        },
+      },
     });
 
-    // Transform the data into TournamentLineup type
     const formattedLineups = lineups.map((lineup: any) => ({
       id: lineup.id,
       name: lineup.name,
       players: lineup.players.map((lineupPlayer: any) =>
         transformLineupPlayer(lineupPlayer, tournamentId)
       ),
+      contestLineups: lineup.contestLineups.map((cl: any) => ({
+        id: cl.id,
+        contestId: cl.contestId,
+        userId: cl.userId,
+        tournamentLineupId: cl.tournamentLineupId,
+        position: cl.position ?? 0,
+        score: cl.score,
+        status: cl.status,
+        entryId: cl.entryId,
+        createdAt: cl.createdAt,
+        updatedAt: cl.updatedAt,
+        user: cl.user,
+        contest: formatContestResponse(cl.contest, tournamentId),
+      })),
     }));
 
     return c.json({ lineups: formattedLineups });

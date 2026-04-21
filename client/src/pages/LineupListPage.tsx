@@ -1,17 +1,52 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "../hooks/useLineupData";
-import { useContestsQuery } from "../hooks/useContestQuery";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
-// import { Share } from "../components/common/Share";
 
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupCard } from "../components/lineup/LineupCard";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
-import type { ContestLineup } from "../types/lineup";
+import type { AuthUser } from "../contexts/AuthContext";
+import type { ContestLineup, TournamentLineupListItem } from "../types/lineup";
+
+function contestLineupForCard(row: TournamentLineupListItem, user: AuthUser): ContestLineup {
+  const tournamentLineup = {
+    id: row.id,
+    name: row.name,
+    players: row.players,
+  };
+  const first = row.contestLineups[0];
+  if (first) {
+    return {
+      ...first,
+      tournamentLineup,
+      user: first.user ?? (user as unknown as ContestLineup["user"]),
+    };
+  }
+  return {
+    id: row.id,
+    contestId: "",
+    userId: user.id,
+    tournamentLineupId: row.id,
+    position: 0,
+    score: 0,
+    status: "ACTIVE",
+    tournamentLineup,
+    user: user as unknown as ContestLineup["user"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function contestsForCard(row: TournamentLineupListItem) {
+  return row.contestLineups.map((cl) => ({
+    contest: cl.contest,
+    position: cl.position ?? 0,
+  }));
+}
 
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading, user } = useAuth();
@@ -23,73 +58,16 @@ export const LineupList: React.FC = () => {
   } = useActiveTournament();
   const { lineups, lineupError, isLoading: isLineupsLoading } = useLineupData();
 
-  const { data: contests = [], isLoading: isContestsLoading } = useContestsQuery(
-    currentTournament?.id,
-    undefined,
-  );
-
-  // Extract user's contest lineups from all contests
-  const userContestLineups = useMemo(() => {
-    if (!user?.id) return [];
-
-    const contestLineups: ContestLineup[] = [];
-    contests.forEach((contest) => {
-      contest.contestLineups?.forEach((contestLineup) => {
-        if (contestLineup.userId === user.id) {
-          contestLineups.push(contestLineup);
-        }
-      });
-    });
-
-    return contestLineups;
-  }, [contests, user?.id]);
-
-  // Get unique lineups (deduplicated by tournamentLineupId)
-  const uniqueUserLineups = useMemo(() => {
-    if (!userContestLineups.length) return [];
-
-    // Use a Map to deduplicate by tournamentLineupId
-    const lineupMap = new Map<string, ContestLineup>();
-    userContestLineups.forEach((contestLineup) => {
-      if (!lineupMap.has(contestLineup.tournamentLineupId)) {
-        lineupMap.set(contestLineup.tournamentLineupId, contestLineup);
-      }
-    });
-
-    return Array.from(lineupMap.values());
-  }, [userContestLineups]);
-
-  /** Contest list API omits nested tournamentLineup; attach roster from `useLineupData`. */
-  const uniqueUserLineupsWithPlayers = useMemo(() => {
-    return uniqueUserLineups.map((cl) => {
-      const tournamentLineup = lineups.find((l) => l.id === cl.tournamentLineupId);
-      return tournamentLineup ? { ...cl, tournamentLineup } : cl;
-    });
-  }, [uniqueUserLineups, lineups]);
-
-  // Function to get contests for a specific lineup
-  const getContestsForLineup = (lineupId: string) => {
-    return contests
-      .filter((contest) =>
-        contest.contestLineups?.some((lineup) => lineup.tournamentLineupId === lineupId),
-      )
-      .map((contest) => {
-        const lineupEntry = contest.contestLineups?.find(
-          (lineup) => lineup.tournamentLineupId === lineupId,
-        );
-        return {
-          contest: contest,
-          position: lineupEntry?.position || 0,
-        };
-      });
-  };
+  const listItems = lineups as TournamentLineupListItem[];
+  const hasLineups = listItems.length > 0;
+  const tournamentName = currentTournament?.name ?? "this tournament";
 
   const showAddLineup =
     isTournamentEditable && !isAuthLoading && !isTournamentLoading && !isLineupsLoading;
 
   const header = (
     <PageHeader
-      title="Lineups"
+      title="My Lineups"
       actions={
         showAddLineup ? (
           <Link
@@ -123,64 +101,79 @@ export const LineupList: React.FC = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="p-4 space-y-4">
+        {header}
+        <ErrorMessage message="Sign in to view lineups." />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 space-y-4">
       {header}
 
-      {/* list of user lineups */}
-      {isTournamentEditable
-        ? // When editable, show TournamentLineup cards
-          lineups &&
-          lineups.length > 0 && (
-            <div>
-              {lineups.map((lineup) => (
-                <div
-                  key={lineup.id}
-                  className="rounded-md border border-gray-200 bg-white p-4 pb-6 mt-4"
-                >
-                  <LineupCard lineup={lineup} isEditable={isTournamentEditable} />
-                </div>
-              ))}
+      {isTournamentEditable && hasLineups && (
+        <div>
+          {listItems.map((lineup) => (
+            <div
+              key={lineup.id}
+              className="rounded-md border border-gray-200 bg-white p-4 pb-6 mt-4"
+            >
+              <LineupCard lineup={lineup} isEditable={isTournamentEditable} />
             </div>
-          )
-        : // When not editable, show unique ContestLineup cards (deduplicated by tournamentLineupId)
-          uniqueUserLineupsWithPlayers &&
-          uniqueUserLineupsWithPlayers.length > 0 && (
-            <div>
-              {uniqueUserLineupsWithPlayers.map((contestLineup) => (
-                <div
-                  key={contestLineup.tournamentLineupId}
-                  className="rounded-sm border border-gray-200 bg-white p-4 pb-6"
-                >
-                  <LineupContestCard
-                    lineup={contestLineup}
-                    roundDisplay={currentTournament?.roundDisplay || ""}
-                    contests={getContestsForLineup(contestLineup.tournamentLineupId)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          ))}
+        </div>
+      )}
 
-      {/* tournament in progress message */}
-      {!isTournamentEditable &&
-        !isContestsLoading &&
-        uniqueUserLineups &&
-        uniqueUserLineups.length === 0 && (
-          <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-gray-600 text-lg">🏌️</span>
-              <div className="text-lg font-semibold text-gray-900 font-display">
-                Tournament {tournamentStatusDisplay}!
-              </div>
+      {isTournamentEditable && !hasLineups && (
+        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+          <p className="text-base font-semibold text-gray-900 font-display mb-1">
+            Build your first lineup
+          </p>
+          <p className="text-sm text-gray-600 font-display leading-relaxed">
+            Choose your players for{" "}
+            <span className="font-medium text-gray-800">{tournamentName}</span>.
+          </p>
+          {showAddLineup ? (
+            <Link
+              to="/lineups/create"
+              className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+            >
+              Add Lineup
+            </Link>
+          ) : null}
+        </div>
+      )}
+
+      {!isTournamentEditable && hasLineups && (
+        <div>
+          {listItems.map((row) => (
+            <div key={row.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
+              <LineupContestCard
+                lineup={contestLineupForCard(row, user)}
+                roundDisplay={currentTournament?.roundDisplay || ""}
+                contests={contestsForCard(row)}
+              />
             </div>
-            <div className="text-sm text-gray-600">
-              <p className="mb-2">
-                Check back when the next tournament opens to create your lineup.
-              </p>
+          ))}
+        </div>
+      )}
+
+      {!isTournamentEditable && !hasLineups && (
+        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-gray-600 text-lg">🏌️</span>
+            <div className="text-lg font-semibold text-gray-900 font-display">
+              Tournament {tournamentStatusDisplay}!
             </div>
           </div>
-        )}
+          <div className="text-sm text-gray-600">
+            <p className="mb-2">Check back when the next tournament opens to create your lineup.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

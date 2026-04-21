@@ -115,7 +115,8 @@ const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tourname
   };
 };
 
-const formatContestResponse = (contest: any, fallbackTournamentId?: string) => {
+/** Used by contest list and GET /lineup/:tournamentId nested contests. */
+export const formatContestResponse = (contest: any, fallbackTournamentId?: string) => {
   if (!contest?.contestLineups) {
     return contest;
   }

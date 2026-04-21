@@ -4,7 +4,7 @@ import { useLineupsQuery } from "./useLineupQueries";
 import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
 import { useAuth } from "../contexts/AuthContext";
 import { useCurrentTournament } from "./useTournamentData";
-import { type TournamentLineup } from "../types/player";
+import type { TournamentLineupListItem } from "../types/lineup";
 
 interface UseLineupDataOptions {
   tournamentId?: string;
@@ -29,19 +29,19 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
   const updateMutation = useUpdateLineup();
 
   /** Explicit network refresh (e.g. pull-to-refresh). Prefer relying on the query cache otherwise. */
-  const refetchLineups = useCallback(async (): Promise<TournamentLineup[]> => {
+  const refetchLineups = useCallback(async (): Promise<TournamentLineupListItem[]> => {
     const result = await refetch();
     return result.data ?? [];
   }, [refetch]);
 
   const getLineupFromCache = useCallback(
-    (lineupId: string): TournamentLineup | null =>
+    (lineupId: string): TournamentLineupListItem | null =>
       lineups.find((lineup) => lineup.id === lineupId) ?? null,
     [lineups]
   );
 
   const getLineupById = useCallback(
-    async (lineupId: string): Promise<TournamentLineup> => {
+    async (lineupId: string): Promise<TournamentLineupListItem> => {
       const lineup = getLineupFromCache(lineupId);
       if (!lineup) {
         throw new Error(`Lineup ${lineupId} not found`);

@@ -2,9 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
+import type { TournamentLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
 
-interface LineupResponse {
+interface LineupListResponse {
+  lineups: TournamentLineupListItem[];
+}
+
+interface LineupDetailResponse {
   lineups: TournamentLineup[];
 }
 
@@ -24,7 +29,7 @@ export function useLineupsQuery(
     queryKey: queryKeys.lineups.byTournament(userId ?? "_", tournamentId ?? "_"),
     queryFn: async () => {
       if (!tournamentId) throw new Error("Tournament ID is required");
-      const data = await apiClient.get<LineupResponse>(`/lineup/${tournamentId}`);
+      const data = await apiClient.get<LineupListResponse>(`/lineup/${tournamentId}`);
       return data.lineups || [];
     },
     enabled: canRun,
@@ -48,7 +53,7 @@ export function useLineupQuery(
     queryKey: queryKeys.lineups.byId(userId ?? "_", lineupId ?? "_"),
     queryFn: async () => {
       if (!lineupId) throw new Error("Lineup ID is required");
-      const data = await apiClient.get<LineupResponse>(`/lineup/lineup/${lineupId}`);
+      const data = await apiClient.get<LineupDetailResponse>(`/lineup/lineup/${lineupId}`);
       return data.lineups[0] ?? null;
     },
     enabled: canRun,

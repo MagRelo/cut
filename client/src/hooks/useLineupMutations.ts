@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-q
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
+import type { TournamentLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
 
 interface LineupResponse {
@@ -25,7 +26,7 @@ function findLineupListContext(
   queryClient: QueryClient,
   lineupId: string
 ): { userId: string; tournamentId: string } | null {
-  const entries = queryClient.getQueriesData<TournamentLineup[]>({
+  const entries = queryClient.getQueriesData<TournamentLineupListItem[]>({
     queryKey: queryKeys.lineups.all,
   });
   for (const [queryKey, lineups] of entries) {
@@ -68,18 +69,19 @@ export function useCreateLineup() {
 
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
 
-      const previousLineups = queryClient.getQueryData<TournamentLineup[]>(
+      const previousLineups = queryClient.getQueryData<TournamentLineupListItem[]>(
         queryKeys.lineups.byTournament(userId, tournamentId)
       );
 
       if (previousLineups !== undefined) {
-        const optimisticLineup: TournamentLineup = {
+        const optimisticLineup: TournamentLineupListItem = {
           id: `temp-${Date.now()}`,
           name: name || "New Lineup",
           players: [],
+          contestLineups: [],
         };
 
-        queryClient.setQueryData<TournamentLineup[]>(
+        queryClient.setQueryData<TournamentLineupListItem[]>(
           queryKeys.lineups.byTournament(userId, tournamentId),
           [...previousLineups, optimisticLineup]
         );
@@ -135,12 +137,12 @@ export function useUpdateLineup() {
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byTournament(uid, tournamentId) });
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byId(uid, lineupId) });
 
-      const previousLineups = queryClient.getQueryData<TournamentLineup[]>(
+      const previousLineups = queryClient.getQueryData<TournamentLineupListItem[]>(
         queryKeys.lineups.byTournament(uid, tournamentId)
       );
 
       if (previousLineups) {
-        queryClient.setQueryData<TournamentLineup[]>(
+        queryClient.setQueryData<TournamentLineupListItem[]>(
           queryKeys.lineups.byTournament(uid, tournamentId),
           previousLineups.map((lineup) =>
             lineup.id === lineupId
