@@ -31,14 +31,14 @@ export const Home: React.FC = () => {
           </h3>
 
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-gray-800 text-sm font-medium px-1 mb-3">
-            <span>Real Money</span>
+            <span>Weekly Contests</span>
             <span className="text-gray-500">•</span>
             <span>Live Scoring Updates</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-gray-800 text-sm font-medium px-1">
-            <span>Earn Interest on Deposits</span>
+            <span>Prediction Market</span>
             <span className="text-gray-500">•</span>
-            <span>Weekly Contests</span>
+            <span>Zero Fees</span>
           </div>
         </div>
       </div>
@@ -147,7 +147,9 @@ export const Home: React.FC = () => {
 
       {/* Referral Bonus */}
       <div className="w-full max-w-4xl px-4">
-        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">Referral Bonus</h3>
+        <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">
+          Referral Network Bonuses
+        </h3>
         <div className="bg-white rounded-sm shadow p-6 border-2 border-orange-200 hover:shadow-lg transition-shadow">
           <p className="text-gray-700 leading-relaxed font-display text-center mb-5 max-w-2xl mx-auto">
             Earn bonuses when you refer new players—and when <em>their</em> invites bring in more
@@ -159,7 +161,7 @@ export const Home: React.FC = () => {
                 Level 1
               </div>
               <p className="text-sm text-gray-700 font-display leading-snug">
-                You refer someone—they sign up and play with your link.
+                You refer someone—when they win, you earn a bonus.
               </p>
             </div>
             <div className="rounded-sm border border-orange-100 bg-orange-50/40 p-4">
@@ -167,7 +169,7 @@ export const Home: React.FC = () => {
                 Level 2
               </div>
               <p className="text-sm text-gray-700 font-display leading-snug">
-                They refer their own friends—you can earn again on that activity.
+                They refer their own friends—you can earn <i>again</i> on that activity.
               </p>
             </div>
             <div className="rounded-sm border border-orange-100 bg-orange-50/40 p-4">
@@ -175,14 +177,14 @@ export const Home: React.FC = () => {
                 Deeper levels
               </div>
               <p className="text-sm text-gray-700 font-display leading-snug">
-                The chain keeps going—bonuses can apply down multiple tiers.
+                The chain keeps going—bonuses apply up to <strong>10 levels</strong> deep.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <hr className="w-full border-gray-200 mb-8" />
+      <hr className="w-full border-gray-200 my-8" />
 
       {/* Share component */}
       <Share

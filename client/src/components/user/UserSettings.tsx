@@ -11,7 +11,7 @@ export function UserSettings() {
   // Track original values for comparison
   const [originalName, setOriginalName] = useState(user?.name || "");
   const [originalSettings, setOriginalSettings] = useState<Record<string, unknown>>(
-    user?.settings || {}
+    user?.settings || {},
   );
 
   // Update original values when user data changes
@@ -58,27 +58,33 @@ export function UserSettings() {
 
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
-      <div className="text-lg font-semibold text-gray-700 mb-2 font-display">User Display</div>
+      <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Lineup Display</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              NAME
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+            >
+              Name
             </label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Enter your name"
             />
           </div>
 
           <div>
-            <label htmlFor="color" className="block text-sm font-medium text-gray-700">
-              COLOR
+            <label
+              htmlFor="color"
+              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+            >
+              Color
             </label>
             <div className="mt-3 grid grid-cols-5 gap-3">
               {[
@@ -124,7 +130,7 @@ export function UserSettings() {
             disabled={isLoading || !hasChanges()}
             className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
           >
-            {isLoading ? "Saving..." : "Save Settings"}
+            {isLoading ? "Saving..." : "Save"}
           </button>
         </div>
       </form>
