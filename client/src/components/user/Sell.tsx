@@ -92,20 +92,22 @@ export const Sell = () => {
               <div className="text-lg font-semibold text-gray-800">
                 {formattedBalance(platformTokenBalance ?? 0n, 18)}
               </div>
-              <div className="text-xs text-gray-500">CUT</div>
+              <div className="text-xs text-gray-500">{platformTokenSymbol || "CUT"}</div>
             </div>
 
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Exchange Rate</div>
               <div className="text-lg font-semibold text-gray-800">1:1</div>
-              <div className="text-xs text-gray-500">CUT to {paymentTokenSymbol || "USDC"}</div>
+              <div className="text-xs text-gray-500">
+                {platformTokenSymbol || "CUT"} to {paymentTokenSymbol || "USDC"}
+              </div>
             </div>
           </div>
         </div>
 
         <div>
           <label htmlFor="sell-amount" className="block text-sm font-medium text-gray-700 mb-2">
-            Amount (CUT)
+            Amount ({platformTokenSymbol || "CUT"})
           </label>
           <div className="relative">
             <input
