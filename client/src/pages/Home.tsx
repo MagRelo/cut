@@ -5,26 +5,28 @@ import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
 
 export const Home: React.FC = () => {
   return (
-    <div className="flex-1 w-full min-w-0 flex flex-col items-center bg-gray-50 pt-8 pb-8 px-1 sm:px-0">
+    <div className="flex-1 w-full min-w-0 flex flex-col items-center bg-gray-50 px-1 pb-8 pt-12 sm:px-0 sm:pt-8">
       <div className="w-full min-w-0 max-w-full">
-        {/* Title and Logo — stack on narrow viewports so copy doesn’t collide with the logo */}
-        <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-center gap-4 sm:gap-5 pb-2">
-          <img
-            src="/logo-transparent.png"
-            alt="Cut Logo"
-            className="h-24 sm:h-32 w-auto flex-shrink-0"
-          />
+        {/* Title and Logo — horizontal at all breakpoints */}
+        <div className="flex justify-center px-2 pb-2 sm:px-0">
+          <div className="flex max-w-full min-w-0 flex-row items-center justify-center gap-3 sm:gap-3">
+            <img
+              src="/logo-transparent.png"
+              alt="Cut Logo"
+              className="h-24 w-auto flex-shrink-0 sm:h-32"
+            />
 
-          <h1 className="text-center sm:text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
-            the Cut
-            <div className="text-xl sm:text-2xl font-bold text-gray-400">Fantasy Golf + </div>
-            <div className="text-xl sm:text-2xl font-bold text-gray-400">Prediction Market</div>
-          </h1>
+            <h1 className="min-w-0 text-4xl font-bold text-black sm:text-5xl md:text-6xl">
+              the Cut
+              <div className="text-xl sm:text-2xl font-bold text-gray-400">Fantasy Golf + </div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-400">Prediction Market</div>
+            </h1>
+          </div>
         </div>
         {/* Features — stay centered at all breakpoints (sm:mx-0 had pulled this block left) */}
         <div className="w-full max-w-sm mx-auto font-display mt-2 mb-4">
           <h3
-            className="text-lg sm:text-xl font-medium italic text-green-600 text-center mb-3"
+            className="text-lg sm:text-xl font-medium italic text-green-700 text-center mb-3"
             style={{ fontFamily: "serif" }}
           >
             ~ featuring ~
@@ -177,7 +179,7 @@ export const Home: React.FC = () => {
                 Deeper levels
               </div>
               <p className="text-sm text-gray-700 font-display leading-snug">
-                The chain keeps going—bonuses apply up to <strong>10 levels</strong> deep.
+                The chain keeps going and going—bonuses apply up to <strong>10 levels deep</strong>.
               </p>
             </div>
           </div>
