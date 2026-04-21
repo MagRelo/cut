@@ -80,12 +80,10 @@ const ReferralNetworkPanel = ({
     .sort((a, b) => a.depth - b.depth);
   return (
     <div className="bg-white rounded-sm shadow p-4">
-      <h2 className="text-lg font-semibold text-gray-700 font-display">
-        Multi-Level Referral Network
-      </h2>
+      <h2 className="text-lg font-semibold text-gray-700 font-display">Referral Network</h2>
 
       <p className="text-sm text-gray-700 font-display mb-3">
-        Build your network. When they win, you earn.{" "}
+        Build your multi-level network. When they win, you earn.{" "}
         <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
           Learn more ...
         </Link>

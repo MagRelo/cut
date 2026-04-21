@@ -15,7 +15,7 @@ export function TransferFundsPage() {
   return (
     <div className="p-4">
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Transfer funds" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Manage" }]}
         className="mb-3"
       />
 
