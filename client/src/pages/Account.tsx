@@ -21,39 +21,54 @@ function depthLabel(depth: number) {
   return `${depth}th`;
 }
 
-function InviteLinkRow({ inviteLinkUrl }: { inviteLinkUrl: string }) {
-  return (
-    <>
-      <hr className="my-4 border-gray-200" />
+function ReferralLinkRow({
+  className,
+  showSeparator,
+}: {
+  className?: string;
+  showSeparator?: boolean;
+}) {
+  const { client: smartWalletClient } = useSmartWallets();
+  const addr = smartWalletClient?.account?.address;
+  const url = addr ? `${window.location.origin}/?ref=${addr}` : null;
+  if (!url) return null;
 
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-        <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-          Referral Link
+  const row = (
+    <div
+      className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center${className ? ` ${className}` : ""}`}
+    >
+      <span className="text-sm font-medium text-gray-700 font-display shrink-0">Referral Link</span>
+      <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+        <span
+          className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
+          title={url}
+        >
+          {truncateMiddle(url, 18, 6)}
         </span>
-        <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-          <span
-            className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
-            title={inviteLinkUrl}
-          >
-            {truncateMiddle(inviteLinkUrl, 16, 6)}
-          </span>
-          <CopyButton text={inviteLinkUrl} />
-        </div>
+        <CopyButton text={url} />
       </div>
-    </>
+    </div>
   );
+
+  if (showSeparator) {
+    return (
+      <>
+        <hr className="my-4 border-gray-200" />
+        {row}
+      </>
+    );
+  }
+  return row;
 }
 
 const ReferralNetworkPanel = ({
   loading,
   error,
   levels,
-  inviteLinkUrl,
 }: {
   loading: boolean;
   error: string | null;
   levels: Array<{ depth: number; count: number }> | undefined;
-  inviteLinkUrl: string | undefined;
 }) => {
   const levelMap = new Map((levels ?? []).map((level) => [level.depth, level.count]));
   const primaryLevels = [1, 2, 3].map((depth) => ({
@@ -64,7 +79,7 @@ const ReferralNetworkPanel = ({
     .filter((level) => level.depth > 3)
     .sort((a, b) => a.depth - b.depth);
   return (
-    <div className="bg-white rounded-sm shadow p-4 mt-4">
+    <div className="bg-white rounded-sm shadow p-4">
       <h2 className="text-lg font-semibold text-gray-700 font-display">
         Multi-Level Referral Network
       </h2>
@@ -125,7 +140,7 @@ const ReferralNetworkPanel = ({
         </div>
       ) : null}
 
-      {inviteLinkUrl ? <InviteLinkRow inviteLinkUrl={inviteLinkUrl} /> : null}
+      <ReferralLinkRow showSeparator />
     </div>
   );
 };
@@ -136,16 +151,14 @@ const WalletInfo = ({
   canSignOut,
   userEmail,
   accountIdAddress,
-  inviteLinkUrl,
 }: {
   disconnect: () => void;
   canSignOut: boolean;
   userEmail: string | null | undefined;
   accountIdAddress: string | undefined;
-  inviteLinkUrl: string | undefined;
 }) => {
   return (
-    <div className="bg-white rounded-sm shadow p-4 mt-4">
+    <div className="bg-white rounded-sm shadow p-4">
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
 
       {userEmail ? (
@@ -176,27 +189,10 @@ const WalletInfo = ({
         </div>
       ) : null}
 
-      {inviteLinkUrl ? (
-        <div
-          className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
-        >
-          <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-            Invite Link
-          </span>
-          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-            <span
-              className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
-              title={inviteLinkUrl}
-            >
-              {truncateMiddle(inviteLinkUrl, 16, 6)}
-            </span>
-            <CopyButton text={inviteLinkUrl} />
-          </div>
-        </div>
-      ) : null}
+      <ReferralLinkRow className={userEmail || accountIdAddress ? "mt-3" : ""} />
 
       <div
-        className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress || inviteLinkUrl ? "mt-3" : ""}`}
+        className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
       >
         <span className="text-sm font-medium text-gray-700 font-display shrink-0">
           Contest History
@@ -236,11 +232,6 @@ export function UserPage() {
   const { client: smartWalletClient } = useSmartWallets();
   const smartWalletAddress = smartWalletClient?.account?.address;
 
-  const inviteLinkUrl = useMemo(
-    () => (smartWalletAddress ? `${window.location.origin}/?ref=${smartWalletAddress}` : undefined),
-    [smartWalletAddress],
-  );
-
   const {
     data: referralSummary,
     isLoading: referralLoading,
@@ -254,7 +245,7 @@ export function UserPage() {
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-4">
       {/* <PageHeader title="Account" className="mb-3" /> */}
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
@@ -272,13 +263,10 @@ export function UserPage() {
         loading={referralLoading}
         error={referralError}
         levels={referralLevels}
-        inviteLinkUrl={inviteLinkUrl}
       />
 
       {/* User Settings */}
-      <div className="mt-4">
-        <UserSettings />
-      </div>
+      <UserSettings />
 
       {/* Wallet Information - Below tabs */}
       <WalletInfo
@@ -286,7 +274,6 @@ export function UserPage() {
         canSignOut={!!address || !!smartWalletAddress}
         userEmail={user?.email}
         accountIdAddress={smartWalletAddress}
-        inviteLinkUrl={inviteLinkUrl}
       />
     </div>
   );
