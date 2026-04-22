@@ -76,7 +76,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
   }, [contest.results?.secondaryPayouts]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       <div>
         {primaryRowsWithPayout.length === 0 ? (
           <p className="text-sm text-gray-500">Results not available.</p>
@@ -142,13 +142,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Winner pool payouts
         </h4>
-        {sortedSecondaryPayouts.length === 0 ? (
-          <p className="text-sm text-gray-500 mt-2">
-            {contest.results?.secondaryPayouts === undefined
-              ? "Results not available."
-              : "No winner pool payouts for this contest."}
-          </p>
-        ) : (
+        {sortedSecondaryPayouts.length === 0 ? null : (
           <div className="space-y-3 mt-2">
             {sortedSecondaryPayouts.map((row, index) => {
               const wei = secondaryAmountWei(row);
@@ -184,12 +178,12 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
           </div>
         )}
       </div>
-
+      {/* 
       {contest.results?.pushPayoutsError ? (
         <p className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-sm px-2 py-1.5">
           Payout push note: {contest.results.pushPayoutsError}
         </p>
-      ) : null}
+      ) : null} */}
     </div>
   );
 };
