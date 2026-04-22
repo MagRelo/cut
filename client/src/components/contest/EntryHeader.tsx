@@ -30,7 +30,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
 
   return (
     <div
-      className="rounded-sm p-3 font-display"
+      className="mb-1 p-3 font-display"
       style={{
         borderLeftColor: resolvedBorderColor,
         borderLeftWidth: "5px",
@@ -64,7 +64,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
         {/* Points */}
         <div className="flex-shrink-0 flex items-center gap-2">
           <div className="text-right">
-            <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
+            <div className="text-xl font-bold text-gray-900 leading-none">{totalPoints}</div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               PTS
             </div>

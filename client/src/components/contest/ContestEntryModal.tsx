@@ -78,7 +78,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                   {/* Content Section */}
                   <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
                     {/* Header */}
-                    <div className="mb-2 border-b border-slate-300 pb-2">
+                    <div className="mb-2">
                       <EntryHeader
                         userColorHex={userColorHex}
                         userName={userName}
@@ -88,6 +88,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                     </div>
 
                     <div>
+                      <hr className="my-0 border-0 border-t border-gray-200" />
                       {sortedPlayers.length === 0 ? (
                         <p className="text-sm text-gray-500 px-2 py-4 text-center">No players</p>
                       ) : (
@@ -99,10 +100,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                                 className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
                                 onClick={() => setDetailPlayer(player)}
                               >
-                                <PlayerDisplayRow
-                                  player={player}
-                                  roundDisplay={roundDisplay}
-                                />
+                                <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
                               </button>
                               {index < sortedPlayers.length - 1 && (
                                 <hr className="my-0 border-0 border-t border-gray-200" />
