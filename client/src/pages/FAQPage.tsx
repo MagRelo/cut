@@ -163,10 +163,11 @@ export const FAQPage: React.FC = () => {
                   </ul>
                 </div>
               </div>
-              <p className="text-gray-700 mt-2 text-sm">
-                Note: A small oracle fee (typically 5%) is deducted from the prize pool to cover
-                tournament result verification costs.
-              </p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Are there any fees?</h3>
+              <p className="text-gray-700 text-sm">The Cut takes a 7% fee from each contest.</p>
             </div>
           </div>
         </div>
