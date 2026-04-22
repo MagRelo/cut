@@ -79,7 +79,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
               >
                 ✓
               </span>
-              <span>Referral link detected — it will apply when you create an account!</span>
+              <span>Referral link detected</span>
             </div>
           )}
         </div>
