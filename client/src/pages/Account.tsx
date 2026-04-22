@@ -14,13 +14,6 @@ function truncateMiddle(value: string, head = 8, tail = 6) {
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
-function depthLabel(depth: number) {
-  if (depth === 1) return "Direct";
-  if (depth === 2) return "2nd";
-  if (depth === 3) return "3rd";
-  return `${depth}th`;
-}
-
 function ReferralLinkRow({
   className,
   showSeparator,
@@ -37,7 +30,7 @@ function ReferralLinkRow({
     <div
       className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center${className ? ` ${className}` : ""}`}
     >
-      <span className="text-sm font-medium text-gray-700 font-display shrink-0">Referral Link</span>
+      <span className="text-sm font-medium text-gray-700 font-display shrink-0">Invite Link</span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
         <span
           className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
@@ -70,73 +63,34 @@ const ReferralNetworkPanel = ({
   error: string | null;
   levels: Array<{ depth: number; count: number }> | undefined;
 }) => {
-  const levelMap = new Map((levels ?? []).map((level) => [level.depth, level.count]));
-  const primaryLevels = [1, 2, 3].map((depth) => ({
-    depth,
-    count: levelMap.get(depth) ?? 0,
-  }));
-  const additionalLevels = (levels ?? [])
-    .filter((level) => level.depth > 3)
-    .sort((a, b) => a.depth - b.depth);
+  const totalPlayersInNetwork = (levels ?? []).reduce((sum, level) => sum + level.count, 0);
   return (
     <div className="bg-white rounded-sm shadow p-4">
-      <h2 className="text-lg font-semibold text-gray-700 font-display">Referral Network</h2>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-3">
+        <h2 className="text-lg font-semibold text-gray-700 font-display shrink-0">
+          Invite Network
+        </h2>
+        {loading ? (
+          <div
+            className="h-5 w-10 justify-self-end rounded bg-gray-200 animate-pulse"
+            aria-busy="true"
+          />
+        ) : null}
+        {!loading && !error ? (
+          <span className="text-lg font-semibold text-gray-800 text-right font-display">
+            {totalPlayersInNetwork}
+          </span>
+        ) : null}
+      </div>
 
       <p className="text-sm text-gray-700 font-display mb-3">
-        Build your multi-level network. When they win, you earn.{" "}
+        When they win, you earn.{" "}
         <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
           Learn more ...
         </Link>
       </p>
 
-      {loading ? (
-        <div className="space-y-2" aria-busy="true">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`referral-skeleton-${index}`}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
-            >
-              <div className="h-4 w-16 shrink-0 rounded bg-gray-200 animate-pulse" />
-              <div className="h-4 w-10 justify-self-end rounded bg-gray-200 animate-pulse" />
-            </div>
-          ))}
-        </div>
-      ) : null}
-
       {!loading && error ? <p className="text-sm text-red-600 font-display">{error}</p> : null}
-
-      {!loading && !error ? (
-        <div className="space-y-2">
-          {primaryLevels.map((level) => (
-            <div
-              key={level.depth}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
-            >
-              <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-                {depthLabel(level.depth)}
-              </span>
-              <span className="text-sm text-gray-800 text-right font-display">{level.count}</span>
-            </div>
-          ))}
-
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">etc...</span>
-            <span className="text-sm text-gray-800 text-right font-display"></span>
-          </div>
-
-          {additionalLevels.map((level) => (
-            <div
-              key={level.depth}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center"
-            >
-              <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-                {depthLabel(level.depth)}
-              </span>
-              <span className="text-sm text-gray-800 text-right font-display">{level.count}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
 
       <ReferralLinkRow showSeparator />
     </div>

@@ -497,7 +497,7 @@ export const FAQPage: React.FC = () => {
 
         {/* Referral Network Section */}
         <div id="referral-network" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Referral Network</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Invite Network</h2>
 
           <div className="space-y-4 text-gray-700">
             <p>
