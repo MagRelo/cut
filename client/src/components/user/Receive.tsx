@@ -1,7 +1,11 @@
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId } from "wagmi";
 import { CopyButton } from "../common/CopyToClipboard.tsx";
-import { getContractAddress, getNetworkLabel, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
+import {
+  getContractAddress,
+  getNetworkLabel,
+  useTokenSymbol,
+} from "../../utils/blockchainUtils.tsx";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -65,9 +69,21 @@ export const Receive = () => {
           </div>
 
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-              Account ID
-            </span>
+            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Address</span>
+            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+              <span
+                className="text-xs text-gray-800 text-right truncate font-display"
+                title={receiveAddress}
+              >
+                {receiveAddress}
+              </span>
+            </div>
+          </div>
+
+          <hr className="border-gray-200" />
+
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
+            <span className="text-sm font-medium text-gray-400 font-display shrink-0"></span>
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
               <span
                 className="text-xs text-gray-800 text-right truncate font-display"
