@@ -51,8 +51,9 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
           {contest.description && (
             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{contest.description}</p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
             {contest.userGroup && <span className="font-medium">• {contest.userGroup.name}</span>}
+            <span>Ended: {formatDate(contest.endTime)}</span>
           </div>
         </div>
 
@@ -71,9 +72,6 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
           >
             {formatStatus(contest.status)}
           </span>
-          <div className="text-xs text-gray-500 text-right">
-            <div>Ended: {formatDate(contest.endTime)}</div>
-          </div>
         </div>
       </div>
     </Link>
