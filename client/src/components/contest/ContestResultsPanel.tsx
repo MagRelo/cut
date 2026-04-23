@@ -17,16 +17,13 @@ function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
   return `${wholeWithCommas}.${fixedFraction}`;
 }
 
-function primaryPayoutWei(result: DetailedResult, layer1PoolWei: bigint | null): bigint | null {
+function primaryPayoutWei(result: DetailedResult): bigint | null {
   if (result.payoutBasisPoints <= 0) return null;
   try {
     if (result.payoutAmountWei !== undefined || result.positionBonusAmountWei !== undefined) {
       const p = BigInt(result.payoutAmountWei ?? "0");
       const b = BigInt(result.positionBonusAmountWei ?? "0");
       return p + b;
-    }
-    if (layer1PoolWei !== null) {
-      return (layer1PoolWei * BigInt(Math.floor(result.payoutBasisPoints))) / 10000n;
     }
   } catch {
     return null;
@@ -52,19 +49,6 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
       });
   }, [contest.results?.detailedResults]);
 
-  const layer1PoolWei = useMemo(() => {
-    const snapshot = contest.results?.snapshot;
-    if (!snapshot) return null;
-    try {
-      if (snapshot.primaryPrizePoolSubsidy !== undefined) {
-        return BigInt(snapshot.primaryPrizePool) + BigInt(snapshot.primaryPrizePoolSubsidy);
-      }
-      return BigInt(snapshot.primaryPrizePool);
-    } catch {
-      return null;
-    }
-  }, [contest.results?.snapshot]);
-
   const sortedSecondaryPayouts = useMemo(() => {
     const rows = contest.results?.secondaryPayouts ?? [];
     return [...rows].sort((a, b) => {
@@ -86,7 +70,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
               Contest Winners
             </h4>
             {primaryRowsWithPayout.map((result, index) => {
-              const payoutWei = primaryPayoutWei(result, layer1PoolWei);
+              const payoutWei = primaryPayoutWei(result);
               return (
                 <div
                   key={`${result.entryId}-${index}`}

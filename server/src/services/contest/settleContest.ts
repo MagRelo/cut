@@ -26,6 +26,17 @@ const isValidHexColor = (value: unknown): value is string => {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
 
+function clampBps(value: number): number {
+  return Math.max(0, Math.min(10000, Math.floor(value)));
+}
+
+function applyOracleFeeWei(amountWei: bigint, oracleFeeBps: number): bigint {
+  const feeBps = clampBps(oracleFeeBps);
+  if (feeBps === 0) return amountWei;
+  if (feeBps >= 10000) return 0n;
+  return (amountWei * BigInt(10000 - feeBps)) / 10000n;
+}
+
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
     // console.log(`[settleContest] Starting settlement for contest ${contestId}`);
@@ -200,6 +211,13 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     // Preserve payout/bonus totals at settlement time.
     // These on-chain values may be zeroed after users claim, but we want to
     // keep the UI display consistent by storing them in `contest.results`.
+    // Store net-of-fee values so stored amounts match pushed payouts.
+    const rawOracleFeeBps =
+      (contest.settings as { oracleFeeBps?: unknown } | null | undefined)?.oracleFeeBps ?? 0;
+    const oracleFeeBps =
+      typeof rawOracleFeeBps === "number"
+        ? rawOracleFeeBps
+        : Number.parseInt(String(rawOracleFeeBps), 10) || 0;
     const layer1PoolWei = BigInt(snapshot.primaryPrizePool);
     const winningEntriesBigIntForPreview = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigIntForPreview = payoutBps.map((bp) => BigInt(bp));
@@ -257,7 +275,8 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     }
 
     detailedResults.forEach((r) => {
-      const payoutAmountWei = primaryPayoutPreview.get(r.entryId) ?? 0n;
+      const grossPayoutAmountWei = primaryPayoutPreview.get(r.entryId) ?? 0n;
+      const payoutAmountWei = applyOracleFeeWei(grossPayoutAmountWei, oracleFeeBps);
       r.payoutAmountWei = payoutAmountWei.toString();
       r.positionBonusAmountWei = "0";
     });
