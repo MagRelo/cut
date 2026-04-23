@@ -40,7 +40,7 @@ export const Home: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-gray-800 text-sm font-medium px-1">
             <span>Prediction Market</span>
             <span className="text-gray-500">•</span>
-            <span>Zero Fees</span>
+            <span>Private Contests</span>
           </div>
         </div>
       </div>
