@@ -1,6 +1,7 @@
 import React from "react";
 import { useReadContract } from "wagmi";
 import { erc20Abi } from "viem";
+import { base, baseSepolia } from "wagmi/chains";
 import sepoliaConfig from "./contracts/sepolia.json";
 import baseConfig from "./contracts/base.json";
 
@@ -95,6 +96,16 @@ export function getContractAddress(
  */
 export function isChainSupported(chainId: number): boolean {
   return getContractConfig(chainId) !== null;
+}
+
+/**
+ * Returns a user-facing network label for known chains.
+ * Falls back to the provider chain name, then `Chain <id>`.
+ */
+export function getNetworkLabel(chainId: number, chainName?: string): string {
+  if (chainId === base.id) return "Base Mainnet";
+  if (chainId === baseSepolia.id) return "Base Sepolia";
+  return chainName ?? `Chain ${chainId}`;
 }
 
 // ============================================================================

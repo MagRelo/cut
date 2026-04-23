@@ -80,12 +80,18 @@ export const Sell = () => {
 
   return (
     <>
-      <div className="space-y-5">
-        <div>
-          <h3 className="text-base font-semibold text-gray-800 mb-3">
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-gray-800">
             Exchange {platformTokenSymbol || "CUT"} for {paymentTokenSymbol || "USDC"}
           </h3>
+          <p className="text-sm text-gray-600 font-display">
+            {platformTokenSymbol} is the currency of the Cut platform. Each CUT is backed by and
+            convertible to {paymentTokenSymbol} at a 1:1 ratio.
+          </p>
+        </div>
 
+        <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
@@ -157,7 +163,7 @@ export const Sell = () => {
               {isSending ? "Confirming..." : "Processing..."}
             </>
           ) : (
-            "Sell CUT"
+            "Exchange"
           )}
         </button>
       </div>

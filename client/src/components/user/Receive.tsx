@@ -1,18 +1,11 @@
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
 import { CopyButton } from "../common/CopyToClipboard.tsx";
-import { getContractAddress, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
+import { getContractAddress, getNetworkLabel, useTokenSymbol } from "../../utils/blockchainUtils.tsx";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
-}
-
-function getNetworkLabel(chainId: number, chainName: string | undefined) {
-  if (chainId === base.id) return "Base Mainnet";
-  if (chainId === baseSepolia.id) return "Base Sepolia";
-  return chainName ?? `Chain ${chainId}`;
 }
 
 export const Receive = () => {

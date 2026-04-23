@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { formatUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTransferTokens } from "../../hooks/useTokenOperations";
 import { useAuth } from "../../contexts/AuthContext";
+import { getNetworkLabel } from "../../utils/blockchainUtils";
 
 interface SendProps {
   tokenName?: "CUT" | "USDC";
 }
 
 export const Send = ({ tokenName = "CUT" }: SendProps) => {
-  const { isConnected } = useAccount();
+  const { isConnected, chain } = useAccount();
+  const chainId = useChainId();
   const {
     platformTokenBalance,
     paymentTokenBalance,
@@ -26,8 +28,9 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
   const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
   const tokenBalance = tokenName === "USDC" ? paymentTokenBalance : platformTokenBalance;
   const tokenDecimals =
-    tokenName === "USDC" ? paymentTokenDecimals ?? 6 : platformTokenDecimals ?? 18;
+    tokenName === "USDC" ? (paymentTokenDecimals ?? 6) : (platformTokenDecimals ?? 18);
   const tokenSymbol = tokenName === "USDC" ? paymentTokenSymbol : platformTokenSymbol;
+  const networkName = getNetworkLabel(chainId, chain?.name);
 
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -79,18 +82,28 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
 
   return (
     <>
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold text-gray-800 mb-3">Send {displaySymbol}</h3>
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-gray-800">Send {displaySymbol}</h3>
 
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
-          <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
-          <div className="text-lg font-semibold text-gray-800">
-            {formattedBalance(tokenBalance ?? 0n)}
-          </div>
-          <div className="text-xs text-gray-500">{displaySymbol}</div>
+          <p className="text-sm text-gray-600 font-display">
+            You can send {displaySymbol} to another player or to an external exchange account.
+            Please verify all details before sending.
+          </p>
         </div>
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Network</label>
+            <input
+              type="text"
+              value={networkName}
+              readOnly
+              aria-readonly="true"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Recipient Address
@@ -102,6 +115,14 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
               placeholder="0x..."
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm"
             />
+          </div>
+
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
+            <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
+            <div className="text-lg font-semibold text-gray-800">
+              {formattedBalance(tokenBalance ?? 0n)}
+            </div>
+            <div className="text-xs text-gray-500">{displaySymbol}</div>
           </div>
 
           <div>
