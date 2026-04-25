@@ -68,7 +68,7 @@ const ReferralNetworkPanel = ({
     <div className="bg-white rounded-sm shadow p-4">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-3">
         <h2 className="text-lg font-semibold text-gray-700 font-display shrink-0">
-          Your Invite Network
+          My Invite Network
         </h2>
         {loading ? (
           <div
