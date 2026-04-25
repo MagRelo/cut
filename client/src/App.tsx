@@ -40,6 +40,7 @@ import { TournamentHeaderPanel } from "./components/tournament/TournamentHeaderP
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { OnboardingRedirectGate } from "./components/common/OnboardingRedirectGate";
 import { Footer } from "./components/common/Footer";
+import { GlobalLoadingOverlay } from "./components/common/GlobalLoadingOverlay";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 import { FAQPage } from "./pages/FAQPage";
@@ -49,6 +50,7 @@ import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
 import { DebugPage } from "./pages/DebugPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
+import { useAppLoadingGate } from "./hooks/useAppLoadingGate";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
@@ -63,6 +65,145 @@ function ReferralQueryCapture() {
   useReferralCapture();
   return null;
 }
+
+const AppShell: React.FC = () => {
+  const { isBlockingLoad } = useAppLoadingGate();
+
+  return (
+    <>
+      <ReferralQueryCapture />
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        {/* TODO: Remove this when we're ready to go live */}
+        {/* <MaintenanceOverlay /> */}
+        <div className="flex flex-col flex-grow">
+          <div className="container mx-auto">
+            <OnboardingRedirectGate>
+              <div className="max-w-2xl mx-auto">
+                <TournamentHeaderPanel />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/faq" element={<FAQPage />} />
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute>
+                        <OnboardingPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/connect" element={<ConnectPage />} />
+                  <Route path="/contracts" element={<ContractsPage />} />
+                  <Route
+                    path="/account"
+                    element={
+                      <ProtectedRoute>
+                        <UserPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/account/history"
+                    element={
+                      <ProtectedRoute>
+                        <UserHistoryPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/account/funds"
+                    element={
+                      <ProtectedRoute>
+                        <TransferFundsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/usdc" element={<USDCInfoPage />} />
+                  <Route path="/cut" element={<CUTInfoPage />} />
+
+                  {/* Contests */}
+                  <Route path="/contests" element={<Contests />} />
+                  <Route
+                    path="/contests/create"
+                    element={
+                      <ProtectedRoute>
+                        <CreateContestPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/contest/:id" element={<ContestLobby />} />
+
+                  {/* Lineups */}
+                  <Route
+                    path="/lineups/create"
+                    element={
+                      <ProtectedRoute>
+                        <LineupCreatePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/lineups/edit/:lineupId"
+                    element={
+                      <ProtectedRoute>
+                        <LineupCreatePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/lineups"
+                    element={
+                      <ProtectedRoute>
+                        <LineupList />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Leaderboard */}
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+                  {/* User Groups */}
+                  <Route
+                    path="/user-groups"
+                    element={
+                      <ProtectedRoute>
+                        <UserGroupListPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/user-groups/create"
+                    element={
+                      <ProtectedRoute>
+                        <UserGroupCreatePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/user-groups/:id"
+                    element={
+                      <ProtectedRoute>
+                        <UserGroupDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Admin */}
+                  <Route path="/admin" element={<AdminPage />} />
+
+                  {/* Debug */}
+                  <Route path="/debug" element={<DebugPage />} />
+                </Routes>
+              </div>
+            </OnboardingRedirectGate>
+          </div>
+        </div>
+        <Footer />
+      </div>
+      <GlobalLoadingOverlay isBlocking={isBlockingLoad} />
+    </>
+  );
+};
 
 export const App: React.FC = () => {
   // Prefetch tournament data on app initialization for faster page loads
@@ -82,135 +223,7 @@ export const App: React.FC = () => {
             <GlobalErrorProvider>
               <AuthProvider>
                 <Router>
-                  <ReferralQueryCapture />
-                  <div className="min-h-screen bg-gray-100 flex flex-col">
-                    {/* TODO: Remove this when we're ready to go live */}
-                    {/* <MaintenanceOverlay /> */}
-                    <div className="flex flex-col flex-grow">
-                      <div className="container mx-auto">
-                        <OnboardingRedirectGate>
-                          <div className="max-w-2xl mx-auto">
-                            <TournamentHeaderPanel />
-                            <Routes>
-                              <Route path="/" element={<Home />} />
-                              <Route path="/terms" element={<TermsOfService />} />
-                              <Route path="/faq" element={<FAQPage />} />
-                              <Route
-                                path="/onboarding"
-                                element={
-                                  <ProtectedRoute>
-                                    <OnboardingPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route path="/connect" element={<ConnectPage />} />
-                              <Route path="/contracts" element={<ContractsPage />} />
-                              <Route
-                                path="/account"
-                                element={
-                                  <ProtectedRoute>
-                                    <UserPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/account/history"
-                                element={
-                                  <ProtectedRoute>
-                                    <UserHistoryPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/account/funds"
-                                element={
-                                  <ProtectedRoute>
-                                    <TransferFundsPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route path="/usdc" element={<USDCInfoPage />} />
-                              <Route path="/cut" element={<CUTInfoPage />} />
-
-                              {/* Contests */}
-                              <Route path="/contests" element={<Contests />} />
-                              <Route
-                                path="/contests/create"
-                                element={
-                                  <ProtectedRoute>
-                                    <CreateContestPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route path="/contest/:id" element={<ContestLobby />} />
-
-                              {/* Lineups */}
-                              <Route
-                                path="/lineups/create"
-                                element={
-                                  <ProtectedRoute>
-                                    <LineupCreatePage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/lineups/edit/:lineupId"
-                                element={
-                                  <ProtectedRoute>
-                                    <LineupCreatePage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/lineups"
-                                element={
-                                  <ProtectedRoute>
-                                    <LineupList />
-                                  </ProtectedRoute>
-                                }
-                              />
-
-                              {/* Leaderboard */}
-                              <Route path="/leaderboard" element={<LeaderboardPage />} />
-
-                              {/* User Groups */}
-                              <Route
-                                path="/user-groups"
-                                element={
-                                  <ProtectedRoute>
-                                    <UserGroupListPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/user-groups/create"
-                                element={
-                                  <ProtectedRoute>
-                                    <UserGroupCreatePage />
-                                  </ProtectedRoute>
-                                }
-                              />
-                              <Route
-                                path="/user-groups/:id"
-                                element={
-                                  <ProtectedRoute>
-                                    <UserGroupDetailPage />
-                                  </ProtectedRoute>
-                                }
-                              />
-
-                              {/* Admin */}
-                              <Route path="/admin" element={<AdminPage />} />
-
-                              {/* Debug */}
-                              <Route path="/debug" element={<DebugPage />} />
-                            </Routes>
-                          </div>
-                        </OnboardingRedirectGate>
-                      </div>
-                    </div>
-                    <Footer />
-                  </div>
+                  <AppShell />
                 </Router>
               </AuthProvider>
             </GlobalErrorProvider>

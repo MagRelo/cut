@@ -525,6 +525,13 @@ export const FAQPage: React.FC = () => {
         {/* Contracts Section */}
         <div id="contracts" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Smart Contracts</h2>
+          <p className="text-gray-700 mb-4">
+            Looking for deployed addresses and network details? Visit the{" "}
+            <Link to="/contracts" className="text-blue-600 hover:underline">
+              Contracts page
+            </Link>
+            .
+          </p>
 
           <div className="space-y-4">
             {/* What are Smart Contracts */}

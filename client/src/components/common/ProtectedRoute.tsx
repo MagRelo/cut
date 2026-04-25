@@ -10,7 +10,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
 
   if (loading) {
-    return null;
+    // Global loading overlay blocks interactions while auth resolves.
+    return <>{children}</>;
   }
 
   if (!user) {

@@ -28,33 +28,8 @@ export const TournamentHeaderPanel: React.FC = () => {
   }, [queryError, showError, clearError]);
   const currentTournament = data?.tournament;
 
-  // Only show loading on initial load (no data yet)
-  // This prevents getting stuck in loading state when refetching
   if (isFetching && !currentTournament) {
-    return (
-      <div className="overflow-hidden min-h-[162px] bg-slate-700 animate-pulse">
-        <div className="flex flex-col min-h-[162px] p-4 pb-0">
-          {/* Tournament name skeleton */}
-          <div className="h-9 bg-gray-600 rounded w-3/4 mb-2"></div>
-          {/* Course skeleton */}
-          <div className="h-6 bg-gray-600 rounded w-1/2 mb-2"></div>
-          {/* Status skeleton */}
-          <div className="h-5 bg-gray-600 rounded w-1/3"></div>
-
-          {/* Tab bar skeleton (Contests left; Lineups + account right when logged in) */}
-          <div className="mt-auto pt-4 flex flex-row items-end w-full gap-2 pb-0">
-            <div className="flex gap-2">
-              <div className="h-9 w-24 bg-gray-300/80 rounded-t-lg" />
-            </div>
-            <div className="flex-1 min-h-9" />
-            <div className="flex gap-2 shrink-0">
-              <div className="h-9 w-24 bg-gray-300/80 rounded-t-lg" />
-              <div className="h-9 w-28 bg-gray-300/80 rounded-t-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="overflow-hidden min-h-[162px]" />;
   }
 
   if (queryError) {
@@ -69,10 +44,6 @@ export const TournamentHeaderPanel: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden min-h-[162px]">
-      {/* Subtle loading indicator when refetching in background */}
-      {isFetching && (
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 animate-pulse z-50"></div>
-      )}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{

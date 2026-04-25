@@ -12,6 +12,7 @@ export interface ActiveTournamentState {
   currentTournament: Tournament | null;
   players: PlayerWithTournamentData[];
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   isTournamentEditable: boolean;
   tournamentStatusDisplay: string;
@@ -34,12 +35,12 @@ export function useTournamentData() {
       const data = await apiClient.get<TournamentData>("/tournaments/active");
       return data;
     },
-    // Keep data fresh for 2 minutes before considering it stale
-    staleTime: 2 * 60 * 1000,
+    // Keep heavy active tournament payload fresh for longer to reduce focus refetch churn
+    staleTime: 10 * 60 * 1000,
     // Refetch every 10 minutes to keep live scores updated
     refetchInterval: 10 * 60 * 1000,
-    // Always refetch when window regains focus (user returns to tab)
-    refetchOnWindowFocus: true,
+    // Avoid focus-triggered reloads for heavy player payload; interval still keeps data fresh
+    refetchOnWindowFocus: false,
     // Cache data for 10 minutes even when component unmounts
     gcTime: 10 * 60 * 1000,
     // Show cached data immediately on mount, then refetch in background
@@ -68,7 +69,7 @@ export function useTournamentPlayers() {
 }
 
 export function useActiveTournament(): ActiveTournamentState {
-  const { data, isLoading, error } = useTournamentData();
+  const { data, isLoading, isFetching, error } = useTournamentData();
 
   const currentTournament = data?.tournament ?? null;
   const players = data?.players ?? [];
@@ -87,6 +88,7 @@ export function useActiveTournament(): ActiveTournamentState {
     currentTournament,
     players,
     isLoading,
+    isFetching,
     error: typedError,
     isTournamentEditable,
     tournamentStatusDisplay,
@@ -104,7 +106,7 @@ export async function prefetchTournamentData(queryClient: QueryClient) {
       const data = await apiClient.get<TournamentData>("/tournaments/active");
       return data;
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }
 
