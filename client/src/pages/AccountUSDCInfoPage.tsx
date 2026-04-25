@@ -72,7 +72,7 @@ export function USDCInfoPage() {
                 <Receive />
               </TabPanel>
               <TabPanel>
-                <Send tokenName="USDC" />
+                <Send />
               </TabPanel>
             </div>
           </TabGroup>

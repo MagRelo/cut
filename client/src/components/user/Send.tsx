@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Tab, TabGroup, TabList } from "@headlessui/react";
 import { useAccount, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useTransferTokens } from "../../hooks/useTokenOperations";
+import { useModeAwareTransfer } from "../../hooks/useTokenOperations";
 import { useAuth } from "../../contexts/AuthContext";
 import { getNetworkLabel } from "../../utils/blockchainUtils";
 
-interface SendProps {
-  tokenName?: "CUT" | "USDC";
-}
+type SendMode = "internal" | "external";
 
-export const Send = ({ tokenName = "CUT" }: SendProps) => {
+export const Send = () => {
   const { isConnected, chain } = useAccount();
   const chainId = useChainId();
   const {
@@ -24,18 +23,29 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     paymentTokenDecimals,
   } = useAuth();
 
-  // Select the appropriate token address, balance, decimals, and symbol based on tokenName
-  const tokenAddress = tokenName === "USDC" ? paymentTokenAddress : platformTokenAddress;
-  const tokenBalance = tokenName === "USDC" ? paymentTokenBalance : platformTokenBalance;
-  const tokenDecimals =
-    tokenName === "USDC" ? (paymentTokenDecimals ?? 6) : (platformTokenDecimals ?? 18);
-  const tokenSymbol = tokenName === "USDC" ? paymentTokenSymbol : platformTokenSymbol;
+  const resolvedPlatformDecimals = platformTokenDecimals ?? 18;
+  const resolvedPaymentDecimals = paymentTokenDecimals ?? 6;
+  const platformBalance = platformTokenBalance ?? 0n;
+  const paymentBalance = paymentTokenBalance ?? 0n;
+  const decimalScale = 10n ** BigInt(resolvedPlatformDecimals - resolvedPaymentDecimals);
   const networkName = getNetworkLabel(chainId, chain?.name);
 
+  const [mode, setMode] = useState<SendMode>("internal");
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
 
-  // Use centralized blockchain transaction hook
+  const targetDecimals = mode === "internal" ? resolvedPlatformDecimals : resolvedPaymentDecimals;
+  const targetSymbol =
+    mode === "internal" ? (platformTokenSymbol ?? "CUT") : (paymentTokenSymbol ?? "USDC");
+
+  const maxAmountInTargetUnits = useMemo(() => {
+    if (mode === "internal") {
+      return platformBalance + paymentBalance * decimalScale;
+    }
+    return paymentBalance + platformBalance / decimalScale;
+  }, [mode, platformBalance, paymentBalance, decimalScale]);
+
   const {
     execute,
     isProcessing,
@@ -43,56 +53,126 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
     isConfirmed,
     isFailed,
     error: transactionError,
-    createTransferCalls,
-  } = useTransferTokens({
-    tokenAddress: tokenAddress as string,
-    tokenDecimals,
+    createModeAwareTransferCalls,
+  } = useModeAwareTransfer({
+    platformTokenAddress: platformTokenAddress as string,
+    paymentTokenAddress: paymentTokenAddress as string,
+    platformTokenDecimals: resolvedPlatformDecimals,
+    paymentTokenDecimals: resolvedPaymentDecimals,
     onSuccess: () => {
       setRecipientAddress("");
       setAmount("");
+      setSendError(null);
     },
-    // Don't set local error state - let the hook handle error display
     onError: () => {
-      // Clear any existing local errors - let hook handle display
+      setSendError(null);
     },
   });
 
   const handleMaxSend = () => {
-    if (tokenBalance) {
-      const maxAmount = formatUnits(tokenBalance, tokenDecimals);
-      setAmount(maxAmount);
-    }
+    setAmount(formatUnits(maxAmountInTargetUnits, targetDecimals));
+    setSendError(null);
   };
 
   const handleSend = async () => {
     if (!isConnected || !recipientAddress || !amount) {
+      setSendError("Please enter a valid recipient and amount");
       return;
     }
 
-    const calls = createTransferCalls(recipientAddress, amount);
+    if (!(recipientAddress.startsWith("0x") && recipientAddress.length === 42)) {
+      setSendError("Recipient must be a valid wallet address");
+      return;
+    }
+
+    let amountInTargetUnits: bigint;
+    try {
+      amountInTargetUnits = parseUnits(amount, targetDecimals);
+    } catch {
+      setSendError("Please enter a valid amount");
+      return;
+    }
+
+    if (amountInTargetUnits <= 0n) {
+      setSendError("Amount must be greater than 0");
+      return;
+    }
+
+    if (amountInTargetUnits > maxAmountInTargetUnits) {
+      setSendError("Insufficient combined balance");
+      return;
+    }
+
+    setSendError(null);
+    let calls;
+    try {
+      calls = createModeAwareTransferCalls({
+        mode,
+        recipient: recipientAddress,
+        amount,
+        platformTokenBalance: platformBalance,
+        paymentTokenBalance: paymentBalance,
+      });
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "Unable to prepare transfer");
+      return;
+    }
     await execute(calls);
   };
 
-  // round balance to 2 decimal points
-  const formattedBalance = (balance: bigint) => {
-    return Number(formatUnits(balance, tokenDecimals)).toFixed(2);
+  const formattedBalance = (balance: bigint, decimals: number) => {
+    return Number(formatUnits(balance, decimals)).toFixed(2);
   };
 
-  const displaySymbol = tokenSymbol || tokenName;
+  const modeTitle = mode === "internal" ? "Send to another player" : "Offramp to exchange";
+  const modeCopy =
+    mode === "internal"
+      ? `You can send funds to another player. Be sure to confirm the details before sending.`
+      : `You can withdraw funds to your exchange account. Be sure to confirm the details before withdrawing.`;
 
   return (
     <>
       <div className="space-y-6">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-gray-800">Send {displaySymbol}</h3>
-
-          <p className="text-sm text-gray-600 font-display">
-            You can send {displaySymbol} to another player or to an external exchange account.
-            Please verify all details before sending.
-          </p>
-        </div>
-
         <div className="space-y-4">
+          <TabGroup
+            selectedIndex={mode === "internal" ? 0 : 1}
+            onChange={(index) => {
+              setMode(index === 0 ? "internal" : "external");
+              setAmount("");
+              setSendError(null);
+            }}
+          >
+            <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
+                    selected
+                      ? "border-b-2 border-blue-600 text-blue-700"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`
+                }
+              >
+                Player-to-Player
+              </Tab>
+              <Tab
+                className={({ selected }: { selected: boolean }) =>
+                  `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
+                    selected
+                      ? "border-b-2 border-blue-600 text-blue-700"
+                      : "text-gray-600 hover:text-gray-800"
+                  }`
+                }
+              >
+                External
+              </Tab>
+            </TabList>
+          </TabGroup>
+
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-gray-800">{modeTitle}</h3>
+            <p className="text-sm text-gray-600 font-display">{modeCopy}</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Network</label>
             <input
@@ -118,23 +198,29 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
           </div>
 
           <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
-            <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
+            <div className="text-xs font-medium text-gray-600 mb-1">Total Available</div>
             <div className="text-lg font-semibold text-gray-800">
-              {formattedBalance(tokenBalance ?? 0n)}
+              {formattedBalance(maxAmountInTargetUnits, targetDecimals)}
             </div>
-            <div className="text-xs text-gray-500">{displaySymbol}</div>
+            <div className="text-xs text-gray-500">{targetSymbol}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
+              {platformTokenSymbol || "CUT"} +{" "}
+              {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
+              {paymentTokenSymbol || "USDC"}
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount ({displaySymbol})
+              Amount ({targetSymbol})
             </label>
             <div className="relative">
               <input
                 type="number"
                 value={amount}
                 step="0.01"
-                max={formattedBalance(tokenBalance ?? 0n)}
+                max={formattedBalance(maxAmountInTargetUnits, targetDecimals)}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 className="w-full px-4 py-2.5 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
@@ -150,6 +236,12 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
             </div>
           </div>
 
+          {sendError && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+              {sendError}
+            </div>
+          )}
+
           <button
             onClick={handleSend}
             disabled={!recipientAddress || !amount || isProcessing}
@@ -161,7 +253,7 @@ export const Send = ({ tokenName = "CUT" }: SendProps) => {
                 {isSending ? "Confirming..." : "Processing..."}
               </>
             ) : (
-              `Send ${displaySymbol}`
+              `Send ${targetSymbol}`
             )}
           </button>
         </div>

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { Receive } from "../components/user/Receive.tsx";
-import { Sell } from "../components/user/Sell.tsx";
 import { Send } from "../components/user/Send.tsx";
 
 function classNames(...classes: string[]) {
@@ -47,31 +46,17 @@ export function TransferFundsPage() {
                   )
                 }
               >
-                Exchange
-              </Tab>
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  classNames(
-                    "w-full py-2 text-sm font-display leading-5",
-                    "focus:outline-none",
-                    selected
-                      ? "border-b-2 border-blue-600 text-blue-700"
-                      : "text-gray-600 hover:text-gray-800",
-                  )
-                }
-              >
                 Send
               </Tab>
             </TabList>
-            <div className="p-4">
+            <div className="px-4 py-2">
               <TabPanel>
-                <Receive />
+                <div className="py-2">
+                  <Receive />
+                </div>
               </TabPanel>
               <TabPanel>
-                <Sell />
-              </TabPanel>
-              <TabPanel>
-                <Send tokenName="USDC" />
+                <Send />
               </TabPanel>
             </div>
           </TabGroup>
