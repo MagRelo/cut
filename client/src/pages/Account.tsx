@@ -218,7 +218,7 @@ export function UserPage() {
       {/* User Settings */}
       <UserSettings />
 
-      {/* Wallet Information - Below tabs */}
+      {/* Wallet Information */}
       <WalletInfo
         disconnect={logout}
         canSignOut={!!address || !!smartWalletAddress}
