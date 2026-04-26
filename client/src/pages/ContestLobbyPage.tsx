@@ -5,7 +5,6 @@ import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { Breadcrumbs } from "../components/common/Breadcrumbs.tsx";
 import { ContestCard } from "../components/contest/ContestCard";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { LineupManagement } from "../components/contest/LineupManagement";
@@ -91,13 +90,6 @@ export const ContestLobby: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-2 p-4">
-        <div>
-          {/* breadcrumbs */}
-          <Breadcrumbs
-            items={[{ label: "Contests", path: "/contests/" }, { label: "Loading Contest..." }]}
-          />
-        </div>
-
         <div className="bg-white rounded-lg shadow">
           <div className="flex items-center justify-center min-h-[176px]">
             <LoadingSpinner />
@@ -110,11 +102,6 @@ export const ContestLobby: React.FC = () => {
   if (queryError) {
     return (
       <div className="space-y-2 p-4">
-        <div>
-          {/* breadcrumbs */}
-          <Breadcrumbs items={[{ label: "Contests", path: "/contests" }]} />
-        </div>
-
         <div className="bg-white rounded-lg shadow min-h-[176px]">
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <p className="text-lg font-medium text-gray-800 mb-2">Unable to load contest</p>
@@ -133,16 +120,8 @@ export const ContestLobby: React.FC = () => {
 
   return (
     <div className="space-y-2 p-4">
-      {/* breadcrumbs */}
-      <Breadcrumbs
-        items={[
-          { label: "Contests", path: "/contests" },
-          { label: contest?.name ?? "", path: `/contests/${contestId}` },
-        ]}
-      />
-
       {/* contest lobby */}
-      <div className="bg-white rounded-sm shadow pt-2">
+      <div className="bg-white rounded-sm shadow border border-slate-400/60 pt-2">
         {/* header */}
 
         <div className="p-3 pb-1">
@@ -211,7 +190,7 @@ export const ContestLobby: React.FC = () => {
                 {primaryActionsLocked ? (
                   <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-3 border-gray-20 mt-6 mb-6">
+                  <div className="flex flex-col items-center justify-center gap-3 border-b border-gray-200 mt-6 pb-4 mb-4">
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
@@ -227,8 +206,10 @@ export const ContestLobby: React.FC = () => {
 
                     {contest.tournament?.status === "NOT_STARTED" &&
                     contest.tournament.startDate ? (
-                      <p className="text-xs text-gray-500 text-center mb-2">
-                        <span>{contest.tournament.name} starts in</span>
+                      <p className="text-xs text-gray-500 text-center mb-2 mt-2">
+                        <span>
+                          <strong>{contest.tournament.name}</strong> starts in
+                        </span>
                         <br />
                         <span className="inline-block min-w-[120px] whitespace-nowrap tabular-nums pt-1">
                           <CountdownTimer targetDate={contest.tournament.startDate} />

@@ -84,7 +84,8 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
     const first = boundaries[0];
     const firstColoredStart = first.sliceStart + halfGap;
     const firstColoredEnd = first.sliceEnd - halfGap;
-    const firstRenderedStart = firstColoredEnd > firstColoredStart ? firstColoredStart : first.sliceStart;
+    const firstRenderedStart =
+      firstColoredEnd > firstColoredStart ? firstColoredStart : first.sliceStart;
     if (firstRenderedStart > 0) {
       gradientStops.push(`transparent 0.00% ${firstRenderedStart.toFixed(2)}%`);
     }
@@ -150,8 +151,19 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
 
   if (!chartData.gradient) {
     return (
-      <div className="mt-2 mb-3 p-3 border border-gray-200 rounded-sm bg-white">
-        <div className="text-xs text-gray-500 font-display">No share ownership data yet</div>
+      <div className="mt-2 mb-3 p-3 bg-white">
+        <div className="flex justify-center items-center">
+          <div className="relative h-40 w-40 rounded-full flex-shrink-0 bg-gradient-to-br from-slate-200 to-slate-300">
+            <div className="absolute inset-[7px] rounded-full bg-slate-50 flex flex-col items-center justify-center text-center px-2">
+              <div className="text-[10px] font-semibold text-slate-500 uppercase font-display tracking-[0.14em]">
+                Winner Pool is open
+              </div>
+              <div className="text-[10px] text-slate-500 font-display mt-1">
+                Select a team to <br /> buy shares
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

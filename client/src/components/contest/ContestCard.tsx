@@ -54,7 +54,8 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     }
   })();
 
-  const displayPot = isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
+  const displayPot =
+    isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
   const showLoading = !isFinalizedContest && isPredictionDataLoading;
 
   const formatStatus = (status: string) => {
@@ -67,7 +68,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   return (
     <div className="flex items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
-      <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
+      <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/90">
         <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
           {contest.settings?.primaryDeposit === 0
             ? "Free"
