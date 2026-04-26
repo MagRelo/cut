@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { isOnboardingDismissed } from "../../lib/onboardingSettings";
+import { ONBOARDING_DISMISSED_KEY } from "../../lib/onboardingSettings";
 
 const EXCLUDED_PATHS = new Set(["/onboarding", "/connect"]);
 
@@ -16,11 +16,10 @@ export function OnboardingRedirectGate({ children }: { children: React.ReactNode
     return <>{children}</>;
   }
 
-  if (
-    user &&
-    !isOnboardingDismissed(user.settings) &&
-    !EXCLUDED_PATHS.has(location.pathname)
-  ) {
+  const onboardingDismissedValue = user?.settings?.[ONBOARDING_DISMISSED_KEY];
+  const shouldRedirectToOnboarding = onboardingDismissedValue === false;
+
+  if (user && shouldRedirectToOnboarding && !EXCLUDED_PATHS.has(location.pathname)) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }
 

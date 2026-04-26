@@ -416,6 +416,9 @@ export async function ensureCutUserFromPrivy(
       privyUserId: privyId,
       name: `User ${address.slice(0, 6)}`,
       userType: "PUBLIC",
+      settings: {
+        onboardingDismissed: false,
+      },
       ...(email ? { email } : {}),
       referrerAddress: referral?.referrerAddress ?? null,
       referralGroupId: referral?.groupIdHex ?? null,

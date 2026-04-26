@@ -155,6 +155,8 @@ export const DebugPage: React.FC = () => {
             (key, value) => {
               // Don't show the token in the raw JSON for security
               if (key === "token") return "[REDACTED]";
+              // JSON.stringify cannot serialize BigInt; render as string for debug output.
+              if (typeof value === "bigint") return value.toString();
               return value;
             },
             2
