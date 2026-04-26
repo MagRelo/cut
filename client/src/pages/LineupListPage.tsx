@@ -7,7 +7,6 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 
 import { PageHeader } from "../components/common/PageHeader";
-import { LineupCard } from "../components/lineup/LineupCard";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import type { AuthUser } from "../contexts/AuthContext";
 import type { ContestLineup, TournamentLineupListItem } from "../types/lineup";
@@ -114,14 +113,17 @@ export const LineupList: React.FC = () => {
     <div className="p-4 space-y-4">
       {header}
 
-      {isTournamentEditable && hasLineups && (
+      {hasLineups && (
         <div>
-          {listItems.map((lineup) => (
-            <div
-              key={lineup.id}
-              className="rounded-md border border-gray-200 bg-white p-4 pb-6 mt-4"
-            >
-              <LineupCard lineup={lineup} isEditable={isTournamentEditable} />
+          {listItems.map((row) => (
+            <div key={row.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
+              <LineupContestCard
+                lineup={contestLineupForCard(row, user)}
+                roundDisplay={currentTournament?.roundDisplay || ""}
+                contests={contestsForCard(row)}
+                isEditable={isTournamentEditable}
+                editHref={`/lineups/edit/${row.id}`}
+              />
             </div>
           ))}
         </div>
@@ -144,20 +146,6 @@ export const LineupList: React.FC = () => {
               Add Lineup
             </Link>
           ) : null}
-        </div>
-      )}
-
-      {!isTournamentEditable && hasLineups && (
-        <div>
-          {listItems.map((row) => (
-            <div key={row.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
-              <LineupContestCard
-                lineup={contestLineupForCard(row, user)}
-                roundDisplay={currentTournament?.roundDisplay || ""}
-                contests={contestsForCard(row)}
-              />
-            </div>
-          ))}
         </div>
       )}
 

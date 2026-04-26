@@ -21,6 +21,8 @@ interface LineupContestCardProps {
   lineup: ContestLineup;
   roundDisplay: string;
   contests?: ContestInfo[];
+  isEditable?: boolean;
+  editHref?: string;
 }
 
 function classNames(...classes: string[]) {
@@ -31,6 +33,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
   roundDisplay,
   contests = [],
+  isEditable = false,
+  editHref,
 }) => {
   // Tab state
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -103,7 +107,18 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               )
             }
           >
-            Contests ({contests.length})
+            <span className="inline-flex items-center gap-1">
+              <span>Contests ({contests.length})</span>
+              {contests.length === 0 ? (
+                <span
+                  className="inline-flex items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700"
+                  title="No contests for this lineup"
+                  aria-label="Warning: lineup has no contests"
+                >
+                  !
+                </span>
+              ) : null}
+            </span>
           </Tab>
         </TabList>
 
@@ -119,6 +134,16 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   onClick={() => openPlayerModal(player)}
                 />
               ))}
+              {isEditable && editHref ? (
+                <div className="mt-4 flex justify-center">
+                  <Link
+                    to={editHref}
+                    className="inline-flex items-center rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                  >
+                    Edit Lineup
+                  </Link>
+                </div>
+              ) : null}
             </div>
           </TabPanel>
 
@@ -156,17 +181,25 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   );
                 })
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 font-display">
+                <div className="rounded-sm border border-gray-200 bg-white p-4 shadow">
+                  <p className="mb-1 font-display text-base font-semibold text-gray-900">
                     This lineup is not entered in any contests.
                   </p>
+                  <p className="font-display text-sm leading-relaxed text-gray-600">
+                    Browse available contests and enter your lineup.
+                  </p>
+                  <Link
+                    to="/contests"
+                    className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                  >
+                    Browse Contests
+                  </Link>
                 </div>
               )}
             </div>
           </TabPanel>
         </div>
       </TabGroup>
-
       <PlayerDetailModal
         isOpen={isModalOpen}
         onClose={closePlayerModal}
