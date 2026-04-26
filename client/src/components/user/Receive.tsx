@@ -42,11 +42,11 @@ export const Receive = () => {
     <div className="space-y-6">
       <div className="space-y-1">
         <h3 className="text-base font-semibold text-gray-800">
-          Receive {platformTokenSymbol} or {paymentTokenSymbol}
+          Fund your account with {platformTokenSymbol} or {paymentTokenSymbol}
         </h3>
         <p className="text-sm text-gray-600 font-display">
-          You can fund your account by sending {platformTokenSymbol} or {paymentTokenSymbol} to your
-          Account ID. Be sure to confirm the details are correct before sending:
+          Send {platformTokenSymbol} or {paymentTokenSymbol} from your wallet or exchange to this
+          Account ID. Confirm network and token details before sending.
         </p>
       </div>
 

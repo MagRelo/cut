@@ -33,7 +33,7 @@ export function TransferFundsPage() {
                   )
                 }
               >
-                Receive
+                Deposit
               </Tab>
               <Tab
                 className={({ selected }: { selected: boolean }) =>
@@ -46,7 +46,7 @@ export function TransferFundsPage() {
                   )
                 }
               >
-                Send
+                Withdraw
               </Tab>
             </TabList>
             <div className="px-4 py-2">

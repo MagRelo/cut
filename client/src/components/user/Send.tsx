@@ -8,6 +8,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getNetworkLabel } from "../../utils/blockchainUtils";
 
 type SendMode = "internal" | "external";
+const ENABLE_EXTERNAL_SEND = false;
 
 export const Send = () => {
   const { isConnected, chain } = useAccount();
@@ -75,6 +76,11 @@ export const Send = () => {
   };
 
   const handleSend = async () => {
+    if (!ENABLE_EXTERNAL_SEND && mode === "external") {
+      setSendError("External send is currently unavailable");
+      return;
+    }
+
     if (!isConnected || !recipientAddress || !amount) {
       setSendError("Please enter a valid recipient and amount");
       return;
@@ -124,49 +130,45 @@ export const Send = () => {
     return Number(formatUnits(balance, decimals)).toFixed(2);
   };
 
-  const modeTitle = mode === "internal" ? "Send to another player" : "Offramp to exchange";
+  const modeTitle = mode === "internal" ? "Player-to-Player Transfer" : "Offramp to exchange";
   const modeCopy =
     mode === "internal"
-      ? `You can send funds to another player. Be sure to confirm the details before sending.`
+      ? `You can send funds to another player at any time. Be sure to confirm the details before sending.`
       : `You can withdraw funds to your exchange account. Be sure to confirm the details before withdrawing.`;
+  const selectedTabIndex = !ENABLE_EXTERNAL_SEND ? 0 : mode === "internal" ? 0 : 1;
 
   return (
     <>
       <div className="space-y-6">
         <div className="space-y-4">
-          <TabGroup
-            selectedIndex={mode === "internal" ? 0 : 1}
-            onChange={(index) => {
-              setMode(index === 0 ? "internal" : "external");
-              setAmount("");
-              setSendError(null);
-            }}
-          >
-            <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
-                    selected
-                      ? "border-b-2 border-blue-600 text-blue-700"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`
+          {ENABLE_EXTERNAL_SEND ? (
+            <TabGroup
+              selectedIndex={selectedTabIndex}
+              onChange={(index) => {
+                if (!ENABLE_EXTERNAL_SEND) {
+                  setMode("internal");
+                } else {
+                  setMode(index === 0 ? "internal" : "external");
                 }
-              >
-                Player-to-Player
-              </Tab>
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
-                    selected
-                      ? "border-b-2 border-blue-600 text-blue-700"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`
-                }
-              >
-                External
-              </Tab>
-            </TabList>
-          </TabGroup>
+                setAmount("");
+                setSendError(null);
+              }}
+            >
+              <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+                <Tab
+                  className={({ selected }: { selected: boolean }) =>
+                    `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
+                      selected
+                        ? "border-b-2 border-blue-600 text-blue-700"
+                        : "text-gray-600 hover:text-gray-800"
+                    }`
+                  }
+                >
+                  External
+                </Tab>
+              </TabList>
+            </TabGroup>
+          ) : null}
 
           <div className="space-y-1">
             <h3 className="text-base font-semibold text-gray-800">{modeTitle}</h3>
