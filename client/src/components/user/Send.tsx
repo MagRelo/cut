@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Tab, TabGroup, TabList } from "@headlessui/react";
 import { useAccount, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
@@ -10,7 +10,14 @@ import { getNetworkLabel } from "../../utils/blockchainUtils";
 type SendMode = "internal" | "external";
 const ENABLE_EXTERNAL_SEND = false;
 
-export const Send = () => {
+export type SendProps = {
+  /** Pre-fill recipient (e.g. admin support: target user wallet). */
+  initialRecipientAddress?: string;
+  /** If true, recipient field is read-only. */
+  lockRecipient?: boolean;
+};
+
+export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendProps) => {
   const { isConnected, chain } = useAccount();
   const chainId = useChainId();
   const {
@@ -32,9 +39,15 @@ export const Send = () => {
   const networkName = getNetworkLabel(chainId, chain?.name);
 
   const [mode, setMode] = useState<SendMode>("internal");
-  const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
   const [amount, setAmount] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialRecipientAddress !== undefined) {
+      setRecipientAddress(initialRecipientAddress);
+    }
+  }, [initialRecipientAddress]);
 
   const targetDecimals = mode === "internal" ? resolvedPlatformDecimals : resolvedPaymentDecimals;
   const targetSymbol =
@@ -193,9 +206,15 @@ export const Send = () => {
             <input
               type="text"
               value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
+              onChange={(e) => {
+                if (!lockRecipient) setRecipientAddress(e.target.value);
+              }}
+              readOnly={lockRecipient}
+              aria-readonly={lockRecipient}
               placeholder="0x..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm"
+              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm ${
+                lockRecipient ? "bg-gray-50 cursor-not-allowed" : ""
+              }`}
             />
           </div>
 

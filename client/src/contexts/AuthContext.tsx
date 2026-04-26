@@ -242,7 +242,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const isAdmin = useCallback(() => {
-    return Boolean(user?.userType === "ADMIN");
+    const t = user?.userType;
+    return Boolean(t === "ADMIN" || t === "SUPER_ADMIN");
   }, [user]);
 
   const flushAuthRelatedQueries = useCallback(() => {

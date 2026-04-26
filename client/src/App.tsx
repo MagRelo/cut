@@ -45,6 +45,9 @@ import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
 import { FAQPage } from "./pages/FAQPage";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
+import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
+import { AdminRoute } from "./components/common/AdminRoute";
 import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
@@ -188,8 +191,37 @@ const AppShell: React.FC = () => {
                     }
                   />
 
-                  {/* Admin */}
-                  <Route path="/admin" element={<AdminPage />} />
+                  {/* Admin (staff only; not linked in global nav) */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute>
+                        <AdminRoute>
+                          <AdminPage />
+                        </AdminRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users"
+                    element={
+                      <ProtectedRoute>
+                        <AdminRoute>
+                          <AdminUsersPage />
+                        </AdminRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/users/:userId"
+                    element={
+                      <ProtectedRoute>
+                        <AdminRoute>
+                          <AdminUserDetailPage />
+                        </AdminRoute>
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Debug */}
                   <Route path="/debug" element={<DebugPage />} />

@@ -176,8 +176,24 @@ const WalletInfo = ({
   );
 };
 
+const AdminPanel = () => {
+  return (
+    <div className="bg-white rounded-sm shadow p-4">
+      <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Admin</h2>
+      <div className="flex flex-col gap-2 text-sm">
+        <Link to="/admin" className="text-blue-600 hover:text-blue-800 hover:underline">
+          Open admin panel
+        </Link>
+        <Link to="/admin/users" className="text-blue-600 hover:text-blue-800 hover:underline">
+          Manage users
+        </Link>
+      </div>
+    </div>
+  );
+};
+
 export function UserPage() {
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
   const { address } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   const smartWalletAddress = smartWalletClient?.account?.address;
@@ -217,6 +233,8 @@ export function UserPage() {
 
       {/* User Settings */}
       <UserSettings />
+
+      {isAdmin() ? <AdminPanel /> : null}
 
       {/* Wallet Information */}
       <WalletInfo

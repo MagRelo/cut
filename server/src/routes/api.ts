@@ -5,6 +5,7 @@ import lineupRoutes from "./lineup.js";
 import contestRoutes from "./contest.js";
 import cronRoutes from "./cron.js";
 import userGroupRoutes from "./userGroup.js";
+import adminRoutes from "./admin.js";
 
 const apiRouter = new Hono();
 
@@ -24,5 +25,6 @@ apiRouter.route("/lineup", lineupRoutes);
 apiRouter.route("/contests", contestRoutes);
 apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/userGroups", userGroupRoutes);
+apiRouter.route("/admin", adminRoutes);
 
 export default apiRouter;
