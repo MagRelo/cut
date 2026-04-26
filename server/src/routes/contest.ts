@@ -21,6 +21,16 @@ const contestRouter = new Hono();
 
 type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 
+const DEFAULT_USER_COLOR = "#9CA3AF";
+
+function pickUserColor(settings: unknown): string {
+  if (typeof settings !== "object" || settings === null) return DEFAULT_USER_COLOR;
+  const maybeColor = (settings as { color?: unknown }).color;
+  if (typeof maybeColor !== "string") return DEFAULT_USER_COLOR;
+  const color = maybeColor.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : DEFAULT_USER_COLOR;
+}
+
 const contestDetailSelect = {
   id: true,
   name: true,
@@ -108,6 +118,15 @@ const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tourname
 
   return {
     ...lineup,
+    user: lineup.user
+      ? {
+          id: lineup.user.id,
+          name: lineup.user.name,
+          settings: {
+            color: pickUserColor(lineup.user.settings),
+          },
+        }
+      : undefined,
     tournamentLineup: {
       ...lineup.tournamentLineup,
       players,

@@ -54,7 +54,13 @@ export const contestLineupsInclude = {
  */
 export const contestLineupsIncludeWithoutPlayers = {
   include: {
-    user: true,
+    user: {
+      select: {
+        id: true,
+        name: true,
+        settings: true,
+      },
+    },
     tournamentLineup: true,
   },
 } as const;
