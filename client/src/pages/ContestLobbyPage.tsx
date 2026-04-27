@@ -121,10 +121,10 @@ export const ContestLobby: React.FC = () => {
   return (
     <div className="space-y-2 p-4">
       {/* contest lobby */}
-      <div className="bg-white rounded-sm shadow border border-slate-400/60 pt-2">
+      <div className="bg-white rounded-sm shadow border border-gray-200">
         {/* header */}
 
-        <div className="p-3 pb-1">
+        <div className="p-3 py-4">
           <ContestCard
             contest={contest}
             onPotClick={() => setIsPayoutsModalOpen(true)}
