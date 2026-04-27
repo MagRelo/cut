@@ -63,10 +63,28 @@ const ReferralNetworkPanel = ({
   error: string | null;
   levels: Array<{ depth: number; count: number }> | undefined;
 }) => {
+  const getDepthLabel = (depth: number) => {
+    if (depth === 1) return "Direct";
+    const suffix =
+      depth % 10 === 1 && depth % 100 !== 11
+        ? "st"
+        : depth % 10 === 2 && depth % 100 !== 12
+          ? "nd"
+          : depth % 10 === 3 && depth % 100 !== 13
+            ? "rd"
+            : "th";
+    return `${depth}${suffix}`;
+  };
   const totalPlayersInNetwork = (levels ?? []).reduce((sum, level) => sum + level.count, 0);
+  const levelsByDepth = new Map((levels ?? []).map((level) => [level.depth, level.count]));
+  const maxDepthToShow = Math.max(3, ...(levels ?? []).map((level) => level.depth));
+  const displayLevels = Array.from({ length: maxDepthToShow }, (_, index) => {
+    const depth = index + 1;
+    return { depth, count: levelsByDepth.get(depth) ?? 0 };
+  });
   return (
     <div className="bg-white rounded-sm shadow p-4">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-1">
         <h2 className="text-lg font-semibold text-gray-700 font-display shrink-0">
           My Invite Network
         </h2>
@@ -91,6 +109,21 @@ const ReferralNetworkPanel = ({
       </p>
 
       {!loading && error ? <p className="text-sm text-red-600 font-display">{error}</p> : null}
+      {!loading && !error ? (
+        <div className="space-y-2">
+          {displayLevels.map((level) => (
+            <div
+              key={level.depth}
+              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center text-sm font-display"
+            >
+              <span className="text-gray-700 font-medium font-display shrink-0">
+                {getDepthLabel(level.depth)}
+              </span>
+              <span className="text-gray-800 text-right">{level.count}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <ReferralLinkRow showSeparator />
     </div>

@@ -505,7 +505,7 @@ export const FAQPage: React.FC = () => {
               The Cut&apos;s referral network is built like a family tree. When you invite someone,
               they become part of your first level. If that person invites someone else, that new
               person is on the 2nd level, and so on. This creates a multi-level graph of
-              relationships up to <strong>10 levels deep</strong>.
+              relationships <strong> up to 10 levels deep</strong>.
             </p>
 
             <p>
