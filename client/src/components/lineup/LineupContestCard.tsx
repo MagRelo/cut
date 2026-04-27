@@ -135,12 +135,27 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 />
               ))}
               {isEditable && editHref ? (
-                <div className="mt-4 flex justify-center">
+                <div className="flex justify-center border-t border-gray-200 mt-2 pt-4">
                   <Link
                     to={editHref}
-                    className="inline-flex items-center rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                    className="inline-flex items-center gap-1.5 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
                   >
-                    Edit Lineup
+                    <span>Edit Lineup</span>
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
                   </Link>
                 </div>
               ) : null}

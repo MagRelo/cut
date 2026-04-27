@@ -116,7 +116,7 @@ export const LineupList: React.FC = () => {
       {hasLineups && (
         <div>
           {listItems.map((row) => (
-            <div key={row.id} className="rounded-sm border border-gray-200 bg-white p-4 pb-6">
+            <div key={row.id} className="rounded-sm border border-gray-200 bg-white p-4">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
                 roundDisplay={currentTournament?.roundDisplay || ""}
