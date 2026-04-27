@@ -18,7 +18,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = "medium" 
           className={`w-32 ${sizeClasses[size]} bg-gray-200 rounded-full overflow-hidden relative`}
         >
           <div
-            className={`${sizeClasses[size]} bg-emerald-600/70 rounded-full absolute inset-0`}
+            className={`${sizeClasses[size]} bg-blue-500 rounded-full absolute inset-0`}
             style={{
               animation: "progress 1.5s ease-in-out infinite",
             }}
