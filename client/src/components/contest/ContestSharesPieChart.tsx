@@ -141,15 +141,7 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
     return `$${Math.round(raw).toLocaleString()}`;
   }, [secondaryTotalFundsFormatted]);
 
-  if (isLoading) {
-    return (
-      <div className="mt-2 mb-3 p-3 border border-gray-200 rounded-sm bg-white">
-        <div className="text-xs text-gray-500 font-display">Loading share chart...</div>
-      </div>
-    );
-  }
-
-  if (!chartData.gradient) {
+  if (isLoading || !chartData.gradient) {
     return (
       <div className="mt-2 mb-3 p-3 bg-white">
         <div className="flex justify-center items-center">
