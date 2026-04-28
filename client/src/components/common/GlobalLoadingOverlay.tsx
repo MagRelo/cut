@@ -58,7 +58,8 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
         <div className="scale-125">
           <LoadingSpinnerSmall color="white" />
         </div>
-        <p className="text-sm tracking-[0.2em] uppercase text-white/80">Loading the Cut</p>
+        <p className="text-sm tracking-[0.2em] uppercase text-white/80">Loading</p>
+        <p className="font-display text-3xl sm:text-4xl font-bold leading-none text-white/90">the Cut</p>
       </div>
     </div>
   );
