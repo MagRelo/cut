@@ -109,6 +109,19 @@ const ReferralNetworkPanel = ({
       </p>
 
       {!loading && error ? <p className="text-sm text-red-600 font-display">{error}</p> : null}
+      {loading ? (
+        <div className="space-y-2" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center text-sm font-display"
+            >
+              <div className="h-4 w-16 rounded bg-gray-200 animate-pulse" />
+              <div className="h-4 w-8 justify-self-end rounded bg-gray-200 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {!loading && !error ? (
         <div className="space-y-2">
           {displayLevels.map((level) => (
