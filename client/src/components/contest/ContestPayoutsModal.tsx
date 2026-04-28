@@ -96,7 +96,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Total Prize Pool Summary */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-4">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
@@ -131,15 +131,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                     className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-4"
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
-                          payout.position === 1
-                            ? "bg-yellow-100 text-yellow-800"
-                            : payout.position === 2
-                              ? "bg-gray-100 text-gray-800"
-                              : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm bg-emerald-100 text-emerald-800">
                         {payout.position}
                       </div>
                       <div>
@@ -197,8 +189,8 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           </div>
 
           {oracleFeeBps > 0 ? (
-            <div className="text-xs text-gray-600 text-center">
-              Oracle fee ({(oracleFeeBps / 100).toFixed(2)}%) is deducted before payouts.
+            <div className="text-xs text-gray-500 text-center border-t border-gray-200 pt-3">
+              Platform fee ({(oracleFeeBps / 100).toFixed(2)}%) is deducted before payouts.
             </div>
           ) : null}
         </div>

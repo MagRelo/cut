@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Share } from "../components/common/Share";
 import { InfoScorecard } from "../components/common/InfoScorecard";
 import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
@@ -184,6 +185,19 @@ export const Home: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <hr className="w-full border-gray-200 my-8" />
+
+      <div className="w-full px-4 mb-8 flex flex-col items-center gap-3">
+        <h3 className="text-2xl font-bold text-gray-400 text-center">Live Contests</h3>
+        <p className="text-gray-700 font-display text-center">New contests every week:</p>
+        <Link
+          to="/contests"
+          className="inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
+        >
+          View Contests &gt;
+        </Link>
       </div>
 
       <hr className="w-full border-gray-200 my-8" />

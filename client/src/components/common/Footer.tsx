@@ -1,9 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
 
 export const Footer: React.FC = () => {
-  const { user, isAdmin } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -11,20 +9,23 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-white border-t border-gray-200 w-full">
+    <footer className="w-full border-t border-gray-200/60 bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
+        <div className="flex justify-between h-14 items-center">
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2">
-              <img src="/logo-transparent.png" alt="logo" className="h-10" />
-              <span className="text-2xl font-semibold text-gray-700 font-display">the Cut</span>
+            <Link
+              to="/"
+              className="flex items-center gap-2 opacity-75 hover:opacity-100 transition-opacity"
+            >
+              <img src="/logo-transparent.png" alt="logo" className="h-8" />
+              <span className="text-xl font-semibold text-gray-600 font-display">the Cut</span>
             </Link>
           </div>
           <div className="flex items-center gap-4">
             <Link
               to="/faq"
               className={`text-sm font-medium ${
-                isActive("/faq") ? "text-blue-600" : "text-gray-400 hover:text-gray-700"
+                isActive("/faq") ? "text-blue-500" : "text-gray-400 hover:text-gray-600"
               }`}
             >
               FAQ
@@ -32,21 +33,11 @@ export const Footer: React.FC = () => {
             <Link
               to="/terms"
               className={`text-sm font-medium ${
-                isActive("/terms") ? "text-blue-600" : "text-gray-400 hover:text-gray-700"
+                isActive("/terms") ? "text-blue-500" : "text-gray-400 hover:text-gray-600"
               }`}
             >
               Terms
             </Link>
-            {user && isAdmin() && (
-              <Link
-                to="/admin"
-                className={`text-lg font-medium ${
-                  isActive("/admin") ? "text-emerald-500" : "text-gray-400 hover:text-gray-700"
-                }`}
-              >
-                Admin
-              </Link>
-            )}
           </div>
         </div>
       </div>
