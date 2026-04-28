@@ -78,7 +78,7 @@ export const ContestEntryList = ({
   }
 
   return (
-    <div className="px-2">
+    <div>
       {sortedLineups.map((lineup, index) => {
         const isInTheMoney = (lineup.position || 0) <= paidPositions;
         const nextLineup = sortedLineups[index + 1];
@@ -100,7 +100,9 @@ export const ContestEntryList = ({
         return (
           <div key={lineup.id}>
             <div
-              className="cursor-pointer rounded-sm p-3 mb-2 border-0 border-l border-t border-r border-b border-gray-200 pb-2 font-display shadow-sm"
+              className={`cursor-pointer rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm ${
+                index > 0 ? "mt-2" : ""
+              }`}
               onClick={() => openLineupModal(lineup)}
               style={{
                 borderLeftColor: resolvedBorderColor,

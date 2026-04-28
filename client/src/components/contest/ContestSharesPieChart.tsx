@@ -143,7 +143,7 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
 
   if (isLoading || !chartData.gradient) {
     return (
-      <div className="mt-2 mb-3 p-3 bg-white">
+      <div className="p-3 bg-white">
         <div className="flex justify-center items-center">
           <div className="relative h-40 w-40 rounded-full flex-shrink-0 bg-gradient-to-br from-slate-200 to-slate-300">
             <div className="absolute inset-[7px] rounded-full bg-slate-50 flex flex-col items-center justify-center text-center px-2">
@@ -161,7 +161,7 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
   }
 
   return (
-    <div className="mt-2 mb-3 p-3 bg-white">
+    <div className="p-3 bg-white">
       <div className="flex justify-center items-center">
         <div
           className="relative h-40 w-40 rounded-full flex-shrink-0"

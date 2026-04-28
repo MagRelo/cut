@@ -60,7 +60,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
   }, [contest.results?.secondaryPayouts]);
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6">
       <div>
         {primaryRowsWithPayout.length === 0 ? (
           <p className="text-sm text-gray-500">Results not available.</p>

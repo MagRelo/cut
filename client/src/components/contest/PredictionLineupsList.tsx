@@ -67,7 +67,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   return (
     <div>
-      <div className="space-y-2 mt-2 px-2">
+      <div className="space-y-2">
         {[...entryData]
           .sort((a, b) => parseFloat(b.priceFormatted) - parseFloat(a.priceFormatted))
           .map((entry) => {

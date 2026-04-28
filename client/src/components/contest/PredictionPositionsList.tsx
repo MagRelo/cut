@@ -97,15 +97,15 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
   }
 
   return (
-    <div className="bg-white rounded-sm">
+    <div>
       {/* Error Message */}
       {error && (
-        <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded-md p-3">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-3">
           <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
 
-      <div className="space-y-2 mt-2 px-2">
+      <div className="space-y-2">
         {userPositions.map((position) => {
           const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
           const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";

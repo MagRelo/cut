@@ -28,6 +28,15 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+const TAB_LIST_CLASS = "flex border-b border-gray-200 px-3";
+const getTabButtonClass = (selected: boolean) =>
+  classNames(
+    "w-full border-b-2 py-2 text-sm font-display leading-5 focus:outline-none",
+    selected
+      ? "border-blue-500 text-blue-600"
+      : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+  );
+
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -89,7 +98,7 @@ export const ContestLobby: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-2 p-4">
+      <div className="space-y-3 p-4">
         <div className="bg-white rounded-lg shadow">
           <div className="flex items-center justify-center min-h-[176px]">
             <LoadingSpinner />
@@ -101,7 +110,7 @@ export const ContestLobby: React.FC = () => {
 
   if (queryError) {
     return (
-      <div className="space-y-2 p-4">
+      <div className="space-y-3 p-4">
         <div className="bg-white rounded-lg shadow min-h-[176px]">
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <p className="text-lg font-medium text-gray-800 mb-2">Unable to load contest</p>
@@ -113,18 +122,18 @@ export const ContestLobby: React.FC = () => {
   }
 
   if (!contest) {
-    return <div className="space-y-2 p-4 font-display">Contest not found</div>;
+    return <div className="space-y-3 p-4 font-display">Contest not found</div>;
   }
 
   const isPostSettlement = contest.status === "SETTLED" || contest.status === "CLOSED";
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="space-y-3 p-4">
       {/* contest lobby */}
       <div className="bg-white rounded-sm shadow border border-gray-200">
         {/* header */}
 
-        <div className="p-3 py-4">
+        <div className="px-4 py-4">
           <ContestCard
             contest={contest}
             onPotClick={() => setIsPayoutsModalOpen(true)}
@@ -139,58 +148,29 @@ export const ContestLobby: React.FC = () => {
           onChange={setSelectedIndex}
           key={`${contest.id}-${isPostSettlement}`}
         >
-          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
-              }
-            >
+          <TabList className={TAB_LIST_CLASS}>
+            <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
               Contest – ${primaryPoolLabel}
             </Tab>
             {!isPostSettlement ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  classNames(
-                    "w-full py-1.5 text-sm font-display leading-5",
-                    "focus:outline-none",
-                    selected
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                  )
-                }
-              >
+              <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
                 Winner Pool - ${secondaryPoolLabel}
               </Tab>
             ) : (
-              <Tab
-                className={({ selected }: { selected: boolean }) =>
-                  classNames(
-                    "w-full py-1.5 text-sm font-display leading-5",
-                    "focus:outline-none",
-                    selected
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                  )
-                }
-              >
+              <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
                 Results
               </Tab>
             )}
           </TabList>
-          <div className="">
+
+          <TabPanels>
             {/* ENTRIES (Contest) */}
-            <TabPanel>
-              <div className="p-2">
+            <TabPanel className="p-4 focus:outline-none">
+              <div className="space-y-4">
                 {primaryActionsLocked ? (
                   <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-3 border-b border-gray-200 mt-6 pb-4 mb-4">
+                  <div className="flex flex-col items-center justify-center gap-3 border-b border-gray-200 py-4">
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
@@ -220,13 +200,11 @@ export const ContestLobby: React.FC = () => {
                 )}
 
                 {/* Contest Entry List */}
-                <div className="mt-2">
-                  <ContestEntryList
-                    contestLineups={contest?.contestLineups}
-                    roundDisplay={contest?.tournament?.roundDisplay}
-                    contestStatus={contest.status}
-                  />
-                </div>
+                <ContestEntryList
+                  contestLineups={contest?.contestLineups}
+                  roundDisplay={contest?.tournament?.roundDisplay}
+                  contestStatus={contest.status}
+                />
               </div>
             </TabPanel>
 
@@ -242,45 +220,33 @@ export const ContestLobby: React.FC = () => {
 
             {!isPostSettlement ? (
               /* Prediction Market (Winner Pool tab) */
-              <TabPanel>
-                <div className="p-2">
+              <TabPanel className="p-4 focus:outline-none">
+                <div className="space-y-4">
                   <ContestSharesPieChart contest={contest} />
                   {/* <ContestTimelinesSection timelineData={contest.timeline} variant="sharePrice" /> */}
 
                   <TabGroup>
-                    <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+                    <TabList className={TAB_LIST_CLASS}>
                       <Tab
                         className={({ selected }: { selected: boolean }) =>
-                          classNames(
-                            "w-full py-1.5 text-sm font-display leading-5",
-                            "focus:outline-none",
-                            selected
-                              ? "border-b-2 border-blue-500 text-blue-600"
-                              : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                          )
+                          getTabButtonClass(selected)
                         }
                       >
                         {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Buy Shares
                       </Tab>
                       <Tab
                         className={({ selected }: { selected: boolean }) =>
-                          classNames(
-                            "w-full py-1.5 text-sm font-display leading-5",
-                            "focus:outline-none",
-                            selected
-                              ? "border-b-2 border-blue-500 text-blue-600"
-                              : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                          )
+                          getTabButtonClass(selected)
                         }
                       >
                         Positions
                       </Tab>
                     </TabList>
-                    <TabPanels>
-                      <TabPanel className="focus:outline-none mt-2">
+                    <TabPanels className="pt-4">
+                      <TabPanel className="focus:outline-none">
                         <PredictionLineupsList contest={contest} />
                       </TabPanel>
-                      <TabPanel className="focus:outline-none mt-2">
+                      <TabPanel className="focus:outline-none">
                         <PredictionPositionsList contest={contest} />
                       </TabPanel>
                     </TabPanels>
@@ -288,13 +254,13 @@ export const ContestLobby: React.FC = () => {
                 </div>
               </TabPanel>
             ) : (
-              <TabPanel>
-                <div className="p-3">
+              <TabPanel className="p-4 focus:outline-none">
+                <div>
                   <ContestResultsPanel contest={contest} />
                 </div>
               </TabPanel>
             )}
-          </div>
+          </TabPanels>
         </TabGroup>
       </div>
 
