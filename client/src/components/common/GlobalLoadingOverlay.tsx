@@ -7,14 +7,17 @@ interface GlobalLoadingOverlayProps {
 
 const FADE_DURATION_MS = 300;
 const MIN_VISIBLE_MS = 450;
+const DEBUG_FORCE_OVERLAY = false;
 
 export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBlocking }) => {
-  const [isRendered, setIsRendered] = useState(isBlocking);
-  const [isVisible, setIsVisible] = useState(isBlocking);
-  const visibleSinceRef = useRef<number | null>(isBlocking ? Date.now() : null);
+  const shouldForceOverlay = DEBUG_FORCE_OVERLAY;
+  const effectiveBlocking = shouldForceOverlay || isBlocking;
+  const [isRendered, setIsRendered] = useState(effectiveBlocking);
+  const [isVisible, setIsVisible] = useState(effectiveBlocking);
+  const visibleSinceRef = useRef<number | null>(effectiveBlocking ? Date.now() : null);
 
   useEffect(() => {
-    if (isBlocking) {
+    if (effectiveBlocking) {
       setIsRendered(true);
       visibleSinceRef.current = Date.now();
       const rafId = window.requestAnimationFrame(() => setIsVisible(true));
@@ -38,7 +41,7 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
       window.clearTimeout(hideTimer);
       window.clearTimeout(unmountTimer);
     };
-  }, [isBlocking]);
+  }, [effectiveBlocking]);
 
   if (!isRendered) {
     return null;
@@ -49,7 +52,11 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
       aria-hidden={!isVisible}
       aria-live="polite"
       role="status"
-      className={`fixed inset-0 z-[900] flex items-center justify-center bg-slate-950 transition-opacity duration-300 ${
+      className={`fixed inset-0 ${
+        shouldForceOverlay
+          ? "z-[9999] bg-fuchsia-600/70 outline outline-4 outline-yellow-300"
+          : "z-[900] bg-slate-950"
+      } flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
@@ -58,8 +65,10 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
         <div className="scale-125">
           <LoadingSpinnerSmall color="white" />
         </div>
-        <p className="text-sm tracking-[0.2em] uppercase text-white/80">Loading</p>
-        <p className="font-display text-3xl sm:text-4xl font-bold leading-none text-white/90">the Cut</p>
+
+        <div>
+          <p className="text-sm tracking-[0.2em] uppercase text-white/80">playthecut</p>
+        </div>
       </div>
     </div>
   );
