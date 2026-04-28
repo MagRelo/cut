@@ -156,7 +156,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           {/* Secondary Prediction Payouts */}
           <div>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Prediction Payouts</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Winner Pool Payouts</h3>
               <div className="text-sm font-medium text-gray-600">
                 ${Math.round(secondaryLiquidityData.netTotal).toLocaleString()}
               </div>
@@ -173,7 +173,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                   1
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900">Winner Take All</div>
+                  <div className="font-semibold text-gray-900">Winner Ticket</div>
                   <div className="text-xs text-gray-500">100%</div>
                 </div>
                 <div className="text-right">
