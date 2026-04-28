@@ -44,7 +44,7 @@
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base",
     "ssh": "ssh deployer@45.55.136.214",
-    "swarm:deploy": "ssh root@157.230.6.6 'cd /opt/cut && docker pull magrelo/cut-v2:latest && docker stack deploy -c swarm/stack.yml cut'"
+    "swarm:deploy": "ssh root@157.230.6.6 'cd /opt/cut && docker pull magrelo/cut-v2:latest && docker stack deploy --detach=true -c swarm/stack.yml cut'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
