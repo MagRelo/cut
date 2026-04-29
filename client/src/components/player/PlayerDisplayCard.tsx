@@ -6,6 +6,7 @@ interface PlayerCardsProps {
   player: PlayerWithTournamentData;
   selectedScorecardRound: number;
   onScorecardRoundChange: (round: number) => void;
+  onShare?: () => void;
 }
 
 interface LabelProps {
@@ -32,6 +33,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   player,
   selectedScorecardRound,
   onScorecardRoundChange,
+  onShare,
 }) => {
   const getCurrentRound = (player: PlayerWithTournamentData) => {
     if (!player?.tournamentData) return null;
@@ -70,19 +72,45 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
 
           {/* Player Name + country */}
           <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
-            <div className="truncate font-display text-2xl font-semibold leading-tight text-gray-800">
-              {player.pga_lastName && player.pga_firstName
-                ? `${player.pga_lastName}, ${player.pga_firstName}`
-                : player.pga_displayName || ""}
+            <div className="flex items-center truncate font-display text-2xl font-semibold leading-tight text-gray-800">
+              <span className="truncate">
+                {player.pga_lastName && player.pga_firstName
+                  ? `${player.pga_lastName}, ${player.pga_firstName}`
+                  : player.pga_displayName || ""}
+              </span>
               {currentRound?.round && currentRound.data.icon !== "" && (
-                <span className="ml-2 text-2xl font-bold text-gray-600">
+                <span className="ml-2 flex-shrink-0 text-2xl font-bold text-gray-600">
                   {currentRound.data.icon}
                 </span>
               )}
             </div>
             {player.pga_country?.trim() ? (
-              <div className="mt-0.5 truncate text-sm font-normal text-gray-500">
-                {player.pga_country.trim()}
+              <div className="mt-0.5 flex items-center gap-1 truncate text-sm font-normal text-gray-500">
+                <span className="truncate">{player.pga_country.trim()}</span>
+                {onShare ? (
+                  <button
+                    type="button"
+                    onClick={onShare}
+                    className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                    aria-label="Share player leaderboard link"
+                    title="Share player"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 17L17 7m0 0H9m8 0v8"
+                      />
+                    </svg>
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -90,7 +118,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
           {/* Points */}
           <div className="text-right flex-shrink-0">
             <div className="text-3xl font-display font-bold tabular-nums text-gray-900 leading-none">
-              {player.tournamentData.total || 0}
+              {player.tournamentData.total ?? 0}
             </div>
             <Label className="mt-1 block leading-none">PTS</Label>
           </div>

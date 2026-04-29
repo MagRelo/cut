@@ -9,6 +9,7 @@ export interface PlayerDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerWithTournamentData | null;
+  onShare?: (player: PlayerWithTournamentData) => void;
   /** Page context (e.g. contest round); modal opens on latest round with data regardless. */
   roundDisplay: string;
 }
@@ -17,6 +18,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   isOpen,
   onClose,
   player,
+  onShare,
 }) => {
   const [scorecardRound, setScorecardRound] = useState(1);
 
@@ -59,6 +61,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                         player={player}
                         selectedScorecardRound={scorecardRound}
                         onScorecardRoundChange={setScorecardRound}
+                        onShare={onShare ? () => onShare(player) : undefined}
                       />
                       <div className="max-h-[min(50vh,22rem)] overflow-y-auto border-t border-slate-200 bg-white">
                         <PlayerScorecard player={player} selectedRound={scorecardRound} />

@@ -17,19 +17,31 @@ export const LeaderboardPage: React.FC = () => {
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
 
+  const playerIdParam = searchParams.get("playerId");
   const pgaTourIdParam = searchParams.get("pgaTourId");
 
   useEffect(() => {
-    if (isLoading || !pgaTourIdParam || players.length === 0) return;
+    if (isLoading || players.length === 0) return;
 
-    const match = players.find(
-      (p) => p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === pgaTourIdParam.trim(),
-    );
+    let match: PlayerWithTournamentData | undefined;
+
+    if (playerIdParam?.trim()) {
+      const normalizedPlayerId = playerIdParam.trim();
+      match = players.find((p) => String(p.id).trim() === normalizedPlayerId);
+    }
+
+    if (!match && pgaTourIdParam?.trim()) {
+      const normalizedPgaTourId = pgaTourIdParam.trim();
+      match = players.find(
+        (p) => p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === normalizedPgaTourId,
+      );
+    }
+
     if (match) {
       setSelectedPlayer(match);
       setIsPlayerModalOpen(true);
     }
-  }, [isLoading, pgaTourIdParam, players]);
+  }, [isLoading, playerIdParam, pgaTourIdParam, players]);
 
   const openPlayerModal = (player: PlayerWithTournamentData) => {
     setSelectedPlayer(player);
@@ -39,10 +51,38 @@ export const LeaderboardPage: React.FC = () => {
   const closePlayerModal = () => {
     setIsPlayerModalOpen(false);
     setSelectedPlayer(null);
-    if (searchParams.has("pgaTourId")) {
+    if (searchParams.has("pgaTourId") || searchParams.has("playerId")) {
       const next = new URLSearchParams(searchParams);
       next.delete("pgaTourId");
+      next.delete("playerId");
       setSearchParams(next, { replace: true });
+    }
+  };
+
+  const sharePlayerLeaderboardLink = async (player: PlayerWithTournamentData) => {
+    if (typeof window === "undefined") return;
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set("playerId", String(player.id));
+    shareUrl.searchParams.delete("pgaTourId");
+
+    const titleName =
+      player.pga_displayName || [player.pga_firstName, player.pga_lastName].filter(Boolean).join(" ");
+
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({
+          title: titleName ? `${titleName} - Leaderboard` : "Leaderboard",
+          url: shareUrl.toString(),
+        });
+        return;
+      }
+    } catch {
+      // User can cancel native share; fall through to clipboard for other cases.
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareUrl.toString());
     }
   };
 
@@ -127,6 +167,7 @@ export const LeaderboardPage: React.FC = () => {
         isOpen={isPlayerModalOpen}
         onClose={closePlayerModal}
         player={selectedPlayer}
+        onShare={sharePlayerLeaderboardLink}
         roundDisplay={roundDisplay}
       />
     </div>
