@@ -7,14 +7,6 @@ import { useAdminUsersQuery } from "../../hooks/useAdminUserQueries";
 
 const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC"] as const;
 
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
-
 export function AdminUsersPage() {
   const [userTypeFilter, setUserTypeFilter] = useState<string>("USER");
   const { data, isLoading, error } = useAdminUsersQuery(userTypeFilter);
@@ -57,32 +49,19 @@ export function AdminUsersPage() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left">
                 <th className="p-3 font-medium text-gray-700">Name</th>
-                <th className="p-3 font-medium text-gray-700">Type</th>
                 <th className="p-3 font-medium text-gray-700">Email</th>
-                <th className="p-3 font-medium text-gray-700">Wallet</th>
-                <th className="p-3 font-medium text-gray-700">Created</th>
-                <th className="p-3 font-medium text-gray-700">View</th>
               </tr>
             </thead>
             <tbody>
               {(data?.items ?? []).map((u) => (
                 <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/80">
-                  <td className="p-3 text-gray-900 font-medium">{u.name}</td>
-                  <td className="p-3 text-gray-600">{u.userType}</td>
+                  <td className="p-3 text-gray-900 font-medium">
+                    <Link to={`/admin/users/${u.id}`} className="text-blue-600 hover:text-blue-800">
+                      {u.name}
+                    </Link>
+                  </td>
                   <td className="p-3 text-gray-600 max-w-[180px] truncate" title={u.email ?? ""}>
                     {u.email ?? "—"}
-                  </td>
-                  <td className="p-3 text-gray-600 font-mono text-xs max-w-[200px] truncate" title={u.walletAddress ?? ""}>
-                    {u.walletAddress ? `${u.walletAddress.slice(0, 6)}…${u.walletAddress.slice(-4)}` : "—"}
-                  </td>
-                  <td className="p-3 text-gray-500 whitespace-nowrap">{formatDate(u.createdAt)}</td>
-                  <td className="p-3">
-                    <Link
-                      to={`/admin/users/${u.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Open
-                    </Link>
                   </td>
                 </tr>
               ))}
