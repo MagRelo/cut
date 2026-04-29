@@ -79,6 +79,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   // Top summary shows total pot before oracle fee (gross).
   const totalPrizePool = primaryPrizePoolData.grossTotal + secondaryLiquidityData.grossTotal;
+  const networkBonusTotal = (totalPrizePool * oracleFeeBps) / 10000;
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
 
@@ -188,9 +189,36 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             </div>
           </div>
 
+          {/* Network Bonus */}
           {oracleFeeBps > 0 ? (
-            <div className="text-xs text-gray-500 text-center border-t border-gray-200 pt-3">
-              Platform fee ({(oracleFeeBps / 100).toFixed(2)}%) is deducted before payouts.
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Rewards</h3>
+                <div className="text-sm font-medium text-gray-600">
+                  ${Math.round(networkBonusTotal).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500 mt-1 mb-3">
+                Grow the game, reward the community, and give value back to players.
+              </div>
+
+              <div className="bg-white border border-blue-200 rounded-md p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900">Network Bonus</div>
+                    <div className="text-xs text-gray-500">Invite Rewards</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-gray-900">
+                      ${Math.round(networkBonusTotal).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {networkBonusTotal.toFixed(2)} {tokenLabel}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
