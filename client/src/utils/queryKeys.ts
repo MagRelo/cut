@@ -50,7 +50,8 @@ export const queryKeys = {
   },
   admin: {
     all: ["admin"] as const,
-    userList: (chainId: number) => [...queryKeys.admin.all, "users", chainId] as const,
+    userList: (chainId: number, userType: string) =>
+      [...queryKeys.admin.all, "users", chainId, userType] as const,
     userDetail: (userId: string, chainId: number) =>
       [...queryKeys.admin.all, "user", userId, chainId] as const,
   },

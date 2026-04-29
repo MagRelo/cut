@@ -400,17 +400,7 @@ export const FAQPage: React.FC = () => {
                 How does sign-in and my wallet work?
               </h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>The Cut uses Privy for sign-in and wallet connectivity</li>
-                <li>
-                  You can use email, SMS, or an external wallet—depending on how the app is
-                  configured
-                </li>
-                <li>
-                  Privy helps secure your keys and session; you stay in control of your assets
-                </li>
-                <li>
-                  You can manage recovery and linked accounts from your Privy session when available
-                </li>
+                <li>Use your email to log in.</li>
                 <li>
                   Visit your{" "}
                   <Link to="/account" className="text-blue-600 hover:underline">

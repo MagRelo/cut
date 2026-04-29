@@ -6,13 +6,18 @@ import type { AdminUserDetailResponse, AdminUsersListResponse } from "../types/a
 
 const LIST_LIMIT = 100;
 
-export function useAdminUsersQuery() {
+export function useAdminUsersQuery(userType: string = "USER") {
   const chainId = useChainId();
   return useQuery({
-    queryKey: queryKeys.admin.userList(chainId ?? 0),
+    queryKey: queryKeys.admin.userList(chainId ?? 0, userType),
     queryFn: async () => {
+      const params = new URLSearchParams({
+        limit: String(LIST_LIMIT),
+        offset: "0",
+        userType,
+      });
       return await apiClient.get<AdminUsersListResponse>(
-        `/admin/users?limit=${LIST_LIMIT}&offset=0`,
+        `/admin/users?${params.toString()}`,
         { requiresAuth: true },
       );
     },

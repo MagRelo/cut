@@ -46,14 +46,17 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
 
     const limitRaw = c.req.query("limit");
     const offsetRaw = c.req.query("offset");
+    const userType = c.req.query("userType")?.trim() || "USER";
     const limit = Math.min(
       MAX_LIMIT,
       Math.max(1, limitRaw ? parseInt(limitRaw, 10) || DEFAULT_LIMIT : DEFAULT_LIMIT),
     );
     const offset = Math.max(0, offsetRaw ? parseInt(offsetRaw, 10) || 0 : 0);
+    const where = { userType };
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
@@ -64,7 +67,7 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
           },
         },
       }),
-      prisma.user.count(),
+      prisma.user.count({ where }),
     ]);
 
     const items = users.map((u) => {
@@ -84,7 +87,7 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
       };
     });
 
-    return c.json({ items, total, limit, offset, chainId });
+    return c.json({ items, total, limit, offset, chainId, userType });
   } catch (error) {
     console.error("admin list users error:", error);
     return c.json({ error: "Failed to list users" }, 500);

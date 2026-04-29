@@ -415,7 +415,7 @@ export async function ensureCutUserFromPrivy(
     data: {
       privyUserId: privyId,
       name: `User ${address.slice(0, 6)}`,
-      userType: "PUBLIC",
+      userType: "USER",
       settings: {
         onboardingDismissed: false,
       },

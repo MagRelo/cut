@@ -15,7 +15,7 @@ export interface User {
   verificationCodeExpiresAt?: Date;
 }
 
-export type UserType = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserType = "USER" | "TEST" | "ADMIN" | "SUPER_ADMIN" | "PUBLIC";
 
 // Optional: Create a type for creating a new user
 export interface CreateUserInput {
