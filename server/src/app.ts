@@ -1,12 +1,153 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
+import { prisma } from "./lib/prisma.js";
 
 // Create Hono app instance
 const app = new Hono();
+
+type PageMetadata = {
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+  type: "website";
+};
+
+const DEFAULT_OG_IMAGE = "https://cut.mattlovan.dev/cut-logo2-og.png";
+const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
+const TITLE_SUFFIX = " | the Cut";
+
+function getBaseUrl(c: Context): string {
+  const configured = process.env.PUBLIC_WEB_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+  return new URL(c.req.url).origin;
+}
+
+function upsertMetaTag(html: string, key: string, value: string, isProperty = false): string {
+  const escapedValue = value.replace(/"/g, "&quot;");
+  const attr = isProperty ? "property" : "name";
+  const matcher = new RegExp(`<meta\\s+${attr}=["']${key}["'][^>]*>`, "i");
+  const tag = `<meta ${attr}="${key}" content="${escapedValue}" />`;
+
+  if (matcher.test(html)) {
+    return html.replace(matcher, tag);
+  }
+
+  return html.replace("</head>", `  ${tag}\n  </head>`);
+}
+
+function upsertTitleTag(html: string, title: string): string {
+  const escapedTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  if (/<title>[\s\S]*?<\/title>/i.test(html)) {
+    return html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapedTitle}</title>`);
+  }
+  return html.replace("</head>", `  <title>${escapedTitle}</title>\n  </head>`);
+}
+
+function injectMetadata(indexHtml: string, metadata: PageMetadata): string {
+  let html = indexHtml;
+  html = upsertTitleTag(html, metadata.title);
+  html = upsertMetaTag(html, "description", metadata.description);
+  html = upsertMetaTag(html, "og:title", metadata.title, true);
+  html = upsertMetaTag(html, "og:description", metadata.description, true);
+  html = upsertMetaTag(html, "og:image", metadata.image, true);
+  html = upsertMetaTag(html, "og:url", metadata.url, true);
+  html = upsertMetaTag(html, "og:type", metadata.type, true);
+  html = upsertMetaTag(html, "twitter:title", metadata.title);
+  html = upsertMetaTag(html, "twitter:description", metadata.description);
+  html = upsertMetaTag(html, "twitter:image", metadata.image);
+  return html;
+}
+
+async function resolveMetadataForPath(
+  path: string,
+  baseUrl: string
+): Promise<PageMetadata> {
+  const defaults: PageMetadata = {
+    title: "the Cut",
+    description: DEFAULT_DESCRIPTION,
+    image: DEFAULT_OG_IMAGE,
+    url: `${baseUrl}${path}`,
+    type: "website",
+  };
+
+  if (path === "/leaderboard") {
+    try {
+      const tournament = await prisma.tournament.findFirst({
+        where: { manualActive: true },
+        select: { name: true },
+      });
+
+      if (tournament?.name) {
+        return {
+          ...defaults,
+          title: `${tournament.name}${TITLE_SUFFIX}`,
+          description: `Live leaderboard and scoring for ${tournament.name} on the Cut.`,
+        };
+      }
+    } catch (error) {
+      console.error("Error resolving leaderboard metadata:", error);
+    }
+
+    return defaults;
+  }
+
+  const contestMatch = path.match(/^\/contest\/([^/]+)$/);
+  if (contestMatch) {
+    const contestId = contestMatch[1];
+    if (!contestId) {
+      return defaults;
+    }
+    try {
+      const contest = await prisma.contest.findUnique({
+        where: { id: contestId },
+        select: {
+          name: true,
+          description: true,
+        },
+      });
+
+      if (contest?.name) {
+        return {
+          ...defaults,
+          title: `${contest.name}${TITLE_SUFFIX}`,
+          description: contest.description?.trim() || "Join this contest on the Cut.",
+        };
+      }
+    } catch (error) {
+      console.error("Error resolving contest metadata:", error);
+    }
+  }
+
+  return defaults;
+}
+
+async function serveSpaHtmlWithMetadata(c: Context) {
+  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
+  c.header("Pragma", "no-cache");
+  c.header("Expires", "0");
+
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const indexPath = path.join(process.cwd(), "public/index.html");
+    const indexContent = fs.readFileSync(indexPath, "utf-8");
+    const requestPath = c.req.path;
+    const baseUrl = getBaseUrl(c);
+    const metadata = await resolveMetadataForPath(requestPath, baseUrl);
+    const htmlWithMetadata = injectMetadata(indexContent, metadata);
+    return c.html(htmlWithMetadata);
+  } catch (error) {
+    console.error("Error serving index.html:", error);
+    return c.notFound();
+  }
+}
 
 // Configure CORS middleware
 app.use(
@@ -120,22 +261,7 @@ app.use(
 
 // Serve index.html for root route
 app.get("/", async (c) => {
-  // Set no-cache headers for HTML files
-  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
-  c.header("Pragma", "no-cache");
-  c.header("Expires", "0");
-
-  // Serve the actual index.html file
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const indexPath = path.join(process.cwd(), "public/index.html");
-    const indexContent = fs.readFileSync(indexPath, "utf-8");
-    return c.html(indexContent);
-  } catch (error) {
-    console.error("Error serving index.html:", error);
-    return c.notFound();
-  }
+  return serveSpaHtmlWithMetadata(c);
 });
 
 // Serve index.html for all other routes to support client-side routing
@@ -146,22 +272,7 @@ app.get("*", async (c) => {
     return c.notFound();
   }
 
-  // Set no-cache headers for HTML files
-  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
-  c.header("Pragma", "no-cache");
-  c.header("Expires", "0");
-
-  // Serve the actual index.html file
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const indexPath = path.join(process.cwd(), "public/index.html");
-    const indexContent = fs.readFileSync(indexPath, "utf-8");
-    return c.html(indexContent);
-  } catch (error) {
-    console.error("Error serving index.html:", error);
-    return c.notFound();
-  }
+  return serveSpaHtmlWithMetadata(c);
 });
 
 // Error handling - must be last
