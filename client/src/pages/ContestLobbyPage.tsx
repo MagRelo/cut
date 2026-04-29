@@ -133,7 +133,7 @@ export const ContestLobby: React.FC = () => {
       <div className="bg-white rounded-sm shadow border border-gray-200">
         {/* header */}
 
-        <div className="px-4 py-4">
+        <div className="px-3 py-4">
           <ContestCard
             contest={contest}
             onPotClick={() => setIsPayoutsModalOpen(true)}
