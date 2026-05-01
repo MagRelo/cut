@@ -187,9 +187,9 @@ export const FAQPage: React.FC = () => {
                 How does the Winner Pool work?
               </h3>
               <p className="text-gray-700 mb-2">
-                The Winner Pool lets you <strong>bet on which lineup will finish first</strong>.
-                Payouts are parimutuel: all wagers are combined into one pool, and returns are
-                calculated from that pool.
+                The Winner Pool is a side-bet that lets you{" "}
+                <strong>bet on which lineup will win the contest</strong>. Payouts are parimutuel:
+                all wagers are combined into one pool, and returns are calculated from that pool.
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>You choose a lineup and place a wager.</li>
