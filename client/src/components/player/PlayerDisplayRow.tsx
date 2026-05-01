@@ -42,10 +42,10 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   const roundVsPar = formatRoundStrokesVsPar(roundData);
   const scoreThruLabel = (() => {
     if (holeProgress == null) return "";
-    if (holeProgress.played === 0) return "Not Started";
+    if (holeProgress.played === 0) return "Pending";
     const roundComplete = holeProgress.remaining === 0 && holeProgress.played > 0;
     if (roundComplete) {
-      return roundVsPar != null ? `${roundShortLabel}: ${roundVsPar}` : `${roundShortLabel}: –`;
+      return roundVsPar != null ? `Complete, ${roundVsPar}` : "Complete, –";
     }
     const thruPart = `thru ${holeProgress.played}`;
     if (roundVsPar == null) return thruPart;
@@ -96,11 +96,19 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
             </span>
           )}
         </div>
+
         <div
           className="flex min-h-5 items-center text-xs  tabular-nums text-gray-700"
           title="This round vs par and holes completed"
         >
-          {scoreThruLabel || "\u00A0"}
+          {scoreThruLabel ? (
+            <>
+              <span className="mr-1">{roundShortLabel}</span>
+              <span>{scoreThruLabel}</span>
+            </>
+          ) : (
+            "\u00A0"
+          )}
         </div>
       </div>
 
