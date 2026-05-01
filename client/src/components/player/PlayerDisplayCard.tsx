@@ -53,6 +53,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   };
 
   const currentRound = getCurrentRound(player);
+  const country = player.pga_country?.trim() || "";
 
   return (
     <div className="bg-white overflow-hidden">
@@ -84,17 +85,18 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
                 </span>
               )}
             </div>
-            {player.pga_country?.trim() ? (
-              <div className="mt-0.5 flex items-center gap-1 truncate text-sm font-normal text-gray-500">
-                <span className="truncate">{player.pga_country.trim()}</span>
+            {country || onShare ? (
+              <div className="mt-1 flex items-center gap-2 text-sm font-normal text-gray-600">
+                {country ? <span className="min-w-0 truncate">{country}</span> : null}
                 {onShare ? (
                   <button
                     type="button"
                     onClick={onShare}
-                    className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
                     aria-label="Share player leaderboard link"
                     title="Share player"
                   >
+                    <span>Share</span>
                     <svg
                       className="h-3.5 w-3.5"
                       fill="none"
