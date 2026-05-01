@@ -59,33 +59,6 @@ export const LeaderboardPage: React.FC = () => {
     }
   };
 
-  const sharePlayerLeaderboardLink = async (player: PlayerWithTournamentData) => {
-    if (typeof window === "undefined") return;
-
-    const shareUrl = new URL(window.location.href);
-    shareUrl.searchParams.set("playerId", String(player.id));
-    shareUrl.searchParams.delete("pgaTourId");
-
-    const titleName =
-      player.pga_displayName || [player.pga_firstName, player.pga_lastName].filter(Boolean).join(" ");
-
-    try {
-      if (typeof navigator.share === "function") {
-        await navigator.share({
-          title: titleName ? `${titleName} - Leaderboard` : "Leaderboard",
-          url: shareUrl.toString(),
-        });
-        return;
-      }
-    } catch {
-      // User can cancel native share; fall through to clipboard for other cases.
-    }
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(shareUrl.toString());
-    }
-  };
-
   const sortedPlayers = useMemo(() => {
     const sortByNameOnly = currentTournament?.status === "NOT_STARTED";
     const playersWithName = players.filter((player) => {
@@ -167,7 +140,6 @@ export const LeaderboardPage: React.FC = () => {
         isOpen={isPlayerModalOpen}
         onClose={closePlayerModal}
         player={selectedPlayer}
-        onShare={sharePlayerLeaderboardLink}
         roundDisplay={roundDisplay}
       />
     </div>

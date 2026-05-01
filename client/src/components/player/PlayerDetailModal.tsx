@@ -33,6 +33,35 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
     setScorecardRound(getDefaultScorecardRound(player.tournamentData));
   }, [isOpen, player]);
 
+  const sharePlayerLeaderboardLink = async (targetPlayer: PlayerWithTournamentData) => {
+    if (typeof window === "undefined") return;
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.pathname = "/leaderboard";
+    shareUrl.searchParams.set("playerId", String(targetPlayer.id));
+    shareUrl.searchParams.delete("pgaTourId");
+
+    const titleName =
+      targetPlayer.pga_displayName ||
+      [targetPlayer.pga_firstName, targetPlayer.pga_lastName].filter(Boolean).join(" ");
+
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({
+          title: titleName ? `${titleName} - Leaderboard` : "Leaderboard",
+          url: shareUrl.toString(),
+        });
+        return;
+      }
+    } catch {
+      // User can cancel native share; fall through to clipboard for other cases.
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareUrl.toString());
+    }
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -67,7 +96,9 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                         player={displayPlayer}
                         selectedScorecardRound={scorecardRound}
                         onScorecardRoundChange={setScorecardRound}
-                        onShare={onShare ? () => onShare(displayPlayer) : undefined}
+                        onShare={() =>
+                          onShare ? onShare(displayPlayer) : sharePlayerLeaderboardLink(displayPlayer)
+                        }
                       />
                       <div className="max-h-[min(50vh,22rem)] overflow-y-auto border-t border-slate-200 bg-white">
                         <PlayerScorecard player={displayPlayer} selectedRound={scorecardRound} />

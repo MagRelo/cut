@@ -25,7 +25,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
     setIsModalOpen(false);
     setSelectedPlayer(null);
   };
-
   const processPlayersData = () => {
     if (!contest?.contestLineups) return [];
 

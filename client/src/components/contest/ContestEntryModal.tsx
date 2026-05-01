@@ -46,7 +46,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
       ? (userSettings as { color?: unknown }).color
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
-
   return (
     <>
       <Transition appear show={isOpen} as={Fragment}>
