@@ -88,7 +88,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-white text-left align-middle shadow-xl transition-[opacity,transform]">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-white text-left align-middle shadow-xl transition-[opacity,transform]">
                 <div className="p-2">
                   {displayPlayer ? (
                     <div className="overflow-hidden border border-gray-300 rounded-sm bg-white">

@@ -341,7 +341,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="w-full max-w-md transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
+                <DialogPanel className="w-full max-w-md transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
                   <div className="p-6">
                     <DialogTitle className="text-lg font-semibold text-red-600 mb-2">
                       Warning

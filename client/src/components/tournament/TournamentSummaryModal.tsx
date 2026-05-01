@@ -50,7 +50,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform rounded-md bg-white text-left align-middle shadow-xl transition-all">
+              <DialogPanel className="w-full max-w-2xl transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
                 <div className="p-4 sm:p-6">
                   <div className="space-y-1 pb-4 border-b border-gray-200">
                     <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-gray-900">

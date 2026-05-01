@@ -62,7 +62,7 @@ export const Modal: React.FC<ModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <DialogPanel
-                className={`w-full ${maxWidthClasses[maxWidth]} transform rounded-md bg-white text-left align-middle shadow-xl transition-all`}
+                className={`w-full ${maxWidthClasses[maxWidth]} transform rounded-sm bg-white text-left align-middle shadow-xl transition-all`}
               >
                 {/* Header */}
                 <div
