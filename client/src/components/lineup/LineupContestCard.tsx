@@ -164,30 +164,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
           {/* CONTESTS TAB */}
           <TabPanel>
-            <div className="px-2 mt-3 pb-2 space-y-2">
+            <div className="mt-3 pb-2 space-y-3">
               {contests.length > 0 ? (
                 contests.map((contestInfo) => {
-                  // Determine if position is "in the money"
-                  const totalEntries = contestInfo.contest.contestLineups?.length || 0;
-                  const paidPositions = totalEntries < 10 ? 1 : 3;
-                  const isInTheMoney =
-                    contestInfo.position > 0 && contestInfo.position <= paidPositions;
-                  const primaryActionsLocked = arePrimaryActionsLocked(contestInfo.contest.status);
-
                   return (
-                    <div key={contestInfo.contest.id} className="flex items-center gap-3">
-                      {/* Position Badge */}
-                      <div className="flex-shrink-0">
-                        <PositionBadge
-                          position={contestInfo.position}
-                          isInTheMoney={isInTheMoney}
-                          showBorder={true}
-                          primaryActionsLocked={primaryActionsLocked}
-                        />
-                      </div>
-
+                    <div key={contestInfo.contest.id} className="flex items-center gap-2">
                       {/* Contest Card */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-300 p-2 ">
                         <Link to={`/contest/${contestInfo.contest.id}`} className="block">
                           <ContestCard contest={contestInfo.contest} />
                         </Link>

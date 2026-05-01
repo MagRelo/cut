@@ -182,16 +182,16 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
                   <div className="text-3xl md:text-3xl font-extrabold text-emerald-600 leading-none">
                     {secondaryTotalPotLabel}
                   </div>
-                  <div className="pt-0.5 text-xs font-semibold text-gray-400 uppercase font-display tracking-wide">
+                  <div className="pt-1 text-xs font-semibold text-gray-400 uppercase font-display tracking-wide">
                     Winner Pool
                   </div>
                 </div>
               </div>
 
-              <div className="mt-1.5 flex h-5 items-center justify-center">
+              <div className="mt-1 flex h-5 items-center justify-center">
                 <Link
                   to="/faq#winner-pool"
-                  className={`font-display font-medium text-blue-600 hover:text-blue-700 ${
+                  className={`font-display text-blue-600 hover:text-blue-700 ${
                     showEmptyState ? "text-[10px] underline" : "text-xs"
                   }`}
                 >

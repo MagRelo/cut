@@ -23,7 +23,7 @@ const UsdcLogo = () => (
 const tokenInfoLinkClass = "text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium";
 /** Same as {@link tokenInfoLinkClass} with `text-sm` for the Balance header (`text-xl`). */
 const manageLinkClass =
-  "text-blue-600 ml-3 hover:text-blue-700 transition-colors font-normal text-sm";
+  "text-blue-600 ml-2 hover:text-blue-700 transition-colors font-normal text-sm";
 
 const rowChevron = (
   <svg
