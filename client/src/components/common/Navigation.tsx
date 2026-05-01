@@ -26,9 +26,9 @@ type NavTab = {
   state?: Location["state"];
 };
 
-/** Tab pills: no border on the tab itself — the row rule comes from the wrapper below. */
+/** Tab pills: subtle border defines inactive tabs; active tab matches the page panel edge. */
 const tabBase =
-  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-colors shadow-sm relative border-0";
+  "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-[color,background-color,border-color] shadow-sm relative border";
 
 export const Navigation: React.FC = () => {
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
@@ -119,8 +119,8 @@ export const Navigation: React.FC = () => {
                 "gap-1.5",
                 tab.firstRight ? "ml-auto" : "",
                 active
-                  ? "z-10 bg-gray-100 text-gray-900 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
-                  : "bg-gray-300 text-gray-700 hover:text-gray-900",
+                  ? "z-10 border-gray-300/90 bg-gray-100 text-gray-950 font-semibold after:pointer-events-none after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] after:bg-gray-100 after:content-['']"
+                  : "border-gray-600/25 bg-gray-300 text-gray-800 hover:border-gray-600/40 hover:text-gray-950",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-0",
               ]
                 .filter(Boolean)
