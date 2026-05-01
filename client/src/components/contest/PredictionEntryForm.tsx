@@ -24,6 +24,13 @@ import apiClient from "../../utils/apiClient";
 import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
+const DEFAULT_USER_COLOR = "#9CA3AF";
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
+
 export interface PredictionEntryData {
   entryId: string;
   price: bigint;
@@ -80,6 +87,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     () => entryData.find((entry) => entry.entryId === entryId) ?? null,
     [entryData, entryId],
   );
+  const resolvedLeftBorderColor = useMemo(() => {
+    const userSettings = lineupForEntry?.user?.settings;
+    const maybeColor =
+      typeof userSettings === "object" && userSettings !== null
+        ? (userSettings as { color?: unknown }).color
+        : undefined;
+    return isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
+  }, [lineupForEntry]);
 
   /**
    * Ownership after = (balance + buyer mint) / newSupply on this entry.
@@ -273,25 +288,23 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       </div>
 
       <div className="space-y-2 p-3 text-sm">
-        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
-            User
-          </div>
-          <div className="mt-0.5 truncate text-sm font-semibold text-gray-900">
+        <div
+          className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 bg-white/90 px-2.5 py-2"
+          style={{
+            borderLeftColor: resolvedLeftBorderColor,
+            borderLeftWidth: "5px",
+            borderLeftStyle: "solid",
+          }}
+        >
+          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
             {lineupForEntry?.user?.name || lineupForEntry?.user?.email || "—"}
           </div>
-        </div>
-
-        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
-            Lineup
-          </div>
-          <div className="mt-0.5 truncate text-sm font-semibold text-gray-900">
+          <div className="text-xs text-gray-500 truncate mt-0.5">
             {lineupForEntry?.tournamentLineup?.name || "—"}
           </div>
         </div>
 
-        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
+        <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
             Purchase Amount
           </div>
@@ -321,7 +334,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const predictionPurchaseSummary = (
-    <div className="space-y-2 text-sm pb-3">
+    <div className="space-y-2 text-sm pb-1">
       {/* parimutuel odds warning */}
       <div className="text-xs text-gray-500">
         <span className="font-bold">Warning:</span> Parimutuel odds are not guaranteed and may
