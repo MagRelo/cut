@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { PlayerDisplayCard } from "./PlayerDisplayCard";
 import { PlayerScorecard } from "./PlayerScorecard";
@@ -21,6 +21,12 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   onShare,
 }) => {
   const [scorecardRound, setScorecardRound] = useState(1);
+  /** Keeps card content visible through the leave transition when parents clear `player` immediately on close. */
+  const playerSnapshotRef = useRef<PlayerWithTournamentData | null>(null);
+  if (player) {
+    playerSnapshotRef.current = player;
+  }
+  const displayPlayer = player ?? playerSnapshotRef.current;
 
   useEffect(() => {
     if (!isOpen || !player) return;
@@ -35,7 +41,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
           enter="ease-out duration-200"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in duration-150"
+          leave="ease-in duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
@@ -49,22 +55,22 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
               enter="ease-out duration-200"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
-              leave="ease-in duration-150"
+              leave="ease-in duration-200"
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-white text-left align-middle shadow-xl transition-all">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-white text-left align-middle shadow-xl transition-[opacity,transform]">
                 <div className="p-2">
-                  {player ? (
+                  {displayPlayer ? (
                     <div className="overflow-hidden border border-gray-300 rounded-sm bg-white">
                       <PlayerDisplayCard
-                        player={player}
+                        player={displayPlayer}
                         selectedScorecardRound={scorecardRound}
                         onScorecardRoundChange={setScorecardRound}
-                        onShare={onShare ? () => onShare(player) : undefined}
+                        onShare={onShare ? () => onShare(displayPlayer) : undefined}
                       />
                       <div className="max-h-[min(50vh,22rem)] overflow-y-auto border-t border-slate-200 bg-white">
-                        <PlayerScorecard player={player} selectedRound={scorecardRound} />
+                        <PlayerScorecard player={displayPlayer} selectedRound={scorecardRound} />
                       </div>
                     </div>
                   ) : null}
