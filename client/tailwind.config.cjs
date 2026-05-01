@@ -3,6 +3,12 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      maxWidth: {
+        /** Slightly under `max-w-2xl` so dialogs don’t line up edge-to-edge with the main column */
+        modal: '37rem',
+        /** Slightly under `max-w-4xl` for wide picker-style dialogs */
+        'modal-wide': '50rem',
+      },
       fontFamily: {
         sans: [
           'Inter',

@@ -77,7 +77,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
         </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-left">
+          <div className="flex min-h-full items-center justify-center p-5 text-left">
             <TransitionChild
               as={Fragment}
               enter="ease-out duration-200"
@@ -87,7 +87,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-sm bg-gray-100 text-left align-middle shadow-xl transition-all p-2">
+              <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 text-left align-middle shadow-xl transition-all p-2">
                 <div className="flex max-h-[70vh] flex-col overflow-hidden bg-white rounded-sm border border-gray-300">
                   <div className="shrink-0 px-3 pt-3 sm:px-6 sm:pt-4">
                     <DialogTitle className="text-lg font-medium text-gray-900">Place Wager</DialogTitle>

@@ -331,7 +331,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
           </TransitionChild>
 
           <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
+            <div className="flex min-h-full items-center justify-center p-5">
               <TransitionChild
                 as={Fragment}
                 enter="ease-out duration-200"

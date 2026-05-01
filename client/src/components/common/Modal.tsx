@@ -19,8 +19,8 @@ const maxWidthClasses = {
   md: "max-w-md",
   lg: "max-w-lg",
   xl: "max-w-xl",
-  "2xl": "max-w-2xl",
-  "4xl": "max-w-4xl",
+  "2xl": "max-w-modal",
+  "4xl": "max-w-modal-wide",
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -51,7 +51,7 @@ export const Modal: React.FC<ModalProps> = ({
         </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-5">
             <TransitionChild
               as={Fragment}
               enter="ease-out duration-200"

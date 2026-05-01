@@ -92,7 +92,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
         </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-5">
             <TransitionChild
               as={Fragment}
               enter="ease-out duration-200"
@@ -102,7 +102,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-4xl transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
+              <DialogPanel className="w-full max-w-modal-wide transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
                 <div className="p-4 sm:p-6">
                   <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
                     Select a Golfer
