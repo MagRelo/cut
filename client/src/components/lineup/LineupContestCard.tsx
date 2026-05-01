@@ -5,11 +5,9 @@ import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
 import { EntryHeader } from "../contest/EntryHeader";
-import { PositionBadge } from "../contest/PositionBadge";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
-import { arePrimaryActionsLocked } from "../../types/contest";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestInfo {
