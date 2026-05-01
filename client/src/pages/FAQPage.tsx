@@ -187,21 +187,22 @@ export const FAQPage: React.FC = () => {
                 How does the Winner Pool work?
               </h3>
               <p className="text-gray-700 mb-2">
-                The Winner Pool is a parimutuel side market where you place wagers on which lineup
-                will finish first in the contest.
+                The Winner Pool is a side market where you place wagers on which lineup will finish
+                first in the contest.
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>You choose a lineup and place a wager while the market is open.</li>
                 <li>
-                  Odds are displayed as projected English odds and update as new money enters the pool.
+                  Odds are displayed as projected English odds and update as new money enters the
+                  pool.
                 </li>
                 <li>The Winner Pool locks at the start of Round 4 (Sunday morning).</li>
                 <li>
                   At settlement, only wagers on the winning lineup are paid out (winner-take-all).
                 </li>
                 <li>
-                  Your payout is proportional to your holdings on the winning lineup versus all winning
-                  holdings.
+                  Your payout is proportional to your holdings on the winning lineup versus all
+                  winning holdings.
                 </li>
               </ul>
             </div>
@@ -212,17 +213,66 @@ export const FAQPage: React.FC = () => {
               </h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>
-                  <span className="font-semibold">OPEN:</span> Place wagers and adjust positions.
+                  <span className="font-semibold">ACTIVE (Mon-Wed):</span> Place additional wagers
+                  and adjust positions.
                 </li>
                 <li>
-                  <span className="font-semibold">ACTIVE:</span> Place additional wagers, but reduction
+                  <span className="font-semibold">OPEN (Thu-Sat):</span> Place wagers, but reduction
                   actions are restricted.
                 </li>
                 <li>
-                  <span className="font-semibold">LOCKED:</span> No wager changes allowed; waiting for
-                  final results.
+                  <span className="font-semibold">LOCKED (Sun):</span> No wager changes allowed;
+                  waiting for final results.
                 </li>
               </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                How does secondary market pricing work under the hood?
+              </h3>
+              <p className="text-gray-700 mb-2">
+                Winner Pool pricing follows a quadratic bonding curve. In plain terms: the more
+                money that concentrates on one lineup, the more expensive additional exposure
+                becomes on that same lineup.
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>
+                  <span className="font-semibold">Early bettor advantage:</span> lower initial
+                  demand means lower prices and more tokens per dollar.
+                </li>
+                <li>
+                  <span className="font-semibold">Whale protection:</span> large buys move price
+                  materially, so late large positions get worse terms than early smaller ones.
+                </li>
+                <li>
+                  <span className="font-semibold">Per-lineup market:</span> each lineup has its own
+                  demand/price path; activity on one lineup does not directly set the quote of
+                  another.
+                </li>
+                <li>
+                  <span className="font-semibold">Parimutuel settlement:</span> after results are
+                  final, the secondary pool resolves winner-take-all to the winning lineup, and
+                  payouts are distributed pro-rata among holders of that winning lineup.
+                </li>
+                <li>
+                  <span className="font-semibold">Displayed odds:</span> English odds shown in the
+                  UI are a readability layer derived from projected return, while pricing itself
+                  follows the curve economics above.
+                </li>
+              </ul>
+              <p className="text-gray-700 mt-3">
+                For the full simulation write-up and scenario tables, see{" "}
+                <a
+                  href="https://github.com/MagRelo/contestCatalyst/blob/main/SecondaryPricingSimulation.md"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  Secondary Market Pricing Guide
+                </a>
+                .
+              </p>
             </div>
           </div>
         </div>
@@ -289,7 +339,8 @@ export const FAQPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                        Contest becomes available. Users can join/leave, build lineups, and place wagers.
+                        Contest becomes available. Users can join/leave, build lineups, and place
+                        wagers.
                       </td>
                     </tr>
                     <tr className="bg-gray-50">
