@@ -187,11 +187,12 @@ export const FAQPage: React.FC = () => {
                 How does the Winner Pool work?
               </h3>
               <p className="text-gray-700 mb-2">
-                The Winner Pool is a parimutuel side market where you place wagers on which lineup
-                will finish first in the contest.
+                The Winner Pool lets you <strong>bet on which lineup will finish first</strong>.
+                Payouts are parimutuel: all wagers are combined into one pool, and returns are
+                calculated from that pool.
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>You choose a lineup and place a wager while the market is open.</li>
+                <li>You choose a lineup and place a wager.</li>
                 <li>
                   Odds are displayed as projected English odds and update as new money enters the
                   pool.
@@ -213,12 +214,12 @@ export const FAQPage: React.FC = () => {
               </h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>
-                  <span className="font-semibold">ACTIVE (Mon-Wed):</span> Place additional wagers
-                  and adjust positions.
+                  <span className="font-semibold">ACTIVE (Mon-Wed):</span> Place and withdraw
+                  wagers.
                 </li>
                 <li>
-                  <span className="font-semibold">OPEN (Thu-Sat):</span> Place wagers, but reduction
-                  actions are restricted.
+                  <span className="font-semibold">OPEN (Thu-Sat):</span> Place wagers, but you
+                  cannot withdraw them.
                 </li>
                 <li>
                   <span className="font-semibold">LOCKED (Sun):</span> No wager changes allowed;

@@ -342,7 +342,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         <span className="font-bold">Note:</span> Parimutuel odds are not guaranteed and may change
         based on the number of participants and the amount of money in the pool.{" "}
         <Link to="/faq#winner-pool" className="text-blue-600 hover:text-blue-700">
-          Learn more ...
+          Learn more...
         </Link>
       </div>
     </div>
