@@ -22,7 +22,8 @@ const UsdcLogo = () => (
 /** Inline secondary link next to a token label (e.g. "What's this?"). */
 const tokenInfoLinkClass = "text-gray-400 ml-2 hover:text-gray-600 transition-colors font-medium";
 /** Same as {@link tokenInfoLinkClass} with `text-sm` for the Balance header (`text-xl`). */
-const manageLinkClass = `${tokenInfoLinkClass} text-sm`;
+const manageLinkClass =
+  "text-blue-600 ml-3 hover:text-blue-700 transition-colors font-normal text-sm";
 
 const rowChevron = (
   <svg
@@ -80,7 +81,7 @@ export function TokenBalances({
         <div className="min-w-0 text-xl font-semibold text-gray-700 font-display">
           Balance
           <Link to="/account/funds" className={manageLinkClass}>
-            manage
+            manage...
           </Link>
         </div>
         <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
@@ -133,7 +134,7 @@ export function TokenBalances({
             className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="text-sm text-gray-500">View contest history</div>
+              <div className="text-sm text-gray-500 font-normal">View contest history...</div>
             </div>
             {rowChevron}
           </Link>
