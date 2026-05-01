@@ -327,18 +327,20 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           <div className="text-xl font-extrabold tabular-nums text-emerald-700 leading-none">
             {projectedEnglishOdds}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-1">Current Odds</div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-0.5">
+            Current Odds
+          </div>
         </div>
       </div>
     </div>
   );
 
   const predictionPurchaseSummary = (
-    <div className="space-y-2 text-sm pb-1">
+    <div className="space-y-2 text-sm">
       {/* parimutuel odds warning */}
       <div className="text-xs text-gray-500">
-        <span className="font-bold">Warning:</span> Parimutuel odds are not guaranteed and may
-        change based on the number of participants and the amount of money in the pool.
+        <span className="font-bold">Note:</span> Parimutuel odds are not guaranteed and may change
+        based on the number of participants and the amount of money in the pool.
       </div>
     </div>
   );

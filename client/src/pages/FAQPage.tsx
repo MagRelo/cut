@@ -187,8 +187,8 @@ export const FAQPage: React.FC = () => {
                 How does the Winner Pool work?
               </h3>
               <p className="text-gray-700 mb-2">
-                The Winner Pool is a side market where you place wagers on which lineup will finish
-                first in the contest.
+                The Winner Pool is a parimutuel side market where you place wagers on which lineup
+                will finish first in the contest.
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>You choose a lineup and place a wager while the market is open.</li>
@@ -232,14 +232,18 @@ export const FAQPage: React.FC = () => {
                 How does secondary market pricing work under the hood?
               </h3>
               <p className="text-gray-700 mb-2">
-                Winner Pool pricing follows a quadratic bonding curve. In plain terms: the more
-                money that concentrates on one lineup, the more expensive additional exposure
-                becomes on that same lineup.
+                The Winner Pool is an advanced parimutuel market that uses a quadratic bonding curve
+                to price wagers. In plain terms: the more money that concentrates on one lineup, the
+                more expensive additional exposure becomes on that same lineup.
+              </p>
+
+              <p className="text-gray-700 mb-2">
+                This offers several advantages over a traditional parimutuel market:
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>
-                  <span className="font-semibold">Early bettor advantage:</span> lower initial
-                  demand means lower prices and more tokens per dollar.
+                  <span className="font-semibold">Early bettor advantage:</span> early bettors get
+                  better prices than late bettors.
                 </li>
                 <li>
                   <span className="font-semibold">Whale protection:</span> large buys move price
@@ -251,14 +255,9 @@ export const FAQPage: React.FC = () => {
                   another.
                 </li>
                 <li>
-                  <span className="font-semibold">Parimutuel settlement:</span> after results are
-                  final, the secondary pool resolves winner-take-all to the winning lineup, and
-                  payouts are distributed pro-rata among holders of that winning lineup.
-                </li>
-                <li>
-                  <span className="font-semibold">Displayed odds:</span> English odds shown in the
-                  UI are a readability layer derived from projected return, while pricing itself
-                  follows the curve economics above.
+                  <span className="font-semibold">Live odds:</span> English odds shown in the UI are
+                  a readability layer derived from projected return, while pricing itself follows a
+                  quadratic bonding curve.
                 </li>
               </ul>
               <p className="text-gray-700 mt-3">
