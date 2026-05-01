@@ -142,54 +142,63 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
     return `$${Math.round(raw).toLocaleString()}`;
   }, [secondaryTotalFundsFormatted]);
 
-  if (isLoading || !chartData.gradient) {
-    return (
-      <div className="p-3 bg-white">
-        <div className="flex justify-center items-center">
-          <div className="relative h-40 w-40 rounded-full flex-shrink-0 bg-gradient-to-br from-slate-200 to-slate-300">
-            <div className="absolute inset-[7px] rounded-full bg-slate-50 flex flex-col items-center justify-center text-center px-2">
-              <div className="text-[10px] font-semibold text-slate-500 uppercase font-display tracking-[0.14em]">
-                Winner Pool is open
-              </div>
-              <div className="text-[10px] text-slate-500 font-display mt-1">
-                Select a lineup to <br /> place a wager
-              </div>
-              <Link
-                to="/faq#winner-pool"
-                className="mt-2 text-[10px] font-display font-medium text-blue-600 hover:text-blue-700 underline"
-              >
-                What's this?
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const showEmptyState = isLoading || !chartData.gradient;
 
   return (
     <div className="p-3 bg-white">
       <div className="flex justify-center items-center">
         <div
-          className="relative h-40 w-40 rounded-full flex-shrink-0"
+          className="relative h-40 w-40 rounded-full flex-shrink-0 transition-[background-image] duration-300 ease-out"
           style={{
-            backgroundImage: chartData.gradient,
+            backgroundImage: showEmptyState
+              ? "linear-gradient(135deg, rgb(226 232 240), rgb(203 213 225))"
+              : chartData.gradient,
           }}
         >
-          <div className="absolute inset-[7px] rounded-full bg-white flex flex-col items-center justify-center text-center px-2">
-            <div className="text-3xl md:text-3xl font-extrabold text-emerald-600 leading-none">
-              {secondaryTotalPotLabel}
-            </div>
-            <div className="text-xs font-semibold text-gray-400 mb-2 uppercase font-display tracking-wide mt-1">
-              Winner Pool
-            </div>
+          <div
+            className={`absolute inset-[7px] rounded-full flex flex-col items-center justify-center px-2 text-center ${
+              showEmptyState ? "bg-slate-50" : "bg-white"
+            }`}
+          >
+            <div className="flex h-[90px] w-full flex-col items-center justify-center">
+              <div className="relative flex min-h-[52px] w-full items-center justify-center leading-none">
+                <div
+                  className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ease-out ${
+                    showEmptyState ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  <div className="text-xs font-semibold text-slate-500 uppercase font-display tracking-wide leading-tight">
+                    Winner Pool is open
+                  </div>
+                  <div className="mt-1 text-[10px] text-slate-500 font-display leading-tight">
+                    Select a lineup to <br /> place a wager
+                  </div>
+                </div>
+                <div
+                  className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ease-out ${
+                    showEmptyState ? "opacity-0" : "opacity-100"
+                  }`}
+                >
+                  <div className="text-3xl md:text-3xl font-extrabold text-emerald-600 leading-none">
+                    {secondaryTotalPotLabel}
+                  </div>
+                  <div className="pt-0.5 text-xs font-semibold text-gray-400 uppercase font-display tracking-wide">
+                    Winner Pool
+                  </div>
+                </div>
+              </div>
 
-            <Link
-              to="/faq#winner-pool"
-              className="text-xs font-display font-medium text-blue-600 hover:text-blue-700 "
-            >
-              What's this?
-            </Link>
+              <div className="mt-1.5 flex h-5 items-center justify-center">
+                <Link
+                  to="/faq#winner-pool"
+                  className={`font-display font-medium text-blue-600 hover:text-blue-700 ${
+                    showEmptyState ? "text-[10px] underline" : "text-xs"
+                  }`}
+                >
+                  What's this?
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
