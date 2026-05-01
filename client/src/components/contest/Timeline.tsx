@@ -169,7 +169,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           display: true,
           title: {
             display: false,
-            text: metric === "score" ? "Score" : "Share price ($ / $1 winnings)",
+            text: metric === "score" ? "Score" : "Projected return per $1 stake",
           },
           grid: {
             color: "#e5e7eb",
@@ -212,7 +212,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       <div className="bg-white p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
         {emptySharePrice ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
-            No share price history yet. It appears after timeline snapshots include market data.
+            No odds history yet. It appears after timeline snapshots include market data.
           </div>
         ) : (
           <Line data={chartData} options={options} />

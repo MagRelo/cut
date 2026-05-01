@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 
@@ -151,8 +152,14 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
                 Winner Pool is open
               </div>
               <div className="text-[10px] text-slate-500 font-display mt-1">
-                Select a team to <br /> buy shares
+                Select a lineup to <br /> place a wager
               </div>
+              <Link
+                to="/faq#winner-pool"
+                className="mt-2 text-[10px] font-display font-medium text-blue-600 hover:text-blue-700 underline"
+              >
+                What's this?
+              </Link>
             </div>
           </div>
         </div>
@@ -173,9 +180,16 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
             <div className="text-3xl md:text-3xl font-extrabold text-emerald-600 leading-none">
               {secondaryTotalPotLabel}
             </div>
-            <div className="text-xs font-semibold text-gray-400 mb-2 uppercase font-display tracking-wide">
+            <div className="text-xs font-semibold text-gray-400 mb-2 uppercase font-display tracking-wide mt-1">
               Winner Pool
             </div>
+
+            <Link
+              to="/faq#winner-pool"
+              className="text-xs font-display font-medium text-blue-600 hover:text-blue-700 "
+            >
+              What's this?
+            </Link>
           </div>
         </div>
       </div>

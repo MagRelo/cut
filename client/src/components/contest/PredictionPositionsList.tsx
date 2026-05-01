@@ -4,6 +4,7 @@ import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
+import { toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -12,6 +13,7 @@ const isValidHexColor = (value: unknown): value is string => {
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
+
 interface PredictionPositionsListProps {
   contest: Contest;
 }
@@ -74,7 +76,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
         <p className="text-gray-600 text-sm font-display">
-          Connect your wallet to view your prediction positions.
+          Connect your wallet to view your wagers.
         </p>
       </div>
     );
@@ -91,7 +93,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
   if (userPositions.length === 0) {
     return (
       <div className=" p-4 text-center">
-        <p className="text-gray-400 text-sm font-display">No active positions</p>
+        <p className="text-gray-400 text-sm font-display">No active wagers</p>
       </div>
     );
   }
@@ -121,17 +123,6 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             ? maybeColor
             : DEFAULT_USER_COLOR;
 
-          const ownershipPercent =
-            position.totalSupply > 0n
-              ? Number((position.balance * 10000n) / position.totalSupply) / 100
-              : 0;
-          const ownershipDisplay =
-            !Number.isFinite(ownershipPercent) || ownershipPercent <= 0
-              ? "0.00"
-              : ownershipPercent < 0.01
-                ? "< 0.01"
-                : ownershipPercent.toFixed(0);
-
           const deposited = parseFloat(position.secondaryDepositedFormatted);
           const depositedDisplay =
             !Number.isFinite(deposited) || deposited <= 0
@@ -147,6 +138,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
               : impliedWinnings < 0.01
                 ? "< 0.01"
                 : impliedWinnings.toFixed(2);
+          const englishOddsDisplay = toEnglishOdds(deposited, impliedWinnings);
 
           return (
             <div
@@ -171,16 +163,16 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                     ${depositedDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
-                    Paid
+                    Stake
                   </div>
                 </div>
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
                   <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
-                    {ownershipDisplay}%
+                    {englishOddsDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
-                    Own
+                    Odds
                   </div>
                 </div>
 
@@ -190,7 +182,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                       ${impliedDisplay}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                      payout
+                      return
                     </div>
                   </div>
                 </div>

@@ -487,7 +487,7 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="primaryEntryInvestmentShareBps" className="block font-medium">
-            Primary entry investment share BPS (0–10000)
+            Primary entry parimutuel allocation BPS (0–10000)
           </label>
           <p className="text-xs text-gray-600">
             <span className="font-mono">_primaryEntryInvestmentShareBps</span>: portion of each

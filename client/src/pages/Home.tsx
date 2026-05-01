@@ -75,8 +75,7 @@ export const Home: React.FC = () => {
               <h4 className="text-xl font-bold text-gray-900">Predict Contest Winners</h4>
             </div>
             <p className="text-gray-700 leading-relaxed font-display ml-4">
-              Buy shares in any team. Shares are priced based on demand - buy early to secure a
-              better price.
+              Place a wager on any lineup and track projected English odds from live pool demand.
             </p>
           </div>
 

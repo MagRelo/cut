@@ -1,11 +1,34 @@
 import type { SimulateAddSecondaryPositionResult } from "@cut/secondary-pricing";
 
+export function toEnglishOdds(stake: number, projectedReturn: number): string {
+  if (!Number.isFinite(stake) || !Number.isFinite(projectedReturn) || stake <= 0 || projectedReturn <= 0) {
+    return "—";
+  }
+  const ratio = projectedReturn / stake;
+  if (!Number.isFinite(ratio) || ratio <= 0) return "—";
+  const tolerance = 1e-6;
+  let bestNum = 1;
+  let bestDen = 1;
+  let bestDiff = Number.POSITIVE_INFINITY;
+  for (let den = 1; den <= 99; den += 1) {
+    const num = Math.max(1, Math.round(ratio * den));
+    const diff = Math.abs(num / den - ratio);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestNum = num;
+      bestDen = den;
+      if (diff < tolerance) break;
+    }
+  }
+  return `${bestNum}/${bestDen}`;
+}
+
 /**
  * Incremental claim on the contest-wide secondary pot from an additional purchase:
  * valueAfter − valueBefore, where value = (totalSecondaryLiquidity × yourBalance) / entrySupply.
  *
  * If you already hold 100% of this entry's supply before the buy, an extra deposit only
- * increases your pro-rata claim by the deposit amount → returns `purchaseAmount` ("$10 buys $10").
+ * increases your pro-rata claim by the deposit amount → returns `purchaseAmount` ("$10 returns $10").
  */
 export function incrementalGlobalClaimDelta(
   totalSecondaryLiquidityBefore: bigint,

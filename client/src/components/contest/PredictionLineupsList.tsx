@@ -4,7 +4,7 @@ import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
+import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
@@ -74,7 +74,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
             const lineupNumberLabel = getLineupNumberLabel(lineup?.tournamentLineup?.name);
-            const tenDollarBuysLabel = (() => {
+            const tenDollarReturnLabel = (() => {
               if (!poolSnapshot) return "—";
 
               let tenDollarAmount: bigint;
@@ -102,6 +102,11 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
               const impliedRaw = Number(formatUnits(deltaWei, 18));
               if (!Number.isFinite(impliedRaw)) return "—";
               return impliedRaw.toFixed(2);
+            })();
+            const tenDollarEnglishOdds = (() => {
+              const projectedReturn = Number.parseFloat(tenDollarReturnLabel);
+              if (!Number.isFinite(projectedReturn)) return "—";
+              return toEnglishOdds(10, projectedReturn);
             })();
 
             const userSettings = lineup?.user?.settings;
@@ -154,11 +159,11 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <div className="text-right">
-                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
-                        $10 buys
+                      <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mb-0.5">
+                        {tenDollarEnglishOdds}
                       </div>
-                      <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mt-0.5">
-                        ${tenDollarBuysLabel}
+                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
+                        Odds
                       </div>
                     </div>
                   </div>

@@ -30,8 +30,13 @@ export const FAQPage: React.FC = () => {
         <h3 className="text-sm font-semibold text-gray-700 mb-2 font-display">Jump to Section</h3>
         <ul className="list-disc pl-6 space-y-1">
           <li>
-            <a href="#gameplay" className="text-blue-600 hover:underline">
-              Gameplay
+            <a href="#contest-gameplay" className="text-blue-600 hover:underline">
+              Contest Gameplay
+            </a>
+          </li>
+          <li>
+            <a href="#winner-pool" className="text-blue-600 hover:underline">
+              Winner Pool
             </a>
           </li>
           <li>
@@ -58,9 +63,9 @@ export const FAQPage: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {/* Gameplay Section */}
-        <div id="gameplay" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Gameplay</h2>
+        {/* Contest Gameplay Section */}
+        <div id="contest-gameplay" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Contest Gameplay</h2>
 
           <div className="space-y-4">
             {/* Scoring System */}
@@ -172,6 +177,56 @@ export const FAQPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Winner Pool Section */}
+        <div id="winner-pool" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Winner Pool</h2>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                How does the Winner Pool work?
+              </h3>
+              <p className="text-gray-700 mb-2">
+                The Winner Pool is a parimutuel side market where you place wagers on which lineup
+                will finish first in the contest.
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>You choose a lineup and place a wager while the market is open.</li>
+                <li>
+                  Odds are displayed as projected English odds and update as new money enters the pool.
+                </li>
+                <li>The Winner Pool locks at the start of Round 4 (Sunday morning).</li>
+                <li>
+                  At settlement, only wagers on the winning lineup are paid out (winner-take-all).
+                </li>
+                <li>
+                  Your payout is proportional to your holdings on the winning lineup versus all winning
+                  holdings.
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                When can I place or adjust Winner Pool wagers?
+              </h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                <li>
+                  <span className="font-semibold">OPEN:</span> Place wagers and adjust positions.
+                </li>
+                <li>
+                  <span className="font-semibold">ACTIVE:</span> Place additional wagers, but reduction
+                  actions are restricted.
+                </li>
+                <li>
+                  <span className="font-semibold">LOCKED:</span> No wager changes allowed; waiting for
+                  final results.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Contest Status & Timeline Section */}
         <div id="contest-status" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">
@@ -234,7 +289,7 @@ export const FAQPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                        Contest becomes available. Users can join/leave, build lineups, buy shares.
+                        Contest becomes available. Users can join/leave, build lineups, and place wagers.
                       </td>
                     </tr>
                     <tr className="bg-gray-50">
@@ -322,8 +377,8 @@ export const FAQPage: React.FC = () => {
                   <ul className="list-disc pl-6 space-y-1 text-gray-700">
                     <li>Join or leave the contest</li>
                     <li>Create and edit lineups</li>
-                    <li>Buy shares in the prediction market</li>
-                    <li>Sell shares in the prediction market</li>
+                    <li>Place wagers in the prediction market</li>
+                    <li>Adjust positions in the prediction market</li>
                   </ul>
                 </div>
 
@@ -337,7 +392,7 @@ export const FAQPage: React.FC = () => {
                   <ul className="list-disc pl-6 space-y-1 text-gray-700">
                     <li>Entries are locked (cannot join/leave)</li>
                     <li>Lineups are locked (cannot edit)</li>
-                    <li>Can buy shares (but not sell)</li>
+                    <li>Can place wagers (but cannot reduce exposure)</li>
                     <li>Tournament scores update in real-time</li>
                   </ul>
                 </div>
@@ -347,7 +402,7 @@ export const FAQPage: React.FC = () => {
                     <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold mr-2">
                       LOCKED
                     </span>
-                    All Positions Frozen
+                    All Wagers Frozen
                   </div>
                   <ul className="list-disc pl-6 space-y-1 text-gray-700">
                     <li>No changes allowed to any positions</li>

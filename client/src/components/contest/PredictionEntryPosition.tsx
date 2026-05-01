@@ -3,6 +3,7 @@ import { type Contest } from "../../types/contest";
 import { type PredictionEntryData } from "./PredictionEntryForm";
 import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 
 interface PredictionEntryPositionProps {
   contest: Contest;
@@ -30,15 +31,6 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
     },
   });
 
-  const ownershipPercent =
-    entry.totalSupply > 0n ? Number((entry.balance * 10000n) / entry.totalSupply) / 100 : 0;
-  const ownershipDisplay =
-    !Number.isFinite(ownershipPercent) || ownershipPercent <= 0
-      ? "0.00"
-      : ownershipPercent < 0.01
-        ? "< 0.01"
-        : ownershipPercent.toFixed(2);
-
   const deposited = parseFloat(entry.secondaryDepositedFormatted);
   const depositedDisplay =
     !Number.isFinite(deposited) || deposited <= 0
@@ -54,6 +46,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
       : impliedWinnings < 0.01
         ? "< 0.01"
         : impliedWinnings.toFixed(2);
+  const englishOddsDisplay = toEnglishOdds(deposited, impliedWinnings);
 
   const handleWithdraw = async () => {
     if (!canWithdraw) return;
@@ -85,16 +78,16 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
               ${depositedDisplay}
             </div>
             <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-400">
-              Cost
+              Stake
             </div>
           </div>
 
           <div className="flex min-w-[4rem] shrink-0 flex-col items-center justify-center gap-0.5 text-center">
             <div className="text-xs font-medium text-gray-500 leading-tight tabular-nums">
-              {ownershipDisplay}%
+              {englishOddsDisplay}
             </div>
             <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-400">
-              Own %
+              Odds
             </div>
           </div>
 
@@ -103,7 +96,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
               ${impliedDisplay}
             </div>
             <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-              Value
+              Return
             </div>
           </div>
         </div>
@@ -129,7 +122,7 @@ export const PredictionEntryPosition: React.FC<PredictionEntryPositionProps> = (
                 Cancelling...
               </span>
             ) : (
-              "Cancel Position"
+              "Cancel Wager"
             )}
           </button>
         </div>

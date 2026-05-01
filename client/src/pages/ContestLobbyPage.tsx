@@ -232,14 +232,14 @@ export const ContestLobby: React.FC = () => {
                           getTabButtonClass(selected)
                         }
                       >
-                        {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Buy Shares
+                        {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Place Wager
                       </Tab>
                       <Tab
                         className={({ selected }: { selected: boolean }) =>
                           getTabButtonClass(selected)
                         }
                       >
-                        Positions
+                        Bets
                       </Tab>
                     </TabList>
                     <TabPanels className="pt-4">

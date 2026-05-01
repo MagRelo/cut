@@ -343,11 +343,11 @@ export function OnboardingPage() {
               the Winner Pool
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              Each contest also contains a <strong> Winner Pool</strong> - a separate market that
-              lets you trade shares on <strong>which lineup you think will win</strong> the contest.{" "}
-              <strong>Buy early</strong> to get a better price - shares get more expensive as the
-              tournament progresses. The winner pool <strong>locks at the start of round 4</strong>{" "}
-              - keep an eye on the contest to optimize your investments.
+              Each contest also contains a <strong> Winner Pool</strong>, a parimutuel market where
+              you can back <strong>the lineup you think will win</strong>. Odds move as money enters
+              each lineup, and the display uses projected English odds. The market{" "}
+              <strong>locks at the start of round 4</strong> - monitor the contest to optimize your
+              wagering strategy.
             </p>
 
             <StepActions>

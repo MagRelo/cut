@@ -94,7 +94,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
 
   return (
     <div className="p-2 space-y-4 mt-1">
-      {/* Buy Shares + Positions (tabs); when chain is not OPEN/ACTIVE, lineups list only via lobby / other entry points */}
+      {/* Place Wager + Bets (tabs); when chain is not OPEN/ACTIVE, lineups list only via lobby / other entry points */}
       {canPredict && (
         <TabGroup>
           <TabList className="flex space-x-1 border-b border-gray-200 px-4">
@@ -109,7 +109,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
                 )
               }
             >
-              {!canOpenLineupModal ? <span> 🔒</span> : null} Buy Shares
+              {!canOpenLineupModal ? <span> 🔒</span> : null} Place Wager
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -122,7 +122,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
                 )
               }
             >
-              Positions
+              Bets
             </Tab>
           </TabList>
           <TabPanels>
@@ -148,7 +148,7 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
       {/* Claim Panel (SETTLED state) */}
       {canClaim && <PredictionClaimPanel contest={contest} />}
 
-      {/* Positions list when predictions UI is the standalone view (no Buy Shares tab) */}
+      {/* Bets list when predictions UI is the standalone view (no Place Wager tab) */}
       {!canPredict && <PredictionPositionsList contest={contest} />}
 
       {/* Info Panel */}

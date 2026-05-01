@@ -21,7 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import apiClient from "../../utils/apiClient";
-import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
+import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 export interface PredictionEntryData {
@@ -84,11 +84,10 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   /**
    * Ownership after = (balance + buyer mint) / newSupply on this entry.
    * Incremental claim = Δ((pot × balance) / supply) for an additional purchase; at 100% pre-ownership
-   * that nets exactly the purchase amount ("$10 buys $10").
+   * that nets exactly the purchase amount ("$10 returns $10").
    */
   const metrics = useMemo(() => {
     const empty = {
-      ownershipDisplay: "—" as string,
       purchaseAmountDisplay: "—" as string,
       incrementalNetDisplay: "—" as string,
     };
@@ -126,7 +125,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     });
 
     const newSupply = sim.newSupply;
-    const userSharesAfter = balanceBefore + sim.tokensToMint;
 
     const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : "—");
     const fmtWei = (w: bigint) => fmt(Number(formatUnits(w, 18)));
@@ -134,8 +132,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     if (newSupply === 0n) {
       return empty;
     }
-
-    const ownershipPercent = Number((userSharesAfter * 10000n) / newSupply) / 100;
 
     const incrementalWei = incrementalGlobalClaimDelta(
       totalSecondaryLiquidityBefore,
@@ -146,7 +142,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     );
 
     return {
-      ownershipDisplay: `${fmt(ownershipPercent)}%`,
       purchaseAmountDisplay: fmtWei(amountBigInt),
       incrementalNetDisplay: incrementalWei === null ? "—" : fmtWei(incrementalWei),
     };
@@ -154,11 +149,16 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const metricsReady = Boolean(poolSnapshot) && totalSecondaryLiquidityBefore !== undefined;
 
-  const ownershipDisplay = metricsReady && selectedEntryInfo ? metrics.ownershipDisplay : "—";
   const purchaseAmountDisplay =
     metricsReady && selectedEntryInfo ? metrics.purchaseAmountDisplay : "—";
   const incrementalNetDisplay =
     metricsReady && selectedEntryInfo ? metrics.incrementalNetDisplay : "—";
+  const projectedEnglishOdds = useMemo(() => {
+    const stake = Number.parseFloat(purchaseAmountDisplay);
+    const projectedReturn = Number.parseFloat(incrementalNetDisplay);
+    if (!Number.isFinite(stake) || !Number.isFinite(projectedReturn)) return "—";
+    return toEnglishOdds(stake, projectedReturn);
+  }, [purchaseAmountDisplay, incrementalNetDisplay]);
 
   const purchaseAmountWei = useMemo(() => {
     try {
@@ -262,25 +262,59 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   };
 
   const predictionDetailsCard = (
-    <div className="rounded-sm border border-gray-200 bg-gray-50 p-3 space-y-2 text-sm font-display">
-      <div className="space-y-2">
-        <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">User</span>
-          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">
+    <div className="overflow-hidden rounded-md border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white shadow-sm font-display">
+      <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/70 px-3 py-2">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+          Winner Pool Ticket
+        </div>
+        <div className="rounded-full border border-blue-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+          To Win
+        </div>
+      </div>
+
+      <div className="space-y-2 p-3 text-sm">
+        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+            User
+          </div>
+          <div className="mt-0.5 truncate text-sm font-semibold text-gray-900">
             {lineupForEntry?.user?.name || lineupForEntry?.user?.email || "—"}
-          </span>
+          </div>
         </div>
 
-        <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">Lineup</span>
-          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">
+        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+            Lineup
+          </div>
+          <div className="mt-0.5 truncate text-sm font-semibold text-gray-900">
             {lineupForEntry?.tournamentLineup?.name || "—"}
-          </span>
+          </div>
         </div>
 
-        <div className="flex justify-between items-center gap-3">
-          <span className="text-gray-500">Result</span>
-          <span className="text-gray-700 font-medium text-right truncate max-w-[58%]">To Win</span>
+        <div className="rounded-sm border border-gray-100 bg-white/90 px-2.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+            Purchase Amount
+          </div>
+          <div className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900">${amount}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const currentOddsQuoteCard = (
+    <div className="rounded-md border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 px-3 py-2.5 font-display">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+            Market Quote
+          </div>
+          <div className="text-[11px] text-gray-500">Winner Pool - Live Odds</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xl font-extrabold tabular-nums text-emerald-700 leading-none">
+            {projectedEnglishOdds}
+          </div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-1">Current Odds</div>
         </div>
       </div>
     </div>
@@ -288,21 +322,10 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const predictionPurchaseSummary = (
     <div className="space-y-2 text-sm pb-3">
-      <div className="flex justify-between items-center gap-3">
-        <span className="text-gray-500">Purchase amount</span>
-        <span className="text-gray-700 font-medium tabular-nums">${amount}</span>
-      </div>
-
-      <div className="flex justify-between items-center gap-3">
-        <span className="text-gray-500">Ownership After Purchase</span>
-        <span className="text-gray-700 font-medium tabular-nums">{ownershipDisplay}</span>
-      </div>
-
-      <div className="flex justify-between items-center gap-3 ">
-        <span className="text-gray-500">Purchase Leverage</span>
-        <span className="font-bold tabular-nums text-emerald-600">
-          ${purchaseAmountDisplay} buys ${incrementalNetDisplay}
-        </span>
+      {/* parimutuel odds warning */}
+      <div className="text-xs text-gray-500">
+        <span className="font-bold">Warning:</span> Parimutuel odds are not guaranteed and may
+        change based on the number of participants and the amount of money in the pool.
       </div>
     </div>
   );
@@ -315,6 +338,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           aria-disabled="true"
           onSubmit={(event) => event.preventDefault()}
         >
+          {currentOddsQuoteCard}
           {predictionDetailsCard}
           {predictionPurchaseSummary}
 
@@ -360,6 +384,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {currentOddsQuoteCard}
       {predictionDetailsCard}
       {predictionPurchaseSummary}
 
@@ -401,7 +426,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               Placing...
             </span>
           ) : (
-            "Buy Shares"
+            "Place Wager"
           )}
         </button>
 

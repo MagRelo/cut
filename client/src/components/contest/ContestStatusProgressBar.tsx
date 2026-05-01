@@ -90,9 +90,9 @@ export const ContestStatusProgressBar: React.FC = () => {
               <span className="text-xs font-display text-blue-600 font-medium">Winner Pool</span>
             </div>
 
-            {/* Row 7: "Buy Shares" label */}
+            {/* Row 7: "Place Wager" label */}
             <div className="h-4 flex items-center">
-              <span className="text-xs font-display text-gray-600">Buy Shares</span>
+              <span className="text-xs font-display text-gray-600">Place Wager</span>
             </div>
           </div>
         </div>
@@ -277,7 +277,7 @@ export const ContestStatusProgressBar: React.FC = () => {
             {/* Row 6: Empty row aligned with "Winner Market" header */}
             <div className="relative h-4"></div>
 
-            {/* Row 7: Action icons - "Buy Shares" row */}
+            {/* Row 7: Action icons - "Place Wager" row */}
             <div className="relative h-4 flex items-center">
               {/* Checkmarks in M, T, W, Th, F, Sat sections (days 0-5) */}
               {[0, 1, 2, 3, 4, 5].map((dayIndex) => (

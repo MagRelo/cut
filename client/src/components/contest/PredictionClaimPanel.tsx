@@ -159,7 +159,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
                   </div>
 
                   <div className="text-sm mt-2 mb-4 text-gray-600">
-                    You predicted correctly! Claim your share of the winner's pot.
+                    You predicted correctly. Claim your payout from the parimutuel pool.
                   </div>
 
                   <button
@@ -219,7 +219,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
       <div className="px-4 pb-4 text-xs text-gray-500 border-t border-gray-200 pt-4 mt-2">
         <p>
           <strong>Winner-Take-All:</strong> Only predictions on the winning entry receive payouts.
-          Your share is proportional to your token holdings.
+          Payout size is proportional to your winning ticket holdings.
         </p>
       </div>
     </div>

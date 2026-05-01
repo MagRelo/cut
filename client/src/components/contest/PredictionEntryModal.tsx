@@ -90,9 +90,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
               <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-md bg-gray-100 text-left align-middle shadow-xl transition-all p-2">
                 <div className="flex max-h-[70vh] flex-col overflow-hidden bg-white rounded-sm border border-gray-300">
                   <div className="shrink-0 px-3 pt-3 sm:px-6 sm:pt-4">
-                    <DialogTitle className="text-lg font-medium text-gray-900">
-                      Buy Shares
-                    </DialogTitle>
+                    <DialogTitle className="text-lg font-medium text-gray-900">Place Wager</DialogTitle>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 sm:px-6">
                     <div className="min-h-[280px] pt-1">
