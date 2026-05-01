@@ -66,23 +66,58 @@ function injectMetadata(indexHtml: string, metadata: PageMetadata): string {
 }
 
 async function resolveMetadataForPath(
-  path: string,
+  requestUrl: URL,
   baseUrl: string
 ): Promise<PageMetadata> {
+  const path = requestUrl.pathname;
+  const requestPathWithQuery = `${requestUrl.pathname}${requestUrl.search}`;
   const defaults: PageMetadata = {
     title: "the Cut",
     description: DEFAULT_DESCRIPTION,
     image: DEFAULT_OG_IMAGE,
-    url: `${baseUrl}${path}`,
+    url: `${baseUrl}${requestPathWithQuery}`,
     type: "website",
   };
 
   if (path === "/leaderboard") {
     try {
+      const playerIdParam = requestUrl.searchParams.get("playerId")?.trim();
       const tournament = await prisma.tournament.findFirst({
         where: { manualActive: true },
-        select: { name: true },
+        select: { id: true, name: true },
       });
+
+      if (playerIdParam && tournament?.id && tournament.name) {
+        const player = await prisma.player.findFirst({
+          where: {
+            id: playerIdParam,
+            tournamentPlayers: {
+              some: {
+                tournamentId: tournament.id,
+              },
+            },
+          },
+          select: {
+            pga_displayName: true,
+            pga_firstName: true,
+            pga_lastName: true,
+          },
+        });
+
+        const playerName =
+          player?.pga_displayName?.trim() ||
+          [player?.pga_firstName?.trim(), player?.pga_lastName?.trim()]
+            .filter(Boolean)
+            .join(" ");
+
+        if (playerName) {
+          return {
+            ...defaults,
+            title: `${playerName} | ${tournament.name}`,
+            description: `View ${playerName} on the ${tournament.name} leaderboard on the Cut.`,
+          };
+        }
+      }
 
       if (tournament?.name) {
         return {
@@ -138,9 +173,9 @@ async function serveSpaHtmlWithMetadata(c: Context) {
     const path = await import("path");
     const indexPath = path.join(process.cwd(), "public/index.html");
     const indexContent = fs.readFileSync(indexPath, "utf-8");
-    const requestPath = c.req.path;
+    const requestUrl = new URL(c.req.url);
     const baseUrl = getBaseUrl(c);
-    const metadata = await resolveMetadataForPath(requestPath, baseUrl);
+    const metadata = await resolveMetadataForPath(requestUrl, baseUrl);
     const htmlWithMetadata = injectMetadata(indexContent, metadata);
     return c.html(htmlWithMetadata);
   } catch (error) {
