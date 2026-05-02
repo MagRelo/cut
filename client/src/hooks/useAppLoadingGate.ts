@@ -5,15 +5,16 @@ import { useTournamentData } from "./useTournamentData";
 interface AppLoadingGateState {
   isBlockingLoad: boolean;
   authLoading: boolean;
+  /** True only until the first successful active tournament payload; background refetches do not block. */
   tournamentLoading: boolean;
 }
 
 export function useAppLoadingGate(): AppLoadingGateState {
   const { loading: authLoading, user } = useAuth();
-  const { isLoading: tournamentInitialLoading, isFetching: tournamentFetching } = useTournamentData();
+  const { isLoading: tournamentInitialLoading } = useTournamentData();
 
-  // Product decision: block the app on both cold start and subsequent tournament refreshes.
-  const tournamentLoading = tournamentInitialLoading || tournamentFetching;
+  // Block only until we have cached or first-fetched tournament data; do not block on refetchInterval / stale refetches.
+  const tournamentLoading = tournamentInitialLoading;
   // Treat auth loading as blocking only when user has not been resolved yet.
   const authBlocking = authLoading && !user;
   const isBlockingLoad = authBlocking || tournamentLoading;
