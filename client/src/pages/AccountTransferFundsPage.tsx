@@ -56,7 +56,9 @@ export function TransferFundsPage() {
                 </div>
               </TabPanel>
               <TabPanel>
-                <Send />
+                <div className="py-2">
+                  <Send />
+                </div>
               </TabPanel>
             </div>
           </TabGroup>

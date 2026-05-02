@@ -1,3 +1,4 @@
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId } from "wagmi";
 import { CopyButton } from "../common/CopyToClipboard.tsx";
@@ -40,10 +41,36 @@ export const Receive = () => {
 
   return (
     <div className="space-y-6">
+      {chainId === 84532 && (
+        <div
+          className="rounded-sm border border-amber-200/90 bg-amber-50/95 p-4 shadow-sm ring-1 ring-inset ring-amber-100/70"
+          role="status"
+        >
+          <div className="flex gap-3">
+            <ExclamationTriangleIcon
+              className="h-5 w-5 shrink-0 text-amber-600 mt-0.5"
+              aria-hidden
+            />
+            <div className="min-w-0 space-y-1">
+              <p className="text-base font-semibold text-amber-950">Warning: Test Mode</p>
+              <p className="text-sm text-amber-950/90 font-display leading-relaxed">
+                the Cut is currently running on Base Sepolia testnet. Do not send mainnet funds or
+                expect bank or card deposits to settle here. For testing, have another player send
+                you test {platformTokenSymbol} or {paymentTokenSymbol} with an in-app{" "}
+                <span className="font-medium">player-to-player transfer</span> (they use the{" "}
+                <span className="font-medium">Withdraw</span> tab on this page and your Account ID
+                below).
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-1">
         <h3 className="text-base font-semibold text-gray-800">
           Fund your account with {platformTokenSymbol} or {paymentTokenSymbol}
         </h3>
+
         <p className="text-sm text-gray-600 font-display">
           Send {platformTokenSymbol} or {paymentTokenSymbol} from your wallet or exchange to this
           Account ID. Confirm network and token details before sending.

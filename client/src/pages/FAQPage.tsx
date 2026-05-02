@@ -186,10 +186,17 @@ export const FAQPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 How does the Winner Pool work?
               </h3>
+
               <p className="text-gray-700 mb-2">
-                The Winner Pool is a side-bet that lets you{" "}
-                <strong>bet on which lineup will win the contest</strong>. Payouts are parimutuel:
-                all wagers are combined into one pool, and returns are calculated from that pool.
+                The Winner Pool is a live, parimutuel side market where you can back which lineup
+                will win the contest. All wagers are combined into a separate shared pool, and
+                payouts are determined based on that total.
+              </p>
+              <p className="text-gray-700 mb-2">
+                The market runs alongside the tournament, with lines staying open as rounds unfold
+                so you can react in real time. You don’t need to be entered in the contest to
+                participate—anyone with available funds can join the Winner Pool and place a wager
+                on a lineup.
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>You choose a lineup and place a wager.</li>
@@ -233,9 +240,11 @@ export const FAQPage: React.FC = () => {
                 How does Winner Pool work under the hood?
               </h3>
               <p className="text-gray-700 mb-2">
-                The Winner Pool is an advanced parimutuel market that uses a quadratic bonding curve
-                to price wagers. In plain terms: the more money that concentrates on one lineup, the
-                more expensive additional exposure becomes on that same lineup.
+                Pricing in the Winner Pool is algorithmic: a quadratic bonding curve sets how
+                expensive it is to add exposure to a given lineup. Concentration on one lineup
+                pushes the marginal cost of the next wager on that lineup higher. This means the
+                more money piles onto a single pick, the more you pay for each additional increment
+                of exposure on that same lineup.
               </p>
 
               <p className="text-gray-700 mb-2">
