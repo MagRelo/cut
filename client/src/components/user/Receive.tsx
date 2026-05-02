@@ -58,7 +58,7 @@ export const Receive = () => {
                 expect bank or card deposits to settle here. For testing, have another player send
                 you test {platformTokenSymbol} or {paymentTokenSymbol} with an in-app{" "}
                 <span className="font-medium">player-to-player transfer</span> (they use the{" "}
-                <span className="font-medium">Withdraw</span> tab on this page and your Account ID
+                <span className="font-medium">Send</span> tab on this page and your Account ID
                 below).
               </p>
             </div>

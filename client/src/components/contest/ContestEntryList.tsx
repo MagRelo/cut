@@ -1,3 +1,4 @@
+import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
@@ -100,7 +101,7 @@ export const ContestEntryList = ({
         return (
           <div key={lineup.id}>
             <div
-              className={`cursor-pointer rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm ${
+              className={`group cursor-pointer rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm ${
                 index > 0 ? "mt-2" : ""
               }`}
               onClick={() => openLineupModal(lineup)}
@@ -128,24 +129,12 @@ export const ContestEntryList = ({
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 flex items-center gap-3">
-                  {/* user icon */}
+                <div className="flex-shrink-0 flex items-center gap-4">
                   {primaryActionsLocked && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-4 h-4 text-gray-400 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                    <UserGroupIcon
+                      className="h-5 w-5 shrink-0 text-blue-500 group-hover:text-blue-600"
                       aria-hidden
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+                    />
                   )}
 
                   <div className="text-center">

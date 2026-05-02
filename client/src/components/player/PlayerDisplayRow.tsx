@@ -1,3 +1,4 @@
+import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import {
@@ -125,26 +126,11 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
       )}
 
       {/* Right - Points */}
-      <div className="flex-shrink-0 flex items-center gap-3">
-        {/*scorecard icon svg */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4 text-gray-400 flex-shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div className="flex-shrink-0 flex items-center gap-4">
+        <DocumentTextIcon
+          className="h-54 w-5 shrink-0 text-blue-500 group-hover:text-blue-600"
           aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8z"
-          />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 2v6h6" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17h6" />
-        </svg>
+        />
 
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
@@ -161,7 +147,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
       <button
         type="button"
         onClick={onClick}
-        className="font-display w-full p-3 mb-1 text-left cursor-pointer"
+        className="group font-display w-full p-3 mb-1 text-left cursor-pointer"
       >
         {content}
       </button>

@@ -46,7 +46,7 @@ export function TransferFundsPage() {
                   )
                 }
               >
-                Withdraw
+                Send
               </Tab>
             </TabList>
             <div className="px-4 py-2">

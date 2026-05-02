@@ -1,3 +1,4 @@
+import { UserIcon } from "@heroicons/react/24/outline";
 import React, { useMemo } from "react";
 import { Link, useLocation, type Location } from "react-router-dom";
 import { formatUnits } from "viem";
@@ -79,21 +80,7 @@ export const Navigation: React.FC = () => {
         to: "/account",
         label: (
           <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
+            <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
             <span className="font-display tracking-normal">${totalBalance}</span>
           </>
         ),
