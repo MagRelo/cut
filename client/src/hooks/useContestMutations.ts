@@ -45,9 +45,6 @@ export function useCreateContest() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.contests.byTournament(variables.tournamentId, variables.chainId),
       });
-
-      // Also invalidate tournament data as it includes contest counts
-      queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.active() });
     },
 
     onError: (err) => {

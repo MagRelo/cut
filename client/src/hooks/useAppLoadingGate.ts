@@ -1,30 +1,37 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useTournamentData } from "./useTournamentData";
+
+/** Hide overlay only after auth has been non-blocking this long (swallows Privy/wagmi `ready` / `address` flaps). */
+const CLEAR_BLOCKING_DEBOUNCE_MS = 200;
 
 interface AppLoadingGateState {
   isBlockingLoad: boolean;
   authLoading: boolean;
-  /** True only until the first successful active tournament payload; background refetches do not block. */
-  tournamentLoading: boolean;
 }
 
 export function useAppLoadingGate(): AppLoadingGateState {
   const { loading: authLoading, user } = useAuth();
-  const { isLoading: tournamentInitialLoading } = useTournamentData();
 
-  // Block only until we have cached or first-fetched tournament data; do not block on refetchInterval / stale refetches.
-  const tournamentLoading = tournamentInitialLoading;
-  // Treat auth loading as blocking only when user has not been resolved yet.
-  const authBlocking = authLoading && !user;
-  const isBlockingLoad = authBlocking || tournamentLoading;
+  // Global overlay: auth resolution only. Tournament metadata loads in the shell (header placeholder + route loaders).
+  const rawBlocking = authLoading && !user;
+  const [stableBlocking, setStableBlocking] = useState(rawBlocking);
+
+  useEffect(() => {
+    if (rawBlocking) {
+      setStableBlocking(true);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setStableBlocking(false);
+    }, CLEAR_BLOCKING_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [rawBlocking]);
 
   return useMemo(
     () => ({
-      isBlockingLoad,
+      isBlockingLoad: stableBlocking,
       authLoading,
-      tournamentLoading,
     }),
-    [authLoading, isBlockingLoad, tournamentLoading],
+    [authLoading, stableBlocking],
   );
 }

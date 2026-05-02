@@ -1,12 +1,14 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useTournamentData, useActiveTournament } from "../hooks/useTournamentData";
+import { useActiveTournament, useActiveTournamentPlayers, useTournamentMetadata } from "../hooks/useTournamentData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const tournamentQuery = useTournamentData();
+  const metadataQuery = useTournamentMetadata();
+  const tournamentId = metadataQuery.data?.tournament?.id;
+  const playersQuery = useActiveTournamentPlayers(tournamentId);
   const activeTournament = useActiveTournament();
 
   return (
@@ -85,34 +87,53 @@ export const DebugPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tournament Data */}
+      {/* Tournament metadata (shell) */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-3 text-purple-600">
-          Tournament Data (useTournamentData)
+          Tournament shell (useTournamentMetadata / GET active/metadata)
         </h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Loading:</strong> {tournamentQuery.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {metadataQuery.isLoading ? "true" : "false"}
           </div>
           <div>
-            <strong>Error:</strong> {tournamentQuery.error ? tournamentQuery.error.message : "None"}
+            <strong>Error:</strong>{" "}
+            {metadataQuery.error ? String(metadataQuery.error.message) : "None"}
           </div>
           <div>
-            <strong>Data:</strong> {tournamentQuery.data ? "Loaded" : "Not loaded"}
+            <strong>Data:</strong> {metadataQuery.data ? "Loaded" : "Not loaded"}
           </div>
-          {tournamentQuery.data && (
+          {metadataQuery.data && (
             <>
               <div>
-                <strong>Tournament:</strong> {tournamentQuery.data.tournament.name}
+                <strong>Tournament:</strong> {metadataQuery.data.tournament.name}
               </div>
               <div>
-                <strong>Tournament Status:</strong> {tournamentQuery.data.tournament.status}
-              </div>
-              <div>
-                <strong>Players Count:</strong> {tournamentQuery.data.players.length}
+                <strong>Tournament Status:</strong> {metadataQuery.data.tournament.status}
               </div>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Active tournament players */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-3 text-indigo-600">
+          Active players (useActiveTournamentPlayers / GET active/players)
+        </h2>
+        <div className="space-y-2 text-sm">
+          <div>
+            <strong>Tournament ID (from shell):</strong> {tournamentId ?? "—"}
+          </div>
+          <div>
+            <strong>Loading:</strong> {playersQuery.isLoading ? "true" : "false"}
+          </div>
+          <div>
+            <strong>Error:</strong> {playersQuery.error ? String(playersQuery.error.message) : "None"}
+          </div>
+          <div>
+            <strong>Players Count:</strong> {playersQuery.data?.players.length ?? "—"}
+          </div>
         </div>
       </div>
 
@@ -140,28 +161,7 @@ export const DebugPage: React.FC = () => {
             <strong>Is Tournament Editable:</strong>{" "}
             {activeTournament.isTournamentEditable ? "true" : "false"}
           </div>
-          <div>
-            <strong>Tournament Status Display:</strong> {activeTournament.tournamentStatusDisplay}
-          </div>
         </div>
-      </div>
-
-      {/* Raw JSON for debugging */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-3 text-red-600">Raw auth state (JSON)</h2>
-        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-          {JSON.stringify(
-            auth,
-            (key, value) => {
-              // Don't show the token in the raw JSON for security
-              if (key === "token") return "[REDACTED]";
-              // JSON.stringify cannot serialize BigInt; render as string for debug output.
-              if (typeof value === "bigint") return value.toString();
-              return value;
-            },
-            2
-          )}
-        </pre>
       </div>
     </div>
   );

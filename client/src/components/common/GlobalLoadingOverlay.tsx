@@ -6,7 +6,7 @@ interface GlobalLoadingOverlayProps {
 }
 
 const FADE_DURATION_MS = 300;
-const MIN_VISIBLE_MS = 450;
+const MIN_VISIBLE_MS = 750;
 const DEBUG_FORCE_OVERLAY = false;
 
 export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBlocking }) => {

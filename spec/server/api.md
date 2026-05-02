@@ -52,16 +52,18 @@ Unauthenticated routes are explicitly noted below (e.g. health, some tournament 
 ### Tournaments (`/api/tournaments`)
 
 #### `GET /api/tournaments/active/metadata`
-- **Description**: Get active tournament metadata (lightweight)
+- **Description**: Get active tournament row (app shell / header; no players)
 - **Auth**: None
 - **Response**: `{ tournament: Tournament }`
-- **Cache**: 5 minutes
+- **Cache**: 5 minutes (HTTP); client treats as long-lived shell data
 
-#### `GET /api/tournaments/active`
-- **Description**: Get active tournament with full data (players + contests)
+#### `GET /api/tournaments/active/players`
+- **Description**: In-field players and tournament scoring rows for the **currently active** tournament (leaderboard / lineups)
 - **Auth**: None
-- **Response**: `{ tournament: Tournament, players: Player[] }`
-- **Cache**: 2 minutes
+- **Response**: `{ players: PlayerWithTournamentData[] }` (shape matches prior monolithic `players` array)
+- **Cache**: ~2 minutes (HTTP); client refetches on a 5-minute interval
+
+The monolithic `GET /api/tournaments/active` (tournament + players) has been **removed**; clients use metadata + players (and `GET /api/contests` for contest lists).
 
 ### Lineups (`/api/lineup`)
 

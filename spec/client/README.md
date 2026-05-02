@@ -38,7 +38,7 @@ The client layer provides the user interface for Bet the Cut:
 - **userGroup/**: User group components
 
 ### Hooks (`client/src/hooks/`)
-- **useTournamentData.ts**: Tournament data fetching
+- **useTournamentData.ts**: Active tournament metadata shell, active players query, and composed `useActiveTournament`
 - **useContestQuery.ts**: Contest data fetching
 - **useLineupData.ts**: Lineup data operations
 - **useContestMutations.ts**: Contest mutations

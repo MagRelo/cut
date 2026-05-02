@@ -3,8 +3,12 @@ import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Tournament } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
-export interface TournamentData {
+
+export interface ActiveTournamentMetadataResponse {
   tournament: Tournament;
+}
+
+export interface ActiveTournamentPlayersResponse {
   players: PlayerWithTournamentData[];
 }
 
@@ -18,71 +22,98 @@ export interface ActiveTournamentState {
   tournamentStatusDisplay: string;
 }
 
+const METADATA_STALE_MS = 24 * 60 * 60 * 1000;
+const METADATA_GC_MS = 24 * 60 * 60 * 1000;
+
+const PLAYERS_STALE_MS = 5 * 60 * 1000;
+const PLAYERS_REFETCH_MS = 5 * 60 * 1000;
+const PLAYERS_GC_MS = 30 * 60 * 1000;
+
 /**
- * Fetches the current active tournament with players and contests
- *
- * Benefits of using React Query:
- * - Automatic caching (no duplicate requests)
- * - Background refetching (data stays fresh)
- * - Loading and error states built-in
- * - Automatic refetch on window focus
- * - Data persists across component unmounts
+ * Active tournament row for header, app gate, and tournamentId (GET /tournaments/active/metadata).
+ * Long-lived cache; contest list stays on useContestsQuery.
  */
-export function useTournamentData() {
+export function useTournamentMetadata() {
   return useQuery({
-    queryKey: queryKeys.tournaments.active(),
+    queryKey: queryKeys.tournaments.activeMetadata(),
     queryFn: async () => {
-      const data = await apiClient.get<TournamentData>("/tournaments/active");
+      const data = await apiClient.get<ActiveTournamentMetadataResponse>("/tournaments/active/metadata");
       return data;
     },
-    // Keep heavy active tournament payload fresh for longer to reduce focus refetch churn
-    staleTime: 10 * 60 * 1000,
-    // Refetch every 10 minutes to keep live scores updated
-    refetchInterval: 10 * 60 * 1000,
-    // Avoid focus-triggered reloads for heavy player payload; interval still keeps data fresh
+    staleTime: METADATA_STALE_MS,
+    gcTime: METADATA_GC_MS,
     refetchOnWindowFocus: false,
-    // Cache data for 10 minutes even when component unmounts
-    gcTime: 10 * 60 * 1000,
-    // Show cached data immediately on mount, then refetch in background
-    // This makes navigation feel instant when returning to the page
     placeholderData: (previousData) => previousData,
   });
 }
 
 /**
- * Hook to get just the tournament from the cached data
+ * Leaderboard / lineup player payload for the active tournament week.
+ * Keyed by tournamentId so cache resets on week rollover.
  */
+export function useActiveTournamentPlayers(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tournaments.activePlayers(tournamentId ?? ""),
+    queryFn: async () => {
+      const data = await apiClient.get<ActiveTournamentPlayersResponse>("/tournaments/active/players");
+      return data;
+    },
+    enabled: Boolean(tournamentId),
+    staleTime: PLAYERS_STALE_MS,
+    refetchInterval: PLAYERS_REFETCH_MS,
+    refetchOnWindowFocus: false,
+    gcTime: PLAYERS_GC_MS,
+    placeholderData: (previousData) => previousData,
+  });
+}
+
 export function useCurrentTournament() {
-  const { data, ...rest } = useTournamentData();
+  const q = useTournamentMetadata();
   return {
-    tournament: data?.tournament ?? null,
-    ...rest,
+    ...q,
+    tournament: q.data?.tournament ?? null,
   };
 }
 
 export function useTournamentPlayers() {
-  const { data, ...rest } = useTournamentData();
+  const meta = useTournamentMetadata();
+  const tournamentId = meta.data?.tournament?.id;
+  const playersQuery = useActiveTournamentPlayers(tournamentId);
+
   return {
-    players: data?.players ?? [],
-    ...rest,
+    players: playersQuery.data?.players ?? [],
+    isLoading: meta.isLoading || (Boolean(tournamentId) && playersQuery.isLoading),
+    isFetching: meta.isFetching || playersQuery.isFetching,
+    error: meta.error ?? playersQuery.error,
+    refetch: async () => {
+      await Promise.all([meta.refetch(), playersQuery.refetch()]);
+    },
   };
 }
 
 export function useActiveTournament(): ActiveTournamentState {
-  const { data, isLoading, isFetching, error } = useTournamentData();
+  const shell = useTournamentMetadata();
+  const tournamentId = shell.data?.tournament?.id;
+  const playersQuery = useActiveTournamentPlayers(tournamentId);
 
-  const currentTournament = data?.tournament ?? null;
-  const players = data?.players ?? [];
+  const currentTournament = shell.data?.tournament ?? null;
+  const players = playersQuery.data?.players ?? [];
+
+  const isLoading = shell.isLoading || (Boolean(tournamentId) && playersQuery.isLoading);
+  const isFetching = shell.isFetching || playersQuery.isFetching;
+
+  const rawError = shell.error ?? playersQuery.error;
+  const typedError =
+    rawError instanceof Error ? rawError : rawError ? new Error("Failed to load tournament") : null;
 
   const isTournamentEditable =
     currentTournament?.status !== "IN_PROGRESS" && currentTournament?.status !== "COMPLETED";
 
-  const tournamentStatusDisplay = currentTournament?.status
-    ?.split("_")
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(" ") ?? "";
-
-  const typedError = error instanceof Error ? error : error ? new Error("Failed to load tournament") : null;
+  const tournamentStatusDisplay =
+    currentTournament?.status
+      ?.split("_")
+      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(" ") ?? "";
 
   return {
     currentTournament,
@@ -95,60 +126,35 @@ export function useActiveTournament(): ActiveTournamentState {
   };
 }
 
-/**
- * Prefetch tournament data - call this early in app lifecycle
- * This loads data in the background before components mount
- */
-export async function prefetchTournamentData(queryClient: QueryClient) {
-  await queryClient.prefetchQuery({
-    queryKey: queryKeys.tournaments.active(),
-    queryFn: async () => {
-      const data = await apiClient.get<TournamentData>("/tournaments/active");
-      return data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-}
-
-/**
- * Hook to fetch just the tournament metadata (no players, no contests)
- * This is optimized for the TournamentInfoCard which only needs basic tournament info
- *
- * Benefits:
- * - Much faster response time (~50-100ms vs 500ms+)
- * - Smaller payload size
- * - Can cache longer since metadata changes infrequently
- */
-export function useTournamentMetadata() {
-  return useQuery({
-    queryKey: ["tournaments", "active", "metadata"],
-    queryFn: async () => {
-      const data = await apiClient.get<{ tournament: Tournament }>("/tournaments/active/metadata");
-      return data;
-    },
-    // Metadata changes infrequently, keep fresh for 5 minutes
-    staleTime: 5 * 60 * 1000,
-    // Refetch every 10 minutes
-    refetchInterval: 10 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    // Cache for 10 minutes
-    gcTime: 10 * 60 * 1000,
-    // Show cached data immediately
-    placeholderData: (previousData) => previousData,
-  });
-}
-
-/**
- * Prefetch tournament metadata - call this early for fastest initial load
- * This is much faster than prefetching full tournament data
- */
 export async function prefetchTournamentMetadata(queryClient: QueryClient) {
   await queryClient.prefetchQuery({
-    queryKey: ["tournaments", "active", "metadata"],
+    queryKey: queryKeys.tournaments.activeMetadata(),
     queryFn: async () => {
-      const data = await apiClient.get<{ tournament: Tournament }>("/tournaments/active/metadata");
+      const data = await apiClient.get<ActiveTournamentMetadataResponse>("/tournaments/active/metadata");
       return data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: METADATA_STALE_MS,
   });
+}
+
+export async function prefetchActiveTournamentPlayers(queryClient: QueryClient, tournamentId: string) {
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.tournaments.activePlayers(tournamentId),
+    queryFn: async () => {
+      const data = await apiClient.get<ActiveTournamentPlayersResponse>("/tournaments/active/players");
+      return data;
+    },
+    staleTime: PLAYERS_STALE_MS,
+  });
+}
+
+/** Prefetch metadata then active players (uses tournament id from cached metadata). */
+export async function prefetchTournamentShellAndPlayers(queryClient: QueryClient) {
+  await prefetchTournamentMetadata(queryClient);
+  const tid = queryClient.getQueryData<ActiveTournamentMetadataResponse>(
+    queryKeys.tournaments.activeMetadata(),
+  )?.tournament?.id;
+  if (tid) {
+    await prefetchActiveTournamentPlayers(queryClient, tid);
+  }
 }
