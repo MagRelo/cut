@@ -132,7 +132,7 @@ export const ContestEntryList = ({
                 <div className="flex-shrink-0 flex items-center gap-4">
                   {primaryActionsLocked && (
                     <UserGroupIcon
-                      className="h-5 w-5 shrink-0 text-blue-500 group-hover:text-blue-600"
+                      className="h-5 w-5 shrink-0 text-blue-400 group-hover:text-blue-600"
                       aria-hidden
                     />
                   )}
