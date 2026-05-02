@@ -127,10 +127,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
       {/* Right - Points */}
       <div className="flex-shrink-0 flex items-center gap-4">
-        <DocumentTextIcon
-          className="h-54 w-5 shrink-0 text-blue-400 group-hover:text-blue-600"
-          aria-hidden
-        />
+        <DocumentTextIcon className="h-54 w-5 shrink-0 text-blue-400" aria-hidden />
 
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
