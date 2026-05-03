@@ -172,7 +172,7 @@ export const FAQPage: React.FC = () => {
 
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Are there any fees?</h3>
-              <p className="text-gray-700 text-sm">The Cut takes a 7% fee from each contest.</p>
+              <p className="text-gray-700 mb-2">The Cut takes a 7% fee from each contest.</p>
             </div>
           </div>
         </div>
@@ -244,13 +244,14 @@ export const FAQPage: React.FC = () => {
                 market: the same pooled, outcome-settled idea as a classic tote, but with{" "}
                 <span className="font-semibold">algorithmic pricing</span> instead of a single
                 static line.{" "}
-                <span className="font-semibold">Wagers are priced using a quadratic curve</span>
-                —each incremental slice of exposure on a lineup costs more as more money stacks on
-                that side.
+                <span className="font-semibold">Wagers are priced using a quadratic curve.</span>{" "}
+                Each incremental slice of exposure on a lineup costs more as more money stacks on
+                that lineup.
               </p>
 
               <p className="text-gray-700 mb-2">
-                This offers several advantages over a traditional parimutuel market:
+                The Winner Pool's dynamic pricing model provides several important upgrades to the
+                traditional parimutuel market:
               </p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>
