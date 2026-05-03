@@ -5,7 +5,6 @@ import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
   getRoundHoleProgress,
-  getRoundShortLabel,
 } from "./playerRoundUtils";
 
 interface PlayerDisplayRowProps {
@@ -38,15 +37,15 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   const icon = getCurrentRoundIcon();
 
   const roundData = getRoundDataForDisplay(player.tournamentData, roundDisplay);
-  const roundShortLabel = getRoundShortLabel(roundDisplay);
+  // const roundShortLabel = getRoundShortLabel(roundDisplay);
   const holeProgress = getRoundHoleProgress(roundData);
   const roundVsPar = formatRoundStrokesVsPar(roundData);
   const scoreThruLabel = (() => {
     if (holeProgress == null) return "";
-    if (holeProgress.played === 0) return "Pending";
+    if (holeProgress.played === 0) return "Not started";
     const roundComplete = holeProgress.remaining === 0 && holeProgress.played > 0;
     if (roundComplete) {
-      return roundVsPar != null ? `Complete, ${roundVsPar}` : "Complete, –";
+      return roundVsPar != null ? `${roundVsPar}, Round Complete` : "–, Round Complete";
     }
     const thruPart = `thru ${holeProgress.played}`;
     if (roundVsPar == null) return thruPart;
@@ -102,14 +101,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
           className="flex min-h-5 items-center text-xs  tabular-nums text-gray-700"
           title="This round vs par and holes completed"
         >
-          {scoreThruLabel ? (
-            <>
-              <span className="mr-1">{roundShortLabel}</span>
-              <span>{scoreThruLabel}</span>
-            </>
-          ) : (
-            "\u00A0"
-          )}
+          {scoreThruLabel ? <span>{scoreThruLabel}</span> : "\u00A0"}
         </div>
       </div>
 
