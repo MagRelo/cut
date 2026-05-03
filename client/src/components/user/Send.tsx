@@ -188,17 +188,23 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             <p className="text-sm text-gray-600 font-display">{modeCopy}</p>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
-            <div className="text-xs font-medium text-gray-600 mb-1">Total Available</div>
-            <div className="text-lg font-semibold text-gray-800">
-              {formattedBalance(maxAmountInTargetUnits, targetDecimals)}
+          <div className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-sm font-display">
+            <div className="border-b border-blue-200 bg-blue-50/80 px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+                Total Available
+              </div>
             </div>
-            <div className="text-xs text-gray-500">{targetSymbol}</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
-              {platformTokenSymbol || "CUT"} +{" "}
-              {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
-              {paymentTokenSymbol || "USDC"}
+            <div className="space-y-0.5 p-3">
+              <div className="text-lg font-semibold tabular-nums text-gray-900">
+                {formattedBalance(maxAmountInTargetUnits, targetDecimals)}
+              </div>
+              <div className="text-xs text-blue-800/80">{targetSymbol}</div>
+              <div className="text-xs text-gray-600 mt-1">
+                {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
+                {platformTokenSymbol || "CUT"} +{" "}
+                {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
+                {paymentTokenSymbol || "USDC"}
+              </div>
             </div>
           </div>
 

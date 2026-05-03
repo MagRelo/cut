@@ -43,27 +43,24 @@ export const Receive = () => {
     <div className="space-y-6">
       {chainId === 84532 && (
         <div
-          className="rounded-sm border border-amber-200/90 bg-amber-50/95 p-4 shadow-sm ring-1 ring-inset ring-amber-100/70"
+          className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm font-display"
           role="status"
         >
-          <div className="flex gap-3">
-            <ExclamationTriangleIcon
-              className="h-5 w-5 shrink-0 text-amber-600 mt-0.5"
-              aria-hidden
-            />
-            <div className="min-w-0 space-y-1">
-              <p className="text-base font-semibold font-display  text-amber-950">
-                Warning: Test Mode
-              </p>
-              <p className="text-sm text-amber-950/90 font-display leading-relaxed">
-                the Cut is currently running on the Base Sepolia testnet. Do not send mainnet funds
-                or expect bank or card deposits to settle here. For testing, have another player
-                send you test {platformTokenSymbol} or {paymentTokenSymbol} with an in-app{" "}
-                <span className="font-medium">player-to-player transfer</span> (they use the{" "}
-                <span className="font-medium">Send</span> tab on this page and your Account ID
-                below).
-              </p>
+          <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
+            <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+              Warning · Test mode
             </div>
+          </div>
+          <div className="p-3">
+            <p className="text-sm text-amber-950/90 leading-relaxed">
+              The Cut is currently running on the Base Sepolia testnet. Do not send mainnet funds or
+              expect bank or card deposits to settle here. For testing, have another player send you
+              funds using the in-app{" "}
+              <span className="font-medium text-amber-950">player-to-player transfer</span> (they
+              use the <span className="font-medium text-amber-950">Send</span> tab on this page and
+              your Account ID below).
+            </p>
           </div>
         </div>
       )}
@@ -79,29 +76,33 @@ export const Receive = () => {
         </p>
       </div>
 
-      {/* Neutral disclosure panel (matches FAQ-style factual blocks) */}
       <div
-        className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+        className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-md font-display"
         role="region"
         aria-label="Network and token details"
       >
-        <div className="space-y-3">
+        <div className="border-b border-blue-200 bg-blue-50/80 px-3 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+            Account ID
+          </div>
+        </div>
+        <div className="space-y-3 p-3">
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Network</span>
-            <div className="text-sm text-gray-800 text-right font-display">{networkLabel}</div>
+            <span className="text-sm font-medium text-blue-900/60 shrink-0">Network</span>
+            <div className="text-sm text-right font-medium text-gray-900">{networkLabel}</div>
           </div>
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Token</span>
-            <div className="text-sm text-gray-800 text-right font-display">
+            <span className="text-sm font-medium text-blue-900/60 shrink-0">Token</span>
+            <div className="text-sm text-right font-medium text-gray-900">
               {platformTokenSymbol} or {paymentTokenSymbol}
             </div>
           </div>
 
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">Address</span>
+            <span className="text-sm font-medium text-blue-900/60 shrink-0">Address</span>
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
               <span
-                className="text-xs text-gray-800 text-right truncate font-display"
+                className="text-xs text-right text-gray-900 truncate"
                 title={receiveAddress}
               >
                 {receiveAddress}
@@ -109,13 +110,13 @@ export const Receive = () => {
             </div>
           </div>
 
-          <hr className="border-gray-200" />
+          <hr className="border-blue-200/80" />
 
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-400 font-display shrink-0"></span>
+            <span className="text-sm font-medium shrink-0" aria-hidden />
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
               <span
-                className="text-xs text-gray-800 text-right truncate font-display"
+                className="text-xs text-right text-gray-900 truncate"
                 title={receiveAddress}
               >
                 {truncateMiddle(receiveAddress)}
