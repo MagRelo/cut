@@ -277,8 +277,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   };
 
   const predictionDetailsCard = (
-    <div className="overflow-hidden rounded-md border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white shadow-sm font-display">
-      <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/70 px-3 py-2">
+    <div className="overflow-hidden rounded-md border border-blue-200 bg-gradient-to-tl from-blue-50 via-white to-white shadow-md font-display">
+      <div className="flex items-center justify-between border-b border-blue-200 bg-blue-50/70 px-3 py-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
           Winner Pool Ticket
         </div>
@@ -289,7 +289,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
       <div className="space-y-2 p-3 text-sm">
         <div
-          className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 bg-white/90 px-2.5 py-2"
+          className="rounded-sm border border-gray-300 bg-white/90 px-2.5 py-2 shadow-sm"
           style={{
             borderLeftColor: resolvedLeftBorderColor,
             borderLeftWidth: "5px",
@@ -304,7 +304,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           </div>
         </div>
 
-        <div>
+        <div className="text-right">
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
             Purchase Amount
           </div>
@@ -315,7 +315,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const currentOddsQuoteCard = (
-    <div className="rounded-md border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 px-3 py-2.5 font-display">
+    <div className="rounded-md border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-3 py-2.5 font-display">
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
@@ -375,7 +375,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="w-full px-4 py-3 text-right text-base tabular-nums border border-gray-200 rounded-md bg-gray-50/80 text-gray-600 font-normal cursor-not-allowed"
+              className="w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-right text-base font-normal tabular-nums text-gray-600 shadow-inner cursor-not-allowed"
               disabled
             />
           </div>
@@ -420,7 +420,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full px-4 py-3 text-right text-base tabular-nums border border-gray-200 rounded-md text-gray-700 font-normal placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-300"
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-right text-base font-normal tabular-nums text-gray-900 shadow-inner placeholder:text-gray-400 transition-[box-shadow,border-color] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none"
           disabled={isProcessing}
           autoFocus
         />

@@ -188,16 +188,11 @@ export const FAQPage: React.FC = () => {
               </h3>
 
               <p className="text-gray-700 mb-2">
-                The Winner Pool is a live, parimutuel side market where you can back which lineup
-                will win the contest. All wagers are combined into a separate shared pool, and
+                The Winner Pool is a live, parimutuel side market where you can bet on which lineup
+                will win the contest. All Winner Pool wagers are combined into a shared pool, and
                 payouts are determined based on that total.
               </p>
-              <p className="text-gray-700 mb-2">
-                The market runs alongside the tournament, with lines staying open as rounds unfold
-                so you can react in real time. You don’t need to be entered in the contest to
-                participate—anyone with available funds can join the Winner Pool and place a wager
-                on a lineup.
-              </p>
+
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>You choose a lineup and place a wager.</li>
                 <li>
@@ -213,6 +208,13 @@ export const FAQPage: React.FC = () => {
                   winning holdings.
                 </li>
               </ul>
+
+              <p className="text-gray-700 mt-2">
+                The market runs alongside the tournament, with lines staying open as rounds unfold
+                so you can react in real time. You don’t need to be entered in the contest to
+                participate—anyone with available funds can join the Winner Pool and place a wager
+                on a lineup.
+              </p>
             </div>
 
             <div>
