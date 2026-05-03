@@ -79,7 +79,7 @@ export const TournamentHeaderPanel: React.FC = () => {
                 Starting: <CountdownTimer targetDate={currentTournament.startDate} />
               </p>
             ) : (
-              <p className="text-sm font-medium tracking-wide">
+              <p className="text-sm font-medium tracking-wide font-display">
                 {currentTournament.roundDisplay} - {currentTournament.roundStatusDisplay}
               </p>
             )}

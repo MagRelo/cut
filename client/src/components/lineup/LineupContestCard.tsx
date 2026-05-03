@@ -168,7 +168,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   return (
                     <div key={contestInfo.contest.id} className="flex items-center gap-2">
                       {/* Contest Card */}
-                      <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-300 p-2 ">
+                      <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow">
                         <Link to={`/contest/${contestInfo.contest.id}`} className="block">
                           <ContestCard contest={contestInfo.contest} />
                         </Link>

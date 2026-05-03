@@ -183,14 +183,11 @@ export const FAQPage: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                How does the Winner Pool work?
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">What is the Winner Pool?</h3>
 
               <p className="text-gray-700 mb-2">
                 The Winner Pool is a live, parimutuel side market where you can bet on which lineup
-                will win the contest. All Winner Pool wagers are combined into a shared pool, and
-                payouts are determined based on that total.
+                will win the contest.
               </p>
 
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
@@ -239,14 +236,17 @@ export const FAQPage: React.FC = () => {
 
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                How does Winner Pool work under the hood?
+                How does the Winner Pool work?
               </h3>
+
               <p className="text-gray-700 mb-2">
-                Pricing in the Winner Pool is algorithmic: a quadratic bonding curve sets how
-                expensive it is to add exposure to a given lineup. Concentration on one lineup
-                pushes the marginal cost of the next wager on that lineup higher. This means the
-                more money piles onto a single pick, the more you pay for each additional increment
-                of exposure on that same lineup.
+                The Winner Pool is an <span className="font-semibold">advanced parimutuel</span>{" "}
+                market: the same pooled, outcome-settled idea as a classic tote, but with{" "}
+                <span className="font-semibold">algorithmic pricing</span> instead of a single
+                static line.{" "}
+                <span className="font-semibold">Wagers are priced using a quadratic curve</span>
+                —each incremental slice of exposure on a lineup costs more as more money stacks on
+                that side.
               </p>
 
               <p className="text-gray-700 mb-2">

@@ -52,11 +52,13 @@ export const Receive = () => {
               aria-hidden
             />
             <div className="min-w-0 space-y-1">
-              <p className="text-base font-semibold text-amber-950">Warning: Test Mode</p>
+              <p className="text-base font-semibold font-display  text-amber-950">
+                Warning: Test Mode
+              </p>
               <p className="text-sm text-amber-950/90 font-display leading-relaxed">
-                the Cut is currently running on Base Sepolia testnet. Do not send mainnet funds or
-                expect bank or card deposits to settle here. For testing, have another player send
-                you test {platformTokenSymbol} or {paymentTokenSymbol} with an in-app{" "}
+                the Cut is currently running on the Base Sepolia testnet. Do not send mainnet funds
+                or expect bank or card deposits to settle here. For testing, have another player
+                send you test {platformTokenSymbol} or {paymentTokenSymbol} with an in-app{" "}
                 <span className="font-medium">player-to-player transfer</span> (they use the{" "}
                 <span className="font-medium">Send</span> tab on this page and your Account ID
                 below).
