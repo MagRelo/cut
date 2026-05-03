@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-js/react";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type TournamentLineup } from "../types/player";
 import type { TournamentLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
+import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -50,6 +52,7 @@ function findLineupListContext(
  */
 export function useCreateLineup() {
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -100,7 +103,18 @@ export function useCreateLineup() {
       }
     },
 
-    onSuccess: (_data, { tournamentId }) => {
+    onSuccess: (data, { tournamentId }, context) => {
+      if (userId && data?.id) {
+        const isFirstLineup =
+          context?.previousLineups === undefined || context.previousLineups.length === 0;
+        captureLineupCreated(posthog, {
+          user_id: userId,
+          tournament_id: tournamentId,
+          lineup_id: data.id,
+          player_count: Array.isArray(data.players) ? data.players.length : 0,
+          is_first_lineup: isFirstLineup,
+        });
+      }
       if (userId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
       }
@@ -114,6 +128,7 @@ export function useCreateLineup() {
  */
 export function useUpdateLineup() {
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -170,6 +185,13 @@ export function useUpdateLineup() {
 
     onSuccess: (data) => {
       const tid = data?.players?.[0]?.tournamentId;
+      if (userId && data?.id && tid) {
+        captureLineupUpdated(posthog, {
+          user_id: userId,
+          lineup_id: data.id,
+          tournament_id: tid,
+        });
+      }
       if (userId) {
         if (tid) {
           queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tid) });

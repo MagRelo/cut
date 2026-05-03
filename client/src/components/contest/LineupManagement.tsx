@@ -1,6 +1,7 @@
 import React, { Fragment, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits, parseUnits } from "viem";
+import { usePostHog } from "posthog-js/react";
 import { useReadContract } from "wagmi";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 
@@ -14,6 +15,8 @@ import {
   useLeaveContest as useLeaveContestBlockchain,
 } from "../../hooks/useContestantOperations";
 import { generateEntryId } from "../../utils/entryIdUtils";
+import { captureContestEntryRecorded } from "../../lib/analytics/posthog";
+import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 
 // Import contract ABIs
 import ContestContract from "../../utils/contracts/ContestController.json";
@@ -51,6 +54,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 };
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
+  const posthog = usePostHog();
   const { lineups } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const joinContest = useJoinContest();
@@ -90,7 +94,22 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     error: joinError,
     createJoinContestCalls,
   } = useJoinContestBlockchain({
-    onSuccess: async () => {
+    onSuccess: async (statusData: BatchTransactionStatusData) => {
+      if (
+        pendingAction?.type === "join" &&
+        pendingAction?.entryId &&
+        user?.id &&
+        pendingAction.lineupId
+      ) {
+        const txHash = statusData.receipts[0]?.transactionHash;
+        captureContestEntryRecorded(posthog, {
+          user_id: user.id,
+          contest_id: contestId,
+          entry_id: pendingAction.entryId,
+          chain_id: contest.chainId,
+          transaction_hash: txHash,
+        });
+      }
       if (pendingAction?.type === "join" && pendingAction?.lineupId && pendingAction?.entryId) {
         const joinedLineupId = pendingAction.lineupId;
         try {

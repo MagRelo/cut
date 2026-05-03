@@ -1,15 +1,13 @@
 import { useChainId } from "wagmi";
 import { parseUnits } from "viem";
-import { useBlockchainTransaction, type TransactionCall } from "./useBlockchainTransaction";
+import {
+  useBlockchainTransaction,
+  type TransactionCall,
+  type UseBlockchainTransactionOptions,
+} from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
-
-interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: any) => void | Promise<void>;
-  onError?: (error: Error | string) => void;
-  onSettled?: () => void;
-}
 
 /**
  * Hook for buying platform tokens (CUT) using payment tokens (USDC)

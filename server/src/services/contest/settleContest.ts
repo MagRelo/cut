@@ -18,6 +18,7 @@ import {
 import { getContract, createPublicClient, http, erc20Abi } from "viem";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
+import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -322,6 +323,29 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         results: JSON.parse(JSON.stringify(results)),
       },
     });
+
+    const entryIdToUserId = new Map<string, string>();
+    for (const cl of contest.contestLineups) {
+      if (cl.entryId && cl.userId) {
+        entryIdToUserId.set(String(cl.entryId), cl.userId);
+      }
+    }
+    for (const row of detailedResults) {
+      const payoutWei = BigInt(row.payoutAmountWei ?? "0");
+      if (payoutWei <= 0n) continue;
+      const userId = entryIdToUserId.get(String(row.entryId));
+      if (!userId) continue;
+      captureContestWinPayoutRecorded({
+        distinctId: userId,
+        contest_id: contestId,
+        tournament_id: contest.tournamentId,
+        entry_id: String(row.entryId),
+        user_id: userId,
+        chain_id: contest.chainId,
+        payout_amount_wei: String(row.payoutAmountWei ?? "0"),
+        settlement_tx_hash: hash,
+      });
+    }
 
     console.log(`[settleContest] Successfully settled contest ${contestId}`);
 

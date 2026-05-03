@@ -1,13 +1,7 @@
 import { useChainId } from "wagmi";
-import { useBlockchainTransaction } from "./useBlockchainTransaction";
+import { useBlockchainTransaction, type UseBlockchainTransactionOptions } from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
 import ContestFactoryContract from "../utils/contracts/ContestFactory.json";
-
-interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: unknown) => void | Promise<void>;
-  onError?: (error: Error | string) => void;
-  onSettled?: () => void;
-}
 
 /**
  * Hook for creating a new contest via ContestFactory

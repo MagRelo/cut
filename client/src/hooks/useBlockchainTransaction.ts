@@ -12,12 +12,6 @@ export interface TransactionCall {
   to: `0x${string}`;
 }
 
-interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: unknown) => void | Promise<void>;
-  onError?: (error: Error | string) => void;
-  onSettled?: () => void;
-}
-
 /** Shape expected by CreateContestForm and similar onSuccess handlers */
 export type BatchTransactionStatusData = {
   status: "success";
@@ -30,6 +24,12 @@ export type BatchTransactionStatusData = {
     }[];
   }>;
 };
+
+export interface UseBlockchainTransactionOptions {
+  onSuccess?: (data: BatchTransactionStatusData) => void | Promise<void>;
+  onError?: (error: Error | string) => void;
+  onSettled?: () => void;
+}
 
 function isPrivyEmbeddedWallet(
   address: string | undefined,

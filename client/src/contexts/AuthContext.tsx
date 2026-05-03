@@ -1,9 +1,14 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQueryClient } from "@tanstack/react-query";
-import { erc20Abi } from "viem";
+import { erc20Abi, formatUnits, parseUnits } from "viem";
+import { usePostHog } from "posthog-js/react";
+import {
+  captureAccountFirstFunded,
+  captureAuthSessionSynced,
+} from "../lib/analytics/posthog";
 import { ApiError, handleApiResponse, isApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
@@ -56,6 +61,18 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
+const PAYMENT_TOKEN_DECIMALS = 6;
+const PLATFORM_TOKEN_DECIMALS = 18;
+
+function convertPaymentToPlatformTokens(paymentTokenAmount: bigint): bigint {
+  const humanReadableAmount = formatUnits(paymentTokenAmount, PAYMENT_TOKEN_DECIMALS);
+  return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
+}
+
+function firstFundedStorageKey(userId: string): string {
+  return `cut_ph_account_first_funded_${userId}`;
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -65,6 +82,7 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const posthog = usePostHog();
   const { address, chainId: currentChainId, status } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   /** Sponsored smart-account txs debit ERC20s from the smart wallet, not always the wagmi EOA. */
@@ -140,6 +158,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
+
+  const combinedSpendableWei = useMemo(() => {
+    const platform = platformTokenBalanceData?.value ?? 0n;
+    const payment = paymentTokenBalanceData?.value ?? 0n;
+    return platform + convertPaymentToPlatformTokens(payment);
+  }, [platformTokenBalanceData?.value, paymentTokenBalanceData?.value]);
+
+  const combinedPrevRef = useRef<bigint | null>(null);
+
+  useEffect(() => {
+    combinedPrevRef.current = null;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !posthog) return;
+    posthog.identify(user.id, {
+      email: user.email ?? undefined,
+      name: user.name,
+    });
+  }, [user?.id, user?.email, user?.name, posthog]);
+
+  useEffect(() => {
+    if (!user?.id || !posthog) return;
+    captureAuthSessionSynced(posthog, {
+      user_id: user.id,
+      wallet_address: user.walletAddress,
+    });
+  }, [user?.id, user?.walletAddress, posthog]);
+
+  useEffect(() => {
+    if (!user?.id || !posthog || balancesLoading) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(firstFundedStorageKey(user.id))) {
+      combinedPrevRef.current = combinedSpendableWei;
+      return;
+    }
+    const prev = combinedPrevRef.current;
+    if (prev === null) {
+      combinedPrevRef.current = combinedSpendableWei;
+      return;
+    }
+    if (prev === 0n && combinedSpendableWei > 0n) {
+      localStorage.setItem(firstFundedStorageKey(user.id), "1");
+      captureAccountFirstFunded(posthog, {
+        user_id: user.id,
+        chain_id: user.chainId,
+        platform_balance_wei: (platformTokenBalanceData?.value ?? 0n).toString(),
+        payment_balance_wei: (paymentTokenBalanceData?.value ?? 0n).toString(),
+      });
+    }
+    combinedPrevRef.current = combinedSpendableWei;
+  }, [
+    user?.id,
+    user?.chainId,
+    posthog,
+    balancesLoading,
+    combinedSpendableWei,
+    platformTokenBalanceData?.value,
+    paymentTokenBalanceData?.value,
+  ]);
 
   // Keep apiClient / non-React fetch helpers in sync with Privy JWT + wagmi chain for Authorization and X-Cut-Chain-Id.
   // Necessary if anything outside this tree calls those helpers; remove only if all API calls go through `request` here.
@@ -280,6 +358,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      posthog?.reset();
+    } catch {
+      /* noop */
+    }
+    try {
       await privyLogout();
     } catch (e) {
       console.warn("Privy logout:", e);
@@ -290,7 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn("Wagmi disconnect:", e);
     }
-  }, [privyLogout, clearLocalCache, disconnect]);
+  }, [privyLogout, clearLocalCache, disconnect, posthog]);
 
   const clearLoginError = useCallback(() => {
     setLoginError(null);

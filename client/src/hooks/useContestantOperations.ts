@@ -1,16 +1,10 @@
 import { useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import { useBlockchainTransaction } from "./useBlockchainTransaction";
+import { useBlockchainTransaction, type UseBlockchainTransactionOptions } from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
 import ContestContract from "../utils/contracts/ContestController.json";
 import DepositManagerContract from "../utils/contracts/DepositManager.json";
 import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
-
-interface UseBlockchainTransactionOptions {
-  onSuccess?: (data: unknown) => void | Promise<void>;
-  onError?: (error: Error | string) => void;
-  onSettled?: () => void;
-}
 
 // Helper functions for decimal conversion
 const PAYMENT_TOKEN_DECIMALS = 6;

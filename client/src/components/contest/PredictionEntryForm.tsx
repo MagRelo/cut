@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { usePostHog } from "posthog-js/react";
 import { formatUnits, parseUnits } from "viem";
 
 /** Matches `useSpectatorOperations` / `createAddPredictionCalls` funding rules. */
@@ -22,6 +23,7 @@ import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import apiClient from "../../utils/apiClient";
 import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
+import { captureWinnerPoolPositionRecorded } from "../../lib/analytics/posthog";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -72,6 +74,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   onClose,
 }) => {
   const location = useLocation();
+  const posthog = usePostHog();
   const { platformTokenBalance, paymentTokenBalance, user } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
@@ -202,6 +205,15 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     onSuccess: async (data) => {
       const statusData = data as BatchTransactionStatusData;
       const lastReceipt = statusData.receipts[statusData.receipts.length - 1];
+      if (user?.id && entryId && contest?.id) {
+        captureWinnerPoolPositionRecorded(posthog, {
+          user_id: user.id,
+          contest_id: contest.id,
+          entry_id: entryId,
+          chain_id: contest.chainId,
+          amount_wei: purchaseAmountWei !== null ? purchaseAmountWei.toString() : undefined,
+        });
+      }
       if (lastReceipt?.transactionHash && entryId && contest?.id) {
         try {
           await apiClient.post(

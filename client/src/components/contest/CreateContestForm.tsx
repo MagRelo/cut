@@ -7,6 +7,7 @@ import { type ContestSettings, type CreateContestInput } from "../../types/conte
 import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateContest } from "../../hooks/useContestFactory";
+import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentTournament } from "../../hooks/useTournamentData";
@@ -106,22 +107,13 @@ export const CreateContestForm = () => {
     error: transactionError,
     createContestCalls,
   } = useCreateContest({
-    onSuccess: async (statusData: unknown) => {
+    onSuccess: async (statusData: BatchTransactionStatusData) => {
       const pendingFromTx = pendingContestForApiRef.current;
       if (!pendingFromTx) return;
 
       setLoading(true);
       try {
-        const tx = statusData as {
-          receipts?: Array<{
-            transactionHash?: string;
-            logs?: Array<{
-              address?: string;
-              data?: `0x${string}`;
-              topics?: readonly `0x${string}`[];
-            }>;
-          }>;
-        };
+        const tx = statusData;
         let contestAddress: string | undefined;
         const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
 
