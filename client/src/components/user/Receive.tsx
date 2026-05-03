@@ -77,7 +77,7 @@ export const Receive = () => {
       </div>
 
       <div
-        className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-md font-display"
+        className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-sm font-display"
         role="region"
         aria-label="Network and token details"
       >
@@ -101,10 +101,7 @@ export const Receive = () => {
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
             <span className="text-sm font-medium text-blue-900/60 shrink-0">Address</span>
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span
-                className="text-xs text-right text-gray-900 truncate"
-                title={receiveAddress}
-              >
+              <span className="text-xs text-right text-gray-900 truncate" title={receiveAddress}>
                 {receiveAddress}
               </span>
             </div>
@@ -115,10 +112,7 @@ export const Receive = () => {
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
             <span className="text-sm font-medium shrink-0" aria-hidden />
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span
-                className="text-xs text-right text-gray-900 truncate"
-                title={receiveAddress}
-              >
+              <span className="text-xs text-right text-gray-900 truncate" title={receiveAddress}>
                 {truncateMiddle(receiveAddress)}
               </span>
               <CopyButton text={receiveAddress} />
