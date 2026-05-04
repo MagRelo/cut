@@ -230,9 +230,9 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
       <div className="flex justify-between items-start mb-1">
         <div>
           <h3 className="text-lg font-semibold text-gray-600">
-            {lineupId && currentLineup
-              ? currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}`
-              : nextLineupName}
+            {lineupId
+              ? `Edit ${currentLineup ? currentLineup.name || `Lineup ${currentLineup.id.slice(-6)}` : "lineup"}`
+              : `Create ${nextLineupName}`}
           </h3>
         </div>
         <button
@@ -258,10 +258,10 @@ export const LineupForm: React.FC<LineupFormProps> = ({ lineupId }) => {
         </div>
       )}
 
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-4 mt-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <React.Fragment key={`slot-${index}`}>
-            <hr className="border-0 border-t border-slate-300 my-4" />
+            {/* <hr className="border-0 border-t border-slate-300 my-4" /> */}
             <PlayerSelectionButton
               player={draftPlayers[index] || null}
               isSelected={false}

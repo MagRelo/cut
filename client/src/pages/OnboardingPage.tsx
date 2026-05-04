@@ -30,10 +30,10 @@ function StepActions({ children, className = "" }: { children: ReactNode; classN
 }
 
 const primaryBtn =
-  "inline-flex shrink-0 items-center justify-center rounded-sm bg-emerald-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex shrink-0 items-center justify-center rounded-sm bg-blue-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 /** Match primary control height; reset default button padding so flex cross-axis centers line up on mobile */
 const ghostLink =
-  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline disabled:opacity-50";
+  "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline disabled:opacity-50";
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -131,14 +131,14 @@ export function OnboardingPage() {
             type="button"
             onClick={() => void dismissOnboarding()}
             disabled={saving}
-            className="text-green-600 hover:text-green-700 font-medium underline-offset-2 hover:underline"
+            className="text-blue-600 hover:text-blue-700 font-medium underline-offset-2 hover:underline"
           >
             Exit
           </button>
         </div>
         <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
           <div
-            className="h-full rounded-full bg-green-600 transition-[width] duration-300 ease-out"
+            className="h-full rounded-full bg-blue-600 transition-[width] duration-300 ease-out"
             style={{ width: `${progressPct}%` }}
           />
         </div>

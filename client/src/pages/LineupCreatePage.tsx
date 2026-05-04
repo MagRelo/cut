@@ -2,7 +2,6 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { LineupForm } from "../components/lineup/LineupForm";
-import { TournamentInfoPanel } from "../components/tournament/TournamentInfoPanel";
 
 const LineupCreatePage: React.FC = () => {
   const { lineupId } = useParams<{ lineupId: string }>();
@@ -18,11 +17,6 @@ const LineupCreatePage: React.FC = () => {
           },
         ]}
       />
-
-      {/* Tournament Info Panel - only show when editable */}
-      <div>
-        <TournamentInfoPanel />
-      </div>
 
       <div className="bg-white rounded-sm shadow">
         <LineupForm lineupId={lineupId} />

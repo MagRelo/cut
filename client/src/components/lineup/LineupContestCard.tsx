@@ -136,11 +136,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 <div className="flex justify-center border-t border-gray-200 mt-2 pt-4">
                   <Link
                     to={editHref}
-                    className="inline-flex items-center gap-1.5 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                    className="inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
                   >
                     <span>Edit Lineup</span>
                     <svg
-                      className="h-3.5 w-3.5"
+                      className="h-4 w-4 shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

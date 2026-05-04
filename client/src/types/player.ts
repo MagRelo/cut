@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+/** Merged into `pga_performance` during tournament init when a Data Golf match is found. */
+export interface DataGolfRankingSnapshot {
+  dg_rank: number;
+  dg_rank_change?: number;
+  dg_skill?: number;
+  dgp_rank?: number;
+  dgp_rank_change?: number;
+}
+
 // Base Player Type (from Player table)
 export interface Player {
   id: string;
@@ -42,6 +51,7 @@ export interface Player {
         wide: boolean;
       }>;
     }>;
+    dataGolfRanking?: DataGolfRankingSnapshot;
   };
   isActive: boolean;
   inField: boolean;
@@ -137,6 +147,15 @@ export const playerSchema = z.object({
           ),
         }),
       ),
+      dataGolfRanking: z
+        .object({
+          dg_rank: z.number(),
+          dg_rank_change: z.number().optional(),
+          dg_skill: z.number().optional(),
+          dgp_rank: z.number().optional(),
+          dgp_rank_change: z.number().optional(),
+        })
+        .optional(),
     })
     .optional(),
   isActive: z.boolean(),

@@ -34,13 +34,13 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
     <button
       onClick={handleClick}
       disabled={disabled}
-      className={`w-full rounded-md  py-3 transition-all relative ${
+      className={`w-full rounded-md transition-all relative ${
         disabled ? "bg-white opacity-60 cursor-not-allowed" : "bg-white "
       }`}
     >
       {iconType && (
         <div
-          className={`absolute top-3 right-3 p-1 rounded-md ${
+          className={`absolute top-3 right-3 p-1 rounded-sm ${
             isSelected ? "bg-green-700" : "bg-blue-500"
           }`}
         >
@@ -55,9 +55,7 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
           </svg>
         </div>
       )}
-      <div className="px-2">
-        <PlayerSelectionCard player={player || undefined} />
-      </div>
+      <PlayerSelectionCard player={player || undefined} />
     </button>
   );
 };

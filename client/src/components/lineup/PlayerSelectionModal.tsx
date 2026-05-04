@@ -11,8 +11,16 @@ interface PlayerSelectionModalProps {
   selectedPlayers: string[];
 }
 
-type SortField = "name" | "owgr" | "fedex";
+type SortField = "dg" | "name" | "owgr" | "fedex";
 type SortDirection = "asc" | "desc";
+
+function sortButtonClass(sortField: SortField, field: SortField): string {
+  return `rounded-md border px-3 py-1.5 text-xs font-medium font-display transition-colors ${
+    sortField === field
+      ? "border-blue-500 bg-blue-100 text-blue-800 shadow-sm"
+      : "border-slate-400 bg-white text-slate-700 hover:bg-slate-50"
+  }`;
+}
 
 export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   isOpen,
@@ -22,7 +30,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   selectedPlayers,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>("owgr");
+  const [sortField, setSortField] = useState<SortField>("dg");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const handleClose = () => {
@@ -43,6 +51,17 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
         case "name":
           comparison = (a.pga_lastName || "").localeCompare(b.pga_lastName || "");
           break;
+        case "dg": {
+          const aDg = a.pga_performance?.dataGolfRanking?.dg_rank;
+          const bDg = b.pga_performance?.dataGolfRanking?.dg_rank;
+          const aHas = aDg !== undefined && aDg !== null && Number.isFinite(Number(aDg));
+          const bHas = bDg !== undefined && bDg !== null && Number.isFinite(Number(bDg));
+          if (!aHas && !bHas) comparison = 0;
+          else if (!aHas) comparison = 1;
+          else if (!bHas) comparison = -1;
+          else comparison = Number(aDg) - Number(bDg);
+          break;
+        }
         case "owgr":
           aOwgr = Number(a.pga_performance?.standings?.owgr);
           bOwgr = Number(b.pga_performance?.standings?.owgr);
@@ -103,13 +122,13 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <DialogPanel className="w-full max-w-modal-wide transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
-                <div className="p-4 sm:p-6">
+                <div className="p-4">
                   <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
-                    Select a Golfer
+                    Select Player
                   </DialogTitle>
 
-                  <div className="border border-slate-300 rounded-md overflow-hidden">
-                    <div className=" bg-slate-900/40 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto p-2 shadow-[inset_0_2px_5px_0_rgba(0,0,0,0.09)]">
+                  <div className="border border-slate-300 rounded-sm overflow-hidden">
+                    <div className="grid max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-3">
                       {filteredPlayers.map((player) => {
                         const isAlreadySelected = selectedPlayers.includes(player.id);
                         return (
@@ -125,38 +144,33 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                       })}
                     </div>
 
-                    <div className="p-3  border-t border-slate-800/30">
-                      <div className="flex justify-center items-center gap-4">
+                    <div className="border-t-2 border-slate-300 bg-slate-100 p-3">
+                      <div className="flex flex-wrap justify-center items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => toggleSort("fedex")}
-                          className={`px-3 py-1.5 text-xs font-medium font-display ${
-                            sortField === "fedex"
-                              ? "bg-blue-50 text-blue-600 border-blue-300"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } rounded-md border transition-colors`}
+                          onClick={() => toggleSort("dg")}
+                          className={sortButtonClass(sortField, "dg")}
                         >
-                          FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
+                          DG {sortField === "dg" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleSort("owgr")}
-                          className={`px-3 py-1.5 text-xs font-medium font-display ${
-                            sortField === "owgr"
-                              ? "bg-blue-50 text-blue-600 border-blue-300"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } rounded-md border transition-colors`}
+                          className={sortButtonClass(sortField, "owgr")}
                         >
                           OWGR {sortField === "owgr" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"
+                          onClick={() => toggleSort("fedex")}
+                          className={sortButtonClass(sortField, "fedex")}
+                        >
+                          FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleSort("name")}
-                          className={`px-3 py-1.5 text-xs font-medium font-display ${
-                            sortField === "name"
-                              ? "bg-blue-50 text-blue-600 border-blue-300"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } rounded-md border transition-colors`}
+                          className={sortButtonClass(sortField, "name")}
                         >
                           Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
