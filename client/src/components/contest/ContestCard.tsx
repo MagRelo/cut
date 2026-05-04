@@ -59,6 +59,18 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   const showLoading = !isFinalizedContest && isPredictionDataLoading;
 
   const formatStatus = (status: string) => {
+    const statusLabels: Record<string, string> = {
+      OPEN: "Entries Open",
+      ACTIVE: "In Progress",
+      LOCKED: "Winner Pool Locked",
+      SETTLED: "Settled",
+      CLOSED: "Closed",
+    };
+
+    if (statusLabels[status]) {
+      return statusLabels[status];
+    }
+
     return status
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())

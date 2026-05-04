@@ -8,6 +8,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@
 import { Contest } from "src/types/contest";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useAuth } from "../../contexts/AuthContext";
+import { LoadingSpinner } from "../common/LoadingSpinner";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useJoinContest, useLeaveContest } from "../../hooks/useContestMutations";
 import {
@@ -56,7 +57,7 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
-  const { lineups } = useLineupData();
+  const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData();
   const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
@@ -331,7 +332,17 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     <div className="flex flex-col gap-2">
       {/* <h3 className="text-sm font-medium text-gray-900">My Lineups</h3> */}
 
-      {lineups.map((lineup) => {
+      {isLineupsLoading && (
+        <div className="py-8">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm font-display text-slate-500">Loading lineups...</p>
+          </div>
+        </div>
+      )}
+
+      {!isLineupsLoading &&
+        lineups.map((lineup) => {
         const isEntered = enteredLineupsMap.has(lineup.id);
         const isPending = pendingAction?.lineupId === lineup.id;
         const isProcessing = isPending && (isSending || isConfirming);
@@ -450,9 +461,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
             </div>
           </Fragment>
         );
-      })}
+        })}
 
-      {lineups.length === 0 && (
+      {!isLineupsLoading && lineups.length === 0 && (
         <Link
           to="/lineups/create"
           className="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
@@ -462,9 +473,15 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
       )}
 
       {/* Error Display */}
-      {(validationError || submissionError || serverError || transactionError || isFailed) && (
+      {(lineupError ||
+        validationError ||
+        submissionError ||
+        serverError ||
+        transactionError ||
+        isFailed) && (
         <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-          {validationError ||
+          {lineupError ||
+            validationError ||
             submissionError ||
             serverError ||
             transactionError ||
