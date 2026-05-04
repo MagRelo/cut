@@ -40,8 +40,8 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
     >
       {iconType && (
         <div
-          className={`absolute top-3 right-3 p-1 rounded-sm ${
-            isSelected ? "bg-green-700" : "bg-blue-500"
+          className={`absolute top-3 right-3 p-1 rounded-md ${
+            isSelected ? "bg-green-600" : "bg-blue-500"
           }`}
         >
           <svg

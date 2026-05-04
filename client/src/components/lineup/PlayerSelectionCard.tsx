@@ -70,7 +70,7 @@ export const PlayerSelectionCard: React.FC<{
   className?: string;
 }> = ({ player, showImage = true, className = "" }) => {
   const shell =
-    "rounded-md border border-slate-900/20 bg-gradient-to-br from-white via-white to-slate-50/90 shadow-sm overflow-hidden";
+    "overflow-hidden rounded-md border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm";
 
   if (!player) {
     return (
