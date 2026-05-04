@@ -80,15 +80,15 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   return (
     <div className="flex items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
-      <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/90">
-        <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
+      <div className="min-w-[4.25rem] flex-shrink-0 rounded-md border border-blue-200 bg-gradient-to-b from-blue-50 to-indigo-50 p-1.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+        <div className="text-base font-display font-bold leading-none tabular-nums text-blue-900">
           {contest.settings?.primaryDeposit === 0
             ? "Free"
             : contest.settings?.primaryDeposit != null
               ? `$${contest.settings.primaryDeposit}`
               : "—"}
         </div>
-        <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-blue-700/80">
           buy-in
         </div>
       </div>
@@ -140,21 +140,21 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             type="button"
             onClick={onPotClick}
             aria-label="Contest Payouts"
-            className="text-right ml-2 mr-2 bg-transparent p-0 m-0 hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+            className="ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
-            <div className="text-lg font-display font-bold text-emerald-600 leading-none">
+            <div className="text-xl font-display font-bold leading-none text-emerald-700 tabular-nums">
               {showLoading ? "..." : `$${displayPot}`}
             </div>
-            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-emerald-700/70">
               POT
             </div>
           </button>
         ) : (
-          <div className="text-right ml-2 mr-2">
-            <div className="text-lg font-display font-bold text-emerald-600 leading-none">
+          <div className="ml-2 mr-2 text-right">
+            <div className="text-xl font-display font-bold leading-none text-emerald-700 tabular-nums">
               {showLoading ? "..." : `$${displayPot}`}
             </div>
-            <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-emerald-700/70">
               POT
             </div>
           </div>
