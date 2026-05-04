@@ -174,7 +174,7 @@ export const ContestLobby: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
+                      className="w-full max-w-sm rounded-lg bg-blue-600 px-6 py-3 text-base font-display font-semibold text-white shadow-md shadow-blue-900/15 transition hover:bg-blue-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 active:bg-blue-800"
                     >
                       Enter Contest{" — "}
                       <span>
@@ -186,7 +186,7 @@ export const ContestLobby: React.FC = () => {
 
                     {contest.tournament?.status === "NOT_STARTED" &&
                     contest.tournament.startDate ? (
-                      <p className="text-xs text-gray-500 text-center mb-2 mt-2">
+                      <p className="text-xs text-gray-800 text-center mb-2 mt-2">
                         <span>
                           <strong>{contest.tournament.name}</strong> starts in
                         </span>
