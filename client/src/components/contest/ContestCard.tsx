@@ -60,7 +60,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
 
   const formatStatus = (status: string) => {
     const statusLabels: Record<string, string> = {
-      OPEN: "Entries Open",
+      OPEN: "Pre-Tournament",
       ACTIVE: "In Progress",
       LOCKED: "Winner Pool Locked",
       SETTLED: "Settled",
