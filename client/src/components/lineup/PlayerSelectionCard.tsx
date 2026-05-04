@@ -40,17 +40,44 @@ interface RankPillProps {
   muted?: boolean;
 }
 
+function ordinalSuffix(n: number): string {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+
+/** Adds 1st / 2nd / 3rd-style suffix when value is a plain integer string; otherwise returns as-is. */
+function formatOrdinalRank(value: string): string {
+  const t = value.trim();
+  if (t === "" || t === "—") return t;
+  if (!/^\d+$/.test(t)) return value;
+  const n = Number.parseInt(t, 10);
+  if (n === 0) return "0";
+  return `${n}${ordinalSuffix(n)}`;
+}
+
 const RankPill: React.FC<RankPillProps> = ({ label, value, muted }) => (
   <div
-    className={`inline-flex items-baseline gap-1 rounded-full px-2.5 py-0.5 text-xs ${
+    className={`inline-flex items-baseline gap-1.5 rounded-sm border px-2 py-1.5 leading-snug ${
       muted
-        ? "bg-slate-100 text-slate-400"
-        : "bg-slate-100/90 text-slate-700 ring-1 ring-slate-200/80"
+        ? "border-slate-100 bg-slate-50/80"
+        : "border-blue-100 bg-gradient-to-b from-blue-50/95 to-blue-50/45"
     }`}
   >
-    <span className={`font-medium ${muted ? "text-slate-400" : "text-slate-500"}`}>{label}</span>
-    <span className={`font-bold tabular-nums ${muted ? "text-slate-400" : "text-slate-900"}`}>
-      {value}
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-wide leading-tight ${
+        muted ? "text-slate-400" : "text-blue-800"
+      }`}
+    >
+      {label}
+    </span>
+    <span
+      className={`text-[13px] font-bold tabular-nums leading-tight ${muted ? "text-slate-400" : "text-slate-800"}`}
+    >
+      {formatOrdinalRank(value)}
     </span>
   </div>
 );
@@ -97,12 +124,13 @@ export const PlayerSelectionCard: React.FC<{
           )}
           <div className="min-w-0 flex-1">
             <p className="text-left text-base font-semibold text-slate-400">No golfer selected</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <RankPill label="DG" value="—" muted />
-              <RankPill label="OWGR" value="—" muted />
-              <RankPill label="FedEx" value="—" muted />
-            </div>
+            <p className="mt-1 text-left text-sm text-slate-400">—</p>
           </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 justify-evenly">
+          <RankPill label="DG" value="—" muted />
+          <RankPill label="OWGR" value="—" muted />
+          <RankPill label="FedEx" value="—" muted />
         </div>
         <div className="mt-2.5 border-t border-slate-100 pt-2.5">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide leading-tight text-slate-400">
@@ -165,16 +193,19 @@ export const PlayerSelectionCard: React.FC<{
           <h3 className="truncate text-left text-xl font-semibold leading-tight text-slate-900">
             {player.pga_displayName || "Unknown"}
           </h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {dgRank !== undefined ? (
-              <RankPill label="DG" value={String(dgRank)} />
-            ) : (
-              <RankPill label="DG" value="—" muted />
-            )}
-            <RankPill label="OWGR" value={owgr} />
-            <RankPill label="FedEx" value={fedex} />
-          </div>
+          <p className="mt-1 truncate text-left text-sm text-slate-600">
+            {player.pga_country?.trim() || "—"}
+          </p>
         </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 justify-evenly">
+        {dgRank !== undefined ? (
+          <RankPill label="DG" value={String(dgRank)} />
+        ) : (
+          <RankPill label="DG" value="—" muted />
+        )}
+        <RankPill label="OWGR" value={owgr} />
+        <RankPill label="FedEx" value={fedex} />
       </div>
 
       {showThisEvent && (
@@ -205,7 +236,7 @@ export const PlayerSelectionCard: React.FC<{
         </div>
       )}
 
-      <div className="mt-2.5 border-t border-slate-100 pt-2.5">
+      <div className="mt-1 pt-2.5">
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide leading-tight text-slate-500">
           Season form
           {currentSeason?.displaySeason ? (

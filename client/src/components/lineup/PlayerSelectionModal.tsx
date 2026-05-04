@@ -123,18 +123,12 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             >
               <DialogPanel className="w-full max-w-modal-wide transform overflow-hidden rounded-lg bg-gradient-to-b from-slate-50 to-white text-left align-middle shadow-xl ring-1 ring-slate-900/[0.08] transition-all">
                 <div className="p-4 sm:p-6">
-                  <header className="mb-4 flex items-start gap-3 border-b border-slate-200/90 pb-4">
-                    <span
-                      className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-blue-500 to-blue-700 shadow-[0_1px_2px_rgba(37,99,235,0.25)]"
-                      aria-hidden
-                    />
-                    <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-slate-900">
-                      Select Player
-                    </DialogTitle>
-                  </header>
+                  <DialogTitle className="mb-3 pb-2 border-b border-slate-200 font-display text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                    Select Player
+                  </DialogTitle>
 
                   <div className="overflow-hidden rounded-md border border-slate-300/90 shadow-sm ring-1 ring-slate-900/[0.04]">
-                    <div className="grid max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-2">
                       {filteredPlayers.map((player) => {
                         const isAlreadySelected = selectedPlayers.includes(player.id);
                         return (
