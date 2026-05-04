@@ -288,7 +288,7 @@ export const ContestLobby: React.FC = () => {
       <Modal
         isOpen={isLineupModalOpen}
         onClose={() => setIsLineupModalOpen(false)}
-        title="Manage Lineups"
+        title="Manage Contest Lineups"
         maxWidth="4xl"
         contentClassName="p-0"
       >

@@ -17,6 +17,7 @@ import {
 import { generateEntryId } from "../../utils/entryIdUtils";
 import { captureContestEntryRecorded } from "../../lib/analytics/posthog";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
+import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 // Import contract ABIs
 import ContestContract from "../../utils/contracts/ContestController.json";
@@ -324,9 +325,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   };
 
   const joinPrimaryDepositLabel =
-    contest.settings?.primaryDeposit === 0
-      ? "Free"
-      : `$${contest.settings?.primaryDeposit ?? 0}`;
+    contest.settings?.primaryDeposit === 0 ? "Free" : `$${contest.settings?.primaryDeposit ?? 0}`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -369,7 +368,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     <button
                       type="button"
                       onClick={() => setWarningModal({ open: false, message: "" })}
-                      className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                      className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                     >
                       Close
                     </button>
@@ -381,89 +380,129 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
         </Dialog>
       </Transition>
 
-      <h3 className="text-sm font-medium text-gray-900">My Lineups</h3>
+      {/* <h3 className="text-sm font-medium text-gray-900">My Lineups</h3> */}
 
-      {lineups.map((lineup) => {
+      {lineups.map((lineup, index) => {
         const isEntered = enteredLineupsMap.has(lineup.id);
         const isPending = pendingAction?.lineupId === lineup.id;
         const isProcessing = isPending && (isSending || isConfirming);
+        const sortedPlayers = sortPlayersByLeaderboard(lineup.players ?? []);
 
         return (
-          <div
-            key={lineup.id}
-            className={`border rounded-sm p-3 ${
-              isEntered ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"
-            }`}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-gray-900">
-                    {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                  </h4>
-                  {isEntered && (
-                    <div className="flex items-center gap-1">
-                      <svg
-                        className="w-4 h-4 text-green-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="text-xs font-medium text-green-600">Lineup Entered</span>
-                    </div>
-                  )}
-                </div>
-                {lineup.players && lineup.players.length > 0 && (
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-600 mt-2">
-                    {lineup.players.map((player) => (
-                      <div key={player.id}>
-                        {player.pga_displayName || `${player.pga_firstName} ${player.pga_lastName}`}
+          <Fragment key={lineup.id}>
+            <div className="rounded-md border border-transparent bg-white p-3 transition-colors">
+              <div className="mb-2 flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-slate-900">
+                      {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
+                    </h4>
+                    {isEntered && (
+                      <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 ml-1">
+                        <svg
+                          className="h-3.5 w-3.5 text-emerald-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="text-xs font-medium text-emerald-700">Entered</span>
                       </div>
-                    ))}
+                    )}
                   </div>
+                  <div
+                    className={`mt-2 overflow-hidden rounded-md border ${
+                      isEntered ? "border-transparent bg-white" : "border-transparent bg-white"
+                    }`}
+                  >
+                    {sortedPlayers.length === 0 ? (
+                      <p className="px-2 py-4 text-center text-sm text-slate-500">
+                        No players selected
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {sortedPlayers.map((player) => {
+                          const displayName =
+                            player.pga_displayName ||
+                            `${player.pga_lastName ?? ""}, ${player.pga_firstName ?? ""}`.trim() ||
+                            "Unknown Player";
+                          const initials = displayName
+                            .split(/[,\s]+/)
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((part) => part[0]?.toUpperCase())
+                            .join("");
+
+                          return (
+                            <div
+                              key={player.id}
+                              className="flex items-center gap-2 rounded-md bg-white p-2"
+                            >
+                              {player.pga_imageUrl ? (
+                                <img
+                                  src={player.pga_imageUrl}
+                                  alt={displayName}
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
+                                  {initials || "?"}
+                                </div>
+                              )}
+                              <div className="min-w-0 text-sm font-medium text-slate-800 truncate">
+                                {displayName}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                {isEntered ? (
+                  <button
+                    onClick={() => handleLeaveContest(lineup.id)}
+                    disabled={isProcessing}
+                    className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center gap-2 justify-center">
+                        <LoadingSpinnerSmall />
+                        {getStatusMessages("idle", isSending, isConfirming)}
+                      </div>
+                    ) : (
+                      "Leave Contest"
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleJoinContest(lineup.id)}
+                    disabled={isProcessing || isPrimaryDepositLoading}
+                    className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center gap-2 justify-center">
+                        <LoadingSpinnerSmall />
+                        {getStatusMessages("idle", isSending, isConfirming)}
+                      </div>
+                    ) : (
+                      `Join Contest — ${joinPrimaryDepositLabel}`
+                    )}
+                  </button>
                 )}
               </div>
             </div>
-
-            <div className="mt-3">
-              {isEntered ? (
-                <button
-                  onClick={() => handleLeaveContest(lineup.id)}
-                  disabled={isProcessing}
-                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center gap-2 justify-center">
-                      <LoadingSpinnerSmall />
-                      {getStatusMessages("idle", isSending, isConfirming)}
-                    </div>
-                  ) : (
-                    "Leave Contest"
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleJoinContest(lineup.id)}
-                  disabled={isProcessing || isPrimaryDepositLoading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center gap-2 justify-center">
-                      <LoadingSpinnerSmall />
-                      {getStatusMessages("idle", isSending, isConfirming)}
-                    </div>
-                  ) : (
-                    `Join Contest — ${joinPrimaryDepositLabel}`
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
+            {index < lineups.length - 1 ? (
+              <hr className="border-0 border-t border-slate-200" />
+            ) : null}
+          </Fragment>
         );
       })}
 
