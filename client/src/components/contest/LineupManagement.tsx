@@ -328,61 +328,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     contest.settings?.primaryDeposit === 0 ? "Free" : `$${contest.settings?.primaryDeposit ?? 0}`;
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Warning Modal */}
-      <Transition appear show={warningModal.open} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-50"
-          onClose={() => setWarningModal({ open: false, message: "" })}
-        >
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-150"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          </TransitionChild>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-5">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-200"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-150"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <DialogPanel className="w-full max-w-md transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
-                  <div className="p-6">
-                    <DialogTitle className="text-lg font-semibold text-red-600 mb-2">
-                      Warning
-                    </DialogTitle>
-                    <div className="text-gray-800 mb-4 font-display">{warningModal.message}</div>
-                    <button
-                      type="button"
-                      onClick={() => setWarningModal({ open: false, message: "" })}
-                      className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-
+    <div className="flex flex-col gap-2">
       {/* <h3 className="text-sm font-medium text-gray-900">My Lineups</h3> */}
 
-      {lineups.map((lineup, index) => {
+      {lineups.map((lineup) => {
         const isEntered = enteredLineupsMap.has(lineup.id);
         const isPending = pendingAction?.lineupId === lineup.id;
         const isProcessing = isPending && (isSending || isConfirming);
@@ -390,7 +339,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
         return (
           <Fragment key={lineup.id}>
-            <div className="rounded-md border border-transparent bg-white p-3 transition-colors">
+            <div className="rounded-none border border-slate-300 bg-white p-3 transition-colors mb-2 shadow-sm">
               <div className="mb-2 flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -499,9 +448,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                 )}
               </div>
             </div>
-            {index < lineups.length - 1 ? (
-              <hr className="border-0 border-t border-slate-200" />
-            ) : null}
           </Fragment>
         );
       })}
@@ -525,6 +471,57 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
             "The transaction was rejected or failed to execute. Please try again."}
         </div>
       )}
+
+      {/* Warning Modal */}
+      <Transition appear show={warningModal.open} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setWarningModal({ open: false, message: "" })}
+        >
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-5">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform rounded-sm bg-white text-left align-middle shadow-xl transition-all">
+                  <div className="p-6">
+                    <DialogTitle className="text-lg font-semibold text-red-600 mb-2">
+                      Warning
+                    </DialogTitle>
+                    <div className="text-gray-800 mb-4 font-display">{warningModal.message}</div>
+                    <button
+                      type="button"
+                      onClick={() => setWarningModal({ open: false, message: "" })}
+                      className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };
