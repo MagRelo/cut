@@ -15,10 +15,10 @@ type SortField = "dg" | "name" | "owgr" | "fedex";
 type SortDirection = "asc" | "desc";
 
 function sortButtonClass(sortField: SortField, field: SortField): string {
-  return `rounded-md border px-3 py-1.5 text-xs font-medium font-display transition-colors ${
+  return `rounded-md border px-3 py-1.5 text-xs font-normal font-display transition-colors ${
     sortField === field
-      ? "border-blue-500 bg-blue-100 text-blue-800 shadow-sm"
-      : "border-slate-400 bg-white text-slate-700 hover:bg-slate-50"
+      ? "border-blue-300 bg-blue-100 text-blue-800 shadow-sm"
+      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
   }`;
 }
 
@@ -123,12 +123,12 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
             >
               <DialogPanel className="w-full max-w-modal-wide transform overflow-hidden rounded-lg bg-gradient-to-b from-slate-50 to-white text-left align-middle shadow-xl ring-1 ring-slate-900/[0.08] transition-all">
                 <div className="p-4 sm:p-6">
-                  <DialogTitle className="mb-3 pb-2 border-b border-slate-200 font-display text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                  <DialogTitle className="pb-2 font-display text-2xl font-semibold leading-tight tracking-tight text-slate-900">
                     Select Player
                   </DialogTitle>
 
                   <div className="overflow-hidden rounded-md border border-slate-300/90 shadow-sm ring-1 ring-slate-900/[0.04]">
-                    <div className="grid max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-2">
+                    <div className="grid max-h-[55vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-2">
                       {filteredPlayers.map((player) => {
                         const isAlreadySelected = selectedPlayers.includes(player.id);
                         return (
@@ -145,7 +145,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     </div>
 
                     <div className="border-t-2 border-slate-300 bg-slate-100 p-3">
-                      <div className="flex flex-wrap justify-center items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-center gap-2">
                         <button
                           type="button"
                           onClick={() => toggleSort("dg")}
@@ -178,18 +178,18 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-5 flex justify-end gap-2 border-t border-slate-200/80 pt-4 sm:mt-6">
+                  <div className="mt-4 flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => onSelect(null)}
-                      className="rounded-md border border-slate-400 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
+                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-normal text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
                     >
                       Leave Empty
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="rounded-md border border-slate-400 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
+                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-normal text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
                     >
                       Close
                     </button>

@@ -1,4 +1,5 @@
 import React from "react";
+import { UserIcon } from "@heroicons/react/24/outline";
 import type { Player, PlayerWithTournamentData } from "../../types/player";
 
 type PerformanceSeason = NonNullable<NonNullable<Player["pga_performance"]>["performance"]>[number];
@@ -107,41 +108,28 @@ export const PlayerSelectionCard: React.FC<{
           {showImage && (
             <div className="shrink-0">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                <svg
-                  className="h-8 w-8 text-slate-300"
-                  fill="none"
-                  viewBox="0 0 23 23"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
+                <UserIcon className="h-8 w-8 text-slate-300" aria-hidden="true" />
               </div>
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-left text-base font-semibold text-slate-400">No golfer selected</p>
-            <p className="mt-1 text-left text-sm text-slate-400">—</p>
+            <p className="text-left font-display leading-tight text-lg font-semibold text-slate-400">
+              No Player Selected
+            </p>
+            <p className="mt-1 text-left text-sm text-slate-400">{"\u00A0"}</p>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 justify-evenly">
-          <RankPill label="DG" value="—" muted />
-          <RankPill label="OWGR" value="—" muted />
-          <RankPill label="FedEx" value="—" muted />
-        </div>
-        <div className="mt-2.5 border-t border-slate-100 pt-2.5">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide leading-tight text-slate-400">
-            Season form
-          </p>
-          <div className="grid grid-cols-4 gap-1.5">
-            <StatTile label="Wins" value="—" muted />
-            <StatTile label="T10" value="—" muted />
-            <StatTile label="T25" value="—" muted />
-            <StatTile label="Cuts" value="—" muted />
+        <div className="mt-3">
+          <div className="grid grid-cols-3 gap-1.5">
+            <RankPill label="DG" value={"\u00A0"} muted className="w-full justify-center" />
+            <RankPill label="OWGR" value={"\u00A0"} muted className="w-full justify-center" />
+            <RankPill label="FedEx" value={"\u00A0"} muted className="w-full justify-center" />
+          </div>
+          <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+            <StatTile label="Wins" value={"\u00A0"} muted />
+            <StatTile label="T10" value={"\u00A0"} muted />
+            <StatTile label="T25" value={"\u00A0"} muted />
+            <StatTile label="Cuts" value={"\u00A0"} muted />
           </div>
         </div>
       </div>
