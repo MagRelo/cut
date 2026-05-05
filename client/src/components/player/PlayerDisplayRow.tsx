@@ -136,12 +136,12 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
       <button
         type="button"
         onClick={onClick}
-        className="group font-display w-full p-3 mb-1 text-left cursor-pointer"
+        className="group font-display w-full p-3 text-left cursor-pointer"
       >
         {content}
       </button>
     );
   }
 
-  return <div className="font-display w-full p-3 mb-1">{content}</div>;
+  return <div className="font-display w-full p-3">{content}</div>;
 };

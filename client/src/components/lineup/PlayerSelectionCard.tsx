@@ -11,7 +11,7 @@ interface StatTileProps {
 
 const StatTile: React.FC<StatTileProps> = ({ label, value, muted }) => (
   <div
-    className={`rounded-sm border px-1.5 py-1 text-center leading-snug ${
+    className={`rounded-sm border px-1.5 py-1.5 text-center leading-snug ${
       muted
         ? "border-slate-100 bg-slate-50/80"
         : "border-blue-100 bg-gradient-to-b from-blue-50/95 to-blue-50/45"
@@ -25,7 +25,7 @@ const StatTile: React.FC<StatTileProps> = ({ label, value, muted }) => (
       {label}
     </div>
     <div
-      className={`mt-0.5 text-[13px] font-bold tabular-nums leading-tight ${
+      className={`mt-1 text-[13px] font-bold tabular-nums leading-tight ${
         muted ? "text-slate-400" : "text-slate-800"
       }`}
     >
@@ -38,6 +38,7 @@ interface RankPillProps {
   label: string;
   value: string;
   muted?: boolean;
+  className?: string;
 }
 
 function ordinalSuffix(n: number): string {
@@ -59,9 +60,9 @@ function formatOrdinalRank(value: string): string {
   return `${n}${ordinalSuffix(n)}`;
 }
 
-const RankPill: React.FC<RankPillProps> = ({ label, value, muted }) => (
+const RankPill: React.FC<RankPillProps> = ({ label, value, muted, className = "" }) => (
   <div
-    className={`inline-flex items-baseline gap-1.5 rounded-sm border px-2 py-1.5 leading-snug ${
+    className={`inline-flex items-baseline gap-1.5 rounded-sm border p-2 leading-snug ${className} ${
       muted
         ? "border-slate-100 bg-slate-50/80"
         : "border-blue-100 bg-gradient-to-b from-blue-50/95 to-blue-50/45"
@@ -169,13 +170,6 @@ export const PlayerSelectionCard: React.FC<{
         : "—";
 
   const dgRank = player.pga_performance?.dataGolfRanking?.dg_rank;
-  const tourPos = player.tournamentData?.leaderboardPosition?.trim();
-  const tourTotal = player.tournamentData?.leaderboardTotal?.trim();
-  const tourScore =
-    player.tournamentData?.total !== undefined && player.tournamentData.total !== null
-      ? String(player.tournamentData.total)
-      : null;
-  const showThisEvent = Boolean(tourPos || tourTotal || tourScore);
 
   return (
     <div className={`${shell} p-3 ${className}`}>
@@ -189,61 +183,27 @@ export const PlayerSelectionCard: React.FC<{
             />
           </div>
         )}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 mt-1">
           <h3 className="truncate text-left text-xl font-semibold leading-tight text-slate-900">
             {player.pga_displayName || "Unknown"}
           </h3>
-          <p className="mt-1 truncate text-left text-sm text-slate-600">
+          <p className="truncate text-left text-sm text-slate-600">
             {player.pga_country?.trim() || "—"}
           </p>
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 justify-evenly">
-        {dgRank !== undefined ? (
-          <RankPill label="DG" value={String(dgRank)} />
-        ) : (
-          <RankPill label="DG" value="—" muted />
-        )}
-        <RankPill label="OWGR" value={owgr} />
-        <RankPill label="FedEx" value={fedex} />
-      </div>
 
-      {showThisEvent && (
-        <div className="mt-3 rounded-md border border-emerald-100 bg-gradient-to-r from-emerald-50/90 to-teal-50/50 px-2.5 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/80">
-            This tournament
-          </p>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm text-emerald-950">
-            {tourPos ? (
-              <span>
-                <span className="font-medium text-emerald-800/85">Pos.</span>{" "}
-                <span className="font-bold tabular-nums">{tourPos}</span>
-              </span>
-            ) : null}
-            {tourTotal ? (
-              <span>
-                <span className="font-medium text-emerald-800/85">Score</span>{" "}
-                <span className="font-bold tabular-nums">{tourTotal}</span>
-              </span>
-            ) : null}
-            {!tourTotal && tourScore ? (
-              <span>
-                <span className="font-medium text-emerald-800/85">Pts</span>{" "}
-                <span className="font-bold tabular-nums">{tourScore}</span>
-              </span>
-            ) : null}
-          </div>
+      <div className="mt-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          {dgRank !== undefined ? (
+            <RankPill label="DG" value={String(dgRank)} className="w-full justify-center" />
+          ) : (
+            <RankPill label="DG" value="—" muted className="w-full justify-center" />
+          )}
+          <RankPill label="OWGR" value={owgr} className="w-full justify-center" />
+          <RankPill label="FedEx" value={fedex} className="w-full justify-center" />
         </div>
-      )}
-
-      <div className="mt-1 pt-2.5">
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide leading-tight text-slate-500">
-          Season form
-          {currentSeason?.displaySeason ? (
-            <span className="font-normal text-slate-500"> · {currentSeason.displaySeason}</span>
-          ) : null}
-        </p>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="mt-1.5 grid grid-cols-4 gap-1.5">
           <StatTile label="Wins" value={wins} />
           <StatTile label="T10" value={t10} />
           <StatTile label="T25" value={t25} />

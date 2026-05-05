@@ -4,11 +4,18 @@ import { Link } from "react-router-dom";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
-import { EntryHeader } from "../contest/EntryHeader";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
+
+const DEFAULT_USER_COLOR = "#9CA3AF";
+
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
 
 interface ContestInfo {
   contest: Contest;
@@ -26,6 +33,8 @@ interface LineupContestCardProps {
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
+
+const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18rem] pt-2 pb-2 flow-root";
 
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
@@ -66,17 +75,63 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       ? (userSettings as { color?: unknown }).color
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
+  const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
+  const canEditLineup = Boolean(isEditable && editHref);
 
   return (
     <div className="">
       {/* Header */}
-
-      <EntryHeader
-        userName={lineup.user?.name || lineup.user?.email || "Unknown User"}
-        lineupName={lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
-        totalPoints={totalPoints || 0}
-        userColorHex={userColorHex}
-      />
+      <div
+        className="mb-1 p-3 font-display"
+        style={{
+          borderLeftColor: resolvedBorderColor,
+          borderLeftWidth: "5px",
+          borderLeftStyle: "solid",
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 text-left font-display">
+            <div className="truncate text-xl font-semibold leading-tight text-gray-900">
+              {lineup.user?.name || lineup.user?.email || "Unknown User"}
+            </div>
+            <div className="truncate text-sm leading-tight text-gray-700">
+              {lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {canEditLineup ? (
+              <Link
+                to={editHref!}
+                className="inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
+              >
+                <span>Edit</span>
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </Link>
+            ) : (
+              <div className="text-right">
+                <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
+                <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+                  PTS
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Tabs */}
       <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
@@ -84,11 +139,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           <Tab
             className={({ selected }: { selected: boolean }) =>
               classNames(
-                "w-full py-1.5 text-sm font-display leading-5",
+                "w-full border-b-2 py-1.5 text-sm font-display leading-5",
                 "focus:outline-none",
                 selected
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
               )
             }
           >
@@ -97,11 +152,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           <Tab
             className={({ selected }: { selected: boolean }) =>
               classNames(
-                "w-full py-1.5 text-sm font-display leading-5",
+                "w-full border-b-2 py-1.5 text-sm font-display leading-5",
                 "focus:outline-none",
                 selected
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
               )
             }
           >
@@ -122,8 +177,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
         <div className="">
           {/* PLAYERS TAB */}
-          <TabPanel>
-            <div className="mt-2">
+          <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+            <div className="space-y-1">
               {sortedPlayers.map((player) => (
                 <PlayerDisplayRow
                   key={player.id}
@@ -132,37 +187,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   onClick={() => openPlayerModal(player)}
                 />
               ))}
-              {isEditable && editHref ? (
-                <div className="flex justify-center border-t border-gray-200 mt-2 pt-4">
-                  <Link
-                    to={editHref}
-                    className="inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
-                  >
-                    <span>Edit Lineup</span>
-                    <svg
-                      className="h-4 w-4 shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  </Link>
-                </div>
-              ) : null}
             </div>
           </TabPanel>
 
           {/* CONTESTS TAB */}
-          <TabPanel>
-            <div className="mt-3 pb-2 space-y-3">
+          <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+            <div className="space-y-3">
               {contests.length > 0 ? (
                 contests.map((contestInfo) => {
                   return (
