@@ -121,9 +121,9 @@ export const PlayerSelectionCard: React.FC<{
         </div>
         <div className="mt-3">
           <div className="grid grid-cols-3 gap-1.5">
-            <RankPill label="DG" value={"\u00A0"} muted className="w-full justify-center" />
             <RankPill label="OWGR" value={"\u00A0"} muted className="w-full justify-center" />
             <RankPill label="FedEx" value={"\u00A0"} muted className="w-full justify-center" />
+            <RankPill label="DG" value={"\u00A0"} muted className="w-full justify-center" />
           </div>
           <div className="mt-1.5 grid grid-cols-4 gap-1.5">
             <StatTile label="Wins" value={"\u00A0"} muted />
@@ -183,13 +183,13 @@ export const PlayerSelectionCard: React.FC<{
 
       <div className="mt-3">
         <div className="grid grid-cols-3 gap-1.5">
+          <RankPill label="OWGR" value={owgr} className="w-full justify-center" />
+          <RankPill label="FedEx" value={fedex} className="w-full justify-center" />
           {dgRank !== undefined ? (
             <RankPill label="DG" value={String(dgRank)} className="w-full justify-center" />
           ) : (
             <RankPill label="DG" value="—" muted className="w-full justify-center" />
           )}
-          <RankPill label="OWGR" value={owgr} className="w-full justify-center" />
-          <RankPill label="FedEx" value={fedex} className="w-full justify-center" />
         </div>
         <div className="mt-1.5 grid grid-cols-4 gap-1.5">
           <StatTile label="Wins" value={wins} />

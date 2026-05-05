@@ -148,13 +148,6 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <button
                           type="button"
-                          onClick={() => toggleSort("dg")}
-                          className={sortButtonClass(sortField, "dg")}
-                        >
-                          DG {sortField === "dg" && (sortDirection === "asc" ? "↑" : "↓")}
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => toggleSort("owgr")}
                           className={sortButtonClass(sortField, "owgr")}
                         >
@@ -166,6 +159,13 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                           className={sortButtonClass(sortField, "fedex")}
                         >
                           FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleSort("dg")}
+                          className={sortButtonClass(sortField, "dg")}
+                        >
+                          DG {sortField === "dg" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"

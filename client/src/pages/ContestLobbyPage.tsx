@@ -177,7 +177,7 @@ export const ContestLobby: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
-                      className="w-full max-w-sm rounded-lg bg-blue-600 px-6 py-3 text-base font-display font-semibold text-white shadow-md shadow-blue-900/15 transition hover:bg-blue-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 active:bg-blue-800"
+                      className="w-full max-w-sm rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-6 py-3 text-base font-display font-semibold text-white shadow-md shadow-blue-900/20 transition hover:from-blue-500 hover:to-blue-600 hover:shadow-lg hover:shadow-blue-900/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                     >
                       Enter Contest{" — "}
                       <span>
