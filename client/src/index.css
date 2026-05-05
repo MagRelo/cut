@@ -51,4 +51,26 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Privy modal / embedded UI — align with app blues; foreground-accent = text on primary buttons */
+  --privy-border-radius-sm: 0.375rem;
+  --privy-border-radius-md: 0.5rem;
+  --privy-border-radius-lg: 0.75rem;
+  --privy-border-radius-full: 9999px;
+  --privy-color-background: #ffffff;
+  --privy-color-background-2: #f8fafc;
+  --privy-color-background-3: #f1f5f9;
+  --privy-color-foreground: #0f172a;
+  --privy-color-foreground-2: #334155;
+  --privy-color-foreground-3: #64748b;
+  --privy-color-foreground-4: #94a3b8;
+  --privy-color-foreground-accent: #ffffff;
+  --privy-color-accent: #2563eb;
+  --privy-color-accent-light: #3b82f6;
+  --privy-color-accent-lightest: #dbeafe;
+  --privy-color-accent-dark: #1d4ed8;
+  --privy-color-accent-darkest: #1e3a8a;
+  --privy-color-success: #16a34a;
+  --privy-color-error: #dc2626;
+  --privy-color-error-light: #fecaca;
 }
