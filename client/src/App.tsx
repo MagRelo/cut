@@ -75,10 +75,10 @@ const AppShell: React.FC = () => {
   return (
     <>
       <ReferralQueryCapture />
-      <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="min-h-dvh bg-gray-100 flex flex-col">
         {/* TODO: Remove this when we're ready to go live */}
         {/* <MaintenanceOverlay /> */}
-        <div className="flex flex-col flex-grow">
+        <main className="flex-1 min-h-0">
           <div className="container mx-auto">
             <OnboardingRedirectGate>
               <div className="max-w-2xl mx-auto">
@@ -229,7 +229,7 @@ const AppShell: React.FC = () => {
               </div>
             </OnboardingRedirectGate>
           </div>
-        </div>
+        </main>
         <Footer />
       </div>
       <GlobalLoadingOverlay isBlocking={isBlockingLoad} />

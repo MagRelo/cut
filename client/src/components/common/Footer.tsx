@@ -9,7 +9,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-transparent">
+    <footer className="w-full bg-gray-100 shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-14 items-center">
           <div className="flex items-center gap-4">
