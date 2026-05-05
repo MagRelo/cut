@@ -191,9 +191,11 @@ export const ContestLobby: React.FC = () => {
                           <strong>{contest.tournament.name}</strong> starts in
                         </span>
                         <br />
-                        <span className="inline-block min-w-[120px] whitespace-nowrap tabular-nums pt-1">
-                          <CountdownTimer targetDate={contest.tournament.startDate} />
-                        </span>
+                        <strong>
+                          <span className="inline-block min-w-[120px] whitespace-nowrap tabular-nums pt-1">
+                            <CountdownTimer targetDate={contest.tournament.startDate} />
+                          </span>
+                        </strong>
                       </p>
                     ) : null}
                   </div>
