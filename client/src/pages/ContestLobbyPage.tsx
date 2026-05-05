@@ -11,16 +11,17 @@ import { LineupManagement } from "../components/contest/LineupManagement";
 import { ContestEntryList } from "../components/contest/ContestEntryList";
 import { ContestSettings } from "../components/contest/ContestSettings";
 import { Connect } from "../components/user/Connect";
-import { arePrimaryActionsLocked, areSecondaryActionsLocked } from "../types/contest";
+import { arePrimaryActionsLocked } from "../types/contest";
 import { ContestResultsPanel } from "../components/contest/ContestResultsPanel";
 import { Timeline } from "../components/contest/Timeline";
 import { type TimelineData } from "../types/contest";
 import { Modal } from "../components/common/Modal";
 import { ContestPayoutsModal } from "../components/contest/ContestPayoutsModal";
-import { ContestSharesPieChart } from "../components/contest/ContestSharesPieChart";
-import { PredictionLineupsList } from "../components/contest/PredictionLineupsList";
-import { PredictionPositionsList } from "../components/contest/PredictionPositionsList";
-import { ContestState } from "../hooks/useContestPredictionData";
+// TEMP HIDE: winner pool UI (restore these imports when re-enabling)
+// import { ContestSharesPieChart } from "../components/contest/ContestSharesPieChart";
+// import { PredictionLineupsList } from "../components/contest/PredictionLineupsList";
+// import { PredictionPositionsList } from "../components/contest/PredictionPositionsList";
+// import { ContestState } from "../hooks/useContestPredictionData";
 import { CountdownTimer } from "../components/tournament/CountdownTimer";
 import ContestContract from "../utils/contracts/ContestController.json";
 
@@ -56,39 +57,38 @@ export const ContestLobby: React.FC = () => {
     },
   });
 
-  const { data: secondarySideBalance } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "getSecondarySideBalance",
-    chainId: contest?.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: Boolean(contest?.address),
-    },
-  });
-
   const primaryPoolLabel = Math.round(
     Number(formatUnits((primarySideBalance as bigint | undefined) ?? 0n, 18)),
   ).toLocaleString();
-  const secondaryPoolLabel = Math.round(
-    Number(formatUnits((secondarySideBalance as bigint | undefined) ?? 0n, 18)),
-  ).toLocaleString();
-
-  const { data: contestStateOnChain } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "state",
-    chainId: contest?.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: Boolean(contest?.address),
-    },
-  });
-
-  const secondaryActionsLockedForWinnerPool = contest
-    ? areSecondaryActionsLocked(contest.status)
-    : true;
-  const canPredictOnChain =
-    contestStateOnChain === ContestState.OPEN || contestStateOnChain === ContestState.ACTIVE;
-  const canOpenLineupModalForWinnerPool = canPredictOnChain && !secondaryActionsLockedForWinnerPool;
+  // TEMP HIDE: winner pool UI (restore this data flow when re-enabling)
+  // const { data: secondarySideBalance } = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: ContestContract.abi,
+  //   functionName: "getSecondarySideBalance",
+  //   chainId: contest?.chainId as 8453 | 84532 | undefined,
+  //   query: {
+  //     enabled: Boolean(contest?.address),
+  //   },
+  // });
+  // const secondaryPoolLabel = Math.round(
+  //   Number(formatUnits((secondarySideBalance as bigint | undefined) ?? 0n, 18)),
+  // ).toLocaleString();
+  // const { data: contestStateOnChain } = useReadContract({
+  //   address: contest?.address as `0x${string}`,
+  //   abi: ContestContract.abi,
+  //   functionName: "state",
+  //   chainId: contest?.chainId as 8453 | 84532 | undefined,
+  //   query: {
+  //     enabled: Boolean(contest?.address),
+  //   },
+  // });
+  // const secondaryActionsLockedForWinnerPool = contest
+  //   ? areSecondaryActionsLocked(contest.status)
+  //   : true;
+  // const canPredictOnChain =
+  //   contestStateOnChain === ContestState.OPEN || contestStateOnChain === ContestState.ACTIVE;
+  // const canOpenLineupModalForWinnerPool =
+  //   canPredictOnChain && !secondaryActionsLockedForWinnerPool;
 
   // tabs - default to first tab (Contest)
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -152,15 +152,18 @@ export const ContestLobby: React.FC = () => {
             <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
               Contest – ${primaryPoolLabel}
             </Tab>
+            {/* TEMP HIDE: Winner Pool tab (kept for exact restore)
             {!isPostSettlement ? (
               <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
                 Winner Pool - ${secondaryPoolLabel}
               </Tab>
-            ) : (
+            ) : null}
+            */}
+            {isPostSettlement ? (
               <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
                 Results
               </Tab>
-            )}
+            ) : null}
           </TabList>
 
           <TabPanels>
@@ -220,13 +223,11 @@ export const ContestLobby: React.FC = () => {
               </TabPanel>
             )} */}
 
+            {/* TEMP HIDE: Winner Pool panel (kept for exact restore)
             {!isPostSettlement ? (
-              /* Prediction Market (Winner Pool tab) */
               <TabPanel className="p-4 focus:outline-none">
                 <div className="space-y-4">
                   <ContestSharesPieChart contest={contest} />
-                  {/* <ContestTimelinesSection timelineData={contest.timeline} variant="sharePrice" /> */}
-
                   <TabGroup>
                     <TabList className={TAB_LIST_CLASS}>
                       <Tab
@@ -255,13 +256,15 @@ export const ContestLobby: React.FC = () => {
                   </TabGroup>
                 </div>
               </TabPanel>
-            ) : (
+            ) : null}
+            */}
+            {isPostSettlement ? (
               <TabPanel className="p-4 focus:outline-none">
                 <div>
                   <ContestResultsPanel contest={contest} />
                 </div>
               </TabPanel>
-            )}
+            ) : null}
           </TabPanels>
         </TabGroup>
       </div>
