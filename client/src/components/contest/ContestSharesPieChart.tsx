@@ -4,6 +4,8 @@ import { type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+const EMPTY_STATE_PIE_GRADIENT =
+  "conic-gradient(from -90deg, transparent 0% 0.4%, rgba(34, 197, 94, 0.55) 0.4% 22.3%, transparent 22.3% 23.1%, rgba(22, 163, 74, 0.55) 23.1% 34.6%, transparent 34.6% 35.4%, rgba(74, 222, 128, 0.55) 35.4% 54.8%, transparent 54.8% 55.6%, rgba(21, 128, 61, 0.55) 55.6% 62.0%, transparent 62.0% 62.8%, rgba(52, 211, 153, 0.55) 62.8% 80.9%, transparent 80.9% 81.7%, rgba(34, 197, 94, 0.55) 81.7% 95.0%, transparent 95.0% 95.8%, rgba(22, 163, 74, 0.55) 95.8% 99.6%, transparent 99.6% 100%)";
 
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
@@ -150,16 +152,10 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
         <div
           className="relative h-40 w-40 rounded-full flex-shrink-0 transition-[background-image] duration-300 ease-out"
           style={{
-            backgroundImage: showEmptyState
-              ? "linear-gradient(135deg, rgb(226 232 240), rgb(203 213 225))"
-              : chartData.gradient,
+            backgroundImage: showEmptyState ? EMPTY_STATE_PIE_GRADIENT : chartData.gradient,
           }}
         >
-          <div
-            className={`absolute inset-[7px] rounded-full flex flex-col items-center justify-center px-2 text-center ${
-              showEmptyState ? "bg-slate-50" : "bg-white"
-            }`}
-          >
+          <div className="absolute inset-[7px] rounded-full flex flex-col items-center justify-center px-2 text-center bg-white">
             <div className="flex h-[90px] w-full flex-col items-center justify-center">
               <div className="relative flex min-h-[52px] w-full items-center justify-center leading-none">
                 <div
@@ -167,12 +163,14 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
                     showEmptyState ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  <div className="text-xs font-semibold text-slate-500 uppercase font-display tracking-wide leading-tight">
-                    Winner Pool is open
+                  <div className="text-xs font-semibold text-emerald-700 uppercase font-display tracking-wide leading-tight">
+                    Winner Pool
+                    <br />
+                    is open
                   </div>
-                  <div className="mt-1 text-[10px] text-slate-500 font-display leading-tight">
+                  {/* <div className="mt-1 text-[10px] text-emerald-600 font-display leading-tight">
                     Select a lineup to <br /> place a wager
-                  </div>
+                  </div> */}
                 </div>
                 <div
                   className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ease-out ${
@@ -188,12 +186,10 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
                 </div>
               </div>
 
-              <div className="mt-1 flex h-5 items-center justify-center">
+              <div className="flex h-5 items-center justify-center">
                 <Link
                   to="/faq#winner-pool"
-                  className={`font-display text-blue-600 hover:text-blue-700 ${
-                    showEmptyState ? "text-[10px] underline" : "text-xs"
-                  }`}
+                  className="font-display text-blue-600 hover:text-blue-700 text-[12px]"
                 >
                   What's this?
                 </Link>
