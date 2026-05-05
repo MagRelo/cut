@@ -384,14 +384,14 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                           <p className="mb-2 text-[10px] font-display font-semibold uppercase tracking-[0.14em] text-slate-400">
                             Roster
                           </p>
-                          <div className="grid grid-cols-2 gap-2 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2.5 ring-1 ring-inset ring-slate-100/90">
+                          <div className="space-y-2 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2.5 ring-1 ring-inset ring-slate-100/90">
                             {sortedPlayers.map((player, pickIndex) => {
-                              const last = (player.pga_lastName ?? "").trim();
                               const first = (player.pga_firstName ?? "").trim();
+                              const last = (player.pga_lastName ?? "").trim();
                               const displayName =
-                                last && first
-                                  ? `${last}, ${first}`
-                                  : last || first || player.pga_displayName?.trim() || "Unknown Player";
+                                player.pga_displayName?.trim() ||
+                                (first && last ? `${first} ${last}` : first || last) ||
+                                "Unknown Player";
                               return (
                                 <div
                                   key={player.id}
@@ -436,7 +436,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     <button
                       onClick={() => handleJoinContest(lineup.id)}
                       disabled={isProcessing || isPrimaryDepositLoading}
-                      className="w-full rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md shadow-blue-900/20 transition hover:from-blue-500 hover:to-blue-600 hover:shadow-lg hover:shadow-blue-900/25 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                      className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-sm font-semibold font-display text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isProcessing ? (
                         <div className="flex items-center gap-2 justify-center">
