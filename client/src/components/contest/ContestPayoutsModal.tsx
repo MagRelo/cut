@@ -82,6 +82,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const networkBonusTotal = (totalPrizePool * oracleFeeBps) / 10000;
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
+  const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
   return (
     <Modal
@@ -97,52 +98,66 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Total Prize Pool Summary */}
-          <div className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-sm font-display">
-            <div className="border-b border-blue-200 bg-blue-50/80 px-3 py-1.5">
-              <div className="font-display text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-blue-700">
-                Total prize pool
+        <div className="space-y-4 font-display">
+          <section className="overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
+            <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.35fr_1fr] sm:items-end">
+              <div>
+                <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.16em] text-blue-700">
+                  Total Prize Pool
+                </p>
+                <p className="mt-1 text-4xl font-semibold leading-tight tracking-tight text-slate-900 tabular-nums">
+                  {formatCurrency(totalPrizePool)}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-200/70 bg-white/90 p-2.5">
+                <div className="rounded-md bg-blue-50 px-2 py-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+                    Contest Pool
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
+                    {formatCurrency(primaryPrizePoolData.grossTotal)}
+                  </p>
+                </div>
+                <div className="rounded-md bg-indigo-50 px-2 py-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                    Winner Pool
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
+                    {formatCurrency(secondaryLiquidityData.grossTotal)}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="p-3 pt-2">
-              <p className="font-display text-4xl font-semibold leading-tight tracking-tight text-slate-900 tabular-nums">
-                ${Math.round(totalPrizePool).toLocaleString()}
-              </p>
-            </div>
-          </div>
+          </section>
 
-          <section className="space-y-2">
-            <div className="border-b border-slate-200 pb-1">
-              <h2 className="font-display text-xl font-semibold leading-tight text-slate-900">
+          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="text-xl font-semibold leading-tight text-slate-900">
                 Contest payouts
               </h2>
+              <p className="mt-1 text-xs text-slate-500">Paid based on final contest standings.</p>
             </div>
-            {/* <p className="text-sm leading-tight text-slate-500">
-              Distributed based on final scores and position. In case of ties, payouts are split
-              evenly among tied participants.
-            </p> */}
-            <div className="divide-y divide-slate-200 pl-4 sm:pl-5">
+            <div className="divide-y divide-slate-200">
               {payoutStructure.map((payout) => {
                 const payoutAmount = (primaryPrizePoolData.netTotal * payout.percentage) / 100;
                 return (
                   <div
                     key={payout.position}
-                    className="flex items-baseline justify-between gap-3 py-2 first:pt-1"
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5"
                   >
                     <div className="min-w-0">
-                      <p className="font-display text-md font-semibold leading-tight text-slate-800">
+                      <p className="text-base font-semibold leading-tight text-slate-800">
                         {payout.label}
                       </p>
-                      <p className="mt-px font-display text-xs leading-tight text-slate-500">
+                      <p className="mt-0.5 text-xs leading-tight text-slate-500">
                         {payout.percentage}% of contest pool
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="font-display text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
-                        ${Math.round(payoutAmount).toLocaleString()}
+                      <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                        {formatCurrency(payoutAmount)}
                       </p>
-                      <p className="mt-px font-display text-xs leading-tight tabular-nums text-slate-500">
+                      <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
                         {payoutAmount.toFixed(2)} {tokenLabel}
                       </p>
                     </div>
@@ -152,30 +167,28 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             </div>
           </section>
 
-          <section className="space-y-2">
-            <div className="border-b border-slate-200 pb-1">
-              <h2 className="font-display text-xl font-semibold leading-tight text-slate-900">
+          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="text-xl font-semibold leading-tight text-slate-900">
                 Winner Pool payouts
               </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Winner-ticket holders split this pool proportionally.
+              </p>
             </div>
-            {/* <p className="text-sm leading-tight text-slate-500">
-              Winner-take-all pool distributed proportionally to holders of the winning entry.
-            </p> */}
-            <div className="divide-y divide-slate-200 pl-4 sm:pl-5">
-              <div className="flex items-baseline justify-between gap-3 py-2 first:pt-1">
+            <div className="divide-y divide-slate-200">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="font-display text-md font-semibold leading-tight text-slate-800">
-                    Winner ticket
+                  <p className="text-base font-semibold leading-tight text-slate-800">
+                    Winner Ticket
                   </p>
-                  <p className="mt-px font-display text-xs leading-tight text-slate-500">
-                    100% of winner pool
-                  </p>
+                  <p className="mt-0.5 text-xs leading-tight text-slate-500">100% of winner pool</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-display text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
-                    ${Math.round(secondaryLiquidityData.netTotal).toLocaleString()}
+                  <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                    {formatCurrency(secondaryLiquidityData.netTotal)}
                   </p>
-                  <p className="mt-px font-display text-xs leading-tight tabular-nums text-slate-500">
+                  <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
                     {secondaryLiquidityData.netTotal.toFixed(2)} {tokenLabel}
                   </p>
                 </div>
@@ -183,36 +196,39 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             </div>
           </section>
 
-          <section className="space-y-2">
-            <div className="border-b border-slate-200 pb-1">
-              <h2 className="font-display text-xl font-semibold leading-tight text-slate-900">
-                Rewards
-              </h2>
+          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="text-xl font-semibold leading-tight text-slate-900">Rewards</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Grow the game, reward the community, and give value back to players.
+              </p>
             </div>
-            {/* <p className="text-sm leading-tight text-slate-500">
-              Grow the game, reward the community, and give value back to players.
-            </p> */}
-            <div className="divide-y divide-slate-200 pl-4 sm:pl-5">
-              <div className="flex items-baseline justify-between gap-3 py-2 first:pt-1">
+            <div className="divide-y divide-slate-200">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="font-display text-md font-semibold leading-tight text-slate-800">
-                    Network bonus
+                  <p className="text-base font-semibold leading-tight text-slate-800">
+                    Invite Network
                   </p>
-                  <p className="mt-px font-display text-xs leading-tight text-slate-500">
+                  <p className="mt-0.5 text-xs leading-tight text-slate-500">
                     {oracleFeeBps > 0 ? "Invite rewards" : "No rewards allocation for this contest"}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-display text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
-                    ${Math.round(networkBonusTotal).toLocaleString()}
+                  <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                    {formatCurrency(networkBonusTotal)}
                   </p>
-                  <p className="mt-px font-display text-xs leading-tight tabular-nums text-slate-500">
+                  <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
                     {networkBonusTotal.toFixed(2)} {tokenLabel}
                   </p>
                 </div>
               </div>
             </div>
           </section>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            Payouts are based on final standings. Tied positions split the corresponding payouts
+            evenly.
+          </div>
         </div>
       )}
     </Modal>
