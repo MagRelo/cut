@@ -21,6 +21,28 @@ const DEFAULT_OG_IMAGE = "https://cut.mattlovan.dev/cut-logo2-og.png";
 const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
 const TITLE_SUFFIX = " | the Cut";
 
+function getContestEntryLabel(settings: unknown): string | null {
+  if (!settings || typeof settings !== "object") {
+    return null;
+  }
+
+  const primaryDeposit = (settings as { primaryDeposit?: unknown }).primaryDeposit;
+  if (primaryDeposit == null) {
+    return null;
+  }
+
+  const entryFee = Number(primaryDeposit);
+  if (!Number.isFinite(entryFee)) {
+    return null;
+  }
+
+  if (entryFee === 0) {
+    return "Free";
+  }
+
+  return `$${entryFee}`;
+}
+
 function getBaseUrl(c: Context): string {
   const configured = process.env.PUBLIC_WEB_URL?.trim();
   if (configured) {
@@ -145,13 +167,18 @@ async function resolveMetadataForPath(
         select: {
           name: true,
           description: true,
+          settings: true,
         },
       });
 
       if (contest?.name) {
+        const entryLabel = getContestEntryLabel(contest.settings);
+        const titleParts = [entryLabel, contest.name].filter(Boolean).join(" ").trim();
+        const title = `${titleParts}${TITLE_SUFFIX}`;
+
         return {
           ...defaults,
-          title: `${contest.name}${TITLE_SUFFIX}`,
+          title,
           description: contest.description?.trim() || "Join this contest on the Cut.",
         };
       }
