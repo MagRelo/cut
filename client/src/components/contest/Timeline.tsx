@@ -24,10 +24,7 @@ interface TimelineProps {
   allowedMetrics?: TimelineMetric[];
 }
 
-export const Timeline: React.FC<TimelineProps> = ({
-  className = "",
-  timelineData,
-}) => {
+export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData }) => {
   const [selectedRound, setSelectedRound] = useState(4);
 
   const topTeams = useMemo(() => {
@@ -46,7 +43,9 @@ export const Timeline: React.FC<TimelineProps> = ({
       topTeams.flatMap((team) =>
         team.dataPoints
           .map((dp) => dp.roundNumber)
-          .filter((round): round is number => typeof round === "number" && round >= 1 && round <= 4),
+          .filter(
+            (round): round is number => typeof round === "number" && round >= 1 && round <= 4,
+          ),
       ),
     );
   }, [topTeams]);
@@ -172,7 +171,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div className={`font-display ${className}`.trim()}>
-      <div className="bg-white p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
+      <div className="bg-white p-2 pb-1 timeline-chart" style={{ height: "250px" }}>
         {selectedRoundTimestamps.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
             No timeline data available for Round {selectedRound}.
@@ -192,9 +191,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               disabled={!hasData}
               onClick={() => setSelectedRound(round)}
               className={`flex-1 py-1.5 text-xs border-b ${
-                isActive
-                  ? "text-blue-700 border-blue-600"
-                  : "text-gray-600 border-transparent"
+                isActive ? "text-blue-700 border-blue-600" : "text-gray-600 border-transparent"
               } ${hasData ? "" : "opacity-50 cursor-not-allowed"}`}
               aria-pressed={isActive}
             >
