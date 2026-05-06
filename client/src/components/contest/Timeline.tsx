@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +13,7 @@ import { Line } from "react-chartjs-2";
 import type { TimelineData, TimelineMetric } from "../../types/contest";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+const ROUND_BUTTONS = [1, 2, 3, 4] as const;
 
 interface TimelineProps {
   className?: string;
@@ -23,35 +24,11 @@ interface TimelineProps {
   allowedMetrics?: TimelineMetric[];
 }
 
-function teamHasSharePrice(team: TimelineData["teams"][number]): boolean {
-  return team.dataPoints.some((dp) => dp.sharePrice != null && Number.isFinite(dp.sharePrice));
-}
-
 export const Timeline: React.FC<TimelineProps> = ({
   className = "",
   timelineData,
-  defaultMetric = "score",
-  allowedMetrics,
 }) => {
-  const hasSharePriceData = useMemo(
-    () => timelineData.teams.some(teamHasSharePrice),
-    [timelineData.teams],
-  );
-
-  const selectableMetrics = useMemo((): TimelineMetric[] => {
-    const base: TimelineMetric[] = ["score"];
-    if (hasSharePriceData) base.push("sharePrice");
-    if (!allowedMetrics?.length) return base;
-    return base.filter((m) => allowedMetrics.includes(m));
-  }, [hasSharePriceData, allowedMetrics]);
-
-  const metric = useMemo((): TimelineMetric => {
-    if (allowedMetrics?.length === 1 && allowedMetrics[0]) {
-      return allowedMetrics[0];
-    }
-    if (selectableMetrics.includes(defaultMetric)) return defaultMetric;
-    return selectableMetrics[0] ?? "score";
-  }, [selectableMetrics, defaultMetric, allowedMetrics]);
+  const [selectedRound, setSelectedRound] = useState(4);
 
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
@@ -64,61 +41,54 @@ export const Timeline: React.FC<TimelineProps> = ({
       .slice(0, 10);
   }, [timelineData.teams]);
 
-  const { labels, allTimestampsSorted } = useMemo(() => {
-    const seenRounds = new Set<string>();
-    const labelList = [
-      ...new Set(topTeams.flatMap((team) => team.dataPoints.map((dp) => dp.timestamp))),
-    ]
-      .sort()
-      .map((timestamp) => {
-        const dataPoint = topTeams
-          .flatMap((team) => team.dataPoints)
-          .find((dp) => dp.timestamp === timestamp);
-        const roundLabel = dataPoint?.roundNumber ? `Round ${dataPoint.roundNumber}` : "";
-        if (roundLabel && !seenRounds.has(roundLabel)) {
-          seenRounds.add(roundLabel);
-          return roundLabel;
-        }
-        return "";
-      });
-    const timestamps = [
-      ...new Set(topTeams.flatMap((t) => t.dataPoints.map((dp) => dp.timestamp))),
-    ].sort();
-    return { labels: labelList, allTimestampsSorted: timestamps };
+  const availableRounds = useMemo(() => {
+    return new Set(
+      topTeams.flatMap((team) =>
+        team.dataPoints
+          .map((dp) => dp.roundNumber)
+          .filter((round): round is number => typeof round === "number" && round >= 1 && round <= 4),
+      ),
+    );
   }, [topTeams]);
 
-  const chartData = useMemo(() => {
-    if (metric === "score") {
-      return {
-        labels,
-        datasets: topTeams.map((team) => {
-          const scoreMap = new Map(team.dataPoints.map((dp) => [dp.timestamp, dp.score]));
-          return {
-            label: team.name,
-            data: allTimestampsSorted.map((timestamp) => scoreMap.get(timestamp) ?? null),
-            borderColor: team.color,
-            backgroundColor: team.color,
-            borderWidth: 2,
-            pointRadius: 0,
-            tension: 0.4,
-            spanGaps: true,
-          };
-        }),
-      };
+  useEffect(() => {
+    if (availableRounds.size > 0 && !availableRounds.has(selectedRound)) {
+      const latestAvailableRound = [...ROUND_BUTTONS]
+        .reverse()
+        .find((round) => availableRounds.has(round));
+      if (latestAvailableRound) setSelectedRound(latestAvailableRound);
     }
+  }, [availableRounds, selectedRound]);
 
+  const selectedRoundTimestamps = useMemo(() => {
+    return [
+      ...new Set(
+        topTeams.flatMap((team) =>
+          team.dataPoints
+            .filter((dp) => dp.roundNumber === selectedRound)
+            .map((dp) => dp.timestamp),
+        ),
+      ),
+    ].sort();
+  }, [topTeams, selectedRound]);
+
+  const labels = useMemo(
+    () => selectedRoundTimestamps.map((_timestamp, idx) => `${idx + 1}`),
+    [selectedRoundTimestamps],
+  );
+
+  const chartData = useMemo(() => {
     return {
       labels,
       datasets: topTeams.map((team) => {
-        const priceMap = new Map(
-          team.dataPoints.map((dp) => [dp.timestamp, dp.sharePrice ?? null]),
+        const scoreMap = new Map(
+          team.dataPoints
+            .filter((dp) => dp.roundNumber === selectedRound)
+            .map((dp) => [dp.timestamp, dp.score]),
         );
         return {
           label: team.name,
-          data: allTimestampsSorted.map((timestamp) => {
-            const v = priceMap.get(timestamp);
-            return v != null && Number.isFinite(v) ? v : null;
-          }),
+          data: selectedRoundTimestamps.map((timestamp) => scoreMap.get(timestamp) ?? null),
           borderColor: team.color,
           backgroundColor: team.color,
           borderWidth: 2,
@@ -128,7 +98,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         };
       }),
     };
-  }, [metric, labels, topTeams, allTimestampsSorted]);
+  }, [labels, topTeams, selectedRoundTimestamps, selectedRound]);
 
   const options = useMemo(
     () => ({
@@ -155,13 +125,13 @@ export const Timeline: React.FC<TimelineProps> = ({
             display: false,
           },
           ticks: {
-            display: true,
+            display: false,
             font: {
               family: "'Outfit', sans-serif",
               size: 9,
             },
             maxRotation: 0,
-            autoSkip: false,
+            autoSkip: true,
             maxTicksLimit: 10,
           },
         },
@@ -169,7 +139,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           display: true,
           title: {
             display: false,
-            text: metric === "score" ? "Score" : "Projected return per $1 stake",
+            text: "Score",
           },
           grid: {
             color: "#e5e7eb",
@@ -179,20 +149,13 @@ export const Timeline: React.FC<TimelineProps> = ({
               family: "'Outfit', sans-serif",
               size: 9,
             },
-            callback: (value: string | number) =>
-              metric === "sharePrice" ? `$${Number(value).toFixed(2)}` : value,
+            callback: (value: string | number) => value,
           },
         },
       },
     }),
-    [metric],
+    [],
   );
-
-  const emptySharePrice =
-    metric === "sharePrice" &&
-    !topTeams.some((team) =>
-      team.dataPoints.some((dp) => dp.sharePrice != null && Number.isFinite(dp.sharePrice)),
-    );
 
   if (!timelineData.teams.length) {
     return (
@@ -210,13 +173,35 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div className={`font-display ${className}`.trim()}>
       <div className="bg-white p-4 pb-3 timeline-chart" style={{ height: "250px" }}>
-        {emptySharePrice ? (
+        {selectedRoundTimestamps.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
-            No odds history yet. It appears after timeline snapshots include market data.
+            No timeline data available for Round {selectedRound}.
           </div>
         ) : (
           <Line data={chartData} options={options} />
         )}
+      </div>
+      <div className="bg-white px-4 pb-4 flex gap-2">
+        {ROUND_BUTTONS.map((round) => {
+          const isActive = selectedRound === round;
+          const hasData = availableRounds.has(round);
+          return (
+            <button
+              key={round}
+              type="button"
+              disabled={!hasData}
+              onClick={() => setSelectedRound(round)}
+              className={`flex-1 py-1.5 text-xs border-b ${
+                isActive
+                  ? "text-blue-700 border-blue-600"
+                  : "text-gray-600 border-transparent"
+              } ${hasData ? "" : "opacity-50 cursor-not-allowed"}`}
+              aria-pressed={isActive}
+            >
+              Round {round}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
