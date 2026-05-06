@@ -344,7 +344,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   const userDisplayName = user?.name || user?.email || "Unknown User";
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-gray-100 p-2">
+    <div className="flex flex-col gap-2 rounded-xl bg-gray-100 p-4 pt-2">
       {/* <h3 className="text-sm font-medium text-gray-900">My Lineups</h3> */}
 
       {isLineupsLoading && (
@@ -365,7 +365,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
           return (
             <Fragment key={lineup.id}>
-              <div className="group mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
+              <div className="group mb-2 rounded-xl border border-gray-200 bg-white p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
                 <div className="overflow-hidden rounded-sm border border-slate-200/90 bg-white">
                   <div className="flex items-center gap-2 border-b border-slate-200">
                     <div

@@ -328,7 +328,7 @@ export const ContestLobby: React.FC = () => {
               >
                 <DialogPanel className="w-full max-w-modal-wide transform overflow-hidden rounded-sm bg-white text-left align-middle shadow-xl transition-all">
                   <div className="flex items-center justify-between p-3 pb-2 bg-gray-100">
-                    <DialogTitle className="font-display text-xl font-semibold tracking-tight text-slate-900">
+                    <DialogTitle className="font-display text-xl font-semibold tracking-tight text-slate-800">
                       Manage Contest Lineups
                     </DialogTitle>
                     <button
