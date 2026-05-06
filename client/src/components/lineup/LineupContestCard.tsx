@@ -82,7 +82,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     <div className="">
       {/* Header */}
       <div
-        className="mb-1 p-3 font-display"
+        className="p-3 py-5 font-display"
         style={{
           borderLeftColor: resolvedBorderColor,
           borderLeftWidth: "5px",
@@ -90,7 +90,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         }}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 text-left font-display">
+          <div className="min-w-0 flex-1 text-left font-display pl-1">
             <div className="truncate text-xl font-semibold leading-tight text-gray-900">
               {lineup.user?.name || lineup.user?.email || "Unknown User"}
             </div>
@@ -102,7 +102,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             {canEditLineup ? (
               <Link
                 to={editHref!}
-                className="inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
+                className="mr-1 inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
               >
                 <span>Edit</span>
                 <svg
@@ -134,98 +134,103 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       </div>
 
       {/* Tabs */}
-      <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-        <TabList className="flex space-x-1 border-b border-gray-200">
-          <Tab
-            className={({ selected }: { selected: boolean }) =>
-              classNames(
-                "w-full border-b-2 py-1.5 text-sm font-display leading-5",
-                "focus:outline-none",
-                selected
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-              )
-            }
-          >
-            Players ({lineupPlayers.length})
-          </Tab>
-          <Tab
-            className={({ selected }: { selected: boolean }) =>
-              classNames(
-                "w-full border-b-2 py-1.5 text-sm font-display leading-5",
-                "focus:outline-none",
-                selected
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-              )
-            }
-          >
-            <span className="inline-flex items-center gap-1">
-              <span>Contests ({contests.length})</span>
-              {contests.length === 0 ? (
-                <span
-                  className="inline-flex items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700"
-                  title="No contests for this lineup"
-                  aria-label="Warning: lineup has no contests"
-                >
-                  !
-                </span>
-              ) : null}
-            </span>
-          </Tab>
-        </TabList>
 
-        <div className="">
-          {/* PLAYERS TAB */}
-          <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-            <div className="space-y-1">
-              {sortedPlayers.map((player) => (
-                <PlayerDisplayRow
-                  key={player.id}
-                  player={player}
-                  roundDisplay={roundDisplay}
-                  onClick={() => openPlayerModal(player)}
-                />
-              ))}
-            </div>
-          </TabPanel>
-
-          {/* CONTESTS TAB */}
-          <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-            <div className="space-y-3">
-              {contests.length > 0 ? (
-                contests.map((contestInfo) => {
-                  return (
-                    <div key={contestInfo.contest.id} className="flex items-center gap-2">
-                      {/* Contest Card */}
-                      <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow">
-                        <Link to={`/contest/${contestInfo.contest.id}`} className="block">
-                          <ContestCard contest={contestInfo.contest} />
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-sm border border-gray-200 bg-white p-4 shadow">
-                  <p className="mb-1 font-display text-base font-semibold text-gray-900">
-                    This lineup is not entered in any contests.
-                  </p>
-                  <p className="font-display text-sm leading-relaxed text-gray-600">
-                    Browse available contests and enter your lineup.
-                  </p>
-                  <Link
-                    to="/contests"
-                    className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+      <div className="p-4 pt-0">
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+          <TabList className="flex space-x-1 border-b border-gray-200">
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
+              Players ({lineupPlayers.length})
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
+              <span className="inline-flex items-center gap-1">
+                <span>Contests ({contests.length})</span>
+                {contests.length === 0 ? (
+                  <span
+                    className="inline-flex items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700"
+                    title="No contests for this lineup"
+                    aria-label="Warning: lineup has no contests"
                   >
-                    Browse Contests
-                  </Link>
-                </div>
-              )}
-            </div>
-          </TabPanel>
-        </div>
-      </TabGroup>
+                    !
+                  </span>
+                ) : null}
+              </span>
+            </Tab>
+          </TabList>
+
+          <div className="">
+            {/* PLAYERS TAB */}
+            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+              <div className="space-y-1">
+                {sortedPlayers.map((player) => (
+                  <PlayerDisplayRow
+                    key={player.id}
+                    player={player}
+                    roundDisplay={roundDisplay}
+                    onClick={() => openPlayerModal(player)}
+                  />
+                ))}
+              </div>
+            </TabPanel>
+
+            {/* CONTESTS TAB */}
+            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+              <div className="space-y-3">
+                {contests.length > 0 ? (
+                  contests.map((contestInfo) => {
+                    return (
+                      <div key={contestInfo.contest.id} className="flex items-center gap-2">
+                        {/* Contest Card */}
+                        <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow">
+                          <Link to={`/contest/${contestInfo.contest.id}`} className="block">
+                            <ContestCard contest={contestInfo.contest} />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-sm border border-gray-200 bg-white p-4 shadow">
+                    <p className="mb-1 font-display text-base font-semibold text-gray-900">
+                      This lineup is not entered in any contests.
+                    </p>
+                    <p className="font-display text-sm leading-relaxed text-gray-600">
+                      Browse available contests and enter your lineup.
+                    </p>
+                    <Link
+                      to="/contests"
+                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                    >
+                      Browse Contests
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </TabPanel>
+          </div>
+        </TabGroup>
+      </div>
+
+      {/* Player Detail Modal */}
       <PlayerDetailModal
         isOpen={isModalOpen}
         onClose={closePlayerModal}
