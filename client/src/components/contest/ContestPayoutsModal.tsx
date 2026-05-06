@@ -108,8 +108,8 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="space-y-4 font-display">
-          <section className="overflow-hidden rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
+        <div className="space-y-4 rounded-xl bg-slate-100 p-3 font-display">
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.35fr_1fr] sm:items-end">
               <div>
                 <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.16em] text-blue-700">

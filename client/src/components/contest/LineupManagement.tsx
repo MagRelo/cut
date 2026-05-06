@@ -55,6 +55,14 @@ const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
   return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
 };
 
+const DEFAULT_USER_COLOR = "#9CA3AF";
+
+const isValidHexColor = (value: unknown): value is string => {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+};
+
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData();
@@ -327,13 +335,20 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
   const joinPrimaryDepositLabel =
     contest.settings?.primaryDeposit === 0 ? "Free" : `$${contest.settings?.primaryDeposit ?? 0}`;
+  const userSettings = user?.settings;
+  const maybeUserColor =
+    typeof userSettings === "object" && userSettings !== null
+      ? (userSettings as { color?: unknown }).color
+      : undefined;
+  const resolvedBorderColor = isValidHexColor(maybeUserColor) ? maybeUserColor : DEFAULT_USER_COLOR;
+  const userDisplayName = user?.name || user?.email || "Unknown User";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-xl bg-gray-100 p-2">
       {/* <h3 className="text-sm font-medium text-gray-900">My Lineups</h3> */}
 
       {isLineupsLoading && (
-        <div className="py-8">
+        <div className="py-8 min-h-48">
           <div className="flex flex-col items-center justify-center gap-3">
             <LoadingSpinner />
             <p className="text-sm font-display text-slate-500">Loading lineups...</p>
@@ -350,16 +365,24 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
           return (
             <Fragment key={lineup.id}>
-              <div className="group mb-3 rounded-xl border border-gray-200 bg-gradient-to-b from-blue-50 to-blue-100 p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
-                <div className="overflow-hidden rounded-lg border border-slate-200/90 bg-white">
-                  <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2.5">
-                    <h4 className="font-display text-base font-semibold tracking-wide text-slate-900">
-                      {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                    </h4>
+              <div className="group mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
+                <div className="overflow-hidden rounded-sm border border-slate-200/90 bg-white">
+                  <div className="flex items-center gap-2 border-b border-slate-200">
+                    <div
+                      className="min-w-0 flex-1 border-l-[5px] pl-3 py-1 font-display px-3 py-2.5"
+                      style={{ borderLeftColor: resolvedBorderColor }}
+                    >
+                      <div className="truncate text-base font-semibold leading-tight text-gray-900">
+                        {userDisplayName}
+                      </div>
+                      <div className="truncate text-xs leading-tight text-gray-600">
+                        {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
+                      </div>
+                    </div>
 
                     {/* Entered badge */}
                     {isEntered && (
-                      <div className="ml-1 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
+                      <div className="ml-auto mr-2 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
                         <svg
                           className="h-3.5 w-3.5 text-white"
                           fill="currentColor"
@@ -395,7 +418,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                             className="flex min-w-0 items-center gap-3 px-3 py-2.5"
                           >
                             <span
-                              className="w-6 shrink-0 text-center font-display text-xs font-bold tabular-nums text-slate-600"
+                              className="w-6 shrink-0 text-center font-display text-xs font-bold tabular-nums text-slate-400"
                               aria-hidden
                             >
                               {pickIndex + 1}
