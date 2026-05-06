@@ -1,6 +1,7 @@
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
+import { useCurrentTournament } from "../../hooks/useTournamentData";
 import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
@@ -21,8 +22,14 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   onClick,
   ownershipPercentage,
 }) => {
-  // Calculate total points
+  const { tournament: currentTournament } = useCurrentTournament();
+  const isTournamentEditable =
+    currentTournament?.status !== "IN_PROGRESS" && currentTournament?.status !== "COMPLETED";
+  const resolvedIsActive = !isTournamentEditable;
+
   const totalPoints = player.tournamentData?.total || 0;
+  const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;
+  const leaderboardTotalDisplay = leaderboardTotalRaw || "E";
 
   // Get hot/cold icon from current round
   const getCurrentRoundIcon = () => {
@@ -33,11 +40,10 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     }
     return "";
   };
-
   const icon = getCurrentRoundIcon();
 
+  // Calculate score thru label
   const roundData = getRoundDataForDisplay(player.tournamentData, roundDisplay);
-  // const roundShortLabel = getRoundShortLabel(roundDisplay);
   const holeProgress = getRoundHoleProgress(roundData);
   const roundVsPar = formatRoundStrokesVsPar(roundData);
   const scoreThruLabel = (() => {
@@ -52,12 +58,32 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     return `${roundVsPar} ${thruPart}`;
   })();
 
-  const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;
-  const leaderboardTotalDisplay = leaderboardTotalRaw || "E";
+  const inactiveContent = (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {player.pga_imageUrl && (
+          <div className="flex-shrink-0">
+            <img
+              className="h-10 w-10 rounded-full object-cover"
+              src={player.pga_imageUrl}
+              alt={player.pga_displayName || ""}
+            />
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="truncate text-md font-semibold leading-tight text-gray-900">
+            {player.pga_lastName && player.pga_firstName
+              ? `${player.pga_lastName}, ${player.pga_firstName}`
+              : player.pga_displayName || ""}
+          </div>
+          <div className="truncate text-xs text-gray-600">{player.pga_country?.trim() || "—"}</div>
+        </div>
+      </div>
+    </div>
+  );
 
   const content = (
     <div className="flex items-center justify-between gap-3">
-      {/* Leaderboard total (top) + position (bottom), beside photo */}
       <div className="flex w-4 shrink-0 flex-col items-center justify-center gap-1.5 text-center tabular-nums">
         <span className="text-xs font-semibold leading-none text-gray-800">
           {player.tournamentData?.leaderboardPosition || "–"}
@@ -138,10 +164,10 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
         onClick={onClick}
         className="group font-display w-full p-3 text-left cursor-pointer"
       >
-        {content}
+        {resolvedIsActive ? content : inactiveContent}
       </button>
     );
   }
 
-  return <div className="font-display w-full p-3">{content}</div>;
+  return <div className="font-display w-full p-3">{resolvedIsActive ? content : inactiveContent}</div>;
 };
