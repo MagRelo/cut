@@ -415,7 +415,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     <button
                       onClick={() => handleLeaveContest(lineup.id)}
                       disabled={isProcessing}
-                      className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 text-sm font-medium font-display text-gray-600 shadow-sm transition-colors hover:border-gray-500 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 text-sm font-medium font-display text-gray-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isProcessing ? (
                         <div className="flex items-center gap-2 justify-center">
