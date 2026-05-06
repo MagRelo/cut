@@ -381,9 +381,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                         </p>
                       ) : (
                         <>
-                          <p className="mb-2 text-[10px] font-display font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          {/* <p className="mb-2 text-[10px] font-display font-semibold uppercase tracking-[0.14em] text-slate-400">
                             Roster
-                          </p>
+                          </p> */}
                           <div className="space-y-2 rounded-xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2.5 ring-1 ring-inset ring-slate-100/90">
                             {sortedPlayers.map((player, pickIndex) => {
                               const first = (player.pga_firstName ?? "").trim();
