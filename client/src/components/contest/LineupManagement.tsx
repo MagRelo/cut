@@ -351,71 +351,63 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
           return (
             <Fragment key={lineup.id}>
               <div className="group mb-3 rounded-xl border border-gray-200 bg-gradient-to-b from-blue-50 to-blue-100 p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
-                <div className="mb-2 flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-display text-base font-bold tracking-wide text-slate-900">
-                        {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
-                      </h4>
+                <div className="overflow-hidden rounded-lg border border-slate-200/90 bg-white">
+                  <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2.5">
+                    <h4 className="font-display text-base font-semibold tracking-wide text-slate-900">
+                      {lineup.name || `Lineup ${lineup.id.slice(-6)}`}
+                    </h4>
 
-                      {/* Entered badge */}
-                      {isEntered && (
-                        <div className="ml-1 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
-                          <svg
-                            className="h-3.5 w-3.5 text-white"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span className="text-xs font-semibold text-white">Entered</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      {sortedPlayers.length === 0 ? (
-                        <p className="rounded-lg border border-dashed border-gray-300 bg-white/70 px-3 py-6 text-center font-display text-sm text-slate-700">
-                          No players selected
-                        </p>
-                      ) : (
-                        <>
-                          {/* <p className="mb-2 text-[10px] font-display font-semibold uppercase tracking-[0.14em] text-slate-400">
-                            Roster
-                          </p> */}
-                          <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/90 bg-white">
-                            {sortedPlayers.map((player, pickIndex) => {
-                              const first = (player.pga_firstName ?? "").trim();
-                              const last = (player.pga_lastName ?? "").trim();
-                              const displayName =
-                                player.pga_displayName?.trim() ||
-                                (first && last ? `${first} ${last}` : first || last) ||
-                                "Unknown Player";
-                              return (
-                                <div
-                                  key={player.id}
-                                  className="flex min-w-0 items-center gap-3 px-3 py-2.5"
-                                >
-                                  <span
-                                    className="w-6 shrink-0 text-center font-display text-xs font-bold tabular-nums text-slate-600"
-                                    aria-hidden
-                                  >
-                                    {pickIndex + 1}
-                                  </span>
-                                  <span className="min-w-0 truncate font-display text-sm font-semibold leading-snug text-slate-800">
-                                    {displayName}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    {/* Entered badge */}
+                    {isEntered && (
+                      <div className="ml-1 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
+                        <svg
+                          className="h-3.5 w-3.5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="text-xs font-semibold text-white">Entered</span>
+                      </div>
+                    )}
                   </div>
+
+                  {sortedPlayers.length === 0 ? (
+                    <p className="px-3 py-6 text-center font-display text-sm text-slate-700">
+                      No players selected
+                    </p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {sortedPlayers.map((player, pickIndex) => {
+                        const first = (player.pga_firstName ?? "").trim();
+                        const last = (player.pga_lastName ?? "").trim();
+                        const displayName =
+                          player.pga_displayName?.trim() ||
+                          (first && last ? `${first} ${last}` : first || last) ||
+                          "Unknown Player";
+                        return (
+                          <div
+                            key={player.id}
+                            className="flex min-w-0 items-center gap-3 px-3 py-2.5"
+                          >
+                            <span
+                              className="w-6 shrink-0 text-center font-display text-xs font-bold tabular-nums text-slate-600"
+                              aria-hidden
+                            >
+                              {pickIndex + 1}
+                            </span>
+                            <span className="min-w-0 truncate font-display text-sm font-semibold leading-snug text-slate-800">
+                              {displayName}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4">
@@ -423,7 +415,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     <button
                       onClick={() => handleLeaveContest(lineup.id)}
                       disabled={isProcessing}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium font-display text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 text-sm font-medium font-display text-gray-600 shadow-sm transition-colors hover:border-gray-500 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isProcessing ? (
                         <div className="flex items-center gap-2 justify-center">
@@ -438,7 +430,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     <button
                       onClick={() => handleJoinContest(lineup.id)}
                       disabled={isProcessing || isPrimaryDepositLoading}
-                      className="w-full rounded-lg border border-blue-600 bg-blue-600 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-700 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isProcessing ? (
                         <div className="flex items-center gap-2 justify-center">

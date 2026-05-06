@@ -6,6 +6,7 @@ import { LoadingSpinner } from "../common/LoadingSpinner";
 import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
+import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 
 interface ContestPayoutsModalProps {
   isOpen: boolean;
@@ -83,6 +84,15 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
   const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString()}`;
+  const contractExplorerLink =
+    contest?.address && chainId !== undefined
+      ? createExplorerLinkJSX(
+          contest.address,
+          chainId,
+          "View Contest Contract...",
+          "text-sm font-medium text-blue-700 decoration-blue-700/30 underline-offset-4 transition-colors hover:text-blue-900",
+        )
+      : null;
 
   return (
     <Modal
@@ -154,7 +164,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                      <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
                         {formatCurrency(payoutAmount)}
                       </p>
                       <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
@@ -185,7 +195,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                   <p className="mt-0.5 text-xs leading-tight text-slate-500">100% of winner pool</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                  <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
                     {formatCurrency(secondaryLiquidityData.netTotal)}
                   </p>
                   <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
@@ -214,7 +224,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-xl font-semibold leading-tight text-emerald-700 tabular-nums">
+                  <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
                     {formatCurrency(networkBonusTotal)}
                   </p>
                   <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
@@ -225,9 +235,9 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             </div>
           </section>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            Payouts are based on final standings. Tied positions split the corresponding payouts
-            evenly.
+          <div>
+            <hr className="border-0 border-t border-slate-200" />
+            {contractExplorerLink ? <div className="py-2">{contractExplorerLink}</div> : null}
           </div>
         </div>
       )}

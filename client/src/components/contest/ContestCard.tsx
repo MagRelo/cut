@@ -81,7 +81,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     <div className="flex items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
       <div className="min-w-[4.25rem] flex-shrink-0 rounded-md border border-blue-200 bg-blue-50 p-1.5 text-center">
-        <div className="text-base font-display font-bold leading-none tabular-nums text-blue-600">
+        <div className="text-base font-display font-bold leading-none tabular-nums text-gray-800">
           {contest.settings?.primaryDeposit === 0
             ? "Free"
             : contest.settings?.primaryDeposit != null
@@ -142,19 +142,19 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             aria-label="Contest Payouts"
             className="ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
-            <div className="text-xl font-display font-bold leading-none text-emerald-700 tabular-nums">
+            <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
               {showLoading ? "..." : `$${displayPot}`}
             </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-emerald-700/70">
+            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
               POT
             </div>
           </button>
         ) : (
           <div className="ml-2 mr-2 text-right">
-            <div className="text-xl font-display font-bold leading-none text-emerald-700 tabular-nums">
+            <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
               {showLoading ? "..." : `$${displayPot}`}
             </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-emerald-700/70">
+            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
               POT
             </div>
           </div>
