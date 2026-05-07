@@ -90,7 +90,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
           contest.address,
           chainId,
           "View Contest Contract...",
-          "text-sm font-medium text-blue-700 decoration-blue-700/30 underline-offset-4 transition-colors hover:text-blue-900",
+          "text-sm text-blue-600 hover:underline",
         )
       : null;
 
@@ -103,144 +103,153 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
       scrollable
       maxHeight="600px"
     >
-      {isLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      ) : (
-        <div className="space-y-4 rounded-xl bg-slate-100 p-3 font-display">
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.35fr_1fr] sm:items-end">
-              <div>
-                <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.16em] text-blue-700">
-                  Total Prize Pool
-                </p>
-                <p className="mt-1 text-4xl font-semibold leading-tight tracking-tight text-slate-900 tabular-nums">
-                  {formatCurrency(totalPrizePool)}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-200/70 bg-white/90 p-2.5">
-                <div className="rounded-md bg-blue-50 px-2 py-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
-                    Contest Pool
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
-                    {formatCurrency(primaryPrizePoolData.grossTotal)}
-                  </p>
-                </div>
-                <div className="rounded-md bg-indigo-50 px-2 py-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-700">
-                    Winner Pool
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
-                    {formatCurrency(secondaryLiquidityData.grossTotal)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="border-b border-slate-200 pb-2">
-              <h2 className="text-xl font-semibold leading-tight text-slate-900">
-                Contest payouts
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">Paid based on final contest standings.</p>
-            </div>
-            <div className="divide-y divide-slate-200">
-              {payoutStructure.map((payout) => {
-                const payoutAmount = (primaryPrizePoolData.netTotal * payout.percentage) / 100;
-                return (
-                  <div
-                    key={payout.position}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold leading-tight text-slate-800">
-                        {payout.label}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-tight text-slate-500">
-                        {payout.percentage}% of contest pool
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
-                        {formatCurrency(payoutAmount)}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
-                        {payoutAmount.toFixed(2)} {tokenLabel}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="border-b border-slate-200 pb-2">
-              <h2 className="text-xl font-semibold leading-tight text-slate-900">
-                Winner Pool payouts
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Winner-ticket holders split this pool proportionally.
-              </p>
-            </div>
-            <div className="divide-y divide-slate-200">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-base font-semibold leading-tight text-slate-800">
-                    Winner Ticket
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight text-slate-500">100% of winner pool</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
-                    {formatCurrency(secondaryLiquidityData.netTotal)}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
-                    {secondaryLiquidityData.netTotal.toFixed(2)} {tokenLabel}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="border-b border-slate-200 pb-2">
-              <h2 className="text-xl font-semibold leading-tight text-slate-900">Rewards</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Grow the game, reward the community, and give value back to players.
-              </p>
-            </div>
-            <div className="divide-y divide-slate-200">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-base font-semibold leading-tight text-slate-800">
-                    Invite Network
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight text-slate-500">
-                    {oracleFeeBps > 0 ? "Invite rewards" : "No rewards allocation for this contest"}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
-                    {formatCurrency(networkBonusTotal)}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
-                    {networkBonusTotal.toFixed(2)} {tokenLabel}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div>
-            <hr className="border-0 border-t border-slate-200" />
-            {contractExplorerLink ? <div className="py-2">{contractExplorerLink}</div> : null}
+      <div>
+        {isLoading ? (
+          <div className="flex min-h-[200px] items-center justify-center">
+            <LoadingSpinner />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-4 rounded-xl bg-slate-100 p-3 font-display">
+            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.35fr_1fr] sm:items-end">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.16em] text-blue-700">
+                    Total Prize Pool
+                  </p>
+                  <p className="mt-1 text-4xl font-semibold leading-tight tracking-tight text-slate-900 tabular-nums">
+                    {formatCurrency(totalPrizePool)}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-200/70 bg-white/90 p-2.5">
+                  <div className="rounded-md bg-blue-50 px-2 py-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+                      Contest Pool
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
+                      {formatCurrency(primaryPrizePoolData.grossTotal)}
+                    </p>
+                  </div>
+                  <div className="rounded-md bg-indigo-50 px-2 py-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                      Winner Pool
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
+                      {formatCurrency(secondaryLiquidityData.grossTotal)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="border-b border-slate-200 pb-2">
+                <h2 className="text-xl font-semibold leading-tight text-slate-900">
+                  Contest payouts
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Paid based on final contest standings.
+                </p>
+              </div>
+              <div className="divide-y divide-slate-200">
+                {payoutStructure.map((payout) => {
+                  const payoutAmount = (primaryPrizePoolData.netTotal * payout.percentage) / 100;
+                  return (
+                    <div
+                      key={payout.position}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold leading-tight text-slate-800">
+                          {payout.label}
+                        </p>
+                        <p className="mt-0.5 text-xs leading-tight text-slate-500">
+                          {payout.percentage}%
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
+                          {formatCurrency(payoutAmount)}
+                        </p>
+                        <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
+                          {payoutAmount.toFixed(2)} {tokenLabel}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="border-b border-slate-200 pb-2">
+                <h2 className="text-xl font-semibold leading-tight text-slate-900">
+                  Winner Pool payouts
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Winner-ticket holders split this pool proportionally.
+                </p>
+              </div>
+              <div className="divide-y divide-slate-200">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold leading-tight text-slate-800">
+                      Winner Ticket
+                    </p>
+                    <p className="mt-0.5 text-xs leading-tight text-slate-500">
+                      100% of winner pool
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
+                      {formatCurrency(secondaryLiquidityData.netTotal)}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
+                      {secondaryLiquidityData.netTotal.toFixed(2)} {tokenLabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="border-b border-slate-200 pb-2">
+                <h2 className="text-xl font-semibold leading-tight text-slate-900">Rewards</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Grow the game, reward the community, and give value back to players.
+                </p>
+              </div>
+              <div className="divide-y divide-slate-200">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold leading-tight text-slate-800">
+                      Invite Network
+                    </p>
+                    <p className="mt-0.5 text-xs leading-tight text-slate-500">
+                      {oracleFeeBps > 0
+                        ? "Invite rewards"
+                        : "No rewards allocation for this contest"}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-lg font-semibold leading-tight text-emerald-600 tabular-nums">
+                      {formatCurrency(networkBonusTotal)}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">
+                      {networkBonusTotal.toFixed(2)} {tokenLabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div>
+              {contractExplorerLink ? (
+                <div className="mb-2 ml-4">{contractExplorerLink}</div>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </div>
     </Modal>
   );
 };

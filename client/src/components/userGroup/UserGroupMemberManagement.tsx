@@ -104,7 +104,7 @@ export const UserGroupMemberManagement = ({
         title="Add Member"
         maxWidth="md"
       >
-        <form onSubmit={handleAddMember} className="space-y-4">
+        <form onSubmit={handleAddMember} className="space-y-4 p-4">
           {addMemberMutation.error && (
             <ErrorMessage
               message={
@@ -236,7 +236,7 @@ export const UserGroupMemberManagement = ({
         title="Remove Member"
         maxWidth="md"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           {removeMemberMutation.error && <ErrorMessage message={getRemoveError()} />}
 
           <p className="text-gray-700">

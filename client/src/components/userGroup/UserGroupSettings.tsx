@@ -95,7 +95,7 @@ export const UserGroupSettings = ({
         title="Delete Group"
         maxWidth="md"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           {deleteMutation.error && <ErrorMessage message={getDeleteError()} />}
 
           <p className="text-gray-700">

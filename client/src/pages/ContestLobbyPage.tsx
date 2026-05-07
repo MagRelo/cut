@@ -288,7 +288,6 @@ export const ContestLobby: React.FC = () => {
         maxWidth="2xl"
         scrollable
         maxHeight="600px"
-        contentClassName="p-0"
       >
         <ContestSettings contest={contest} />
       </Modal>

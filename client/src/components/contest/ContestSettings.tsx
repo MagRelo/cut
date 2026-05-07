@@ -211,7 +211,7 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4">
       {/* Contest Contract Details */}
       <div>
         {/* Contract panel */}

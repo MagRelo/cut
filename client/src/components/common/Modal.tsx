@@ -94,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
 
                 {/* Content */}
                 <div
-                  className={`p-4 ${scrollable ? "overflow-y-auto" : ""} ${contentClassName}`}
+                  className={`${scrollable ? "overflow-y-auto" : ""} ${contentClassName}`.trim()}
                   style={maxHeight ? { maxHeight } : undefined}
                 >
                   {children}

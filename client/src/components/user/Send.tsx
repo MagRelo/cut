@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tab, TabGroup, TabList } from "@headlessui/react";
-import { useAccount, useChainId } from "wagmi";
+import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useModeAwareTransfer } from "../../hooks/useTokenOperations";
 import { useAuth } from "../../contexts/AuthContext";
-import { getNetworkLabel } from "../../utils/blockchainUtils";
 
 type SendMode = "internal" | "external";
 const ENABLE_EXTERNAL_SEND = false;
@@ -18,8 +17,7 @@ export type SendProps = {
 };
 
 export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendProps) => {
-  const { isConnected, chain } = useAccount();
-  const chainId = useChainId();
+  const { isConnected } = useAccount();
   const {
     platformTokenBalance,
     paymentTokenBalance,
@@ -36,7 +34,6 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   const platformBalance = platformTokenBalance ?? 0n;
   const paymentBalance = paymentTokenBalance ?? 0n;
   const decimalScale = 10n ** BigInt(resolvedPlatformDecimals - resolvedPaymentDecimals);
-  const networkName = getNetworkLabel(chainId, chain?.name);
 
   const [mode, setMode] = useState<SendMode>("internal");
   const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
@@ -209,20 +206,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Network</label>
-            <input
-              type="text"
-              value={networkName}
-              readOnly
-              aria-readonly="true"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm font-display text-gray-700 cursor-not-allowed"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Recipient Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Account ID</label>
             <input
               type="text"
               value={recipientAddress}
