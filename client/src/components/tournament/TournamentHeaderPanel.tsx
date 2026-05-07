@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useTournamentMetadata } from "../../hooks/useTournamentData";
 import { resolveTournamentBeautyImage } from "../../types/tournament";
 import { Navigation } from "../common/Navigation";
@@ -43,6 +44,10 @@ export const TournamentHeaderPanel: React.FC = () => {
   const locationLine = [currentTournament.city?.trim(), currentTournament.state?.trim()]
     .filter(Boolean)
     .join(", ");
+  const isTournamentEditable =
+    currentTournament.status !== "IN_PROGRESS" && currentTournament.status !== "COMPLETED";
+  const roundDisplay = currentTournament.roundDisplay || "R1";
+  const roundStatusDisplay = currentTournament.roundStatusDisplay || currentTournament.status;
 
   return (
     <div className="relative overflow-hidden min-h-[162px]">
@@ -73,11 +78,28 @@ export const TournamentHeaderPanel: React.FC = () => {
             </h2>
           ) : null}
 
-          {locationLine ? (
-            <p className="mt-1 font-display text-sm font-normal leading-snug tracking-wide text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-              {locationLine}
-            </p>
-          ) : null}
+          {isTournamentEditable ? (
+            locationLine ? (
+              <p className="mt-1 font-display text-sm font-normal leading-snug tracking-wide text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
+                {locationLine}
+              </p>
+            ) : null
+          ) : (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-sm font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
+              <span>{roundDisplay}</span>
+              <span className="text-[9px] leading-none text-white/70" aria-hidden>
+                ●
+              </span>
+              {currentTournament.roundStatusDisplay === "Suspended" ? (
+                <span className="inline-flex items-center gap-1 text-yellow-300">
+                  <ExclamationTriangleIcon className="h-3.5 w-3.5 text-yellow-300" aria-hidden />
+                  <span>{roundStatusDisplay}</span>
+                </span>
+              ) : (
+                <span>{roundStatusDisplay}</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tab strip: page-colored tabs; gaps + flex spacer let the header image show through */}
