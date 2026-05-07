@@ -3,12 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
-import { PageHeader } from "../components/common/PageHeader";
 import { PlayerDetailModal } from "../components/player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../components/player/PlayerDisplayRow";
 import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
 import type { PlayerWithTournamentData } from "../types/player";
 import { sortPlayersByLeaderboard } from "../utils/playerSorting";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 export const LeaderboardPage: React.FC = () => {
   const { currentTournament, players, isLoading, error } = useActiveTournament();
@@ -95,34 +95,62 @@ export const LeaderboardPage: React.FC = () => {
   }
 
   const roundDisplay = currentTournament.roundDisplay || "R1";
+  const locationDisplay = [currentTournament.city?.trim(), currentTournament.state?.trim()]
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <div className="space-y-4 p-4">
-      <PageHeader
-        title="Leaderboard"
-        actions={
-          <button
-            type="button"
-            onClick={() => setIsSummaryModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-display py-1 px-3 rounded border border-blue-500 transition-colors text-sm"
-          >
-            Info
-          </button>
-        }
-      />
+    <div className="p-4">
+      <div className="rounded-t-sm border border-gray-200 bg-white">
+        <div className="px-4 py-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900">
+              {currentTournament.name}
+            </h1>
+            {/* <button
+              type="button"
+              onClick={() => setIsSummaryModalOpen(true)}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 text-sm font-display text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-200"
+            >
+              Preview
+            </button> */}
+          </div>
 
-      <TournamentSummaryModal
-        isOpen={isSummaryModalOpen}
-        onClose={() => setIsSummaryModalOpen(false)}
-      />
+          <div className="space-y-0.5">
+            {currentTournament.course ? (
+              <p className="font-display text-base font-medium leading-snug text-gray-700">
+                {currentTournament.course}
+              </p>
+            ) : null}
+            {locationDisplay ? (
+              <p className="font-display text-sm leading-snug text-gray-500">{locationDisplay}</p>
+            ) : null}
+          </div>
 
-      <div className="bg-white rounded-sm shadow overflow-hidden">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-sm font-medium text-gray-600">
+            <span>{roundDisplay}</span>
+            <span className="text-[9px] leading-none text-gray-300" aria-hidden>
+              ●
+            </span>
+            {currentTournament.roundStatusDisplay === "Suspended" ? (
+              <span className="inline-flex items-center gap-1 text-gray-600">
+                <ExclamationTriangleIcon className="h-3.5 w-3.5 text-gray-500" aria-hidden />
+                <span>{currentTournament.roundStatusDisplay || currentTournament.status}</span>
+              </span>
+            ) : (
+              <span>{currentTournament.roundStatusDisplay || currentTournament.status}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-b-sm border-x border-b border-gray-200 bg-white">
         {sortedPlayers.length === 0 ? (
           <div className="px-4 py-6 text-center text-gray-500">
             <p>No players found.</p>
           </div>
         ) : (
-          <div className="px-2 py-3">
+          <div className="p-2 pt-0">
             {sortedPlayers.map((player) => (
               <div key={player.id} className="border-b border-gray-200">
                 <PlayerDisplayRow
@@ -135,6 +163,11 @@ export const LeaderboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <TournamentSummaryModal
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+      />
 
       <PlayerDetailModal
         isOpen={isPlayerModalOpen}

@@ -184,7 +184,7 @@ export const ContestLobby: React.FC = () => {
                 {primaryActionsLocked ? (
                   <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-3 border-b border-gray-200 py-4">
+                  <div className="flex flex-col items-center justify-center gap-4 border-b border-gray-200 py-8">
                     <button
                       type="button"
                       onClick={() => setIsLineupModalOpen(true)}
@@ -200,7 +200,7 @@ export const ContestLobby: React.FC = () => {
 
                     {contest.tournament?.status === "NOT_STARTED" &&
                     contest.tournament.startDate ? (
-                      <p className="text-xs text-gray-800 text-center mb-2 mt-2">
+                      <p className="text-xs text-gray-800 text-center">
                         <span>
                           <strong>{contest.tournament.name}</strong> starts in
                         </span>

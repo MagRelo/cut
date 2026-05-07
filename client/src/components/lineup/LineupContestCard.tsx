@@ -36,6 +36,10 @@ function classNames(...classes: string[]) {
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18rem] pt-2 pb-2 flow-root";
 
+/** Matches the “no contests” badge on the Contests tab label. */
+const NO_CONTESTS_WARNING_BADGE_CLASS =
+  "inline-flex shrink-0 items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700";
+
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
   roundDisplay,
@@ -122,7 +126,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 </svg>
               </Link>
             ) : (
-              <div className="text-right">
+              <div className="text-right pr-5">
                 <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
                 <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
                   PTS
@@ -134,7 +138,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       </div>
 
       {/* Tabs */}
-
       <div className="p-4 pt-0">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className="flex space-x-1 border-b border-gray-200">
@@ -166,7 +169,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 <span>Contests ({contests.length})</span>
                 {contests.length === 0 ? (
                   <span
-                    className="inline-flex items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700"
+                    className={NO_CONTESTS_WARNING_BADGE_CLASS}
                     title="No contests for this lineup"
                     aria-label="Warning: lineup has no contests"
                   >
@@ -210,15 +213,18 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   })
                 ) : (
                   <div className="rounded-sm border border-gray-200 bg-white p-4 shadow">
-                    <p className="mb-1 font-display text-base font-semibold text-gray-900">
-                      This lineup is not entered in any contests.
+                    <p className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
+                      <span className={NO_CONTESTS_WARNING_BADGE_CLASS} aria-hidden>
+                        !
+                      </span>
+                      <span>This lineup is not entered in any contests.</span>
                     </p>
                     <p className="font-display text-sm leading-relaxed text-gray-600">
                       Browse available contests and enter your lineup.
                     </p>
                     <Link
                       to="/contests"
-                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600"
+                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
                     >
                       Browse Contests
                     </Link>

@@ -365,11 +365,12 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
           return (
             <Fragment key={lineup.id}>
-              <div className="group mb-2 rounded-xl border border-gray-200 bg-white p-4 shadow transition-[box-shadow] duration-200 hover:shadow-md">
+              <div className="group mb-2 rounded-xl border border-gray-200 bg-white shadow transition-[box-shadow] duration-200 hover:shadow-md">
                 <div className="overflow-hidden rounded-sm border border-slate-200/90 bg-white">
+                  {/* Header */}
                   <div className="flex items-center gap-2 border-b border-slate-200">
                     <div
-                      className="min-w-0 flex-1 border-l-[5px] pl-3 py-1 font-display px-3 py-2.5"
+                      className="min-w-0 flex-1 border-l-[5px] pl-3 font-display p-3 py-4"
                       style={{ borderLeftColor: resolvedBorderColor }}
                     >
                       <div className="truncate text-base font-semibold leading-tight text-gray-900">
@@ -382,7 +383,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
                     {/* Entered badge */}
                     {isEntered && (
-                      <div className="ml-auto mr-2 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
+                      <div className="ml-auto mr-4 inline-flex items-center gap-1 rounded-full border border-emerald-700/80 bg-emerald-600 px-2.5 py-0.5 shadow-sm">
                         <svg
                           className="h-3.5 w-3.5 text-white"
                           fill="currentColor"
@@ -433,7 +434,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                   )}
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 px-4 pb-4">
                   {isEntered ? (
                     <button
                       onClick={() => handleLeaveContest(lineup.id)}
