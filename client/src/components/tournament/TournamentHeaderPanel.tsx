@@ -72,16 +72,16 @@ export const TournamentHeaderPanel: React.FC = () => {
             </h1>
           </div>
 
-          {currentTournament.course ? (
-            <h2 className="mt-1.5 font-display text-lg font-medium leading-snug text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
-              {currentTournament.course}
+          {locationLine ? (
+            <h2 className="mt-1 font-display text-lg font-medium leading-snug text-white/90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]">
+              {locationLine}
             </h2>
           ) : null}
 
           {isTournamentEditable ? (
-            locationLine ? (
+            currentTournament.course ? (
               <p className="mt-1 font-display text-sm font-normal leading-snug tracking-wide text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-                {locationLine}
+                {currentTournament.course}
               </p>
             ) : null
           ) : (
