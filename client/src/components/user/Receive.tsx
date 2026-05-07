@@ -8,11 +8,6 @@ import {
   useTokenSymbol,
 } from "../../utils/blockchainUtils.tsx";
 
-function truncateMiddle(value: string, head = 8, tail = 6) {
-  if (value.length <= head + tail + 1) return value;
-  return `${value.slice(0, head)}…${value.slice(-tail)}`;
-}
-
 export const Receive = () => {
   const { address, isConnected, chain } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
@@ -98,23 +93,23 @@ export const Receive = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-blue-900/60 shrink-0">Address</span>
-            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span className="text-xs text-right text-gray-900 truncate" title={receiveAddress}>
+          <div className="grid grid-cols-1 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-4 sm:items-center">
+            <span className="text-sm font-medium text-blue-900/60 shrink-0">Deposit Address</span>
+            <div className="flex min-w-0 items-center justify-start sm:justify-end gap-3">
+              <span
+                className="block max-w-full break-all text-xs text-left text-gray-900 sm:text-right"
+                title={receiveAddress}
+              >
                 {receiveAddress}
               </span>
             </div>
           </div>
 
-          <hr className="border-blue-200/80" />
-
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium shrink-0" aria-hidden />
-            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span className="text-xs text-right text-gray-900 truncate" title={receiveAddress}>
-                {truncateMiddle(receiveAddress)}
-              </span>
+          <div className="grid grid-cols-1 gap-y-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-4 sm:items-center">
+            <span className="text-sm font-medium text-blue-900/60 shrink-0">
+              Copy Deposit Address
+            </span>
+            <div className="flex min-w-0 items-center justify-start sm:justify-end">
               <CopyButton text={receiveAddress} />
             </div>
           </div>
