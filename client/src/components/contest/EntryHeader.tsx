@@ -30,7 +30,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
 
   return (
     <div
-      className="p-3 pr-5 font-display"
+      className="p-4 pr-5 font-display"
       style={{
         borderLeftColor: resolvedBorderColor,
         borderLeftWidth: "5px",
@@ -46,7 +46,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
         {/* User / lineup */}
         <div className="flex-1 min-w-0 text-left font-display">
           {userName && (
-            <div className="text-xl font-semibold text-gray-900 truncate leading-tight">
+            <div className="text-2xl font-semibold text-gray-900 truncate leading-tight">
               {userName}
             </div>
           )}
@@ -64,7 +64,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
         {/* Points */}
         <div className="flex-shrink-0 flex items-center gap-2">
           <div className="text-right">
-            <div className="text-xl font-bold text-gray-900 leading-none">{totalPoints}</div>
+            <div className="text-2xl font-bold text-gray-900 leading-none">{totalPoints}</div>
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               PTS
             </div>
