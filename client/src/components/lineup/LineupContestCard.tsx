@@ -197,13 +197,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
             {/* CONTESTS TAB */}
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 {contests.length > 0 ? (
                   contests.map((contestInfo) => {
                     return (
                       <div key={contestInfo.contest.id} className="flex items-center gap-2">
                         {/* Contest Card */}
-                        <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow">
+                        <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow-sm">
                           <Link to={`/contest/${contestInfo.contest.id}`} className="block">
                             <ContestCard contest={contestInfo.contest} />
                           </Link>
