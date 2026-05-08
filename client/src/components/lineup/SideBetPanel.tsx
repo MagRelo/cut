@@ -1,36 +1,55 @@
 import React, { useMemo, useState } from "react";
+import { Modal } from "../common/Modal";
 
 type SideBetRow = "2 of 4" | "3 of 4" | "4 of 4";
 type SideBetCol = "Top 5" | "Top 10" | "Top 20";
 
+interface SideBetOdds {
+  english: string;
+  decimal: string;
+  american: string;
+}
+
 interface SideBetCell {
   row: SideBetRow;
   col: SideBetCol;
-  odds: string;
+  odds: SideBetOdds;
 }
 
 const SIDE_BET_COLUMNS: SideBetCol[] = ["Top 5", "Top 10", "Top 20"];
 
 const SIDE_BET_CELLS: SideBetCell[] = [
-  { row: "2 of 4", col: "Top 5", odds: "+597" },
-  { row: "2 of 4", col: "Top 10", odds: "+367" },
-  { row: "2 of 4", col: "Top 20", odds: "+112" },
-  { row: "3 of 4", col: "Top 5", odds: "+1722" },
-  { row: "3 of 4", col: "Top 10", odds: "+903" },
-  { row: "3 of 4", col: "Top 20", odds: "+208" },
-  { row: "4 of 4", col: "Top 5", odds: "+4631" },
-  { row: "4 of 4", col: "Top 10", odds: "+2048" },
-  { row: "4 of 4", col: "Top 20", odds: "+348" },
+  { row: "2 of 4", col: "Top 5", odds: { english: "6/1", decimal: "6.97", american: "+597" } },
+  { row: "2 of 4", col: "Top 10", odds: { english: "11/3", decimal: "4.67", american: "+367" } },
+  { row: "2 of 4", col: "Top 20", odds: { english: "11/10", decimal: "2.12", american: "+112" } },
+  { row: "3 of 4", col: "Top 5", odds: { english: "17/1", decimal: "18.22", american: "+1722" } },
+  { row: "3 of 4", col: "Top 10", odds: { english: "9/1", decimal: "10.03", american: "+903" } },
+  { row: "3 of 4", col: "Top 20", odds: { english: "2/1", decimal: "3.08", american: "+208" } },
+  { row: "4 of 4", col: "Top 5", odds: { english: "46/1", decimal: "47.31", american: "+4631" } },
+  { row: "4 of 4", col: "Top 10", odds: { english: "20/1", decimal: "21.48", american: "+2048" } },
+  { row: "4 of 4", col: "Top 20", odds: { english: "7/2", decimal: "4.48", american: "+348" } },
 ];
-
-const makeKey = (row: SideBetRow, col: SideBetCol) => `${row}-${col}`;
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export const SideBetPanel: React.FC = () => {
-  const [selectedCellKeys, setSelectedCellKeys] = useState<Set<string>>(new Set());
+export interface SideBetPanelProps {
+  /** Left accent border (user color), same as contest entry rows. */
+  borderColor: string;
+  userLabel: string;
+  lineupNumberLabel: string | null;
+  /** Comma-separated last names, leaderboard order (matches ContestEntryList when locked). */
+  playerLastNamesLine: string;
+}
+
+export const SideBetPanel: React.FC<SideBetPanelProps> = ({
+  borderColor,
+  userLabel,
+  lineupNumberLabel,
+  playerLastNamesLine,
+}) => {
+  const [activeCell, setActiveCell] = useState<SideBetCell | null>(null);
 
   const oddsByRow = useMemo(() => {
     const byRow = new Map<SideBetRow, SideBetCell[]>();
@@ -42,18 +61,7 @@ export const SideBetPanel: React.FC = () => {
     return byRow;
   }, []);
 
-  const toggleCell = (row: SideBetRow, col: SideBetCol) => {
-    const key = makeKey(row, col);
-    setSelectedCellKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
+  const closeModal = () => setActiveCell(null);
 
   return (
     <div className="rounded-sm bg-white p-4 pt-0">
@@ -63,7 +71,7 @@ export const SideBetPanel: React.FC = () => {
         too.
       </p>
 
-      <div className="mt-4 flex justify-center">
+      <div className="mt-2 flex justify-center">
         <div className="grid w-full max-w-[28rem] grid-cols-[3rem_repeat(3,minmax(0,1fr))] gap-2">
           <div />
           {SIDE_BET_COLUMNS.map((column) => (
@@ -87,23 +95,20 @@ export const SideBetPanel: React.FC = () => {
                   const cell = rowCells.find((entry) => entry.col === col);
                   if (!cell) return null;
 
-                  const isSelected = selectedCellKeys.has(makeKey(row, col));
-
                   return (
                     <button
                       key={`${row}-${col}`}
                       type="button"
-                      onClick={() => toggleCell(row, col)}
+                      onClick={() => setActiveCell(cell)}
                       className={classNames(
-                        "w-full rounded-sm border px-4 py-3 text-center font-display transition-colors",
+                        "w-full rounded-sm border border-gray-300 bg-gray-100 py-3 font-display text-gray-900 transition-colors",
+                        "hover:bg-gray-200",
                         "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
-                        isSelected
-                          ? "border-green-500 bg-green-100 text-green-900"
-                          : "border-gray-300 bg-gray-100 text-gray-900 hover:bg-gray-200",
                       )}
-                      aria-pressed={isSelected}
                     >
-                      <span className="block text-base font-medium leading-tight">{cell.odds}</span>
+                      <span className="block w-full text-center text-sm leading-tight">
+                        {cell.odds.american}
+                      </span>
                     </button>
                   );
                 })}
@@ -113,13 +118,75 @@ export const SideBetPanel: React.FC = () => {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {}}
-        className="mt-5 w-full rounded border border-blue-500 bg-blue-500 px-3 py-2 text-center font-display text-base font-semibold text-white transition-colors hover:bg-blue-600"
+      <Modal
+        isOpen={activeCell !== null}
+        onClose={closeModal}
+        title="Parlay"
+        maxWidth="md"
+        headerClassName="font-display"
+        contentClassName="p-4 font-display"
       >
-        {`Place ${selectedCellKeys.size} Bet${selectedCellKeys.size === 1 ? "" : "s"}`}
-      </button>
+        {activeCell ? (
+          <div className="space-y-3">
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup</h5>
+
+            <div>
+              <div
+                className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm"
+                style={{
+                  borderLeftColor: borderColor,
+                  borderLeftWidth: "5px",
+                  borderLeftStyle: "solid",
+                }}
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                    {userLabel}
+                    {lineupNumberLabel ? (
+                      <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
+                        {lineupNumberLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="truncate text-xs text-gray-500">
+                    {playerLastNamesLine || "No players"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bet</h5>
+              <p className="mt-2 text-base font-semibold text-gray-900">
+                {activeCell.col} (including ties) · {activeCell.row} players
+              </p>
+              <p className="text-sm text-gray-700">
+                All four of your players must finish {activeCell.col} to win.
+              </p>
+              <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                    American
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-gray-900">{activeCell.odds.american}</dd>
+                </div>
+                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                    Decimal
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-gray-900">{activeCell.odds.decimal}</dd>
+                </div>
+                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                    Fractional
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-gray-900">{activeCell.odds.english}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };

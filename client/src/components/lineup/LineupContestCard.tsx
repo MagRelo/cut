@@ -12,6 +12,12 @@ import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
+const getLineupNumberLabel = (lineupName?: string) => {
+  if (!lineupName) return null;
+  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
+  return match?.[1] ? `#${match[1]}` : null;
+};
+
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -81,6 +87,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
+  const sideBetLineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
+  const sideBetPlayerLastNames = sortedPlayers
+    .map((player) => player.pga_lastName)
+    .filter(Boolean)
+    .join(", ");
+  const sideBetUserLabel = lineup.user?.name || lineup.user?.email || "Unknown User";
   const canEditLineup = Boolean(isEditable && editHref);
 
   return (
@@ -212,7 +224,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
             {/* PARLAYS TAB */}
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-              <SideBetPanel />
+              <SideBetPanel
+                borderColor={resolvedBorderColor}
+                userLabel={sideBetUserLabel}
+                lineupNumberLabel={sideBetLineupNumberLabel}
+                playerLastNamesLine={sideBetPlayerLastNames}
+              />
             </TabPanel>
 
             {/* CONTESTS TAB */}
