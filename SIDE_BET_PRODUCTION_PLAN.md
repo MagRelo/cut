@@ -118,3 +118,107 @@ flowchart TD
 4. Cron stages for lock/settle/close with provider result feed integration.
 5. Frontend wiring in lineup flow and `SideBetPanel`.
 6. Tests + staged rollout flag.
+
+## Worked Example: Side Bet Parlay Odds (Top 5/10/20)
+
+Use these source markets for the event:
+
+- [Top 5 Finish](https://www.oddschecker.com/us/golf/truist-championship/top-5-finish)
+- [Top 10 Finish](https://www.oddschecker.com/us/golf/truist-championship/top-10-finish)
+- [Top 20 Finish](https://www.oddschecker.com/us/golf/truist-championship/top-20-finish)
+
+Note: odds pages are dynamic; values below are an example snapshot to document the math pipeline.
+
+### Example lineup (4 golfers)
+
+- Scottie Scheffler
+- Rory McIlroy
+- Xander Schauffele
+- Collin Morikawa
+
+### Example market odds (American -> Decimal)
+
+Top 5:
+- Scheffler `+120` -> `2.20`
+- McIlroy `+140` -> `2.40`
+- Schauffele `+180` -> `2.80`
+- Morikawa `+220` -> `3.20`
+
+Top 10:
+- Scheffler `-110` -> `1.9091`
+- McIlroy `+100` -> `2.00`
+- Schauffele `+125` -> `2.25`
+- Morikawa `+150` -> `2.50`
+
+Top 20:
+- Scheffler `-275` -> `1.3636`
+- McIlroy `-240` -> `1.4167`
+- Schauffele `-210` -> `1.4762`
+- Morikawa `-175` -> `1.5714`
+
+Conversion formulas:
+
+- If American > 0: `decimal = 1 + (american / 100)`
+- If American < 0: `decimal = 1 + (100 / abs(american))`
+- Combined parlay decimal for a combo: `D_combo = product(D_leg_i)`
+- Unified row decimal: arithmetic mean of combo decimals in that row
+- Decimal to American:
+  - `D >= 2`: `american = +(D - 1) * 100`
+  - `D < 2`: `american = -100 / (D - 1)`
+
+### Top 5 row math
+
+2 of 4 (6 combos):
+- S+R: `2.20 * 2.40 = 5.2800` (`+428`)
+- S+X: `2.20 * 2.80 = 6.1600` (`+516`)
+- S+C: `2.20 * 3.20 = 7.0400` (`+604`)
+- R+X: `2.40 * 2.80 = 6.7200` (`+572`)
+- R+C: `2.40 * 3.20 = 7.6800` (`+668`)
+- X+C: `2.80 * 3.20 = 8.9600` (`+796`)
+- Unified 2 of 4: mean decimal `6.9733` -> `+597`
+
+3 of 4 (4 combos):
+- S+R+X: `14.7840` (`+1378`)
+- S+R+C: `16.8960` (`+1590`)
+- S+X+C: `19.7120` (`+1871`)
+- R+X+C: `21.5040` (`+2050`)
+- Unified 3 of 4: mean decimal `18.2240` -> `+1722`
+
+4 of 4 (1 combo):
+- S+R+X+C: `47.3088` -> `+4631`
+
+### Top 10 row math
+
+2 of 4:
+- combo decimals: `3.8182, 4.2955, 4.7727, 4.5000, 5.0000, 5.6250`
+- Unified 2 of 4: mean decimal `4.6686` -> `+367`
+
+3 of 4:
+- combo decimals: `8.5909, 9.5455, 10.7386, 11.2500`
+- Unified 3 of 4: mean decimal `10.0312` -> `+903`
+
+4 of 4:
+- combo decimal: `21.4773`
+- Unified 4 of 4: `+2048`
+
+### Top 20 row math
+
+2 of 4:
+- combo decimals: `1.9318, 2.0130, 2.1429, 2.0913, 2.2262, 2.3197`
+- Unified 2 of 4: mean decimal `2.1208` -> `+112`
+
+3 of 4:
+- combo decimals: `2.8517, 3.0357, 3.1633, 3.2863`
+- Unified 3 of 4: mean decimal `3.0842` -> `+208`
+
+4 of 4:
+- combo decimal: `4.4813`
+- Unified 4 of 4: `+348`
+
+### Example UI grid output (unified odds)
+
+- 4 of 4: `Top 5 +4631` | `Top 10 +2048` | `Top 20 +348`
+- 3 of 4: `Top 5 +1722` | `Top 10 +903` | `Top 20 +208`
+- 2 of 4: `Top 5 +597` | `Top 10 +367` | `Top 20 +112`
+
+This is the exact output shape the `calculateRoundRobinOdds` service should produce for one lineup snapshot.

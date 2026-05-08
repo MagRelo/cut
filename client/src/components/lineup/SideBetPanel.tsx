@@ -12,15 +12,15 @@ interface SideBetCell {
 const SIDE_BET_COLUMNS: SideBetCol[] = ["Top 5", "Top 10", "Top 20"];
 
 const SIDE_BET_CELLS: SideBetCell[] = [
-  { row: "2 of 4", col: "Top 5", odds: "+500" },
-  { row: "2 of 4", col: "Top 10", odds: "+300" },
-  { row: "2 of 4", col: "Top 20", odds: "+150" },
-  { row: "3 of 4", col: "Top 5", odds: "+800" },
-  { row: "3 of 4", col: "Top 10", odds: "+400" },
-  { row: "3 of 4", col: "Top 20", odds: "+200" },
-  { row: "4 of 4", col: "Top 5", odds: "+1500" },
-  { row: "4 of 4", col: "Top 10", odds: "+800" },
-  { row: "4 of 4", col: "Top 20", odds: "+400" },
+  { row: "2 of 4", col: "Top 5", odds: "+597" },
+  { row: "2 of 4", col: "Top 10", odds: "+367" },
+  { row: "2 of 4", col: "Top 20", odds: "+112" },
+  { row: "3 of 4", col: "Top 5", odds: "+1722" },
+  { row: "3 of 4", col: "Top 10", odds: "+903" },
+  { row: "3 of 4", col: "Top 20", odds: "+208" },
+  { row: "4 of 4", col: "Top 5", odds: "+4631" },
+  { row: "4 of 4", col: "Top 10", odds: "+2048" },
+  { row: "4 of 4", col: "Top 20", odds: "+348" },
 ];
 
 const makeKey = (row: SideBetRow, col: SideBetCol) => `${row}-${col}`;
