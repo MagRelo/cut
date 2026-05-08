@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
+import { SideBetPanel } from "./SideBetPanel";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
@@ -165,6 +166,19 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 )
               }
             >
+              Parlays
+            </Tab>
+            <Tab
+              className={({ selected }: { selected: boolean }) =>
+                classNames(
+                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
+                  "focus:outline-none",
+                  selected
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
+                )
+              }
+            >
               <span className="inline-flex items-center gap-1">
                 <span>Contests ({contests.length})</span>
                 {contests.length === 0 ? (
@@ -194,6 +208,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   </div>
                 ))}
               </div>
+            </TabPanel>
+
+            {/* PARLAYS TAB */}
+            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+              <SideBetPanel />
             </TabPanel>
 
             {/* CONTESTS TAB */}
