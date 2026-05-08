@@ -101,7 +101,9 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                                   className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
                                   onClick={() => setDetailPlayer(player)}
                                 >
-                                  <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
+                                  <div className="p-3">
+                                    <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
+                                  </div>
                                 </button>
                                 {index < sortedPlayers.length - 1 && (
                                   <hr className="my-0 border-0 border-t border-gray-200" />

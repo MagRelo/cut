@@ -153,11 +153,13 @@ export const LeaderboardPage: React.FC = () => {
           <div className="p-2 pt-0">
             {sortedPlayers.map((player) => (
               <div key={player.id} className="border-b border-gray-200">
-                <PlayerDisplayRow
-                  player={player}
-                  roundDisplay={roundDisplay}
-                  onClick={() => openPlayerModal(player)}
-                />
+                <div className="p-3">
+                  <PlayerDisplayRow
+                    player={player}
+                    roundDisplay={roundDisplay}
+                    onClick={() => openPlayerModal(player)}
+                  />
+                </div>
               </div>
             ))}
           </div>

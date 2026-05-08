@@ -85,13 +85,15 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
       <div className="px-2 mt-3">
         {playersData.map((playerData) => (
           <div key={playerData.player.id} className="border-b border-gray-200">
-            <PlayerDisplayRow
-              player={playerData.player}
-              roundDisplay={roundDisplay || "R1"}
-              onClick={() => openPlayerModal(playerData.player)}
-              ownershipPercentage={playerData.ownershipPercentage}
-              isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
-            />
+            <div className="p-3">
+              <PlayerDisplayRow
+                player={playerData.player}
+                roundDisplay={roundDisplay || "R1"}
+                onClick={() => openPlayerModal(playerData.player)}
+                ownershipPercentage={playerData.ownershipPercentage}
+                isOwnedByCurrentUser={playerData.isOwnedByCurrentUser}
+              />
+            </div>
           </div>
         ))}
       </div>

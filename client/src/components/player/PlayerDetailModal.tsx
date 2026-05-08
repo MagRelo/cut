@@ -10,6 +10,8 @@ export interface PlayerDetailModalProps {
   onClose: () => void;
   player: PlayerWithTournamentData | null;
   onShare?: (player: PlayerWithTournamentData) => void;
+  /** Icon beside PTS in the header row: scorecard (default in lists) or share (detail modal default). */
+  playerRowTrailing?: "scorecard" | "share";
   /** Page context (e.g. contest round); modal opens on latest round with data regardless. */
   roundDisplay: string;
 }
@@ -19,6 +21,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   onClose,
   player,
   onShare,
+  playerRowTrailing = "share",
 }) => {
   const [scorecardRound, setScorecardRound] = useState(1);
   /** Keeps card content visible through the leave transition when parents clear `player` immediately on close. */
@@ -88,7 +91,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-white text-left align-middle shadow-xl transition-[opacity,transform]">
+              <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-50 text-left align-middle shadow-xl transition-[opacity,transform]">
                 <div className="p-2">
                   {displayPlayer ? (
                     <div className="overflow-hidden border border-gray-300 rounded-sm bg-white">
@@ -96,8 +99,14 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                         player={displayPlayer}
                         selectedScorecardRound={scorecardRound}
                         onScorecardRoundChange={setScorecardRound}
-                        onShare={() =>
-                          onShare ? onShare(displayPlayer) : sharePlayerLeaderboardLink(displayPlayer)
+                        playerRowTrailing={playerRowTrailing}
+                        onPlayerShare={
+                          playerRowTrailing === "share"
+                            ? () =>
+                                onShare
+                                  ? onShare(displayPlayer)
+                                  : sharePlayerLeaderboardLink(displayPlayer)
+                            : undefined
                         }
                       />
                       <div className="max-h-[min(50vh,22rem)] overflow-y-auto border-t border-slate-200 bg-white">

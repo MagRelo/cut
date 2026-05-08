@@ -185,12 +185,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
               <div className="space-y-1">
                 {sortedPlayers.map((player) => (
-                  <PlayerDisplayRow
-                    key={player.id}
-                    player={player}
-                    roundDisplay={roundDisplay}
-                    onClick={() => openPlayerModal(player)}
-                  />
+                  <div key={player.id} className="p-3">
+                    <PlayerDisplayRow
+                      player={player}
+                      roundDisplay={roundDisplay}
+                      onClick={() => openPlayerModal(player)}
+                    />
+                  </div>
                 ))}
               </div>
             </TabPanel>

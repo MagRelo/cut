@@ -1,12 +1,14 @@
 import React from "react";
-import type { PlayerWithTournamentData, TournamentPlayerData } from "../../types/player";
+import type { PlayerWithTournamentData } from "../../types/player";
+import { PlayerDisplayRow } from "./PlayerDisplayRow";
 import { roundHasBeenPlayed } from "./playerRoundUtils";
 
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
   selectedScorecardRound: number;
   onScorecardRoundChange: (round: number) => void;
-  onShare?: () => void;
+  playerRowTrailing?: "scorecard" | "share";
+  onPlayerShare?: () => void;
 }
 
 interface LabelProps {
@@ -16,203 +18,122 @@ interface LabelProps {
 
 const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
   <span
-    className={`text-[10px] uppercase text-gray-400 font-medium font-display tracking-wide leading-none ${className}`}
+    className={`text-[10px] uppercase text-gray-500 font-semibold font-display tracking-wide leading-none ${className}`}
   >
     {children}
   </span>
 );
 
-/** Shared layout: value (font-display) + label strip with optional bottom rule — keeps row aligned. */
+/** Label strip on top, value below — numerals match PlayerDisplayRow PTS (text-lg bold). */
 const STAT_VALUE_CLASS =
-  "flex min-h-[1.5rem] items-center justify-center font-display text-lg leading-none tabular-nums";
-const STAT_CELL_OUTER = "flex w-full min-w-0 flex-col px-1 pb-px";
-const STAT_LABEL_STRIP_BASE =
-  "mt-0.5 w-full border-b-2 pt-0.5 pb-1 text-center transition-[border-color] duration-150";
+  "flex min-h-[1.5rem] items-center justify-center font-display text-lg leading-none";
+const STAT_CELL_OUTER = "flex w-full min-w-0 flex-col px-1 py-1.5 border-0";
+const STAT_LABEL_STRIP_BASE = "mb-0 w-full pt-0.5 pb-0.5 text-center";
 
 export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   player,
   selectedScorecardRound,
   onScorecardRoundChange,
-  onShare,
+  playerRowTrailing = "scorecard",
+  onPlayerShare,
 }) => {
-  const getCurrentRound = (player: PlayerWithTournamentData) => {
-    if (!player?.tournamentData) return null;
-
-    const roundNumber = String(selectedScorecardRound);
-    const roundData = player.tournamentData[`r${roundNumber}` as keyof TournamentPlayerData];
-
-    if (
-      roundData &&
-      typeof roundData === "object" &&
-      "total" in roundData &&
-      roundData.total !== undefined
-    ) {
-      return { round: `R${roundNumber}`, data: roundData };
-    }
-    return null;
-  };
-
-  const currentRound = getCurrentRound(player);
-  const country = player.pga_country?.trim() || "";
-
   return (
     <div className="bg-white overflow-hidden">
-      <div className="p-4 pb-2">
-        {/* Top Row */}
-        <div className="flex items-center space-x-4">
-          {/* Player Image */}
-          {player.pga_imageUrl && (
-            <div className="flex-shrink-0">
-              <img
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-white"
-                src={player.pga_imageUrl}
-                alt={player.pga_displayName || ""}
-              />
-            </div>
-          )}
-
-          {/* Player Name + country */}
-          <div className="flex min-w-0 flex-1 flex-col justify-center text-left">
-            <div className="flex items-center truncate font-display text-2xl font-semibold leading-tight text-gray-800">
-              <span className="truncate">
-                {player.pga_lastName && player.pga_firstName
-                  ? `${player.pga_lastName}, ${player.pga_firstName}`
-                  : player.pga_displayName || ""}
-              </span>
-              {currentRound?.round && currentRound.data.icon !== "" && (
-                <span className="ml-2 flex-shrink-0 text-2xl font-bold text-gray-600">
-                  {currentRound.data.icon}
-                </span>
-              )}
-            </div>
-            {country || onShare ? (
-              <div className="mt-1 flex items-center gap-2 text-sm font-normal text-gray-600">
-                {country ? <span className="min-w-0 truncate">{country}</span> : null}
-                {onShare ? (
-                  <button
-                    type="button"
-                    onClick={onShare}
-                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
-                    aria-label="Share player leaderboard link"
-                    title="Share player"
-                  >
-                    <span>Share</span>
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 17L17 7m0 0H9m8 0v8"
-                      />
-                    </svg>
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          {/* Points */}
-          <div className="text-right flex-shrink-0">
-            <div className="text-3xl font-display font-bold tabular-nums text-gray-900 leading-none">
-              {player.tournamentData.total ?? 0}
-            </div>
-            <Label className="mt-1 block leading-none">PTS</Label>
-          </div>
+      <div className="">
+        <div className="p-3 py-4">
+          <PlayerDisplayRow
+            player={player}
+            roundDisplay={`r${selectedScorecardRound}`}
+            rowTrailing={playerRowTrailing}
+            onShare={playerRowTrailing === "share" ? onPlayerShare : undefined}
+          />
         </div>
 
-        {/* Bottom Row: R1–R4, CUT, POS */}
-        <div className="">
-          <div
-            className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start gap-x-1 pt-3 pb-0.5"
-            role="presentation"
-          >
-            {(
-              [
-                [1, player.tournamentData.r1],
-                [2, player.tournamentData.r2],
-                [3, player.tournamentData.r3],
-                [4, player.tournamentData.r4],
-              ] as const
-            ).map(([roundNum, data]) => {
-              const played = roundHasBeenPlayed(data);
-              const selected = selectedScorecardRound === roundNum;
-              const label = `R${roundNum}`;
-              const value = played && data?.total !== undefined ? data.total : null;
+        {/* Bottom Row: R1–R4, CUT, POS — top edge + vertical dividers only */}
+        <div
+          className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start border-t border-gray-200 divide-x divide-gray-200 bg-white"
+          role="presentation"
+        >
+          {(
+            [
+              [1, player.tournamentData.r1],
+              [2, player.tournamentData.r2],
+              [3, player.tournamentData.r3],
+              [4, player.tournamentData.r4],
+            ] as const
+          ).map(([roundNum, data]) => {
+            const played = roundHasBeenPlayed(data);
+            const selected = selectedScorecardRound === roundNum;
+            const label = `R${roundNum}`;
+            const value = played && data?.total !== undefined ? data.total : null;
 
-              const valueClass = played ? "font-bold text-gray-900" : "font-medium text-gray-300";
+            const valueClass = !played
+              ? "font-medium text-gray-300"
+              : "font-bold text-gray-900";
 
-              if (!played) {
-                return (
-                  <div
-                    key={label}
-                    className={`${STAT_CELL_OUTER} cursor-default text-center`}
-                    aria-label={`${label}, no round data`}
-                  >
-                    <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
-                    <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
-                      <Label className="block">{label}</Label>
-                    </div>
-                  </div>
-                );
-              }
-
+            if (!played) {
               return (
-                <button
+                <div
                   key={label}
-                  type="button"
-                  onClick={() => onScorecardRoundChange(roundNum)}
-                  className={`group ${STAT_CELL_OUTER} text-center focus:outline-none`}
+                  className={`${STAT_CELL_OUTER} cursor-default !bg-white text-center`}
+                  aria-label={`${label}, no round data`}
                 >
-                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
-                  <div
-                    className={`${STAT_LABEL_STRIP_BASE} ${
-                      selected ? "border-blue-500" : "border-gray-200 group-hover:border-gray-400"
-                    }`}
-                  >
-                    <Label className={`block ${selected ? "!text-blue-500" : ""}`}>{label}</Label>
+                  <div className={STAT_LABEL_STRIP_BASE}>
+                    <Label className="block !text-gray-400">{label}</Label>
                   </div>
-                </button>
+                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
+                </div>
               );
-            })}
+            }
 
-            <div className={`${STAT_CELL_OUTER} text-center`}>
-              <div
-                className={`${STAT_VALUE_CLASS} ${
-                  player.tournamentData.cut && player.tournamentData.cut > 0
-                    ? "font-bold text-green-600"
-                    : "font-medium text-gray-300"
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => onScorecardRoundChange(roundNum)}
+                className={`group ${STAT_CELL_OUTER} text-center transition-colors focus:outline-none ${
+                  selected ? "bg-slate-100" : "bg-white hover:bg-slate-50"
                 }`}
               >
-                {player.tournamentData.cut && player.tournamentData.cut > 0
-                  ? `+${player.tournamentData.cut}`
-                  : ""}
-              </div>
-              <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
-                <Label className="block">CUT</Label>
-              </div>
+                <div className={STAT_LABEL_STRIP_BASE}>
+                  <Label className={`block ${selected ? "" : "!text-blue-600"}`}>{label}</Label>
+                </div>
+                <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
+              </button>
+            );
+          })}
+
+          <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
+            <div className={STAT_LABEL_STRIP_BASE}>
+              <Label className="block !text-gray-400">CUT</Label>
             </div>
+            <div
+              className={`${STAT_VALUE_CLASS} ${
+                player.tournamentData.cut && player.tournamentData.cut > 0
+                  ? "font-bold text-green-600"
+                  : "font-medium text-gray-300"
+              }`}
+            >
+              {player.tournamentData.cut && player.tournamentData.cut > 0
+                ? `+${player.tournamentData.cut}`
+                : ""}
+            </div>
+          </div>
 
-            <div className={`${STAT_CELL_OUTER} text-center`}>
-              <div
-                className={`${STAT_VALUE_CLASS} ${
-                  player.tournamentData.bonus && player.tournamentData.bonus > 0
-                    ? "font-bold text-green-600"
-                    : "font-medium text-gray-300"
-                }`}
-              >
-                {player.tournamentData.bonus && player.tournamentData.bonus > 0
-                  ? `+${player.tournamentData.bonus}`
-                  : ""}
-              </div>
-              <div className={`${STAT_LABEL_STRIP_BASE} border-transparent`}>
-                <Label className="block">POS</Label>
-              </div>
+          <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
+            <div className={STAT_LABEL_STRIP_BASE}>
+              <Label className="block !text-gray-400">POS</Label>
+            </div>
+            <div
+              className={`${STAT_VALUE_CLASS} ${
+                player.tournamentData.bonus && player.tournamentData.bonus > 0
+                  ? "font-bold text-green-600"
+                  : "font-medium text-gray-300"
+              }`}
+            >
+              {player.tournamentData.bonus && player.tournamentData.bonus > 0
+                ? `+${player.tournamentData.bonus}`
+                : ""}
             </div>
           </div>
         </div>

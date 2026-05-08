@@ -1,4 +1,4 @@
-import { DocumentTextIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import { useCurrentTournament } from "../../hooks/useTournamentData";
@@ -14,6 +14,10 @@ interface PlayerDisplayRowProps {
   onClick?: () => void;
   ownershipPercentage?: number;
   isOwnedByCurrentUser?: boolean;
+  /** Icon beside PTS: scorecard (default) or share action. */
+  rowTrailing?: "scorecard" | "share";
+  /** Required when `rowTrailing` is `"share"`. */
+  onShare?: () => void;
 }
 
 export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
@@ -21,6 +25,8 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   roundDisplay,
   onClick,
   ownershipPercentage,
+  rowTrailing = "scorecard",
+  onShare,
 }) => {
   const { tournament: currentTournament } = useCurrentTournament();
   const isTournamentEditable =
@@ -58,6 +64,22 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     return `${roundVsPar} ${thruPart}`;
   })();
 
+  const trailingControl =
+    rowTrailing === "share" && onShare ? (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onShare();
+        }}
+        className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800"
+        aria-label="Share player leaderboard link"
+        title="Share player"
+      >
+        <ArrowTopRightOnSquareIcon className="h-5 w-5" aria-hidden />
+      </button>
+    ) : null;
+
   const inactiveContent = (
     <div className="flex items-center justify-between gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -79,6 +101,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
           <div className="truncate text-xs text-gray-600">{player.pga_country?.trim() || "—"}</div>
         </div>
       </div>
+      {trailingControl}
     </div>
   );
 
@@ -145,7 +168,11 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
 
       {/* Right - Points */}
       <div className="flex-shrink-0 flex items-center gap-4">
-        <DocumentTextIcon className="h-54 w-5 shrink-0 text-blue-400" aria-hidden />
+        {rowTrailing === "share" && onShare ? (
+          trailingControl
+        ) : (
+          <DocumentTextIcon className="h-5 w-5 shrink-0 text-blue-400" aria-hidden />
+        )}
 
         <div className="text-center">
           <div className="text-lg font-bold text-gray-900 leading-none">{totalPoints}</div>
@@ -162,12 +189,12 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
       <button
         type="button"
         onClick={onClick}
-        className="group font-display w-full p-3 text-left cursor-pointer"
+        className="group font-display w-full text-left cursor-pointer"
       >
         {resolvedIsActive ? content : inactiveContent}
       </button>
     );
   }
 
-  return <div className="font-display w-full p-3">{resolvedIsActive ? content : inactiveContent}</div>;
+  return <div className="font-display w-full">{resolvedIsActive ? content : inactiveContent}</div>;
 };
