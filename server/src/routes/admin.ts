@@ -1,7 +1,10 @@
 import { Hono } from "hono";
+import { erc20Abi } from "viem";
 import { prisma } from "../lib/prisma.js";
+import { getPlatformTokenAddress } from "../lib/contractAddresses.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
+import { getPublicClient } from "../services/shared/contractClient.js";
 
 const adminRouter = new Hono();
 
@@ -87,7 +90,63 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
       };
     });
 
-    return c.json({ items, total, limit, offset, chainId, userType });
+    const platformToken = getPlatformTokenAddress(chainId);
+    let totalPlatformTokenBalanceWei = "0";
+    let itemsWithBalances = items.map((item) => ({
+      ...item,
+      platformTokenBalanceWei: null as string | null,
+    }));
+
+    if (platformToken) {
+      const indexByContractPos: number[] = [];
+      const contracts = items.flatMap((item, i) => {
+        if (!item.walletAddress) return [];
+        indexByContractPos.push(i);
+        return [
+          {
+            address: platformToken,
+            abi: erc20Abi,
+            functionName: "balanceOf" as const,
+            args: [item.walletAddress as `0x${string}`],
+          },
+        ];
+      });
+
+      if (contracts.length > 0) {
+        let totalWei = 0n;
+        const balanceByUserIndex = new Map<number, bigint>();
+        try {
+          const publicClient = getPublicClient(chainId);
+          const results = await publicClient.multicall({ contracts, allowFailure: true });
+          results.forEach((res, idx) => {
+            const userIdx = indexByContractPos[idx];
+            if (userIdx === undefined) return;
+            const bal = res.status === "success" ? (res.result as bigint) : 0n;
+            balanceByUserIndex.set(userIdx, bal);
+            totalWei += bal;
+          });
+          totalPlatformTokenBalanceWei = totalWei.toString();
+          itemsWithBalances = items.map((item, i) => ({
+            ...item,
+            platformTokenBalanceWei: item.walletAddress
+              ? (balanceByUserIndex.get(i) ?? 0n).toString()
+              : null,
+          }));
+        } catch (e) {
+          console.error("admin users platform token multicall:", e);
+        }
+      }
+    }
+
+    return c.json({
+      items: itemsWithBalances,
+      total,
+      limit,
+      offset,
+      chainId,
+      userType,
+      totalPlatformTokenBalanceWei,
+    });
   } catch (error) {
     console.error("admin list users error:", error);
     return c.json({ error: "Failed to list users" }, 500);

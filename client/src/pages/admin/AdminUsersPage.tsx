@@ -1,24 +1,48 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { formatUnits } from "viem";
 import { PageHeader } from "../../components/common/PageHeader";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
+import { useAuth } from "../../contexts/AuthContext";
 import { useAdminUsersQuery } from "../../hooks/useAdminUserQueries";
+
+const PLATFORM_TOKEN_DECIMALS = 18;
+
+function formatPlatformBalance(wei: string | null): string {
+  if (wei === null) return "—";
+  try {
+    return Number(formatUnits(BigInt(wei), PLATFORM_TOKEN_DECIMALS)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    });
+  } catch {
+    return "—";
+  }
+}
 
 const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC"] as const;
 
 export function AdminUsersPage() {
   const [userTypeFilter, setUserTypeFilter] = useState<string>("USER");
+  const { platformTokenSymbol } = useAuth();
+  const tokenLabel = platformTokenSymbol ?? "CUT";
   const { data, isLoading, error } = useAdminUsersQuery(userTypeFilter);
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+  const totalFormatted = data ? formatPlatformBalance(data.totalPlatformTokenBalanceWei) : null;
 
   return (
     <div className="space-y-4 p-4">
       <PageHeader title="Users" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-gray-600">
-          Staff-only list. {data ? `${data.total} user(s) total` : null}
-        </p>
+        <div className="text-sm text-gray-600 space-y-0.5">
+          <p>Staff-only list. {data ? `${data.total} user(s) total` : null}</p>
+          {data ? (
+            <p className="font-medium text-gray-800">
+              Total on this page: {totalFormatted} {tokenLabel}
+            </p>
+          ) : null}
+        </div>
         <label className="flex items-center gap-2 text-sm text-gray-600">
           User type
           <select
@@ -50,6 +74,9 @@ export function AdminUsersPage() {
               <tr className="border-b border-gray-200 bg-gray-50 text-left">
                 <th className="p-3 font-medium text-gray-700">Name</th>
                 <th className="p-3 font-medium text-gray-700">Email</th>
+                <th className="p-3 font-medium text-gray-700 text-right whitespace-nowrap">
+                  {tokenLabel} balance
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +89,9 @@ export function AdminUsersPage() {
                   </td>
                   <td className="p-3 text-gray-600 max-w-[180px] truncate" title={u.email ?? ""}>
                     {u.email ?? "—"}
+                  </td>
+                  <td className="p-3 text-gray-800 text-right tabular-nums whitespace-nowrap">
+                    {formatPlatformBalance(u.platformTokenBalanceWei ?? null)}
                   </td>
                 </tr>
               ))}
