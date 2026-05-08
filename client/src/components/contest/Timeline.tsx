@@ -189,10 +189,12 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
               key={round}
               type="button"
               disabled={!hasData}
+              tabIndex={hasData ? undefined : -1}
+              aria-hidden={!hasData}
               onClick={() => setSelectedRound(round)}
               className={`flex-1 py-1.5 text-xs border-b ${
                 isActive ? "text-blue-700 border-blue-600" : "text-gray-600 border-transparent"
-              } ${hasData ? "" : "opacity-50 cursor-not-allowed"}`}
+              } ${hasData ? "" : "invisible pointer-events-none"}`}
               aria-pressed={isActive}
             >
               Round {round}
