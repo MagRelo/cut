@@ -75,9 +75,10 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
               >
                 <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 shadow-xl transition-all p-2">
                   {/* Content Section */}
-                  <div className="px-2 sm:px-6 py-2 max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
+
+                  <div className="max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
                     {/* Header */}
-                    <div className="mb-2">
+                    <div className="">
                       <EntryHeader
                         userColorHex={userColorHex}
                         userName={userName}
@@ -88,26 +89,28 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
                     <div className="space-y-1">
                       <hr className="my-0 border-0 border-t border-gray-200" />
-                      {sortedPlayers.length === 0 ? (
-                        <p className="text-sm text-gray-500 px-2 py-4 text-center">No players</p>
-                      ) : (
-                        sortedPlayers.map((player, index) => {
-                          return (
-                            <Fragment key={player.id}>
-                              <button
-                                type="button"
-                                className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
-                                onClick={() => setDetailPlayer(player)}
-                              >
-                                <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
-                              </button>
-                              {index < sortedPlayers.length - 1 && (
-                                <hr className="my-0 border-0 border-t border-gray-200" />
-                              )}
-                            </Fragment>
-                          );
-                        })
-                      )}
+                      <div className="px-2 sm:px-6 py-2 space-y-1">
+                        {sortedPlayers.length === 0 ? (
+                          <p className="text-sm text-gray-500 py-4 text-center">No players</p>
+                        ) : (
+                          sortedPlayers.map((player, index) => {
+                            return (
+                              <Fragment key={player.id}>
+                                <button
+                                  type="button"
+                                  className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
+                                  onClick={() => setDetailPlayer(player)}
+                                >
+                                  <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
+                                </button>
+                                {index < sortedPlayers.length - 1 && (
+                                  <hr className="my-0 border-0 border-t border-gray-200" />
+                                )}
+                              </Fragment>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   </div>
                 </DialogPanel>

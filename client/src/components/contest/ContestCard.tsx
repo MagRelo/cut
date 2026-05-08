@@ -88,7 +88,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
               ? `$${contest.settings.primaryDeposit}`
               : "—"}
         </div>
-        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-blue-800/70">
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-blue-800/80">
           buy-in
         </div>
       </div>

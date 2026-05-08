@@ -30,7 +30,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
 
   return (
     <div
-      className="mb-1 p-3 font-display"
+      className="p-3 py-4 font-display"
       style={{
         borderLeftColor: resolvedBorderColor,
         borderLeftWidth: "5px",
