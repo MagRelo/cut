@@ -80,7 +80,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   return (
     <div className="flex items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
-      <div className="min-w-[4rem] flex-shrink-0 rounded-md border border-blue-200 bg-blue-50 p-1.5 text-center">
+      <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-blue-200 bg-blue-50 p-1.5 text-center">
         <div className="text-base font-display font-bold leading-none tabular-nums text-blue-800/90">
           {contest.settings?.primaryDeposit === 0
             ? "Free"
@@ -88,7 +88,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
               ? `$${contest.settings.primaryDeposit}`
               : "—"}
         </div>
-        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-blue-600/80">
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-blue-800/70">
           buy-in
         </div>
       </div>
