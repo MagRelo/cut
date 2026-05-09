@@ -89,7 +89,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
                     <div className="space-y-1">
                       <hr className="my-0 border-0 border-t border-gray-200" />
-                      <div className="px-2 sm:px-6 py-2 space-y-1">
+                      <div className="px-2 sm:px-6 pb-2 pt-0 space-y-1">
                         {sortedPlayers.length === 0 ? (
                           <p className="text-sm text-gray-500 py-4 text-center">No players</p>
                         ) : (
