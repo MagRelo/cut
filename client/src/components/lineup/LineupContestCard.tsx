@@ -34,7 +34,7 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18rem] pt-2 pb-2 flow-root";
+const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
 
 /** Matches the “no contests” badge on the Contests tab label. */
 const NO_CONTESTS_WARNING_BADGE_CLASS =
