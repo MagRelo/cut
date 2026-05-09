@@ -109,7 +109,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                             : undefined
                         }
                       />
-                      <div className="max-h-[min(50vh,22rem)] overflow-y-auto border-t border-slate-200 bg-white">
+                      <div className="max-h-[min(50vh,22rem)] overflow-y-auto bg-white">
                         <PlayerScorecard player={displayPlayer} selectedRound={scorecardRound} />
                       </div>
                     </div>

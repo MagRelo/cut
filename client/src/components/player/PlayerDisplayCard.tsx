@@ -27,7 +27,8 @@ const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
 /** Label strip on top, value below — numerals match PlayerDisplayRow PTS (text-lg bold). */
 const STAT_VALUE_CLASS =
   "flex min-h-[1.5rem] items-center justify-center font-display text-lg leading-none";
-const STAT_CELL_OUTER = "flex w-full min-w-0 flex-col px-1 py-1.5 border-0";
+const STAT_CELL_OUTER =
+  "flex h-full min-h-0 w-full min-w-0 flex-col px-1 py-1.5";
 const STAT_LABEL_STRIP_BASE = "mb-0 w-full pt-0.5 pb-0.5 text-center";
 
 export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
@@ -49,9 +50,9 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
           />
         </div>
 
-        {/* Bottom Row: R1–R4, CUT, POS — top edge + vertical dividers only */}
+        {/* Bottom Row: R1–R4, CUT, POS — top + vertical dividers + bottom border per cell (selected round has no bottom, meets scorecard) */}
         <div
-          className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-start border-t border-gray-200 divide-x divide-gray-200 bg-white"
+          className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch border-t border-gray-200 divide-x divide-gray-200 bg-white"
           role="presentation"
         >
           {(
