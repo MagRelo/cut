@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
@@ -14,6 +15,64 @@ function truncateMiddle(value: string, head = 8, tail = 6) {
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
+const referralLinkRowGridClass = "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center";
+
+function ReferralUrlPreview({ url }: { url: string }) {
+  return (
+    <span
+      className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
+      title={url}
+    >
+      {truncateMiddle(url, 18, 6)}
+    </span>
+  );
+}
+
+function ShareInviteButton({ url }: { url: string }) {
+  const [feedback, setFeedback] = useState<null | "shared" | "copied">(null);
+
+  const handleClick = async () => {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Bet the Cut",
+          text: "Join me with my invite link:",
+          url,
+        });
+        setFeedback("shared");
+        setTimeout(() => setFeedback(null), 2000);
+        return;
+      } catch (err) {
+        if ((err as DOMException).name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setFeedback("copied");
+      setTimeout(() => setFeedback(null), 2000);
+    } catch (e) {
+      console.error("Share/copy failed:", e);
+    }
+  };
+
+  const label = feedback === "shared" ? "Shared!" : feedback === "copied" ? "Copied!" : "Share";
+  const active = feedback !== null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleClick()}
+      aria-label={active ? label : "Share your invite link"}
+      className={`inline-flex items-center gap-1.5 shrink-0 rounded px-3 py-1 text-sm font-medium text-white font-display transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
+      }`}
+    >
+      {label}
+      <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" aria-hidden />
+    </button>
+  );
+}
+
 function ReferralLinkRow({
   className,
   showSeparator,
@@ -26,18 +85,22 @@ function ReferralLinkRow({
   const url = addr ? `${window.location.origin}/?ref=${addr}` : null;
   if (!url) return null;
 
-  const row = (
-    <div
-      className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center${className ? ` ${className}` : ""}`}
-    >
+  const shareRow = (
+    <div className={`${referralLinkRowGridClass}${className ? ` ${className}` : ""}`}>
+      <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+        Share Your Link
+      </span>
+      <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+        <ShareInviteButton url={url} />
+      </div>
+    </div>
+  );
+
+  const copyRow = (
+    <div className={`${referralLinkRowGridClass} mt-3`}>
       <span className="text-sm font-medium text-gray-700 font-display shrink-0">Invite Link</span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-        <span
-          className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
-          title={url}
-        >
-          {truncateMiddle(url, 18, 6)}
-        </span>
+        <ReferralUrlPreview url={url} />
         <CopyButton text={url} />
       </div>
     </div>
@@ -47,11 +110,17 @@ function ReferralLinkRow({
     return (
       <>
         <hr className="my-4 border-gray-200" />
-        {row}
+        {shareRow}
+        {/* {copyRow} */}
       </>
     );
   }
-  return row;
+  return (
+    <>
+      {shareRow}
+      {copyRow}
+    </>
+  );
 }
 
 const ReferralNetworkPanel = ({
@@ -90,7 +159,7 @@ const ReferralNetworkPanel = ({
         </h2>
         {loading ? (
           <div
-            className="h-5 w-10 justify-self-end rounded bg-gray-200 animate-pulse"
+            className="h-7 w-10 justify-self-end rounded bg-gray-200 animate-pulse"
             aria-busy="true"
           />
         ) : null}
@@ -110,20 +179,20 @@ const ReferralNetworkPanel = ({
 
       {!loading && error ? <p className="text-sm text-red-600 font-display">{error}</p> : null}
       {loading ? (
-        <div className="space-y-2" aria-busy="true">
+        <div className="space-y-2 py-px" aria-busy="true">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={index}
               className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center text-sm font-display"
             >
-              <div className="h-4 w-16 rounded bg-gray-200 animate-pulse" />
-              <div className="h-4 w-8 justify-self-end rounded bg-gray-200 animate-pulse" />
+              <div className="h-5 w-16 rounded bg-gray-200 animate-pulse" />
+              <div className="h-5 w-8 justify-self-end rounded bg-gray-200 animate-pulse" />
             </div>
           ))}
         </div>
       ) : null}
       {!loading && !error ? (
-        <div className="space-y-2">
+        <div className="space-y-2 py-px">
           {displayLevels.map((level) => (
             <div
               key={level.depth}
