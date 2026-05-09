@@ -20,8 +20,26 @@ async function getReferralSummary(userId: string) {
     },
   });
 
-  const chainId = user?.referralChainId ?? null;
-  const groupId = user?.referralGroupId ?? null;
+  let chainId = user?.referralChainId ?? null;
+  let groupId = user?.referralGroupId ?? null;
+
+  // Users who signed up without a referral never got chain/group on their row, but
+  // direct referrals store the same chain + group. Infer from any direct invitee
+  // so the invite network panel counts correctly for "root" referrers.
+  if (chainId == null || !groupId) {
+    const fromInvitee = await prisma.user.findFirst({
+      where: {
+        referredByUserId: userId,
+        referralChainId: { not: null },
+        referralGroupId: { not: null },
+      },
+      select: { referralChainId: true, referralGroupId: true },
+    });
+    if (fromInvitee?.referralChainId != null && fromInvitee.referralGroupId) {
+      chainId = fromInvitee.referralChainId;
+      groupId = fromInvitee.referralGroupId;
+    }
+  }
 
   if (chainId == null || !groupId) {
     return {
