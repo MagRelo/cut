@@ -39,7 +39,7 @@ export const Receive = () => {
       <div className="space-y-1">
         <h3 className="text-base font-semibold text-gray-800 font-display">Fund your account</h3>
         <p className="text-sm text-gray-600 font-display">
-          Share your Account ID with another player so they can send you funds from the{" "}
+          Share your Account ID with another player—they can send you funds from the{" "}
           <strong>Send</strong> tab.
         </p>
       </div>
