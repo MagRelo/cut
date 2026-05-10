@@ -297,10 +297,10 @@ const AdminPanel = () => {
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Admin</h2>
       <div className="flex flex-col gap-2 text-sm">
         <Link to="/admin" className="text-blue-600 hover:text-blue-800 hover:underline">
-          Open admin panel
+          Admin Tools
         </Link>
         <Link to="/admin/users" className="text-blue-600 hover:text-blue-800 hover:underline">
-          Manage users
+          Manage Users
         </Link>
       </div>
     </div>
@@ -349,8 +349,6 @@ export function UserPage() {
       {/* User Settings */}
       <UserSettings />
 
-      {isAdmin() ? <AdminPanel /> : null}
-
       {/* Wallet Information */}
       <WalletInfo
         disconnect={logout}
@@ -358,6 +356,8 @@ export function UserPage() {
         userEmail={user?.email}
         accountIdAddress={smartWalletAddress}
       />
+
+      {isAdmin() ? <AdminPanel /> : null}
     </div>
   );
 }

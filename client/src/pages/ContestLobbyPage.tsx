@@ -180,7 +180,7 @@ export const ContestLobby: React.FC = () => {
           <TabPanels>
             {/* ENTRIES (Contest) */}
             <TabPanel className="p-4 focus:outline-none">
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {primaryActionsLocked ? (
                   <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
                 ) : (
