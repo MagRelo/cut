@@ -2,10 +2,47 @@
 
 ## Scope and Decisions
 
-- Odds source: third-party sportsbook-style API.
-- Grading source: same odds provider result/settlement feed.
+- **Live odds source:** DataGolf only — finish-position quotes come from the [`betting-tools/outrights`](https://datagolf.com/api-access) feed (Scratch Plus membership + API key; no alternate live odds provider for the grid).
+- **Grading source:** Official tournament results persisted in the app (player finish position / cut / WD rules derived from data the product already trusts for contests), not the DataGolf odds feed or a sportsbook settlement API.
 - Settlement rail: on-chain-like flow (persist transaction/payment artifacts similarly to contests).
 - Frontend target: replace mock `SideBetPanel` grid with live market + placement + open/settled state.
+
+## DataGolf live odds (API reference and integration plan)
+
+Canonical documentation: [DataGolf API Access](https://datagolf.com/api-access).
+
+**Endpoint (outrights / finish markets)**
+
+- Base URL: `https://feeds.datagolf.com/betting-tools/outrights`
+- Authentication: append `key=<DATAGOLF_API_KEY>` as a query parameter on every request.
+
+**Query parameters (grid-relevant)**
+
+| Parameter | Notes |
+|-----------|--------|
+| `market` | **Required.** For this feature use `top_5`, `top_10`, `top_20` (one request per market, or cache aggressively). Other values exist on the API (`win`, `make_cut`, `mc`, `frl`) but are out of scope for the Top 5/10/20 grid. |
+| `tour` | Optional; default PGA-oriented usage: `tour=pga`. |
+| `odds_format` | Use `decimal` for direct input into `calculateRoundRobinOdds` (american supported if we normalize first). |
+| `file_format` | `json` |
+
+**Example request**
+
+`https://feeds.datagolf.com/betting-tools/outrights?tour=pga&market=top_10&odds_format=decimal&file_format=json&key=YOUR_API_KEY`
+
+**Operational constraints**
+
+- Global rate limit **45 requests per minute** per API key (documented on the access page); exceeding it triggers a short suspension. Plan refresh so that fetching three markets (`top_5`, `top_10`, `top_20`) plus cron and user traffic stays under the cap (cache snapshots, single-flight refresh, backoff on 429 if exposed).
+
+**Player and event mapping**
+
+- Lineup golfers are keyed by `pga_pgaTourId` today. DataGolf responses identify players in their own ID space; their docs note tour-specific IDs in feeds such as field updates / player list. Implementation plan: resolve each lineup player to DataGolf’s row (e.g. via PGA tour id column on DG payloads, or a small `dg_id` / mapping table on `Player`) before joining decimals into `buildSideBetMarket`.
+
+**Integration plan**
+
+1. Add `DATAGOLF_API_KEY` to server env; implement `server/src/services/odds/dataGolfOutrightsClient.ts` (or a thin `providerClient.ts` that only calls DataGolf) to fetch and validate the three markets for the active tournament week.
+2. Map four lineup players to DG outright rows; extract per-player decimal odds per market; pass into `buildSideBetMarket` → `calculateRoundRobinOdds`.
+3. Persist snapshots on `SideBetMarket` / selections; on failure, mark stale and surface partial grid per reliability rules.
+4. Settlement jobs read **official** finishes from existing tournament/player state (same source as fantasy grading), not DataGolf odds.
 
 ## Data Model (Server + Prisma)
 
@@ -14,23 +51,24 @@
   - `SideBetSelection` (normalized selectable outcomes: `hitsRequired` x `finishThreshold` + provider odds).
   - `SideBetTicket` (user/wallet stake, selected cells, derived aggregate odds, status lifecycle).
   - `SideBetTicketLeg` (optional normalized per-leg storage for auditability and grading).
-  - `SideBetSettlement` (provider result payload + settlement metadata + tx hash/reference).
+  - `SideBetSettlement` (snapshot of official grading inputs + settlement metadata + tx hash/reference).
 - Keep lifecycle/status enums aligned with existing contest patterns (`OPEN`, `LOCKED`, `SETTLING`, `SETTLED`, `VOID`).
 - Add migration and indices for common queries (`tournamentId`, `userId/wallet`, `status`, `createdAt`).
 
 ## Odds Ingestion + Round-Robin Pricing
 
-- Implement odds provider client (`server/src/services/odds/providerClient.ts`) with:
-  - event lookup by tournament/player mapping,
-  - per-player finish markets fetch,
-  - normalized decimal/american conversion helpers.
+- Implement **DataGolf outrights client** (`server/src/services/odds/dataGolfOutrightsClient.ts`, or `providerClient.ts` as a thin adapter that only calls DataGolf) with:
+  - tournament/week context and **player mapping** from `pga_pgaTourId` to DataGolf player rows (see DataGolf section above),
+  - three fetches per refresh for `market=top_5`, `top_10`, `top_20` (or equivalent single pipeline with caching),
+  - normalized decimal/american conversion helpers as needed.
+- Ingest **per-player decimal (or american) odds per market** from DataGolf JSON, then feed the existing math pipeline (no alternate live odds source for the grid).
 - Implement market builder (`server/src/services/odds/buildSideBetMarket.ts`) to map lineup's 4 golfers into selectable cells (`2/3/4 of 4` x `Top10/20/30`).
 - Implement round-robin aggregator (`server/src/services/odds/calculateRoundRobinOdds.ts`):
   - derive combo set for each row (C(4,2), C(4,3), C(4,4)),
   - compute combined odds per combo,
   - average combo implied return (or equivalent decimal averaging rule),
   - convert to final display odds string + stored decimal for settlement math.
-- Persist fresh market snapshots and mark stale markets when provider data is unavailable.
+- Persist fresh market snapshots and mark stale markets when DataGolf data is unavailable.
 
 ## API Surface
 
@@ -52,7 +90,7 @@
   - `server/src/services/batch/batchSettleSideBets.ts`
   - `server/src/services/batch/batchCloseSideBets.ts`
 - Add per-ticket settlement service (`server/src/services/betting/settleSideBetTicket.ts`) to:
-  - pull provider settlement/result feed,
+  - resolve outcomes from **official tournament results** in the database (finish thresholds vs persisted positions / cut / WD rules),
   - resolve ticket win/loss/void,
   - compute payout from locked-in odds/stake,
   - execute settlement transaction via existing payment abstraction pattern,
@@ -73,7 +111,7 @@
 
 ## Reliability and Operations
 
-- Add provider failure handling: retry/backoff, stale flags, partial-market suppression.
+- Add DataGolf failure handling: retry/backoff, stale flags, partial-market suppression (respect 45 req/min).
 - Add idempotency keys for placement and settlement jobs.
 - Add audit logs around quote generation, placement, and settlement transitions.
 - Add feature flag to enable side bets per tournament/contest while rolling out.
@@ -86,7 +124,8 @@
   - status transition guards.
 - Integration tests:
   - market fetch/placement endpoints,
-  - cron lock/settle jobs against seeded tournament + mocked provider feed,
+  - mocked **DataGolf outrights JSON** for `top_5`, `top_10`, and `top_20` asserting grid output matches `calculateRoundRobinOdds` expectations,
+  - cron lock/settle jobs against seeded tournament + **official results** in DB (no odds-feed settlement),
   - duplicate-settlement and idempotency cases.
 - UI tests:
   - panel renders live grid,
@@ -97,14 +136,13 @@
 
 ```mermaid
 flowchart TD
-  oddsProvider[OddsProviderAPI] --> oddsIngest[OddsIngestionService]
+  dataGolfOutrights[DataGolfOutrights] --> oddsIngest[OddsIngestionService]
   oddsIngest --> marketStore[SideBetMarketTables]
   marketStore --> betsApi[SideBetAPI]
   betsApi --> sideBetPanel[SideBetPanelUI]
   sideBetPanel --> placeTicket[PlaceTicketEndpoint]
   placeTicket --> ticketsStore[SideBetTicketTables]
-  oddsProvider --> settleFeed[ProviderSettlementFeed]
-  settleFeed --> settleJob[BatchSettleSideBetsJob]
+  officialResults[OfficialTournamentResults] --> settleJob[BatchSettleSideBetsJob]
   ticketsStore --> settleJob
   settleJob --> chainSettle[OnChainLikeSettlementService]
   chainSettle --> payoutsLedger[SettlementAndPaymentArtifacts]
@@ -113,15 +151,17 @@ flowchart TD
 ## Implementation Order
 
 1. Prisma models + migration + enums.
-2. Odds provider client + market builder + round-robin math service.
+2. DataGolf outrights client + player/event mapping + market builder + round-robin math service.
 3. Side-bet API endpoints + validation + ticket placement persistence.
-4. Cron stages for lock/settle/close with provider result feed integration.
+4. Cron stages for lock/settle/close integrated with **official results** from the existing tournament/player pipeline (not DataGolf odds for grading).
 5. Frontend wiring in lineup flow and `SideBetPanel`.
 6. Tests + staged rollout flag.
 
 ## Worked Example: Side Bet Parlay Odds (Top 5/10/20)
 
-Use these source markets for the event:
+**Production:** Per-player odds for the grid come from DataGolf `betting-tools/outrights` with `market=top_5`, `top_10`, and `top_20` (see [DataGolf live odds](#datagolf-live-odds-api-reference-and-integration-plan)). The Oddschecker links below are **illustrative only** of market shape for readers; they are not the live quote source.
+
+Use these source markets for the event (illustrative):
 
 - [Top 5 Finish](https://www.oddschecker.com/us/golf/truist-championship/top-5-finish)
 - [Top 10 Finish](https://www.oddschecker.com/us/golf/truist-championship/top-10-finish)
