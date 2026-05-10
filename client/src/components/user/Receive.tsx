@@ -116,7 +116,7 @@ export const Receive = () => {
               funds using the in-app{" "}
               <span className="font-medium text-amber-950">player-to-player transfer</span> (they
               use the <span className="font-medium text-amber-950">Send</span> tab on this page and
-              your Account ID below).
+              your Account ID).
             </p>
           </div>
         </div>
