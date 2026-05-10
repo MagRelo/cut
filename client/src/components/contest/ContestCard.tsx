@@ -13,7 +13,11 @@ interface ContestCardProps {
 
 export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCardProps) => {
   // Read primary prize pool from contract
-  const primaryPrizePool = useReadContract({
+  const {
+    data: primaryPrizePool,
+    isLoading: isLoadingPrimaryPrizePool,
+    isError: isErrorPrimaryPrizePool,
+  } = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "primaryPrizePool",
@@ -22,19 +26,26 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     query: {
       enabled: !!contest?.address,
     },
-  }).data as bigint | undefined;
+  });
+
+  const primaryPrizePoolBig = primaryPrizePool as bigint | undefined;
 
   // Calculate pot amount from contract data (with 18 decimals)
-  const potAmount = primaryPrizePool ? Math.round(Number(formatUnits(primaryPrizePool, 18))) : 0;
+  const potAmount = primaryPrizePoolBig
+    ? Math.round(Number(formatUnits(primaryPrizePoolBig, 18)))
+    : 0;
 
   // Fetch speculator pot - don't need entryIds to get total pot
-  const { secondaryTotalFundsFormatted, isLoading: isPredictionDataLoading } =
-    useContestPredictionData({
-      contestAddress: contest.address,
-      entryIds: [], // Empty array since we only need secondary prize pool data
-      enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-      chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-    });
+  const {
+    secondaryTotalFundsFormatted,
+    isLoading: isPredictionDataLoading,
+    contestChainReadsUnavailable,
+  } = useContestPredictionData({
+    contestAddress: contest.address,
+    entryIds: [], // Empty array since we only need secondary prize pool data
+    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
+    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+  });
 
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
 
@@ -56,7 +67,15 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
 
   const displayPot =
     isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
-  const showLoading = !isFinalizedContest && isPredictionDataLoading;
+
+  const primaryReadFailed =
+    !!contest?.address && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
+  const showLoading =
+    !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
+  const showPotUnavailable =
+    !isFinalizedContest &&
+    !showLoading &&
+    (primaryReadFailed || contestChainReadsUnavailable);
 
   const formatStatus = (status: string) => {
     const statusLabels: Record<string, string> = {
@@ -143,7 +162,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             className="group ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
             <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
-              {showLoading ? "..." : `$${displayPot}`}
+              {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
             </div>
             <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
               <span>POT</span>
@@ -158,7 +177,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         ) : (
           <div className="ml-2 mr-2 text-right">
             <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
-              {showLoading ? "..." : `$${displayPot}`}
+              {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
             </div>
             <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
               POT

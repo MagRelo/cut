@@ -58,7 +58,11 @@ export const ContestLobby: React.FC = () => {
   // Compute action locks based on contest status
   const primaryActionsLocked = contest ? arePrimaryActionsLocked(contest.status) : true;
 
-  const { data: primarySideBalance } = useReadContract({
+  const {
+    data: primarySideBalance,
+    isLoading: isPrimaryPoolLabelLoading,
+    isError: isPrimaryPoolLabelError,
+  } = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "getPrimarySideBalance",
@@ -68,9 +72,14 @@ export const ContestLobby: React.FC = () => {
     },
   });
 
-  const primaryPoolLabel = Math.round(
-    Number(formatUnits((primarySideBalance as bigint | undefined) ?? 0n, 18)),
-  ).toLocaleString();
+  const primaryPoolTabSuffix = (() => {
+    if (!contest?.address) return "—";
+    if (isPrimaryPoolLabelLoading) return "...";
+    if (isPrimaryPoolLabelError) return "—";
+    return Math.round(
+      Number(formatUnits((primarySideBalance as bigint | undefined) ?? 0n, 18)),
+    ).toLocaleString();
+  })();
   // TEMP HIDE: winner pool UI (restore this data flow when re-enabling)
   // const { data: secondarySideBalance } = useReadContract({
   //   address: contest?.address as `0x${string}`,
@@ -161,7 +170,7 @@ export const ContestLobby: React.FC = () => {
         >
           <TabList className={TAB_LIST_CLASS}>
             <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
-              Contest – ${primaryPoolLabel}
+              Contest – {primaryPoolTabSuffix === "—" ? "—" : `$${primaryPoolTabSuffix}`}
             </Tab>
             {/* TEMP HIDE: Winner Pool tab (kept for exact restore)
             {!isPostSettlement ? (

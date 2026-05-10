@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatUnits, type Abi } from "viem";
 import { sharesForSecondaryPricing, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
@@ -37,7 +37,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
   const contestAbi = ContestContract.abi as Abi;
 
   // Read contest state
-  const { data: contestState, isLoading: isLoadingState } = useReadContract({
+  const {
+    data: contestState,
+    isLoading: isLoadingState,
+    isError: isErrorState,
+    refetch: refetchContestState,
+  } = useReadContract({
     address: contestAddress as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "state",
@@ -48,28 +53,36 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
   });
 
   // Total liquidity backing all secondary ERC1155 tokens.
-  const { data: totalSecondaryLiquidity, isLoading: isLoadingTotalSecondaryLiquidity } =
-    useReadContract({
-      address: contestAddress as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "totalSecondaryLiquidity",
-      chainId,
-      query: {
-        enabled: enabled && !!contestAddress,
-      },
-    });
+  const {
+    data: totalSecondaryLiquidity,
+    isLoading: isLoadingTotalSecondaryLiquidity,
+    isError: isErrorTotalSecondaryLiquidity,
+    refetch: refetchTotalSecondaryLiquidity,
+  } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalSecondaryLiquidity",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
 
   // Contract config needed for secondary split during `addSecondaryPosition`.
-  const { data: primaryEntryInvestmentShareBpsRaw, isLoading: isLoadingPrimaryEntryInvestmentShareBps } =
-    useReadContract({
-      address: contestAddress as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "primaryEntryInvestmentShareBps",
-      chainId,
-      query: {
-        enabled: enabled && !!contestAddress,
-      },
-    });
+  const {
+    data: primaryEntryInvestmentShareBpsRaw,
+    isLoading: isLoadingPrimaryEntryInvestmentShareBps,
+    isError: isErrorPrimaryEntryInvestmentShareBps,
+    refetch: refetchPrimaryEntryInvestmentShareBps,
+  } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "primaryEntryInvestmentShareBps",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
   const primaryEntryInvestmentShareBps = primaryEntryInvestmentShareBpsRaw as bigint | undefined;
 
   const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => {
@@ -156,7 +169,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     [shouldFetchEntries, entryIds, contestAddress, chainId, contestAbi],
   );
 
-  const { data: priceResults, isLoading: isLoadingPrices } = useReadContracts({
+  const {
+    data: priceResults,
+    isLoading: isLoadingPrices,
+    isError: isErrorPrices,
+    refetch: refetchPrices,
+  } = useReadContracts({
     contracts: priceContracts,
     query: {
       enabled: shouldFetchEntries,
@@ -166,7 +184,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const { data: supplyResults, isLoading: isLoadingSupplies } = useReadContracts({
+  const {
+    data: supplyResults,
+    isLoading: isLoadingSupplies,
+    isError: isErrorSupplies,
+    refetch: refetchSupplies,
+  } = useReadContracts({
     contracts: supplyContracts,
     query: {
       enabled: shouldFetchEntries,
@@ -176,7 +199,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const { data: balanceResults, isLoading: isLoadingBalances } = useReadContracts({
+  const {
+    data: balanceResults,
+    isLoading: isLoadingBalances,
+    isError: isErrorBalances,
+    refetch: refetchPositionBalances,
+  } = useReadContracts({
     contracts: balanceContracts,
     query: {
       enabled: shouldFetchBalances,
@@ -186,7 +214,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const { data: depositedPerEntryResults, isLoading: isLoadingDepositedPerEntry } = useReadContracts({
+  const {
+    data: depositedPerEntryResults,
+    isLoading: isLoadingDepositedPerEntry,
+    isError: isErrorDepositedPerEntry,
+    refetch: refetchDepositedPerEntry,
+  } = useReadContracts({
     contracts: depositedPerEntryContracts,
     query: {
       enabled: shouldFetchBalances && depositedPerEntryContracts.length > 0,
@@ -196,7 +229,12 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  const { data: liquidityResults, isLoading: isLoadingLiquidity } = useReadContracts({
+  const {
+    data: liquidityResults,
+    isLoading: isLoadingLiquidity,
+    isError: isErrorLiquidity,
+    refetch: refetchLiquidity,
+  } = useReadContracts({
     contracts: liquidityContracts,
     query: {
       enabled: shouldFetchEntries,
@@ -272,6 +310,39 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     isLoadingTotalSecondaryLiquidity ||
     isLoadingPrimaryEntryInvestmentShareBps;
 
+  const contestAddressEnabled = enabled && !!contestAddress;
+
+  const contestChainReadsUnavailable =
+    contestAddressEnabled &&
+    !isLoading &&
+    (isErrorState ||
+      isErrorTotalSecondaryLiquidity ||
+      isErrorPrimaryEntryInvestmentShareBps ||
+      (shouldFetchEntries && (isErrorPrices || isErrorSupplies || isErrorLiquidity)) ||
+      (shouldFetchBalances && (isErrorBalances || isErrorDepositedPerEntry)));
+
+  const refetchContestChainReads = useCallback(async () => {
+    await Promise.all([
+      refetchContestState(),
+      refetchTotalSecondaryLiquidity(),
+      refetchPrimaryEntryInvestmentShareBps(),
+      refetchPrices(),
+      refetchSupplies(),
+      refetchPositionBalances(),
+      refetchDepositedPerEntry(),
+      refetchLiquidity(),
+    ]);
+  }, [
+    refetchContestState,
+    refetchTotalSecondaryLiquidity,
+    refetchPrimaryEntryInvestmentShareBps,
+    refetchPrices,
+    refetchSupplies,
+    refetchPositionBalances,
+    refetchDepositedPerEntry,
+    refetchLiquidity,
+  ]);
+
   return {
     contestState: contestState as ContestState | undefined,
     canPredict,
@@ -286,5 +357,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     secondaryTotalFundsFormatted: formatUnits(totalSecondaryFunds, 18),
     poolSnapshot,
     isLoading,
+    contestChainReadsUnavailable,
+    refetchContestChainReads,
   };
 }

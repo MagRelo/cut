@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { Modal } from "../common/Modal";
@@ -25,7 +26,12 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const oracleFeeBps = Math.max(0, Math.min(10000, contest?.settings?.oracleFeeBps ?? 0));
 
   // Read primary prize pool from contract
-  const { data: primaryPrizePool, isLoading: isLoadingPrimary } = useReadContract({
+  const {
+    data: primaryPrizePool,
+    isLoading: isLoadingPrimary,
+    isError: isErrorPrimary,
+    refetch: refetchPrimaryPrizePool,
+  } = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "primaryPrizePool",
@@ -36,18 +42,21 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     },
   });
 
-  const { data: totalSecondaryLiquidity, isLoading: isLoadingSecondaryLiquidity } = useReadContract(
-    {
-      address: contest?.address as `0x${string}`,
-      abi: ContestContract.abi,
-      functionName: "totalSecondaryLiquidity",
-      args: [],
-      chainId,
-      query: {
-        enabled: !!contest?.address && isOpen,
-      },
+  const {
+    data: totalSecondaryLiquidity,
+    isLoading: isLoadingSecondaryLiquidity,
+    isError: isErrorSecondaryLiquidity,
+    refetch: refetchTotalSecondaryLiquidity,
+  } = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalSecondaryLiquidity",
+    args: [],
+    chainId,
+    query: {
+      enabled: !!contest?.address && isOpen,
     },
-  );
+  });
 
   // Calculate payout structure based on number of entries
   const entryCount = contest?.contestLineups?.length ?? 0;
@@ -83,6 +92,15 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const networkBonusTotal = (totalPrizePool * oracleFeeBps) / 10000;
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
+  const readsFailed =
+    !!contest?.address &&
+    isOpen &&
+    !isLoading &&
+    (isErrorPrimary || isErrorSecondaryLiquidity);
+
+  const refetchPayoutReads = () =>
+    void Promise.all([refetchPrimaryPrizePool(), refetchTotalSecondaryLiquidity()]);
+
   const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
   return (
@@ -99,6 +117,33 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
         {isLoading ? (
           <div className="flex min-h-[200px] items-center justify-center">
             <LoadingSpinner />
+          </div>
+        ) : readsFailed ? (
+          <div className="p-3 font-display">
+            <div
+              className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
+              role="status"
+            >
+              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
+                <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                  Payout data unavailable
+                </div>
+              </div>
+              <div className="p-3">
+                <p className="text-sm text-amber-950/90 leading-relaxed">
+                  Couldn&apos;t load prize pool totals from the network. This is usually temporary
+                  (RPC or connectivity).{" "}
+                  <button
+                    type="button"
+                    onClick={refetchPayoutReads}
+                    className="font-medium text-amber-950 underline-offset-2 hover:underline"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4 bg-gray-100 p-3 font-display">
