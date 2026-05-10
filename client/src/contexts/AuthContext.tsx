@@ -57,6 +57,11 @@ interface AuthContextData {
   platformTokenSymbol: string | undefined;
   platformTokenDecimals: number | undefined;
   balancesLoading: boolean;
+  /** True after a failed balance read while signed in (do not treat as $0). */
+  balancesUnavailable: boolean;
+  platformBalanceUnavailable: boolean;
+  paymentBalanceUnavailable: boolean;
+  refetchBalances: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
@@ -99,20 +104,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
-  const { data: platformTokenBalanceData, isLoading: platformBalanceLoading } = useBalance({
+  const platformBalanceEnabled = !!balanceAddress && !!platformTokenAddress && !!user;
+  const paymentBalanceEnabled = !!balanceAddress && !!paymentTokenAddress && !!user;
+
+  const {
+    data: platformTokenBalanceData,
+    isLoading: platformBalanceLoading,
+    isError: platformBalanceIsError,
+    refetch: refetchPlatformTokenBalance,
+  } = useBalance({
     address: balanceAddress,
     token: platformTokenAddress as `0x${string}`,
     query: {
-      enabled: !!balanceAddress && !!platformTokenAddress && !!user,
+      enabled: platformBalanceEnabled,
       refetchInterval: user ? 30000 : false,
     },
   });
 
-  const { data: paymentTokenBalanceData, isLoading: paymentBalanceLoading } = useBalance({
+  const {
+    data: paymentTokenBalanceData,
+    isLoading: paymentBalanceLoading,
+    isError: paymentBalanceIsError,
+    refetch: refetchPaymentTokenBalance,
+  } = useBalance({
     address: balanceAddress,
     token: paymentTokenAddress as `0x${string}`,
     query: {
-      enabled: !!balanceAddress && !!paymentTokenAddress && !!user,
+      enabled: paymentBalanceEnabled,
       refetchInterval: user ? 30000 : false,
     },
   });
@@ -159,6 +177,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
 
+  const platformBalanceUnavailable =
+    platformBalanceEnabled && !platformBalanceLoading && platformBalanceIsError;
+  const paymentBalanceUnavailable =
+    paymentBalanceEnabled && !paymentBalanceLoading && paymentBalanceIsError;
+  const balancesUnavailable = platformBalanceUnavailable || paymentBalanceUnavailable;
+
+  const refetchBalances = useCallback(async () => {
+    await Promise.all([refetchPlatformTokenBalance(), refetchPaymentTokenBalance()]);
+  }, [refetchPlatformTokenBalance, refetchPaymentTokenBalance]);
+
   const combinedSpendableWei = useMemo(() => {
     const platform = platformTokenBalanceData?.value ?? 0n;
     const payment = paymentTokenBalanceData?.value ?? 0n;
@@ -188,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, user?.walletAddress, posthog]);
 
   useEffect(() => {
-    if (!user?.id || !posthog || balancesLoading) return;
+    if (!user?.id || !posthog || balancesLoading || balancesUnavailable) return;
     if (typeof window === "undefined") return;
     if (localStorage.getItem(firstFundedStorageKey(user.id))) {
       combinedPrevRef.current = combinedSpendableWei;
@@ -214,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user?.chainId,
     posthog,
     balancesLoading,
+    balancesUnavailable,
     combinedSpendableWei,
     platformTokenBalanceData?.value,
     paymentTokenBalanceData?.value,
@@ -517,6 +546,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol: platformTokenSymbol as string | undefined,
       platformTokenDecimals: platformTokenDecimals as number | undefined,
       balancesLoading,
+      balancesUnavailable,
+      platformBalanceUnavailable,
+      paymentBalanceUnavailable,
+      refetchBalances,
     }),
     [
       user,
@@ -540,6 +573,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       platformTokenSymbol,
       platformTokenDecimals,
       balancesLoading,
+      balancesUnavailable,
+      platformBalanceUnavailable,
+      paymentBalanceUnavailable,
+      refetchBalances,
     ],
   );
 

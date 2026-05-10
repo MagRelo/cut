@@ -10,7 +10,13 @@ import { useAuth } from "../../contexts/AuthContext";
 export const Sell = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
-  const { platformTokenBalance, paymentTokenSymbol, platformTokenSymbol } = useAuth();
+  const {
+    platformTokenBalance,
+    paymentTokenSymbol,
+    platformTokenSymbol,
+    platformBalanceUnavailable,
+    refetchBalances,
+  } = useAuth();
 
   // Sell form state
   const [sellAmount, setSellAmount] = useState("");
@@ -38,6 +44,7 @@ export const Sell = () => {
   });
 
   const handleMaxSell = () => {
+    if (platformBalanceUnavailable) return;
     if (platformTokenBalance) {
       const maxAmount = formatUnits(platformTokenBalance, 18);
       setSellAmount(maxAmount);
@@ -47,6 +54,11 @@ export const Sell = () => {
   const handleSell = async () => {
     if (!isConnected || !sellAmount) {
       setSellError("Please enter an amount");
+      return;
+    }
+
+    if (platformBalanceUnavailable) {
+      setSellError("Could not load your CUT balance. Check your connection and try again.");
       return;
     }
 
@@ -95,8 +107,21 @@ export const Sell = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 rounded-lg border border-gray-200/50">
               <div className="text-xs font-medium text-gray-600 mb-1">Available Balance</div>
-              <div className="text-lg font-semibold text-gray-800">
-                {formattedBalance(platformTokenBalance ?? 0n, 18)}
+              <div className="text-lg font-semibold text-gray-800 tabular-nums">
+                {platformBalanceUnavailable ? (
+                  <span className="text-amber-900/90">
+                    —{" "}
+                    <button
+                      type="button"
+                      onClick={() => void refetchBalances()}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      Retry
+                    </button>
+                  </span>
+                ) : (
+                  formattedBalance(platformTokenBalance ?? 0n, 18)
+                )}
               </div>
               <div className="text-xs text-gray-500">{platformTokenSymbol || "CUT"}</div>
             </div>
@@ -129,7 +154,7 @@ export const Sell = () => {
             <button
               type="button"
               onClick={handleMaxSell}
-              disabled={isProcessing}
+              disabled={isProcessing || platformBalanceUnavailable}
               className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-gray-700 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               MAX
@@ -154,7 +179,7 @@ export const Sell = () => {
 
         <button
           onClick={handleSell}
-          disabled={!isConnected || !sellAmount || isProcessing}
+          disabled={!isConnected || !sellAmount || isProcessing || platformBalanceUnavailable}
           className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md disabled:shadow-none"
         >
           {isProcessing ? (

@@ -32,13 +32,15 @@ const tabBase =
   "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-[color,background-color,border-color] shadow-sm relative border";
 
 export const Navigation: React.FC = () => {
-  const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
+  const { user, platformTokenBalance, paymentTokenBalance, balancesUnavailable } = useAuth();
   const location = useLocation();
 
-  const totalBalance = (
-    Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
-    Number(formatUnits(paymentTokenBalance ?? 0n, 6))
-  ).toFixed(2);
+  const totalBalance = balancesUnavailable
+    ? null
+    : (
+        Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
+        Number(formatUnits(paymentTokenBalance ?? 0n, 6))
+      ).toFixed(2);
 
   const tabs: NavTab[] = useMemo(() => {
     if (!user) {
@@ -81,14 +83,23 @@ export const Navigation: React.FC = () => {
         label: (
           <>
             <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="font-display tracking-normal">${totalBalance}</span>
+            {totalBalance !== null ? (
+              <span className="font-display tracking-normal">${totalBalance}</span>
+            ) : (
+              <span
+                className="font-display tracking-normal text-amber-900/90 tabular-nums"
+                title="Could not load balance from the network"
+              >
+                —
+              </span>
+            )}
           </>
         ),
         match: accountMatch,
         firstRight: false,
       },
     ];
-  }, [user, totalBalance]);
+  }, [user, totalBalance, balancesUnavailable]);
 
   return (
     <nav aria-label="Main" className="">

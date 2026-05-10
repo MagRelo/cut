@@ -1,3 +1,4 @@
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -57,8 +58,16 @@ export function TokenBalances({
   showCutInfoLink = false,
   showUsdcInfoLink = false,
 }: TokenBalancesProps) {
-  const { platformTokenBalance, paymentTokenBalance, paymentTokenSymbol, platformTokenSymbol } =
-    useAuth();
+  const {
+    platformTokenBalance,
+    paymentTokenBalance,
+    paymentTokenSymbol,
+    platformTokenSymbol,
+    balancesUnavailable,
+    platformBalanceUnavailable,
+    paymentBalanceUnavailable,
+    refetchBalances,
+  } = useAuth();
 
   // round balance to 2 decimal points for payment tokens (6 decimals)
   const formattedPaymentBalance = (balance: bigint) => {
@@ -69,10 +78,12 @@ export function TokenBalances({
   const hasLowerSection = showBreakdown || showContestHistoryLink;
 
   const balanceHeaderClass = `flex items-center justify-between ${hasLowerSection ? "mb-2" : ""}`;
-  const balanceTotal = (
-    Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
-    Number(formatUnits(paymentTokenBalance ?? 0n, 6))
-  ).toFixed(2);
+  const balanceTotal = balancesUnavailable
+    ? null
+    : (
+        Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
+        Number(formatUnits(paymentTokenBalance ?? 0n, 6))
+      ).toFixed(2);
 
   return (
     <div className="bg-white rounded-sm shadow p-4 mb-4">
@@ -84,8 +95,46 @@ export function TokenBalances({
             manage...
           </Link>
         </div>
-        <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+        <div className="min-w-0 justify-end text-right">
+          {balanceTotal !== null ? (
+            <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+          ) : (
+            <span
+              className="text-xl font-semibold text-amber-800 font-display tabular-nums"
+              title="Could not load balance from the network"
+            >
+              —
+            </span>
+          )}
+        </div>
       </div>
+
+      {balancesUnavailable && (
+        <div
+          className="mt-2 overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm font-display mb-2"
+          role="status"
+        >
+          <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
+            <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+              Balance unavailable
+            </div>
+          </div>
+          <div className="p-3">
+            <p className="text-sm text-amber-950/90 leading-relaxed">
+              Couldn&apos;t load balances from the network. This is usually temporary (RPC or
+              connectivity).{" "}
+              <button
+                type="button"
+                onClick={() => void refetchBalances()}
+                className="font-medium text-amber-950 underline-offset-2 hover:underline"
+              >
+                Try again
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Token Breakdown */}
       {showBreakdown && (
@@ -101,8 +150,14 @@ export function TokenBalances({
                   </Link>
                 )}
               </div>
-              <div className="text-sm font-semibold text-gray-700 text-right font-sans">
-                ${Number(formatUnits(platformTokenBalance ?? 0n, 18)).toFixed(2)}
+              <div className="text-sm font-semibold text-gray-700 text-right font-sans tabular-nums">
+                {platformBalanceUnavailable ? (
+                  <span className="text-amber-800" title="Could not load CUT balance">
+                    —
+                  </span>
+                ) : (
+                  <>${Number(formatUnits(platformTokenBalance ?? 0n, 18)).toFixed(2)}</>
+                )}
               </div>
             </>
           )}
@@ -118,8 +173,14 @@ export function TokenBalances({
                   </Link>
                 )}
               </div>
-              <div className="text-sm font-semibold text-gray-700 text-right font-sans">
-                ${formattedPaymentBalance(paymentTokenBalance ?? 0n)}
+              <div className="text-sm font-semibold text-gray-700 text-right font-sans tabular-nums">
+                {paymentBalanceUnavailable ? (
+                  <span className="text-amber-800" title="Could not load USDC balance">
+                    —
+                  </span>
+                ) : (
+                  <>${formattedPaymentBalance(paymentTokenBalance ?? 0n)}</>
+                )}
               </div>
             </>
           )}

@@ -27,6 +27,8 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
     paymentTokenSymbol,
     platformTokenDecimals,
     paymentTokenDecimals,
+    balancesUnavailable,
+    refetchBalances,
   } = useAuth();
 
   const resolvedPlatformDecimals = platformTokenDecimals ?? 18;
@@ -81,6 +83,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   });
 
   const handleMaxSend = () => {
+    if (balancesUnavailable) return;
     setAmount(formatUnits(maxAmountInTargetUnits, targetDecimals));
     setSendError(null);
   };
@@ -88,6 +91,11 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   const handleSend = async () => {
     if (!ENABLE_EXTERNAL_SEND && mode === "external") {
       setSendError("External send is currently unavailable");
+      return;
+    }
+
+    if (balancesUnavailable) {
+      setSendError("Could not load your balances. Check your connection and try again.");
       return;
     }
 
@@ -193,14 +201,33 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             </div>
             <div className="space-y-0.5 p-3">
               <div className="text-lg font-semibold tabular-nums text-gray-900">
-                {formattedBalance(maxAmountInTargetUnits, targetDecimals)}
+                {balancesUnavailable ? (
+                  <span className="text-amber-900/90">
+                    —{" "}
+                    <button
+                      type="button"
+                      onClick={() => void refetchBalances()}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      Retry
+                    </button>
+                  </span>
+                ) : (
+                  formattedBalance(maxAmountInTargetUnits, targetDecimals)
+                )}
               </div>
               <div className="text-xs text-blue-800/80">{targetSymbol}</div>
               <div className="text-xs text-gray-600 mt-1">
-                {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
-                {platformTokenSymbol || "CUT"} +{" "}
-                {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
-                {paymentTokenSymbol || "USDC"}
+                {balancesUnavailable ? (
+                  <span className="text-amber-900/90">Breakdown unavailable</span>
+                ) : (
+                  <>
+                    {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
+                    {platformTokenSymbol || "CUT"} +{" "}
+                    {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
+                    {paymentTokenSymbol || "USDC"}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -239,7 +266,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
               <button
                 type="button"
                 onClick={handleMaxSend}
-                disabled={isProcessing}
+                disabled={isProcessing || balancesUnavailable}
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-gray-700 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 MAX
@@ -255,7 +282,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
           <button
             onClick={handleSend}
-            disabled={!recipientAddress || !amount || isProcessing}
+            disabled={!recipientAddress || !amount || isProcessing || balancesUnavailable}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md disabled:shadow-none"
           >
             {isProcessing ? (

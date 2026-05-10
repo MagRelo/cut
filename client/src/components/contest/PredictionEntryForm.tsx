@@ -75,7 +75,13 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 }) => {
   const location = useLocation();
   const posthog = usePostHog();
-  const { platformTokenBalance, paymentTokenBalance, user } = useAuth();
+  const {
+    platformTokenBalance,
+    paymentTokenBalance,
+    user,
+    balancesUnavailable,
+    refetchBalances,
+  } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
@@ -188,13 +194,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   }, [amount]);
 
   const canAffordPurchase = useMemo(() => {
+    if (balancesUnavailable) return false;
     if (purchaseAmountWei === null) return false;
     return canCoverSecondaryPurchase(
       purchaseAmountWei,
       platformTokenBalance ?? 0n,
       paymentTokenBalance ?? 0n,
     );
-  }, [purchaseAmountWei, platformTokenBalance, paymentTokenBalance]);
+  }, [balancesUnavailable, purchaseAmountWei, platformTokenBalance, paymentTokenBalance]);
 
   useEffect(() => {
     setAmount("10");
@@ -250,6 +257,11 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
     if (!amount || Number.parseFloat(amount) <= 0) {
       setError("Please enter a valid amount");
+      return;
+    }
+
+    if (balancesUnavailable) {
+      setError("Could not load your balance. Check your connection and tap Retry below.");
       return;
     }
 
@@ -414,6 +426,21 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {balancesUnavailable && (
+        <div
+          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          role="status"
+        >
+          Couldn&apos;t load your wallet balance (network or RPC).{" "}
+          <button
+            type="button"
+            onClick={() => void refetchBalances()}
+            className="font-medium text-blue-700 hover:text-blue-800 underline-offset-2 hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {currentOddsQuoteCard}
       {predictionDetailsCard}
       {predictionPurchaseSummary}
@@ -444,6 +471,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           disabled={
             secondaryActionsLocked ||
             isProcessing ||
+            balancesUnavailable ||
             !amount ||
             Number.parseFloat(amount) <= 0 ||
             !canAffordPurchase

@@ -66,7 +66,7 @@ const isValidHexColor = (value: unknown): value is string => {
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData();
-  const { user, platformTokenBalance, paymentTokenBalance } = useAuth();
+  const { user, platformTokenBalance, paymentTokenBalance, balancesUnavailable } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
 
@@ -282,6 +282,13 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     }
     if (isPrimaryDepositError || contestantDepositAmount === undefined) {
       setSubmissionError("Unable to read contest details from blockchain");
+      return;
+    }
+
+    if (balancesUnavailable) {
+      setSubmissionError(
+        "Could not load your wallet balance. Check your connection and try again from Account.",
+      );
       return;
     }
 
