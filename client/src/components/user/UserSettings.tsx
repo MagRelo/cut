@@ -1,33 +1,33 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
+type DraftState = {
+  name: string;
+  settings: Record<string, unknown>;
+  originalName: string;
+  originalSettings: Record<string, unknown>;
+};
+
+function draftFromUser(user: { name?: string | null; settings?: Record<string, unknown> | null } | null | undefined): DraftState {
+  const name = user?.name || "";
+  const settings = user?.settings || {};
+  return { name, settings, originalName: name, originalSettings: settings };
+}
+
 export function UserSettings() {
   const { user, updateUser, updateUserSettings } = useAuth();
-  const [name, setName] = useState(user?.name || "");
-  const [settings, setSettings] = useState<Record<string, unknown>>(user?.settings || {});
+  const [draft, setDraft] = useState<DraftState>(() => draftFromUser(user));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track original values for comparison
-  const [originalName, setOriginalName] = useState(user?.name || "");
-  const [originalSettings, setOriginalSettings] = useState<Record<string, unknown>>(
-    user?.settings || {},
-  );
-
-  // Update original values when user data changes
   useEffect(() => {
-    if (user) {
-      setOriginalName(user.name || "");
-      setOriginalSettings(user.settings || {});
-      setName(user.name || "");
-      setSettings(user.settings || {});
-    }
+    if (!user) return;
+    setDraft((prev) => ({ ...prev, ...draftFromUser(user) }));
   }, [user]);
 
-  // Check if there are any changes
-  const hasChanges = () => {
-    return name !== originalName || JSON.stringify(settings) !== JSON.stringify(originalSettings);
-  };
+  const hasChanges =
+    draft.name !== draft.originalName ||
+    JSON.stringify(draft.settings) !== JSON.stringify(draft.originalSettings);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +35,10 @@ export function UserSettings() {
     setError(null);
 
     try {
-      // Update name separately from settings
-      if (name !== user?.name) {
-        await updateUser({ name });
+      if (draft.name !== user?.name) {
+        await updateUser({ name: draft.name });
       }
-
-      // Update color in settings
-      await updateUserSettings(settings);
+      await updateUserSettings(draft.settings);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update settings");
     } finally {
@@ -50,9 +47,9 @@ export function UserSettings() {
   };
 
   const handleChange = (key: string, value: unknown) => {
-    setSettings((prev) => ({
+    setDraft((prev) => ({
       ...prev,
-      [key]: value,
+      settings: { ...prev.settings, [key]: value },
     }));
   };
 
@@ -72,8 +69,8 @@ export function UserSettings() {
             <input
               type="text"
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={draft.name}
+              onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
               className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Enter your name"
             />
@@ -104,13 +101,13 @@ export function UserSettings() {
                     type="radio"
                     name="color"
                     value={color}
-                    checked={(settings.color as string) === color}
+                    checked={(draft.settings.color as string) === color}
                     onChange={() => handleChange("color", color)}
                     className="sr-only"
                   />
                   <span
                     className={`h-8 w-8 rounded-full border-4 ${
-                      (settings.color as string) === color
+                      (draft.settings.color as string) === color
                         ? "border-white ring-2 ring-gray-400"
                         : "border-white"
                     }`}
@@ -127,7 +124,7 @@ export function UserSettings() {
         <div className="flex justify-center !mt-6">
           <button
             type="submit"
-            disabled={isLoading || !hasChanges()}
+            disabled={isLoading || !hasChanges}
             className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
           >
             {isLoading ? "Saving..." : "Save"}
