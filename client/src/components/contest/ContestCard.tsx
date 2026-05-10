@@ -140,13 +140,19 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
             type="button"
             onClick={onPotClick}
             aria-label="Contest Payouts"
-            className="ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            className="group ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
             <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
               {showLoading ? "..." : `$${displayPot}`}
             </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
-              POT
+            <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
+              <span>POT</span>
+              <span
+                aria-hidden="true"
+                className="flex h-3 w-3 items-center justify-center rounded-full border border-blue-300 text-[8px] font-bold normal-case leading-none text-blue-500 transition group-hover:border-blue-500 group-hover:bg-blue-50 group-hover:text-blue-700"
+              >
+                ?
+              </span>
             </div>
           </button>
         ) : (

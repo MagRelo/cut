@@ -224,16 +224,6 @@ export const ContestLobby: React.FC = () => {
               </div>
             </TabPanel>
 
-            {/* PLAYERS - Only shown when primary actions are locked */}
-            {/* {primaryActionsLocked && (
-              <TabPanel>
-                <ContestPlayerList
-                  contest={contest}
-                  roundDisplay={contest?.tournament?.roundDisplay}
-                />
-              </TabPanel>
-            )} */}
-
             {/* TEMP HIDE: Winner Pool panel (kept for exact restore)
             {!isPostSettlement ? (
               <TabPanel className="p-4 focus:outline-none">

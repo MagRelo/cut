@@ -8,6 +8,8 @@ export interface ModalProps {
   children: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "4xl";
   showCloseButton?: boolean;
+  /** Skip title bar; shows floating close + sr-only title for accessibility */
+  hideHeader?: boolean;
   headerClassName?: string;
   contentClassName?: string;
   scrollable?: boolean;
@@ -30,6 +32,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = "2xl",
   showCloseButton = true,
+  hideHeader = false,
   headerClassName = "",
   contentClassName = "",
   scrollable = false,
@@ -62,35 +65,40 @@ export const Modal: React.FC<ModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <DialogPanel
-                className={`w-full ${maxWidthClasses[maxWidth]} transform rounded-sm bg-white text-left align-middle shadow-xl transition-all`}
+                className={`relative w-full ${maxWidthClasses[maxWidth]} transform rounded-sm bg-white text-left align-middle shadow-xl transition-all`}
               >
-                {/* Header */}
-                <div
-                  className={`p-3 pb-2 flex items-center justify-between border-b border-gray-200 ${headerClassName}`}
-                >
-                  <DialogTitle className="text-lg font-medium text-gray-900">{title}</DialogTitle>
-                  {showCloseButton && (
-                    <button
-                      type="button"
-                      className="rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
-                      onClick={onClose}
-                      aria-label="Close"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-5 w-5"
+                {hideHeader ? (
+                  <DialogTitle className="sr-only">{title || "Dialog"}</DialogTitle>
+                ) : (
+                  <div
+                    className={`flex items-center justify-between rounded-t-sm border-b border-slate-200 bg-slate-100 px-4 py-3 ${headerClassName}`}
+                  >
+                    <DialogTitle className="font-display text-base font-semibold tracking-tight text-slate-600">
+                      {title}
+                    </DialogTitle>
+                    {showCloseButton && (
+                      <button
+                        type="button"
+                        className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                        onClick={onClose}
+                        aria-label="Close"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="h-5 w-5"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Content */}
                 <div
