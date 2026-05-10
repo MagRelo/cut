@@ -80,7 +80,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
   return (
     <div className="flex items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
-      <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gray-50 p-1.5 text-center">
+      <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gradient-to-b from-white to-gray-200 p-1.5 text-center shadow-sm ring-1 ring-inset ring-white/60">
         <div className="text-base font-display font-bold leading-none tabular-nums text-gray-900">
           {contest.settings?.primaryDeposit === 0
             ? "Free"
@@ -98,8 +98,8 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         <h3 className="text-lg font-bold text-gray-900 font-display truncate leading-tight">
           {contest.name}
         </h3>
-        <p className="text-xs text-gray-400 font-medium leading-tight mt-0.5">
-          <span className="">{formatStatus(contest.status)}</span>
+        <p className="mt-0.5 text-xs font-medium leading-tight text-gray-500 truncate">
+          {formatStatus(contest.status)}
         </p>
       </div>
 
