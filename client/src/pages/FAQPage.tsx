@@ -173,13 +173,13 @@ export const FAQPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">How are ties handled?</h3>
               <p className="text-gray-700 mb-2">
-                If two or more lineups finish with the same score, the prize money for the
-                positions they occupy is pooled together and split evenly between them.
+                If two or more lineups finish with the same score, the prize money for the positions
+                they occupy is pooled together and split evenly between them.
               </p>
               <p className="text-gray-700 mb-2">
                 For example, in a large contest, if two lineups tie for 1st place, the 1st and 2nd
-                place prizes (70% + 20% = 90%) are combined and each lineup receives 45% of the
-                pot. The next lineup down still receives the 3rd place prize.
+                place prizes (70% + 20% = 90%) are combined and each lineup receives 45% of the pot.
+                The next lineup down still receives the 3rd place prize.
               </p>
               <p className="text-gray-700">
                 Tiebreakers are never used—every lineup with the same score is treated equally.
@@ -188,7 +188,15 @@ export const FAQPage: React.FC = () => {
 
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Are there any fees?</h3>
-              <p className="text-gray-700 mb-2">The Cut takes a 7% fee from each contest.</p>
+              <p className="text-gray-700 mb-2">
+                The Cut does not take any fees. 7% of each pot is redirected to the invite network
+                in order to grow the game and reward the community. Learn more about the invite
+                network{" "}
+                <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                  here
+                </Link>
+                .
+              </p>
             </div>
           </div>
         </div>
