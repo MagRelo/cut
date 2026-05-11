@@ -104,14 +104,14 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
 
   if (!hasAnyRows) {
     return (
-      <ContestPayoutLayout>
+      <ContestPayoutLayout background="white">
         <p className="text-sm text-slate-500">Results not available.</p>
       </ContestPayoutLayout>
     );
   }
 
   return (
-    <ContestPayoutLayout>
+    <ContestPayoutLayout background="white">
       <ContestPayoutSection
         title="Contest"
         description={

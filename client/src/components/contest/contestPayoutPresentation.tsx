@@ -1,7 +1,15 @@
 import type { ReactNode } from "react";
 
-export function ContestPayoutLayout({ children }: { children: ReactNode }) {
-  return <div className="space-y-4 bg-gray-100 p-3 font-display">{children}</div>;
+export function ContestPayoutLayout({
+  children,
+  background = "muted",
+}: {
+  children: ReactNode;
+  /** `muted` matches payouts modal; `white` for embedded panels (e.g. post-settlement results). */
+  background?: "muted" | "white";
+}) {
+  const surfaceClass = background === "white" ? "bg-white" : "bg-gray-100";
+  return <div className={`space-y-4 p-3 font-display ${surfaceClass}`}>{children}</div>;
 }
 
 export function ContestPayoutHeroCard({
