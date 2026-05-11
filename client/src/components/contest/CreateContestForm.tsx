@@ -40,8 +40,10 @@ function buildContestSettings(
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "", // `_oracle`: address that drives contest lifecycle (onlyOracle)
     primaryDeposit: 10, // `_primaryDepositAmount`: fixed stake per primary participant
     oracleFeeBps: Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500, // `_oracleFeeBps`: oracle cut of settlement, basis points (100 = 1%)
-    primaryEntryInvestmentShareBps:
-      Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) || 500, // `_primaryEntryInvestmentShareBps`: BPS of each secondary buy minted to entry owner first
+    primaryDepositSecondarySubsidyBps:
+      Number(import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS) ||
+      Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) ||
+      700, // `_primaryDepositSecondarySubsidyBps`: BPS of each primary deposit to per-entry secondary subsidy
   };
 }
 
@@ -164,6 +166,7 @@ export const CreateContestForm = () => {
               resetForm();
               setExpiryDaysAfterTournament(defaultExpiryDaysAfterTournament);
               setLoading(false);
+
               navigate(`/contest/${contest.id}`);
             },
             onError: (err) => {
@@ -229,8 +232,8 @@ export const CreateContestForm = () => {
       return;
     }
 
-    if (s.primaryEntryInvestmentShareBps < 0 || s.primaryEntryInvestmentShareBps > 10000) {
-      setError("Primary entry investment share must be between 0 and 10000 basis points.");
+    if (s.primaryDepositSecondarySubsidyBps < 0 || s.primaryDepositSecondarySubsidyBps > 10000) {
+      setError("Primary deposit secondary subsidy must be between 0 and 10000 basis points.");
       return;
     }
 
@@ -263,7 +266,6 @@ export const CreateContestForm = () => {
     };
 
     pendingContestForApiRef.current = pending;
-
     const primaryDepositAmount = BigInt(Math.floor(s.primaryDeposit * 1e18));
     // `ContestFactory.createContest` → `ContestController` constructor (same order as Solidity NatSpec).
     const calls = createContestCalls(
@@ -272,7 +274,7 @@ export const CreateContestForm = () => {
       primaryDepositAmount, // contestantDepositAmount / _primaryDepositAmount — fixed primary entry stake
       s.oracleFeeBps, // oracleFee — fee to oracle at settlement (bps, cap enforced on-chain)
       BigInt(s.expiryTimestamp), // expiry — unix seconds; after this, refund paths apply per contract rules
-      s.primaryEntryInvestmentShareBps, // primaryEntryInvestmentShareBps — split for secondary buy minting
+      s.primaryDepositSecondarySubsidyBps, // primaryDepositSecondarySubsidyBps — primary deposit carve to secondary subsidy
     );
 
     await execute(calls);
@@ -311,6 +313,79 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="primaryDeposit" className="block font-medium">
+            Primary deposit (token amount, 18 decimals on-chain)
+          </label>
+          <p className="text-xs text-gray-600">
+            Fixed Layer 1 stake per primary participant. Use <span className="font-medium">0</span> for
+            a free contest (no deposit; still uses the same contract flow).
+          </p>
+          <div className="relative">
+            <input
+              type="number"
+              id="primaryDeposit"
+              min="0"
+              step="0.01"
+              value={s.primaryDeposit}
+              onChange={(e) => patchSettings({ primaryDeposit: Number(e.target.value) })}
+              required
+              className="w-full p-2 border rounded-md pr-12"
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+              {platformTokenSymbol}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="oracleFeeBps" className="block font-medium">
+            Oracle fee BPS (0–1000)
+          </label>
+          <p className="text-xs text-gray-600">
+            <span className="font-mono">_oracleFeeBps</span>: fee to the oracle in basis points
+            (e.g. 100 = 1%), accumulated at settlement and claimable by the oracle.
+          </p>
+          <input
+            type="number"
+            id="oracleFeeBps"
+            min={0}
+            max={1000}
+            step={1}
+            value={s.oracleFeeBps}
+            onChange={(e) => patchSettings({ oracleFeeBps: Number(e.target.value) })}
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="primaryDepositSecondarySubsidyBps" className="block font-medium">
+            Primary deposit → secondary subsidy BPS (0–10000)
+          </label>
+          <p className="text-xs text-gray-600">
+            <span className="font-mono">_primaryDepositSecondarySubsidyBps</span>: BPS of each
+            primary deposit credited to that entry&apos;s unbacked secondary subsidy pool; the
+            remainder credits the primary prize pool (see <span className="font-mono">ContestController</span>
+            NatSpec).
+          </p>
+          <input
+            type="number"
+            id="primaryDepositSecondarySubsidyBps"
+            min={0}
+            max={10000}
+            step={1}
+            value={s.primaryDepositSecondarySubsidyBps}
+            onChange={(e) =>
+              patchSettings({ primaryDepositSecondarySubsidyBps: Number(e.target.value) })
+            }
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-900">Other contest settings</h3>
+
+        <div className="space-y-2">
           <label htmlFor="userGroupId" className="block font-medium">
             User group (optional)
           </label>
@@ -336,28 +411,34 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="primaryDeposit" className="block font-medium">
-            Primary deposit (token amount, 18 decimals on-chain)
+          <span className="block font-medium">Payment token</span>
+          <p className="text-xs text-gray-600">
+            <span className="font-mono">_paymentToken</span>: ERC20 used for all deposits,
+            collateral, and payouts.
+          </p>
+          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
+            {platformTokenAddress || "Not configured"}
+          </div>
+          <p className="text-sm text-gray-600">{platformTokenSymbol}</p>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="oracle" className="block font-medium">
+            Oracle
           </label>
           <p className="text-xs text-gray-600">
-            Fixed Layer 1 stake per primary participant. Use <span className="font-medium">0</span> for
-            a free contest (no deposit; still uses the same contract flow).
+            <span className="font-mono">_oracle</span>: sole address allowed to
+            advance/cancel/settle the contest (<span className="font-mono">onlyOracle</span>).
           </p>
-          <div className="relative">
-            <input
-              type="number"
-              id="primaryDeposit"
-              min="0"
-              step="0.01"
-              value={s.primaryDeposit}
-              onChange={(e) => patchSettings({ primaryDeposit: Number(e.target.value) })}
-              required
-              className="w-full p-2 border rounded-md pr-12"
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {platformTokenSymbol}
-            </div>
-          </div>
+          <input
+            type="text"
+            id="oracle"
+            value={s.oracle}
+            onChange={(e) => patchSettings({ oracle: e.target.value })}
+            required
+            className="w-full p-2 border rounded-md font-mono text-sm"
+            placeholder="0x…"
+          />
         </div>
 
         <div className="space-y-2">
@@ -392,47 +473,6 @@ export const CreateContestForm = () => {
               : "Not available"}
           </p>
         </div>
-      </div>
-
-      <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900">ContestController constructor</h3>
-        <p className="text-xs text-gray-600">
-          These values are forwarded by{" "}
-          <span className="font-mono">ContestFactory.createContest</span> into{" "}
-          <span className="font-mono">ContestController</span> immutables (NatSpec: orchestrates
-          primary competition, oracle settlement, and secondary LMSR mechanics).
-        </p>
-
-        <div className="space-y-2">
-          <span className="block font-medium">Payment token</span>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_paymentToken</span>: ERC20 used for all deposits,
-            collateral, and payouts.
-          </p>
-          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
-            {platformTokenAddress || "Not configured"}
-          </div>
-          <p className="text-sm text-gray-600">{platformTokenSymbol}</p>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="oracle" className="block font-medium">
-            Oracle
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_oracle</span>: sole address allowed to
-            advance/cancel/settle the contest (<span className="font-mono">onlyOracle</span>).
-          </p>
-          <input
-            type="text"
-            id="oracle"
-            value={s.oracle}
-            onChange={(e) => patchSettings({ oracle: e.target.value })}
-            required
-            className="w-full p-2 border rounded-md font-mono text-sm"
-            placeholder="0x…"
-          />
-        </div>
 
         <div className="space-y-2">
           <label htmlFor="expiryTimestamp" className="block font-medium">
@@ -454,49 +494,6 @@ export const CreateContestForm = () => {
             }
             required
             className="w-full p-2 border rounded-md font-mono text-sm"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="oracleFeeBps" className="block font-medium">
-            Oracle fee BPS (0–1000)
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_oracleFeeBps</span>: fee to the oracle in basis points
-            (e.g. 100 = 1%), accumulated at settlement and claimable by the oracle.
-          </p>
-          <input
-            type="number"
-            id="oracleFeeBps"
-            min={0}
-            max={1000}
-            step={1}
-            value={s.oracleFeeBps}
-            onChange={(e) => patchSettings({ oracleFeeBps: Number(e.target.value) })}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="primaryEntryInvestmentShareBps" className="block font-medium">
-            Primary entry parimutuel allocation BPS (0–10000)
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_primaryEntryInvestmentShareBps</span>: portion of each
-            secondary buy that mints ERC1155 to the entry owner first; the remainder mints to the
-            buyer.
-          </p>
-          <input
-            type="number"
-            id="primaryEntryInvestmentShareBps"
-            min={0}
-            max={10000}
-            step={1}
-            value={s.primaryEntryInvestmentShareBps}
-            onChange={(e) =>
-              patchSettings({ primaryEntryInvestmentShareBps: Number(e.target.value) })
-            }
-            className="w-full p-2 border rounded-md"
           />
         </div>
       </div>

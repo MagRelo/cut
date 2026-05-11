@@ -107,10 +107,10 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const primaryEntryInvestmentShareBps = useReadContract({
+  const primaryDepositSecondarySubsidyBps = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
-    functionName: "primaryEntryInvestmentShareBps",
+    functionName: "primaryDepositSecondarySubsidyBps",
     args: [],
     chainId,
     query: {
@@ -168,9 +168,9 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const currentPrimarySharePercent =
     currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
-  const primaryEntryInvestmentSharePercent =
-    primaryEntryInvestmentShareBps !== undefined
-      ? Number(primaryEntryInvestmentShareBps) / 100
+  const primaryDepositSecondarySubsidyPercent =
+    primaryDepositSecondarySubsidyBps !== undefined
+      ? Number(primaryDepositSecondarySubsidyBps) / 100
       : undefined;
 
   // const accumulatedOracleFee = useReadContract({
@@ -250,11 +250,11 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
               </div>
             )}
 
-            {primaryEntryInvestmentShareBps !== undefined && (
+            {primaryDepositSecondarySubsidyBps !== undefined && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Secondary → owner mint leg</span>
+                <span className="text-gray-600">Primary deposit → secondary subsidy</span>
                 <span className="text-gray-900 font-semibold">
-                  {primaryEntryInvestmentSharePercent?.toFixed(2) ?? "..."}%
+                  {primaryDepositSecondarySubsidyPercent?.toFixed(2) ?? "..."}%
                 </span>
               </div>
             )}

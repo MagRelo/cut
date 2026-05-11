@@ -19,7 +19,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     primaryDepositAmount: bigint,
     oracleFeeBps: number,
     expiryTimestamp: bigint,
-    primaryEntryInvestmentShareBps: number,
+    primaryDepositSecondarySubsidyBps: number,
   ) => {
     return [
       {
@@ -30,7 +30,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           primaryDepositAmount,
           BigInt(oracleFeeBps),
           expiryTimestamp,
-          BigInt(primaryEntryInvestmentShareBps),
+          BigInt(primaryDepositSecondarySubsidyBps),
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,

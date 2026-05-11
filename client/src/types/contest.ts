@@ -46,8 +46,14 @@ export interface ContestSettings {
   /** `_oracleFeeBps` */
   oracleFeeBps: number;
 
-  /** `_primaryEntryInvestmentShareBps` */
-  primaryEntryInvestmentShareBps: number;
+  /**
+   * `_primaryDepositSecondarySubsidyBps` — BPS of each primary deposit credited to
+   * `secondaryPrimarySubsidyPerEntry` (unbacked); remainder to `primaryPrizePool`.
+   */
+  primaryDepositSecondarySubsidyBps: number;
+
+  /** @deprecated Stored JSON from older app builds; prefer `primaryDepositSecondarySubsidyBps`. */
+  primaryEntryInvestmentShareBps?: number;
 
   /** Legacy catalytic contest params (older contracts / older stored JSON). */
   positionBonusShareBps?: number;
@@ -158,7 +164,10 @@ export interface ContestSnapshot {
   secondarySideBalance: string; // bigint as string (total)
   currentPrimaryShareBps: number;
   totalSecondaryLiquidity: string; // bigint as string
-  primaryEntryInvestmentShareBps: number;
+  primaryDepositSecondarySubsidyBps?: number;
+
+  /** @deprecated Older settlement snapshots used this name for the same immutable. */
+  primaryEntryInvestmentShareBps?: number;
 
   /** Legacy catalytic contest snapshot fields (older settled contests). */
   primaryPrizePoolSubsidy?: string; // bigint as string

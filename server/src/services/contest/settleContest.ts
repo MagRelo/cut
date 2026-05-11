@@ -165,7 +165,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       secondarySideBalance,
       currentPrimaryShareBps,
       totalSecondaryLiquidity,
-      primaryEntryInvestmentShareBps,
+      primaryDepositSecondarySubsidyBps,
       paymentTokenAddress,
     ] = await Promise.all([
       contract.read.primaryPrizePool!() as Promise<bigint>,
@@ -173,7 +173,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       contract.read.getSecondarySideBalance!() as Promise<bigint>,
       contract.read.getPrimarySideShareBps!() as Promise<bigint>,
       contract.read.totalSecondaryLiquidity!() as Promise<bigint>,
-      contract.read.primaryEntryInvestmentShareBps!() as Promise<bigint>,
+      contract.read.primaryDepositSecondarySubsidyBps!() as Promise<bigint>,
       contract.read.paymentToken!() as Promise<`0x${string}`>,
     ]);
 
@@ -200,7 +200,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       secondarySideBalance: secondarySideBalance.toString(),
       currentPrimaryShareBps: Number(currentPrimaryShareBps),
       totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
-      primaryEntryInvestmentShareBps: Number(primaryEntryInvestmentShareBps),
+      primaryDepositSecondarySubsidyBps: Number(primaryDepositSecondarySubsidyBps),
     };
 
     console.log(`[settleContest] Snapshot captured:`, {

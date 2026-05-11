@@ -44,7 +44,11 @@ export interface ContestSettings {
   /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. `0` = free primary layer. */
   primaryDeposit: number;
   oracleFeeBps: number;
-  primaryEntryInvestmentShareBps: number;
+  /** BPS of each primary deposit to per-entry secondary subsidy (`primaryDepositSecondarySubsidyBps` on-chain). */
+  primaryDepositSecondarySubsidyBps?: number;
+
+  /** @deprecated Older stored JSON only; treat as legacy alias when `primaryDepositSecondarySubsidyBps` is absent. */
+  primaryEntryInvestmentShareBps?: number;
 
   /** Legacy catalytic contest params (older contracts / older stored JSON). */
   positionBonusShareBps?: number;
@@ -60,7 +64,10 @@ export interface ContestSnapshot {
   secondarySideBalance: string; // bigint as string (total)
   currentPrimaryShareBps: number;
   totalSecondaryLiquidity: string; // bigint as string
-  primaryEntryInvestmentShareBps: number;
+  primaryDepositSecondarySubsidyBps?: number;
+
+  /** @deprecated Older settlement snapshots. */
+  primaryEntryInvestmentShareBps?: number;
 
   /** Legacy catalytic contest snapshot fields (older settled contests). */
   primaryPrizePoolSubsidy?: string; // bigint as string

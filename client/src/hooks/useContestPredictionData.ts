@@ -68,27 +68,8 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  // Contract config needed for secondary split during `addSecondaryPosition`.
-  const {
-    data: primaryEntryInvestmentShareBpsRaw,
-    isLoading: isLoadingPrimaryEntryInvestmentShareBps,
-    isError: isErrorPrimaryEntryInvestmentShareBps,
-    refetch: refetchPrimaryEntryInvestmentShareBps,
-  } = useReadContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryEntryInvestmentShareBps",
-    chainId,
-    query: {
-      enabled: enabled && !!contestAddress,
-    },
-  });
-  const primaryEntryInvestmentShareBps = primaryEntryInvestmentShareBpsRaw as bigint | undefined;
-
-  const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => {
-    if (primaryEntryInvestmentShareBps === undefined) return undefined;
-    return { primaryEntryInvestmentShareBps };
-  }, [primaryEntryInvestmentShareBps]);
+  /** Curve sizing for `addSecondaryPosition` does not depend on extra on-chain immutables. */
+  const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => ({}), []);
 
   // Helper to determine if predictions are available
   const canPredict = contestState === ContestState.OPEN || contestState === ContestState.ACTIVE;
@@ -307,8 +288,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     isLoadingDepositedPerEntry ||
     isLoadingSupplies ||
     isLoadingLiquidity ||
-    isLoadingTotalSecondaryLiquidity ||
-    isLoadingPrimaryEntryInvestmentShareBps;
+    isLoadingTotalSecondaryLiquidity;
 
   const contestAddressEnabled = enabled && !!contestAddress;
 
@@ -317,7 +297,6 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     !isLoading &&
     (isErrorState ||
       isErrorTotalSecondaryLiquidity ||
-      isErrorPrimaryEntryInvestmentShareBps ||
       (shouldFetchEntries && (isErrorPrices || isErrorSupplies || isErrorLiquidity)) ||
       (shouldFetchBalances && (isErrorBalances || isErrorDepositedPerEntry)));
 
@@ -325,7 +304,6 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     await Promise.all([
       refetchContestState(),
       refetchTotalSecondaryLiquidity(),
-      refetchPrimaryEntryInvestmentShareBps(),
       refetchPrices(),
       refetchSupplies(),
       refetchPositionBalances(),
@@ -335,7 +313,6 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
   }, [
     refetchContestState,
     refetchTotalSecondaryLiquidity,
-    refetchPrimaryEntryInvestmentShareBps,
     refetchPrices,
     refetchSupplies,
     refetchPositionBalances,

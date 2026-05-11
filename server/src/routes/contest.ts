@@ -6,6 +6,7 @@ import {
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
@@ -16,6 +17,7 @@ import {
 } from "../utils/lineupValidation.js";
 import { isUserGroupMember } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
+import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 
 const contestRouter = new Hono();
 
@@ -346,7 +348,7 @@ contestRouter.get("/:id", async (c) => {
 });
 
 // Create new contest
-contestRouter.post("/", requireAuth, async (c) => {
+contestRouter.post("/", requireAuth, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
 
@@ -402,6 +404,35 @@ contestRouter.post("/", requireAuth, async (c) => {
         userGroup: true,
       },
     });
+
+    // Fire-and-forget contract verification for the freshly deployed ContestController instance.
+    // This is intentionally not awaited; we only want to kick off verification after the DB row is created.
+    if (settings?.paymentTokenAddress && settings?.oracle) {
+      const bps =
+        settings.primaryDepositSecondarySubsidyBps ??
+        (settings as any).primaryEntryInvestmentShareBps;
+
+      if (
+        typeof settings.primaryDeposit === "number" &&
+        typeof settings.oracleFeeBps === "number" &&
+        typeof settings.expiryTimestamp === "number" &&
+        typeof bps === "number"
+      ) {
+        const primaryDepositAmountWei = BigInt(Math.floor(settings.primaryDeposit * 1e18)).toString();
+        void queueVerifyContestContract({
+          chainId,
+          contestAddress: contest.address,
+          paymentTokenAddress: settings.paymentTokenAddress,
+          oracle: settings.oracle,
+          primaryDepositAmountWei,
+          oracleFeeBps: settings.oracleFeeBps,
+          expiryTimestamp: settings.expiryTimestamp,
+          primaryDepositSecondarySubsidyBps: bps,
+        }).catch((err) => {
+          console.error("Failed to queue contest contract verification:", err);
+        });
+      }
+    }
 
     return c.json(contest, 201);
   } catch (error) {

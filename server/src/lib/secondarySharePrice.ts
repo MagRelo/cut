@@ -17,19 +17,11 @@ const TEN_DOLLAR_POSITION = parseUnits("10", 18);
 const abi = ContestController.abi as Abi;
 
 export async function fetchSecondaryPoolSnapshot(
-  contestAddress: `0x${string}`,
-  chainId: number,
+  _contestAddress: `0x${string}`,
+  _chainId: number,
 ): Promise<SecondaryPoolSnapshot> {
-  const { chain, rpcUrl } = getChainConfig(chainId);
-  const client = createPublicClient({ chain, transport: http(rpcUrl) });
-
-  const primaryEntryInvestmentShareBps = (await client.readContract({
-    address: contestAddress,
-    abi,
-    functionName: "primaryEntryInvestmentShareBps",
-  })) as bigint;
-
-  return { primaryEntryInvestmentShareBps };
+  /** `addSecondaryPosition` does not read extra immutables for curve sizing; snapshot is empty. */
+  return {};
 }
 
 export async function fetchNetPosition(

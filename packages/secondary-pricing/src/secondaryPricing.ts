@@ -1,6 +1,8 @@
 /**
- * Mirrors ContestCatalyst `SecondaryPricing.sol` bonding curve math and the secondary deposit split in
- * `ContestController.addSecondaryPosition` (primary entry investment leg → buyer leg).
+ * Mirrors contestCatalyst `SecondaryPricing.sol` bonding curve math and
+ * `ContestController.addSecondaryPosition`: the full payment mints ERC1155 to the buyer only.
+ *
+ * Primary deposit split matches `_splitPrimaryDeposit` / `primaryDepositSecondarySubsidyBps`.
  */
 
 export const PRICE_PRECISION = 1_000_000n;
@@ -79,143 +81,101 @@ export function calculateTokensFromCollateral(shares: bigint, payment: bigint): 
   return tokensLow;
 }
 
-export interface SecondaryCrossSubsidyInput {
-  primaryBefore: bigint;
-  secondaryBefore: bigint;
-  targetPrimaryShareBps: bigint;
-  maxCrossSubsidyBps: bigint;
+export interface SplitPrimaryDepositResult {
+  /** Portion of `deposit` credited to `primaryPrizePool` on add (reversed on remove). */
+  toPrimaryPool: bigint;
+  /** Portion credited to `secondaryPrimarySubsidyPerEntry[entryId]` on add (unbacked). */
+  subsidy: bigint;
 }
 
-/** Matches `_calculateSecondaryCrossSubsidy` for a secondary deposit's `remainingAmount`. */
-export function calculateSecondaryCrossSubsidy(
-  netAmount: bigint,
-  input: SecondaryCrossSubsidyInput,
-): bigint {
-  if (netAmount === 0n || input.maxCrossSubsidyBps === 0n) {
-    return 0n;
-  }
-  const total = input.primaryBefore + input.secondaryBefore + netAmount;
-  if (total === 0n) {
-    return 0n;
-  }
-  const targetPrimary = (total * input.targetPrimaryShareBps) / BPS_DENOMINATOR;
-  if (targetPrimary <= input.primaryBefore) {
-    return 0n;
-  }
-  let desired = targetPrimary - input.primaryBefore;
-  const maxSubsidy = (netAmount * input.maxCrossSubsidyBps) / BPS_DENOMINATOR;
-  if (desired > maxSubsidy) {
-    desired = maxSubsidy;
-  }
-  if (desired > netAmount) {
-    desired = netAmount;
-  }
-  return desired;
+/**
+ * Matches `ContestController._splitPrimaryDeposit(deposit)` using `primaryDepositSecondarySubsidyBps`.
+ */
+export function splitPrimaryDeposit(
+  deposit: bigint,
+  primaryDepositSecondarySubsidyBps: bigint,
+): SplitPrimaryDepositResult {
+  const subsidy = (deposit * primaryDepositSecondarySubsidyBps) / BPS_DENOMINATOR;
+  const toPrimaryPool = deposit - subsidy;
+  return { toPrimaryPool, subsidy };
 }
 
-export interface SecondaryPoolSnapshot {
-  /**
-   * Contract config: BPS of each secondary payment used for primary entry-owner curve leg
-   * (see `ContestController.primaryEntryInvestmentShareBps`).
-   */
-  primaryEntryInvestmentShareBps: bigint;
-}
+/**
+ * No extra immutable reads are required to mirror `addSecondaryPosition` on the current controller.
+ * Call sites may spread a snapshot for forward compatibility.
+ */
+export type SecondaryPoolSnapshot = Record<string, never>;
 
-export interface SimulateAddSecondaryPositionInput extends SecondaryPoolSnapshot {
+export interface SimulateAddSecondaryPositionInput {
   /**
    * Payment token amount the buyer deposits (passed as `amount` to `addSecondaryPosition`).
-   * In the new contract, oracle fees are charged at payout time, so this is not net of fees.
    */
   amount: bigint;
 
   /**
-   * Current nonnegative secondary supply shares for the entry (from `netPosition`).
-   * This represents total ERC1155 supply for the entry.
+   * Current nonnegative secondary supply shares for the entry (from nonnegative `netPosition`).
    */
   entryShares: bigint;
 
   /**
-   * Current liquidity backing the entry's secondary side (from `secondaryLiquidityPerEntry(entryId)`).
-   * In the new contract, liquidity increases by the full deposit `amount`.
+   * Current liquidity backing the entry's secondary side (`secondaryLiquidityPerEntry(entryId)`).
    */
   entryLiquidity: bigint;
 }
 
 export interface SimulateAddSecondaryPositionResult {
-  /**
-   * ERC1155 token amount minted to the participant (buyer leg) for this deposit.
-   * This is what the UI considers "tokens received" for the user.
-   */
+  /** ERC1155 tokens minted to the participant (matches on-chain buyer mint). */
   tokensToMint: bigint;
 
-  /** ERC1155 token amount minted to the entry owner as the primary investment leg. */
+  /** Always 0 — there is no separate owner mint leg in `addSecondaryPosition`. */
   ownerTokensToMint: bigint;
 
   /**
-   * Total secondary supply shares after deposit (owner + participant legs).
-   * Matches `uint256(netPosition[entryId])` after `addSecondaryPosition`.
+   * Total secondary supply shares after deposit.
+   * Matches nonnegative `netPosition[entryId]` after `addSecondaryPosition`.
    */
   newSupply: bigint;
 
   /**
-   * Liquidity for the entry after deposit (`secondaryLiquidityPerEntry + amount`).
-   * Matches what `pushSecondaryPayouts` uses for winner distribution.
+   * Liquidity for the entry after deposit (`secondaryLiquidityPerEntry += amount`).
    */
   newSecondaryTotalFunds: bigint;
 
-  /** For debugging/UI labels only. */
+  /** Always 0 — the carve applies to primary deposits only (`splitPrimaryDeposit`). */
   investmentAmount: bigint;
+
+  /** Same as `amount` (entire deposit backs the buyer curve leg). */
   remainingAmount: bigint;
 }
 
 /**
- * End state after `addSecondaryPosition` for the given on-chain snapshot (no other txs interleaved).
+ * End state after `addSecondaryPosition` for the given snapshot (no other txs interleaved).
  */
 export function simulateAddSecondaryPosition(
   input: SimulateAddSecondaryPositionInput,
 ): SimulateAddSecondaryPositionResult {
-  // Mirrors `ContestController.addSecondaryPosition` splitting logic.
-  const investmentAmount = (input.amount * input.primaryEntryInvestmentShareBps) / BPS_DENOMINATOR;
-  const remainingAmount = input.amount - investmentAmount;
-
   const shares0 = input.entryShares;
 
-  const ownerTokensToMint =
-    investmentAmount > 0n ? calculateTokensFromCollateral(shares0, investmentAmount) : 0n;
+  const buyerTokens =
+    input.amount > 0n ? calculateTokensFromCollateral(shares0, input.amount) : 0n;
 
-  // Contract requires owner leg to mint at least 1 token if investmentAmount > 0.
-  if (investmentAmount > 0n && ownerTokensToMint === 0n) {
+  if (input.amount > 0n && buyerTokens === 0n) {
     return {
       tokensToMint: 0n,
       ownerTokensToMint: 0n,
-      newSupply: input.entryShares,
+      newSupply: shares0,
       newSecondaryTotalFunds: input.entryLiquidity + input.amount,
-      investmentAmount,
-      remainingAmount,
-    };
-  }
-
-  const shares1 = shares0 + ownerTokensToMint;
-  const tokensToMint = remainingAmount > 0n ? calculateTokensFromCollateral(shares1, remainingAmount) : 0n;
-
-  // Contract requires buyer leg to mint at least 1 token if remainingAmount > 0.
-  if (remainingAmount > 0n && tokensToMint === 0n) {
-    return {
-      tokensToMint: 0n,
-      ownerTokensToMint,
-      newSupply: shares1,
-      newSecondaryTotalFunds: input.entryLiquidity + input.amount,
-      investmentAmount,
-      remainingAmount,
+      investmentAmount: 0n,
+      remainingAmount: input.amount,
     };
   }
 
   return {
-    tokensToMint,
-    ownerTokensToMint,
-    newSupply: shares1 + tokensToMint,
+    tokensToMint: buyerTokens,
+    ownerTokensToMint: 0n,
+    newSupply: shares0 + buyerTokens,
     newSecondaryTotalFunds: input.entryLiquidity + input.amount,
-    investmentAmount,
-    remainingAmount,
+    investmentAmount: 0n,
+    remainingAmount: input.amount,
   };
 }
