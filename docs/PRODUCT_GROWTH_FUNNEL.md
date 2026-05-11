@@ -1,4 +1,4 @@
-# Product growth funnel — Bet the Cut
+# Product growth funnel — Play the Cut
 
 How a new user is expected to move from **first touch** to **repeat, high-value play**. This is a **product and measurement** reference: stage definitions, what “good” looks like, and where teams usually watch for drop-off. It pairs with the numeric engagement tiers in [`ECONOMICS_SKETCH.md`](./ECONOMICS_SKETCH.md).
 

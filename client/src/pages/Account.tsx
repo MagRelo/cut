@@ -35,7 +35,7 @@ function ShareInviteButton({ url }: { url: string }) {
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({
-          title: "Bet the Cut",
+          title: "Play the Cut",
           text: "Join me with my invite link:",
           url,
         });

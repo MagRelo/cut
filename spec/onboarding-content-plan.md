@@ -1,7 +1,7 @@
 ---
 # Onboarding content — tracked in repo (implementation todos for reference)
 name: Onboarding content sketch
-overview: 'A stepped, one-primary-action-per-screen onboarding narrative for Bet the Cut: draft headlines, body copy, and CTAs aligned with existing FAQ/product terms (Stableford, lineups, contests, winner pool / secondary market, CUT, Privy).'
+overview: 'A stepped, one-primary-action-per-screen onboarding narrative for Play the Cut: draft headlines, body copy, and CTAs aligned with existing FAQ/product terms (Stableford, lineups, contests, winner pool / secondary market, CUT, Privy).'
 todos:
   - id: lock-terminology
     content: 'Step 2 framing: “How you’ll show up” (display name + color; lineup labels programmatic)'
@@ -62,7 +62,7 @@ Tone: short sentences, one idea per paragraph, friendly—not legalistic. Adjust
 
 ### 1. Welcome
 
-- **Headline**: Welcome to Bet the Cut
+- **Headline**: Welcome to Play the Cut
 - **Body**: Pick four PGA Tour players each week, score using Modified Stableford, and compete in contests with real stakes. This short tour shows you how it works—a few minutes.
 - **Primary CTA**: Start
 - **Secondary**: Skip for now

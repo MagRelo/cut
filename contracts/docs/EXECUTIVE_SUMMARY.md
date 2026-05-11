@@ -265,7 +265,7 @@ Competitor #1's spectators:
 
 ### Phase 1: Fantasy Sports (Proof of Concept)
 
-- **Target:** Fantasy golf leagues (existing "Bet the Cut" implementation)
+- **Target:** Fantasy golf leagues (existing "Play the Cut" implementation)
 - **Why:** Proven model, measurable outcomes, weekly tournaments
 - **Traction:** Get to 10,000 weekly active users, $1M weekly volume
 

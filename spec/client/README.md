@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The client layer provides the user interface for Bet the Cut:
+The client layer provides the user interface for Play the Cut:
 - **React Application**: Modern React 19 with TypeScript
 - **Blockchain Integration**: Wagmi for wallet connections and contract interactions
 - **State Management**: React Query for server state, Context API for app state
