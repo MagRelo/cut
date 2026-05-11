@@ -17,8 +17,8 @@ type SortDirection = "asc" | "desc";
 function sortButtonClass(sortField: SortField, field: SortField): string {
   return `rounded-md border px-3 py-1.5 text-xs font-normal font-display transition-colors ${
     sortField === field
-      ? "border-blue-300 bg-blue-100 text-blue-800 shadow-sm"
-      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+      ? "border-blue-400/60 bg-gradient-to-b from-blue-50 to-blue-100/70 text-blue-900 shadow-sm ring-1 ring-blue-950/[0.04]"
+      : "border-slate-400/35 bg-white/85 text-slate-600 hover:border-slate-400/50 hover:bg-slate-50/90"
   }`;
 }
 
@@ -144,7 +144,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                       })}
                     </div>
 
-                    <div className="border-t-2 border-slate-300 bg-slate-100 p-3">
+                    <div className="border-t border-slate-500/20 bg-slate-100 p-3">
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <button
                           type="button"
@@ -178,18 +178,18 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-4 flex justify-end gap-2">
+                  <div className="mt-2 flex justify-end gap-1">
                     <button
                       type="button"
                       onClick={() => onSelect(null)}
-                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-normal text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
+                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600"
                     >
                       Leave Empty
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-normal text-slate-700 font-display shadow-sm transition-colors hover:bg-slate-50"
+                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600"
                     >
                       Close
                     </button>
