@@ -36,7 +36,7 @@ function ShareInviteButton({ url }: { url: string }) {
       try {
         await navigator.share({
           title: "Play the Cut",
-          text: "Join me with my invite link:",
+          text: "Join Play the Cut",
           url,
         });
         setFeedback("shared");
