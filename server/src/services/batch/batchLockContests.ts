@@ -1,8 +1,8 @@
 /**
- * Batch lock contests (for cron jobs)
+ * Batch lock contests (admin trigger or CLI: `npm run service:batch-lock-contests`)
  *
- * Finds all ACTIVE contests where the tournament has reached round 4,
- * then locks each one.
+ * Finds all ACTIVE contests on supported chains, then calls `lockContest` for each.
+ * No day-of-week or tournament-round filter; `lockContest` still requires on-chain ACTIVE.
  */
 
 import { prisma } from "../../lib/prisma.js";
@@ -16,12 +16,6 @@ export async function batchLockContests(): Promise<BatchOperationResult> {
         status: "ACTIVE",
         chainId: {
           in: [8453, 84532],
-        },
-        tournament: {
-          currentRound: 4,
-          status: {
-            in: ["IN_PROGRESS", "COMPLETED"],
-          },
         },
       },
       select: {

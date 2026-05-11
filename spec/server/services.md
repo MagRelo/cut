@@ -99,10 +99,10 @@ Services contain business logic and are used by both API routes and cron jobs. T
 #### `batchLockContests.ts`
 - **Purpose**: Lock multiple contests
 - **Operations**:
-  - Find contests that should be locked
+  - Find contests with status ACTIVE on supported chains (Base / Base Sepolia)
   - Call `lockContest()` for each
   - Return batch results
-- **Usage**: Cron job
+- **Usage**: Admin API (`POST /api/admin/contests/lock-eligible`) / manual CLI (`service:batch-lock-contests`); not run on cron
 
 #### `batchSettleContests.ts`
 - **Purpose**: Settle multiple contests

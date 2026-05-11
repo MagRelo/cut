@@ -35,3 +35,19 @@ export interface AdminUserDetailResponse {
   walletAddress: string | null;
   wallet: { publicKey: string; isPrimary: boolean; chainId: number } | null;
 }
+
+/** Matches server `OperationResult` from contest batch jobs. */
+export interface AdminBatchContestOperationResult {
+  success: boolean;
+  contestId: string;
+  transactionHash?: string;
+  error?: string;
+}
+
+/** Matches server `BatchOperationResult` from `batchLockContests`. */
+export interface AdminBatchLockContestsResponse {
+  total: number;
+  succeeded: number;
+  failed: number;
+  results: AdminBatchContestOperationResult[];
+}

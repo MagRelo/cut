@@ -5,8 +5,20 @@ import { getPlatformTokenAddress } from "../lib/contractAddresses.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
 import { getPublicClient } from "../services/shared/contractClient.js";
+import { batchLockContests } from "../services/batch/batchLockContests.js";
 
 const adminRouter = new Hono();
+
+// POST /api/admin/contests/lock-eligible
+adminRouter.post("/contests/lock-eligible", requireAuth, requireAdmin, async (c) => {
+  try {
+    const result = await batchLockContests();
+    return c.json(result);
+  } catch (error) {
+    console.error("admin batch lock contests error:", error);
+    return c.json({ error: "Failed to lock contests" }, 500);
+  }
+});
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;

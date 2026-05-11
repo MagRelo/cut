@@ -9,8 +9,6 @@ import { batchActivateContests } from "../services/batch/batchActivateContests.j
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
-import { batchLockContests } from "../services/batch/batchLockContests.js";
-
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
   private isEnabled: boolean;
@@ -106,7 +104,6 @@ class CronScheduler {
 
       // Step 3: Update contest lifecycle
       await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
-      await this.executeWithErrorHandling("Lock Contests", batchLockContests);
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests);
       await this.executeWithErrorHandling("Close Contests", batchCloseContests);
       await this.executeWithErrorHandling("Sync Referral Graph", batchSyncReferralGraph);

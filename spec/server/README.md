@@ -45,7 +45,7 @@ The server layer provides the backend API and services for Play the Cut:
 
 ### Cron Jobs (`server/src/cron/`)
 - **scheduler.ts**: Main cron scheduler
-- Runs every 5 minutes: Tournament → Activate → Lock → Players → Lineups → Settle → Close
+- Runs every 5 minutes: Tournament → (conditional players/lineups) → Activate → Settle → Close → Sync referral (contest lock is admin-only; see `batchLockContests`)
 
 ### Middleware (`server/src/middleware/`)
 - **auth.ts**: `requireAuth` — verifies `Authorization: Bearer` with Privy and sets user context

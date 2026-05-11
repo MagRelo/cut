@@ -16,18 +16,20 @@ Cron jobs automate regular tasks like tournament updates, contest state transiti
 
 ## Pipeline Execution Order
 
+Contest locking (`batchLockContests`) is **not** run on cron. Staff run it from the admin UI (or `npm run service:batch-lock-contests` on the server).
+
 ```mermaid
 flowchart TD
     Start[Pipeline Start] --> UpdateTournament[Update Tournament]
-    UpdateTournament --> ActivateContests[Activate Contests]
-    ActivateContests --> LockContests[Lock Contests]
-    LockContests --> CheckActive{Is Tournament Active?}
+    UpdateTournament --> CheckActive{Is Tournament Active?}
     CheckActive -->|Yes| UpdatePlayers[Update Tournament Players]
-    CheckActive -->|No| SettleContests
+    CheckActive -->|No| ActivateContests[Activate Contests]
     UpdatePlayers --> UpdateLineups[Update Contest Lineups]
-    UpdateLineups --> SettleContests[Settle Contests]
+    UpdateLineups --> ActivateContests
+    ActivateContests --> SettleContests[Settle Contests]
     SettleContests --> CloseContests[Close Contests]
-    CloseContests --> End[Pipeline End]
+    CloseContests --> SyncReferral[Sync Referral Graph]
+    SyncReferral --> End[Pipeline End]
 ```
 
 ## Pipeline Jobs
@@ -51,17 +53,7 @@ flowchart TD
   - Call contract `activateContest()` for each
   - Update database status
 
-### 3. Lock Contests
-- **Service**: `batchLockContests.ts`
-- **Purpose**: Lock contests that should be locked
-- **Frequency**: Every 5 minutes
-- **Criteria**: Contest is ACTIVE and should be locked (based on tournament state)
-- **Operations**:
-  - Find contests to lock
-  - Call contract `lockContest()` for each
-  - Update database status
-
-### 4. Update Tournament Players (Conditional)
+### 3. Update Tournament Players (Conditional)
 - **Service**: `updateTournamentPlayers.ts`
 - **Purpose**: Update player scores and leaderboard
 - **Frequency**: Every 5 minutes (only if tournament is active)
@@ -72,7 +64,7 @@ flowchart TD
   - Update TournamentPlayer records
   - Update leaderboard positions
 
-### 5. Update Contest Lineups (Conditional)
+### 4. Update Contest Lineups (Conditional)
 - **Service**: `updateContestLineups.ts`
 - **Purpose**: Update contest lineup scores and create timeline snapshots
 - **Frequency**: Every 5 minutes (only if tournament is active)
@@ -83,7 +75,7 @@ flowchart TD
   - Create ContestLineupTimeline snapshots
   - Update contest leaderboard positions
 
-### 6. Settle Contests
+### 5. Settle Contests
 - **Service**: `batchSettleContests.ts`
 - **Purpose**: Settle contests that should be settled
 - **Frequency**: Every 5 minutes
@@ -94,7 +86,7 @@ flowchart TD
   - Call contract `settleContest()` for each
   - Update database status and results
 
-### 7. Close Contests
+### 6. Close Contests
 - **Service**: `batchCloseContests.ts`
 - **Purpose**: Close contests after expiry
 - **Frequency**: Every 5 minutes
@@ -103,6 +95,12 @@ flowchart TD
   - Find contests to close
   - Call contract `closeContest()` for each
   - Update database status
+
+### 7. Sync Referral Graph
+- **Service**: `batchSyncReferralGraph.ts`
+- **Purpose**: Push pending referral registrations to the on-chain ReferralGraph (`batchRegister`)
+- **Frequency**: Every 5 minutes (end of pipeline)
+- **Operations**: Load users with referral fields set but no `referralOnchainTxHash`; batch-register on chain
 
 ## Error Handling
 
