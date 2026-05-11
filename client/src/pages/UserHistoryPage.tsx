@@ -28,24 +28,24 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
   return (
     <Link
       to={`/contest/${contest.id}`}
-      className="block border bg-white rounded-sm p-3 hover:bg-gray-50 transition-colors"
+      className="block min-w-0 w-full border bg-white rounded-sm p-3 hover:bg-gray-50 transition-colors"
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-shrink-0 rounded-md bg-slate-200/70 p-1.5 min-w-[4rem] text-center border border-slate-300/60">
-          <div className="text-base font-display font-bold text-slate-600 leading-none tabular-nums">
+      <div className="flex min-w-0 items-center justify-between gap-4">
+        <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gradient-to-b from-white to-gray-200 p-1.5 text-center shadow-sm ring-1 ring-inset ring-white/60">
+          <div className="text-base font-display font-bold leading-none tabular-nums text-gray-900">
             {contest.primaryDeposit === 0
               ? "Free"
               : contest.primaryDeposit != null
                 ? `$${contest.primaryDeposit}`
                 : "—"}
           </div>
-          <div className="text-[10px] uppercase text-slate-500 font-semibold tracking-wide leading-none mt-1">
+          <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
             buy-in
           </div>
         </div>
         {/* Left Section - Contest Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-gray-900 font-display truncate">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <h3 className="truncate text-base font-bold text-gray-900 font-display">
             {contest.name}
           </h3>
           {contest.description && (
