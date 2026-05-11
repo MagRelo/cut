@@ -29,9 +29,13 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   onShare,
 }) => {
   const { tournament: currentTournament } = useCurrentTournament();
+  const currentTournamentId = currentTournament?.id;
   const isTournamentEditable =
     currentTournament?.status !== "IN_PROGRESS" && currentTournament?.status !== "COMPLETED";
-  const resolvedIsActive = !isTournamentEditable;
+  const playerRowIsForCurrentWeek =
+    Boolean(currentTournamentId) && player.tournamentId === currentTournamentId;
+  /** Full row for any non–active-tournament player; for active-tournament players only when the event is live or completed. */
+  const resolvedIsActive = !playerRowIsForCurrentWeek || !isTournamentEditable;
 
   const totalPoints = player.tournamentData?.total || 0;
   const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;

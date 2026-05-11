@@ -9,6 +9,10 @@ export function transformPlayerWithTournamentData(
   tournamentId: string
 ): PlayerWithTournamentData {
   const tournamentPlayer = player.tournamentPlayers?.[0];
+  const resolvedTournamentId =
+    typeof tournamentPlayer?.tournamentId === "string"
+      ? tournamentPlayer.tournamentId
+      : tournamentId;
 
   return {
     id: player.id,
@@ -29,7 +33,7 @@ export function transformPlayerWithTournamentData(
     createdAt: player.createdAt,
     updatedAt: player.updatedAt,
     lastSyncedAt: player.lastSyncedAt,
-    tournamentId,
+    tournamentId: resolvedTournamentId,
         tournamentData: tournamentPlayer
       ? {
           leaderboardPosition: tournamentPlayer.leaderboardPosition,
@@ -70,6 +74,10 @@ export function transformLineupPlayer(
 ): PlayerWithTournamentData {
   const player = lineupPlayer.tournamentPlayer.player;
   const tournamentPlayer = lineupPlayer.tournamentPlayer;
+  const resolvedTournamentId =
+    typeof tournamentPlayer?.tournamentId === "string"
+      ? tournamentPlayer.tournamentId
+      : tournamentId;
 
   return {
     id: player.id,
@@ -90,7 +98,7 @@ export function transformLineupPlayer(
     createdAt: player.createdAt,
     updatedAt: player.updatedAt,
     lastSyncedAt: player.lastSyncedAt,
-    tournamentId,
+    tournamentId: resolvedTournamentId,
     tournamentData: {
       leaderboardPosition: tournamentPlayer.leaderboardPosition,
       r1: tournamentPlayer.r1,
