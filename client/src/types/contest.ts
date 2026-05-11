@@ -90,7 +90,7 @@ export interface Contest {
     /** Invite / network rewards payout rows (optional; populated when settlement exposes them). */
     rewardsPayouts?: RewardsPayoutResult[];
   };
-  /** Merged from `GET /contests/:id/timeline` in `useContestQuery`; omitted on list / mutation-only responses. */
+  /** Merged from `GET /contests/:id/timeline` in `useContestQuery` (includes `contestFinished` + `isPrimaryPayoutWinner` per team). */
   timeline?: TimelineData;
 }
 
@@ -179,11 +179,18 @@ export interface TimelineDataPoint {
 }
 
 export interface TimelineTeam {
+  /** Join key to `ContestLineup.id` (from timeline API) */
+  contestLineupId: string;
   name: string;
   color: string;
+  entryId?: string | null;
+  /** From `GET /contests/:id/timeline` settlement overlay */
+  isPrimaryPayoutWinner?: boolean;
   dataPoints: TimelineDataPoint[];
 }
 
 export interface TimelineData {
+  /** From timeline API: contest SETTLED/CLOSED */
+  contestFinished?: boolean;
   teams: TimelineTeam[];
 }

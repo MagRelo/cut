@@ -8,10 +8,55 @@ function isValidHexColor(value: unknown): value is string {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 }
 
+/** Stored `contest.results` JSON (minimal fields for timeline winner lines). */
+type StoredContestResults = {
+  winningEntries?: unknown[];
+  detailedResults?: Array<{ entryId?: unknown; payoutBasisPoints?: number }>;
+};
+
+function normalizeEntryIdForCompare(raw: string | null | undefined): string | null {
+  if (raw == null || raw === "") return null;
+  const s = raw.trim();
+  try {
+    if (/^0x[0-9a-fA-F]+$/i.test(s)) return BigInt(s).toString(10);
+    if (/^[0-9]+$/.test(s)) {
+      const stripped = s.replace(/^0+/, "") || "0";
+      return BigInt(stripped).toString(10);
+    }
+  } catch {
+    return s;
+  }
+  return s;
+}
+
+function winnerNormalizedEntryIdSetFromResults(results: unknown): Set<string> {
+  const set = new Set<string>();
+  if (!results || typeof results !== "object") return set;
+  const r = results as StoredContestResults;
+  for (const id of r.winningEntries ?? []) {
+    const n = normalizeEntryIdForCompare(typeof id === "string" ? id : String(id));
+    if (n) set.add(n);
+  }
+  for (const row of r.detailedResults ?? []) {
+    if (typeof row?.payoutBasisPoints === "number" && row.payoutBasisPoints > 0) {
+      const n = normalizeEntryIdForCompare(
+        row.entryId != null && row.entryId !== undefined ? String(row.entryId) : null,
+      );
+      if (n) set.add(n);
+    }
+  }
+  return set;
+}
+
 export type ContestTimelineData = {
+  /** Contest ended: show Final tab and winner-line styling when payout winners exist */
+  contestFinished: boolean;
   teams: Array<{
+    contestLineupId: string;
     name: string;
     color: string;
+    entryId: string | null;
+    isPrimaryPayoutWinner: boolean;
     dataPoints: Array<{
       timestamp: string;
       score: number;
@@ -23,28 +68,34 @@ export type ContestTimelineData = {
 
 type LineupMetaRow = {
   id: string;
+  entryId: string | null;
   user: { name: string; settings: unknown };
   tournamentLineup: { name: string };
 };
 
-function buildLineupLabelMap(rows: LineupMetaRow[]) {
-  const map = new Map<string, { name: string; color: string }>();
+function buildLineupMetaMap(rows: LineupMetaRow[]) {
+  const map = new Map<string, { name: string; color: string; entryId: string | null }>();
   for (const row of rows) {
     const userSettings = row.user.settings as { color?: string } | null;
     const userColor = userSettings?.color;
     const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
     const displayName = `${row.user.name} - ${row.tournamentLineup.name}`;
-    map.set(row.id, { name: displayName, color: resolvedColor });
+    map.set(row.id, { name: displayName, color: resolvedColor, entryId: row.entryId });
   }
   return map;
 }
 
 /**
  * Build timeline chart data from ContestLineupTimeline snapshots for a contest.
- * Uses scalar snapshot rows plus one metadata query (avoids per-row joins on snapshots).
+ * Includes `contestFinished` and per-team `isPrimaryPayoutWinner` so the client can render
+ * without merging contest results or normalizing entry ids.
  */
 export async function getContestTimelineData(contestId: string): Promise<ContestTimelineData> {
-  const [snapshots, lineupRows] = await Promise.all([
+  const [contest, snapshots, lineupRows] = await Promise.all([
+    prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { status: true, results: true },
+    }),
     prisma.contestLineupTimeline.findMany({
       where: { contestId },
       select: {
@@ -60,17 +111,30 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       where: { contestId },
       select: {
         id: true,
+        entryId: true,
         user: { select: { name: true, settings: true } },
         tournamentLineup: { select: { name: true } },
       },
     }),
   ]);
 
-  const metaByLineupId = buildLineupLabelMap(lineupRows as LineupMetaRow[]);
-  const lineupMap = new Map<
-    string,
-    { name: string; color: string; dataPoints: ContestTimelineData["teams"][0]["dataPoints"] }
-  >();
+  const contestFinished =
+    contest?.status === "SETTLED" || contest?.status === "CLOSED";
+  const winnerEntryIds = contestFinished
+    ? winnerNormalizedEntryIdSetFromResults(contest?.results ?? null)
+    : new Set<string>();
+
+  const metaByLineupId = buildLineupMetaMap(lineupRows as LineupMetaRow[]);
+  type LineupAccumulator = {
+    contestLineupId: string;
+    name: string;
+    color: string;
+    entryId: string | null;
+    isPrimaryPayoutWinner: boolean;
+    dataPoints: ContestTimelineData["teams"][0]["dataPoints"];
+  };
+
+  const lineupMap = new Map<string, LineupAccumulator>();
 
   for (const snapshot of snapshots) {
     const lineupId = snapshot.contestLineupId;
@@ -79,9 +143,17 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       const meta = metaByLineupId.get(lineupId);
       const displayName = meta?.name ?? "Unknown";
       const resolvedColor = meta?.color ?? DEFAULT_USER_COLOR;
+      const entryId = meta?.entryId ?? null;
+      const normalized = normalizeEntryIdForCompare(entryId);
+      const isPrimaryPayoutWinner = Boolean(
+        contestFinished && normalized && winnerEntryIds.has(normalized),
+      );
       lineupMap.set(lineupId, {
+        contestLineupId: lineupId,
         name: displayName,
         color: resolvedColor,
+        entryId,
+        isPrimaryPayoutWinner,
         dataPoints: [],
       });
     }
@@ -97,8 +169,11 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
 
   const teams = Array.from(lineupMap.values())
     .map((lineup) => ({
+      contestLineupId: lineup.contestLineupId,
       name: lineup.name,
       color: lineup.color,
+      entryId: lineup.entryId,
+      isPrimaryPayoutWinner: lineup.isPrimaryPayoutWinner,
       dataPoints: lineup.dataPoints,
     }))
     .sort((a, b) => {
@@ -107,5 +182,5 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       return bLatestScore - aLatestScore;
     });
 
-  return { teams };
+  return { contestFinished, teams };
 }

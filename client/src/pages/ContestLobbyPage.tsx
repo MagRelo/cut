@@ -391,5 +391,7 @@ const ContestTimelinesSection: React.FC<{
     );
   }
 
-  return <Timeline timelineData={timelineData} defaultMetric="score" allowedMetrics={["score"]} />;
+  return (
+    <Timeline timelineData={timelineData} defaultMetric="score" allowedMetrics={["score"]} />
+  );
 };

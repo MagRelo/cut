@@ -9,12 +9,20 @@ export interface TimelineDataPoint {
 }
 
 export interface TimelineTeam {
+  /** Join key to `ContestLineup.id` */
+  contestLineupId: string;
   name: string;
   color: string;
+  /** On-chain primary entry id */
+  entryId?: string | null;
+  /** From settlement results; used for Final chart winner highlighting */
+  isPrimaryPayoutWinner: boolean;
   dataPoints: TimelineDataPoint[];
 }
 
 export interface TimelineData {
+  /** When true, client may show the all-rounds Final tab and dim non-payout lines */
+  contestFinished: boolean;
   teams: TimelineTeam[];
 }
 

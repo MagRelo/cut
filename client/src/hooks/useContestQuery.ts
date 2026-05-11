@@ -7,12 +7,6 @@ import { type Contest, type TimelineData } from "../types/contest";
 /**
  * Fetches a single contest by ID. Loads contest payload and timeline in parallel
  * (`GET /contests/:id` + `GET /contests/:id/timeline`) and merges for charts.
- *
- * Benefits:
- * - Automatic caching by contest ID
- * - Shared data across all components viewing the same contest
- * - Periodic refetch keeps lineup timeline data fresh
- * - Built-in loading and error states
  */
 export function useContestQuery(contestId: string | undefined) {
   return useQuery({
@@ -25,7 +19,7 @@ export function useContestQuery(contestId: string | undefined) {
       ]);
       return { ...contest, timeline };
     },
-    enabled: !!contestId, // Only run query if contestId exists
+    enabled: !!contestId,
     staleTime: 2 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
     refetchOnWindowFocus: true,
@@ -46,7 +40,6 @@ export function useContestsQuery(tournamentId: string | undefined, chainId: numb
     queryKey: queryKeys.contests.byTournament(tournamentId ?? "", chainId ?? "all"),
     queryFn: async () => {
       if (!tournamentId) throw new Error("Tournament ID is required");
-      // Only send chainId if user is connected
       const url =
         isConnected && chainId
           ? `/contests?tournamentId=${tournamentId}&chainId=${chainId}`
@@ -55,10 +48,9 @@ export function useContestsQuery(tournamentId: string | undefined, chainId: numb
     },
     enabled: !!tournamentId,
     staleTime: Infinity,
-    /** Keep list in memory long after leaving the page; data changes rarely. */
     gcTime: 12 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
-    placeholderData: (previousData) => previousData, // Keep previous data while refetching
+    placeholderData: (previousData) => previousData,
   });
 }
