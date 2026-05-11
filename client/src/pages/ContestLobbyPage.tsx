@@ -269,10 +269,8 @@ export const ContestLobby: React.FC = () => {
             ) : null}
             */}
             {isPostSettlement ? (
-              <TabPanel className="p-4 focus:outline-none">
-                <div>
-                  <ContestResultsPanel contest={contest} />
-                </div>
+              <TabPanel className="p-0 focus:outline-none">
+                <ContestResultsPanel contest={contest} />
               </TabPanel>
             ) : null}
           </TabPanels>

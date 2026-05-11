@@ -1,8 +1,24 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { formatUnits } from "viem";
 
-import type { Contest, DetailedResult, SecondaryPayoutResult } from "../../types/contest";
+import type {
+  Contest,
+  DetailedResult,
+  RewardsPayoutResult,
+  SecondaryPayoutResult,
+} from "../../types/contest";
 import { PositionBadge } from "./PositionBadge";
+import {
+  ContestPayoutDividedRows,
+  ContestPayoutGradientMoney,
+  ContestPayoutLayout,
+  ContestPayoutRow,
+  ContestPayoutRowSubtitle,
+  ContestPayoutRowTitle,
+  ContestPayoutSection,
+  ContestPayoutSubAmount,
+} from "./contestPayoutPresentation";
 
 interface ContestResultsPanelProps {
   contest: Contest;
@@ -15,6 +31,10 @@ function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
   if (fractionDigits <= 0) return wholeWithCommas;
   const fixedFraction = fraction.padEnd(fractionDigits, "0").slice(0, fractionDigits);
   return `${wholeWithCommas}.${fixedFraction}`;
+}
+
+function formatDollarFromWei(valueWei: bigint, fractionDigits = 2) {
+  return `$${formatTokenAmount(valueWei, fractionDigits)}`;
 }
 
 function primaryPayoutWei(result: DetailedResult): bigint | null {
@@ -32,6 +52,14 @@ function primaryPayoutWei(result: DetailedResult): bigint | null {
 }
 
 function secondaryAmountWei(row: SecondaryPayoutResult): bigint | null {
+  try {
+    return BigInt(row.amountWei);
+  } catch {
+    return null;
+  }
+}
+
+function rewardsAmountWei(row: RewardsPayoutResult): bigint | null {
   try {
     return BigInt(row.amountWei);
   } catch {
@@ -59,115 +87,191 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
     });
   }, [contest.results?.secondaryPayouts]);
 
+  const sortedRewardsPayouts = useMemo(() => {
+    const rows = contest.results?.rewardsPayouts ?? [];
+    return [...rows].sort((a, b) => {
+      const wa = rewardsAmountWei(a) ?? 0n;
+      const wb = rewardsAmountWei(b) ?? 0n;
+      if (wa === wb) return a.walletAddress.localeCompare(b.walletAddress);
+      return wa < wb ? 1 : -1;
+    });
+  }, [contest.results?.rewardsPayouts]);
+
+  const hasAnyRows =
+    primaryRowsWithPayout.length > 0 ||
+    sortedSecondaryPayouts.length > 0 ||
+    sortedRewardsPayouts.length > 0;
+
+  if (!hasAnyRows) {
+    return (
+      <ContestPayoutLayout>
+        <p className="text-sm text-slate-500">Results not available.</p>
+      </ContestPayoutLayout>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
+    <ContestPayoutLayout>
+      <ContestPayoutSection
+        title="Contest"
+        description={
+          <>
+            Payouts are based on final standings. Ties pool winnings and split evenly.{" "}
+            <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
+              Learn more...
+            </Link>
+          </>
+        }
+      >
         {primaryRowsWithPayout.length === 0 ? (
-          <p className="text-sm text-gray-500">Results not available.</p>
+          <p className="text-sm text-slate-500">No contest payouts recorded.</p>
         ) : (
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Contest Winners
-            </h4>
+          <ContestPayoutDividedRows>
             {primaryRowsWithPayout.map((result, index) => {
               const payoutWei = primaryPayoutWei(result);
               return (
-                <div
+                <ContestPayoutRow
                   key={`${result.entryId}-${index}`}
-                  className="bg-white border border-gray-200 rounded-sm p-3 flex items-center gap-3"
-                  style={{
-                    borderLeftWidth: "3px",
-                    borderLeftStyle: "solid",
-                    borderLeftColor: result.userColor ?? undefined,
-                  }}
-                >
-                  <PositionBadge
-                    position={result.position}
-                    isInTheMoney={result.payoutBasisPoints > 0}
-                    isUser={false}
-                    primaryActionsLocked
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {result.username}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {result.playerLastNames?.length
-                        ? result.playerLastNames.join(", ")
-                        : result.lineupName}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    <div className="text-right">
-                      {payoutWei !== null ? (
-                        <>
-                          <div className="text-lg font-bold text-green-600 leading-none tabular-nums">
-                            ${formatTokenAmount(payoutWei, 2)}
-                          </div>
-                          <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                            {result.score} pts
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
-                          {result.score} pts
-                        </div>
-                      )}
+                  left={
+                    <div className="flex min-w-0 items-stretch gap-2">
+                      <div className="flex shrink-0 items-center">
+                        <PositionBadge
+                          position={result.position}
+                          isInTheMoney={result.payoutBasisPoints > 0}
+                          isUser={false}
+                          primaryActionsLocked
+                        />
+                      </div>
+                      {result.userColor ? (
+                        <div
+                          className="w-[3px] shrink-0 self-stretch rounded-full"
+                          style={{ backgroundColor: result.userColor }}
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1 py-0.5">
+                        <ContestPayoutRowTitle>{result.username}</ContestPayoutRowTitle>
+                        <ContestPayoutRowSubtitle>
+                          {result.playerLastNames?.length
+                            ? result.playerLastNames.join(", ")
+                            : result.lineupName}
+                        </ContestPayoutRowSubtitle>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  }
+                  right={
+                    payoutWei !== null ? (
+                      <>
+                        <ContestPayoutGradientMoney>
+                          {formatDollarFromWei(payoutWei)}
+                        </ContestPayoutGradientMoney>
+                        <ContestPayoutSubAmount>{result.score} pts</ContestPayoutSubAmount>
+                      </>
+                    ) : (
+                      <ContestPayoutRowSubtitle>{result.score} pts</ContestPayoutRowSubtitle>
+                    )
+                  }
+                />
               );
             })}
-          </div>
+          </ContestPayoutDividedRows>
         )}
-      </div>
+      </ContestPayoutSection>
 
-      <div>
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Winner pool payouts
-        </h4>
-        {sortedSecondaryPayouts.length === 0 ? null : (
-          <div className="space-y-3 mt-2">
+      <ContestPayoutSection
+        title="Winner Pool"
+        description={
+          <>
+            Winner-ticket holders split this pool proportionally.{" "}
+            <Link to="/faq#winner-pool" className="text-blue-600 hover:underline">
+              Learn more...
+            </Link>
+          </>
+        }
+      >
+        {sortedSecondaryPayouts.length === 0 ? (
+          <p className="text-sm text-slate-500">No winner pool payouts recorded.</p>
+        ) : (
+          <ContestPayoutDividedRows>
             {sortedSecondaryPayouts.map((row, index) => {
               const wei = secondaryAmountWei(row);
-
               return (
-                <div
+                <ContestPayoutRow
                   key={`${row.entryId}-${row.userId ?? "anon"}-${index}`}
-                  className="bg-white border border-gray-200 rounded-sm p-3 flex items-center gap-3"
-                  style={{
-                    borderLeftWidth: "3px",
-                    borderLeftStyle: "solid",
-                    borderLeftColor: row.userColor ?? undefined,
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{row.username}</p>
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    {wei !== null ? (
-                      <div className="text-lg font-bold text-emerald-600 leading-none tabular-nums">
-                        ${formatTokenAmount(wei, 2)}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
-                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                      payout
+                  left={
+                    <div
+                      className={`min-w-0 ${row.userColor ? "border-l-[3px] border-solid pl-2" : ""}`}
+                      style={row.userColor ? { borderLeftColor: row.userColor } : undefined}
+                    >
+                      <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
                     </div>
-                  </div>
-                </div>
+                  }
+                  right={
+                    wei !== null ? (
+                      <>
+                        <ContestPayoutGradientMoney>
+                          {formatDollarFromWei(wei)}
+                        </ContestPayoutGradientMoney>
+                        <ContestPayoutSubAmount>payout</ContestPayoutSubAmount>
+                      </>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )
+                  }
+                />
               );
             })}
-          </div>
+          </ContestPayoutDividedRows>
         )}
-      </div>
-      {/* 
-      {contest.results?.pushPayoutsError ? (
-        <p className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-sm px-2 py-1.5">
-          Payout push note: {contest.results.pushPayoutsError}
-        </p>
-      ) : null} */}
-    </div>
+      </ContestPayoutSection>
+
+      <ContestPayoutSection
+        title="Rewards"
+        description={
+          <>
+            Grow the game, reward the community, and give value back to players.{" "}
+            <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+              Learn more...
+            </Link>
+          </>
+        }
+      >
+        {sortedRewardsPayouts.length === 0 ? (
+          <p className="text-sm text-slate-500">No rewards payouts recorded.</p>
+        ) : (
+          <ContestPayoutDividedRows>
+            {sortedRewardsPayouts.map((row, index) => {
+              const wei = rewardsAmountWei(row);
+              const key = row.entryId ?? `${row.walletAddress}-${index}`;
+              return (
+                <ContestPayoutRow
+                  key={key}
+                  left={
+                    <div
+                      className={`min-w-0 ${row.userColor ? "border-l-[3px] border-solid pl-2" : ""}`}
+                      style={row.userColor ? { borderLeftColor: row.userColor } : undefined}
+                    >
+                      <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
+                    </div>
+                  }
+                  right={
+                    wei !== null ? (
+                      <>
+                        <ContestPayoutGradientMoney>
+                          {formatDollarFromWei(wei)}
+                        </ContestPayoutGradientMoney>
+                        <ContestPayoutSubAmount>reward</ContestPayoutSubAmount>
+                      </>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )
+                  }
+                />
+              );
+            })}
+          </ContestPayoutDividedRows>
+        )}
+      </ContestPayoutSection>
+    </ContestPayoutLayout>
   );
 };

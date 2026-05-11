@@ -87,6 +87,8 @@ export interface Contest {
     pushSecondaryTxs?: { hash: string }[];
     pushPayoutsError?: string;
     secondaryPayouts?: SecondaryPayoutResult[];
+    /** Invite / network rewards payout rows (optional; populated when settlement exposes them). */
+    rewardsPayouts?: RewardsPayoutResult[];
   };
   /** Merged from `GET /contests/:id/timeline` in `useContestQuery`; omitted on list / mutation-only responses. */
   timeline?: TimelineData;
@@ -113,6 +115,16 @@ export interface SecondaryPayoutResult {
   userColor: string;
   ticketLineupName: string;
   ticketPlayerLastNames: string[];
+}
+
+/** Rewards / invite-network payout row (future: populated from settlement or indexer). */
+export interface RewardsPayoutResult {
+  walletAddress: string;
+  amountWei: string;
+  username: string;
+  userColor?: string;
+  /** Optional stable key when backend provides one. */
+  entryId?: string;
 }
 
 export interface DetailedResult {
