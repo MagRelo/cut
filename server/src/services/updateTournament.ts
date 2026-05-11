@@ -82,7 +82,8 @@ export interface UpdateTournamentOptions {
 
 /**
  * Updates tournament metadata from PGA (including start/end dates from displayDate).
- * beautyImage is not synced here so it can be set manually without cron/init overwriting it.
+ * beautyImage is only synced when `tournamentId` is set (initTournament): that seeds the
+ * hero image from the PGA API once. Periodic cron calls omit it so manual overrides are kept.
  * When called with no options, updates the current manualActive tournament (cron).
  * When called with tournamentId, updates that tournament (used by initTournament).
  */
@@ -132,6 +133,9 @@ export async function updateTournament(options?: UpdateTournamentOptions) {
         ...(parsedDates && {
           startDate: parsedDates.startDate,
           endDate: parsedDates.endDate,
+        }),
+        ...(options?.tournamentId && {
+          beautyImage: tournamentData.beautyImage?.trim() || null,
         }),
       },
     });
