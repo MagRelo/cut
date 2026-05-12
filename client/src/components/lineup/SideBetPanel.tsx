@@ -311,7 +311,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   };
 
   return (
-    <div className="rounded-sm bg-white p-4 pt-2">
+    <div className="rounded-sm bg-white p-2">
       <h4 className="font-display text-base font-semibold text-gray-900">Lineup Parlays</h4>
 
       {!tournamentLineupId ? (
@@ -344,7 +344,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
           ) : null}
 
           {bettable ? (
-            <div className="mt-2 flex flex-col items-center gap-2">
+            <div className="mt-3 flex flex-col items-center gap-2">
               <div className="flex w-full justify-center">
                 <div className="grid w-full max-w-[28rem] grid-cols-[3rem_repeat(3,minmax(0,1fr))] gap-2">
                   <div />
@@ -548,8 +548,8 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                 {activeSelection.colLabel} (including ties) · {activeSelection.rowLabel} players
               </p>
               <p className="text-sm text-gray-700">
-                At least {activeSelection.hitsRequired} of your four must finish in the top{" "}
-                {activeSelection.topN} for this ticket to win (per rules at lock).
+                At least {activeSelection.hitsRequired} of your four players must finish in the top{" "}
+                {activeSelection.topN} for this ticket to win.
               </p>
               <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
                 <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
