@@ -120,6 +120,7 @@ export function useCreateLineup() {
       }
       if (data?.id) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(data.id) });
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
@@ -203,6 +204,7 @@ export function useUpdateLineup() {
       }
       if (data?.id) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(data.id) });
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },

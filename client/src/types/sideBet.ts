@@ -21,6 +21,26 @@ export interface SideBetMarketTicketDto {
   createdAt: string;
 }
 
+/** GET /bets/side/tickets?lineupId=… */
+export interface SideBetTicketListItemDto {
+  id: string;
+  lineupId: string;
+  tournamentId: string;
+  marketStatus: string;
+  hitsRequired: number;
+  topN: number;
+  stakeAmount: number;
+  decimalOddsAtPlacement: number;
+  americanDisplayAtPlacement: string;
+  quoteVersionAtPlacement: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface SideBetTicketsListResponse {
+  tickets: SideBetTicketListItemDto[];
+}
+
 export interface SideBetMarketResponse {
   bettable: boolean;
   marketStatus: string | null;

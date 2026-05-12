@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { erc20Abi } from "viem";
 import { prisma } from "../lib/prisma.js";
+import { SideBetTicketStatus } from "@prisma/client";
 import { getPlatformTokenAddress } from "../lib/contractAddresses.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
@@ -210,6 +211,92 @@ adminRouter.get("/users/:id", requireAuth, requireAdmin, async (c) => {
   } catch (error) {
     console.error("admin get user error:", error);
     return c.json({ error: "Failed to get user" }, 500);
+  }
+});
+
+/** GET /api/admin/bets/side/tournament-report — all side-bet tickets for a tournament + inflow / exposure totals. */
+adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async (c) => {
+  try {
+    const qTid = c.req.query("tournamentId")?.trim();
+    let tournamentId = qTid ?? "";
+    let tournamentName: string | null = null;
+
+    if (!tournamentId) {
+      const active = await prisma.tournament.findFirst({
+        where: { manualActive: true },
+        select: { id: true, name: true },
+      });
+      if (!active) {
+        return c.json({ error: "No active tournament (set manualActive or pass tournamentId)" }, 404);
+      }
+      tournamentId = active.id;
+      tournamentName = active.name;
+    } else {
+      const t = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { id: true, name: true },
+      });
+      if (!t) {
+        return c.json({ error: "Tournament not found" }, 404);
+      }
+      tournamentName = t.name;
+    }
+
+    const tickets = await prisma.sideBetTicket.findMany({
+      where: { sideBetMarket: { tournamentId } },
+      orderBy: { createdAt: "desc" },
+      take: 5000,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        sideBetMarket: { select: { id: true, tournamentLineupId: true, status: true } },
+      },
+    });
+
+    let stakeInflow = 0;
+    let openLiability = 0;
+    let openStake = 0;
+    for (const t of tickets) {
+      stakeInflow += t.stakeAmount;
+      if (t.status === SideBetTicketStatus.OPEN) {
+        openStake += t.stakeAmount;
+        openLiability += t.stakeAmount * t.decimalOddsAtPlacement;
+      }
+    }
+
+    return c.json({
+      tournamentId,
+      tournamentName,
+      ticketCount: tickets.length,
+      totals: {
+        /** Sum of stake for every ticket (funds received on accepted / recorded tickets). */
+        stakeInflow,
+        /** Sum of stake × decimal odds for OPEN tickets only (max payout if all won). */
+        openLiability,
+        /** Sum of stakes for OPEN tickets only. */
+        openStake,
+      },
+      tickets: tickets.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        userName: t.user.name,
+        userEmail: t.user.email,
+        lineupId: t.sideBetMarket.tournamentLineupId,
+        marketId: t.sideBetMarket.id,
+        marketStatus: t.sideBetMarket.status,
+        hitsRequired: t.hitsRequired,
+        topN: t.topN,
+        stakeAmount: t.stakeAmount,
+        decimalOddsAtPlacement: t.decimalOddsAtPlacement,
+        americanDisplayAtPlacement: t.americanDisplayAtPlacement,
+        quoteVersionAtPlacement: t.quoteVersionAtPlacement,
+        status: t.status,
+        createdAt: t.createdAt.toISOString(),
+        potentialPayout: t.stakeAmount * t.decimalOddsAtPlacement,
+      })),
+    });
+  } catch (error) {
+    console.error("admin side bet tournament report error:", error);
+    return c.json({ error: "Failed to load side bet report" }, 500);
   }
 });
 

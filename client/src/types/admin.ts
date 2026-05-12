@@ -51,3 +51,36 @@ export interface AdminBatchLockContestsResponse {
   failed: number;
   results: AdminBatchContestOperationResult[];
 }
+
+/** Row from `GET /api/admin/bets/side/tournament-report`. */
+export interface AdminSideBetTournamentReportTicket {
+  id: string;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  lineupId: string;
+  marketId: string;
+  marketStatus: string;
+  hitsRequired: number;
+  topN: number;
+  stakeAmount: number;
+  decimalOddsAtPlacement: number;
+  americanDisplayAtPlacement: string;
+  quoteVersionAtPlacement: number;
+  status: string;
+  createdAt: string;
+  potentialPayout: number;
+}
+
+/** Response from `GET /api/admin/bets/side/tournament-report`. */
+export interface AdminSideBetTournamentReportResponse {
+  tournamentId: string;
+  tournamentName: string | null;
+  ticketCount: number;
+  totals: {
+    stakeInflow: number;
+    openLiability: number;
+    openStake: number;
+  };
+  tickets: AdminSideBetTournamentReportTicket[];
+}

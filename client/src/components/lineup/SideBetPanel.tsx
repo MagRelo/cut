@@ -5,6 +5,7 @@ import { Modal } from "../common/Modal";
 import {
   usePlaceSideBetTicketMutation,
   useSideBetMarketQuery,
+  useSideBetTicketsForLineupQuery,
 } from "../../hooks/useSideBetQueries";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import type { SideBetMarketSelectionDto, SideBetMarketTicketDto } from "../../types/sideBet";
@@ -84,12 +85,7 @@ function sideBetReturnDisplay(ticket: SideBetMarketTicketDto): {
     return { amount: "—", amountClass: "text-gray-400" };
   }
   const n = implied;
-  const amount =
-    !Number.isFinite(n) || n < 0
-      ? "$0.00"
-      : n < 0.01
-        ? "< $0.01"
-        : formatUsd(n);
+  const amount = !Number.isFinite(n) || n < 0 ? "$0.00" : n < 0.01 ? "< $0.01" : formatUsd(n);
   return { amount, amountClass: "text-emerald-600" };
 }
 
@@ -139,6 +135,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   } | null>(null);
 
   const marketQuery = useSideBetMarketQuery(tournamentLineupId);
+  const ticketsQuery = useSideBetTicketsForLineupQuery(tournamentLineupId);
   const placeMutation = usePlaceSideBetTicketMutation(tournamentLineupId);
 
   const closeModal = () => {
@@ -196,11 +193,23 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   }, [marketQuery.data]);
 
   const lineupParlayTickets = useMemo((): SideBetMarketTicketDto[] => {
-    const raw = marketQuery.data?.tickets ?? [];
-    return [...raw].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  }, [marketQuery.data?.tickets]);
+    const raw = ticketsQuery.data?.tickets ?? [];
+    return [...raw]
+      .map(
+        (t): SideBetMarketTicketDto => ({
+          id: t.id,
+          hitsRequired: t.hitsRequired,
+          topN: t.topN,
+          stakeAmount: t.stakeAmount,
+          decimalOddsAtPlacement: t.decimalOddsAtPlacement,
+          americanDisplayAtPlacement: t.americanDisplayAtPlacement,
+          quoteVersionAtPlacement: t.quoteVersionAtPlacement,
+          status: t.status,
+          createdAt: t.createdAt,
+        }),
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [ticketsQuery.data?.tickets]);
 
   const payoutPreview = useMemo(() => {
     if (!activeSelection) return null;
@@ -302,12 +311,8 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   };
 
   return (
-    <div className="rounded-sm bg-white p-4 pt-0">
+    <div className="rounded-sm bg-white p-4 pt-2">
       <h4 className="font-display text-base font-semibold text-gray-900">Lineup Parlays</h4>
-      <p className="mt-1 font-display text-sm leading-relaxed text-gray-700">
-        Pick how many of your 4 players you think will end up in the top 5, 10, or 20. Ties count
-        too.
-      </p>
 
       {!tournamentLineupId ? (
         <p className="mt-3 font-display text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-sm p-3">
@@ -315,165 +320,185 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
         </p>
       ) : null}
 
-      {tournamentLineupId && marketQuery.isLoading ? (
-        <p className="mt-3 font-display text-sm text-gray-500">Loading market…</p>
-      ) : null}
+      {tournamentLineupId ? (
+        <div className="">
+          <p className="mt-1 font-display text-sm leading-relaxed text-gray-700">
+            Pick how many of your 4 players you think will end up in the top 5, 10, or 20. Ties
+            count too.
+          </p>
 
-      {tournamentLineupId && marketQuery.isError ? (
-        <p className="mt-3 font-display text-sm text-red-700 bg-red-50 border border-red-200 rounded-sm p-3">
-          {PARLAY_MARKET_UNAVAILABLE}
-        </p>
-      ) : null}
+          {marketQuery.isLoading ? (
+            <p className="mt-3 font-display text-sm text-gray-500">Loading market…</p>
+          ) : null}
 
-      {tournamentLineupId && showUnavailable && !marketQuery.isLoading && !marketQuery.isError ? (
-        <p className="mt-3 font-display text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-sm p-3">
-          {PARLAY_MARKET_UNAVAILABLE}
-        </p>
-      ) : null}
+          {marketQuery.isError ? (
+            <p className="mt-3 font-display text-sm text-red-700 bg-red-50 border border-red-200 rounded-sm p-3">
+              {PARLAY_MARKET_UNAVAILABLE}
+            </p>
+          ) : null}
 
-      {bettable ? (
-        <div className="mt-2 flex flex-col items-center gap-2">
-          <div className="flex w-full justify-center">
-            <div className="grid w-full max-w-[28rem] grid-cols-[3rem_repeat(3,minmax(0,1fr))] gap-2">
-              <div />
-              {SIDE_BET_COLUMNS.map((column) => (
-                <div
-                  key={column}
-                  className="px-2 py-1 text-center font-display text-sm font-semibold text-gray-900"
-                >
-                  {column}
-                </div>
-              ))}
+          {showUnavailable && !marketQuery.isLoading && !marketQuery.isError ? (
+            <p className="mt-3 font-display text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-sm p-3">
+              {PARLAY_MARKET_UNAVAILABLE}
+            </p>
+          ) : null}
 
-              {ROW_ORDER.map((row) => {
-                const rowCells = oddsByRow.get(row) ?? [];
-                return (
-                  <React.Fragment key={row}>
-                    <div className="self-center pr-2 text-right font-display text-sm font-semibold text-gray-900">
-                      {row}
+          {bettable ? (
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <div className="flex w-full justify-center">
+                <div className="grid w-full max-w-[28rem] grid-cols-[3rem_repeat(3,minmax(0,1fr))] gap-2">
+                  <div />
+                  {SIDE_BET_COLUMNS.map((column) => (
+                    <div
+                      key={column}
+                      className="px-2 py-1 text-center font-display text-sm font-semibold text-gray-900"
+                    >
+                      {column}
                     </div>
-                    {SIDE_BET_COLUMNS.map((col) => {
-                      const cell = rowCells.find((entry) => entry.colLabel === col);
-                      if (!cell) return <div key={`${row}-${col}`} />;
+                  ))}
 
-                      return (
-                        <button
-                          key={`${row}-${col}`}
-                          type="button"
-                          onClick={() => setActiveSelection(cell)}
-                          className={classNames(
-                            "w-full rounded-sm border border-gray-300 bg-gray-100 py-3 font-display text-gray-900 transition-colors",
-                            "hover:bg-gray-200",
-                            "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
-                          )}
-                        >
-                          <span className="block w-full text-center text-sm leading-tight">
-                            {cell.americanDisplay}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </React.Fragment>
-                );
-              })}
+                  {ROW_ORDER.map((row) => {
+                    const rowCells = oddsByRow.get(row) ?? [];
+                    return (
+                      <React.Fragment key={row}>
+                        <div className="self-center pr-2 text-right font-display text-sm font-semibold text-gray-900">
+                          {row}
+                        </div>
+                        {SIDE_BET_COLUMNS.map((col) => {
+                          const cell = rowCells.find((entry) => entry.colLabel === col);
+                          if (!cell) return <div key={`${row}-${col}`} />;
+
+                          return (
+                            <button
+                              key={`${row}-${col}`}
+                              type="button"
+                              onClick={() => setActiveSelection(cell)}
+                              className={classNames(
+                                "w-full rounded-sm border border-gray-300 bg-gray-100 py-3 font-display text-gray-900 transition-colors",
+                                "hover:bg-gray-200",
+                                "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
+                              )}
+                            >
+                              <span className="block w-full text-center text-sm leading-tight">
+                                {cell.americanDisplay}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       ) : null}
 
-      {tournamentLineupId && !marketQuery.isLoading && !marketQuery.isError ? (
+      {tournamentLineupId ? (
         <div className="mt-6 border-t border-gray-200 pt-4">
           <h5 className="mb-2 font-display text-sm font-semibold text-gray-900">Your parlays</h5>
-          {lineupParlayTickets.length === 0 ? (
-            <div className="p-4 text-center">
-              <p className="text-sm text-gray-400 font-display">No parlays yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {lineupParlayTickets.map((ticket) => {
-                const stake = ticket.stakeAmount;
-                const stakeDisplay =
-                  !Number.isFinite(stake) || stake <= 0
-                    ? "0.00"
-                    : stake < 0.01
-                      ? "< 0.01"
-                      : stake.toFixed(2);
-                const ret = sideBetReturnDisplay(ticket);
+          {ticketsQuery.isLoading && !ticketsQuery.data ? (
+            <p className="font-display text-sm text-gray-500">Loading your parlays…</p>
+          ) : null}
+          {ticketsQuery.isError ? (
+            <p className="mb-2 font-display text-sm text-red-700 bg-red-50 border border-red-200 rounded-sm p-2">
+              Could not load your ticket list. Try again in a moment.
+            </p>
+          ) : null}
+          {!ticketsQuery.isLoading ? (
+            lineupParlayTickets.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-sm text-gray-400 font-display">No parlays yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {lineupParlayTickets.map((ticket) => {
+                  const stake = ticket.stakeAmount;
+                  const stakeDisplay =
+                    !Number.isFinite(stake) || stake <= 0
+                      ? "0.00"
+                      : stake < 0.01
+                        ? "< 0.01"
+                        : stake.toFixed(2);
+                  const ret = sideBetReturnDisplay(ticket);
 
-                return (
-                  <div
-                    key={ticket.id}
-                    className="rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm"
-                  >
-                    <div className="flex flex-col gap-3">
-                      <div className="flex min-w-0 items-center justify-between gap-3">
-                        <span className="min-w-0 truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
-                          {topNToColLabel(ticket.topN)} · {hitsRequiredToRowLabel(ticket.hitsRequired)}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${sideBetStatusBadgeClass(ticket.status)}`}
-                        >
-                          {ticket.status}
-                        </span>
-                      </div>
-
-                      <div
-                        className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm"
-                        style={{
-                          borderLeftColor: borderColor,
-                          borderLeftWidth: "5px",
-                          borderLeftStyle: "solid",
-                        }}
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
-                            {userLabel}
-                            {lineupNumberLabel ? (
-                              <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
-                                {lineupNumberLabel}
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="truncate text-xs text-gray-500">
-                            {playerLastNamesLine || "No players"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 font-sans sm:gap-4">
-                        <div className="flex min-w-0 flex-col items-center text-center">
-                          <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
-                            Stake
-                          </div>
-                          <div className="mt-1 text-sm font-semibold leading-tight text-gray-900 tabular-nums">
-                            ${stakeDisplay}
-                          </div>
-                        </div>
-                        <div className="flex min-w-0 flex-col items-center text-center">
-                          <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
-                            Odds
-                          </div>
-                          <div className="mt-1 text-sm font-semibold leading-tight text-gray-900 tabular-nums">
-                            {ticket.americanDisplayAtPlacement}
-                          </div>
-                        </div>
-                        <div className="flex min-w-0 flex-col items-center text-center">
-                          <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
-                            Return
-                          </div>
-                          <div
-                            className={`mt-1 text-sm font-semibold leading-tight tabular-nums ${ret.amountClass}`}
+                  return (
+                    <div
+                      key={ticket.id}
+                      className="rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex min-w-0 items-center justify-between gap-3">
+                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                            {topNToColLabel(ticket.topN)} ·{" "}
+                            {hitsRequiredToRowLabel(ticket.hitsRequired)}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${sideBetStatusBadgeClass(ticket.status)}`}
                           >
-                            {ret.amount}
+                            {ticket.status}
+                          </span>
+                        </div>
+
+                        <div
+                          className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm"
+                          style={{
+                            borderLeftColor: borderColor,
+                            borderLeftWidth: "5px",
+                            borderLeftStyle: "solid",
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                              {userLabel}
+                              {lineupNumberLabel ? (
+                                <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
+                                  {lineupNumberLabel}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="truncate text-xs text-gray-500">
+                              {playerLastNamesLine || "No players"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 font-sans sm:gap-4">
+                          <div className="flex min-w-0 flex-col items-center text-center">
+                            <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                              Stake
+                            </div>
+                            <div className="mt-1 text-sm font-semibold leading-tight text-gray-900 tabular-nums">
+                              ${stakeDisplay}
+                            </div>
+                          </div>
+                          <div className="flex min-w-0 flex-col items-center text-center">
+                            <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                              Odds
+                            </div>
+                            <div className="mt-1 text-sm font-semibold leading-tight text-gray-900 tabular-nums">
+                              {ticket.americanDisplayAtPlacement}
+                            </div>
+                          </div>
+                          <div className="flex min-w-0 flex-col items-center text-center">
+                            <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                              Return
+                            </div>
+                            <div
+                              className={`mt-1 text-sm font-semibold leading-tight tabular-nums ${ret.amountClass}`}
+                            >
+                              {ret.amount}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )
+          ) : null}
         </div>
       ) : null}
 

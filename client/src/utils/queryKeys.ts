@@ -35,6 +35,8 @@ export const queryKeys = {
   sideBet: {
     all: ["sideBetMarket"] as const,
     market: (tournamentLineupId: string) => [...queryKeys.sideBet.all, tournamentLineupId] as const,
+    tickets: (tournamentLineupId: string) =>
+      [...queryKeys.sideBet.all, "tickets", tournamentLineupId] as const,
   },
   players: {
     all: ["players"] as const,

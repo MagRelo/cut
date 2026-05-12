@@ -1,7 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../utils/apiClient";
-import type { AdminBatchLockContestsResponse } from "../types/admin";
+import type {
+  AdminBatchLockContestsResponse,
+  AdminSideBetTournamentReportResponse,
+} from "../types/admin";
 import type { AdminBatchSideBetsResponse } from "../types/sideBet";
 
 export const AdminPage: React.FC = () => {
@@ -17,6 +20,11 @@ export const AdminPage: React.FC = () => {
   const [sideSettleResult, setSideSettleResult] = useState<AdminBatchSideBetsResponse | null>(null);
   const [sideCloseResult, setSideCloseResult] = useState<AdminBatchSideBetsResponse | null>(null);
   const [sideError, setSideError] = useState<string | null>(null);
+
+  const [sideReportTournamentId, setSideReportTournamentId] = useState("");
+  const [sideReportLoading, setSideReportLoading] = useState(false);
+  const [sideReportError, setSideReportError] = useState<string | null>(null);
+  const [sideReport, setSideReport] = useState<AdminSideBetTournamentReportResponse | null>(null);
 
   const runLockEligibleContests = useCallback(async () => {
     setLockRunning(true);
@@ -95,6 +103,25 @@ export const AdminPage: React.FC = () => {
       setSideCloseRunning(false);
     }
   }, [sideBody]);
+
+  const loadSideBetTournamentReport = useCallback(async () => {
+    setSideReportLoading(true);
+    setSideReportError(null);
+    setSideReport(null);
+    const tid = sideReportTournamentId.trim();
+    const qs = tid ? `?tournamentId=${encodeURIComponent(tid)}` : "";
+    try {
+      const result = await apiClient.get<AdminSideBetTournamentReportResponse>(
+        `/admin/bets/side/tournament-report${qs}`,
+        { requiresAuth: true },
+      );
+      setSideReport(result);
+    } catch (e: unknown) {
+      setSideReportError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSideReportLoading(false);
+    }
+  }, [sideReportTournamentId]);
 
   const failedRows = lockResult?.results.filter((r) => !r.success) ?? [];
   const sideBusy = sideLockRunning || sideSettleRunning || sideCloseRunning;
@@ -229,6 +256,120 @@ export const AdminPage: React.FC = () => {
         {renderSideSummary("Lock", sideLockResult)}
         {renderSideSummary("Settle", sideSettleResult)}
         {renderSideSummary("Close", sideCloseResult)}
+      </div>
+
+      <div className="bg-white rounded-sm shadow border border-gray-200 p-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">Side bet tournament report</h2>
+        <p className="text-sm text-gray-600 mb-3">
+          All tickets for one tournament: total stake recorded (inflow) and open exposure (stake and
+          max payout on OPEN tickets). Leave tournament id blank to use the tournament marked{" "}
+          <span className="font-medium">manualActive</span> on the server.
+        </p>
+        <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="side-report-tid">
+          Optional tournament id (blank = active tournament)
+        </label>
+        <input
+          id="side-report-tid"
+          type="text"
+          value={sideReportTournamentId}
+          onChange={(e) => setSideReportTournamentId(e.target.value)}
+          placeholder="Tournament cuid"
+          className="mb-3 w-full max-w-md rounded-sm border border-gray-300 px-2 py-1.5 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => void loadSideBetTournamentReport()}
+          disabled={sideReportLoading}
+          className="px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-sm hover:bg-teal-800 disabled:opacity-50"
+        >
+          {sideReportLoading ? "Loading…" : "Load report"}
+        </button>
+        {sideReportError ? (
+          <p className="mt-2 text-sm text-red-600" role="alert">
+            {sideReportError}
+          </p>
+        ) : null}
+        {sideReport && !sideReportLoading ? (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-gray-800">
+              <span className="font-medium">{sideReport.tournamentName ?? "Tournament"}</span>
+              <span className="text-gray-500 font-mono text-xs ml-2">{sideReport.tournamentId}</span>
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-sm border border-gray-100 bg-gray-50 px-3 py-2">
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Tickets</p>
+                <p className="font-semibold text-gray-900">{sideReport.ticketCount}</p>
+              </div>
+              <div className="rounded-sm border border-gray-100 bg-gray-50 px-3 py-2">
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Stake inflow</p>
+                <p className="font-semibold text-gray-900">
+                  {sideReport.totals.stakeInflow.toFixed(2)}
+                </p>
+              </div>
+              <div className="rounded-sm border border-gray-100 bg-gray-50 px-3 py-2">
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Open stake</p>
+                <p className="font-semibold text-gray-900">
+                  {sideReport.totals.openStake.toFixed(2)}
+                </p>
+              </div>
+              <div className="rounded-sm border border-amber-200 bg-amber-50 px-3 py-2">
+                <p className="text-xs text-amber-800 uppercase tracking-wide">Open exposure</p>
+                <p className="font-semibold text-amber-950">
+                  {sideReport.totals.openLiability.toFixed(2)}
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">Max payout if all OPEN won</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto max-h-[480px] overflow-y-auto border border-gray-200 rounded-sm">
+              <table className="min-w-full text-xs text-left">
+                <thead className="bg-gray-100 text-gray-700 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-2 font-medium">User</th>
+                    <th className="px-2 py-2 font-medium">Email</th>
+                    <th className="px-2 py-2 font-medium">Lineup</th>
+                    <th className="px-2 py-2 font-medium">Mkt</th>
+                    <th className="px-2 py-2 font-medium">Parlay</th>
+                    <th className="px-2 py-2 font-medium text-right">Stake</th>
+                    <th className="px-2 py-2 font-medium">Odds</th>
+                    <th className="px-2 py-2 font-medium text-right">Payout</th>
+                    <th className="px-2 py-2 font-medium">Status</th>
+                    <th className="px-2 py-2 font-medium">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sideReport.tickets.map((t) => (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="px-2 py-1.5 max-w-[120px] truncate" title={t.userName ?? ""}>
+                        {t.userName ?? "—"}
+                      </td>
+                      <td className="px-2 py-1.5 max-w-[140px] truncate" title={t.userEmail ?? ""}>
+                        {t.userEmail ?? "—"}
+                      </td>
+                      <td className="px-2 py-1.5 font-mono text-[10px] max-w-[90px] truncate">
+                        {t.lineupId}
+                      </td>
+                      <td className="px-2 py-1.5">{t.marketStatus}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        {t.hitsRequired}/{t.topN}
+                      </td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">
+                        {t.stakeAmount.toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{t.americanDisplayAtPlacement}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">
+                        {t.potentialPayout.toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1.5">{t.status}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-gray-600">
+                        {new Date(t.createdAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="bg-white rounded-sm shadow border border-gray-200 p-4">

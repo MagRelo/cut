@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../utils/apiClient";
-import type { SideBetMarketResponse } from "../types/sideBet";
+import type { SideBetMarketResponse, SideBetTicketsListResponse } from "../types/sideBet";
 import { queryKeys } from "../utils/queryKeys";
 
 export type PlaceSideBetTicketPayload = {
@@ -40,6 +40,25 @@ export function useSideBetMarketQuery(tournamentLineupId: string | null | undefi
   });
 }
 
+/** GET /bets/side/tickets?lineupId= — works when market GET is unavailable or errors. */
+export function useSideBetTicketsForLineupQuery(tournamentLineupId: string | null | undefined) {
+  return useQuery({
+    queryKey: tournamentLineupId
+      ? queryKeys.sideBet.tickets(tournamentLineupId)
+      : (["sideBetTickets", "none"] as const),
+    enabled: Boolean(tournamentLineupId),
+    queryFn: async () => {
+      const id = tournamentLineupId as string;
+      return apiClient.get<SideBetTicketsListResponse>(
+        `/bets/side/tickets?lineupId=${encodeURIComponent(id)}`,
+        { requiresAuth: true },
+      );
+    },
+    staleTime: 45_000,
+    refetchInterval: 60_000,
+  });
+}
+
 export function usePlaceSideBetTicketMutation(tournamentLineupId: string | null | undefined) {
   const qc = useQueryClient();
   return useMutation({
@@ -51,6 +70,7 @@ export function usePlaceSideBetTicketMutation(tournamentLineupId: string | null 
     onSuccess: () => {
       if (tournamentLineupId) {
         void qc.invalidateQueries({ queryKey: queryKeys.sideBet.market(tournamentLineupId) });
+        void qc.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(tournamentLineupId) });
       }
     },
   });
