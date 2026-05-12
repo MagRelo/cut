@@ -10,7 +10,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.14.0
 
 # Workspace manifests (required for server dependency @cut/secondary-pricing: workspace:*)
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY server/package.json ./server/
 COPY packages/secondary-pricing/package.json ./packages/secondary-pricing/
 
