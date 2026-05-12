@@ -104,3 +104,23 @@ export async function refreshOpenSideBetQuotes(): Promise<{
     lineupsAttempted,
   };
 }
+
+/**
+ * Recompute side-bet cells for one lineup right after the roster is saved.
+ * Without this, GET /market keeps serving quotes for the previous four players until the cron job runs.
+ */
+export async function refreshSideBetQuoteForLineupAfterRosterChange(
+  tournamentLineupId: string,
+): Promise<void> {
+  if (!sideBetsEnabled() || !process.env.DATAGOLF_API_KEY?.trim()) {
+    return;
+  }
+  const tour = defaultTour();
+  try {
+    const snapshot = await fetchSideBetDataGolfSnapshot(tour);
+    await ingestSideBetQuoteForLineup(tournamentLineupId, tour, snapshot);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[refreshSideBetQuoteForLineupAfterRosterChange]", tournamentLineupId, msg);
+  }
+}

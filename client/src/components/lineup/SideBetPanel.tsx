@@ -20,6 +20,8 @@ const SIDE_BET_COLUMNS: SideBetCol[] = ["Top 5", "Top 10", "Top 20"];
 const ROW_ORDER: SideBetRow[] = ["4 of 4", "3 of 4", "2 of 4"];
 /** Minimum stake shown as dollars (matches 1:1 on-chain platform units in this app). */
 const MIN_STAKE = "0.01";
+/** Total return (stake × decimal odds) must stay strictly below this USD amount per ticket. */
+const MAX_TICKET_PAYOUT_USD = 2000;
 /** Server / market quote issues only — not used for wallet, stake, or payment-prep errors. */
 const PARLAY_MARKET_UNAVAILABLE = "Parlay market is not available.";
 
@@ -228,6 +230,9 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
     return { totalReturn: stake * d, profit: stake * (d - 1) };
   }, [activeSelection, stakeInput, resolvedPlatformDecimals]);
 
+  const exceedsMaxTicketPayout =
+    payoutPreview !== null && payoutPreview.totalReturn >= MAX_TICKET_PAYOUT_USD;
+
   const bettable = marketQuery.data?.bettable === true;
   const showUnavailable =
     !tournamentLineupId ||
@@ -260,6 +265,17 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
     const stakeAmount = Number.parseFloat(amountStr);
     if (!Number.isFinite(stakeAmount) || stakeAmount <= 0) {
       setPlaceError("Enter a valid stake.");
+      return;
+    }
+
+    const totalReturnIfWin = stakeAmount * activeSelection.decimalOdds;
+    if (
+      Number.isFinite(totalReturnIfWin) &&
+      totalReturnIfWin >= MAX_TICKET_PAYOUT_USD
+    ) {
+      setPlaceError(
+        `Total return must stay under ${formatUsd(MAX_TICKET_PAYOUT_USD)} for a single ticket. Lower your stake.`,
+      );
       return;
     }
 
@@ -589,6 +605,10 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                 </div>
               </dl>
 
+              <p className="mt-2 text-xs text-gray-600">
+                Total return per ticket is capped under {formatUsd(MAX_TICKET_PAYOUT_USD)} (stake ×
+                decimal odds).
+              </p>
               {payoutPreview ? (
                 <div className="mt-3 rounded-sm border border-emerald-200 bg-emerald-50/90 p-3 text-sm text-gray-800">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-900">
@@ -607,6 +627,15 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                   stake).
                 </p>
               )}
+              {exceedsMaxTicketPayout ? (
+                <p
+                  className="mt-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-sm p-2"
+                  role="alert"
+                >
+                  This stake would reach or exceed the per-ticket payout cap. Lower your stake to
+                  place the bet.
+                </p>
+              ) : null}
               {placeError ? (
                 <p className="mt-2 text-sm text-red-600" role="alert">
                   {placeError}
@@ -628,7 +657,12 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                 </button>
                 <button
                   type="button"
-                  disabled={!bettable || placeMutation.isPending || isPayingOracle}
+                  disabled={
+                    !bettable ||
+                    placeMutation.isPending ||
+                    isPayingOracle ||
+                    exceedsMaxTicketPayout
+                  }
                   onClick={() => void placeTicket()}
                   className="rounded-sm bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                 >

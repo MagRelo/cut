@@ -35,7 +35,8 @@ export function useSideBetMarketQuery(tournamentLineupId: string | null | undefi
         requiresAuth: true,
       });
     },
-    staleTime: 45_000,
+    /** Odds must track roster and quote version; treat as stale so refetches are not delayed. */
+    staleTime: 0,
     refetchInterval: 60_000,
   });
 }

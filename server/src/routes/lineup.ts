@@ -6,6 +6,7 @@ import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIn
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import { hasMinimumPlayers, isDuplicateLineup } from "../utils/lineupValidation.js";
 import { formatContestResponse } from "./contest.js";
+import { refreshSideBetQuoteForLineupAfterRosterChange } from "../services/sideBets/refreshOpenSideBetQuotes.js";
 
 const lineupRouter = new Hono();
 
@@ -90,6 +91,8 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
         transformLineupPlayer(lineupPlayer, tournamentId)
       ),
     };
+
+    await refreshSideBetQuoteForLineupAfterRosterChange(tournamentLineup.id);
 
     return c.json({ lineups: [formattedLineup] });
   } catch (error) {
@@ -195,6 +198,8 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
         transformLineupPlayer(lineupPlayer, tournamentLineup.tournamentId)
       ),
     };
+
+    await refreshSideBetQuoteForLineupAfterRosterChange(tournamentLineup.id);
 
     return c.json({ lineups: [formattedLineup] });
   } catch (error) {
