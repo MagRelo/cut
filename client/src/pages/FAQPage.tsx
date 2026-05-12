@@ -220,7 +220,6 @@ export const FAQPage: React.FC = () => {
                   Odds are displayed as projected English odds and update as new money enters the
                   pool.
                 </li>
-                <li>The Winner Pool locks at the start of Round 4 (Sunday morning).</li>
                 <li>
                   At settlement, only wagers on the winning lineup are paid out (winner-take-all).
                 </li>
@@ -248,14 +247,19 @@ export const FAQPage: React.FC = () => {
                   wagers.
                 </li>
                 <li>
-                  <span className="font-semibold">OPEN (Thu-Sat):</span> Place wagers, but you
+                  <span className="font-semibold">OPEN (Thu-Sun):</span> Place wagers, but you
                   cannot withdraw them.
                 </li>
                 <li>
-                  <span className="font-semibold">LOCKED (Sun):</span> No wager changes allowed;
-                  waiting for final results.
+                  <span className="font-semibold">LOCKED:</span> No wager changes allowed; waiting
+                  for final results.
                 </li>
               </ul>
+              <p className="text-gray-700 mt-2">
+                <span className="font-semibold">Note:</span> Winner Pool betting does not lock on a
+                fixed day or round. The operator may lock the market at any time, based on the
+                tournament and pool activity.
+              </p>
             </div>
 
             <div>
@@ -397,10 +401,10 @@ export const FAQPage: React.FC = () => {
                     </tr>
                     <tr>
                       <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
-                        Sunday Morning
+                        Varies
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                        Final Round (R4) Starts
+                        Admin locks contest
                       </td>
                       <td className="border border-gray-300 px-4 py-2">
                         <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">
@@ -408,7 +412,9 @@ export const FAQPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                        All positions frozen. Prediction market closed. Awaiting final results.
+                        An administrator manually moves the contest to LOCKED based on contest
+                        conditions (for example as the event nears a conclusion). All positions
+                        frozen; Winner Pool closed; awaiting final results.
                       </td>
                     </tr>
                     <tr className="bg-gray-50">
@@ -492,6 +498,7 @@ export const FAQPage: React.FC = () => {
                     All Wagers Frozen
                   </div>
                   <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                    <li>Reached only when an admin locks the contest—not on a fixed clock</li>
                     <li>No changes allowed to any positions</li>
                     <li>Prediction market completely closed</li>
                     <li>Awaiting final tournament results</li>
