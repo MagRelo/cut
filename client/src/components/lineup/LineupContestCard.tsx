@@ -229,6 +229,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 userLabel={sideBetUserLabel}
                 lineupNumberLabel={sideBetLineupNumberLabel}
                 playerLastNamesLine={sideBetPlayerLastNames}
+                tournamentLineupId={lineup.tournamentLineup?.id ?? null}
               />
             </TabPanel>
 

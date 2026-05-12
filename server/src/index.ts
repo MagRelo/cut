@@ -8,7 +8,8 @@ const envFile =
     ? ".env"
     : ".env.development";
 dotenv.config({ path: envFile });
-dotenv.config({ path: ".env" });
+// Root `.env` overrides env-specific file so a single `server/.env` wins over `.env.development`.
+dotenv.config({ path: ".env", override: true });
 
 // Import other modules after env vars are loaded
 import { serve } from "@hono/node-server";

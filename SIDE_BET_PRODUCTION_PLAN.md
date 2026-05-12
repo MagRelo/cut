@@ -3,7 +3,10 @@
 ## Scope and Decisions
 
 - **Live odds source:** DataGolf only — finish-position quotes come from the [`betting-tools/outrights`](https://datagolf.com/api-access) feed (Scratch Plus membership + API key; no alternate live odds provider for the grid).
+- **Odds refresh cadence:** refresh ingested snapshots **every minute** for active tournament / lineup markets (scheduler + single-flight so concurrent refreshes do not stack).
+- **Manual lifecycle (staff):** side-bet **state transitions are admin-driven only** — **Lock**, **Settle**, and **Close** each have a dedicated button on the admin panel and matching `POST` route under `/api/admin/bets/side/…` (same `requireAuth` + `requireAdmin` pattern as other batch tools). Staff run them in order when appropriate; no automatic promotion of markets/tickets between those stages without an explicit admin action (cron handles **odds refresh** only; see scheduler section).
 - **Grading source:** Official tournament results persisted in the app (player finish position / cut / WD rules derived from data the product already trusts for contests), not the DataGolf odds feed or a sportsbook settlement API.
+- **Conservative product rule (non-negotiable):** **Never** match players or events on names for any path that shows odds, accepts bets, or settles. Use **ID-backed joins only** (`pga_pgaTourId` ↔ DataGolf `player_num` from `field-updates`, then `dg_id` ↔ `outrights.odds`). If **anything** required for a safe quote is missing, mismatched, stale, or ambiguous — **do not** show a bettable grid, **do not** accept tickets, **do not** infer or fill gaps. Prefer a **graceful “unavailable / not open”** experience over partial grids, best-effort odds, or stale markets. Silent degradation is worse than a hard failure.
 - Settlement rail: on-chain-like flow (persist transaction/payment artifacts similarly to contests).
 - Frontend target: replace mock `SideBetPanel` grid with live market + placement + open/settled state.
 
@@ -31,17 +34,21 @@ Canonical documentation: [DataGolf API Access](https://datagolf.com/api-access).
 
 **Operational constraints**
 
-- Global rate limit **45 requests per minute** per API key (documented on the access page); exceeding it triggers a short suspension. Plan refresh so that fetching three markets (`top_5`, `top_10`, `top_20`) plus cron and user traffic stays under the cap (cache snapshots, single-flight refresh, backoff on 429 if exposed).
+- Global rate limit **45 requests per minute** per API key (documented on the access page); exceeding it triggers a short suspension. A **once-per-minute** refresh that performs **three requests** per cycle (one per market: `top_5`, `top_10`, `top_20`) for a given active context stays well under the cap; if multiple tournaments are refreshed in parallel, stagger or batch so aggregate DataGolf calls remain under 45/min. Use cache snapshots, single-flight refresh, and backoff on 429 if exposed.
 
 **Player and event mapping**
 
-- Lineup golfers are keyed by `pga_pgaTourId` today. DataGolf responses identify players in their own ID space; their docs note tour-specific IDs in feeds such as field updates / player list. Implementation plan: resolve each lineup player to DataGolf’s row (e.g. via PGA tour id column on DG payloads, or a small `dg_id` / mapping table on `Player`) before joining decimals into `buildSideBetMarket`.
+- **No name matching:** `player_name` strings from DataGolf are for display or debugging only. They must **not** be used to join lineup players to odds rows.
+- **ID path only:** `betting-tools/outrights` rows carry **`dg_id`** (no PGA id on the row). Build a bridge from **[`field-updates`](https://datagolf.com/api-access)** for the correct `tour` (`pga` vs `opp`, aligned with the tournament week): each field row has **`player_num`** (verified equivalent to **`Player.pga_pgaTourId`**) and **`dg_id`**. Map `pga_pgaTourId` → `dg_id` via that feed only.
+- **Event alignment:** Before treating quotes as valid for a `Tournament`, confirm DataGolf’s field context matches the app’s week (e.g. compare `event_id` / `event_name` / schedule linkage to the row the user is in). If alignment cannot be verified, **fail closed** (no bettable market).
+- **All four or nothing for the grid:** All lineup golfers must have a `pga_pgaTourId`, appear in `field-updates` for that event context, and have a matching `outrights.odds` row with **`dg_id`** for **each** of the three markets fetched in the same ingest pass (or same versioned snapshot). If any player fails any step, **do not** build or expose a partial round-robin grid for that lineup; market is unavailable until the next successful full ingest.
+- Optional **`datagolf_dg_id`** (or similar) on `Player` is a **cache** populated from the same ID path — never a substitute for a fresh `field-updates` join when taking bets.
 
 **Integration plan**
 
-1. Add `DATAGOLF_API_KEY` to server env; implement `server/src/services/odds/dataGolfOutrightsClient.ts` (or a thin `providerClient.ts` that only calls DataGolf) to fetch and validate the three markets for the active tournament week.
-2. Map four lineup players to DG outright rows; extract per-player decimal odds per market; pass into `buildSideBetMarket` → `calculateRoundRobinOdds`.
-3. Persist snapshots on `SideBetMarket` / selections; on failure, mark stale and surface partial grid per reliability rules.
+1. Add `DATAGOLF_API_KEY` to server env; implement `server/src/services/odds/dataGolfOutrightsClient.ts` (or a thin `providerClient.ts` that only calls DataGolf) to fetch and validate the three markets for the active tournament week, together with **`field-updates`** for the same tour/event context in one pipeline so mapping and odds are **consistent**.
+2. Only if every lineup player resolves through **`pga_pgaTourId` → `player_num` → `dg_id` → outrights row** for all three markets: extract decimals, pass into `buildSideBetMarket` → `calculateRoundRobinOdds`. Otherwise persist **no** bettable snapshot (or explicit `UNAVAILABLE` / closed state with reason codes for support).
+3. Persist snapshots on `SideBetMarket` / selections only for **fully valid** ingests; on any failure or partial mapping, **do not** offer odds — mark market closed/unavailable, log for ops, surface a clear UI state (no mixed real + placeholder cells).
 4. Settlement jobs read **official** finishes from existing tournament/player state (same source as fantasy grading), not DataGolf odds.
 
 ## Data Model (Server + Prisma)
@@ -58,30 +65,38 @@ Canonical documentation: [DataGolf API Access](https://datagolf.com/api-access).
 ## Odds Ingestion + Round-Robin Pricing
 
 - Implement **DataGolf outrights client** (`server/src/services/odds/dataGolfOutrightsClient.ts`, or `providerClient.ts` as a thin adapter that only calls DataGolf) with:
-  - tournament/week context and **player mapping** from `pga_pgaTourId` to DataGolf player rows (see DataGolf section above),
-  - three fetches per refresh for `market=top_5`, `top_10`, `top_20` (or equivalent single pipeline with caching),
+  - tournament/week context and **strict ID-only player mapping** via `field-updates` + `outrights` (see DataGolf section above),
+  - three fetches per refresh for `market=top_5`, `top_10`, `top_20` (or equivalent single pipeline with caching), **plus** the matching `field-updates` fetch,
   - normalized decimal/american conversion helpers as needed.
-- Ingest **per-player decimal (or american) odds per market** from DataGolf JSON, then feed the existing math pipeline (no alternate live odds source for the grid).
-- Implement market builder (`server/src/services/odds/buildSideBetMarket.ts`) to map lineup's 4 golfers into selectable cells (`2/3/4 of 4` x `Top10/20/30`).
+- Ingest **per-player decimal (or american) odds per market** from DataGolf JSON only after the full four-player `dg_id` join succeeds; otherwise skip math and mark market unavailable (no alternate live odds source for the grid).
+- Implement market builder (`server/src/services/odds/buildSideBetMarket.ts`) to map lineup's 4 golfers into selectable cells (`2/3/4 of 4` x `Top10/20/30`) **only** when all inputs are present and version-consistent.
 - Implement round-robin aggregator (`server/src/services/odds/calculateRoundRobinOdds.ts`):
   - derive combo set for each row (C(4,2), C(4,3), C(4,4)),
   - compute combined odds per combo,
   - average combo implied return (or equivalent decimal averaging rule),
   - convert to final display odds string + stored decimal for settlement math.
-- Persist fresh market snapshots and mark stale markets when DataGolf data is unavailable.
+- Persist fresh market snapshots **only** when ingest + mapping + event checks pass; otherwise persist **unavailable** state (not a stale partial quote users could confuse for live).
+- Drive refreshes from a **1-minute** cron (or equivalent scheduler tick) in addition to any on-demand refresh after tournament data updates.
 
 ## API Surface
 
 - Add route module [server/src/routes/bets.ts](server/src/routes/bets.ts), mounted in [server/src/routes/api.ts](server/src/routes/api.ts).
 - Endpoints:
-  - `GET /api/bets/side/lineup/:lineupId/market` - latest grid + status + user open tickets.
+  - `GET /api/bets/side/lineup/:lineupId/market` - latest grid + status + user open tickets; when integrity checks fail, response indicates **unavailable** (no odds payload suitable for betting).
   - `POST /api/bets/side/tickets` - place ticket (selected cells, stake, wallet/user context).
   - `GET /api/bets/side/tickets` - list user tickets (open/settled).
+- **Admin (manual lifecycle):** on [server/src/routes/admin.ts](server/src/routes/admin.ts), add three routes with `requireAuth` + `requireAdmin`, each delegating to the corresponding batch service and returning structured per-tournament / counts / failure rows for the UI:
+  - `POST /api/admin/bets/side/lock` → `batchLockSideBetMarkets` (optional body e.g. `{ "tournamentId": "<id>" }` or product-defined scope).
+  - `POST /api/admin/bets/side/settle` → `batchSettleSideBets` (same body conventions).
+  - `POST /api/admin/bets/side/close` → `batchCloseSideBets` (same body conventions).
+- All three must be **idempotent** and safe under retry (no double-settle, no illegal transitions); reject with clear errors when prerequisites are not met (e.g. settle requires locked markets and sufficient official results per conservative rules).
 - Validation:
   - ensure lineup ownership/eligibility,
-  - reject locked or stale markets,
-  - validate selected cells against current market version,
-  - persist quote version/odds at placement for deterministic settlement.
+  - **reject** unless market status is **fully open** with a **current** market version and **all** selections backed by the latest successful ingest (no stale or partial snapshots),
+  - reject locked, unavailable, or any market that failed ID mapping or event alignment checks,
+  - validate selected cells against current market version and exact selection ids,
+  - persist quote version/odds at placement for deterministic settlement,
+  - **Placement is fail-closed:** if server cannot re-validate the same constraints atomically (race with refresh), return error and do not place.
 
 ## On-Chain-Like Settlement Flow
 
@@ -96,24 +111,32 @@ Canonical documentation: [DataGolf API Access](https://datagolf.com/api-access).
   - execute settlement transaction via existing payment abstraction pattern,
   - persist payment artifacts (`txHash`, amount, metadata) in side-bet settlement records (and/or `OnchainPayment` with a new payment type).
 - Trigger in scheduler [server/src/cron/scheduler.ts](server/src/cron/scheduler.ts):
-  - run odds refresh after tournament update,
-  - run lock/settle/close stages alongside existing contest lifecycle with non-overlap safeguards.
+  - run **DataGolf odds refresh every minute** for active side-bet contexts (in addition to any refresh tied to tournament pipeline updates),
+  - **do not** auto-run lock, settle, or close from cron for side bets — those stages run only when staff invoke the **admin** routes (keeps lifecycle explicit and auditable). Admin actions must still tolerate concurrent odds refresh (idempotent transitions, no double-lock / double-settle).
 
 ## Frontend Integration
 
+- **Admin:** extend [client/src/pages/AdminPage.tsx](client/src/pages/AdminPage.tsx) with a **Side bets** card containing **three** primary actions, each mirroring **Lock Winner Pool** (loading state, error alert, structured result summary):
+  - **Lock side bets** → `POST` `/admin/bets/side/lock`
+  - **Settle side bets** → `POST` `/admin/bets/side/settle`
+  - **Close side bets** → `POST` `/admin/bets/side/close`  
+  Use `apiClient` + `requiresAuth: true`. Optional shared `tournamentId` (or scope) field if all three routes use the same targeting. Order in UI should match intended ops flow (lock → settle → close); consider short inline copy per button so staff know prerequisites.
 - Update [client/src/components/lineup/SideBetPanel.tsx](client/src/components/lineup/SideBetPanel.tsx):
   - convert from internal mock data to props/API-backed state,
-  - render provider-backed odds and market lock state,
-  - wire CTA to place tickets.
+  - when the API reports unavailable / incomplete mapping / stale: show a **clear non-bettable** state (copy + disabled actions), **not** a partial grid or last-known odds,
+  - when fully valid: render provider-backed odds and market lock state,
+  - wire CTA to place tickets only when the server marks the market open and bettable.
 - Pass real data through [client/src/components/lineup/LineupContestCard.tsx](client/src/components/lineup/LineupContestCard.tsx) and lineup page fetch path ([client/src/pages/LineupListPage.tsx](client/src/pages/LineupListPage.tsx), [client/src/hooks/useLineupQueries.ts](client/src/hooks/useLineupQueries.ts)).
 - Add typed contracts in [client/src/types/lineup.ts](client/src/types/lineup.ts) (or dedicated bet types file) for market, quote, ticket, and settlement statuses.
-- Add React Query hooks for market fetch + ticket placement + optimistic refresh.
+- Add React Query hooks for market fetch + ticket placement; **avoid** optimistic UI that implies a successful bet before server confirmation — refetch market after successful place only.
 
 ## Reliability and Operations
 
-- Add DataGolf failure handling: retry/backoff, stale flags, partial-market suppression (respect 45 req/min).
+- Add DataGolf failure handling: retry/backoff on fetch, respect 45 req/min while honoring **1-minute** refresh targets. After retries, **fail closed** for that cycle (market unavailable), not degraded quotes.
+- **No partial offering:** never return or cache a “best effort” subset of players or markets for user-facing odds or placement; either the full integrity checks pass or users see unavailable.
+- Stale detection: if `last_updated` / snapshot age / version drifts beyond policy, treat as **not bettable** until refreshed successfully end-to-end.
 - Add idempotency keys for placement and settlement jobs.
-- Add audit logs around quote generation, placement, and settlement transitions.
+- Add audit logs around quote generation, placement, and **each admin lifecycle action** (lock / settle / close).
 - Add feature flag to enable side bets per tournament/contest while rolling out.
 
 ## Testing and Verification
@@ -124,11 +147,16 @@ Canonical documentation: [DataGolf API Access](https://datagolf.com/api-access).
   - status transition guards.
 - Integration tests:
   - market fetch/placement endpoints,
+  - **fail-closed** cases: missing `pga_pgaTourId`, player absent from `field-updates`, `dg_id` missing from one of three outrights responses, event mismatch — assert **no** bettable grid and **409/503** (or product-chosen) on placement,
+  - assert **no code path** uses `player_name` for joins (grep / contract tests as guardrail),
+  - admin lifecycle: `POST /api/admin/bets/side/lock`, `…/settle`, `…/close` (authz, prerequisites, idempotency, illegal transition rejects),
   - mocked **DataGolf outrights JSON** for `top_5`, `top_10`, and `top_20` asserting grid output matches `calculateRoundRobinOdds` expectations,
-  - cron lock/settle jobs against seeded tournament + **official results** in DB (no odds-feed settlement),
+  - **admin-triggered** settle (and close) against seeded tournament + **official results** in DB (no odds-feed settlement),
   - duplicate-settlement and idempotency cases.
 - UI tests:
-  - panel renders live grid,
+  - admin **Side bets** card: three actions each show loading / error / success summary,
+  - panel renders live grid **only** when market is fully valid,
+  - unavailable / error states (no phantom odds),
   - placement success/failure states,
   - open vs settled ticket display.
 
@@ -142,9 +170,12 @@ flowchart TD
   betsApi --> sideBetPanel[SideBetPanelUI]
   sideBetPanel --> placeTicket[PlaceTicketEndpoint]
   placeTicket --> ticketsStore[SideBetTicketTables]
-  officialResults[OfficialTournamentResults] --> settleJob[BatchSettleSideBetsJob]
-  ticketsStore --> settleJob
-  settleJob --> chainSettle[OnChainLikeSettlementService]
+  adminLifecycle[AdminPanelLockSettleClose] --> batchLock[batchLockSideBetMarkets]
+  adminLifecycle --> batchSettle[batchSettleSideBets]
+  adminLifecycle --> batchClose[batchCloseSideBets]
+  officialResults[OfficialTournamentResults] --> batchSettle
+  ticketsStore --> batchSettle
+  batchSettle --> chainSettle[OnChainLikeSettlementService]
   chainSettle --> payoutsLedger[SettlementAndPaymentArtifacts]
 ```
 
@@ -153,9 +184,10 @@ flowchart TD
 1. Prisma models + migration + enums.
 2. DataGolf outrights client + player/event mapping + market builder + round-robin math service.
 3. Side-bet API endpoints + validation + ticket placement persistence.
-4. Cron stages for lock/settle/close integrated with **official results** from the existing tournament/player pipeline (not DataGolf odds for grading).
-5. Frontend wiring in lineup flow and `SideBetPanel`.
-6. Tests + staged rollout flag.
+4. Cron: **minute-level** DataGolf odds refresh **only** (no automatic lock/settle/close for side bets).
+5. Admin routes `POST /api/admin/bets/side/lock`, `…/settle`, `…/close` + matching **Lock / Settle / Close** buttons on `AdminPage`.
+6. Frontend wiring in lineup flow and `SideBetPanel`.
+7. Tests + staged rollout flag.
 
 ## Worked Example: Side Bet Parlay Odds (Top 5/10/20)
 

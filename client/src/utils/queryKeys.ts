@@ -31,6 +31,11 @@ export const queryKeys = {
     byId: (userId: string, lineupId: string) =>
       [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
+  /** GET /bets/side/lineup/:lineupId/market — invalidate when roster changes. */
+  sideBet: {
+    all: ["sideBetMarket"] as const,
+    market: (tournamentLineupId: string) => [...queryKeys.sideBet.all, tournamentLineupId] as const,
+  },
   players: {
     all: ["players"] as const,
     byTournament: (tournamentId: string) =>

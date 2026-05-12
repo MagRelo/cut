@@ -40,6 +40,7 @@ model User {
   onchainPayments   OnchainPayment[]
   contestSecondaryParticipants ContestSecondaryParticipant[]
   wallets           UserWallet[]
+  sideBetTickets    SideBetTicket[]
   referredBy        User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referredUsers     User[]             @relation("UserReferrals")
 
@@ -154,6 +155,7 @@ model Tournament {
   tournamentPlayers  TournamentPlayer[]
   tournamentLineups  TournamentLineup[]
   contests          Contest[]
+  sideBetMarkets    SideBetMarket[]
 
   @@index([pgaTourId])
   @@index([status])
@@ -222,6 +224,7 @@ model TournamentLineup {
   tournament    Tournament @relation(fields: [tournamentId], references: [id])
   players       TournamentLineupPlayer[]
   contestLineups ContestLineup[]
+  sideBetMarket  SideBetMarket?
 
   @@index([userId, tournamentId])
 }
@@ -345,4 +348,90 @@ model ContestLineup {
   @@index([contestId])
   @@index([userId])
   @@index([status])
-} 
+}
+
+enum SideBetMarketStatus {
+  UNAVAILABLE
+  OPEN
+  LOCKED
+  SETTLING
+  SETTLED
+  VOID
+  CLOSED
+}
+
+enum SideBetTicketStatus {
+  OPEN
+  WON
+  LOST
+  VOID
+  REFUND_PENDING
+}
+
+model SideBetMarket {
+  id                   String              @id @default(cuid())
+  tournamentLineupId String              @unique
+  tournamentId       String
+  status             SideBetMarketStatus   @default(UNAVAILABLE)
+  unavailableReason  String?
+  quoteVersion       Int                 @default(0)
+  dgEventId          Int?
+  dgEventName        String?
+  dgFieldLastUpdated String?
+  dgOddsLastUpdated  String?
+  datagolfTour       String              @default("pga")
+  lockedAt           DateTime?
+  settledAt          DateTime?
+  closedAt           DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  tournamentLineup TournamentLineup @relation(fields: [tournamentLineupId], references: [id], onDelete: Cascade)
+  tournament       Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  selections       SideBetSelection[]
+  tickets          SideBetTicket[]
+
+  @@index([tournamentId])
+  @@index([status])
+}
+
+model SideBetSelection {
+  id              String   @id @default(cuid())
+  sideBetMarketId String
+  hitsRequired    Int
+  topN            Int
+  decimalOdds     Float
+  americanDisplay String
+  quoteVersion     Int
+
+  sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
+
+  @@unique([sideBetMarketId, hitsRequired, topN, quoteVersion])
+  @@index([sideBetMarketId, quoteVersion])
+}
+
+model SideBetTicket {
+  id                         String             @id @default(cuid())
+  sideBetMarketId            String
+  userId                     String
+  hitsRequired               Int
+  topN                       Int
+  stakeAmount                Float
+  decimalOddsAtPlacement     Float
+  americanDisplayAtPlacement String
+  quoteVersionAtPlacement    Int
+  status                     SideBetTicketStatus @default(OPEN)
+  // Set when status is REFUND_PENDING — idempotent key for stake tx after a failed book attempt.
+  fundingTxHash              String?
+  settlementNotes            Json?
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+
+  sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fundingTxHash])
+  @@index([userId])
+  @@index([sideBetMarketId])
+  @@index([status])
+}

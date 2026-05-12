@@ -6,6 +6,7 @@ import contestRoutes from "./contest.js";
 import cronRoutes from "./cron.js";
 import userGroupRoutes from "./userGroup.js";
 import adminRoutes from "./admin.js";
+import betsRoutes from "./bets.js";
 
 const apiRouter = new Hono();
 
@@ -26,5 +27,6 @@ apiRouter.route("/contests", contestRoutes);
 apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/userGroups", userGroupRoutes);
 apiRouter.route("/admin", adminRoutes);
+apiRouter.route("/bets", betsRoutes);
 
 export default apiRouter;

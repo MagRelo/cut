@@ -25,7 +25,7 @@ const envFile =
     : ".env.development";
 
 dotenv.config({ path: envFile });
-dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env", override: true });
 
 // Validate required environment variables (only those needed for cron jobs)
 const requiredEnvVars = [

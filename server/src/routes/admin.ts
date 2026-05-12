@@ -6,6 +6,10 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
 import { getPublicClient } from "../services/shared/contractClient.js";
 import { batchLockContests } from "../services/batch/batchLockContests.js";
+import { batchLockSideBetMarkets } from "../services/batch/batchLockSideBetMarkets.js";
+import { batchSettleSideBets } from "../services/batch/batchSettleSideBets.js";
+import { batchCloseSideBetMarkets } from "../services/batch/batchCloseSideBetMarkets.js";
+import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 
 const adminRouter = new Hono();
 
@@ -206,6 +210,51 @@ adminRouter.get("/users/:id", requireAuth, requireAdmin, async (c) => {
   } catch (error) {
     console.error("admin get user error:", error);
     return c.json({ error: "Failed to get user" }, 500);
+  }
+});
+
+adminRouter.post("/bets/side/lock", requireAuth, requireAdmin, async (c) => {
+  if (!sideBetsEnabled()) {
+    return c.json({ error: "Side bets disabled" }, 403);
+  }
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
+    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
+    const result = await batchLockSideBetMarkets(tid ? { tournamentId: tid } : undefined);
+    return c.json(result);
+  } catch (error) {
+    console.error("admin batch lock side bets error:", error);
+    return c.json({ error: "Failed to lock side bets" }, 500);
+  }
+});
+
+adminRouter.post("/bets/side/settle", requireAuth, requireAdmin, async (c) => {
+  if (!sideBetsEnabled()) {
+    return c.json({ error: "Side bets disabled" }, 403);
+  }
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
+    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
+    const result = await batchSettleSideBets(tid ? { tournamentId: tid } : undefined);
+    return c.json(result);
+  } catch (error) {
+    console.error("admin batch settle side bets error:", error);
+    return c.json({ error: "Failed to settle side bets" }, 500);
+  }
+});
+
+adminRouter.post("/bets/side/close", requireAuth, requireAdmin, async (c) => {
+  if (!sideBetsEnabled()) {
+    return c.json({ error: "Side bets disabled" }, 403);
+  }
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
+    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
+    const result = await batchCloseSideBetMarkets(tid ? { tournamentId: tid } : undefined);
+    return c.json(result);
+  } catch (error) {
+    console.error("admin batch close side bets error:", error);
+    return c.json({ error: "Failed to close side bets" }, 500);
   }
 });
 

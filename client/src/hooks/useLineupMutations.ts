@@ -118,6 +118,9 @@ export function useCreateLineup() {
       if (userId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
       }
+      if (data?.id) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
   });
@@ -197,6 +200,9 @@ export function useUpdateLineup() {
           queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tid) });
         }
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
+      }
+      if (data?.id) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },

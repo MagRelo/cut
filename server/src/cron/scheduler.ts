@@ -9,6 +9,7 @@ import { batchActivateContests } from "../services/batch/batchActivateContests.j
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
+import { refreshOpenSideBetQuotes } from "../services/sideBets/refreshOpenSideBetQuotes.js";
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
   private isEnabled: boolean;
@@ -131,6 +132,11 @@ class CronScheduler {
       this.runDataUpdatePipeline();
     });
     this.jobs.set("mainPipeline", mainPipelineJob);
+
+    const sideBetOddsJob = cron.schedule("* * * * *", () => {
+      void this.executeWithErrorHandling("Side bet odds refresh", refreshOpenSideBetQuotes);
+    });
+    this.jobs.set("sideBetOdds", sideBetOddsJob);
 
     console.log("[CRON] All cron jobs scheduled successfully");
   }
