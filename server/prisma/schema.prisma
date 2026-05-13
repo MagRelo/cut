@@ -420,6 +420,8 @@ model SideBetTicket {
   decimalOddsAtPlacement     Float
   americanDisplayAtPlacement String
   quoteVersionAtPlacement    Int
+  /// Four `TournamentPlayer.id` values for this tournament (sorted); set at placement for settlement. Empty = not set (legacy / invalid).
+  playerIds                  String[]           @default([])
   status                     SideBetTicketStatus @default(OPEN)
   // Set when status is REFUND_PENDING — idempotent key for stake tx after a failed book attempt.
   fundingTxHash              String?

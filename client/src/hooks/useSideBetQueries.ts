@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../utils/apiClient";
-import type { SideBetMarketResponse, SideBetTicketsListResponse } from "../types/sideBet";
+import type {
+  SideBetMarketResponse,
+  SideBetPlacementPlayerDto,
+  SideBetTicketsListResponse,
+} from "../types/sideBet";
 import { queryKeys } from "../utils/queryKeys";
 
 export type PlaceSideBetTicketPayload = {
@@ -21,6 +25,8 @@ export type PlaceSideBetTicketResult = {
   americanDisplayAtPlacement: string;
   quoteVersionAtPlacement: number;
   status: string;
+  playerIds: string[];
+  placementPlayers: SideBetPlacementPlayerDto[];
 };
 
 export function useSideBetMarketQuery(tournamentLineupId: string | null | undefined) {

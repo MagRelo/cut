@@ -208,6 +208,8 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
           quoteVersionAtPlacement: t.quoteVersionAtPlacement,
           status: t.status,
           createdAt: t.createdAt,
+          playerIds: t.playerIds ?? [],
+          placementPlayers: t.placementPlayers ?? [],
         }),
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -438,6 +440,12 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                         ? "< 0.01"
                         : stake.toFixed(2);
                   const ret = sideBetReturnDisplay(ticket);
+                  const betRosterLine =
+                    ticket.placementPlayers.length > 0
+                      ? ticket.placementPlayers
+                          .map((p) => p.lastName || p.firstName || "—")
+                          .join(", ")
+                      : "—";
 
                   return (
                     <div
@@ -474,9 +482,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                                 </span>
                               ) : null}
                             </div>
-                            <div className="truncate text-xs text-gray-500">
-                              {playerLastNamesLine || "No players"}
-                            </div>
+                            <div className="truncate text-xs text-gray-500">{betRosterLine}</div>
                           </div>
                         </div>
 

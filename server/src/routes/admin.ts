@@ -263,6 +263,41 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
       }
     }
 
+    const allTpIds = [...new Set(tickets.flatMap((t) => t.playerIds))];
+    const tpRows =
+      allTpIds.length > 0
+        ? await prisma.tournamentPlayer.findMany({
+            where: { tournamentId, id: { in: allTpIds } },
+            select: {
+              id: true,
+              player: { select: { pga_firstName: true, pga_lastName: true } },
+            },
+          })
+        : [];
+    const placementNameByTpId = new Map(
+      tpRows.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          firstName: r.player.pga_firstName ?? null,
+          lastName: r.player.pga_lastName ?? null,
+        },
+      ]),
+    );
+
+    function placementPlayersForTicket(playerIds: string[]) {
+      return [...playerIds]
+        .sort((a, b) => a.localeCompare(b))
+        .map(
+          (id) =>
+            placementNameByTpId.get(id) ?? {
+              id,
+              firstName: null as string | null,
+              lastName: null as string | null,
+            },
+        );
+    }
+
     return c.json({
       tournamentId,
       tournamentName,
@@ -292,6 +327,8 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
         status: t.status,
         createdAt: t.createdAt.toISOString(),
         potentialPayout: t.stakeAmount * t.decimalOddsAtPlacement,
+        playerIds: t.playerIds,
+        placementPlayers: placementPlayersForTicket(t.playerIds),
       })),
     });
   } catch (error) {

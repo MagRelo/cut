@@ -26,13 +26,7 @@ export async function settleOpenTicketIfPossible(
     where: { id: ticketId },
     include: {
       sideBetMarket: {
-        include: {
-          tournamentLineup: {
-            include: {
-              players: { include: { tournamentPlayer: true } },
-            },
-          },
-        },
+        select: { tournamentId: true },
       },
     },
   });
@@ -42,23 +36,43 @@ export async function settleOpenTicketIfPossible(
     return { ok: true, status: ticket.status };
   }
 
-  const lineup = ticket.sideBetMarket.tournamentLineup;
-  if (lineup.players.length !== 4) {
+  const playerIds = ticket.playerIds;
+  if (!playerIds || playerIds.length !== 4) {
     await tx.sideBetTicket.update({
       where: { id: ticketId },
       data: {
         status: SideBetTicketStatus.VOID,
-        settlementNotes: { reason: "LINEUP_NOT_FOUR" },
+        settlementNotes: { reason: "MISSING_PLAYER_IDS" },
       },
     });
     return { ok: true, status: SideBetTicketStatus.VOID };
   }
 
-  const sorted = [...lineup.players].sort((a, b) => a.id.localeCompare(b.id));
+  const tournamentId = ticket.sideBetMarket.tournamentId;
+  const tournamentPlayers = await tx.tournamentPlayer.findMany({
+    where: { tournamentId, id: { in: playerIds } },
+  });
+
+  if (tournamentPlayers.length !== 4) {
+    await tx.sideBetTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: SideBetTicketStatus.VOID,
+        settlementNotes: {
+          reason: "PLACEMENT_PLAYERS_NOT_FOUND",
+          expected: 4,
+          found: tournamentPlayers.length,
+        },
+      },
+    });
+    return { ok: true, status: SideBetTicketStatus.VOID };
+  }
+
+  const sorted = [...tournamentPlayers].sort((a, b) => a.id.localeCompare(b.id));
   const results: (boolean | null)[] = [];
 
-  for (const lp of sorted) {
-    const pos = lp.tournamentPlayer.leaderboardPosition;
+  for (const tp of sorted) {
+    const pos = tp.leaderboardPosition;
     const r = isFinishInTopN(pos, ticket.topN);
     results.push(r);
   }

@@ -1,3 +1,9 @@
+export interface SideBetPlacementPlayerDto {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 /** GET /api/bets/side/lineup/:lineupId/market · POST /api/bets/side/tickets uses tournamentLineupId + hitsRequired + topN */
 export interface SideBetMarketSelectionDto {
   id: string;
@@ -19,6 +25,9 @@ export interface SideBetMarketTicketDto {
   quoteVersionAtPlacement: number;
   status: string;
   createdAt: string;
+  /** Sorted `TournamentPlayer.id` for this tournament (bet roster at placement). */
+  playerIds: string[];
+  placementPlayers: SideBetPlacementPlayerDto[];
 }
 
 /** GET /bets/side/tickets?lineupId=… */
@@ -35,6 +44,8 @@ export interface SideBetTicketListItemDto {
   quoteVersionAtPlacement: number;
   status: string;
   createdAt: string;
+  playerIds: string[];
+  placementPlayers: SideBetPlacementPlayerDto[];
 }
 
 export interface SideBetTicketsListResponse {

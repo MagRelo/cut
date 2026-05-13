@@ -7,6 +7,51 @@ import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 
 const betsRouter = new Hono();
 
+type PlacementPlayerDto = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+/** Sorted `TournamentPlayer.id` values for the side bet snapshot. */
+function sortedPlayerIdsFromLineupPlayers(
+  players: { tournamentPlayerId: string }[],
+): string[] {
+  return [...players.map((p) => p.tournamentPlayerId)].sort((a, b) => a.localeCompare(b));
+}
+
+async function placementPlayersMapForTickets(
+  tournamentId: string,
+  tickets: { id: string; playerIds: string[] }[],
+): Promise<Map<string, PlacementPlayerDto[]>> {
+  const allIds = [...new Set(tickets.flatMap((t) => t.playerIds))];
+  const byTpId = new Map<string, PlacementPlayerDto>();
+  if (allIds.length > 0) {
+    const rows = await prisma.tournamentPlayer.findMany({
+      where: { tournamentId, id: { in: allIds } },
+      select: {
+        id: true,
+        player: { select: { pga_firstName: true, pga_lastName: true } },
+      },
+    });
+    for (const r of rows) {
+      byTpId.set(r.id, {
+        id: r.id,
+        firstName: r.player.pga_firstName ?? null,
+        lastName: r.player.pga_lastName ?? null,
+      });
+    }
+  }
+  const out = new Map<string, PlacementPlayerDto[]>();
+  for (const t of tickets) {
+    const list = [...t.playerIds]
+      .sort((a, b) => a.localeCompare(b))
+      .map((id) => byTpId.get(id) ?? { id, firstName: null, lastName: null });
+    out.set(t.id, list);
+  }
+  return out;
+}
+
 const placeTicketSchema = z.object({
   /** Resolves the live quote row at bet time (selection ids churn when `quoteVersion` bumps). */
   tournamentLineupId: z.string().min(1),
@@ -26,6 +71,8 @@ function mapPlacedTicketJson(ticket: {
   americanDisplayAtPlacement: string;
   quoteVersionAtPlacement: number;
   status: SideBetTicketStatus;
+  playerIds: string[];
+  placementPlayers: PlacementPlayerDto[];
 }) {
   return {
     id: ticket.id,
@@ -36,6 +83,8 @@ function mapPlacedTicketJson(ticket: {
     americanDisplayAtPlacement: ticket.americanDisplayAtPlacement,
     quoteVersionAtPlacement: ticket.quoteVersionAtPlacement,
     status: ticket.status,
+    playerIds: ticket.playerIds,
+    placementPlayers: ticket.placementPlayers,
   };
 }
 
@@ -69,16 +118,19 @@ async function persistRefundPendingTicket(params: {
       fundingTxHash: primary,
       status: SideBetTicketStatus.REFUND_PENDING,
     },
+    include: { sideBetMarket: { select: { tournamentId: true } } },
   });
   if (existing) return existing;
 
   const lineup = await prisma.tournamentLineup.findFirst({
     where: { id: params.tournamentLineupId, userId: params.userId },
-    include: { sideBetMarket: true },
+    include: { players: true, sideBetMarket: true },
   });
   if (!lineup?.sideBetMarket) return null;
 
   const market = lineup.sideBetMarket;
+  const playerIds =
+    lineup.players.length === 4 ? sortedPlayerIdsFromLineupPlayers(lineup.players) : [];
   const httpStatus = thrownHttpCode(params.cause);
   const settlementNotes = {
     kind: "orphan_stake_after_transfer" as const,
@@ -101,7 +153,9 @@ async function persistRefundPendingTicket(params: {
       status: SideBetTicketStatus.REFUND_PENDING,
       settlementNotes,
       fundingTxHash: primary,
+      ...(playerIds.length === 4 ? { playerIds } : {}),
     },
+    include: { sideBetMarket: { select: { tournamentId: true } } },
   });
 }
 
@@ -150,6 +204,11 @@ betsRouter.get("/side/lineup/:lineupId/market", requireAuth, async (c) => {
     lineup.players.length === 4 &&
     selections.length === 9;
 
+  const placementById = await placementPlayersMapForTickets(
+    lineup.tournamentId,
+    market.tickets.map((t) => ({ id: t.id, playerIds: t.playerIds })),
+  );
+
   return c.json({
     bettable,
     marketStatus: market.status,
@@ -176,6 +235,8 @@ betsRouter.get("/side/lineup/:lineupId/market", requireAuth, async (c) => {
       quoteVersionAtPlacement: t.quoteVersionAtPlacement,
       status: t.status,
       createdAt: t.createdAt,
+      playerIds: t.playerIds,
+      placementPlayers: placementById.get(t.id) ?? [],
     })),
   });
 });
@@ -242,6 +303,8 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
         throw Object.assign(new Error("SELECTION_NOT_FOUND"), { code: 409 });
       }
 
+      const playerIds = sortedPlayerIdsFromLineupPlayers(lineup.players);
+
       return tx.sideBetTicket.create({
         data: {
           sideBetMarketId: market.id,
@@ -253,11 +316,30 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
           americanDisplayAtPlacement: selection.americanDisplay,
           quoteVersionAtPlacement: market.quoteVersion,
           status: SideBetTicketStatus.OPEN,
+          playerIds,
         },
+        include: { sideBetMarket: { select: { tournamentId: true } } },
       });
     });
 
-    return c.json(mapPlacedTicketJson(ticket));
+    const placementMap = await placementPlayersMapForTickets(
+      ticket.sideBetMarket.tournamentId,
+      [{ id: ticket.id, playerIds: ticket.playerIds }],
+    );
+    return c.json(
+      mapPlacedTicketJson({
+        id: ticket.id,
+        hitsRequired: ticket.hitsRequired,
+        topN: ticket.topN,
+        stakeAmount: ticket.stakeAmount,
+        decimalOddsAtPlacement: ticket.decimalOddsAtPlacement,
+        americanDisplayAtPlacement: ticket.americanDisplayAtPlacement,
+        quoteVersionAtPlacement: ticket.quoteVersionAtPlacement,
+        status: ticket.status,
+        playerIds: ticket.playerIds,
+        placementPlayers: placementMap.get(ticket.id) ?? [],
+      }),
+    );
   } catch (e) {
     const txHashes = transactionHashes;
     if (txHashes && txHashes.length > 0) {
@@ -273,7 +355,24 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
           cause: e,
         });
         if (recovered) {
-          return c.json(mapPlacedTicketJson(recovered));
+          const placementMap = await placementPlayersMapForTickets(
+            recovered.sideBetMarket.tournamentId,
+            [{ id: recovered.id, playerIds: recovered.playerIds }],
+          );
+          return c.json(
+            mapPlacedTicketJson({
+              id: recovered.id,
+              hitsRequired: recovered.hitsRequired,
+              topN: recovered.topN,
+              stakeAmount: recovered.stakeAmount,
+              decimalOddsAtPlacement: recovered.decimalOddsAtPlacement,
+              americanDisplayAtPlacement: recovered.americanDisplayAtPlacement,
+              quoteVersionAtPlacement: recovered.quoteVersionAtPlacement,
+              status: recovered.status,
+              playerIds: recovered.playerIds,
+              placementPlayers: placementMap.get(recovered.id) ?? [],
+            }),
+          );
         }
       } catch (persistErr) {
         console.error("[POST /bets/side/tickets] REFUND_PENDING persist failed", persistErr);
@@ -324,6 +423,23 @@ betsRouter.get("/side/tickets", requireAuth, async (c) => {
     },
   });
 
+  const byTournament = new Map<string, typeof tickets>();
+  for (const t of tickets) {
+    const tid = t.sideBetMarket.tournamentId;
+    const list = byTournament.get(tid);
+    if (list) list.push(t);
+    else byTournament.set(tid, [t]);
+  }
+
+  const placementByTicketId = new Map<string, PlacementPlayerDto[]>();
+  for (const [tid, group] of byTournament) {
+    const m = await placementPlayersMapForTickets(
+      tid,
+      group.map((t) => ({ id: t.id, playerIds: t.playerIds })),
+    );
+    for (const [id, arr] of m) placementByTicketId.set(id, arr);
+  }
+
   return c.json({
     tickets: tickets.map((t) => ({
       id: t.id,
@@ -338,6 +454,8 @@ betsRouter.get("/side/tickets", requireAuth, async (c) => {
       quoteVersionAtPlacement: t.quoteVersionAtPlacement,
       status: t.status,
       createdAt: t.createdAt,
+      playerIds: t.playerIds,
+      placementPlayers: placementByTicketId.get(t.id) ?? [],
     })),
   });
 });
