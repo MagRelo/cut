@@ -17,7 +17,7 @@ type SideBetRow = "2 of 4" | "3 of 4" | "4 of 4";
 type SideBetCol = "Top 5" | "Top 10" | "Top 20";
 
 const SIDE_BET_COLUMNS: SideBetCol[] = ["Top 5", "Top 10", "Top 20"];
-const ROW_ORDER: SideBetRow[] = ["4 of 4", "3 of 4", "2 of 4"];
+const ROW_ORDER: SideBetRow[] = ["2 of 4", "3 of 4", "4 of 4"];
 /** Minimum stake shown as dollars (matches 1:1 on-chain platform units in this app). */
 const MIN_STAKE = "0.01";
 /** Total return (stake × decimal odds) must stay strictly below this USD amount per ticket. */
