@@ -5,7 +5,12 @@ import { getActivePlayers } from "../lib/pgaField.js";
 import { fetchPGATourPlayers } from "../lib/pgaPlayers.js";
 import { getPlayerProfileOverview } from "../lib/pgaPlayerProfile.js";
 import { updateTournament } from "./updateTournament.js";
-import { fetchDataGolfRankings, type DataGolfRanking } from "../lib/dataGolfRankings.js";
+import { fetchDataGolfRankings, buildDgIdToRankingMap, type DataGolfRanking } from "../lib/dataGolfRankings.js";
+import {
+  buildPgaTourIdToDgIdMap,
+  dataGolfTourFromEnv,
+  fetchDataGolfFieldUpdates,
+} from "./odds/dataGolfFieldUpdates.js";
 import {
   mergeIdentityFromDirectoryPlayer,
   mergeIdentityFromProfileHeadshot,
@@ -147,18 +152,21 @@ function createPlayerNameLookup(rankings: DataGolfRanking[]): Map<string, DataGo
 }
 
 /**
- * Finds a Data Golf ranking for a player by matching normalized names.
- * Tries multiple name combinations: firstName+lastName, displayName, shortName.
- * Returns the ranking and the match method used for logging.
+ * Finds a Data Golf ranking for a player.
+ * Prefer **ID join** (same as side-bet odds): `field-updates` maps `pga_pgaTourId` → `dg_id`,
+ * then `get-dg-rankings` rows match on `dg_id`. Falls back to normalized name keys if needed.
  */
 function findDataGolfRanking(
   player: {
+    pga_pgaTourId?: string | null;
     pga_firstName?: string | null;
     pga_lastName?: string | null;
     pga_displayName?: string | null;
     pga_shortName?: string | null;
   },
   dgLookup: Map<string, DataGolfRanking>,
+  dgIdToRanking: Map<number, DataGolfRanking>,
+  pgaTourIdToDgId: Map<string, number>,
   playerDisplayName?: string | null,
 ): { ranking: DataGolfRanking | null; matchMethod: string | null } {
   const playerName =
@@ -166,6 +174,31 @@ function findDataGolfRanking(
     player.pga_displayName ||
     `${player.pga_firstName || ""} ${player.pga_lastName || ""}`.trim() ||
     "Unknown";
+
+  const pgaId = player.pga_pgaTourId?.trim();
+  if (pgaId && pgaTourIdToDgId.size > 0 && dgIdToRanking.size > 0) {
+    const dgId = pgaTourIdToDgId.get(pgaId);
+    if (dgId != null) {
+      const byId = dgIdToRanking.get(dgId);
+      if (byId) {
+        return { ranking: byId, matchMethod: "dg_id" };
+      }
+    }
+  }
+
+  if (dgLookup.size === 0) {
+    const attemptedNames = [
+      player.pga_firstName && player.pga_lastName
+        ? normalizePlayerName(`${player.pga_firstName} ${player.pga_lastName}`)
+        : null,
+      player.pga_displayName ? normalizePlayerName(player.pga_displayName) : null,
+      player.pga_shortName ? normalizePlayerName(player.pga_shortName) : null,
+    ].filter(Boolean);
+    console.log(
+      `  ✗ DG No Match: "${playerName}" (tried: ${attemptedNames.join(", ") || "no names available"}; no name index or no dg_id join)`,
+    );
+    return { ranking: null, matchMethod: null };
+  }
 
   // Try firstName + lastName combination
   if (player.pga_firstName && player.pga_lastName) {
@@ -197,7 +230,6 @@ function findDataGolfRanking(
   // Try lastName only (as fallback)
   if (player.pga_lastName) {
     const lastName = normalizePlayerName(player.pga_lastName);
-    // Only match if it's a unique match (to avoid false positives)
     const matches = Array.from(dgLookup.keys()).filter((key) => key.includes(lastName));
     if (matches.length === 1 && matches[0]) {
       const ranking = dgLookup.get(matches[0]);
@@ -207,7 +239,6 @@ function findDataGolfRanking(
     }
   }
 
-  // Log failed match attempts
   const attemptedNames = [
     player.pga_firstName && player.pga_lastName
       ? normalizePlayerName(`${player.pga_firstName} ${player.pga_lastName}`)
@@ -270,51 +301,32 @@ export async function initTournament(pgaTourId: string) {
     const fieldPlayerIds = fieldData.players.map((p) => p.id);
     console.log(`Players in field: ${fieldPlayerIds.length}`);
 
-    // Fetch Data Golf rankings early (single API call for all players)
+    // Data Golf: model rankings + field list for PGA id → dg_id (same join as side-bet odds)
     let dgRankingsLookup: Map<string, DataGolfRanking> = new Map();
+    let dgIdToRanking: Map<number, DataGolfRanking> = new Map();
+    let pgaTourIdToDgId: Map<string, number> = new Map();
     try {
-      const dgRankingsData = await fetchDataGolfRankings();
+      const tour = dataGolfTourFromEnv();
+      const [dgRankingsData, fieldPayload] = await Promise.all([
+        fetchDataGolfRankings(),
+        fetchDataGolfFieldUpdates(tour).catch((err) => {
+          console.warn(
+            `[initTournament] DataGolf field-updates failed (DG rankings fall back to name match only):`,
+            err instanceof Error ? err.message : err,
+          );
+          return null;
+        }),
+      ]);
 
-      // Try to extract rankings array from various possible structures
-      let rankingsArray: DataGolfRanking[] | null = null;
-
-      // Check if data is directly an array
-      if (Array.isArray(dgRankingsData?.data)) {
-        rankingsArray = dgRankingsData.data;
-      }
-      // Check if data is an object with rankings inside
-      else if (dgRankingsData?.data && typeof dgRankingsData.data === "object") {
-        const dataObj = dgRankingsData.data as any;
-
-        // Check for table_data.data structure (actual Data Golf structure)
-        if (dataObj.table_data && Array.isArray(dataObj.table_data.data)) {
-          rankingsArray = dataObj.table_data.data;
-        }
-        // Check common property names that might contain the array
-        else if (Array.isArray(dataObj.rankings)) {
-          rankingsArray = dataObj.rankings;
-        } else if (Array.isArray(dataObj.players)) {
-          rankingsArray = dataObj.players;
-        } else if (Array.isArray(dataObj.data)) {
-          rankingsArray = dataObj.data;
-        } else {
-          // Try to find any array property
-          const arrayKeys = Object.keys(dataObj).filter((key) => Array.isArray(dataObj[key]));
-          const firstArrayKey = arrayKeys[0];
-          if (firstArrayKey) {
-            rankingsArray = dataObj[firstArrayKey];
-          }
-        }
-      }
-      // Fallback to rankings property
-      else if (Array.isArray(dgRankingsData?.rankings)) {
-        rankingsArray = dgRankingsData.rankings;
-      }
-
-      if (rankingsArray && Array.isArray(rankingsArray)) {
+      const rankingsArray = Array.isArray(dgRankingsData.data) ? dgRankingsData.data : null;
+      if (rankingsArray && rankingsArray.length > 0) {
         dgRankingsLookup = createPlayerNameLookup(rankingsArray);
+        dgIdToRanking = buildDgIdToRankingMap(rankingsArray);
       } else {
         console.warn(`Warning: Could not extract Data Golf rankings array.`);
+      }
+      if (fieldPayload?.field?.length) {
+        pgaTourIdToDgId = buildPgaTourIdToDgIdMap(fieldPayload.field);
       }
     } catch (error) {
       console.warn(
@@ -429,10 +441,16 @@ export async function initTournament(pgaTourId: string) {
 
             // Try to find matching Data Golf ranking
             let dgRanking: DataGolfRanking | null = null;
-            if (player && dgRankingsLookup.size > 0) {
+            if (
+              player &&
+              (dgRankingsLookup.size > 0 ||
+                (dgIdToRanking.size > 0 && pgaTourIdToDgId.size > 0 && player.pga_pgaTourId))
+            ) {
               const matchResult = findDataGolfRanking(
                 player,
                 dgRankingsLookup,
+                dgIdToRanking,
+                pgaTourIdToDgId,
                 player.pga_displayName || undefined,
               );
               dgRanking = matchResult.ranking;

@@ -2,13 +2,8 @@ import { prisma } from "../../lib/prisma.js";
 import { SideBetMarketStatus } from "@prisma/client";
 import { fetchSideBetDataGolfSnapshot } from "./fetchSideBetDataGolfSnapshot.js";
 import { ingestSideBetQuoteForLineup } from "./ingestSideBetQuoteForLineup.js";
-import type { DataGolfTourParam } from "../odds/dataGolfFieldUpdates.js";
+import { dataGolfTourFromEnv } from "../odds/dataGolfFieldUpdates.js";
 import { sideBetsEnabled } from "./featureFlag.js";
-
-function defaultTour(): DataGolfTourParam {
-  const t = process.env.SIDE_BET_DATAGOLF_TOUR?.trim().toLowerCase();
-  return t === "opp" ? "opp" : "pga";
-}
 
 /**
  * Minute cron: refresh side-bet quotes for the active tournament’s 4-player lineups
@@ -39,7 +34,7 @@ export async function refreshOpenSideBetQuotes(): Promise<{
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
 
-  const tour = defaultTour();
+  const tour = dataGolfTourFromEnv();
 
   const lineups = await prisma.tournamentLineup.findMany({
     where: {
@@ -115,7 +110,7 @@ export async function refreshSideBetQuoteForLineupAfterRosterChange(
   if (!sideBetsEnabled() || !process.env.DATAGOLF_API_KEY?.trim()) {
     return;
   }
-  const tour = defaultTour();
+  const tour = dataGolfTourFromEnv();
   try {
     const snapshot = await fetchSideBetDataGolfSnapshot(tour);
     await ingestSideBetQuoteForLineup(tournamentLineupId, tour, snapshot);

@@ -1,5 +1,11 @@
 export type DataGolfTourParam = "pga" | "opp";
 
+/** `field-updates` / outrights tour: env `SIDE_BET_DATAGOLF_TOUR` (`pga` default, `opp` opposite field). */
+export function dataGolfTourFromEnv(): DataGolfTourParam {
+  const t = process.env.SIDE_BET_DATAGOLF_TOUR?.trim().toLowerCase();
+  return t === "opp" ? "opp" : "pga";
+}
+
 export interface DataGolfFieldRow {
   dg_id: number;
   player_num: number;
