@@ -88,7 +88,7 @@ function sideBetReturnDisplay(ticket: SideBetMarketTicketDto): {
   }
   const n = implied;
   const amount = !Number.isFinite(n) || n < 0 ? "$0.00" : n < 0.01 ? "< $0.01" : formatUsd(n);
-  return { amount, amountClass: "text-emerald-600" };
+  return { amount, amountClass: "text-emerald-700" };
 }
 
 export interface SideBetPanelProps {
@@ -235,6 +235,16 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   const exceedsMaxTicketPayout =
     payoutPreview !== null && payoutPreview.totalReturn >= MAX_TICKET_PAYOUT_USD;
 
+  /** Stake row in the place-ticket preview; mirrors `Your parlays` ticket formatting. */
+  const modalStakeTicketLine = useMemo(() => {
+    const trimmed = stakeInput.trim();
+    if (!trimmed) return "—";
+    const n = parseFloat(trimmed);
+    if (!Number.isFinite(n) || n <= 0) return "—";
+    const stakeDisplay = n < 0.01 ? "< 0.01" : n.toFixed(2);
+    return `$${stakeDisplay}`;
+  }, [stakeInput]);
+
   const bettable = marketQuery.data?.bettable === true;
   const showUnavailable =
     !tournamentLineupId ||
@@ -271,10 +281,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
     }
 
     const totalReturnIfWin = stakeAmount * activeSelection.decimalOdds;
-    if (
-      Number.isFinite(totalReturnIfWin) &&
-      totalReturnIfWin >= MAX_TICKET_PAYOUT_USD
-    ) {
+    if (Number.isFinite(totalReturnIfWin) && totalReturnIfWin >= MAX_TICKET_PAYOUT_USD) {
       setPlaceError(
         `Total return must stay under ${formatUsd(MAX_TICKET_PAYOUT_USD)} for a single ticket. Lower your stake.`,
       );
@@ -453,11 +460,13 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                       className="rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm"
                     >
                       <div className="flex flex-col gap-3">
-                        <div className="flex min-w-0 items-center justify-between gap-3">
-                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
-                            {topNToColLabel(ticket.topN)} ·{" "}
-                            {hitsRequiredToRowLabel(ticket.hitsRequired)}
-                          </span>
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                              {topNToColLabel(ticket.topN)} (including ties) ·{" "}
+                              {hitsRequiredToRowLabel(ticket.hitsRequired)}
+                            </div>
+                          </div>
                           <span
                             className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${sideBetStatusBadgeClass(ticket.status)}`}
                           >
@@ -536,149 +545,143 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
         contentClassName="p-4 font-display"
       >
         {activeSelection ? (
-          <div className="space-y-3">
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup</h5>
-
-            <div>
-              <div
-                className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm"
-                style={{
-                  borderLeftColor: borderColor,
-                  borderLeftWidth: "5px",
-                  borderLeftStyle: "solid",
-                }}
-              >
+          <div className="space-y-3 font-display">
+            <div className="rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm">
+              <div className="flex flex-col gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
-                    {userLabel}
-                    {lineupNumberLabel ? (
-                      <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
-                        {lineupNumberLabel}
-                      </span>
-                    ) : null}
+                  <p className="truncate text-lg font-semibold leading-tight text-gray-900 sm:text-lg">
+                    {activeSelection.colLabel} (including ties) · {activeSelection.rowLabel}
+                  </p>
+                  <div className="space-y-2 text-sm leading-relaxed text-gray-700">
+                    <p>
+                      At least {activeSelection.hitsRequired} of your four players must finish in
+                      the top {activeSelection.topN} for this ticket to win.
+                    </p>
                   </div>
-                  <div className="truncate text-xs text-gray-500">
-                    {playerLastNamesLine || "No players"}
+                </div>
+
+                <div
+                  className="rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm"
+                  style={{
+                    borderLeftColor: borderColor,
+                    borderLeftWidth: "5px",
+                    borderLeftStyle: "solid",
+                  }}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                      {userLabel}
+                      {lineupNumberLabel ? (
+                        <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
+                          {lineupNumberLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="truncate text-xs text-gray-500">
+                      {playerLastNamesLine || "No players"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 font-sans sm:gap-4">
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                      Stake
+                    </div>
+                    <div
+                      className={classNames(
+                        "mt-1 text-sm font-semibold leading-tight tabular-nums",
+                        modalStakeTicketLine === "—" ? "text-gray-400" : "text-gray-900",
+                      )}
+                    >
+                      {modalStakeTicketLine}
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                      Odds
+                    </div>
+                    <div className="mt-1 text-sm font-semibold leading-tight text-gray-900 tabular-nums">
+                      {activeSelection.americanDisplay}
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 flex-col items-center text-center">
+                    <div className="text-[10px] font-medium uppercase leading-none tracking-wide text-gray-500">
+                      Return
+                    </div>
+                    <div
+                      className={classNames(
+                        "mt-1 text-sm font-semibold leading-tight tabular-nums",
+                        payoutPreview ? "text-emerald-700" : "text-gray-400",
+                      )}
+                    >
+                      {payoutPreview ? formatUsd(payoutPreview.totalReturn) : "—"}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div>
-              <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bet</h5>
-              <p className="mt-2 text-base font-semibold text-gray-900">
-                {activeSelection.colLabel} (including ties) · {activeSelection.rowLabel} players
-              </p>
-              <p className="text-sm text-gray-700">
-                At least {activeSelection.hitsRequired} of your four players must finish in the top{" "}
-                {activeSelection.topN} for this ticket to win.
-              </p>
-              <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                    American
-                  </dt>
-                  <dd className="mt-0.5 font-medium text-gray-900">
-                    {activeSelection.americanDisplay}
-                  </dd>
-                </div>
-                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                    Decimal
-                  </dt>
-                  <dd className="mt-0.5 font-medium text-gray-900">
-                    {activeSelection.decimalOdds.toFixed(2)}
-                  </dd>
-                </div>
-                <div className="rounded-sm border border-gray-200 bg-gray-50 px-2 py-2">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                    Stake ($)
-                  </dt>
-                  <dd className="mt-0.5">
-                    <label className="sr-only" htmlFor="side-bet-stake">
-                      Stake amount in dollars
-                    </label>
-                    <input
-                      id="side-bet-stake"
-                      type="number"
-                      min={0.01}
-                      step={0.01}
-                      value={stakeInput}
-                      onChange={(ev) => setStakeInput(ev.target.value)}
-                      className="w-full rounded border border-gray-300 px-1 py-0.5 text-center text-sm"
-                    />
-                  </dd>
-                </div>
-              </dl>
+              <label
+                className="block text-xs font-semibold uppercase tracking-wide text-gray-500"
+                htmlFor="side-bet-stake"
+              >
+                Stake ($)
+              </label>
+              <input
+                id="side-bet-stake"
+                type="number"
+                min={0.01}
+                step={0.01}
+                value={stakeInput}
+                onChange={(ev) => setStakeInput(ev.target.value)}
+                className="mt-2 w-full rounded-sm border border-gray-300 px-3 py-2 text-sm text-gray-900 tabular-nums"
+              />
+            </div>
 
-              <p className="mt-2 text-xs text-gray-600">
-                Total return per ticket is capped under {formatUsd(MAX_TICKET_PAYOUT_USD)} (stake ×
-                decimal odds).
+            {exceedsMaxTicketPayout ? (
+              <p
+                className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-sm p-2"
+                role="alert"
+              >
+                This stake would reach or exceed the per-ticket payout cap (${MAX_TICKET_PAYOUT_USD}
+                ). Lower your stake to place the bet.
               </p>
-              {payoutPreview ? (
-                <div className="mt-3 rounded-sm border border-emerald-200 bg-emerald-50/90 p-3 text-sm text-gray-800">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-900">
-                    If this ticket wins
-                  </p>
-                  <p className="mt-1.5 tabular-nums">
-                    <span className="text-gray-600">Total Return: </span>
-                    <span className="font-semibold text-gray-900">
-                      {formatUsd(payoutPreview.totalReturn)}
-                    </span>
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-gray-500">
-                  Enter at least $0.01 (one cent) to see estimated return and profit (decimal odds ×
-                  stake).
-                </p>
-              )}
-              {exceedsMaxTicketPayout ? (
-                <p
-                  className="mt-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-sm p-2"
-                  role="alert"
-                >
-                  This stake would reach or exceed the per-ticket payout cap. Lower your stake to
-                  place the bet.
-                </p>
-              ) : null}
-              {placeError ? (
-                <p className="mt-2 text-sm text-red-600" role="alert">
-                  {placeError}
-                </p>
-              ) : null}
-              {paymentTxError ? (
-                <p className="mt-2 text-sm text-red-600" role="alert">
-                  {paymentTxError}
-                </p>
-              ) : null}
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={isPayingOracle || placeMutation.isPending}
-                  onClick={closeModal}
-                  className="rounded-sm border border-gray-300 px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={
-                    !bettable ||
-                    placeMutation.isPending ||
-                    isPayingOracle ||
-                    exceedsMaxTicketPayout
-                  }
-                  onClick={() => void placeTicket()}
-                  className="rounded-sm bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {isPayingOracle
-                    ? "Confirm in wallet…"
-                    : placeMutation.isPending
-                      ? "Recording…"
-                      : "Place Bet"}
-                </button>
-              </div>
+            ) : null}
+            {placeError ? (
+              <p className="text-sm text-red-600" role="alert">
+                {placeError}
+              </p>
+            ) : null}
+            {paymentTxError ? (
+              <p className="text-sm text-red-600" role="alert">
+                {paymentTxError}
+              </p>
+            ) : null}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                disabled={isPayingOracle || placeMutation.isPending}
+                onClick={closeModal}
+                className="rounded-sm border border-gray-300 px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  !bettable || placeMutation.isPending || isPayingOracle || exceedsMaxTicketPayout
+                }
+                onClick={() => void placeTicket()}
+                className="rounded-sm bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isPayingOracle
+                  ? "Confirm in wallet…"
+                  : placeMutation.isPending
+                    ? "Recording…"
+                    : "Place Bet"}
+              </button>
             </div>
           </div>
         ) : null}
