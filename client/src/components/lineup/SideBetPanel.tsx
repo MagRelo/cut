@@ -180,20 +180,6 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
     },
   });
 
-  const oddsByRow = useMemo(() => {
-    const selections = marketQuery.data?.selections ?? [];
-    const byRow = new Map<SideBetRow, SideBetMarketSelectionDto[]>();
-    for (const row of ROW_ORDER) {
-      const rowCells: SideBetMarketSelectionDto[] = [];
-      for (const col of SIDE_BET_COLUMNS) {
-        const s = selectionForCell(selections, row, col);
-        if (s) rowCells.push(s);
-      }
-      byRow.set(row, rowCells);
-    }
-    return byRow;
-  }, [marketQuery.data]);
-
   const lineupParlayTickets = useMemo((): SideBetMarketTicketDto[] => {
     const raw = ticketsQuery.data?.tickets ?? [];
     return [...raw]
@@ -246,6 +232,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   }, [stakeInput]);
 
   const bettable = marketQuery.data?.bettable === true;
+  const sideBetMarketSelections = marketQuery.data?.selections ?? [];
   const showUnavailable =
     !tournamentLineupId ||
     marketQuery.isError ||
@@ -371,48 +358,45 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
           {bettable ? (
             <div className="mt-3 flex flex-col items-center gap-2">
               <div className="flex w-full justify-center">
-                <div className="grid w-full max-w-[28rem] grid-cols-[3rem_repeat(3,minmax(0,1fr))] gap-2">
+                <div className="grid w-full max-w-[28rem] grid-cols-[4rem_repeat(3,minmax(0,1fr))] gap-2">
                   <div />
-                  {SIDE_BET_COLUMNS.map((column) => (
+                  {ROW_ORDER.map((hitsLabel) => (
                     <div
-                      key={column}
+                      key={hitsLabel}
                       className="px-2 py-1 text-center font-display text-sm font-semibold text-gray-900"
                     >
-                      {column}
+                      {hitsLabel}
                     </div>
                   ))}
 
-                  {ROW_ORDER.map((row) => {
-                    const rowCells = oddsByRow.get(row) ?? [];
-                    return (
-                      <React.Fragment key={row}>
-                        <div className="self-center pr-2 text-right font-display text-sm font-semibold text-gray-900">
-                          {row}
-                        </div>
-                        {SIDE_BET_COLUMNS.map((col) => {
-                          const cell = rowCells.find((entry) => entry.colLabel === col);
-                          if (!cell) return <div key={`${row}-${col}`} />;
+                  {SIDE_BET_COLUMNS.map((col) => (
+                    <React.Fragment key={col}>
+                      <div className="self-center pr-2 text-right font-display text-sm font-semibold text-gray-900">
+                        {col}
+                      </div>
+                      {ROW_ORDER.map((row) => {
+                        const cell = selectionForCell(sideBetMarketSelections, row, col);
+                        if (!cell) return <div key={`${row}-${col}`} />;
 
-                          return (
-                            <button
-                              key={`${row}-${col}`}
-                              type="button"
-                              onClick={() => setActiveSelection(cell)}
-                              className={classNames(
-                                "w-full rounded-sm border border-gray-300 bg-gray-100 py-3 font-display text-gray-900 transition-colors",
-                                "hover:bg-gray-200",
-                                "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
-                              )}
-                            >
-                              <span className="block w-full text-center text-sm leading-tight">
-                                {cell.americanDisplay}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </React.Fragment>
-                    );
-                  })}
+                        return (
+                          <button
+                            key={`${row}-${col}`}
+                            type="button"
+                            onClick={() => setActiveSelection(cell)}
+                            className={classNames(
+                              "w-full rounded-sm border border-gray-300 bg-gray-100 py-3 font-display text-gray-900 transition-colors",
+                              "hover:bg-gray-200",
+                              "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
+                            )}
+                          >
+                            <span className="block w-full text-center text-sm leading-tight">
+                              {cell.americanDisplay}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
             </div>
