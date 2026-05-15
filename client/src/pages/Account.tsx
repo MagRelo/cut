@@ -265,7 +265,7 @@ const WalletInfo = ({
         <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
           <Link
             to="/account/history"
-            className="min-w-0 max-w-full truncate text-xs text-blue-600 hover:text-blue-700 text-right font-display font-normal"
+            className="min-w-0 max-w-full truncate text-sm text-blue-600 hover:text-blue-700 text-right font-display font-normal"
           >
             View contest history...
           </Link>
