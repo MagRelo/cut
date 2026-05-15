@@ -180,7 +180,9 @@ model TournamentPlayer {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   leaderboardTotal    String?
-  
+  /// Per-round tee times from DataGolf field-updates: [{ roundNum, teetimeIso, label }]
+  teeTimes            Json?
+
   // Relations
   player              Player     @relation(fields: [playerId], references: [id])
   tournament          Tournament @relation(fields: [tournamentId], references: [id])

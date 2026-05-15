@@ -10,7 +10,9 @@ import {
   buildPgaTourIdToDgIdMap,
   dataGolfTourFromEnv,
   fetchDataGolfFieldUpdates,
+  type DataGolfFieldUpdatesPayload,
 } from "./odds/dataGolfFieldUpdates.js";
+import { syncTournamentTeeTimes } from "./syncTournamentTeeTimes.js";
 import {
   mergeIdentityFromDirectoryPlayer,
   mergeIdentityFromProfileHeadshot,
@@ -305,9 +307,10 @@ export async function initTournament(pgaTourId: string) {
     let dgRankingsLookup: Map<string, DataGolfRanking> = new Map();
     let dgIdToRanking: Map<number, DataGolfRanking> = new Map();
     let pgaTourIdToDgId: Map<string, number> = new Map();
+    let fieldPayload: DataGolfFieldUpdatesPayload | null = null;
     try {
       const tour = dataGolfTourFromEnv();
-      const [dgRankingsData, fieldPayload] = await Promise.all([
+      const [dgRankingsData, fetchedField] = await Promise.all([
         fetchDataGolfRankings(),
         fetchDataGolfFieldUpdates(tour).catch((err) => {
           console.warn(
@@ -317,6 +320,7 @@ export async function initTournament(pgaTourId: string) {
           return null;
         }),
       ]);
+      fieldPayload = fetchedField;
 
       const rankingsArray = Array.isArray(dgRankingsData.data) ? dgRankingsData.data : null;
       if (rankingsArray && rankingsArray.length > 0) {
@@ -558,6 +562,18 @@ export async function initTournament(pgaTourId: string) {
     if (createdCount !== fieldPlayerIds.length) {
       console.warn(
         `Warning: Mismatch between field players (${fieldPlayerIds.length}) and TournamentPlayer records (${createdCount})`,
+      );
+    }
+
+    try {
+      const teeResult = await syncTournamentTeeTimes(tournament.id, { fieldPayload });
+      if (!teeResult.skipped && teeResult.updated > 0) {
+        console.log(`Synced tee times for ${teeResult.updated} tournament players`);
+      }
+    } catch (teeErr) {
+      console.warn(
+        `[initTournament] tee time sync failed:`,
+        teeErr instanceof Error ? teeErr.message : teeErr,
       );
     }
 

@@ -47,6 +47,7 @@ async function loadPlayersWithTournamentDataForTournament(tournamentId: string) 
           stableford: true,
           total: true,
           leaderboardTotal: true,
+          teeTimes: true,
         },
       },
     },

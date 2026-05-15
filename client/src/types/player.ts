@@ -74,6 +74,12 @@ export interface RoundData {
   };
 }
 
+export interface TournamentPlayerTeeTime {
+  roundNum: number;
+  teetimeIso: string;
+  label: string;
+}
+
 // Tournament Player Type (from TournamentPlayer table)
 export interface TournamentPlayerData {
   leaderboardPosition?: string;
@@ -85,6 +91,7 @@ export interface TournamentPlayerData {
   bonus?: number;
   total?: number;
   leaderboardTotal?: string;
+  teeTimes?: TournamentPlayerTeeTime[];
 }
 
 // Combined Type for Frontend
@@ -176,6 +183,15 @@ export const tournamentPlayerDataSchema = z.object({
   bonus: z.number().optional(),
   total: z.number().optional(),
   leaderboardTotal: z.string().optional(),
+  teeTimes: z
+    .array(
+      z.object({
+        roundNum: z.number(),
+        teetimeIso: z.string(),
+        label: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export const playerWithTournamentDataSchema = playerSchema.extend({

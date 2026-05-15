@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { getTournament, formatWeather } from "../lib/pgaTournament.js";
 import { fromZonedTime } from "date-fns-tz";
 import { parse } from "date-fns";
+import { syncTournamentTeeTimes } from "./syncTournamentTeeTimes.js";
 
 /**
  * Parses PGA Tour displayDate and timezone to extract start and end dates with times.
@@ -139,6 +140,20 @@ export async function updateTournament(options?: UpdateTournamentOptions) {
         }),
       },
     });
+
+    try {
+      const teeResult = await syncTournamentTeeTimes(tournament.id);
+      if (teeResult.skipped) {
+        console.warn(`[updateTournament] tee time sync skipped: ${teeResult.reason ?? "unknown"}`);
+      } else {
+        console.log(`[updateTournament] tee time sync updated ${teeResult.updated} players`);
+      }
+    } catch (teeErr) {
+      console.warn(
+        "[updateTournament] tee time sync failed:",
+        teeErr instanceof Error ? teeErr.message : teeErr,
+      );
+    }
   } catch (error) {
     console.error("[CRON] Error in updateTournament:", error);
     throw error;

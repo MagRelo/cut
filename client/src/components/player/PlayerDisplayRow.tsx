@@ -6,6 +6,7 @@ import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
   getRoundHoleProgress,
+  getTeeTimeLabelForRound,
 } from "./playerRoundUtils";
 
 interface PlayerDisplayRowProps {
@@ -57,8 +58,13 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   const holeProgress = getRoundHoleProgress(roundData);
   const roundVsPar = formatRoundStrokesVsPar(roundData);
   const scoreThruLabel = (() => {
-    if (holeProgress == null) return "";
-    if (holeProgress.played === 0) return "Not started";
+    const teeLabel = getTeeTimeLabelForRound(player.tournamentData, roundDisplay);
+    if (holeProgress == null) {
+      return teeLabel ?? "";
+    }
+    if (holeProgress.played === 0) {
+      return teeLabel ?? "Not started";
+    }
     const roundComplete = holeProgress.remaining === 0 && holeProgress.played > 0;
     if (roundComplete) {
       return roundVsPar != null ? `${roundVsPar}, Round Complete` : "–, Round Complete";

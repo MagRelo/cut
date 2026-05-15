@@ -1,4 +1,25 @@
-import type { PlayerWithTournamentData, TournamentLineup } from "../types/player.js";
+import type {
+  PlayerWithTournamentData,
+  TournamentLineup,
+  TournamentPlayerTeeTime,
+} from "../types/player.js";
+
+function parseTeeTimes(raw: unknown): TournamentPlayerTeeTime[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: TournamentPlayerTeeTime[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const roundNum = row.roundNum;
+    const label = row.label;
+    const teetimeIso = row.teetimeIso;
+    if (typeof roundNum !== "number" || typeof label !== "string" || typeof teetimeIso !== "string") {
+      continue;
+    }
+    out.push({ roundNum, label, teetimeIso });
+  }
+  return out.length > 0 ? out : undefined;
+}
 
 /**
  * Transform Pattern A: Player with tournamentPlayers include
@@ -13,6 +34,7 @@ export function transformPlayerWithTournamentData(
     typeof tournamentPlayer?.tournamentId === "string"
       ? tournamentPlayer.tournamentId
       : tournamentId;
+  const teeTimes = tournamentPlayer ? parseTeeTimes(tournamentPlayer.teeTimes) : undefined;
 
   return {
     id: player.id,
@@ -47,6 +69,7 @@ export function transformPlayerWithTournamentData(
           stableford: tournamentPlayer.stableford,
           total: tournamentPlayer.total,
           leaderboardTotal: tournamentPlayer.leaderboardTotal,
+          ...(teeTimes ? { teeTimes } : {}),
         }
       : {
           leaderboardPosition: null,
@@ -78,6 +101,7 @@ export function transformLineupPlayer(
     typeof tournamentPlayer?.tournamentId === "string"
       ? tournamentPlayer.tournamentId
       : tournamentId;
+  const teeTimes = parseTeeTimes(tournamentPlayer.teeTimes);
 
   return {
     id: player.id,
@@ -111,6 +135,7 @@ export function transformLineupPlayer(
       stableford: tournamentPlayer.stableford,
       total: tournamentPlayer.total,
       leaderboardTotal: tournamentPlayer.leaderboardTotal,
+      ...(teeTimes ? { teeTimes } : {}),
     },
   };
 }

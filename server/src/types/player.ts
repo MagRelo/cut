@@ -13,6 +13,12 @@ export interface RoundData {
   };
 }
 
+export interface TournamentPlayerTeeTime {
+  roundNum: number;
+  teetimeIso: string;
+  label: string;
+}
+
 export interface TournamentPlayerData {
   leaderboardPosition?: string | null;
   r1?: RoundData | null;
@@ -25,6 +31,7 @@ export interface TournamentPlayerData {
   stableford?: number | null;
   total?: number | null;
   leaderboardTotal?: string | null;
+  teeTimes?: TournamentPlayerTeeTime[];
 }
 
 export interface PlayerWithTournamentData {

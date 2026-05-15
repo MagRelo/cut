@@ -63,6 +63,25 @@ export function getRoundShortLabel(roundDisplay: string): string {
   return m ? `R${m[1]}` : "R1";
 }
 
+/** Round number 1–4 from `roundDisplay` (`r1` / `R2`). */
+export function getRoundNumberFromDisplay(roundDisplay: string): number {
+  const normalized = (roundDisplay || "r1").trim().toLowerCase();
+  const m = /^r([1-4])$/.exec(normalized);
+  return m ? Number(m[1]) : 1;
+}
+
+/** Localized tee time label for the selected round, if synced from DataGolf. */
+export function getTeeTimeLabelForRound(
+  tournamentData: TournamentPlayerData | undefined,
+  roundDisplay: string,
+): string | null {
+  const teeTimes = tournamentData?.teeTimes;
+  if (!teeTimes?.length) return null;
+  const roundNum = getRoundNumberFromDisplay(roundDisplay);
+  const entry = teeTimes.find((t) => t.roundNum === roundNum);
+  return entry?.label ?? null;
+}
+
 export function getRoundDataForDisplay(
   tournamentData: TournamentPlayerData | undefined,
   roundDisplay: string,
