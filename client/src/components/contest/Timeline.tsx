@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,9 +15,73 @@ import type { TimelineData, TimelineMetric } from "../../types/contest";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 const ROUND_BUTTONS = [1, 2, 3, 4] as const;
 
-const MUTED_LINE_COLOR = "rgba(209, 213, 219, 0.35)";
+const OTHER_TEAM_LINE_OPACITY = 0.5;
+/** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
+const USER_LINE_ORDER = 0;
+const PAYOUT_WINNER_LINE_ORDER = 5;
+const OTHER_LINE_ORDER = 10;
 
 type RoundOrFinal = (typeof ROUND_BUTTONS)[number] | "final";
+type TimelineTeam = TimelineData["teams"][number];
+
+function isCurrentUserTeam(team: TimelineTeam, currentUserId: string | undefined): boolean {
+  return Boolean(currentUserId && team.userId && team.userId === currentUserId);
+}
+
+function colorWithOpacity(color: string, opacity: number): string {
+  const c = color.trim();
+  const shortMatch = c.match(/^#([0-9a-fA-F]{3})$/);
+  if (shortMatch) {
+    const [r, g, b] = shortMatch[1].split("").map((ch) => parseInt(ch + ch, 16));
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  const longMatch = c.match(/^#([0-9a-fA-F]{6})$/);
+  if (longMatch) {
+    const hex = longMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(c);
+  if (rgbMatch) {
+    return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, ${opacity})`;
+  }
+  return c;
+}
+
+function sortWinnersLast(teams: TimelineTeam[]): TimelineTeam[] {
+  return [...teams].sort((a, b) => {
+    const aw = a.isPrimaryPayoutWinner === true ? 1 : 0;
+    const bw = b.isPrimaryPayoutWinner === true ? 1 : 0;
+    return aw - bw;
+  });
+}
+
+function chartOrderForTeam(
+  team: TimelineTeam,
+  currentUserId: string | undefined,
+  highlightPayoutWinners: boolean,
+): number {
+  if (isCurrentUserTeam(team, currentUserId)) return USER_LINE_ORDER;
+  if (highlightPayoutWinners && team.isPrimaryPayoutWinner === true) {
+    return PAYOUT_WINNER_LINE_ORDER;
+  }
+  return OTHER_LINE_ORDER;
+}
+
+function orderTeamsForChart(
+  teams: TimelineTeam[],
+  currentUserId: string | undefined,
+  highlightPayoutWinners: boolean,
+): TimelineTeam[] {
+  const others = teams.filter((team) => !isCurrentUserTeam(team, currentUserId));
+  const mine = teams.filter((team) => isCurrentUserTeam(team, currentUserId));
+  if (!highlightPayoutWinners) {
+    return [...mine, ...others];
+  }
+  return [...sortWinnersLast(mine), ...sortWinnersLast(others)];
+}
 
 function forwardFilledScores(
   sortedTimestamps: string[],
@@ -41,11 +105,16 @@ function forwardFilledScores(
 interface TimelineProps {
   className?: string;
   timelineData: TimelineData;
+  currentUserId?: string;
   defaultMetric?: TimelineMetric;
   allowedMetrics?: TimelineMetric[];
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData }) => {
+export const Timeline: React.FC<TimelineProps> = ({
+  className = "",
+  timelineData,
+  currentUserId,
+}) => {
   const contestFinished = timelineData.contestFinished === true;
 
   const [selectedRound, setSelectedRound] = useState<RoundOrFinal>(() =>
@@ -59,8 +128,7 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
         const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
         const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
         return bScore - aScore;
-      })
-      .slice(0, 10);
+      });
   }, [timelineData.teams]);
 
   const availableRounds = useMemo(() => {
@@ -123,13 +191,36 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
   );
 
   const teamsForChart = useMemo(() => {
-    if (selectedRound !== "final" || !highlightPayoutWinners) return topTeams;
-    return [...topTeams].sort((a, b) => {
-      const aw = a.isPrimaryPayoutWinner === true ? 1 : 0;
-      const bw = b.isPrimaryPayoutWinner === true ? 1 : 0;
-      return aw - bw;
-    });
-  }, [topTeams, selectedRound, highlightPayoutWinners]);
+    const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
+    return orderTeamsForChart(topTeams, currentUserId, highlightWinners);
+  }, [topTeams, selectedRound, highlightPayoutWinners, currentUserId]);
+
+  const lineColorForTeam = useCallback(
+    (team: TimelineTeam) => {
+      if (!currentUserId) return team.color;
+      if (isCurrentUserTeam(team, currentUserId)) return team.color;
+      const isFinalWinner =
+        selectedRound === "final" &&
+        highlightPayoutWinners &&
+        team.isPrimaryPayoutWinner === true;
+      if (isFinalWinner) return team.color;
+      return colorWithOpacity(team.color, OTHER_TEAM_LINE_OPACITY);
+    },
+    [currentUserId, selectedRound, highlightPayoutWinners],
+  );
+
+  const lineStyleForTeam = useCallback(
+    (team: TimelineTeam) => {
+      const isUser = isCurrentUserTeam(team, currentUserId);
+      const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
+      return {
+        borderColor: lineColorForTeam(team),
+        borderWidth: !currentUserId ? 2 : isUser ? 3 : 1,
+        order: chartOrderForTeam(team, currentUserId, highlightWinners),
+      };
+    },
+    [currentUserId, selectedRound, highlightPayoutWinners, lineColorForTeam],
+  );
 
   const labels = useMemo(
     () => selectedRoundTimestamps.map((_timestamp, idx) => `${idx + 1}`),
@@ -137,9 +228,6 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
   );
 
   const chartData = useMemo(() => {
-    const dimNonWinners =
-      selectedRound === "final" && highlightPayoutWinners;
-
     if (selectedRound === "final") {
       return {
         labels,
@@ -148,14 +236,14 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
             (dp) =>
               typeof dp.roundNumber === "number" && dp.roundNumber >= 1 && dp.roundNumber <= 4,
           );
-          const isWinner = team.isPrimaryPayoutWinner === true;
-          const lineColor = dimNonWinners && !isWinner ? MUTED_LINE_COLOR : team.color;
+          const { borderColor, borderWidth, order } = lineStyleForTeam(team);
           return {
             label: team.name,
             data: forwardFilledScores(selectedRoundTimestamps, roundPoints),
-            borderColor: lineColor,
-            backgroundColor: lineColor,
-            borderWidth: 2,
+            borderColor,
+            backgroundColor: borderColor,
+            borderWidth,
+            order,
             pointRadius: 0,
             tension: 0.4,
             spanGaps: true,
@@ -172,25 +260,21 @@ export const Timeline: React.FC<TimelineProps> = ({ className = "", timelineData
             .filter((dp) => dp.roundNumber === selectedRound)
             .map((dp) => [dp.timestamp, dp.score]),
         );
+        const { borderColor, borderWidth, order } = lineStyleForTeam(team);
         return {
           label: team.name,
           data: selectedRoundTimestamps.map((timestamp) => scoreMap.get(timestamp) ?? null),
-          borderColor: team.color,
-          backgroundColor: team.color,
-          borderWidth: 2,
+          borderColor,
+          backgroundColor: borderColor,
+          borderWidth,
+          order,
           pointRadius: 0,
           tension: 0.4,
           spanGaps: true,
         };
       }),
     };
-  }, [
-    labels,
-    teamsForChart,
-    selectedRoundTimestamps,
-    selectedRound,
-    highlightPayoutWinners,
-  ]);
+  }, [labels, teamsForChart, selectedRoundTimestamps, selectedRound, lineStyleForTeam]);
 
   const options = useMemo(
     () => ({

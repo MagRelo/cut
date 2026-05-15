@@ -53,6 +53,7 @@ export type ContestTimelineData = {
   contestFinished: boolean;
   teams: Array<{
     contestLineupId: string;
+    userId: string;
     name: string;
     color: string;
     entryId: string | null;
@@ -68,19 +69,28 @@ export type ContestTimelineData = {
 
 type LineupMetaRow = {
   id: string;
+  userId: string;
   entryId: string | null;
   user: { name: string; settings: unknown };
   tournamentLineup: { name: string };
 };
 
 function buildLineupMetaMap(rows: LineupMetaRow[]) {
-  const map = new Map<string, { name: string; color: string; entryId: string | null }>();
+  const map = new Map<
+    string,
+    { userId: string; name: string; color: string; entryId: string | null }
+  >();
   for (const row of rows) {
     const userSettings = row.user.settings as { color?: string } | null;
     const userColor = userSettings?.color;
     const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
     const displayName = `${row.user.name} - ${row.tournamentLineup.name}`;
-    map.set(row.id, { name: displayName, color: resolvedColor, entryId: row.entryId });
+    map.set(row.id, {
+      userId: row.userId,
+      name: displayName,
+      color: resolvedColor,
+      entryId: row.entryId,
+    });
   }
   return map;
 }
@@ -111,6 +121,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       where: { contestId },
       select: {
         id: true,
+        userId: true,
         entryId: true,
         user: { select: { name: true, settings: true } },
         tournamentLineup: { select: { name: true } },
@@ -127,6 +138,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
   const metaByLineupId = buildLineupMetaMap(lineupRows as LineupMetaRow[]);
   type LineupAccumulator = {
     contestLineupId: string;
+    userId: string;
     name: string;
     color: string;
     entryId: string | null;
@@ -150,6 +162,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       );
       lineupMap.set(lineupId, {
         contestLineupId: lineupId,
+        userId: meta?.userId ?? "",
         name: displayName,
         color: resolvedColor,
         entryId,
@@ -170,6 +183,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
   const teams = Array.from(lineupMap.values())
     .map((lineup) => ({
       contestLineupId: lineup.contestLineupId,
+      userId: lineup.userId,
       name: lineup.name,
       color: lineup.color,
       entryId: lineup.entryId,

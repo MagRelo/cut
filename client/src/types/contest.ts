@@ -190,6 +190,7 @@ export interface TimelineDataPoint {
 export interface TimelineTeam {
   /** Join key to `ContestLineup.id` (from timeline API) */
   contestLineupId: string;
+  userId: string;
   name: string;
   color: string;
   entryId?: string | null;

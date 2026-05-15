@@ -11,6 +11,7 @@ export interface TimelineDataPoint {
 export interface TimelineTeam {
   /** Join key to `ContestLineup.id` */
   contestLineupId: string;
+  userId: string;
   name: string;
   color: string;
   /** On-chain primary entry id */

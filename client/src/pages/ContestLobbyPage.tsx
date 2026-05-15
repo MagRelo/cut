@@ -188,7 +188,11 @@ export const ContestLobby: React.FC = () => {
             <TabPanel className="p-4 focus:outline-none">
               <div className="space-y-2">
                 {primaryActionsLocked ? (
-                  <ContestTimelinesSection timelineData={contest.timeline} variant="score" />
+                  <ContestTimelinesSection
+                    timelineData={contest.timeline}
+                    variant="score"
+                    currentUserId={user?.id}
+                  />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-4 border-b border-gray-200 py-8">
                     <button
@@ -367,7 +371,8 @@ type ContestTimelinesVariant = "score" | "sharePrice";
 const ContestTimelinesSection: React.FC<{
   timelineData: TimelineData | undefined;
   variant: ContestTimelinesVariant;
-}> = ({ timelineData, variant }) => {
+  currentUserId?: string;
+}> = ({ timelineData, variant, currentUserId }) => {
   if (!timelineData || !timelineData.teams || timelineData.teams.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height: "300px" }}>
@@ -380,6 +385,7 @@ const ContestTimelinesSection: React.FC<{
     return (
       <Timeline
         timelineData={timelineData}
+        currentUserId={currentUserId}
         defaultMetric="sharePrice"
         allowedMetrics={["sharePrice"]}
       />
@@ -387,6 +393,11 @@ const ContestTimelinesSection: React.FC<{
   }
 
   return (
-    <Timeline timelineData={timelineData} defaultMetric="score" allowedMetrics={["score"]} />
+    <Timeline
+      timelineData={timelineData}
+      currentUserId={currentUserId}
+      defaultMetric="score"
+      allowedMetrics={["score"]}
+    />
   );
 };
