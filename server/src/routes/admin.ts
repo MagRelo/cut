@@ -11,8 +11,24 @@ import { batchLockSideBetMarkets } from "../services/batch/batchLockSideBetMarke
 import { batchSettleSideBets } from "../services/batch/batchSettleSideBets.js";
 import { batchCloseSideBetMarkets } from "../services/batch/batchCloseSideBetMarkets.js";
 import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
+import { getAdminDashboard } from "../services/admin/getAdminDashboard.js";
 
 const adminRouter = new Hono();
+
+/** GET /api/admin/dashboard — current-week tournament, contests, parlays, and ops hints. */
+adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
+  try {
+    const qTid = c.req.query("tournamentId")?.trim();
+    const data = await getAdminDashboard(qTid || undefined);
+    if (qTid && !data.tournament) {
+      return c.json({ error: "Tournament not found" }, 404);
+    }
+    return c.json(data);
+  } catch (error) {
+    console.error("admin dashboard error:", error);
+    return c.json({ error: "Failed to load admin dashboard" }, 500);
+  }
+});
 
 // POST /api/admin/contests/lock-eligible
 adminRouter.post("/contests/lock-eligible", requireAuth, requireAdmin, async (c) => {
@@ -248,7 +264,14 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
       take: 5000,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        sideBetMarket: { select: { id: true, tournamentLineupId: true, status: true } },
+        sideBetMarket: {
+          select: {
+            id: true,
+            tournamentLineupId: true,
+            status: true,
+            tournamentLineup: { select: { name: true } },
+          },
+        },
       },
     });
 
@@ -316,6 +339,7 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
         userName: t.user.name,
         userEmail: t.user.email,
         lineupId: t.sideBetMarket.tournamentLineupId,
+        lineupName: t.sideBetMarket.tournamentLineup.name,
         marketId: t.sideBetMarket.id,
         marketStatus: t.sideBetMarket.status,
         hitsRequired: t.hitsRequired,

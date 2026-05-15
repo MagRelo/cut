@@ -61,6 +61,10 @@ export const queryKeys = {
   },
   admin: {
     all: ["admin"] as const,
+    dashboard: (tournamentId?: string) =>
+      [...queryKeys.admin.all, "dashboard", tournamentId ?? "active"] as const,
+    sideBetReport: (tournamentId?: string) =>
+      [...queryKeys.admin.all, "sideBetReport", tournamentId ?? "active"] as const,
     userList: (chainId: number, userType: string) =>
       [...queryKeys.admin.all, "users", chainId, userType] as const,
     userDetail: (userId: string, chainId: number) =>

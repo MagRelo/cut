@@ -36,6 +36,79 @@ export interface AdminUserDetailResponse {
   wallet: { publicKey: string; isPrimary: boolean; chainId: number } | null;
 }
 
+/** Response from `GET /api/admin/dashboard`. */
+export interface AdminDashboardContest {
+  id: string;
+  name: string;
+  status: string;
+  chainId: number;
+  primaryDeposit: number;
+  lineupCount: number;
+  secondaryParticipantCount: number;
+  estimatedPrimaryCash: number;
+  userGroupName: string | null;
+  endTime: string;
+}
+
+export interface AdminDashboardParlayTypeRow {
+  hitsRequired: number;
+  topN: number;
+  ticketCount: number;
+  stakeTotal: number;
+  openCount: number;
+  openLiability: number;
+}
+
+export interface AdminDashboardResponse {
+  generatedAt: string;
+  tournament: {
+    id: string;
+    name: string;
+    status: string;
+    currentRound: number | null;
+    roundDisplay: string | null;
+    roundStatusDisplay: string | null;
+    cutLine: string | null;
+    startDate: string;
+    endDate: string;
+  } | null;
+  weekCounts: {
+    tournamentLineups: number;
+    contestLineups: number;
+  };
+  contests: {
+    summary: {
+      total: number;
+      byStatus: Record<string, number>;
+      totalLineups: number;
+      totalPrimaryCash: number;
+      totalSecondaryParticipants: number;
+    };
+    items: AdminDashboardContest[];
+  };
+  parlays: {
+    marketsByStatus: Record<string, number>;
+    ticketsByStatus: Record<string, number>;
+    totals: {
+      stakeInflow: number;
+      openStake: number;
+      openLiability: number;
+      ticketCount: number;
+    };
+    byParlayType: AdminDashboardParlayTypeRow[];
+  };
+  operations: {
+    activeContests: number;
+    contestsNeedingLock: number;
+    openSideBetMarkets: number;
+    openSideBetTickets: number;
+    lockedSideBetMarkets: number;
+    sideBetsEnabled: boolean;
+    tournamentIsComplete: boolean;
+    suggestedActions: string[];
+  };
+}
+
 /** Matches server `OperationResult` from contest batch jobs. */
 export interface AdminBatchContestOperationResult {
   success: boolean;
@@ -59,6 +132,7 @@ export interface AdminSideBetTournamentReportTicket {
   userName: string | null;
   userEmail: string | null;
   lineupId: string;
+  lineupName: string;
   marketId: string;
   marketStatus: string;
   hitsRequired: number;
