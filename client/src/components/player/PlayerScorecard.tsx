@@ -1,5 +1,6 @@
 import React from "react";
 import type { PlayerWithTournamentData, RoundData, TournamentPlayerData } from "../../types/player";
+import { getTeeTimeLabelForRound } from "./playerRoundUtils";
 
 /* -------------------------------------------------------------------------- */
 /* Table layout — band rows (hole / par / score) vs points row (white)        */
@@ -125,6 +126,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
 
   const roundData = getRoundData(selectedRound);
   const hasHoleData = roundData?.holes?.scores && roundData.holes.scores.length > 0;
+  const teeTimeLabel = getTeeTimeLabelForRound(player.tournamentData, `r${selectedRound}`);
 
   const holeRow = (
     <tr className={band}>
@@ -235,7 +237,16 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
           </table>
         ) : (
           <div className="px-6 py-10 text-center font-display text-sm text-slate-600">
-            No scorecard data available for Round {selectedRound}
+            {teeTimeLabel ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Round {selectedRound} tee time
+                </p>
+                <p className="mt-1 text-base font-medium text-slate-800">{teeTimeLabel}</p>
+              </>
+            ) : (
+              <p>No scorecard data available for Round {selectedRound}</p>
+            )}
           </div>
         )}
       </div>

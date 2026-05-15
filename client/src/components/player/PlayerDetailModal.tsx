@@ -2,7 +2,7 @@ import React, { Fragment, useEffect, useRef, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { PlayerDisplayCard } from "./PlayerDisplayCard";
 import { PlayerScorecard } from "./PlayerScorecard";
-import { getDefaultScorecardRound } from "./playerRoundUtils";
+import { useActiveTournamentRound } from "../../hooks/useTournamentData";
 import type { PlayerWithTournamentData } from "../../types/player";
 
 export interface PlayerDetailModalProps {
@@ -12,8 +12,6 @@ export interface PlayerDetailModalProps {
   onShare?: (player: PlayerWithTournamentData) => void;
   /** Icon beside PTS in the header row: scorecard (default in lists) or share (detail modal default). */
   playerRowTrailing?: "scorecard" | "share";
-  /** Page context (e.g. contest round); modal opens on latest round with data regardless. */
-  roundDisplay: string;
 }
 
 export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
@@ -23,6 +21,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   onShare,
   playerRowTrailing = "share",
 }) => {
+  const { roundNumber: tournamentRound } = useActiveTournamentRound();
   const [scorecardRound, setScorecardRound] = useState(1);
   /** Keeps card content visible through the leave transition when parents clear `player` immediately on close. */
   const playerSnapshotRef = useRef<PlayerWithTournamentData | null>(null);
@@ -33,8 +32,8 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || !player) return;
-    setScorecardRound(getDefaultScorecardRound(player.tournamentData));
-  }, [isOpen, player]);
+    setScorecardRound(tournamentRound);
+  }, [isOpen, player, tournamentRound]);
 
   const sharePlayerLeaderboardLink = async (targetPlayer: PlayerWithTournamentData) => {
     if (typeof window === "undefined") return;

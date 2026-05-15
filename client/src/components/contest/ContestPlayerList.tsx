@@ -102,7 +102,6 @@ export const ContestPlayerList = ({ contest, roundDisplay }: ContestPlayerListPr
         isOpen={isModalOpen}
         onClose={closePlayerModal}
         player={selectedPlayer}
-        roundDisplay={roundDisplay || "R1"}
       />
     </>
   );

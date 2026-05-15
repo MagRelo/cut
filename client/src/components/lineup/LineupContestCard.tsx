@@ -258,7 +258,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         isOpen={isModalOpen}
         onClose={closePlayerModal}
         player={selectedPlayer}
-        roundDisplay={roundDisplay || "R1"}
       />
     </div>
   );

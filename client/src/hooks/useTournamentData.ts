@@ -1,6 +1,7 @@
 import { useQuery, QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
+import { resolveTournamentRoundNumber } from "../components/player/playerRoundUtils";
 import { type Tournament } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
 
@@ -73,6 +74,15 @@ export function useCurrentTournament() {
     ...q,
     tournament: q.data?.tournament ?? null,
   };
+}
+
+/** Active tournament round label and 1–4 number for scorecard / player UI. */
+export function useActiveTournamentRound() {
+  const { tournament } = useCurrentTournament();
+  const roundDisplay = tournament?.roundDisplay ?? "R1";
+  const currentRound = tournament?.currentRound;
+  const roundNumber = resolveTournamentRoundNumber(roundDisplay, currentRound);
+  return { tournament, roundDisplay, currentRound, roundNumber };
 }
 
 export function useTournamentPlayers() {

@@ -175,7 +175,6 @@ export const LeaderboardPage: React.FC = () => {
         isOpen={isPlayerModalOpen}
         onClose={closePlayerModal}
         player={selectedPlayer}
-        roundDisplay={roundDisplay}
       />
     </div>
   );

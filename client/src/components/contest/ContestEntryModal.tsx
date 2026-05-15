@@ -125,7 +125,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
         isOpen={detailPlayer != null}
         onClose={() => setDetailPlayer(null)}
         player={detailPlayer}
-        roundDisplay={roundDisplay}
       />
     </>
   );

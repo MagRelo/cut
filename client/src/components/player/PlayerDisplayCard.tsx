@@ -1,7 +1,8 @@
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import { PlayerDisplayRow } from "./PlayerDisplayRow";
-import { roundHasBeenPlayed } from "./playerRoundUtils";
+import { useActiveTournamentRound } from "../../hooks/useTournamentData";
+import { isScorecardRoundSelectable, roundHasBeenPlayed } from "./playerRoundUtils";
 
 interface PlayerCardsProps {
   player: PlayerWithTournamentData;
@@ -38,6 +39,8 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
   playerRowTrailing = "scorecard",
   onPlayerShare,
 }) => {
+  const { roundNumber: currentRound } = useActiveTournamentRound();
+
   return (
     <div className="bg-white overflow-hidden">
       <div className="">
@@ -64,6 +67,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
             ] as const
           ).map(([roundNum, data]) => {
             const played = roundHasBeenPlayed(data);
+            const selectable = isScorecardRoundSelectable(roundNum, data, currentRound);
             const selected = selectedScorecardRound === roundNum;
             const label = `R${roundNum}`;
             const value = played && data?.total !== undefined ? data.total : null;
@@ -72,7 +76,7 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
               ? "font-medium text-gray-300"
               : "font-bold text-gray-900";
 
-            if (!played) {
+            if (!selectable) {
               return (
                 <div
                   key={label}
@@ -97,7 +101,9 @@ export const PlayerDisplayCard: React.FC<PlayerCardsProps> = ({
                 }`}
               >
                 <div className={STAT_LABEL_STRIP_BASE}>
-                  <Label className={`block ${selected ? "" : "!text-blue-600"}`}>{label}</Label>
+                  <Label className={`block ${selected ? "" : played ? "!text-blue-600" : "!text-gray-500"}`}>
+                    {label}
+                  </Label>
                 </div>
                 <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
               </button>

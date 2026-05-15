@@ -70,6 +70,27 @@ export function getRoundNumberFromDisplay(roundDisplay: string): number {
   return m ? Number(m[1]) : 1;
 }
 
+/** Tournament round 1–4: prefer `currentRound` from API, then parse `roundDisplay`. */
+export function resolveTournamentRoundNumber(
+  roundDisplay?: string,
+  currentRound?: number | null,
+): number {
+  if (currentRound != null) {
+    const n = Math.round(currentRound);
+    if (n >= 1 && n <= 4) return n;
+  }
+  return getRoundNumberFromDisplay(roundDisplay ?? "r1");
+}
+
+/** Scorecard tab is interactive when the round has data or is the current tournament round. */
+export function isScorecardRoundSelectable(
+  roundNum: number,
+  roundData: RoundData | undefined,
+  currentRound: number,
+): boolean {
+  return roundHasBeenPlayed(roundData) || roundNum === currentRound;
+}
+
 /** Localized tee time label for the selected round, if synced from DataGolf. */
 export function getTeeTimeLabelForRound(
   tournamentData: TournamentPlayerData | undefined,
