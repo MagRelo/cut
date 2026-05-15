@@ -319,7 +319,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             text: "Score",
           },
           grid: {
-            color: "#e5e7eb",
+            display: false,
           },
           ticks: {
             font: {
