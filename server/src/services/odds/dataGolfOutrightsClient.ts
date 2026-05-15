@@ -5,8 +5,8 @@ export type DataGolfFinishMarket = "top_5" | "top_10" | "top_20";
 export interface DataGolfOutrightsOddsRow {
   dg_id: number;
   player_name: string;
-  /** Listed decimal from DataGolf’s DraftKings scrape (same feed as `books_offering`). */
-  draftkings?: number;
+  /** Listed decimal from DataGolf’s Bovada scrape (same feed as `books_offering`). */
+  bovada?: number;
   datagolf?: { baseline?: number; baseline_history_fit?: number };
   [key: string]: unknown;
 }
@@ -55,9 +55,9 @@ export function pickBaselineDecimal(row: DataGolfOutrightsOddsRow): number | nul
   return b;
 }
 
-/** DraftKings decimal from the outrights row (`draftkings` field in DataGolf JSON). */
-export function pickDraftKingsDecimal(row: DataGolfOutrightsOddsRow): number | null {
-  const d = row.draftkings;
+/** Bovada decimal from the outrights row (`bovada` field in DataGolf JSON). */
+export function pickBovadaDecimal(row: DataGolfOutrightsOddsRow): number | null {
+  const d = row.bovada;
   if (typeof d !== "number" || !Number.isFinite(d) || d <= 1) return null;
   return d;
 }

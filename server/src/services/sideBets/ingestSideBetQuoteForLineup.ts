@@ -9,7 +9,7 @@ import {
 import {
   fetchDataGolfOutrights,
   oddsRowsByDgId,
-  pickDraftKingsDecimal,
+  pickBovadaDecimal,
 } from "../odds/dataGolfOutrightsClient.js";
 import { eventsAlign } from "./eventAlignment.js";
 import type { SideBetDataGolfSnapshot } from "./fetchSideBetDataGolfSnapshot.js";
@@ -148,16 +148,16 @@ export async function ingestSideBetQuoteForLineup(
         );
         return { ok: false, reason: "MISSING_OUTRIGHTS_ROW" };
       }
-      const d5 = pickDraftKingsDecimal(r5);
-      const d10 = pickDraftKingsDecimal(r10);
-      const d20 = pickDraftKingsDecimal(r20);
-      if (d5 == null || d10 == null || d20 == null) {
+      const b5 = pickBovadaDecimal(r5);
+      const b10 = pickBovadaDecimal(r10);
+      const b20 = pickBovadaDecimal(r20);
+      if (b5 == null || b10 == null || b20 == null) {
         await prisma.$transaction((tx) =>
-          markUnavailable(tx, lineup.id, lineup.tournamentId, tour, "MISSING_DRAFTKINGS_DECIMAL"),
+          markUnavailable(tx, lineup.id, lineup.tournamentId, tour, "MISSING_BOVADA_DECIMAL"),
         );
-        return { ok: false, reason: "MISSING_DRAFTKINGS_DECIMAL" };
+        return { ok: false, reason: "MISSING_BOVADA_DECIMAL" };
       }
-      playerDecimals.push({ top5: d5, top10: d10, top20: d20 });
+      playerDecimals.push({ top5: b5, top10: b10, top20: b20 });
     }
 
     const tuple = playerDecimals as [
