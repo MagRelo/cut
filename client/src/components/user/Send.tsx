@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tab, TabGroup, TabList } from "@headlessui/react";
+import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -172,15 +173,9 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
                 setSendError(null);
               }}
             >
-              <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+              <TabList className={tabListClassName("space-x-1", "px-4")}>
                 <Tab
-                  className={({ selected }: { selected: boolean }) =>
-                    `w-full py-2 text-sm font-display leading-5 focus:outline-none ${
-                      selected
-                        ? "border-b-2 border-blue-600 text-blue-700"
-                        : "text-gray-600 hover:text-gray-800"
-                    }`
-                  }
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
                   External
                 </Tab>

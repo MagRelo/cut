@@ -14,13 +14,10 @@ import { Receive } from "../components/user/Receive.tsx";
 // import DepositManagerContract from "../utils/contracts/DepositManager.json";
 // import PlatformTokenContract from "../utils/contracts/PlatformToken.json";
 // import { getContractAddress } from "../utils/blockchainUtils.tsx";
+import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
 
 /** Placeholder APY until pool metrics use the live lending market ABI again */
 // const PLACEHOLDER_SUPPLY_APY_PERCENT = 3.5;
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
 
 export function CUTInfoPage() {
   // const chainId = useChainId();
@@ -138,56 +135,24 @@ export function CUTInfoPage() {
       {/* Buy/Sell/Send/Receive Tabs */}
       <div className="bg-white rounded-sm shadow border border-gray-200 mb-4">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+          <TabList className={tabListClassName("space-x-1", "px-4")}>
             <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800",
-                )
-              }
+              className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
             >
               Buy
             </Tab>
             <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800",
-                )
-              }
+              className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
             >
               Sell
             </Tab>
             <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800",
-                )
-              }
+              className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
             >
               Receive
             </Tab>
             <Tab
-              className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-2 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-600 text-blue-700"
-                    : "text-gray-600 hover:text-gray-800",
-                )
-              }
+              className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
             >
               Send
             </Tab>

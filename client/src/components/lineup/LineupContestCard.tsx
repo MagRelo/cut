@@ -9,6 +9,7 @@ import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
+import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -35,10 +36,6 @@ interface LineupContestCardProps {
   contests?: ContestInfo[];
   isEditable?: boolean;
   editHref?: string;
-}
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
 }
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
@@ -153,42 +150,24 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       {/* Tabs */}
       <div className="p-4 pt-0">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className="flex space-x-1 border-b border-gray-200">
+          <TabList className={tabListClassName("space-x-1")}>
             <Tab
               className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
+                tabButtonClassName(selected, { compact: true })
               }
             >
               Players ({lineupPlayers.length})
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
+                tabButtonClassName(selected, { compact: true })
               }
             >
               Parlays
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full border-b-2 py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
+                tabButtonClassName(selected, { compact: true })
               }
             >
               <span className="inline-flex items-center gap-1">

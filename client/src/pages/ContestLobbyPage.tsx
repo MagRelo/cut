@@ -34,19 +34,7 @@ import { PredictionPositionsList } from "../components/contest/PredictionPositio
 import { ContestState } from "../hooks/useContestPredictionData";
 import { CountdownTimer } from "../components/tournament/CountdownTimer";
 import ContestContract from "../utils/contracts/ContestController.json";
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
-const TAB_LIST_CLASS = "flex border-b border-gray-200 px-3";
-const getTabButtonClass = (selected: boolean) =>
-  classNames(
-    "w-full border-b-2 py-2 text-sm font-display leading-5 focus:outline-none",
-    selected
-      ? "border-blue-500 text-blue-600"
-      : "border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-  );
+import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
 
 export const ContestLobby: React.FC = () => {
   const { id: contestId } = useParams<{ id: string }>();
@@ -167,17 +155,17 @@ export const ContestLobby: React.FC = () => {
           onChange={setSelectedIndex}
           key={`${contest.id}-${isPostSettlement}`}
         >
-          <TabList className={TAB_LIST_CLASS}>
-            <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
+          <TabList className={tabListClassName("px-3")}>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest – {primaryPoolTabSuffix === "—" ? "—" : `$${primaryPoolTabSuffix}`}
             </Tab>
             {!isPostSettlement ? (
-              <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
+              <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
                 Winner Pool - ${secondaryPoolLabel}
               </Tab>
             ) : null}
             {isPostSettlement ? (
-              <Tab className={({ selected }: { selected: boolean }) => getTabButtonClass(selected)}>
+              <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
                 Results
               </Tab>
             ) : null}
@@ -239,17 +227,17 @@ export const ContestLobby: React.FC = () => {
                 <div className="space-y-4">
                   <ContestSharesPieChart contest={contest} />
                   <TabGroup>
-                    <TabList className={TAB_LIST_CLASS}>
+                    <TabList className={tabListClassName("px-3")}>
                       <Tab
                         className={({ selected }: { selected: boolean }) =>
-                          getTabButtonClass(selected)
+                          tabButtonClassName(selected)
                         }
                       >
                         {!canOpenLineupModalForWinnerPool ? <span> 🔒</span> : null} Place Wager
                       </Tab>
                       <Tab
                         className={({ selected }: { selected: boolean }) =>
-                          getTabButtonClass(selected)
+                          tabButtonClassName(selected)
                         }
                       >
                         Bets

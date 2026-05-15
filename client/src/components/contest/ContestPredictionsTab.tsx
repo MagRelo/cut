@@ -8,10 +8,7 @@ import { PredictionClaimPanel } from "./PredictionClaimPanel";
 import { useContestPredictionData, ContestState } from "../../hooks/useContestPredictionData";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-
-function classNames(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
+import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 
 interface ContestPredictionsTabProps {
   contest: Contest;
@@ -97,29 +94,17 @@ export const ContestPredictionsTab: React.FC<ContestPredictionsTabProps> = ({ co
       {/* Place Wager + Bets (tabs); when chain is not OPEN/ACTIVE, lineups list only via lobby / other entry points */}
       {canPredict && (
         <TabGroup>
-          <TabList className="flex space-x-1 border-b border-gray-200 px-4">
+          <TabList className={tabListClassName("space-x-1", "px-4")}>
             <Tab
               className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
+                tabButtonClassName(selected, { compact: true })
               }
             >
               {!canOpenLineupModal ? <span> 🔒</span> : null} Place Wager
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
-                classNames(
-                  "w-full py-1.5 text-sm font-display leading-5",
-                  "focus:outline-none",
-                  selected
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "border-b-2 border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-700",
-                )
+                tabButtonClassName(selected, { compact: true })
               }
             >
               Bets

@@ -11,6 +11,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import type { TimelineData, TimelineMetric } from "../../types/contest";
+import { cn, segmentButtonClassName } from "../../lib/tabStyles";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 const ROUND_BUTTONS = [1, 2, 3, 4] as const;
@@ -371,9 +372,10 @@ export const Timeline: React.FC<TimelineProps> = ({
               tabIndex={hasData ? undefined : -1}
               aria-hidden={!hasData}
               onClick={() => setSelectedRound(round)}
-              className={`flex-1 py-1.5 text-xs border-b ${
-                isActive ? "text-blue-700 border-blue-600" : "text-gray-600 border-transparent"
-              } ${hasData ? "" : "invisible pointer-events-none"}`}
+              className={cn(
+                segmentButtonClassName(isActive),
+                !hasData && "invisible pointer-events-none",
+              )}
               aria-pressed={isActive}
             >
               Round {round}
@@ -387,11 +389,10 @@ export const Timeline: React.FC<TimelineProps> = ({
             tabIndex={finalHasData ? undefined : -1}
             aria-hidden={!finalHasData}
             onClick={() => setSelectedRound("final")}
-            className={`flex-1 py-1.5 text-xs border-b ${
-              selectedRound === "final"
-                ? "text-blue-700 border-blue-600"
-                : "text-gray-600 border-transparent"
-            } ${finalHasData ? "" : "invisible pointer-events-none"}`}
+            className={cn(
+              segmentButtonClassName(selectedRound === "final"),
+              !finalHasData && "invisible pointer-events-none",
+            )}
             aria-pressed={selectedRound === "final"}
           >
             Final
