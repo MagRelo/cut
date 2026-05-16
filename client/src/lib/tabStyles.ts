@@ -8,14 +8,14 @@ export function tabButtonClassName(
   selected: boolean,
   options?: { compact?: boolean },
 ): string {
-  const py = options?.compact ? "py-1.5" : "py-2";
+  const py = options?.compact ? "py-1" : "py-1.5";
   const base = `w-full border-b-2 ${py} text-sm font-display leading-5 focus:outline-none`;
   return `${base} ${selected ? segmentActive : segmentInactive}`;
 }
 
 /** Underline segment control (e.g. Timeline round picker). Same colors as tabs, different layout. */
 export function segmentButtonClassName(selected: boolean): string {
-  const base = "flex-1 border-b-2 py-1.5 text-xs font-display leading-5 focus:outline-none";
+  const base = "flex-1 border-b-2 py-1 text-xs font-display leading-5 focus:outline-none";
   return `${base} ${selected ? segmentActive : segmentInactive}`;
 }
 
