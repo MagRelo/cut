@@ -24,6 +24,8 @@
     "test": "pnpm --filter server run test",
     "test:coverage": "pnpm --filter server run test:coverage",
     "test:ui": "pnpm --filter server run test:ui",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev": "concurrently \"pnpm run server:dev\" \"pnpm run client:dev\"",
     "mint-tokens": "node scripts/sepolia/mintPaymentToken.js",
     "deposit-usdc": "node scripts/sepolia/depositUSDC.js",
@@ -49,6 +51,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "dotenv": "^16.4.5",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "viem": "^2.47.4"
   }
 }

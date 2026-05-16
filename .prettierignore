@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+coverage
+.pnpm-store
+client/dist
+server/dist
+contracts/lib
+*.min.js
+pnpm-lock.yaml
