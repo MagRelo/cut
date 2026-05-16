@@ -11,6 +11,8 @@ export interface ModalProps {
   /** Skip title bar; shows floating close + sr-only title for accessibility */
   hideHeader?: boolean;
   headerClassName?: string;
+  /** Extra classes on the dialog panel (e.g. `bg-gray-50` for headerless modals). */
+  panelClassName?: string;
   contentClassName?: string;
   scrollable?: boolean;
   maxHeight?: string;
@@ -34,6 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   hideHeader = false,
   headerClassName = "",
+  panelClassName = "",
   contentClassName = "",
   scrollable = false,
   maxHeight,
@@ -65,7 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <DialogPanel
-                className={`relative w-full ${maxWidthClasses[maxWidth]} transform rounded-sm bg-white text-left align-middle shadow-xl transition-all`}
+                className={`relative w-full ${maxWidthClasses[maxWidth]} transform rounded-sm text-left align-middle shadow-xl transition-all ${panelClassName || "bg-white"}`.trim()}
               >
                 {hideHeader ? (
                   <DialogTitle className="sr-only">{title || "Dialog"}</DialogTitle>

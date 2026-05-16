@@ -75,13 +75,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 }) => {
   const location = useLocation();
   const posthog = usePostHog();
-  const {
-    platformTokenBalance,
-    paymentTokenBalance,
-    user,
-    balancesUnavailable,
-    refetchBalances,
-  } = useAuth();
+  const { platformTokenBalance, paymentTokenBalance, user, balancesUnavailable, refetchBalances } =
+    useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
@@ -183,6 +178,13 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     if (!Number.isFinite(stake) || !Number.isFinite(projectedReturn)) return "—";
     return toEnglishOdds(stake, projectedReturn);
   }, [purchaseAmountDisplay, incrementalNetDisplay]);
+
+  const projectedPayoutDisplay = useMemo(() => {
+    const payout = Number.parseFloat(incrementalNetDisplay);
+    if (!Number.isFinite(payout)) return "—";
+    if (payout > 0 && payout < 0.01) return "< 0.01";
+    return payout.toFixed(2);
+  }, [incrementalNetDisplay]);
 
   const purchaseAmountWei = useMemo(() => {
     try {
@@ -301,12 +303,12 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   };
 
   const predictionDetailsCard = (
-    <div className="overflow-hidden rounded-md border border-blue-200 bg-gradient-to-tl from-blue-50 via-white to-white shadow-md font-display">
+    <div className="overflow-hidden rounded-md border border-blue-200 bg-gradient-to-tl from-blue-50 via-white to-white font-display shadow-md">
       <div className="flex items-center justify-between border-b border-blue-200 bg-blue-50/70 px-3 py-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
           Winner Pool Ticket
         </div>
-        <div className="rounded-full border border-blue-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+        <div className="rounded-full border border-blue-200 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase leading-tight tracking-wide text-blue-700">
           To Win
         </div>
       </div>
@@ -320,17 +322,17 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             borderLeftStyle: "solid",
           }}
         >
-          <div className="text-sm font-semibold text-gray-900 truncate leading-tight">
+          <div className="truncate text-sm font-semibold leading-tight text-gray-900">
             {lineupForEntry?.user?.name || lineupForEntry?.user?.email || "—"}
           </div>
-          <div className="text-xs text-gray-500 truncate mt-0.5">
+          <div className="mt-0.5 truncate text-xs text-gray-500">
             {lineupForEntry?.tournamentLineup?.name || "—"}
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
-            Purchase Amount
+          <div className="text-[10px] font-semibold uppercase leading-tight tracking-[0.12em] text-gray-500">
+            Ticket Amount
           </div>
           <div className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900">${amount}</div>
         </div>
@@ -339,35 +341,44 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const currentOddsQuoteCard = (
-    <div className="rounded-md border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-3 py-2.5 font-display">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
-            Market Quote
-          </div>
-          <div className="text-[11px] text-gray-500">Winner Pool - Live Odds</div>
+    <div className="overflow-hidden rounded-md border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white font-display">
+      <div className="border-b border-emerald-200 bg-emerald-50/70 px-3 py-2">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+          Market Quote
         </div>
-        <div className="text-right">
-          <div className="text-xl font-extrabold tabular-nums text-emerald-700 leading-none">
+      </div>
+
+      <div className="flex items-start justify-between gap-4 px-3 py-3">
+        <div className="text-center">
+          <div className="text-xl font-extrabold tabular-nums leading-none text-emerald-700">
             {projectedEnglishOdds}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-0.5">
+          <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
             Current Odds
           </div>
         </div>
+        <div className="text-center">
+          <div className="text-xl font-extrabold tabular-nums leading-none text-emerald-700">
+            {projectedPayoutDisplay === "—" ? "—" : `$${projectedPayoutDisplay}`}
+          </div>
+          <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
+            Current Payout
+          </div>
+        </div>
       </div>
-    </div>
-  );
 
-  const predictionPurchaseSummary = (
-    <div className="space-y-2 text-sm">
-      {/* parimutuel odds warning */}
-      <div className="text-xs text-gray-500">
-        <span className="font-bold">Note:</span> Parimutuel odds are not guaranteed and may change
-        based on the number of participants and the amount of money in the pool.{" "}
-        <Link to="/faq#winner-pool" className="text-blue-600 hover:text-blue-700">
-          Learn more...
-        </Link>
+      <div className="border-t border-emerald-200/80 bg-emerald-50/60 px-3 py-2">
+        <p className="text-[11px] leading-snug text-emerald-900/80">
+          <span className="font-semibold text-emerald-800">Note:</span> Parimutuel odds are not
+          guaranteed and may change based on the number of participants and the amount of money in
+          the pool.{" "}
+          <Link
+            to="/faq#winner-pool"
+            className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline"
+          >
+            Learn more...
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -376,20 +387,19 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     return (
       <div className="space-y-2">
         <form
-          className="space-y-2 pointer-events-none opacity-55"
+          className="pointer-events-none space-y-2 opacity-55"
           aria-disabled="true"
           onSubmit={(event) => event.preventDefault()}
         >
-          {currentOddsQuoteCard}
           {predictionDetailsCard}
-          {predictionPurchaseSummary}
+          {currentOddsQuoteCard}
 
           <div>
             <label
               htmlFor="position-amount-preview"
-              className="block text-left text-sm font-display font-normal uppercase tracking-wide text-gray-500"
+              className="block text-left font-display text-sm font-normal uppercase tracking-wide text-gray-500"
             >
-              Purchase amount
+              Ticket amount
             </label>
             <input
               id="position-amount-preview"
@@ -399,7 +409,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-right text-base font-normal tabular-nums text-gray-600 shadow-inner cursor-not-allowed"
+              className="w-full cursor-not-allowed rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-right text-base font-normal tabular-nums text-gray-600 shadow-inner"
               disabled
             />
           </div>
@@ -408,7 +418,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         <Link
           to="/connect"
           state={{ from: location }}
-          className="flex w-full justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded border border-blue-500 text-sm font-display font-medium transition-colors"
+          className="flex w-full justify-center rounded border border-blue-500 bg-blue-500 px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-blue-600"
         >
           Connect
         </Link>
@@ -435,22 +445,21 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           <button
             type="button"
             onClick={() => void refetchBalances()}
-            className="font-medium text-blue-700 hover:text-blue-800 underline-offset-2 hover:underline"
+            className="font-medium text-blue-700 underline-offset-2 hover:text-blue-800 hover:underline"
           >
             Retry
           </button>
         </div>
       )}
-      {currentOddsQuoteCard}
       {predictionDetailsCard}
-      {predictionPurchaseSummary}
+      {currentOddsQuoteCard}
 
       <div>
         {/* <label
           htmlFor="position-amount"
           className="block text-left text-sm font-display font-normal uppercase tracking-wide text-gray-500"
         >
-          Purchase amount
+          Ticket amount
         </label> */}
         <input
           id="position-amount"
@@ -459,7 +468,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-right text-base font-normal tabular-nums text-gray-900 shadow-inner placeholder:text-gray-400 transition-[box-shadow,border-color] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none"
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-right text-base font-normal tabular-nums text-gray-900 shadow-inner transition-[box-shadow,border-color] placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none"
           disabled={isProcessing}
           autoFocus
         />
@@ -476,7 +485,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             Number.parseFloat(amount) <= 0 ||
             !canAffordPurchase
           }
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded border border-blue-500 text-sm font-display font-medium transition-colors"
+          className="w-full rounded border border-blue-500 bg-blue-500 px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">
@@ -489,8 +498,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         </button>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
       </div>
