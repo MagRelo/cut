@@ -10,6 +10,8 @@
     "client:build": "pnpm --filter client run build",
     "client:lint": "pnpm --filter client run lint",
     "client:preview": "pnpm --filter client run preview",
+    "client:storybook": "pnpm --filter client run storybook",
+    "client:build-storybook": "pnpm --filter client run build-storybook",
     "server:dev": "pnpm --filter server run dev",
     "server:build": "pnpm --filter server run build",
     "docker:build": "bash docker/build.sh",

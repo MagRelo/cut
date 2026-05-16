@@ -4,6 +4,7 @@ build
 coverage
 .pnpm-store
 client/dist
+client/storybook-static
 server/dist
 contracts/lib
 *.min.js

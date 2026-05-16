@@ -74,3 +74,6 @@ docker-compose.override.yml
 # Prisma
 prisma/*.db 
 
+
+*storybook.log
+storybook-static
