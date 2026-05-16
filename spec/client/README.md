@@ -81,7 +81,6 @@ The client layer provides the user interface for Play the Cut:
 - **Tailwind CSS**: Styling
 - **@headlessui/react**: Accessible components
 - **@heroicons/react**: Icons
-- **@mui/material**: Material UI components (some usage)
 - **chart.js**: Charts for leaderboards
 
 ### Form Handling
