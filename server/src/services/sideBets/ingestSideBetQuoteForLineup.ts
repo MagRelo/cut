@@ -9,7 +9,7 @@ import {
 import {
   fetchDataGolfOutrights,
   oddsRowsByDgId,
-  pickBovadaDecimal,
+  pickIngestDecimal,
 } from "../odds/dataGolfOutrightsClient.js";
 import { eventsAlign } from "./eventAlignment.js";
 import type { SideBetDataGolfSnapshot } from "./fetchSideBetDataGolfSnapshot.js";
@@ -148,14 +148,14 @@ export async function ingestSideBetQuoteForLineup(
         );
         return { ok: false, reason: "MISSING_OUTRIGHTS_ROW" };
       }
-      const b5 = pickBovadaDecimal(r5);
-      const b10 = pickBovadaDecimal(r10);
-      const b20 = pickBovadaDecimal(r20);
+      const b5 = pickIngestDecimal(r5);
+      const b10 = pickIngestDecimal(r10);
+      const b20 = pickIngestDecimal(r20);
       if (b5 == null || b10 == null || b20 == null) {
         await prisma.$transaction((tx) =>
-          markUnavailable(tx, lineup.id, lineup.tournamentId, tour, "MISSING_BOVADA_DECIMAL"),
+          markUnavailable(tx, lineup.id, lineup.tournamentId, tour, "MISSING_FINISH_DECIMAL"),
         );
-        return { ok: false, reason: "MISSING_BOVADA_DECIMAL" };
+        return { ok: false, reason: "MISSING_FINISH_DECIMAL" };
       }
       playerDecimals.push({ top5: b5, top10: b10, top20: b20 });
     }

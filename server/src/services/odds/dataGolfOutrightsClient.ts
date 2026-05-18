@@ -62,6 +62,11 @@ export function pickBovadaDecimal(row: DataGolfOutrightsOddsRow): number | null 
   return d;
 }
 
+/** Bovada when present; otherwise DataGolf `datagolf.baseline` (used for side-bet ingest). */
+export function pickIngestDecimal(row: DataGolfOutrightsOddsRow): number | null {
+  return pickBovadaDecimal(row) ?? pickBaselineDecimal(row);
+}
+
 export function oddsRowsByDgId(rows: DataGolfOutrightsOddsRow[]): Map<number, DataGolfOutrightsOddsRow> {
   const m = new Map<number, DataGolfOutrightsOddsRow>();
   for (const row of rows) {
