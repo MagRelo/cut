@@ -46,6 +46,13 @@ export const Success: Story = {
 };
 
 export const AllVariants: Story = {
+  args: {
+    label: "Users",
+    value: "—",
+  },
+  parameters: {
+    controls: { disable: true },
+  },
   render: () => (
     <div className="grid gap-3 sm:grid-cols-3">
       <AdminStatCard label="Users" value="1,204" />
