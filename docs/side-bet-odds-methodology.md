@@ -4,8 +4,9 @@ How we turn per-player finish odds into the **3×3 grid** (`2/3/4 of 4` × `Top 
 
 | | |
 |---|---|
-| **Current implementation** | `server/src/services/odds/calculateRoundRobinOdds.ts` |
-| **Recommended replacement** | § [Recommended model](#recommended-model-at-least-k-under-independence) below |
+| **Implementation** | `server/src/services/odds/calculateRoundRobinOdds.ts` — P(≥k) under independence + optional margin |
+| **Margin config** | `SIDE_BET_PRICING_MARGIN` via `server/src/services/sideBets/sideBetPricingConfig.ts` (default **0**; **0.08** recommended in prod) |
+| **Odds source** | Bovada decimals from DataGolf outrights (`pickBovadaDecimal` in ingest) |
 
 ---
 
@@ -19,7 +20,7 @@ How we turn per-player finish odds into the **3×3 grid** (`2/3/4 of 4` × `Top 
 
 Columns: **N ∈ {5, 10, 20}**.
 
-**Pricing must target this event.** The current code prices a different (stricter) event and then averages — see § [Current method](#current-method-legacy-mean-of-k-leg-parlays).
+**Pricing targets this event** via P(≥k) under independence (see § [Active model](#active-model-at-least-k-under-independence)). Legacy mean-of-parlay pricing is documented below for history only.
 
 ---
 
@@ -27,16 +28,16 @@ Columns: **N ∈ {5, 10, 20}**.
 
 For each lineup player, three decimal prices from DataGolf outrights (`top_5`, `top_10`, `top_20`):
 
-| Field today | Role |
-|-------------|------|
-| `bovada` | Used in production ingest |
-| `datagolf.baseline` | De-vigged model price; available via `pickBaselineDecimal()` but unused for the grid |
+| Field | Role |
+|-------|------|
+| `bovada` | **Production ingest** — `pickBovadaDecimal()` in `ingestSideBetQuoteForLineup.ts` |
+| `datagolf.baseline` | Available but **not** used for the grid |
 
 Join: PGA Tour id → DataGolf `dg_id` → outrights row. Missing any leg for any player → no grid for that lineup.
 
 ---
 
-## Current method (legacy): mean of k-leg parlays
+## Legacy method (replaced): mean of k-leg parlays
 
 For row **“k of 4”** and column **Top N**:
 
@@ -76,7 +77,7 @@ Player Top 5 decimals: 2.20, 2.40, 2.80, 3.20.
 
 ---
 
-## Recommended model: “at least k” under independence
+## Active model: “at least k” under independence
 
 ### Step 1 — Per-player implied probability
 
@@ -86,12 +87,7 @@ From each player’s decimal \(d_i\) for the relevant Top N market:
 p_i = \frac{1}{d_i}
 \]
 
-**Input choice (conservative stack):**
-
-| Priority | Source | Rationale |
-|----------|--------|-----------|
-| Preferred | `datagolf.baseline` | De-vigged; avoids baking book margin into every leg twice |
-| Acceptable | `bovada` | Simpler; leg vig tends to **inflate** each \(p_i\) slightly → **higher** \(P(\geq k)\) → **shorter** offered odds vs baseline (house-friendlier), but less principled |
+**Input:** Bovada decimal \(d_i\) per player per Top N market → \(p_i = 1/d_i\).
 
 Do **not** use mean of parlay decimals as a proxy for \(P(\geq k)\).
 
@@ -121,7 +117,7 @@ Apply an explicit edge so published odds are **shorter** than fair:
 D_{\text{publish}} = \frac{1}{P(\text{win}) \cdot (1 + m)}
 \]
 
-where \(m\) is a configured margin (e.g. **5–10%**). Tune from desired hold / empirical calibration.
+where \(m\) is `SIDE_BET_PRICING_MARGIN` (fractional, e.g. `0.08` = 8%). **Defaults to 0** when unset; set `0.08` in production when ready.
 
 - Larger \(m\) → lower decimal → less payout → more conservative.
 - Cap or floor policy may be needed for very high \(P(\text{win})\) cells (e.g. 2 of 4 · Top 20 can approach even money under independence).
@@ -225,13 +221,13 @@ Document chosen policy in config (`SIDE_BET_PRICING_MARGIN`, optional `SIDE_BET_
 
 ---
 
-## Suggested rollout
+## Rollout status
 
-1. **Implement** `probAtLeastK` + `publishDecimal` in `calculateRoundRobinOdds.ts` (or sibling module).
-2. **Switch ingest** to `pickBaselineDecimal` (fallback to Bovada if baseline missing).
-3. **Add** `SIDE_BET_PRICING_MARGIN` (start ~8%; review after live tickets).
-4. **Update tests** — replace plan example expectations (e.g. Top 5 · 3 of 4 → ~+476 with 8% margin, not +1722).
-5. **Optional**: max decimal, suppress cells above win-prob threshold, correlation v2.
+- [x] `probAtLeastK` + `publishDecimal` in `calculateRoundRobinOdds.ts`
+- [x] `SIDE_BET_PRICING_MARGIN` (`sideBetPricingConfig.ts`; default 0, document `0.08` in `server/.env.example`)
+- [x] Tests updated for P(≥k) with explicit `{ margin: 0.08 }` on plan example
+- [x] Bovada remains sole ingest source
+- [ ] Optional: max decimal, suppress high–win-prob cells, correlation v2, production margin tuning
 
 ---
 
@@ -253,9 +249,9 @@ Document chosen policy in config (`SIDE_BET_PRICING_MARGIN`, optional `SIDE_BET_
 
 ## Tests
 
-`server/src/services/odds/calculateRoundRobinOdds.test.ts` currently locks legacy Top 5 · 2 of 4 (+597). When switching models, add cases for:
+`server/src/services/odds/calculateRoundRobinOdds.test.ts` covers:
 
-- \(P(\geq k)\) enumeration vs known small examples,
-- 4 of 4 equivalence to product of four leg decimals (pre-margin),
-- margin monotonicity (higher \(m\) → lower decimal),
-- baseline vs Bovada input fixture if both supported.
+- `probAtLeastK` on small and four-player fixtures,
+- `publishDecimal` margin monotonicity,
+- Plan-example grid cells with `{ margin: 0.08 }` (e.g. Top 5 · 3 of 4 ≈ 5.764 / +476),
+- Zero-margin fair independence (Top 5 · 3 of 4 ≈ 6.225).
