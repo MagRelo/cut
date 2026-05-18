@@ -7,6 +7,7 @@ interface PlayerSelectionButtonProps {
   isSelected: boolean;
   onClick: () => void;
   iconType?: "pencil" | "check";
+  actionLabel?: string;
   disabled?: boolean;
 }
 
@@ -15,6 +16,7 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
   isSelected,
   onClick,
   iconType,
+  actionLabel,
   disabled = false,
 }) => {
   const handleClick = () => {
@@ -34,18 +36,18 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
     <button
       onClick={handleClick}
       disabled={disabled}
-      className={`w-full rounded-md transition-all relative ${
+      className={`w-full rounded-sm transition-all relative ${
         disabled ? "bg-white opacity-60 cursor-not-allowed" : "bg-white "
       }`}
     >
       {iconType && (
         <div
-          className={`absolute top-3 right-3 p-1 rounded-md ${
+          className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-sm px-2 py-1 ${
             isSelected ? "bg-green-600" : "bg-blue-500"
           }`}
         >
           <svg
-            className="w-4 h-4 text-white"
+            className="w-4 h-4 text-white shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -53,6 +55,9 @@ export const PlayerSelectionButton: React.FC<PlayerSelectionButtonProps> = ({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={getIconPath()} />
           </svg>
+          {actionLabel ? (
+            <span className="text-xs font-medium text-white font-display">{actionLabel}</span>
+          ) : null}
         </div>
       )}
       <PlayerSelectionCard player={player || undefined} />

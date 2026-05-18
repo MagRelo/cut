@@ -54,21 +54,65 @@ function asString(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : undefined;
 }
 
-/** Split "First Last" / "First Middle Last" into first + last for name lookup. */
-function splitPlayerName(full: string): { first: string; last: string } {
-  const parts = full.trim().split(/\s+/);
-  if (parts.length === 1) return { first: parts[0] ?? "", last: "" };
-  return { first: parts[0] ?? "", last: parts.slice(1).join(" ") };
+export interface PlayerNameParts {
+  first: string;
+  last: string;
+  /** Canonical "First Last" for storage and name lookup. */
+  display: string;
+}
+
+/**
+ * Parse a full name into first / last.
+ * Data Golf `player_name` uses "Last, First" (e.g. "Scheffler, Scottie"); otherwise "First Last".
+ */
+export function parsePlayerNameParts(full: string): PlayerNameParts {
+  const trimmed = full.trim();
+  if (!trimmed) return { first: "", last: "", display: "" };
+
+  const commaIdx = trimmed.indexOf(",");
+  if (commaIdx > 0) {
+    const lastPart = trimmed.slice(0, commaIdx).trim();
+    const firstPart = trimmed.slice(commaIdx + 1).trim();
+    if (lastPart && firstPart) {
+      const display = `${firstPart} ${lastPart}`.trim();
+      return { first: firstPart, last: lastPart, display };
+    }
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) {
+    const only = parts[0] ?? "";
+    return { first: only, last: "", display: only };
+  }
+  const first = parts[0] ?? "";
+  const last = parts.slice(1).join(" ");
+  return { first, last, display: `${first} ${last}`.trim() };
+}
+
+function parseRowDgRank(r: Record<string, unknown>): number | undefined {
+  return (
+    asNumber(r.dg_rank) ??
+    asNumber(r.datagolf_rank) ??
+    asNumber(r.rank) ??
+    asNumber(r.dg_ord) ??
+    asNumber(r.position)
+  );
+}
+
+function parseRowDgSkill(r: Record<string, unknown>): number | undefined {
+  return (
+    asNumber(r.dg_skill) ??
+    asNumber(r.dg_skill_estimate) ??
+    asNumber(r.skill) ??
+    asNumber(r.skill_estimate) ??
+    asNumber(r.pred_skill)
+  );
 }
 
 function isRankingLikeRow(o: unknown): o is Record<string, unknown> {
   if (!o || typeof o !== "object" || Array.isArray(o)) return false;
   const r = o as Record<string, unknown>;
-  const rank =
-    asNumber(r.dg_rank) ??
-    asNumber(r.rank) ??
-    asNumber(r.dg_ord) ??
-    asNumber(r.position);
+  const rank = parseRowDgRank(r);
   if (rank === undefined) return false;
   const hasName = Boolean(
     asString(r.player_name) ||
@@ -104,14 +148,9 @@ function extractRankingsArray(payload: unknown): Record<string, unknown>[] | nul
 }
 
 function normalizeApiRow(raw: Record<string, unknown>): DataGolfRanking | null {
-  const dg_rank =
-    asNumber(raw.dg_rank) ?? asNumber(raw.rank) ?? asNumber(raw.dg_ord) ?? asNumber(raw.position);
+  const dg_rank = parseRowDgRank(raw);
   if (dg_rank === undefined) return null;
-  const dg_skill =
-    asNumber(raw.dg_skill) ??
-    asNumber(raw.skill) ??
-    asNumber(raw.skill_estimate) ??
-    asNumber(raw.pred_skill);
+  const dg_skill = parseRowDgSkill(raw);
   const dgp_rank =
     asNumber(raw.dgp_rank) ??
     asNumber(raw.owgr_rank) ??
@@ -129,10 +168,12 @@ function normalizeApiRow(raw: Record<string, unknown>): DataGolfRanking | null {
   let last = lastIn;
   let player = playerName;
   if ((!first || !last) && playerName) {
-    const sp = splitPlayerName(playerName);
+    const sp = parsePlayerNameParts(playerName);
     first = first || sp.first;
     last = last || sp.last;
-    player = player || playerName;
+    player = sp.display || playerName;
+  } else if (first && last) {
+    player = `${first} ${last}`.trim();
   }
 
   const dgId = asNumber(raw.dg_id);
