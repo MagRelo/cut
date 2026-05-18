@@ -19,6 +19,10 @@ import { getContract, createPublicClient, http, erc20Abi } from "viem";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
+import {
+  applyOracleFeeWei,
+  buildGrossPrimaryPayoutPreview,
+} from "./primaryPayoutPreview.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -26,17 +30,6 @@ const isValidHexColor = (value: unknown): value is string => {
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
-
-function clampBps(value: number): number {
-  return Math.max(0, Math.min(10000, Math.floor(value)));
-}
-
-function applyOracleFeeWei(amountWei: bigint, oracleFeeBps: number): bigint {
-  const feeBps = clampBps(oracleFeeBps);
-  if (feeBps === 0) return amountWei;
-  if (feeBps >= 10000) return 0n;
-  return (amountWei * BigInt(10000 - feeBps)) / 10000n;
-}
 
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
@@ -163,20 +156,19 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       primaryPrizePool,
       primarySideBalance,
       secondarySideBalance,
-      currentPrimaryShareBps,
       totalSecondaryLiquidity,
       primaryDepositSecondarySubsidyBps,
+      oracleFeeBpsOnChain,
       paymentTokenAddress,
     ] = await Promise.all([
       contract.read.primaryPrizePool!() as Promise<bigint>,
       contract.read.getPrimarySideBalance!() as Promise<bigint>,
       contract.read.getSecondarySideBalance!() as Promise<bigint>,
-      contract.read.getPrimarySideShareBps!() as Promise<bigint>,
       contract.read.totalSecondaryLiquidity!() as Promise<bigint>,
       contract.read.primaryDepositSecondarySubsidyBps!() as Promise<bigint>,
+      contract.read.oracleFeeBps!() as Promise<bigint>,
       contract.read.paymentToken!() as Promise<`0x${string}`>,
     ]);
-
     // Get contract token balance using ERC20 contract
     const chainConfig = getChainConfig(contest.chainId);
     const publicClient = createPublicClient({
@@ -198,7 +190,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       primaryPrizePool: primaryPrizePool.toString(),
       primarySideBalance: primarySideBalance.toString(),
       secondarySideBalance: secondarySideBalance.toString(),
-      currentPrimaryShareBps: Number(currentPrimaryShareBps),
       totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
       primaryDepositSecondarySubsidyBps: Number(primaryDepositSecondarySubsidyBps),
     };
@@ -206,33 +197,15 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     console.log(`[settleContest] Snapshot captured:`, {
       primarySideBalance: snapshot.primarySideBalance,
       secondarySideBalance: snapshot.secondarySideBalance,
-      currentPrimaryShareBps: snapshot.currentPrimaryShareBps,
     });
 
     // Preserve payout/bonus totals at settlement time.
     // These on-chain values may be zeroed after users claim, but we want to
     // keep the UI display consistent by storing them in `contest.results`.
     // Store net-of-fee values so stored amounts match pushed payouts.
-    const rawOracleFeeBps =
-      (contest.settings as { oracleFeeBps?: unknown } | null | undefined)?.oracleFeeBps ?? 0;
-    const oracleFeeBps =
-      typeof rawOracleFeeBps === "number"
-        ? rawOracleFeeBps
-        : Number.parseInt(String(rawOracleFeeBps), 10) || 0;
-    const layer1PoolWei = BigInt(snapshot.primaryPrizePool);
-    const winningEntriesBigIntForPreview = winningEntries.map((id) => BigInt(id));
-    const payoutBpsBigIntForPreview = payoutBps.map((bp) => BigInt(bp));
+    const oracleFeeBps = Number(oracleFeeBpsOnChain);
 
-    const primaryPayoutPreview = new Map<string, bigint>();
-    for (let i = 0; i < winningEntries.length; i++) {
-      const entryId = winningEntries[i];
-      const payoutBps = payoutBpsBigIntForPreview[i];
-      if (!entryId || payoutBps === undefined) continue;
-      const payout = (layer1PoolWei * payoutBps) / 10000n;
-      primaryPayoutPreview.set(entryId, payout);
-    }
-
-    const secondaryWinningEntryBigInt = winningEntriesBigIntForPreview[0];
+    const secondaryWinningEntryBigInt = winningEntries[0] ? BigInt(winningEntries[0]) : undefined;
     if (secondaryWinningEntryBigInt === undefined) {
       return {
         success: false,
@@ -240,40 +213,18 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         error: "No secondary winning entry available for settlement preview",
       };
     }
-    const [winnerNetPositionWord, winnerEntryLiquidity] = await Promise.all([
-      contract.read.netPosition!([secondaryWinningEntryBigInt]) as Promise<bigint>,
-      contract.read.secondaryLiquidityPerEntry!([secondaryWinningEntryBigInt]) as Promise<bigint>,
-    ]);
+    const winnerNetPositionWord = (await contract.read.netPosition!([
+      secondaryWinningEntryBigInt,
+    ])) as bigint;
     const winnerSupply = sharesForSecondaryPricing(winnerNetPositionWord);
 
-    if (winnerEntryLiquidity > 0n && winnerSupply === 0n) {
-      const poolToDistribute = winnerEntryLiquidity;
-      let distributed = 0n;
-      for (let i = 0; i < winningEntries.length; i++) {
-        const eid = winningEntries[i];
-        const bps = payoutBpsBigIntForPreview[i];
-        if (!eid || bps === undefined) continue;
-        const extra = (poolToDistribute * bps) / 10000n;
-        if (extra > 0n) {
-          distributed += extra;
-          primaryPayoutPreview.set(eid, (primaryPayoutPreview.get(eid) ?? 0n) + extra);
-        }
-      }
-      if (distributed < poolToDistribute) {
-        const first = winningEntries[0];
-        if (!first) {
-          return {
-            success: false,
-            contestId,
-            error: "No winner entry id available for remainder distribution preview",
-          };
-        }
-        primaryPayoutPreview.set(
-          first,
-          (primaryPayoutPreview.get(first) ?? 0n) + (poolToDistribute - distributed),
-        );
-      }
-    }
+    const primaryPayoutPreview = buildGrossPrimaryPayoutPreview({
+      primaryPrizePoolWei: primaryPrizePool,
+      totalSecondaryLiquidityWei: totalSecondaryLiquidity,
+      winningEntries,
+      payoutBps,
+      winnerSupply,
+    });
 
     detailedResults.forEach((r) => {
       const grossPayoutAmountWei = primaryPayoutPreview.get(r.entryId) ?? 0n;
@@ -286,13 +237,24 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
 
-    // Call contract to settle
+    // Call contract to settle (wait for confirmation before push — pushPrimaryPayouts requires SETTLED)
     const hash = (await contract.write.settleContest!([
       winningEntriesBigInt,
       payoutBpsBigInt,
-    ])) as string;
+    ])) as `0x${string}`;
 
-    console.log(`[settleContest] Transaction hash: ${hash}`);
+    console.log(`[settleContest] Transaction submitted: ${hash}`);
+    const settleReceipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (settleReceipt.status !== "success") {
+      throw new Error(`settleContest transaction reverted: ${hash}`);
+    }
+    const onChainState = await readContestState(contest.address, contest.chainId);
+    if (onChainState !== ContestState.SETTLED) {
+      throw new Error(
+        `Contract state is ${onChainState} after settle tx ${hash}; expected SETTLED (${ContestState.SETTLED})`,
+      );
+    }
+    console.log(`[settleContest] Settlement confirmed on-chain: ${hash}`);
 
     const pushResult = await executeContestPayoutPushes({
       contestId,

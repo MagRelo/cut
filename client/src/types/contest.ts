@@ -162,8 +162,9 @@ export interface ContestSnapshot {
   primaryPrizePool: string; // bigint as string
   primarySideBalance: string; // bigint as string (total)
   secondarySideBalance: string; // bigint as string (total)
-  currentPrimaryShareBps: number;
   totalSecondaryLiquidity: string; // bigint as string
+  /** @deprecated Cross-subsidy metric from older contracts. */
+  currentPrimaryShareBps?: number;
   primaryDepositSecondarySubsidyBps?: number;
 
   /** @deprecated Older settlement snapshots used this name for the same immutable. */

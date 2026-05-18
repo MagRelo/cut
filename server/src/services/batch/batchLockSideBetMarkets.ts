@@ -7,13 +7,19 @@ import {
 
 export type { SideBetBatchOperationSummary } from "./sideBetBatchShared.js";
 
+/** Markets that accept new tickets (OPEN) or are paused but still have placements (UNAVAILABLE). */
+const LOCKABLE_MARKET_STATUSES: SideBetMarketStatus[] = [
+  SideBetMarketStatus.OPEN,
+  SideBetMarketStatus.UNAVAILABLE,
+];
+
 export async function batchLockSideBetMarkets(params?: {
   tournamentId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
   const where: {
-    status: typeof SideBetMarketStatus.OPEN;
+    status: { in: SideBetMarketStatus[] };
     tournamentId?: string;
-  } = { status: SideBetMarketStatus.OPEN };
+  } = { status: { in: LOCKABLE_MARKET_STATUSES } };
   if (params?.tournamentId) where.tournamentId = params.tournamentId;
 
   const markets = await prisma.sideBetMarket.findMany({ where, select: { id: true } });

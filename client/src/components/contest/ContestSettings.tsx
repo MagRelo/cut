@@ -129,17 +129,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
     },
   }).data as bigint | undefined;
 
-  const currentPrimaryShareBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "getPrimarySideShareBps",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address,
-    },
-  }).data as bigint | undefined;
-
   const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
   const tokenSymbol =
     paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.paymentTokenSymbol ?? "";
@@ -166,8 +155,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
 
   const resolvedTokenSymbol = tokenSymbol || "TOKEN";
 
-  const currentPrimarySharePercent =
-    currentPrimaryShareBps !== undefined ? Number(currentPrimaryShareBps) / 100 : undefined;
   const primaryDepositSecondarySubsidyPercent =
     primaryDepositSecondarySubsidyBps !== undefined
       ? Number(primaryDepositSecondarySubsidyBps) / 100
@@ -240,15 +227,6 @@ export const ContestSettings: React.FC<ContestSettingsProps> = ({ contest }) => 
             )}
 
             <hr className="my-2" />
-
-            {currentPrimaryShareBps !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Primary side share</span>
-                <span className="text-gray-900 font-semibold">
-                  {currentPrimarySharePercent?.toFixed(2) ?? "..."}%
-                </span>
-              </div>
-            )}
 
             {primaryDepositSecondarySubsidyBps !== undefined && (
               <div className="flex items-center justify-between">

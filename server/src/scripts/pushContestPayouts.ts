@@ -21,10 +21,17 @@ import {
 } from "../services/shared/contractClient.js";
 import { ContestState, type ContestResults } from "../services/shared/types.js";
 
+function parseContestIdFromArgv(): string | undefined {
+  const args = process.argv.slice(2).filter((a) => a !== "--");
+  return args[0] ?? process.env.CONTEST_ID;
+}
+
 async function main() {
-  const contestId = process.argv[2] ?? process.env.CONTEST_ID;
+  const contestId = parseContestIdFromArgv();
   if (!contestId || contestId.trim() === "") {
-    console.error("Missing contest id. Usage: ... -- <contestId>  or  CONTEST_ID=<contestId>");
+    console.error(
+      "Missing contest id. Usage: pnpm run service:push-contest-payouts -- <contestId>  or  CONTEST_ID=<contestId>",
+    );
     process.exit(1);
   }
 

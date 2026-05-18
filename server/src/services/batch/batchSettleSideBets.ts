@@ -8,12 +8,18 @@ import {
 
 export type { SideBetBatchOperationSummary } from "./sideBetBatchShared.js";
 
+/** Locked markets and UNAVAILABLE markets that may still hold open tickets from a prior OPEN window. */
+const SETTLEABLE_MARKET_STATUSES: SideBetMarketStatus[] = [
+  SideBetMarketStatus.LOCKED,
+  SideBetMarketStatus.UNAVAILABLE,
+];
+
 export async function batchSettleSideBets(params?: {
   tournamentId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
   const markets = await prisma.sideBetMarket.findMany({
     where: {
-      status: SideBetMarketStatus.LOCKED,
+      status: { in: SETTLEABLE_MARKET_STATUSES },
       tournament: {
         is: {
           status: "COMPLETED",
