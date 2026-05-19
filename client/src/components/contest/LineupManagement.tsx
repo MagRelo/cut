@@ -481,7 +481,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
       {!isLineupsLoading && lineups.length === 0 && (
         <Link
-          to="/lineups/create"
+          to="/lineups"
           className="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
         >
           Add Lineup

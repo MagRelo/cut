@@ -7,7 +7,8 @@ export const createTournamentLineupSchema = z.object({
   name: z.string().min(1, 'Lineup name is required'),
   playerIds: z
     .array(z.string().cuid('Invalid player ID'))
-    .min(1, 'At least one player is required'),
+    .min(0)
+    .max(4),
 });
 
 // Schema for updating a tournament lineup
@@ -15,7 +16,8 @@ export const updateTournamentLineupSchema = z.object({
   name: z.string().min(1, 'Lineup name is required').optional(),
   playerIds: z
     .array(z.string().cuid('Invalid player ID'))
-    .min(1, 'At least one player is required')
+    .min(0)
+    .max(4)
     .optional(),
 });
 

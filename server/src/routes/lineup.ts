@@ -4,9 +4,9 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
-import { hasMinimumPlayers, isDuplicateLineup } from "../utils/lineupValidation.js";
+import { isDuplicateLineup } from "../utils/lineupValidation.js";
 import { formatContestResponse } from "./contest.js";
-import { refreshSideBetQuoteForLineupAfterRosterChange } from "../services/sideBets/refreshOpenSideBetQuotes.js";
+import { markSideBetMarketStaleAfterRosterChange } from "../services/sideBets/markSideBetMarketStaleAfterRosterChange.js";
 
 const lineupRouter = new Hono();
 
@@ -21,12 +21,7 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
     }
 
-    // Validate minimum players
-    if (!hasMinimumPlayers(players)) {
-      return c.json({ error: "Lineup must have at least 1 player" }, 400);
-    }
-
-    // Check for duplicate lineup
+    // Check for duplicate lineup (skipped when players is empty)
     const isDuplicate = await isDuplicateLineup(user.userId, tournamentId, players);
     if (isDuplicate) {
       return c.json(
@@ -92,7 +87,7 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
       ),
     };
 
-    await refreshSideBetQuoteForLineupAfterRosterChange(tournamentLineup.id);
+    await markSideBetMarketStaleAfterRosterChange(tournamentLineup.id);
 
     return c.json({ lineups: [formattedLineup] });
   } catch (error) {
@@ -110,11 +105,6 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
 
     if (!Array.isArray(players) || players.length > 4) {
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
-    }
-
-    // Validate minimum players
-    if (!hasMinimumPlayers(players)) {
-      return c.json({ error: "Lineup must have at least 1 player" }, 400);
     }
 
     // Get the existing tournament lineup
@@ -199,7 +189,7 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
       ),
     };
 
-    await refreshSideBetQuoteForLineupAfterRosterChange(tournamentLineup.id);
+    await markSideBetMarketStaleAfterRosterChange(tournamentLineup.id);
 
     return c.json({ lineups: [formattedLineup] });
   } catch (error) {

@@ -13,6 +13,7 @@ import {
   type DataGolfFieldUpdatesPayload,
 } from "./odds/dataGolfFieldUpdates.js";
 import { syncTournamentTeeTimes } from "./syncTournamentTeeTimes.js";
+import { bootstrapTournamentLineups } from "./bootstrapTournamentLineups.js";
 import {
   mergeIdentityFromDirectoryPlayer,
   mergeIdentityFromProfileHeadshot,
@@ -574,6 +575,15 @@ export async function initTournament(pgaTourId: string) {
       console.warn(
         `[initTournament] tee time sync failed:`,
         teeErr instanceof Error ? teeErr.message : teeErr,
+      );
+    }
+
+    try {
+      await bootstrapTournamentLineups(tournament.id);
+    } catch (bootstrapErr) {
+      console.warn(
+        `[initTournament] lineup bootstrap failed:`,
+        bootstrapErr instanceof Error ? bootstrapErr.message : bootstrapErr,
       );
     }
 

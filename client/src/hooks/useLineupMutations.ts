@@ -2,10 +2,12 @@ import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-q
 import { usePostHog } from "posthog-js/react";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type TournamentLineup } from "../types/player";
+import { type PlayerWithTournamentData, type TournamentLineup } from "../types/player";
 import type { TournamentLineupListItem } from "../types/lineup";
+import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
+import type { ActiveTournamentPlayersResponse } from "./useTournamentData";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -21,6 +23,56 @@ interface UpdateLineupParams {
   lineupId: string;
   playerIds: string[];
   name?: string;
+}
+
+function buildPlayersFromIds(
+  queryClient: QueryClient,
+  tournamentId: string,
+  playerIds: string[],
+  lineups: TournamentLineupListItem[],
+): PlayerWithTournamentData[] {
+  const playerMap = new Map<string, PlayerWithTournamentData>();
+
+  const fieldData = queryClient.getQueryData<ActiveTournamentPlayersResponse>(
+    queryKeys.tournaments.activePlayers(tournamentId),
+  );
+  for (const player of fieldData?.players ?? []) {
+    if (!playerMap.has(player.id)) {
+      playerMap.set(player.id, player);
+    }
+  }
+
+  for (const lineup of lineups) {
+    for (const player of lineup.players ?? []) {
+      if (!playerMap.has(player.id)) {
+        playerMap.set(player.id, player);
+      }
+    }
+  }
+
+  return playerIds
+    .map((id) => playerMap.get(id))
+    .filter((p): p is PlayerWithTournamentData => p !== undefined);
+}
+
+/** Clears stale parlay odds in cache immediately when the roster changes. */
+function resetSideBetMarketCache(queryClient: QueryClient, lineupId: string) {
+  const previous = queryClient.getQueryData<SideBetMarketResponse>(
+    queryKeys.sideBet.market(lineupId),
+  );
+  queryClient.setQueryData<SideBetMarketResponse>(queryKeys.sideBet.market(lineupId), {
+    bettable: false,
+    marketStatus: "UNAVAILABLE",
+    unavailableReason: "ROSTER_CHANGED",
+    quoteVersion: 0,
+    selections: [],
+    tickets: previous?.tickets ?? [],
+  });
+}
+
+function invalidateSideBetQueries(queryClient: QueryClient, lineupId: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(lineupId) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(lineupId) });
 }
 
 /** Find which tournament list cache contains this lineup (for optimistic updates). */
@@ -119,8 +171,8 @@ export function useCreateLineup() {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byTournament(userId, tournamentId) });
       }
       if (data?.id) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(data.id) });
+        resetSideBetMarketCache(queryClient, data.id);
+        invalidateSideBetQueries(queryClient, data.id);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
@@ -145,7 +197,7 @@ export function useUpdateLineup() {
       return data.lineups[0];
     },
 
-    onMutate: async ({ lineupId, name }) => {
+    onMutate: async ({ lineupId, name, playerIds }) => {
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx) {
         return { previousLineups: undefined, tournamentId: undefined as string | undefined, lineupId };
@@ -161,6 +213,12 @@ export function useUpdateLineup() {
       );
 
       if (previousLineups) {
+        const optimisticPlayers = buildPlayersFromIds(
+          queryClient,
+          tournamentId,
+          playerIds,
+          previousLineups,
+        );
         queryClient.setQueryData<TournamentLineupListItem[]>(
           queryKeys.lineups.byTournament(uid, tournamentId),
           previousLineups.map((lineup) =>
@@ -168,11 +226,16 @@ export function useUpdateLineup() {
               ? {
                   ...lineup,
                   name: name || lineup.name,
+                  players: optimisticPlayers,
                 }
               : lineup
           )
         );
       }
+
+      resetSideBetMarketCache(queryClient, lineupId);
+      await queryClient.cancelQueries({ queryKey: queryKeys.sideBet.market(lineupId) });
+      await queryClient.cancelQueries({ queryKey: queryKeys.sideBet.tickets(lineupId) });
 
       return { previousLineups, tournamentId, lineupId, userId: uid };
     },
@@ -187,14 +250,29 @@ export function useUpdateLineup() {
       }
     },
 
-    onSuccess: (data) => {
-      const tid = data?.players?.[0]?.tournamentId;
+    onSuccess: (data, _variables, context) => {
+      const tid =
+        data?.players?.[0]?.tournamentId ?? context?.tournamentId;
       if (userId && data?.id && tid) {
         captureLineupUpdated(posthog, {
           user_id: userId,
           lineup_id: data.id,
           tournament_id: tid,
         });
+      }
+      if (userId && context?.tournamentId && data?.id && Array.isArray(data.players)) {
+        queryClient.setQueryData<TournamentLineupListItem[]>(
+          queryKeys.lineups.byTournament(userId, context.tournamentId),
+          (current) =>
+            current?.map((lineup) =>
+              lineup.id === data.id
+                ? {
+                    ...lineup,
+                    players: data.players,
+                  }
+                : lineup,
+            ) ?? current,
+        );
       }
       if (userId) {
         if (tid) {
@@ -203,8 +281,8 @@ export function useUpdateLineup() {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
       }
       if (data?.id) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(data.id) });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(data.id) });
+        resetSideBetMarketCache(queryClient, data.id);
+        invalidateSideBetQueries(queryClient, data.id);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },

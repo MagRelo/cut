@@ -27,7 +27,6 @@ import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { LineupList } from "./pages/LineupListPage";
-import LineupCreatePage from "./pages/LineupCreatePage";
 
 import { Contests } from "./pages/ContestListPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
@@ -137,22 +136,6 @@ const AppShell: React.FC = () => {
                   <Route path="/contest/:id" element={<ContestLobby />} />
 
                   {/* Lineups */}
-                  <Route
-                    path="/lineups/create"
-                    element={
-                      <ProtectedRoute>
-                        <LineupCreatePage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/lineups/edit/:lineupId"
-                    element={
-                      <ProtectedRoute>
-                        <LineupCreatePage />
-                      </ProtectedRoute>
-                    }
-                  />
                   <Route
                     path="/lineups"
                     element={

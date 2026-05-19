@@ -108,7 +108,7 @@ export function OnboardingPage() {
     setSaving(true);
     try {
       await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
-      const nextPath = editingNotAllowed ? "/contests" : "/lineups/create";
+      const nextPath = editingNotAllowed ? "/contests" : "/lineups";
       navigate(nextPath, { replace: true });
     } finally {
       setSaving(false);

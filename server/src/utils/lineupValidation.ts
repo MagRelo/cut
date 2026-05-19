@@ -60,6 +60,11 @@ export async function isDuplicateLineup(
   playerIds: string[],
   excludeLineupId?: string
 ): Promise<boolean> {
+  // Empty lineups are not considered duplicates of each other
+  if (playerIds.length === 0) {
+    return false;
+  }
+
   const normalized = normalizePlayerSet(playerIds);
 
   // Fetch all lineups for this user in this tournament

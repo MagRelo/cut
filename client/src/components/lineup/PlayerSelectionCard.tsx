@@ -113,23 +113,10 @@ export const PlayerSelectionCard: React.FC<{
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-left font-display leading-tight text-lg font-semibold text-slate-400">
+            <p className="text-left font-display text-lg font-semibold leading-tight text-slate-400">
               No Player Selected
             </p>
             <p className="mt-1 text-left text-sm text-slate-400">{"\u00A0"}</p>
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="grid grid-cols-3 gap-1.5">
-            <RankPill label="OWGR" value={"\u00A0"} muted className="w-full justify-center" />
-            <RankPill label="FedEx" value={"\u00A0"} muted className="w-full justify-center" />
-            <RankPill label="DG" value={"\u00A0"} muted className="w-full justify-center" />
-          </div>
-          <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-            <StatTile label="Wins" value={"\u00A0"} muted />
-            <StatTile label="T10" value={"\u00A0"} muted />
-            <StatTile label="T25" value={"\u00A0"} muted />
-            <StatTile label="Cuts" value={"\u00A0"} muted />
           </div>
         </div>
       </div>

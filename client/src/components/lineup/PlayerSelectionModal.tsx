@@ -2,13 +2,16 @@ import React, { Fragment, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import type { PlayerWithTournamentData } from "../../types/player";
 import { PlayerSelectionButton } from "./PlayerSelectionButton";
+import { ErrorMessage } from "../common/ErrorMessage";
 
 interface PlayerSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (playerId: string | null) => void;
+  onSelect: (playerId: string | null) => void | Promise<void>;
   availablePlayers: PlayerWithTournamentData[];
   selectedPlayers: string[];
+  isSaving?: boolean;
+  saveError?: string | null;
 }
 
 type SortField = "dg" | "name" | "owgr" | "fedex";
@@ -28,12 +31,15 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
   onSelect,
   availablePlayers,
   selectedPlayers,
+  isSaving = false,
+  saveError = null,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("dg");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const handleClose = () => {
+    if (isSaving) return;
     setSearchQuery("");
     onClose();
   };
@@ -66,20 +72,16 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
           aOwgr = Number(a.pga_performance?.standings?.owgr);
           bOwgr = Number(b.pga_performance?.standings?.owgr);
           if (!aOwgr && !bOwgr) comparison = 0;
-          else if (!aOwgr)
-            comparison = 1; // Put missing data at bottom
-          else if (!bOwgr)
-            comparison = -1; // Put missing data at bottom
+          else if (!aOwgr) comparison = 1;
+          else if (!bOwgr) comparison = -1;
           else comparison = aOwgr - bOwgr;
           break;
         case "fedex":
           aFedex = Number(a.pga_performance?.standings?.rank);
           bFedex = Number(b.pga_performance?.standings?.rank);
           if (!aFedex && !bFedex) comparison = 0;
-          else if (!aFedex)
-            comparison = 1; // Put missing data at bottom
-          else if (!bFedex)
-            comparison = -1; // Put missing data at bottom
+          else if (!aFedex) comparison = 1;
+          else if (!bFedex) comparison = -1;
           else comparison = aFedex - bFedex;
           break;
       }
@@ -87,6 +89,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
     });
 
   const toggleSort = (field: SortField) => {
+    if (isSaving) return;
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -97,7 +100,7 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={handleClose}>
         <TransitionChild
           as={Fragment}
           enter="ease-out duration-200"
@@ -124,24 +127,42 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
               <DialogPanel className="w-full max-w-modal-wide transform overflow-hidden rounded-lg bg-gradient-to-b from-slate-50 to-white text-left align-middle shadow-xl ring-1 ring-slate-900/[0.08] transition-all">
                 <div className="p-4 sm:p-6">
                   <DialogTitle className="pb-2 font-display text-2xl font-semibold leading-tight tracking-tight text-slate-900">
-                    Select Player
+                    {isSaving ? "Saving lineup..." : "Select Player"}
                   </DialogTitle>
 
+                  {saveError ? (
+                    <div className="mb-3">
+                      <ErrorMessage message={saveError} />
+                    </div>
+                  ) : null}
+
                   <div className="overflow-hidden rounded-md border border-slate-300/90 shadow-sm ring-1 ring-slate-900/[0.04]">
-                    <div className="grid max-h-[55vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-2">
-                      {filteredPlayers.map((player) => {
-                        const isAlreadySelected = selectedPlayers.includes(player.id);
-                        return (
-                          <PlayerSelectionButton
-                            key={player.id as string}
-                            player={player}
-                            isSelected={isAlreadySelected}
-                            onClick={() => onSelect(player.id)}
-                            iconType={isAlreadySelected ? "check" : undefined}
-                            disabled={isAlreadySelected}
-                          />
-                        );
-                      })}
+                    <div className="relative">
+                      <div
+                        className={`grid max-h-[55vh] grid-cols-1 gap-3 overflow-y-auto bg-gradient-to-b from-slate-500 via-slate-700 to-slate-900 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),inset_0_-18px_40px_-12px_rgba(2,6,23,0.45)] md:grid-cols-2 lg:grid-cols-2 ${
+                          isSaving ? "pointer-events-none opacity-60" : ""
+                        }`}
+                      >
+                        {filteredPlayers.map((player) => {
+                          const isAlreadySelected = selectedPlayers.includes(player.id);
+                          return (
+                            <PlayerSelectionButton
+                              key={player.id as string}
+                              player={player}
+                              isSelected={isAlreadySelected}
+                              onClick={() => void onSelect(player.id)}
+                              iconType={isAlreadySelected ? "check" : undefined}
+                              disabled={isAlreadySelected || isSaving}
+                            />
+                          );
+                        })}
+                      </div>
+                      {isSaving ? (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-900/50">
+                          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          <span className="font-display text-sm font-medium text-white">Saving...</span>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="border-t border-slate-500/20 bg-slate-100 p-3">
@@ -149,28 +170,32 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleSort("owgr")}
-                          className={sortButtonClass(sortField, "owgr")}
+                          disabled={isSaving}
+                          className={`${sortButtonClass(sortField, "owgr")} disabled:cursor-not-allowed disabled:opacity-50`}
                         >
                           OWGR {sortField === "owgr" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleSort("fedex")}
-                          className={sortButtonClass(sortField, "fedex")}
+                          disabled={isSaving}
+                          className={`${sortButtonClass(sortField, "fedex")} disabled:cursor-not-allowed disabled:opacity-50`}
                         >
                           FedEx {sortField === "fedex" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleSort("dg")}
-                          className={sortButtonClass(sortField, "dg")}
+                          disabled={isSaving}
+                          className={`${sortButtonClass(sortField, "dg")} disabled:cursor-not-allowed disabled:opacity-50`}
                         >
                           DG {sortField === "dg" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleSort("name")}
-                          className={sortButtonClass(sortField, "name")}
+                          disabled={isSaving}
+                          className={`${sortButtonClass(sortField, "name")} disabled:cursor-not-allowed disabled:opacity-50`}
                         >
                           Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                         </button>
@@ -181,15 +206,17 @@ export const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({
                   <div className="mt-2 flex justify-end gap-1">
                     <button
                       type="button"
-                      onClick={() => onSelect(null)}
-                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600"
+                      onClick={() => void onSelect(null)}
+                      disabled={isSaving}
+                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Leave Empty
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600"
+                      disabled={isSaving}
+                      className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs font-normal text-slate-500 font-display transition-colors hover:bg-slate-200/35 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Close
                     </button>

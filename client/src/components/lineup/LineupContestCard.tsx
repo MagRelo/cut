@@ -5,11 +5,16 @@ import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
 import { SideBetPanel } from "./SideBetPanel";
+import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
+import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
+import { useActiveTournament } from "../../hooks/useTournamentData";
+import { useLineupData } from "../../hooks/useLineupData";
+import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -35,7 +40,6 @@ interface LineupContestCardProps {
   roundDisplay: string;
   contests?: ContestInfo[];
   isEditable?: boolean;
-  editHref?: string;
 }
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
@@ -49,33 +53,47 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   roundDisplay,
   contests = [],
   isEditable = false,
-  editHref,
 }) => {
-  // Tab state
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
 
-  // Player modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
+  const { players: fieldPlayers, isTournamentEditable } = useActiveTournament();
+  const { updateLineup, lineups } = useLineupData();
 
-  const openPlayerModal = (player: PlayerWithTournamentData) => {
-    setSelectedPlayer(player);
-    setIsModalOpen(true);
+  const lineupId = lineup.tournamentLineup?.id ?? "";
+  const initialPlayers = lineup.tournamentLineup?.players ?? [];
+  const canEditSlots = Boolean(isEditable && isTournamentEditable && lineupId);
+
+  const slotEditor = useLineupSlotEditor({
+    lineupId,
+    initialPlayers,
+    fieldPlayers: fieldPlayers ?? [],
+    lineups,
+    updateLineup,
+  });
+
+  const slotActionsDisabled = !canEditSlots || slotEditor.isSaving;
+
+  const openDetailModal = (player: PlayerWithTournamentData) => {
+    setDetailPlayer(player);
+    setIsDetailModalOpen(true);
   };
 
-  const closePlayerModal = () => {
-    setIsModalOpen(false);
-    setSelectedPlayer(null);
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailPlayer(null);
   };
 
-  const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+  const displayPlayers = canEditSlots
+    ? slotEditor.slots.filter((p): p is PlayerWithTournamentData => p !== null)
+    : sortPlayersByLeaderboard(initialPlayers);
 
-  // Calculate total points for the lineup
-  const totalPoints = lineupPlayers.reduce((sum, player) => {
+  const playerCount = canEditSlots ? slotEditor.filledCount : initialPlayers.length;
+
+  const totalPoints = (canEditSlots ? displayPlayers : initialPlayers).reduce((sum, player) => {
     return sum + (player.tournamentData?.total || 0);
   }, 0);
-
-  const sortedPlayers = sortPlayersByLeaderboard(lineupPlayers);
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =
@@ -85,12 +103,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
   const sideBetLineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
-  const sideBetPlayerLastNames = sortedPlayers
+  const sideBetPlayerLastNames = (canEditSlots ? displayPlayers : sortPlayersByLeaderboard(initialPlayers))
     .map((player) => player.pga_lastName)
     .filter(Boolean)
     .join(", ");
   const sideBetUserLabel = lineup.user?.name || lineup.user?.email || "Unknown User";
-  const canEditLineup = Boolean(isEditable && editHref);
 
   return (
     <div className="">
@@ -112,37 +129,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               {lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {canEditLineup ? (
-              <Link
-                to={editHref!}
-                className="mr-1 inline-flex items-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
-              >
-                <span>Edit</span>
-                <svg
-                  className="h-4 w-4 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-              </Link>
-            ) : (
-              <div className="text-right pr-5">
-                <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
-                <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-                  PTS
-                </div>
-              </div>
-            )}
+          <div className="flex shrink-0 items-center gap-2 pr-5 text-right">
+            <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
+            <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+              PTS
+            </div>
           </div>
         </div>
       </div>
@@ -156,7 +147,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 tabButtonClassName(selected, { compact: true })
               }
             >
-              Players ({lineupPlayers.length})
+              Players ({playerCount})
             </Tab>
             <Tab
               className={({ selected }: { selected: boolean }) =>
@@ -189,15 +180,82 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             {/* PLAYERS TAB */}
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
               <div className="space-y-1">
-                {sortedPlayers.map((player) => (
-                  <div key={player.id} className="p-3">
-                    <PlayerDisplayRow
-                      player={player}
-                      roundDisplay={roundDisplay}
-                      onClick={() => openPlayerModal(player)}
-                    />
-                  </div>
-                ))}
+                {canEditSlots ? (
+                  slotEditor.slots.map((player, index) => (
+                    <div key={`slot-${index}`} className="p-3">
+                      {player ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <PlayerDisplayRow
+                              player={player}
+                              roundDisplay={roundDisplay}
+                              onClick={() => openDetailModal(player)}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Edit player in slot ${index + 1}`}
+                          >
+                            <svg
+                              className="h-4 w-4 shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                            Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                              <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
+                            </div>
+                            <span className="truncate text-md font-semibold leading-tight text-slate-400">
+                              No player selected
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Add player to slot ${index + 1}`}
+                          >
+                            <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+                            Add
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  displayPlayers.map((player) => (
+                    <div key={player.id} className="p-3">
+                      <PlayerDisplayRow
+                        player={player}
+                        roundDisplay={roundDisplay}
+                        onClick={() => openDetailModal(player)}
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             </TabPanel>
 
@@ -219,7 +277,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   contests.map((contestInfo) => {
                     return (
                       <div key={contestInfo.contest.id} className="flex items-center gap-2">
-                        {/* Contest Card */}
                         <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow-sm">
                           <Link to={`/contest/${contestInfo.contest.id}`} className="block">
                             <ContestCard contest={contestInfo.contest} />
@@ -253,11 +310,22 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         </TabGroup>
       </div>
 
-      {/* Player Detail Modal */}
+      {canEditSlots ? (
+        <PlayerSelectionModal
+          isOpen={slotEditor.selectedSlotIndex !== null}
+          onClose={slotEditor.closeSlot}
+          onSelect={slotEditor.handlePlayerSelect}
+          availablePlayers={fieldPlayers ?? []}
+          selectedPlayers={slotEditor.selectedPlayerIds}
+          isSaving={slotEditor.isSaving}
+          saveError={slotEditor.saveError}
+        />
+      ) : null}
+
       <PlayerDetailModal
-        isOpen={isModalOpen}
-        onClose={closePlayerModal}
-        player={selectedPlayer}
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+        player={detailPlayer}
       />
     </div>
   );
