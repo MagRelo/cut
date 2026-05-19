@@ -1,3 +1,14 @@
+/** Published decimal odds floor (≈ -10000 American). */
+export const PUBLISHED_DECIMAL_MIN = 1.01;
+
+/** Published decimal odds ceiling (≈ +20000 American). */
+export const PUBLISHED_DECIMAL_MAX = 201;
+
+export function clampPublishedDecimal(decimal: number): number {
+  if (!Number.isFinite(decimal)) return decimal;
+  return Math.min(Math.max(decimal, PUBLISHED_DECIMAL_MIN), PUBLISHED_DECIMAL_MAX);
+}
+
 /** American odds string for display (integer-ish, no cents). */
 export function decimalToAmerican(decimal: number): string {
   if (!Number.isFinite(decimal) || decimal <= 1) {

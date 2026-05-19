@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { clampPublishedDecimal, decimalToAmerican } from "./decimalAmerican.js";
 import {
   calculateRoundRobinOdds,
   probAtLeastK,
@@ -79,5 +80,36 @@ describe("calculateRoundRobinOdds", () => {
     const fairCell = fair.find((c) => c.row === "3 of 4" && c.col === "Top 10")!;
     const marginedCell = margined.find((c) => c.row === "3 of 4" && c.col === "Top 10")!;
     expect(marginedCell.decimal).toBeLessThan(fairCell.decimal);
+  });
+
+  it("clamps extreme longshots to +20000 american", () => {
+    const longshots: typeof planPlayers = [
+      { top5: 500, top10: 500, top20: 500 },
+      { top5: 500, top10: 500, top20: 500 },
+      { top5: 500, top10: 500, top20: 500 },
+      { top5: 500, top10: 500, top20: 500 },
+    ];
+    const cells = calculateRoundRobinOdds(longshots, { margin: 0 });
+    for (const cell of cells) {
+      expect(cell.american).toBe("+20000");
+      expect(cell.decimal).toBe(201);
+    }
+  });
+
+  it("clamps near-certain lines to decimal 1.01", () => {
+    const probs = [0.9999, 0.9999, 0.9999, 0.9999];
+    const raw = publishDecimal(probs, 4, 0);
+    expect(raw).toBeLessThan(1.01);
+    const decimal = clampPublishedDecimal(Math.round(raw * 10000) / 10000);
+    expect(decimal).toBe(1.01);
+    expect(decimalToAmerican(decimal)).toBe("-10000");
+  });
+
+  it("keeps published decimals within configured bounds for plan grid", () => {
+    const cells = calculateRoundRobinOdds(planPlayers, margin08);
+    for (const cell of cells) {
+      expect(cell.decimal).toBeGreaterThanOrEqual(1.01);
+      expect(cell.decimal).toBeLessThanOrEqual(201);
+    }
   });
 });

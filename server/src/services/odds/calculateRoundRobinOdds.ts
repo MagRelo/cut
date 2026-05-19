@@ -1,4 +1,8 @@
-import { decimalToAmerican, decimalToEnglishFractional } from "./decimalAmerican.js";
+import {
+  clampPublishedDecimal,
+  decimalToAmerican,
+  decimalToEnglishFractional,
+} from "./decimalAmerican.js";
 import { sideBetPricingMargin } from "../sideBets/sideBetPricingConfig.js";
 
 export type SideBetRowLabel = "2 of 4" | "3 of 4" | "4 of 4";
@@ -122,7 +126,8 @@ export function calculateRoundRobinOdds(
     for (const { label: col, key } of COLS) {
       const probs = players.map((p) => 1 / p[key]);
       const rawDecimal = publishDecimal(probs, k, margin);
-      const decimal = Math.round(rawDecimal * 10000) / 10000;
+      const rounded = Math.round(rawDecimal * 10000) / 10000;
+      const decimal = clampPublishedDecimal(rounded);
 
       cells.push({
         row,
