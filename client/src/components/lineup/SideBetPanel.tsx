@@ -537,8 +537,8 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
                     {activeSelection.colLabel} (including ties) · {activeSelection.rowLabel}
                   </h2>
                   <p className="mt-1 text-sm leading-snug text-gray-700">
-                    At least {activeSelection.hitsRequired} of your four players must finish in the
-                    top {activeSelection.topN} for this ticket to win.
+                    At least {activeSelection.hitsRequired} of the players must finish in the top{" "}
+                    {activeSelection.topN} for this ticket to win.
                   </p>
                 </div>
 
