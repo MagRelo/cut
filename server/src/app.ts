@@ -17,7 +17,7 @@ type PageMetadata = {
   type: "website";
 };
 
-const DEFAULT_OG_IMAGE = "https://cut.mattlovan.dev/cut-logo2-og.png";
+const DEFAULT_OG_IMAGE = "https://playthecut.com/cut-logo2-og.png";
 const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
 const TITLE_SUFFIX = " | the Cut";
 
