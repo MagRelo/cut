@@ -95,7 +95,7 @@ export function CUTInfoPage() {
         {/* Token Description */}
         <div className="text-sm text-gray-700 font-display mb-4">
           <p>
-            CUT is the currency of the Cut platform. Each CUT is backed by and convertible to USDC
+            CUT is the currency of The Cut platform. Each CUT is backed by and convertible to USDC
             at a 1:1 ratio.
           </p>
         </div>

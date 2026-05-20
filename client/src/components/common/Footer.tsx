@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
               className="flex items-center gap-2 opacity-85 hover:opacity-100 transition-opacity"
             >
               <img src="/logo-transparent.png" alt="logo" className="h-8" />
-              <span className="text-xl font-semibold text-gray-800 font-display">the Cut</span>
+              <span className="text-xl font-semibold text-gray-800 font-display">The Cut</span>
             </Link>
           </div>
           <div className="flex items-center gap-4">

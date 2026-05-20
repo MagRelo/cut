@@ -34,7 +34,7 @@ export function ConnectPage() {
           <img src="/logo-transparent.png" alt="Cut Logo" className="h-20 w-auto" />
 
           <h1 className="text-4xl leading-tight font-bold text-black">
-            the Cut
+            The Cut
             {/* <div className="text-base font-bold text-gray-400">Fantasy Golf + </div>
             <div className="text-base font-bold text-gray-400">Prediction Market</div> */}
           </h1>

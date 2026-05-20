@@ -98,7 +98,7 @@ export const Sell = () => {
             Exchange {platformTokenSymbol || "CUT"} for {paymentTokenSymbol || "USDC"}
           </h3>
           <p className="text-sm text-gray-600 font-display">
-            {platformTokenSymbol} is the currency of the Cut platform. Each {platformTokenSymbol} is
+            {platformTokenSymbol} is the currency of The Cut platform. Each {platformTokenSymbol} is
             backed by and convertible to {paymentTokenSymbol} at a 1:1 ratio.
           </p>
         </div>

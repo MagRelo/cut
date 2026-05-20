@@ -44,7 +44,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         <div className="p-8 text-center">
           <div className="flex items-center gap-3 justify-center text-gray-400 font-medium">
             <LoadingSpinnerSmall color={"green"} />
-            Connecting to the Cut...
+            Connecting to The Cut...
           </div>
         </div>
       ) : (

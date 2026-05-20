@@ -61,7 +61,7 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
       }`}
     >
       <div className="flex flex-col items-center gap-2 text-white">
-        <img src="/logo-transparent.png" alt="the Cut" className="h-14 w-auto" />
+        <img src="/logo-transparent.png" alt="The Cut" className="h-14 w-auto" />
 
         <div>
           <p className="text-sm tracking-[0.2em] uppercase text-white/80">playthecut</p>

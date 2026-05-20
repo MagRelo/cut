@@ -583,7 +583,7 @@ export const FAQPage: React.FC = () => {
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>USDC is a stablecoin pegged 1:1 to the US Dollar</li>
 
-                <li>You need USDC to buy CUT tokens on the Cut</li>
+                <li>You need USDC to buy CUT tokens on The Cut</li>
                 <li>
                   See how to get USDC on the{" "}
                   <Link to="/usdc" className="text-blue-600 hover:underline">
@@ -686,7 +686,7 @@ export const FAQPage: React.FC = () => {
                 <li>They handle all financial transactions transparently and securely</li>
                 <li>No central authority can manipulate funds or results</li>
                 <li>All contract code is publicly verifiable on the blockchain</li>
-                <li>the Cut operates on the Base network (Ethereum Layer 2)</li>
+                <li>The Cut operates on the Base network (Ethereum Layer 2)</li>
               </ul>
             </div>
 

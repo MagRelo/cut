@@ -187,7 +187,7 @@ export function USDCInfoPage() {
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span>
-                Make sure you're using <strong>USDC on the Base network</strong>. the Cut operates
+                Make sure you're using <strong>USDC on the Base network</strong>. The Cut operates
                 on Base (Layer 2).
               </span>
             </li>

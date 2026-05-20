@@ -19,7 +19,7 @@ type PageMetadata = {
 
 const DEFAULT_OG_IMAGE = "https://playthecut.com/cut-logo2-og.png";
 const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
-const TITLE_SUFFIX = " | the Cut";
+const TITLE_SUFFIX = " | The Cut";
 
 function getContestEntryLabel(settings: unknown): string | null {
   if (!settings || typeof settings !== "object") {
@@ -94,7 +94,7 @@ async function resolveMetadataForPath(
   const path = requestUrl.pathname;
   const requestPathWithQuery = `${requestUrl.pathname}${requestUrl.search}`;
   const defaults: PageMetadata = {
-    title: "the Cut",
+    title: "The Cut",
     description: DEFAULT_DESCRIPTION,
     image: DEFAULT_OG_IMAGE,
     url: `${baseUrl}${requestPathWithQuery}`,
@@ -136,7 +136,7 @@ async function resolveMetadataForPath(
           return {
             ...defaults,
             title: `${playerName} | ${tournament.name}`,
-            description: `View ${playerName} on the ${tournament.name} leaderboard on the Cut.`,
+            description: `View ${playerName} on the ${tournament.name} leaderboard on The Cut.`,
           };
         }
       }
@@ -145,7 +145,7 @@ async function resolveMetadataForPath(
         return {
           ...defaults,
           title: `${tournament.name}${TITLE_SUFFIX}`,
-          description: `Live leaderboard and scoring for ${tournament.name} on the Cut.`,
+          description: `Live leaderboard and scoring for ${tournament.name} on The Cut.`,
         };
       }
     } catch (error) {
@@ -179,7 +179,7 @@ async function resolveMetadataForPath(
         return {
           ...defaults,
           title,
-          description: contest.description?.trim() || "Join this contest on the Cut.",
+          description: contest.description?.trim() || "Join this contest on The Cut.",
         };
       }
     } catch (error) {

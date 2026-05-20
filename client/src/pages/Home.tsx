@@ -18,7 +18,7 @@ export const Home: React.FC = () => {
             />
 
             <h1 className="min-w-0 text-4xl font-bold text-black sm:text-5xl md:text-6xl">
-              the Cut
+              The Cut
               <div className="text-xl sm:text-2xl font-bold text-gray-400">Fantasy Golf + </div>
               <div className="text-xl sm:text-2xl font-bold text-gray-400">Prediction Market</div>
             </h1>
@@ -204,8 +204,8 @@ export const Home: React.FC = () => {
       {/* Share component */}
       <Share
         url="https://playthecut.com"
-        title="the Cut Fantasy Golf"
-        subtitle="Play the Cut Fantasy Golf"
+        title="The Cut Fantasy Golf"
+        subtitle="Play The Cut Fantasy Golf"
       />
     </div>
   );
