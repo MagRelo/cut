@@ -12,7 +12,12 @@ import { batchSettleSideBets } from "../services/batch/batchSettleSideBets.js";
 import { batchCloseSideBetMarkets } from "../services/batch/batchCloseSideBetMarkets.js";
 import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 import { getAdminDashboard } from "../services/admin/getAdminDashboard.js";
-import { isEmailConfigured, sendPreviewEmail, sendTestEmail } from "../lib/email/index.js";
+import {
+  isEmailConfigured,
+  PREVIEW_KINDS,
+  sendSampleEmail,
+  type PreviewKind,
+} from "../lib/email/index.js";
 
 const adminRouter = new Hono();
 
@@ -392,7 +397,7 @@ adminRouter.post("/bets/side/settle", requireAuth, requireAdmin, async (c) => {
   }
 });
 
-/** POST /api/admin/test-email — MailerSend test. Body: `{ "to": "...", "mode"?: "minimal" | "preview" }`. Default minimal. */
+/** POST /api/admin/test-email — one real send (fixture content). Body: `{ "to": "...", "mode"?: PreviewKind | "preview" }`. */
 adminRouter.post("/test-email", requireAuth, requireAdmin, async (c) => {
   if (!isEmailConfigured()) {
     return c.json(
@@ -408,16 +413,19 @@ adminRouter.post("/test-email", requireAuth, requireAdmin, async (c) => {
       return c.json({ error: 'Invalid or missing "to" email address' }, 400);
     }
 
-    const mode = typeof body?.mode === "string" ? body.mode.trim() : "minimal";
-    if (mode === "preview") {
-      await sendPreviewEmail(to);
-    } else if (mode === "minimal" || mode === "") {
-      await sendTestEmail(to);
-    } else {
-      return c.json({ error: 'Invalid "mode"; use "minimal" or "preview"' }, 400);
+    const rawMode = typeof body?.mode === "string" ? body.mode.trim() : "minimal";
+    const mode: PreviewKind =
+      rawMode === "preview" ? "new-tournament" : (rawMode as PreviewKind) || "minimal";
+    if (!PREVIEW_KINDS.includes(mode)) {
+      return c.json(
+        { error: `Invalid "mode"; use: ${PREVIEW_KINDS.join(", ")} or preview` },
+        400,
+      );
     }
 
-    return c.json({ ok: true, to, mode: mode || "minimal" });
+    await sendSampleEmail(to, mode);
+
+    return c.json({ ok: true, to, mode });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send test email";
     console.error("admin test-email error:", error);

@@ -3,6 +3,7 @@ export {
   isEmailConfigured,
   sendEmail,
   sendPreviewEmail,
+  sendSampleEmail,
   sendTestEmail,
 } from "./transport.js";
 
@@ -41,4 +42,9 @@ export { sendReminderNoContestBlast } from "./send/reminder.js";
 export { sendTournamentRecapBlast } from "./send/recap.js";
 export { sendBehindTheScenesBlast } from "./send/behindTheScenes.js";
 
-export { buildPreviewHtmlByKind, PREVIEW_KINDS, type PreviewKind } from "./preview/render.js";
+export {
+  buildPreviewHtmlByKind,
+  renderPreviewEmailByKind,
+  PREVIEW_KINDS,
+  type PreviewKind,
+} from "./preview/render.js";

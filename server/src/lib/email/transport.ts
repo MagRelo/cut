@@ -1,7 +1,10 @@
 import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
 import { buildTestEmailHtml } from "./templates.js";
-import { fixtureNewTournament } from "./preview/fixtures.js";
-import { newTournamentSubject, buildNewTournamentHtml } from "./emails/newTournament.js";
+import {
+  renderPreviewEmailByKind,
+  PREVIEW_KINDS,
+  type PreviewKind,
+} from "./preview/render.js";
 
 export interface EmailOptions {
   to: string;
@@ -78,10 +81,17 @@ export async function sendTestEmail(to: string): Promise<void> {
 
 /** Full new-tournament preview HTML (summary sections). */
 export async function sendPreviewEmail(to: string): Promise<void> {
-  const data = await fixtureNewTournament();
-  await sendEmail({
-    to,
-    subject: newTournamentSubject(data),
-    html: buildNewTournamentHtml(data),
-  });
+  await sendSampleEmail(to, "new-tournament");
+}
+
+/**
+ * Send one real message using preview/fixture content. Does not write EmailSendLog
+ * (safe to repeat for MailerSend testing).
+ */
+export async function sendSampleEmail(to: string, kind: PreviewKind = "minimal"): Promise<void> {
+  if (!PREVIEW_KINDS.includes(kind)) {
+    throw new Error(`Unknown kind "${kind}". Use: ${PREVIEW_KINDS.join(", ")}`);
+  }
+  const { subject, html } = await renderPreviewEmailByKind(kind);
+  await sendEmail({ to, subject, html });
 }

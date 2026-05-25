@@ -88,8 +88,26 @@ pnpm --filter server run script:send-blast behind-the-scenes --dry-run
 
 Add `--force` to bypass blast-level idempotency for `new-tournament`, `recap`, `behind-the-scenes`.
 
-**Smoke test (layout only):** `script:send-test-email`  
-**Live preview send:** `POST /api/admin/test-email` with `{ "to": "...", "mode": "preview" }`
+### One address (verify MailerSend)
+
+Sends a **real** message via MailerSend. Does **not** write `EmailSendLog` (repeat as needed).
+
+**Welcome** (fixture copy):
+
+```bash
+pnpm --filter server run script:send-test-email you@example.com welcome
+```
+
+**Other kinds:** `new-tournament` | `reminder` | `recap` | `behind-the-scenes` | `minimal` (default)
+
+```bash
+pnpm --filter server run script:send-test-email you@example.com
+pnpm --filter server run script:send-test-email you@example.com new-tournament
+```
+
+Or: `TO=you@example.com pnpm --filter server run script:send-test-email welcome`
+
+**Admin API** (same kinds as `mode`): `POST /api/admin/test-email` with `{ "to": "you@example.com", "mode": "welcome" }`. Default `mode` is `minimal`.
 
 ---
 

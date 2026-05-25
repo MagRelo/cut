@@ -1,9 +1,10 @@
 import { buildTestEmailHtml } from "../templates.js";
-import { buildBehindTheScenesHtml } from "../emails/behindTheScenes.js";
-import { buildNewTournamentHtml } from "../emails/newTournament.js";
-import { buildReminderNoContestHtml } from "../emails/reminderNoContest.js";
-import { buildTournamentRecapHtml } from "../emails/tournamentRecap.js";
-import { buildWelcomeHtml } from "../emails/welcome.js";
+import { renderBehindTheScenesEmail } from "../emails/behindTheScenes.js";
+import { renderNewTournamentEmail } from "../emails/newTournament.js";
+import { renderReminderNoContestEmail } from "../emails/reminderNoContest.js";
+import { renderTournamentRecapEmail } from "../emails/tournamentRecap.js";
+import { renderWelcomeEmail } from "../emails/welcome.js";
+import type { RenderedEmail } from "../types.js";
 import {
   fixtureBehindTheScenes,
   fixtureNewTournament,
@@ -15,21 +16,28 @@ import {
 
 export { PREVIEW_KINDS, type PreviewKind } from "./fixtures.js";
 
-export async function buildPreviewHtmlByKind(kind: PreviewKind): Promise<string> {
+const TEST_EMAIL_SUBJECT = "Play The Cut — test email";
+
+export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<RenderedEmail> {
   switch (kind) {
     case "welcome":
-      return buildWelcomeHtml(fixtureWelcome());
+      return renderWelcomeEmail(fixtureWelcome());
     case "new-tournament":
-      return buildNewTournamentHtml(await fixtureNewTournament());
+      return renderNewTournamentEmail(await fixtureNewTournament());
     case "reminder":
-      return buildReminderNoContestHtml(fixtureReminder());
+      return renderReminderNoContestEmail(fixtureReminder());
     case "recap":
-      return buildTournamentRecapHtml(fixtureRecap());
+      return renderTournamentRecapEmail(fixtureRecap());
     case "behind-the-scenes":
-      return buildBehindTheScenesHtml(fixtureBehindTheScenes());
+      return renderBehindTheScenesEmail(fixtureBehindTheScenes());
     case "minimal":
-      return buildTestEmailHtml();
+      return { subject: TEST_EMAIL_SUBJECT, html: buildTestEmailHtml() };
     default:
       throw new Error(`Unknown preview kind: ${kind}`);
   }
+}
+
+export async function buildPreviewHtmlByKind(kind: PreviewKind): Promise<string> {
+  const { html } = await renderPreviewEmailByKind(kind);
+  return html;
 }
