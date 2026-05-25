@@ -3,33 +3,28 @@ import { useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
+import {
+  getLineupNumberLabel,
+  resolveUserBorderColor,
+} from "../../lib/lineupDisplay";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
-
-const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
-const isValidHexColor = (value: unknown): value is string => {
-  if (typeof value !== "string") return false;
-  const v = value.trim();
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
-};
-const getLineupNumberLabel = (lineupName?: string) => {
-  if (!lineupName) return null;
-  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
-  return match?.[1] ? `#${match[1]}` : null;
-};
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   roundDisplay?: string;
   contestStatus: ContestStatus;
+  /** When set, controls row click + display; otherwise derived from `contestStatus`. */
+  entryListOpensModal?: boolean;
 }
 
 export const ContestEntryList = ({
   contestLineups,
   roundDisplay,
   contestStatus,
+  entryListOpensModal,
 }: ContestEntryListProps) => {
-  // Compute action locks based on contest status
-  const primaryActionsLocked = arePrimaryActionsLocked(contestStatus);
+  const primaryActionsLocked =
+    entryListOpensModal ?? arePrimaryActionsLocked(contestStatus);
 
   // lineup modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,7 +86,7 @@ export const ContestEntryList = ({
           typeof userSettings === "object" && userSettings !== null
             ? (userSettings as { color?: unknown }).color
             : undefined;
-        const resolvedBorderColor = isValidHexColor(maybeColor) ? maybeColor : DEFAULT_USER_COLOR;
+        const resolvedBorderColor = resolveUserBorderColor(maybeColor);
         const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
           .map((player) => player.pga_lastName)
           .filter(Boolean)

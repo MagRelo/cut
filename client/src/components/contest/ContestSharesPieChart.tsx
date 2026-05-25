@@ -147,8 +147,8 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
   const showEmptyState = isLoading || !chartData.gradient;
 
   return (
-    <div className="p-3 bg-white">
-      <div className="flex justify-center items-center">
+    <div className="flex w-full items-center justify-center">
+      <div className="flex items-center justify-center">
         <div
           className="relative h-40 w-40 rounded-full flex-shrink-0 transition-[background-image] duration-300 ease-out"
           style={{

@@ -53,8 +53,12 @@ components/
 - **ContestSettings.tsx**: Contest settings
 
 ### Contest Display
-- **ContestLobbyPage.tsx**: Main contest page (page component)
-- **ContestStatusProgressBar.tsx**: Status progress indicator
+- **ContestLobbyPage.tsx**: Main contest page (thin container; uses `useContestLobbyState` + `ContestLobbyView`)
+- **contest/lobby/ContestLobbyView.tsx**: Lobby shell (static tabs, modals)
+- **contest/lobby/ContestPrimaryTab.tsx**: Contest tab (enter CTA or timeline + entry list)
+- **contest/lobby/ContestPredictionsPanel.tsx**: Winner Pool tab (pie chart, prediction nested tabs, claim)
+- **contest/lobby/ContestLineupModal.tsx**: Lineup management dialog
+- **contest/lobby/ContestTimelinesSection.tsx**: Timeline wrapper for lobby
 - **ContestResultsPanel.tsx**: Results display
 - **ContestPayoutsModal.tsx**: Payout information modal
 
@@ -62,13 +66,10 @@ components/
 - **LineupManagement.tsx**: Manage lineups in contest
 - **ContestEntryList.tsx**: List of contest entries
 - **ContestEntryModal.tsx**: Entry details modal
-- **ContestPlayerList.tsx**: Players in contest
 - **EntryHeader.tsx**: Entry header display
 
 ### Predictions
-- **ContestPredictionsTab.tsx**: Predictions tab
-- **PredictionEntryForm.tsx**: Prediction entry form (embedded in **ContestEntryModal** “Buy Shares” tab)
-- **PredictionEntryPosition.tsx**: Prediction position display
+- **PredictionEntryForm.tsx**: Prediction entry form (embedded in **PredictionEntryModal**)
 - **PredictionLineupsList.tsx**: List of prediction lineups
 - **PredictionPositionsList.tsx**: List of prediction positions
 - **PredictionClaimPanel.tsx**: Claim prediction winnings

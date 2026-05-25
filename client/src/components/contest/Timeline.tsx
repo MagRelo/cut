@@ -109,12 +109,15 @@ interface TimelineProps {
   currentUserId?: string;
   defaultMetric?: TimelineMetric;
   allowedMetrics?: TimelineMetric[];
+  /** Fill parent height (e.g. inside {@link ContestLobbyTabHero}). */
+  fitContainer?: boolean;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
   className = "",
   timelineData,
   currentUserId,
+  fitContainer = false,
 }) => {
   const contestFinished = timelineData.contestFinished === true;
 
@@ -336,20 +339,33 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   if (!timelineData.teams.length) {
     return (
-      <div className={`font-display ${className}`.trim()}>
-        <div
-          className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-center"
-          style={{ height: "200px" }}
-        >
-          <div className="text-red-500">No timeline data provided</div>
-        </div>
+      <div
+        className={cn(
+          "font-display flex items-center justify-center",
+          fitContainer && "h-full min-h-0 w-full",
+          className,
+        )}
+      >
+        <div className="text-red-500 font-display">No timeline data provided</div>
       </div>
     );
   }
 
   return (
-    <div className={`font-display ${className}`.trim()}>
-      <div className="bg-white p-2 pb-1 timeline-chart" style={{ height: "250px" }}>
+    <div
+      className={cn(
+        "font-display flex w-full flex-col",
+        fitContainer && "h-full min-h-0",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "timeline-chart min-h-0 bg-white p-2 pb-1",
+          fitContainer ? "flex-1" : "",
+        )}
+        style={fitContainer ? undefined : { height: "250px" }}
+      >
         {selectedRoundTimestamps.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
             {selectedRound === "final"
@@ -360,7 +376,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           <Line data={chartData} options={options} />
         )}
       </div>
-      <div className="bg-white px-4 pb-4 flex gap-2">
+      <div className="flex shrink-0 gap-2 bg-white px-4 pb-2 pt-1">
         {ROUND_BUTTONS.map((round) => {
           const isActive = selectedRound === round;
           const hasData = availableRounds.has(round);

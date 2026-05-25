@@ -6,13 +6,7 @@ import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress
 import { type Contest } from "../../types/contest";
 import { toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 
-const DEFAULT_USER_COLOR = "#9CA3AF";
-
-const isValidHexColor = (value: unknown): value is string => {
-  if (typeof value !== "string") return false;
-  const v = value.trim();
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
-};
+import { resolveUserBorderColor } from "../../lib/lineupDisplay";
 
 interface PredictionPositionsListProps {
   contest: Contest;
@@ -119,9 +113,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
             typeof userSettings === "object" && userSettings !== null
               ? (userSettings as { color?: unknown }).color
               : undefined;
-          const resolvedLeftBorderColor = isValidHexColor(maybeColor)
-            ? maybeColor
-            : DEFAULT_USER_COLOR;
+          const resolvedLeftBorderColor = resolveUserBorderColor(maybeColor);
 
           const deposited = parseFloat(position.secondaryDepositedFormatted);
           const depositedDisplay =

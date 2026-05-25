@@ -8,17 +8,7 @@ import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondar
 import { PredictionEntryModal } from "./PredictionEntryModal";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
-const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
-const isValidHexColor = (value: unknown): value is string => {
-  if (typeof value !== "string") return false;
-  const v = value.trim();
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
-};
-const getLineupNumberLabel = (lineupName?: string) => {
-  if (!lineupName) return null;
-  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
-  return match?.[1] ? `#${match[1]}` : null;
-};
+import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 
 interface PredictionLineupsListProps {
   contest: Contest;
@@ -114,9 +104,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
               typeof userSettings === "object" && userSettings !== null
                 ? (userSettings as { color?: unknown }).color
                 : undefined;
-            const resolvedLeftBorderColor = isValidHexColor(maybeColor)
-              ? maybeColor
-              : DEFAULT_USER_COLOR;
+            const resolvedLeftBorderColor = resolveUserBorderColor(maybeColor);
 
             return (
               <div

@@ -582,3 +582,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
+
+const storybookAuthUser: AuthUser = {
+  id: "user-storybook",
+  name: "Storybook User",
+  userType: "USER",
+  settings: { color: "#3B82F6" },
+  phone: null,
+  email: "storybook@example.com",
+  isVerified: true,
+  userGroups: [],
+  chainId: 84532,
+  walletAddress: "0x0000000000000000000000000000000000000001",
+};
+
+const storybookAuthContextValue: AuthContextData = {
+  user: storybookAuthUser,
+  loading: false,
+  serverUserSyncing: false,
+  login: () => undefined,
+  loginError: null,
+  serverSessionError: null,
+  clearLoginError: () => undefined,
+  updateUser: async () => undefined,
+  updateUserSettings: async () => undefined,
+  logout: async () => undefined,
+  isAdmin: () => false,
+  getCurrentUser: () => storybookAuthUser,
+  platformTokenBalance: BigInt(1000) * BigInt(10 ** 18),
+  paymentTokenBalance: BigInt(100) * BigInt(10 ** 6),
+  platformTokenAddress: null,
+  paymentTokenAddress: null,
+  paymentTokenSymbol: "USDC",
+  paymentTokenDecimals: 6,
+  platformTokenSymbol: "CUT",
+  platformTokenDecimals: 18,
+  balancesLoading: false,
+  balancesUnavailable: false,
+  platformBalanceUnavailable: false,
+  paymentBalanceUnavailable: false,
+  refetchBalances: async () => undefined,
+};
+
+/** Storybook-only provider — shares the same context as `useAuth` (no Privy/wagmi). */
+export function StorybookAuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthContext.Provider value={storybookAuthContextValue}>{children}</AuthContext.Provider>
+  );
+}
