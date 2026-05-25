@@ -22,6 +22,13 @@ ${rowsHtml}
 </div>`;
 }
 
+const PROSE_STYLE = `font-family:${FONT_BODY};font-size:14px;line-height:1.55;color:#3f3f46;margin:0 0 16px;`;
+
 export function renderProseBlock(text: string): string {
-  return `<p style="font-family:${FONT_BODY};font-size:14px;line-height:1.55;color:#3f3f46;margin:0 0 16px;">${escapeHtml(text)}</p>`;
+  return `<p style="${PROSE_STYLE}">${escapeHtml(text)}</p>`;
+}
+
+/** Plain paragraph with pre-built inner HTML (escape dynamic text before interpolating). */
+export function renderProseHtml(innerHtml: string): string {
+  return `<p style="${PROSE_STYLE}">${innerHtml}</p>`;
 }
