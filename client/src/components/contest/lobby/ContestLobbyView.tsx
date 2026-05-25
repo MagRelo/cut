@@ -41,7 +41,11 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         <div className="px-3 py-4">
           <ContestCard
             contest={contest}
-            onPotClick={() => setIsPayoutsModalOpen(true)}
+            onPotClick={
+              viewModel.phase === "settled"
+                ? undefined
+                : () => setIsPayoutsModalOpen(true)
+            }
             onSettingsClick={undefined}
           />
         </div>
@@ -114,11 +118,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         <ContestSettings contest={contest} />
       </Modal>
 
-      <ContestPayoutsModal
-        isOpen={isPayoutsModalOpen}
-        onClose={() => setIsPayoutsModalOpen(false)}
-        contest={contest}
-      />
+      {viewModel.phase !== "settled" ? (
+        <ContestPayoutsModal
+          isOpen={isPayoutsModalOpen}
+          onClose={() => setIsPayoutsModalOpen(false)}
+          contest={contest}
+        />
+      ) : null}
 
       <ContestLineupModal
         contest={contest}
