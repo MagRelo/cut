@@ -41,6 +41,7 @@ model User {
   contestSecondaryParticipants ContestSecondaryParticipant[]
   wallets           UserWallet[]
   sideBetTickets    SideBetTicket[]
+  emailSendLogs     EmailSendLog[]
   referredBy        User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referredUsers     User[]             @relation("UserReferrals")
 
@@ -156,6 +157,7 @@ model Tournament {
   tournamentLineups  TournamentLineup[]
   contests          Contest[]
   sideBetMarkets    SideBetMarket[]
+  emailSendLogs     EmailSendLog[]
 
   @@index([pgaTourId])
   @@index([status])
@@ -395,6 +397,26 @@ model SideBetMarket {
 
   @@index([tournamentId])
   @@index([status])
+}
+
+/// Idempotent record for transactional / lifecycle email sends (see docs/email-program.md).
+model EmailSendLog {
+  id             String   @id @default(cuid())
+  kind           String
+  dedupeKey      String   @unique
+  recipientEmail String
+  userId         String?
+  tournamentId   String?
+  campaignId     String?
+  sentAt         DateTime @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+
+  @@index([kind])
+  @@index([userId])
+  @@index([tournamentId])
+  @@index([campaignId])
 }
 
 model SideBetSelection {

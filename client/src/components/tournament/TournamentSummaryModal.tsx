@@ -65,26 +65,48 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                   <div className="max-h-[60vh] overflow-y-auto pt-4 -mx-2 px-2">
                     <div className="space-y-4">
                       {summarySections && summarySections.length > 0 ? (
-                        summarySections.map((section, sectionIndex) => (
-                          <div key={`${section.title}-${sectionIndex}`}>
-                            <h3 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2">
-                              {section.title}
-                            </h3>
-                            <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
-                              {section.items.map((item, itemIndex) => (
-                                <li key={`${item.label ?? "item"}-${itemIndex}`}>
-                                  {item.label ? (
-                                    <span className="font-semibold text-gray-900">
-                                      {item.label}
-                                    </span>
-                                  ) : null}
-                                  {item.label ? " " : null}
-                                  {item.body}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))
+                        <>
+                          {summarySections
+                            .filter((s) => s.title.trim().toLowerCase() === "summary")
+                            .flatMap((s) => s.items)
+                            .length > 0 ? (
+                            <blockquote className="mb-4 border-l-[3px] border-gray-300 bg-gray-50 px-4 py-3.5">
+                              {summarySections
+                                .filter((s) => s.title.trim().toLowerCase() === "summary")
+                                .flatMap((s) => s.items)
+                                .map((item, itemIndex) => (
+                                  <p
+                                    key={`summary-lead-${itemIndex}`}
+                                    className="text-sm italic text-gray-600 leading-relaxed mb-3 last:mb-0"
+                                  >
+                                    {item.body}
+                                  </p>
+                                ))}
+                            </blockquote>
+                          ) : null}
+                          {summarySections
+                            .filter((s) => s.title.trim().toLowerCase() !== "summary")
+                            .map((section, sectionIndex) => (
+                              <div key={`${section.title}-${sectionIndex}`}>
+                                <h3 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-2">
+                                  {section.title}
+                                </h3>
+                                <ul className="list-disc pl-4 space-y-1.5 text-sm text-gray-700">
+                                  {section.items.map((item, itemIndex) => (
+                                    <li key={`${item.label ?? "item"}-${itemIndex}`}>
+                                      {item.label ? (
+                                        <span className="font-semibold text-gray-900">
+                                          {item.label}
+                                        </span>
+                                      ) : null}
+                                      {item.label ? " " : null}
+                                      {item.body}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                        </>
                       ) : (
                         <p className="text-sm text-gray-600">No tournament summary available.</p>
                       )}

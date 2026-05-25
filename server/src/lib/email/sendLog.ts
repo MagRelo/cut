@@ -1,0 +1,83 @@
+import { prisma } from "../prisma.js";
+import { sendEmail, type EmailOptions } from "./transport.js";
+import { buildDedupeKey, type EmailDedupeParams, type EmailKind } from "./types.js";
+
+export async function hasEmailBeenSent(dedupeKey: string): Promise<boolean> {
+  const row = await prisma.emailSendLog.findUnique({
+    where: { dedupeKey },
+    select: { id: true },
+  });
+  return row !== null;
+}
+
+export async function recordEmailSend(input: {
+  kind: EmailKind;
+  dedupeKey: string;
+  recipientEmail: string;
+  userId?: string;
+  tournamentId?: string;
+  campaignId?: string;
+}): Promise<void> {
+  await prisma.emailSendLog.create({
+    data: {
+      kind: input.kind,
+      dedupeKey: input.dedupeKey,
+      recipientEmail: input.recipientEmail,
+      userId: input.userId ?? null,
+      tournamentId: input.tournamentId ?? null,
+      campaignId: input.campaignId ?? null,
+    },
+  });
+}
+
+export type SendIfNotLoggedInput = {
+  kind: EmailKind;
+  dedupe: EmailDedupeParams;
+  to: string;
+  subject: string;
+  html: string;
+  dryRun?: boolean;
+};
+
+export type SendIfNotLoggedResult =
+  | { status: "sent" }
+  | { status: "skipped"; reason: "already_sent" }
+  | { status: "dry_run" };
+
+/**
+ * Sends one email if dedupeKey has not been logged. Records send on success.
+ */
+export async function sendIfNotLogged(input: SendIfNotLoggedInput): Promise<SendIfNotLoggedResult> {
+  const dedupeKey = buildDedupeKey(input.kind, input.dedupe);
+
+  if (await hasEmailBeenSent(dedupeKey)) {
+    return { status: "skipped", reason: "already_sent" };
+  }
+
+  if (input.dryRun) {
+    return { status: "dry_run" };
+  }
+
+  const payload: EmailOptions = {
+    to: input.to,
+    subject: input.subject,
+    html: input.html,
+  };
+  await sendEmail(payload);
+
+  await recordEmailSend({
+    kind: input.kind,
+    dedupeKey,
+    recipientEmail: input.to,
+    ...(input.dedupe.userId ? { userId: input.dedupe.userId } : {}),
+    ...(input.dedupe.tournamentId ? { tournamentId: input.dedupe.tournamentId } : {}),
+    ...(input.dedupe.campaignId ? { campaignId: input.dedupe.campaignId } : {}),
+  });
+
+  return { status: "sent" };
+}
+
+/** Broadcast guard: true if this tournament/campaign blast was already sent. */
+export async function hasBroadcastBeenSent(kind: EmailKind, dedupe: EmailDedupeParams): Promise<boolean> {
+  return hasEmailBeenSent(buildDedupeKey(kind, dedupe));
+}

@@ -12,6 +12,7 @@ import { batchSettleSideBets } from "../services/batch/batchSettleSideBets.js";
 import { batchCloseSideBetMarkets } from "../services/batch/batchCloseSideBetMarkets.js";
 import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 import { getAdminDashboard } from "../services/admin/getAdminDashboard.js";
+import { isEmailConfigured, sendPreviewEmail, sendTestEmail } from "../lib/email/index.js";
 
 const adminRouter = new Hono();
 
@@ -388,6 +389,39 @@ adminRouter.post("/bets/side/settle", requireAuth, requireAdmin, async (c) => {
   } catch (error) {
     console.error("admin batch settle side bets error:", error);
     return c.json({ error: "Failed to settle side bets" }, 500);
+  }
+});
+
+/** POST /api/admin/test-email — MailerSend test. Body: `{ "to": "...", "mode"?: "minimal" | "preview" }`. Default minimal. */
+adminRouter.post("/test-email", requireAuth, requireAdmin, async (c) => {
+  if (!isEmailConfigured()) {
+    return c.json(
+      { error: "MailerSend is not configured (MAILERSEND_API_KEY, MAILERSEND_FROM_EMAIL)" },
+      503,
+    );
+  }
+
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const to = typeof body?.to === "string" ? body.to.trim() : "";
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return c.json({ error: 'Invalid or missing "to" email address' }, 400);
+    }
+
+    const mode = typeof body?.mode === "string" ? body.mode.trim() : "minimal";
+    if (mode === "preview") {
+      await sendPreviewEmail(to);
+    } else if (mode === "minimal" || mode === "") {
+      await sendTestEmail(to);
+    } else {
+      return c.json({ error: 'Invalid "mode"; use "minimal" or "preview"' }, 400);
+    }
+
+    return c.json({ ok: true, to, mode: mode || "minimal" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to send test email";
+    console.error("admin test-email error:", error);
+    return c.json({ error: message }, 500);
   }
 });
 

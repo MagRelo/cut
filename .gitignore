@@ -10,6 +10,7 @@ coverage/
 # Production
 dist/
 build/
+server/tmp/*.html
 *.tsbuildinfo
 
 # Vite generated files
