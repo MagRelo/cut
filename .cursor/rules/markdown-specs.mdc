@@ -1,0 +1,32 @@
+---
+description: Markdown docs are complete specs, not changelogs or reasoning traces
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Markdown documentation
+
+All `.md` files in this repo should read as **complete, authoritative specs**—what the system *is* and *will be*—not as running notes from a design session.
+
+## Write as present-state spec
+
+- State the target design directly: tables, cadences, APIs, flows, decisions.
+- Use sections like **Open decisions** or **TBD** for unresolved items.
+- Link to the owning spec when a feature has a dedicated doc (e.g. `docs/email-program.md` for email).
+
+## Do not add
+
+- **Diff / changelog voice:** "Removed:", "Added:", "We used to…", "replaces the old…", "no longer…", strikethrough history, or edit commentary meant for humans reviewing a PR.
+- **Chain-of-thought:** reasoning trails, option-by-option debate, "we considered X but chose Y" unless that tradeoff is a lasting architectural record worth keeping in a short **Decisions** section.
+- **Session artifacts:** "as discussed", "per the chat", "updated per feedback", or notes that only make sense if you saw the prior version.
+
+## When requirements change
+
+- Update the doc to describe the **new** design in full sentences.
+- Do not leave the old design documented alongside strikethroughs or a "Removed" callout—git history holds the past.
+- If a one-line design invariant must survive implementation (e.g. "only one mid-week email"), put it in the spec body or in `.cursor/rules/`, not as a changelog footnote.
+
+## Tone
+
+- Clear, scannable, product/engineering reference—not a diary.
+- Prefer tables and bullet specs over narrative walkthroughs unless the flow itself is the spec.
