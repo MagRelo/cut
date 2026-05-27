@@ -19,7 +19,6 @@ export async function fixtureNewTournament(): Promise<NewTournamentEmailData> {
 
 export function fixtureWelcome(): WelcomeEmailData {
   return {
-    userName: "Alex",
     tournamentName: "Charles Schwab Challenge",
   };
 }

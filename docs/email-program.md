@@ -70,7 +70,7 @@ flowchart LR
 | **Trigger** | **Manual:** operator runs send script when ready. **Not** sent from signup or `initTournament`. |
 | **Send window** | Operator-chosen. |
 | **Audience** | All users with email who have not already received `WELCOME` (per-user idempotency). |
-| **Content** | Welcome; what The Cut is; link to this week’s tournament; build a lineup → enter a contest; Account / funding pointer. |
+| **Content** | Welcome; weekly curated experience + live updates; three wagering types (Parlays, Contest Rules, Winner Pool); deposit/withdraw (self-custody, crypto, P2P); CTAs to app and Account funds. |
 | **Skip if** | No email; already logged `WELCOME` for `userId`. |
 | **Idempotency** | Log `userId` + `WELCOME`. |
 

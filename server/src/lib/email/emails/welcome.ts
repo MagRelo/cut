@@ -1,13 +1,12 @@
 import { appPath } from "../appUrl.js";
 import { renderCtaBlock } from "../blocks/cta.js";
-import { renderProseBlock, renderProseHtml } from "../blocks/resultsTable.js";
+import { renderBulletList, renderProseBlock, renderProseHtml } from "../blocks/resultsTable.js";
 import { escapeHtml } from "../escape.js";
-import { BODY_TITLE_H1_STYLE } from "../styles.js";
+import { BODY_TITLE_H1_STYLE, SECTION_TITLE_STYLE } from "../styles.js";
 import { wrapEmailHtml } from "../templates.js";
 import type { RenderedEmail } from "../types.js";
 
 export type WelcomeEmailData = {
-  userName: string;
   tournamentName?: string;
 };
 
@@ -15,22 +14,78 @@ export function welcomeSubject(): string {
   return "Welcome to Play The Cut";
 }
 
+function renderSection(sectionTitle: string, ...blocks: string[]): string {
+  return `<div style="margin:0 0 24px;">
+<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(sectionTitle)}</h2>
+${blocks.join("\n")}
+</div>`;
+}
+
+function renderBlockGroup(...blocks: string[]): string {
+  return `<div style="margin:0 0 24px;">
+${blocks.join("\n")}
+</div>`;
+}
+
 export function buildWelcomeHtml(data: WelcomeEmailData): string {
-  const greeting = data.userName.trim() ? `Hi ${escapeHtml(data.userName.trim())},` : "Hi there,";
-  const tournamentLine = data.tournamentName
-    ? renderProseHtml(
-        `This week: <span style="font-weight:600;color:#18181b;">${escapeHtml(data.tournamentName)}</span> is live on Play The Cut.`,
+  const tournamentBlock = data.tournamentName
+    ? renderSection(
+        "This week",
+        renderProseHtml(
+          `<span style="font-weight:600;color:#18181b;">${escapeHtml(data.tournamentName)}</span> is the active tournament on Play The Cut. The field is set, lineups are open, and contests are filling up. Build your four-player team, then browse open contests when you are ready to compete.`,
+        ),
       )
     : renderProseBlock(
-        "Pick a lineup, enter a contest, and follow live Stableford scoring all week.",
+        "When a new tournament week opens, you will see previews, the field, and open contests right on the home page. Your first move is always the same: build a four-player lineup for the week.",
       );
 
-  const bodyHtml = `<h1 style="${BODY_TITLE_H1_STYLE}">Welcome to Play The Cut</h1>
-${renderProseHtml(`${greeting} thanks for joining.`)}
-${tournamentLine}
-${renderProseBlock("Build a four-player lineup for the active tournament, then enter an open contest with your group or the public lobby.")}
-${renderCtaBlock({ label: "Go to Play The Cut", href: appPath("/") })}
-${renderProseBlock("Fund your account from Settings when you are ready to enter paid contests.")}`;
+  const bodyHtml = `<h1 style="${BODY_TITLE_H1_STYLE};margin:0 0 20px;">Welcome to Play The Cut!</h1>
+${renderBlockGroup(
+  renderProseBlock(
+    "Play The Cut goes beyond the traditional fantasy golf format. Each week is a curated tournament experience, with key storylines, field insights, wagering, and live scoring all in one place.",
+  ),
+  renderProseBlock(
+    "Once the tournament is underway, Play The Cut tracks every shot from Thursday through Sunday. The leaderboard shifts in real time with every birdie, bogey, and bonus point, alongside live odds that move with the action.",
+  ),
+  renderProseBlock(
+    "Getting started is simple. Choose your four-player lineup, and you're in—your lineup powers every contest and game format.",
+  ),
+)}
+${renderSection(
+  "Three ways to Play",
+  renderProseBlock(
+    "There is more than one way to win on Play The Cut. Most players mix and match these three—start with a lineup, then choose how you want to compete:",
+  ),
+  renderBulletList([
+    {
+      title: "Fantasy Contests",
+      description:
+        "Fantasy contests are the heart of the game. Enter an open contest with your four-player lineup, pay the buy-in, and climb the leaderboard as your players score points.",
+    },
+    {
+      title: "Winner Pool",
+      description:
+        "Every contest also runs a Winner Pool—a live market on which lineup wins the field. Back the entry you like, watch prices move as money flows in, and track projected odds as the tournament unfolds. When the contest settles, wagers on the winner share the pool.",
+    },
+    {
+      title: "Parlays",
+      description:
+        "Turn your lineup into fixed-odds tickets. Combine finish predictions across your four golfers—how many will land Top 5, Top 10, or Top 20—and lock in a price before the tournament runs its course. A focused way to back your card without entering a full fantasy contest.",
+    },
+  ]),
+)}
+${renderSection(
+  "Deposit & withdraw",
+  renderProseBlock(
+    "Your balance stays in your control. Play The Cut uses self-custody through your wallet—your keys, your funds. We never hold your account hostage; you decide when to add money and when to cash out.",
+  ),
+  renderProseBlock(
+    "When you are ready to play for stakes, fund your account with a crypto deposit (USDC on Base) or receive a peer-to-peer transfer from another player using your Account ID. Withdraw the same way whenever you want—no hoops, no waiting on us to approve a withdrawal request.",
+  ),
+)}
+${tournamentBlock}
+${renderProseBlock("We are excited to have you on the leaderboard. Build your lineup and make your first pick of the week.")}
+${renderCtaBlock({ label: "Build your lineup", href: appPath("/lineups") })}`;
 
   return wrapEmailHtml({ title: welcomeSubject(), bodyHtml });
 }
