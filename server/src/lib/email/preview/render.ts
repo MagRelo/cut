@@ -5,6 +5,7 @@ import { renderReminderNoContestEmail } from "../emails/reminderNoContest.js";
 import { renderTournamentRecapEmail } from "../emails/tournamentRecap.js";
 import { renderWelcomeEmail } from "../emails/welcome.js";
 import type { RenderedEmail } from "../types.js";
+import { appendUnsubscribeFooter } from "../unsubscribe.js";
 import {
   fixtureBehindTheScenes,
   fixtureNewTournament,
@@ -17,6 +18,7 @@ import {
 export { PREVIEW_KINDS, type PreviewKind } from "./fixtures.js";
 
 const TEST_EMAIL_SUBJECT = "Play The Cut — test email";
+const PREVIEW_EMAIL = "preview@playthecut.com";
 
 export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<RenderedEmail> {
   switch (kind) {
@@ -39,5 +41,5 @@ export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<Rende
 
 export async function buildPreviewHtmlByKind(kind: PreviewKind): Promise<string> {
   const { html } = await renderPreviewEmailByKind(kind);
-  return html;
+  return appendUnsubscribeFooter(html, PREVIEW_EMAIL);
 }

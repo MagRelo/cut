@@ -1,5 +1,6 @@
 import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
 import { buildTestEmailHtml } from "./templates.js";
+import { appendUnsubscribeFooter } from "./unsubscribe.js";
 import {
   renderPreviewEmailByKind,
   PREVIEW_KINDS,
@@ -50,6 +51,7 @@ function getMailerSendClient(): MailerSend {
 export const sendEmail = async ({ to, subject, html }: EmailOptions): Promise<void> => {
   const { fromEmail, fromName } = getEmailConfig();
   const mailerSend = getMailerSendClient();
+  const htmlWithUnsubscribe = appendUnsubscribeFooter(html, to);
 
   const sentFrom = new Sender(fromEmail, fromName);
   const recipients = [new Recipient(to, to.split("@")[0])];
@@ -59,8 +61,8 @@ export const sendEmail = async ({ to, subject, html }: EmailOptions): Promise<vo
     .setTo(recipients)
     .setReplyTo(sentFrom)
     .setSubject(subject)
-    .setHtml(html)
-    .setText(html.replace(/<[^>]*>/g, ""));
+    .setHtml(htmlWithUnsubscribe)
+    .setText(htmlWithUnsubscribe.replace(/<[^>]*>/g, ""));
 
   try {
     await mailerSend.email.send(emailParams);

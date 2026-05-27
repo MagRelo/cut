@@ -6,13 +6,21 @@ export type EmailRecipient = {
   name: string;
 };
 
+function isMarketingUnsubscribed(settings: unknown): boolean {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+    return false;
+  }
+  return (settings as { marketingUnsubscribed?: unknown }).marketingUnsubscribed === true;
+}
+
 /** All users with a deliverable email address. */
 export async function loadAllEmailRecipients(): Promise<EmailRecipient[]> {
   const users = await prisma.user.findMany({
     where: { email: { not: null } },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, settings: true },
   });
   return users
+    .filter((u) => !isMarketingUnsubscribed(u.settings))
     .filter((u): u is typeof u & { email: string } => Boolean(u.email?.trim()))
     .map((u) => ({ id: u.id, email: u.email.trim(), name: u.name }));
 }
@@ -49,10 +57,11 @@ export async function loadReminderNoContestSegment(
         none: { contest: { tournamentId: current.id } },
       },
     },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, settings: true },
   });
 
   return users
+    .filter((u) => !isMarketingUnsubscribed(u.settings))
     .filter((u): u is typeof u & { email: string } => Boolean(u.email?.trim()))
     .map((u) => ({ id: u.id, email: u.email.trim(), name: u.name }));
 }

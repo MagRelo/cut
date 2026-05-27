@@ -7,6 +7,7 @@ import cronRoutes from "./cron.js";
 import userGroupRoutes from "./userGroup.js";
 import adminRoutes from "./admin.js";
 import betsRoutes from "./bets.js";
+import unsubscribeRoutes from "./unsubscribe.js";
 
 const apiRouter = new Hono();
 
@@ -28,5 +29,6 @@ apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/userGroups", userGroupRoutes);
 apiRouter.route("/admin", adminRoutes);
 apiRouter.route("/bets", betsRoutes);
+apiRouter.route("/unsubscribe", unsubscribeRoutes);
 
 export default apiRouter;

@@ -182,8 +182,17 @@ Mid-week contest energy is split: **New Tournament** = everyone (event + CTA); *
 
 - [ ] Tournament Recap audience: all users vs. entrants only?
 - [ ] Behind the scenes: require opt-in before sending to full user base?
-- [ ] Unsubscribe / preferences page (required before broad sends)?
 - [ ] Exact “last 3 tournaments” query for reminder segment
+
+---
+
+## Unsubscribe (stop-gap)
+
+- All emails include a simple unsubscribe link.
+- Link format: `GET /api/unsubscribe?email=<email>&token=<token>`.
+- Token is an HMAC over normalized email using server secret material (no new env var required).
+- Unsubscribe state is stored at `User.settings.marketingUnsubscribed = true`.
+- Email audience loaders skip users with `marketingUnsubscribed === true`.
 
 ---
 
