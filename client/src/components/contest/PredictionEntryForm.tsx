@@ -341,40 +341,34 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const currentOddsQuoteCard = (
-    <div className="overflow-hidden rounded-md border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white font-display">
-      <div className="border-b border-emerald-200 bg-emerald-50/70 px-3 py-2">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
-          Market Quote
-        </div>
-      </div>
-
-      <div className="flex items-start justify-between gap-4 px-3 py-3">
+    <div className="px-1 pt-4 font-display">
+      <div className="flex items-start justify-between gap-4">
         <div className="text-center">
-          <div className="text-xl font-extrabold tabular-nums leading-none text-emerald-700">
+          <div className="text-lg font-semibold tabular-nums leading-none text-gray-800">
             {projectedEnglishOdds}
           </div>
           <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
-            Current Odds
+            Estimated Odds
           </div>
         </div>
         <div className="text-center">
-          <div className="text-xl font-extrabold tabular-nums leading-none text-emerald-700">
+          <div className="text-lg font-semibold tabular-nums leading-none text-emerald-700">
             {projectedPayoutDisplay === "—" ? "—" : `$${projectedPayoutDisplay}`}
           </div>
           <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
-            Current Payout
+            Estimated Payout
           </div>
         </div>
       </div>
 
-      <div className="border-t border-emerald-200/80 bg-emerald-50/60 px-3 py-2">
-        <p className="text-[11px] leading-snug text-emerald-900/80">
-          <span className="font-semibold text-emerald-800">Note:</span> Parimutuel odds are not
-          guaranteed and may change based on the number of participants and the amount of money in
-          the pool.{" "}
+      <div className="mt-2">
+        <p className="text-[11px] leading-snug text-gray-600">
+          <span className="font-semibold text-gray-900">Note:</span> Winner Pool quotes update as
+          entries and pool size change. Your final odds and payout are calculated from the closing
+          pool at lock.{" "}
           <Link
             to="/faq#winner-pool"
-            className="font-medium text-emerald-700 underline-offset-2 hover:text-emerald-800 hover:underline"
+            className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
           >
             Learn more...
           </Link>

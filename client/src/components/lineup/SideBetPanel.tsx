@@ -23,7 +23,7 @@ const MIN_STAKE = "0.01";
 /** Total return (stake × decimal odds) must stay strictly below this USD amount per ticket. */
 const MAX_TICKET_PAYOUT_USD = 2000;
 /** Server / market quote issues only — not used for wallet, stake, or payment-prep errors. */
-const PARLAY_MARKET_UNAVAILABLE = "Parlay market is not available.";
+const PARLAY_MARKET_UNAVAILABLE = "Parlay market is not available right now; check back soon.";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
