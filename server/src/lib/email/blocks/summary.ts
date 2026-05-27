@@ -8,28 +8,46 @@ import {
 } from "../styles.js";
 import {
   isSummaryLeadSection,
+  type TournamentSummarySection,
   type TournamentSummarySections,
 } from "../../tournamentSummary.js";
 
-function renderLeadSummaryHtml(sections: TournamentSummarySections): string {
+export function normalizeSummarySectionKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
+function findSummarySectionByKey(
+  sections: TournamentSummarySections,
+  key: string,
+): TournamentSummarySection | null {
+  const normalized = normalizeSummarySectionKey(key);
+  return sections.find((section) => normalizeSummarySectionKey(section.title) === normalized) ?? null;
+}
+
+export function renderLeadSummarySectionHtml(
+  sections: TournamentSummarySections | null | undefined,
+): string {
+  if (!sections || sections.length === 0) return "";
   const leadItems = sections.filter(isSummaryLeadSection).flatMap((s) => s.items);
   if (leadItems.length === 0) return "";
 
   const paragraphsHtml = leadItems
     .map((item, index) => {
       const margin = index < leadItems.length - 1 ? "margin:0 0 12px;" : "margin:0;";
-      return `<p style="${QUOTE_TEXT_STYLE}${margin}">${escapeHtml(item.body.trim())}</p>`;
+      return `<p style="${QUOTE_TEXT_STYLE}${margin}">&ldquo;${escapeHtml(item.body.trim())}&rdquo;</p>`;
     })
     .join("");
 
+  const attributionHtml = `<p style="margin:10px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;font-weight:600;letter-spacing:0.01em;color:#71717a;text-align:right;">&mdash; CutBot 🤖</p>`;
+
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
   <tr>
-    <td style="${QUOTE_CELL_STYLE}">${paragraphsHtml}</td>
+    <td style="${QUOTE_CELL_STYLE}">${paragraphsHtml}${attributionHtml}</td>
   </tr>
 </table>`;
 }
 
-function renderBulletSectionHtml(section: TournamentSummarySections[number]): string {
+function renderBulletSectionHtml(section: TournamentSummarySection): string {
   const itemsHtml = section.items
     .map((item) => {
       const label = item.label?.trim();
@@ -46,6 +64,19 @@ ${itemsHtml}
 </div>`;
 }
 
+export function renderSummarySectionByKeyHtml(
+  sections: TournamentSummarySections | null | undefined,
+  key: string,
+): string {
+  if (!sections || sections.length === 0) return "";
+  const section = findSummarySectionByKey(sections, key);
+  if (!section) return "";
+  if (isSummaryLeadSection(section)) {
+    return renderLeadSummarySectionHtml([section]);
+  }
+  return renderBulletSectionHtml(section);
+}
+
 export function renderSummarySectionsEmailHtml(
   sections: TournamentSummarySections | null | undefined,
 ): string {
@@ -53,7 +84,7 @@ export function renderSummarySectionsEmailHtml(
     return `<p style="${EMPTY_SUMMARY_STYLE}">No tournament summary available.</p>`;
   }
 
-  const leadHtml = renderLeadSummaryHtml(sections);
+  const leadHtml = renderLeadSummarySectionHtml(sections);
   const bulletHtml = sections
     .filter((section) => !isSummaryLeadSection(section))
     .map(renderBulletSectionHtml)
