@@ -21,12 +21,6 @@ ${blocks.join("\n")}
 </div>`;
 }
 
-function renderBlockGroup(...blocks: string[]): string {
-  return `<div style="margin:0 0 24px;">
-${blocks.join("\n")}
-</div>`;
-}
-
 export function buildWelcomeHtml(data: WelcomeEmailData): string {
   const tournamentBlock = data.tournamentName
     ? renderSection(
@@ -40,16 +34,8 @@ export function buildWelcomeHtml(data: WelcomeEmailData): string {
       );
 
   const bodyHtml = `<h1 style="${BODY_TITLE_H1_STYLE};margin:0 0 20px;">Welcome to Play The Cut!</h1>
-${renderBlockGroup(
-  renderProseBlock(
-    "Play The Cut goes beyond the traditional fantasy golf format. Each week is a curated tournament experience, with key storylines, field insights, wagering, and live scoring all in one place.",
-  ),
-  renderProseBlock(
-    "Once the tournament is underway, Play The Cut tracks every shot from Thursday through Sunday. The leaderboard shifts in real time with every birdie, bogey, and bonus point, alongside live odds that move with the action.",
-  ),
-  renderProseBlock(
-    "Getting started is simple. Choose your four-player lineup, and you're in—your lineup powers every contest and game format.",
-  ),
+${renderProseBlock(
+  "Getting started is simple. Choose your four-player lineup, and you're in—your lineup powers every contest and game format.",
 )}
 ${renderSection(
   "Three ways to Play",
@@ -74,17 +60,7 @@ ${renderSection(
     },
   ]),
 )}
-${renderSection(
-  "Deposit & withdraw",
-  renderProseBlock(
-    "Your balance stays in your control. Play The Cut uses self-custody through your wallet—your keys, your funds. We never hold your account hostage; you decide when to add money and when to cash out.",
-  ),
-  renderProseBlock(
-    "When you are ready to play for stakes, fund your account with a crypto deposit (USDC on Base) or receive a peer-to-peer transfer from another player using your Account ID. Withdraw the same way whenever you want—no hoops, no waiting on us to approve a withdrawal request.",
-  ),
-)}
 ${tournamentBlock}
-${renderProseBlock("We are excited to have you on the leaderboard. Build your lineup and make your first pick of the week.")}
 ${renderCtaBlock({ label: "Build your lineup", href: appPath("/lineups") })}`;
 
   return wrapEmailHtml({ title: welcomeSubject(), bodyHtml });
