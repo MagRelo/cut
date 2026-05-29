@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -56,6 +57,7 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0",
+    "vitest": "^3.2.4",
     "storybook": "^10.4.0",
     "@storybook/react-vite": "^10.4.0",
     "@chromatic-com/storybook": "^5.2.1",

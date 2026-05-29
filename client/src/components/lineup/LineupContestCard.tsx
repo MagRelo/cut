@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
-import { SideBetPanel } from "./SideBetPanel";
+import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import type { PlayerWithTournamentData } from "../../types/player";

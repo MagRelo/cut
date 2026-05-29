@@ -625,8 +625,16 @@ const storybookAuthContextValue: AuthContextData = {
 };
 
 /** Storybook-only provider — shares the same context as `useAuth` (no Privy/wagmi). */
-export function StorybookAuthProvider({ children }: { children: React.ReactNode }) {
+export function StorybookAuthProvider({
+  children,
+  value,
+}: {
+  children: React.ReactNode;
+  value?: Partial<AuthContextData>;
+}) {
   return (
-    <AuthContext.Provider value={storybookAuthContextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ ...storybookAuthContextValue, ...value }}>
+      {children}
+    </AuthContext.Provider>
   );
 }

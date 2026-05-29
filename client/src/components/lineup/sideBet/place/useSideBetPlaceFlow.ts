@@ -1,0 +1,212 @@
+import { useMemo, useRef, useState } from "react";
+import { useAccount } from "wagmi";
+import { isAddress, parseUnits } from "viem";
+import { usePlaceSideBetTicketMutation } from "../../../../hooks/useSideBetQueries";
+import type { BatchTransactionStatusData } from "../../../../hooks/useBlockchainTransaction";
+import type { SideBetMarketSelectionDto } from "../../../../types/sideBet";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { useModeAwareTransfer } from "../../../../hooks/useTokenOperations";
+import { ApiError } from "../../../../utils/apiError";
+import {
+  MAX_TICKET_PAYOUT_USD,
+  MIN_STAKE,
+  PARLAY_MARKET_UNAVAILABLE,
+} from "../shared/sideBetConstants";
+import { formatStakeInputLine, formatUsd } from "../shared/sideBetFormatters";
+
+export interface UseSideBetPlaceFlowOptions {
+  tournamentLineupId: string | null;
+  activeSelection: SideBetMarketSelectionDto | null;
+  stakeInput: string;
+  bettable: boolean;
+  onSuccess: () => void;
+}
+
+export function useSideBetPlaceFlow({
+  tournamentLineupId,
+  activeSelection,
+  stakeInput,
+  bettable,
+  onSuccess,
+}: UseSideBetPlaceFlowOptions) {
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const { isConnected } = useAccount();
+  const {
+    platformTokenBalance,
+    paymentTokenBalance,
+    platformTokenDecimals,
+    paymentTokenDecimals,
+    balancesUnavailable,
+  } = useAuth();
+
+  const resolvedPlatformDecimals = platformTokenDecimals ?? 18;
+  const resolvedPaymentDecimals = paymentTokenDecimals ?? 6;
+  const platformBalance = platformTokenBalance ?? 0n;
+  const paymentBalance = paymentTokenBalance ?? 0n;
+  const decimalScale = 10n ** BigInt(resolvedPlatformDecimals - resolvedPaymentDecimals);
+
+  const pendingSideBetRef = useRef<{
+    tournamentLineupId: string;
+    hitsRequired: number;
+    topN: number;
+    stakeAmount: number;
+  } | null>(null);
+
+  const placeMutation = usePlaceSideBetTicketMutation(tournamentLineupId);
+
+  const {
+    execute,
+    isProcessing: isPayingOracle,
+    error: paymentTxError,
+    createModeAwareTransferCalls,
+  } = useModeAwareTransfer({
+    platformTokenDecimals: resolvedPlatformDecimals,
+    paymentTokenDecimals: resolvedPaymentDecimals,
+    onSuccess: async (statusData: BatchTransactionStatusData) => {
+      const pending = pendingSideBetRef.current;
+      pendingSideBetRef.current = null;
+      if (!pending) return;
+      const transactionHashes = statusData.receipts.map((r) => r.transactionHash);
+      try {
+        const result = await placeMutation.mutateAsync({
+          ...pending,
+          ...(transactionHashes.length > 0 ? { transactionHashes } : {}),
+        });
+        if (result.status === "REFUND_PENDING") {
+          setPlaceError(
+            "Your stake was sent on-chain, but this parlay could not be booked at current prices. A refund-pending entry was saved on your ticket list—contact support if you need a manual refund.",
+          );
+          return;
+        }
+        onSuccess();
+      } catch (e: unknown) {
+        setPlaceError(e instanceof ApiError ? e.message : PARLAY_MARKET_UNAVAILABLE);
+      }
+    },
+    onError: () => {
+      pendingSideBetRef.current = null;
+    },
+  });
+
+  const payoutPreview = useMemo(() => {
+    if (!activeSelection) return null;
+    const trimmed = stakeInput.trim();
+    let stakeBn: bigint;
+    try {
+      stakeBn = parseUnits(trimmed, resolvedPlatformDecimals);
+    } catch {
+      return null;
+    }
+    const minBn = parseUnits(MIN_STAKE, resolvedPlatformDecimals);
+    if (stakeBn < minBn) return null;
+    const stake = parseFloat(trimmed);
+    const d = activeSelection.decimalOdds;
+    if (!Number.isFinite(stake) || !Number.isFinite(d) || d <= 1) return null;
+    return { totalReturn: stake * d, profit: stake * (d - 1) };
+  }, [activeSelection, stakeInput, resolvedPlatformDecimals]);
+
+  const exceedsMaxTicketPayout =
+    payoutPreview !== null && payoutPreview.totalReturn >= MAX_TICKET_PAYOUT_USD;
+
+  const modalStakeTicketLine = useMemo(
+    () => formatStakeInputLine(stakeInput),
+    [stakeInput],
+  );
+
+  const clearPlaceError = () => setPlaceError(null);
+
+  const placeTicket = async () => {
+    if (!activeSelection || !tournamentLineupId) return;
+    if (!bettable) {
+      setPlaceError(PARLAY_MARKET_UNAVAILABLE);
+      return;
+    }
+    const amountStr = stakeInput.trim();
+    let stakeUnitsPlatform: bigint;
+    try {
+      stakeUnitsPlatform = parseUnits(amountStr, resolvedPlatformDecimals);
+    } catch {
+      setPlaceError("Enter a valid stake.");
+      return;
+    }
+    if (stakeUnitsPlatform <= 0n) {
+      setPlaceError("Enter a valid stake.");
+      return;
+    }
+    const minStakeWei = parseUnits(MIN_STAKE, resolvedPlatformDecimals);
+    if (stakeUnitsPlatform < minStakeWei) {
+      setPlaceError("Minimum stake is $0.01 (one cent).");
+      return;
+    }
+    const stakeAmount = Number.parseFloat(amountStr);
+    if (!Number.isFinite(stakeAmount) || stakeAmount <= 0) {
+      setPlaceError("Enter a valid stake.");
+      return;
+    }
+
+    const totalReturnIfWin = stakeAmount * activeSelection.decimalOdds;
+    if (Number.isFinite(totalReturnIfWin) && totalReturnIfWin >= MAX_TICKET_PAYOUT_USD) {
+      setPlaceError(
+        `Total return must stay under ${formatUsd(MAX_TICKET_PAYOUT_USD)} for a single ticket. Lower your stake.`,
+      );
+      return;
+    }
+
+    const oracle = import.meta.env.VITE_ORACLE_ADDRESS?.trim() ?? "";
+    if (!oracle || !isAddress(oracle)) {
+      setPlaceError("Oracle payout address is not configured (VITE_ORACLE_ADDRESS).");
+      return;
+    }
+    if (!isConnected) {
+      setPlaceError("Connect your wallet to pay the stake.");
+      return;
+    }
+    if (balancesUnavailable) {
+      setPlaceError("Could not load balances. Try again from Account.");
+      return;
+    }
+
+    const maxPayablePlatform = platformBalance + paymentBalance * decimalScale;
+    if (stakeUnitsPlatform > maxPayablePlatform) {
+      setPlaceError("Insufficient balance for this stake. Add funds in Account if needed.");
+      return;
+    }
+
+    setPlaceError(null);
+    pendingSideBetRef.current = {
+      tournamentLineupId,
+      hitsRequired: activeSelection.hitsRequired,
+      topN: activeSelection.topN,
+      stakeAmount,
+    };
+
+    let calls;
+    try {
+      calls = createModeAwareTransferCalls({
+        mode: "internal",
+        recipient: oracle,
+        amount: amountStr,
+        platformTokenBalance: platformBalance,
+        paymentTokenBalance: paymentBalance,
+      });
+    } catch (e: unknown) {
+      pendingSideBetRef.current = null;
+      setPlaceError(e instanceof Error ? e.message : "Could not prepare payment.");
+      return;
+    }
+
+    await execute(calls);
+  };
+
+  return {
+    placeTicket,
+    placeError,
+    clearPlaceError,
+    paymentTxError,
+    isPayingOracle,
+    isRecording: placeMutation.isPending,
+    payoutPreview,
+    exceedsMaxTicketPayout,
+    modalStakeTicketLine,
+  };
+}
