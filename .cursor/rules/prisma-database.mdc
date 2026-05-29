@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Database Documentation
 
+Source of truth: `server/prisma/schema.prisma`. Product spec for private leagues: [`PRIVATE_LEAGUES.md`](../../PRIVATE_LEAGUES.md) at repo root (UI: **League**, code: **UserGroup**).
+
 ## ⚠️ CRITICAL: Destructive Database Operations
 
 **NEVER run destructive Prisma operations automatically. ALWAYS provide scripts for the user to run manually.**
@@ -25,124 +27,110 @@ When the user asks for database resets or destructive operations:
 3. Let them execute it themselves
 4. Never run these commands using the terminal tool
 
-## Core Concepts
+## Core concepts (implemented schema)
 
-The database is designed around these key concepts:
+1. **Players** are PGA Tour golfers loaded from external data. They are not owned by leagues or lineups; they link to tournaments via `TournamentPlayer` and to user lineups via `TournamentLineupPlayer`.
+2. **TournamentLineup** is a user's set of golfers (typically 4) for a **specific tournament**. A user may have multiple lineups per tournament. Lineups are **not** tied to a `UserGroup`.
+3. **UserGroup** (product: **League**) is a private social group. Users join via `UserGroupMember` with role `ADMIN` or `MEMBER`. There is no public league directory in the target design.
+4. **Contest** is a tournament-scoped competition. Optional `userGroupId` scopes a contest to a league; entry requires league membership when set.
+5. **ContestLineup** links a `TournamentLineup` into a `Contest` (entry, scoring, settlement).
+6. **`User.referralGroupId`** is for the on-chain referral graph, not `UserGroup`.
 
-1. Players exist independently of teams or leagues. Players will be loaded and refreshed from external data so players should only be linked to teams through the TeamPlayer table.
-2. Users can join multiple leagues
-3. Users can create a single team for each league they have joined. Users cannot have more than one team per league.
-4. Teams can draft any player. Each player can only be used once per team per league, ie, multiple teams within a league can use the same player, but each player can only be selected once (no duplicates on a single team). The same player can be on multiple teams across different leagues
+## Entity relationships
 
-## Entity Relationships
+```mermaid
+flowchart TB
+  User --> UserGroupMember
+  UserGroupMember --> UserGroup
+  UserGroup --> Contest
+  User --> TournamentLineup
+  Tournament --> TournamentLineup
+  TournamentLineup --> TournamentLineupPlayer
+  TournamentLineupPlayer --> TournamentPlayer
+  TournamentPlayer --> Player
+  TournamentLineup --> ContestLineup
+  ContestLineup --> Contest
+  Contest --> Tournament
+```
 
-### Players and Teams
+### Users and leagues (`UserGroup`)
 
-- Players are independent entities representing PGA Tour golfers
-- Players can be drafted to multiple teams across different leagues
-- The TeamPlayer junction table manages these many-to-many relationships
-- A player doesn't need to be on any team to exist in the system
+- Users belong to many leagues through `UserGroupMember`.
+- League creator is `ADMIN`; other members are `MEMBER`.
+- Admins manage members (today: add by wallet address; planned: invite links — see `PRIVATE_LEAGUES.md`).
 
-### Users and Leagues
+### Lineups and contests
 
-- Users can join multiple leagues through LeagueMembership
-- Users can be commissioners of leagues they create
-- Users can create and manage exactly one team within each leagues they've joined
+- `TournamentLineup` belongs to one `User` and one `Tournament`.
+- `ContestLineup` enters one lineup into one contest.
+- League contests: `Contest.userGroupId` → `UserGroup`; non-members must not see or join (enforcement in progress per `PRIVATE_LEAGUES.md`).
 
-### Teams and Leagues
+### Players and tournaments
 
-- Teams must belong to exactly one league
-- Teams can draft players up to their league's roster size limit
-- Multiple teams can draft the same player
+- `Player` is the master golfer record.
+- `TournamentPlayer` is field + scoring for a player in a tournament.
+- Lineup slots reference `TournamentPlayer`, not `Player` directly.
 
-## Database Tables
+## Database tables (implemented)
 
-1. **Player**
+### UserGroup
 
-   - Purpose: Central repository for all PGA Tour player information
-   - Independent entity not tied to any teams or leagues
-   - Fields: id, pgaTourId (unique), name, imageUrl, hometown, age
-   - Relations: teams (through TeamPlayer), tournaments (through TournamentPlayer)
-   - Note: Players exist whether or not they're on any teams
+- **Purpose:** Private league / friend group.
+- **Fields:** `id`, `name`, `description?`, `createdAt`, `updatedAt`
+- **Relations:** `members` (`UserGroupMember[]`), `contests` (`Contest[]`)
+- **Planned:** `isPrivate`, invite model — see `PRIVATE_LEAGUES.md`
 
-2. **TeamPlayer**
+### UserGroupMember
 
-   - Purpose: Manages the many-to-many relationship between Teams and Players
-   - Tracks which players are on which teams
-   - Fields: id, teamId, playerId, addedAt, active
-   - Relations: team, player
-   - Constraints: unique [teamId, playerId] to prevent duplicates
-   - Note: The 'active' field allows for tracking current vs historical roster spots
+- **Purpose:** League membership and role.
+- **Fields:** `id`, `userId`, `userGroupId`, `role` (`ADMIN` | `MEMBER`), `joinedAt`
+- **Constraints:** `@@unique([userId, userGroupId])`
 
-3. **Team**
+### TournamentLineup
 
-   - Purpose: Represents a collection of players within a league
-   - Fields: id, name, leagueId, createdAt, updatedAt
-   - Relations: league, players (through TeamPlayer), users
-   - Note: Teams can only exist within a league
+- **Purpose:** User's golfers for one tournament (fantasy "team" for the week).
+- **Fields:** `id`, `userId`, `tournamentId`, `name`, timestamps
+- **Relations:** `players` via `TournamentLineupPlayer`, `contestLineups`, optional `sideBetMarket`
 
-4. **League**
+### TournamentLineupPlayer
 
-   - Purpose: Organizes teams and competition structure
-   - Fields: id, name, description, isPrivate, maxTeams, commissionerId
-   - Relations: commissioner, members, teams, settings
-   - Note: Controls the rules and structure of the competition
+- **Purpose:** Players on a lineup (junction).
+- **Constraints:** `@@unique([tournamentLineupId, tournamentPlayerId])`
 
-5. **LeagueSettings**
+### Contest
 
-   - Purpose: Configures league-specific rules
-   - Fields: id, rosterSize, weeklyStarters, scoringType, draftDate, seasonDates
-   - Relations: league (one-to-one)
-   - Note: Each league has exactly one settings record
+- **Purpose:** Paid competition for a tournament; optional league scope.
+- **Fields:** include `tournamentId`, `userGroupId?`, `status`, `settings` (JSON), on-chain `address`, `chainId`
+- **Relations:** `tournament`, `userGroup?`, `contestLineups`, secondary market participants
 
-6. **LeagueMembership**
+### Player, Tournament, TournamentPlayer
 
-   - Purpose: Tracks user participation in leagues
-   - Fields: id, userId, leagueId, role, joinedAt
-   - Relations: user, league
-   - Note: Users must be members to create teams
+- **Player:** PGA identity and sync metadata (`pga_*` fields).
+- **Tournament:** Event schedule, status, course, cut line, etc.
+- **TournamentPlayer:** Per-tournament field row, rounds, stableford, leaderboard.
 
-7. **Tournament**
+### User, UserWallet
 
-   - Purpose: Tracks PGA Tour tournaments
-   - Fields: id, name, dates, course, purse, status
-   - Relations: players (through TournamentPlayer)
-   - Note: Independent of leagues/teams, represents actual PGA events
+- **User:** Auth (Privy/email), profile, settings JSON, referral fields.
+- **UserWallet:** Chain addresses per user (`publicKey`, `chainId`, `isPrimary`).
 
-8. **TournamentPlayer**
+Other models in schema (not league-specific): `ContestLineup`, `ContestLineupTimeline`, `ContestSecondaryParticipant`, `SideBetMarket`, `SideBetTicket`, `OnchainPayment`, `EmailSendLog`, etc.
 
-   - Purpose: Tracks player performance in tournaments
-   - Fields: id, scores, position, earnings, etc.
-   - Relations: tournament, player
-   - Note: Contains actual tournament performance data
+## Deprecated design (not in schema)
 
-9. **User**
+The following were an early fantasy-league design and **do not exist** in `schema.prisma`. Do not reference them in new code or migrations.
 
-   - Purpose: Manages user accounts and authentication
-   - Fields: id, email, password, name, emailVerified
-   - Relations: team, ownedLeagues, leagueMemberships, orderLogs
-   - Note: Users can participate in multiple leagues
+| Deprecated model | Was intended for |
+|------------------|------------------|
+| `League` | Season-long competition container |
+| `LeagueMembership` | User ↔ league join |
+| `LeagueSettings` | Roster size, draft, scoring rules |
+| `Team` | One team per user per league |
+| `TeamPlayer` | Roster slots on a team |
 
-10. **UserOrderLog**
-    - Purpose: Tracks user trading activity
-    - Fields: id, orderType, asset, amount, price, status
-    - Relations: user
-    - Note: Maintains history of trading actions
+**Replacement:** weekly (per-tournament) fantasy uses **`TournamentLineup`** + **`Contest`**. Social grouping uses **`UserGroup`** + optional **`Contest.userGroupId`**.
 
-## Database Seeding
+## Database seeding
 
-The seeding process follows these steps:
-
-1. PGA Tour Data Import:
-
-   - Fetch current tournament and player data using scrapePGATourData()
-   - Create Player records for all PGA Tour players
-   - This establishes the base player pool
-
-2. Test Data Creation:
-   - Create 3 test users
-   - Create 1 test league
-   - Create 3 teams (one per user)
-   - Assign 8 players to each team through TeamPlayer records
-   - Use real PGA Tour players for authenticity
-   - Create sample tournament results
+- PGA data import creates/updates `Player`, `Tournament`, `TournamentPlayer` (see `server/prisma/seedPGA.ts` and related jobs).
+- UserGroup seed data is not required for local dev unless testing leagues explicitly.
