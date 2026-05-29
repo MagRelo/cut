@@ -1,5 +1,13 @@
 import type { SideBetMarketResponse, SideBetMarketSelectionDto } from "../../../../types/sideBet";
-import { PARLAY_MARKET_UNAVAILABLE } from "../shared/sideBetConstants";
+import { PARLAY_MARKET_CLOSED, PARLAY_MARKET_UNAVAILABLE } from "../shared/sideBetConstants";
+
+const CLOSED_MARKET_STATUSES = new Set([
+  "LOCKED",
+  "SETTLING",
+  "SETTLED",
+  "VOID",
+  "CLOSED",
+]);
 
 export type SideBetMarketVisualState =
   | { kind: "hidden" }
@@ -27,10 +35,12 @@ export function resolveSideBetMarketState(
     return { kind: "error", message: PARLAY_MARKET_UNAVAILABLE };
   }
   if (query.data != null && query.data.bettable !== true) {
-    return {
-      kind: "unavailable",
-      message: query.data.unavailableReason ?? PARLAY_MARKET_UNAVAILABLE,
-    };
+    const status = query.data.marketStatus;
+    const message =
+      status != null && CLOSED_MARKET_STATUSES.has(status)
+        ? PARLAY_MARKET_CLOSED
+        : (query.data.unavailableReason ?? PARLAY_MARKET_UNAVAILABLE);
+    return { kind: "unavailable", message };
   }
   return { kind: "ready", selections: query.data?.selections ?? [] };
 }

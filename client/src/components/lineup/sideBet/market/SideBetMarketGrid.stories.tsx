@@ -5,7 +5,7 @@ import {
   buildBettableSideBetMarket,
   buildSideBetSelectionsFixture,
 } from "../../../../test/fixtures/sideBetMock";
-import { PARLAY_MARKET_UNAVAILABLE } from "../shared/sideBetConstants";
+import { PARLAY_MARKET_CLOSED, PARLAY_MARKET_UNAVAILABLE } from "../shared/sideBetConstants";
 import { SideBetMarketGrid } from "./SideBetMarketGrid";
 
 const meta = {
@@ -35,7 +35,7 @@ export const Unavailable: Story = {
   args: {
     state: {
       kind: "unavailable",
-      message: "Lineup is locked for betting.",
+      message: PARLAY_MARKET_CLOSED,
     },
   },
 };

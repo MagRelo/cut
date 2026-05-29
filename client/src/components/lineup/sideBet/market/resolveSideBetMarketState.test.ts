@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBettableSideBetMarket } from "../../../../test/fixtures/sideBetMock";
+import { PARLAY_MARKET_CLOSED } from "../shared/sideBetConstants";
 import { resolveSideBetMarketState } from "./resolveSideBetMarketState";
 
 describe("resolveSideBetMarketState", () => {
@@ -43,6 +44,20 @@ describe("resolveSideBetMarketState", () => {
       isError: false,
     });
     expect(result).toEqual({ kind: "unavailable", message: "Locked" });
+  });
+
+  it("returns closed copy when market status is LOCKED", () => {
+    const result = resolveSideBetMarketState("lineup-1", {
+      data: buildBettableSideBetMarket({
+        bettable: false,
+        marketStatus: "LOCKED",
+        unavailableReason: null,
+      }),
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+    });
+    expect(result).toEqual({ kind: "unavailable", message: PARLAY_MARKET_CLOSED });
   });
 
   it("returns ready with selections when bettable", () => {
