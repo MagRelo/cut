@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react";
 import { useLineupsQuery } from "./useLineupQueries";
 import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
 import { useAuth } from "../contexts/AuthContext";
-import { useCurrentTournament } from "./useTournamentData";
+import { useActiveTournament } from "./useTournamentData";
 import type { TournamentLineupListItem } from "../types/lineup";
 
 interface UseLineupDataOptions {
@@ -13,7 +13,7 @@ interface UseLineupDataOptions {
 
 export function useLineupData(options: UseLineupDataOptions = {}) {
   const { user } = useAuth();
-  const { tournament: currentTournament } = useCurrentTournament();
+  const { tournament: currentTournament } = useActiveTournament();
 
   const tournamentId = options.tournamentId ?? currentTournament?.id;
   const isEnabled = options.enabled ?? (!!user && !!tournamentId);

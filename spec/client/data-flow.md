@@ -10,7 +10,7 @@ The client receives data from two main sources:
 
 ### Tournament Data Flow
 
-Active tournament data is split: **metadata** (long-lived shell), **players** (5-minute refetch for scores), and **contests** (`GET /contests` via `useContestsQuery`, unchanged).
+Active tournament data is split: **shell** (init/week, long cache), **live** (cron round status + players, 5-minute poll), and **contests** (`GET /contests` via `useContestsQuery`, unchanged).
 
 ```mermaid
 sequenceDiagram
@@ -20,24 +20,24 @@ sequenceDiagram
     participant ApiClient
     participant Server
 
-    App->>Hook: useTournamentMetadata()
-    Hook->>ReactQuery: useQuery(activeMetadata)
-    ReactQuery->>ApiClient: GET /api/tournaments/active/metadata
+    App->>Hook: useTournamentShell()
+    Hook->>ReactQuery: useQuery(activeShell)
+    ReactQuery->>ApiClient: GET /api/tournaments/active/shell
     ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: tournament
+    Server-->>ApiClient: tournament shell
     ApiClient-->>ReactQuery: JSON Response
     ReactQuery-->>Hook: shell state
 
-    App->>Hook: useActiveTournamentPlayers(tournamentId)
-    Hook->>ReactQuery: useQuery(activePlayers by id)
-    ReactQuery->>ApiClient: GET /api/tournaments/active/players
+    App->>Hook: useActiveTournamentLive(tournamentId)
+    Hook->>ReactQuery: useQuery(activeLive by id)
+    ReactQuery->>ApiClient: GET /api/tournaments/active/live
     ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: players
+    Server-->>ApiClient: live tournament + players
     ApiClient-->>ReactQuery: JSON Response
-    ReactQuery-->>Hook: players state
+    ReactQuery-->>Hook: live state
 ```
 
-`useActiveTournament()` composes metadata + players for lineups and leaderboard.
+`useActiveTournament()` merges shell + live (`mergeTournament`) for lineups, leaderboard, and header. `useTournamentShell()` alone is used only where live fields are not needed (e.g. tournament summary modal).
 
 ### Contest Data Flow
 

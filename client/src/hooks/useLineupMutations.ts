@@ -7,7 +7,7 @@ import type { TournamentLineupListItem } from "../types/lineup";
 import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
-import type { ActiveTournamentPlayersResponse } from "./useTournamentData";
+import type { ActiveTournamentLiveResponse } from "./useTournamentData";
 
 interface LineupResponse {
   lineups: TournamentLineup[];
@@ -33,8 +33,8 @@ function buildPlayersFromIds(
 ): PlayerWithTournamentData[] {
   const playerMap = new Map<string, PlayerWithTournamentData>();
 
-  const fieldData = queryClient.getQueryData<ActiveTournamentPlayersResponse>(
-    queryKeys.tournaments.activePlayers(tournamentId),
+  const fieldData = queryClient.getQueryData<ActiveTournamentLiveResponse>(
+    queryKeys.tournaments.activeLive(tournamentId),
   );
   for (const player of fieldData?.players ?? []) {
     if (!playerMap.has(player.id)) {

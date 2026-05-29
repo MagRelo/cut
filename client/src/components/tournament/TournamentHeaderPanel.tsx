@@ -1,16 +1,14 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { useTournamentMetadata } from "../../hooks/useTournamentData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 import { resolveTournamentBeautyImage } from "../../types/tournament";
 import { Navigation } from "../common/Navigation";
 
 import { useGlobalError } from "../../contexts/GlobalErrorContext";
 
 export const TournamentHeaderPanel: React.FC = () => {
-  // Use lightweight metadata endpoint instead of full tournament data
-  // This loads ~10x faster since it doesn't fetch all players and contests
-  const { data, isFetching, error: queryError } = useTournamentMetadata();
+  const { tournament, isFetching, error: queryError } = useActiveTournament();
   const { showError, clearError } = useGlobalError();
 
   useEffect(() => {
@@ -26,9 +24,8 @@ export const TournamentHeaderPanel: React.FC = () => {
       clearError("tournament-header");
     }
   }, [queryError, showError, clearError]);
-  const currentTournament = data?.tournament;
 
-  if (isFetching && !currentTournament) {
+  if (isFetching && !tournament) {
     return <div className="overflow-hidden min-h-[162px]" />;
   }
 
@@ -36,18 +33,18 @@ export const TournamentHeaderPanel: React.FC = () => {
     return <div className="overflow-hidden min-h-[162px]" />;
   }
 
-  if (!currentTournament) {
+  if (!tournament) {
     return null;
   }
 
-  const headerImageUrl = resolveTournamentBeautyImage(currentTournament.beautyImage);
-  const locationLine = [currentTournament.city?.trim(), currentTournament.state?.trim()]
+  const headerImageUrl = resolveTournamentBeautyImage(tournament.beautyImage);
+  const locationLine = [tournament.city?.trim(), tournament.state?.trim()]
     .filter(Boolean)
     .join(", ");
   const isTournamentEditable =
-    currentTournament.status !== "IN_PROGRESS" && currentTournament.status !== "COMPLETED";
-  const roundDisplay = currentTournament.roundDisplay || "R1";
-  const roundStatusDisplay = currentTournament.roundStatusDisplay || currentTournament.status;
+    tournament.status !== "IN_PROGRESS" && tournament.status !== "COMPLETED";
+  const roundDisplay = tournament.roundDisplay || "R1";
+  const roundStatusDisplay = tournament.roundStatusDisplay || tournament.status;
 
   return (
     <div className="relative overflow-hidden min-h-[162px]">
@@ -67,7 +64,7 @@ export const TournamentHeaderPanel: React.FC = () => {
                 to="/leaderboard"
                 className="hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-sm"
               >
-                {currentTournament.name}
+                {tournament.name}
               </Link>
             </h1>
           </div>
@@ -79,9 +76,9 @@ export const TournamentHeaderPanel: React.FC = () => {
           ) : null}
 
           {isTournamentEditable ? (
-            currentTournament.course ? (
+            tournament.course ? (
               <p className="mt-1 font-display text-sm font-normal leading-snug tracking-wide text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-                {currentTournament.course}
+                {tournament.course}
               </p>
             ) : null
           ) : (
@@ -90,7 +87,7 @@ export const TournamentHeaderPanel: React.FC = () => {
               <span className="text-[9px] leading-none text-white/70" aria-hidden>
                 ●
               </span>
-              {currentTournament.roundStatusDisplay === "Suspended" ? (
+              {tournament.roundStatusDisplay === "Suspended" ? (
                 <span className="inline-flex items-center gap-1 text-yellow-300">
                   <ExclamationTriangleIcon className="h-3.5 w-3.5 text-yellow-300" aria-hidden />
                   <span>{roundStatusDisplay}</span>

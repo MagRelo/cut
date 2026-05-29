@@ -1,7 +1,7 @@
 import { ArrowTopRightOnSquareIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { PlayerWithTournamentData } from "../../types/player";
-import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
@@ -29,10 +29,10 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   rowTrailing = "scorecard",
   onShare,
 }) => {
-  const { tournament: currentTournament } = useCurrentTournament();
-  const currentTournamentId = currentTournament?.id;
+  const { tournament } = useActiveTournament();
+  const currentTournamentId = tournament?.id;
   const isTournamentEditable =
-    currentTournament?.status !== "IN_PROGRESS" && currentTournament?.status !== "COMPLETED";
+    tournament?.status !== "IN_PROGRESS" && tournament?.status !== "COMPLETED";
   const playerRowIsForCurrentWeek =
     Boolean(currentTournamentId) && player.tournamentId === currentTournamentId;
   /** Full row for any non–active-tournament player; for active-tournament players only when the event is live or completed. */

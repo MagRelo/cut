@@ -1,14 +1,18 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useActiveTournament, useActiveTournamentPlayers, useTournamentMetadata } from "../hooks/useTournamentData";
+import {
+  useActiveTournament,
+  useActiveTournamentLive,
+  useTournamentShell,
+} from "../hooks/useTournamentData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const metadataQuery = useTournamentMetadata();
-  const tournamentId = metadataQuery.data?.tournament?.id;
-  const playersQuery = useActiveTournamentPlayers(tournamentId);
+  const shellQuery = useTournamentShell();
+  const tournamentId = shellQuery.data?.tournament?.id;
+  const liveQuery = useActiveTournamentLive(tournamentId);
   const activeTournament = useActiveTournament();
 
   return (
@@ -94,53 +98,67 @@ export const DebugPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tournament metadata (shell) */}
+      {/* Tournament shell */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-3 text-purple-600">
-          Tournament shell (useTournamentMetadata / GET active/metadata)
+          Tournament shell (useTournamentShell / GET active/shell)
         </h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Loading:</strong> {metadataQuery.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {shellQuery.isLoading ? "true" : "false"}
           </div>
           <div>
             <strong>Error:</strong>{" "}
-            {metadataQuery.error ? String(metadataQuery.error.message) : "None"}
+            {shellQuery.error ? String(shellQuery.error.message) : "None"}
           </div>
           <div>
-            <strong>Data:</strong> {metadataQuery.data ? "Loaded" : "Not loaded"}
+            <strong>Data updated:</strong>{" "}
+            {shellQuery.dataUpdatedAt
+              ? new Date(shellQuery.dataUpdatedAt).toLocaleString()
+              : "—"}
           </div>
-          {metadataQuery.data && (
+          {shellQuery.data && (
             <>
               <div>
-                <strong>Tournament:</strong> {metadataQuery.data.tournament.name}
+                <strong>Tournament:</strong> {shellQuery.data.tournament.name}
               </div>
               <div>
-                <strong>Tournament Status:</strong> {metadataQuery.data.tournament.status}
+                <strong>Tournament ID:</strong> {shellQuery.data.tournament.id}
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Active tournament players */}
+      {/* Active tournament live */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-3 text-indigo-600">
-          Active players (useActiveTournamentPlayers / GET active/players)
+          Active live (useActiveTournamentLive / GET active/live)
         </h2>
         <div className="space-y-2 text-sm">
           <div>
             <strong>Tournament ID (from shell):</strong> {tournamentId ?? "—"}
           </div>
           <div>
-            <strong>Loading:</strong> {playersQuery.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {liveQuery.isLoading ? "true" : "false"}
           </div>
           <div>
-            <strong>Error:</strong> {playersQuery.error ? String(playersQuery.error.message) : "None"}
+            <strong>Error:</strong> {liveQuery.error ? String(liveQuery.error.message) : "None"}
           </div>
           <div>
-            <strong>Players Count:</strong> {playersQuery.data?.players.length ?? "—"}
+            <strong>Data updated:</strong>{" "}
+            {liveQuery.dataUpdatedAt
+              ? new Date(liveQuery.dataUpdatedAt).toLocaleString()
+              : "—"}
           </div>
+          <div>
+            <strong>Players Count:</strong> {liveQuery.data?.players.length ?? "—"}
+          </div>
+          {liveQuery.data && (
+            <div>
+              <strong>Status:</strong> {liveQuery.data.tournament.status}
+            </div>
+          )}
         </div>
       </div>
 
@@ -158,8 +176,8 @@ export const DebugPage: React.FC = () => {
             {activeTournament.error ? activeTournament.error.message : "None"}
           </div>
           <div>
-            <strong>Current Tournament:</strong>{" "}
-            {activeTournament.currentTournament ? activeTournament.currentTournament.name : "None"}
+            <strong>Tournament:</strong>{" "}
+            {activeTournament.tournament ? activeTournament.tournament.name : "None"}
           </div>
           <div>
             <strong>Players Count:</strong> {activeTournament.players.length}

@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 import type { TournamentSummarySections } from "../../types/tournament";
 
 interface TournamentSummaryModalProps {
@@ -12,7 +12,7 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { tournament } = useCurrentTournament();
+  const { tournament } = useActiveTournament();
 
   const summarySections: TournamentSummarySections | undefined = tournament?.summarySections;
   const headerLocation =

@@ -11,7 +11,7 @@ import { sortPlayersByLeaderboard } from "../utils/playerSorting";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 export const LeaderboardPage: React.FC = () => {
-  const { currentTournament, players, isLoading, error } = useActiveTournament();
+  const { tournament, players, isLoading, error } = useActiveTournament();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -60,7 +60,7 @@ export const LeaderboardPage: React.FC = () => {
   };
 
   const sortedPlayers = useMemo(() => {
-    const sortByNameOnly = currentTournament?.status === "NOT_STARTED";
+    const sortByNameOnly = tournament?.status === "NOT_STARTED";
     const playersWithName = players.filter((player) => {
       const hasLastName = Boolean((player.pga_lastName || "").trim());
       const hasDisplayName = Boolean((player.pga_displayName || "").trim());
@@ -68,7 +68,7 @@ export const LeaderboardPage: React.FC = () => {
     });
 
     return sortPlayersByLeaderboard(playersWithName, { sortByNameOnly });
-  }, [players, currentTournament?.status]);
+  }, [players, tournament?.status]);
 
   if (isLoading) {
     return (
@@ -86,7 +86,7 @@ export const LeaderboardPage: React.FC = () => {
     );
   }
 
-  if (!currentTournament) {
+  if (!tournament) {
     return (
       <div className="p-4 text-center">
         <p className="text-gray-600">No tournament data available</p>
@@ -94,8 +94,8 @@ export const LeaderboardPage: React.FC = () => {
     );
   }
 
-  const roundDisplay = currentTournament.roundDisplay || "R1";
-  const locationDisplay = [currentTournament.city?.trim(), currentTournament.state?.trim()]
+  const roundDisplay = tournament.roundDisplay || "R1";
+  const locationDisplay = [tournament.city?.trim(), tournament.state?.trim()]
     .filter(Boolean)
     .join(", ");
 
@@ -105,7 +105,7 @@ export const LeaderboardPage: React.FC = () => {
         <div className="px-4 py-3.5">
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900">
-              {currentTournament.name}
+              {tournament.name}
             </h1>
             {/* <button
               type="button"
@@ -117,9 +117,9 @@ export const LeaderboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-0.5">
-            {currentTournament.course ? (
+            {tournament.course ? (
               <p className="font-display text-base font-medium leading-snug text-gray-700">
-                {currentTournament.course}
+                {tournament.course}
               </p>
             ) : null}
             {locationDisplay ? (
@@ -132,13 +132,13 @@ export const LeaderboardPage: React.FC = () => {
             <span className="text-[9px] leading-none text-gray-300" aria-hidden>
               ●
             </span>
-            {currentTournament.roundStatusDisplay === "Suspended" ? (
+            {tournament.roundStatusDisplay === "Suspended" ? (
               <span className="inline-flex items-center gap-1 text-gray-600">
                 <ExclamationTriangleIcon className="h-3.5 w-3.5 text-gray-500" aria-hidden />
-                <span>{currentTournament.roundStatusDisplay || currentTournament.status}</span>
+                <span>{tournament.roundStatusDisplay || tournament.status}</span>
               </span>
             ) : (
-              <span>{currentTournament.roundStatusDisplay || currentTournament.status}</span>
+              <span>{tournament.roundStatusDisplay || tournament.status}</span>
             )}
           </div>
         </div>

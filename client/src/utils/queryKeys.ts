@@ -11,11 +11,11 @@
 export const queryKeys = {
   tournaments: {
     all: ["tournaments"] as const,
-    /** Active tournament row for header + app shell (GET /tournaments/active/metadata). */
-    activeMetadata: () => [...queryKeys.tournaments.all, "active", "metadata"] as const,
-    /** Leaderboard player payload for a specific active tournament week. */
-    activePlayers: (tournamentId: string) =>
-      [...queryKeys.tournaments.all, "active", "players", tournamentId] as const,
+    /** Week/setup fields (GET /tournaments/active/shell). */
+    activeShell: () => [...queryKeys.tournaments.all, "active", "shell"] as const,
+    /** Cron round status + players (GET /tournaments/active/live). */
+    activeLive: (tournamentId: string) =>
+      [...queryKeys.tournaments.all, "active", "live", tournamentId] as const,
   },
   contests: {
     all: ["contests"] as const,

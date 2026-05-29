@@ -40,7 +40,7 @@ const mutation = useMutation({
 ```
 
 ### Custom Hooks
-- **useTournamentData** (`useTournamentMetadata`, `useActiveTournamentPlayers`, `useActiveTournament`): split active tournament shell vs players
+- **useTournamentData** (`useTournamentShell`, `useActiveTournamentLive`, `useActiveTournament`): shell (24h cache) + live (5 min poll); primary UI uses merged `useActiveTournament()`
 - **useContestQuery**: Contest data fetching
 - **useLineupData**: Lineup operations
 - **useContestMutations**: Contest mutations

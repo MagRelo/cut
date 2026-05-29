@@ -51,19 +51,19 @@ Unauthenticated routes are explicitly noted below (e.g. health, some tournament 
 
 ### Tournaments (`/api/tournaments`)
 
-#### `GET /api/tournaments/active/metadata`
-- **Description**: Get active tournament row (app shell / header; no players)
+#### `GET /api/tournaments/active/shell`
+- **Description**: Week/setup fields for the active tournament (init-tournament; no live status or players)
 - **Auth**: None
-- **Response**: `{ tournament: Tournament }`
-- **Cache**: 5 minutes (HTTP); client treats as long-lived shell data
+- **Response**: `{ tournament: TournamentShell }` — `id`, `pgaTourId`, `name`, `startDate`, `endDate`, `beautyImage`, `summarySections`, `timezone`, `manualActive`, timestamps
+- **Cache**: 24 hours (HTTP); client `staleTime` 24h, no poll
 
-#### `GET /api/tournaments/active/players`
-- **Description**: In-field players and tournament scoring rows for the **currently active** tournament (leaderboard / lineups)
+#### `GET /api/tournaments/active/live`
+- **Description**: Cron-updated round status and in-field player scores for the active tournament (single payload)
 - **Auth**: None
-- **Response**: `{ players: PlayerWithTournamentData[] }` (shape matches prior monolithic `players` array)
-- **Cache**: ~2 minutes (HTTP); client refetches on a 5-minute interval
+- **Response**: `{ tournament: TournamentLive, players: PlayerWithTournamentData[] }`
+- **Cache**: ~2 minutes (HTTP); client refetches every 5 minutes (aligned with cron pipeline)
 
-The monolithic `GET /api/tournaments/active` (tournament + players) has been **removed**; clients use metadata + players (and `GET /api/contests` for contest lists).
+The monolithic `GET /api/tournaments/active` and the split `active/metadata` + `active/players` endpoints have been **removed**. Clients merge shell + live via `mergeTournament()` and `useActiveTournament()`.
 
 ### Lineups (`/api/lineup`)
 

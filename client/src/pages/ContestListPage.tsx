@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
 import { ContestList } from "../components/contest/ContestList";
-import { useCurrentTournament } from "../hooks/useTournamentData";
+import { useActiveTournament } from "../hooks/useTournamentData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
 export const Contests: React.FC = () => {
-  const { tournament, isLoading: isTournamentLoading, error: fetchError } = useCurrentTournament();
+  const { tournament, isLoading: isTournamentLoading, error: fetchError } = useActiveTournament();
   const tournamentId = tournament?.id;
 
   const {

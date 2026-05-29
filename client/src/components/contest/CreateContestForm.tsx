@@ -10,7 +10,7 @@ import { useCreateContest } from "../../hooks/useContestFactory";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { useAuth } from "../../contexts/AuthContext";
-import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
@@ -49,7 +49,7 @@ function buildContestSettings(
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
-  const { tournament: currentTournament } = useCurrentTournament();
+  const { tournament: currentTournament } = useActiveTournament();
   const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();

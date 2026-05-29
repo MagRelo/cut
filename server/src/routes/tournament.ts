@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { transformPlayerWithTournamentData } from "../utils/playerTransform.js";
+import {
+  tournamentShellSelect,
+  tournamentLiveSelect,
+} from "../schemas/activeTournament.js";
 
 const tournamentRouter = new Hono();
 
@@ -56,46 +60,60 @@ async function loadPlayersWithTournamentDataForTournament(tournamentId: string) 
   return players.map((player: any) => transformPlayerWithTournamentData(player, tournamentId));
 }
 
-// Get active tournament metadata only (lightweight, for header + app shell)
-tournamentRouter.get("/active/metadata", async (c) => {
+async function findActiveTournament() {
+  return prisma.tournament.findFirst({
+    where: { manualActive: true },
+  });
+}
+
+// Week/setup fields for header shell (init-tournament; long client cache)
+tournamentRouter.get("/active/shell", async (c) => {
   try {
     const tournament = await prisma.tournament.findFirst({
       where: { manualActive: true },
+      select: tournamentShellSelect,
     });
 
     if (!tournament) {
       return c.json({ error: "No active tournament found" }, 404);
     }
 
-    // Add cache headers - metadata changes infrequently
-    c.header("Cache-Control", "public, max-age=300, stale-while-revalidate=120");
+    c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
 
     return c.json({ tournament });
   } catch (error) {
-    console.error("Error fetching active tournament metadata:", error);
-    return c.json({ error: "Failed to fetch tournament" }, 500);
+    console.error("Error fetching active tournament shell:", error);
+    return c.json({ error: "Failed to fetch tournament shell" }, 500);
   }
 });
 
-// Leaderboard / lineup player payload for the active tournament (refetched frequently on client)
-tournamentRouter.get("/active/players", async (c) => {
+// Cron-updated round status + player scores (single payload, 5 min client poll)
+tournamentRouter.get("/active/live", async (c) => {
   try {
-    const tournament = await prisma.tournament.findFirst({
-      where: { manualActive: true },
-    });
+    const tournament = await findActiveTournament();
 
     if (!tournament) {
       return c.json({ error: "No active tournament found" }, 404);
     }
 
-    const players = await loadPlayersWithTournamentDataForTournament(tournament.id);
+    const [liveTournament, players] = await Promise.all([
+      prisma.tournament.findUnique({
+        where: { id: tournament.id },
+        select: tournamentLiveSelect,
+      }),
+      loadPlayersWithTournamentDataForTournament(tournament.id),
+    ]);
+
+    if (!liveTournament) {
+      return c.json({ error: "No active tournament found" }, 404);
+    }
 
     c.header("Cache-Control", "public, max-age=120, stale-while-revalidate=60");
 
-    return c.json({ players });
+    return c.json({ tournament: liveTournament, players });
   } catch (error) {
-    console.error("Error fetching active tournament players:", error);
-    return c.json({ error: "Failed to fetch tournament players" }, 500);
+    console.error("Error fetching active tournament live data:", error);
+    return c.json({ error: "Failed to fetch tournament live data" }, 500);
   }
 });
 

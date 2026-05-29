@@ -50,6 +50,58 @@ export interface TournamentLocation {
   country: string;
 }
 
+/** Week/setup fields from GET /tournaments/active/shell (init-tournament). */
+export interface TournamentShell {
+  id: string;
+  pgaTourId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  beautyImage?: string | null;
+  summarySections?: TournamentSummarySections;
+  timezone: string;
+  manualActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Cron-updated fields from GET /tournaments/active/live. */
+export interface TournamentLive {
+  status: TournamentStatus;
+  roundStatusDisplay?: string | null;
+  roundDisplay?: string | null;
+  currentRound?: number | null;
+  weather?: Record<string, unknown>;
+  course: string;
+  city: string;
+  state: string;
+}
+
+/** Merged view for UI: shell + live (live overrides overlapping fields). */
+export function mergeTournament(shell: TournamentShell, live: TournamentLive): Tournament {
+  return {
+    id: shell.id,
+    pgaTourId: shell.pgaTourId,
+    name: shell.name,
+    startDate: shell.startDate,
+    endDate: shell.endDate,
+    timezone: shell.timezone,
+    beautyImage: shell.beautyImage,
+    summarySections: shell.summarySections,
+    manualActive: shell.manualActive,
+    createdAt: new Date(shell.createdAt),
+    updatedAt: new Date(shell.updatedAt),
+    status: live.status,
+    roundStatusDisplay: live.roundStatusDisplay ?? undefined,
+    roundDisplay: live.roundDisplay ?? undefined,
+    currentRound: live.currentRound ?? undefined,
+    weather: live.weather,
+    course: live.course,
+    city: live.city,
+    state: live.state,
+  };
+}
+
 // Main Tournament Type
 export interface Tournament {
   id: string;

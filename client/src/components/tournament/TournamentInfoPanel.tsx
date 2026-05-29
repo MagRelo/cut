@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { TournamentSummaryModal } from "./TournamentSummaryModal";
-import { useCurrentTournament } from "../../hooks/useTournamentData";
+import { useActiveTournament } from "../../hooks/useTournamentData";
 
 export const TournamentInfoPanel: React.FC = () => {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const { tournament } = useCurrentTournament();
+  const { tournament } = useActiveTournament();
 
   if (!tournament) return null;
 

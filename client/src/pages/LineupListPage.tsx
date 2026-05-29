@@ -51,7 +51,7 @@ export const LineupList: React.FC = () => {
   const { loading: isAuthLoading, user } = useAuth();
   const {
     isLoading: isTournamentLoading,
-    currentTournament,
+    tournament,
     isTournamentEditable,
     tournamentStatusDisplay,
   } = useActiveTournament();
@@ -61,18 +61,18 @@ export const LineupList: React.FC = () => {
 
   const listItems = lineups as TournamentLineupListItem[];
   const hasLineups = listItems.length > 0;
-  const tournamentName = currentTournament?.name ?? "this tournament";
+  const tournamentName = tournament?.name ?? "this tournament";
 
   const showAddLineup =
     isTournamentEditable && !isAuthLoading && !isTournamentLoading && !isLineupsLoading;
 
   const handleCreateLineup = async () => {
-    if (!currentTournament?.id || isCreating) return;
+    if (!tournament?.id || isCreating) return;
     const nextName = `Lineup #${listItems.length + 1}`;
     setIsCreating(true);
     setCreateError(null);
     try {
-      await createLineup(currentTournament.id, [], nextName);
+      await createLineup(tournament.id, [], nextName);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to create lineup");
     } finally {
@@ -138,7 +138,7 @@ export const LineupList: React.FC = () => {
             <div key={row.id} className="rounded-sm border border-gray-200 bg-white mb-4">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
-                roundDisplay={currentTournament?.roundDisplay || ""}
+                roundDisplay={tournament?.roundDisplay || ""}
                 contests={contestsForCard(row)}
                 isEditable={isTournamentEditable}
               />
