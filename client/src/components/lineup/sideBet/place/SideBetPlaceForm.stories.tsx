@@ -63,7 +63,7 @@ function InteractivePlaceForm(
 
 const meta = {
   title: "Lineup/SideBet/PlaceForm",
-  component: SideBetPlaceForm,
+  component: InteractivePlaceForm,
   tags: ["autodocs"],
   decorators: [
     ...lobbyDecorators,
@@ -73,9 +73,11 @@ const meta = {
       </div>
     ),
   ],
-  render: (args) => <InteractivePlaceForm {...defaultDisplayArgs} {...args} />,
-  args: defaultDisplayArgs,
-} satisfies Meta<typeof SideBetPlaceForm>;
+  args: {
+    ...defaultDisplayArgs,
+    initialStake: "10",
+  },
+} satisfies Meta<typeof InteractivePlaceForm>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -89,7 +91,9 @@ export const ValidationError: Story = {
 };
 
 export const ExceedsCap: Story = {
-  render: (args) => <InteractivePlaceForm {...defaultDisplayArgs} {...args} initialStake="1000" />,
+  args: {
+    initialStake: "1000",
+  },
 };
 
 export const ConfirmInWallet: Story = {

@@ -46,6 +46,7 @@ const meta = {
     contest: contestWithPredictions,
     entryId: "1",
     onClose: fn(),
+    ...chainProps,
   },
   argTypes: {
     contest: { control: false },
@@ -78,14 +79,17 @@ export const DataUnavailable: Story = {
 };
 
 export const ConnectWallet: Story = {
+  args: {},
   decorators: [withAuthOverride({ user: null })],
 };
 
 export const BalancesUnavailable: Story = {
+  args: {},
   decorators: [withAuthOverride({ balancesUnavailable: true })],
 };
 
 export const InsufficientBalance: Story = {
+  args: {},
   decorators: [
     withAuthOverride({
       platformTokenBalance: 0n,

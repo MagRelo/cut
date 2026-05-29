@@ -21,7 +21,11 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
   return (
     <div className="mt-3 flex w-full justify-center">
       <div
-        className={classNames("w-full max-w-[28rem]", SIDE_BET_MARKET_GRID_H, isMessage && "flex items-center justify-center")}
+        className={classNames(
+          "w-full max-w-[28rem]",
+          SIDE_BET_MARKET_GRID_H,
+          ...(isMessage ? ["flex items-center justify-center"] : []),
+        )}
         aria-busy={state.kind === "loading"}
         aria-label={state.kind === "loading" ? "Loading parlay market" : undefined}
       >
