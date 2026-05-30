@@ -4,6 +4,7 @@ import apiClient from "../utils/apiClient";
 
 export interface UserContestHistoryItem {
   id: string;
+  address: string;
   name: string;
   description: string | null;
   status: string;

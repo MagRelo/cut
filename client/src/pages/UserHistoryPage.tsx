@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { useUserContestHistory, type UserContestHistoryItem } from "../hooks/useUserContestHistory";
+import { contestLobbyPath } from "../utils/contestRoutes";
 
 const formatStatus = (status: string) => {
   return status
@@ -27,7 +28,7 @@ interface ContestHistoryItemProps {
 const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
   return (
     <Link
-      to={`/contest/${contest.id}`}
+      to={contestLobbyPath(contest.address)}
       className="block min-w-0 w-full border bg-white rounded-sm p-3 hover:bg-gray-50 transition-colors"
     >
       <div className="flex min-w-0 items-center justify-between gap-4">

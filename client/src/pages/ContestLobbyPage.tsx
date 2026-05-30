@@ -7,10 +7,10 @@ import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
 
 export const ContestLobby: React.FC = () => {
-  const { id: contestId } = useParams<{ id: string }>();
+  const { address: contestAddress } = useParams<{ address: string }>();
   const { user } = useAuth();
 
-  const { data: contest, isLoading, error: queryError } = useContestQuery(contestId);
+  const { data: contest, isLoading, error: queryError } = useContestQuery(contestAddress);
   const { viewModel } = useContestLobbyState(contest);
 
   if (isLoading) {

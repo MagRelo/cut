@@ -4,6 +4,7 @@ import { useChainId } from "wagmi";
 import { decodeEventLog, isAddress } from "viem";
 
 import { type ContestSettings, type CreateContestInput } from "../../types/contest";
+import { contestLobbyPath } from "../../utils/contestRoutes";
 import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useCreateContest } from "../../hooks/useContestFactory";
@@ -167,7 +168,7 @@ export const CreateContestForm = () => {
               setExpiryDaysAfterTournament(defaultExpiryDaysAfterTournament);
               setLoading(false);
 
-              navigate(`/contest/${contest.id}`);
+              navigate(contestLobbyPath(contest.address));
             },
             onError: (err) => {
               console.error("Error creating contest in backend:", err);

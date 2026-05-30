@@ -20,6 +20,8 @@ export const queryKeys = {
   contests: {
     all: ["contests"] as const,
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
+    /** Lobby page loaded from `/contest/:address` (address in URL only). */
+    byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
     byTournament: (tournamentId: string, chainId: number | "all") =>
       [...queryKeys.contests.all, "list", tournamentId, chainId] as const,
   },

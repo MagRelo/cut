@@ -17,11 +17,6 @@ interface LeaveContestParams {
 
 /**
  * Mutation hook for creating a contest
- *
- * Features:
- * - Automatic cache invalidation on success
- * - Error handling
- * - Better UX with instant feedback
  */
 export function useCreateContest() {
   const queryClient = useQueryClient();
@@ -36,12 +31,8 @@ export function useCreateContest() {
       });
     },
 
-    // Always refetch after success to ensure data is in sync
     onSuccess: (_data, variables) => {
-      // Invalidate all contest queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
-
-      // Invalidate tournament-specific contest queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.contests.byTournament(variables.tournamentId, variables.chainId),
       });
@@ -55,12 +46,6 @@ export function useCreateContest() {
 
 /**
  * Mutation hook for joining a contest
- *
- * Features:
- * - Optimistic updates: UI updates immediately before server confirms
- * - Automatic rollback on error
- * - Cache invalidation on success
- * - Better UX with instant feedback
  */
 export function useJoinContest() {
   const queryClient = useQueryClient();
@@ -73,31 +58,25 @@ export function useJoinContest() {
       });
     },
 
-    // Optimistic update: Update UI before server responds
     onMutate: async ({ contestId, tournamentLineupId }) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
 
-      // Snapshot the previous value
       const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
 
-      // Optimistically update to show the new lineup
       if (previousContest) {
         queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (old) => {
           if (!old) return old;
 
-          // Create a temporary contest lineup entry (server will provide the real one)
           const optimisticLineup: ContestLineup = {
-            id: `temp-${Date.now()}`, // Temporary ID
+            id: `temp-${Date.now()}`,
             contestId,
             tournamentLineupId,
-            userId: "", // Will be filled by server
+            userId: "",
             status: "ACTIVE",
-            position: 0, // Temporary position
-            score: 0, // Temporary score
+            position: 0,
+            score: 0,
             createdAt: new Date(),
             updatedAt: new Date(),
-            // Note: Real data will come from server
           };
 
           return {
@@ -107,11 +86,9 @@ export function useJoinContest() {
         });
       }
 
-      // Return context with the snapshot
       return { previousContest };
     },
 
-    // If mutation fails, rollback to the previous value
     onError: (err, { contestId }, context) => {
       console.error("Failed to join contest:", err);
       if (context?.previousContest) {
@@ -119,14 +96,7 @@ export function useJoinContest() {
       }
     },
 
-    // Always refetch after success to ensure data is in sync with server
-    onSuccess: (data, { contestId }) => {
-      queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (prev) => ({
-        ...data,
-        timeline: prev?.timeline,
-      }));
-
-      // Also invalidate related queries
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
@@ -136,11 +106,6 @@ export function useJoinContest() {
 
 /**
  * Mutation hook for leaving a contest
- *
- * Features:
- * - Optimistic updates: Removes lineup from UI immediately
- * - Automatic rollback on error
- * - Cache invalidation on success
  */
 export function useLeaveContest() {
   const queryClient = useQueryClient();
@@ -150,15 +115,11 @@ export function useLeaveContest() {
       return await apiClient.delete<Contest>(`/contests/${contestId}/lineups/${contestLineupId}`);
     },
 
-    // Optimistic update: Remove lineup from UI before server responds
     onMutate: async ({ contestId, contestLineupId }) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
 
-      // Snapshot the previous value
       const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
 
-      // Optimistically remove the lineup
       if (previousContest) {
         queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (old) => {
           if (!old) return old;
@@ -166,17 +127,15 @@ export function useLeaveContest() {
           return {
             ...old,
             contestLineups: (old.contestLineups || []).filter(
-              (lineup) => lineup.id !== contestLineupId
+              (lineup) => lineup.id !== contestLineupId,
             ),
           };
         });
       }
 
-      // Return context with the snapshot
       return { previousContest };
     },
 
-    // If mutation fails, rollback to the previous value
     onError: (err, { contestId }, context) => {
       console.error("Failed to leave contest:", err);
       if (context?.previousContest) {
@@ -184,14 +143,7 @@ export function useLeaveContest() {
       }
     },
 
-    // Always refetch after success to ensure data is in sync
-    onSuccess: (data, { contestId }) => {
-      queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (prev) => ({
-        ...data,
-        timeline: prev?.timeline,
-      }));
-
-      // Also invalidate related queries
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
@@ -199,23 +151,6 @@ export function useLeaveContest() {
   });
 }
 
-/**
- * Combined hook that provides create, join, and leave mutations
- *
- * Usage:
- * ```typescript
- * const { create, join, leave } = useContestActions();
- *
- * // Create contest
- * create.mutate({ name: "My Contest", tournamentId: "123", ... });
- *
- * // Join contest
- * join.mutate({ contestId: "123", tournamentLineupId: "456" });
- *
- * // Leave contest
- * leave.mutate({ contestId: "123", contestLineupId: "789" });
- * ```
- */
 export function useContestActions() {
   const create = useCreateContest();
   const join = useJoinContest();

@@ -133,7 +133,7 @@ const AppShell: React.FC = () => {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/contest/:id" element={<ContestLobby />} />
+                  <Route path="/contest/:address" element={<ContestLobby />} />
 
                   {/* Lineups */}
                   <Route

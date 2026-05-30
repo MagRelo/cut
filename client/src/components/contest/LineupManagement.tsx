@@ -79,7 +79,6 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     entryId?: string;
   } | null>(null);
 
-  // Extract primitive values to prevent re-renders
   const contestId = contest.id;
 
   const userContestLineups = useMemo(() => {

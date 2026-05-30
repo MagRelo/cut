@@ -296,6 +296,7 @@ authRouter.get("/contests", requireAuth, async (c) => {
       const settings = item.contest.settings as { primaryDeposit?: number } | null;
       return {
         id: item.contest.id,
+        address: item.contest.address,
         name: item.contest.name,
         description: item.contest.description,
         status: item.contest.status,

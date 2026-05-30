@@ -3,23 +3,24 @@ import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Contest, type TimelineData } from "../types/contest";
+import { normalizeContestAddress } from "../utils/contestRoutes";
 
 /**
- * Fetches a single contest by ID. Loads contest payload and timeline in parallel
- * (`GET /contests/:id` + `GET /contests/:id/timeline`) and merges for charts.
+ * Loads the contest lobby from a contract address in the URL.
+ * API calls after the initial fetch use the database id; only this hook accepts an address.
  */
-export function useContestQuery(contestId: string | undefined) {
+export function useContestQuery(contestAddress: string | undefined) {
+  const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
+
   return useQuery({
-    queryKey: queryKeys.contests.byId(contestId ?? ""),
+    queryKey: queryKeys.contests.byLobbyRoute(routeKey),
     queryFn: async () => {
-      if (!contestId) throw new Error("Contest ID is required");
-      const [contest, timeline] = await Promise.all([
-        apiClient.get<Contest>(`/contests/${contestId}`),
-        apiClient.get<TimelineData>(`/contests/${contestId}/timeline`),
-      ]);
+      if (!routeKey) throw new Error("Contest address is required");
+      const contest = await apiClient.get<Contest>(`/contests/${routeKey}`);
+      const timeline = await apiClient.get<TimelineData>(`/contests/${contest.id}/timeline`);
       return { ...contest, timeline };
     },
-    enabled: !!contestId,
+    enabled: !!routeKey,
     staleTime: 2 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
     refetchOnWindowFocus: true,

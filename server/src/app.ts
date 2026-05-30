@@ -157,11 +157,16 @@ async function resolveMetadataForPath(
 
   const contestMatch = path.match(/^\/contest\/([^/]+)$/);
   if (contestMatch) {
-    const contestId = contestMatch[1];
-    if (!contestId) {
+    const routeParam = contestMatch[1];
+    if (!routeParam) {
       return defaults;
     }
     try {
+      const { resolveContestDbId } = await import("./utils/contestRouteParam.js");
+      const contestId = await resolveContestDbId(routeParam);
+      if (!contestId) {
+        return defaults;
+      }
       const contest = await prisma.contest.findUnique({
         where: { id: contestId },
         select: {

@@ -1,4 +1,5 @@
 import { type Contest } from "../../types/contest";
+import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestCard } from "./ContestCard";
@@ -37,7 +38,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   return (
     <div className="grid gap-2">
       {contests.map((contest) => (
-        <Link key={contest.id} to={`/contest/${contest.id}`} className="block min-w-0 w-full">
+        <Link key={contest.id} to={contestLobbyPath(contest.address)} className="block min-w-0 w-full">
           <div className="min-w-0 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 py-4 shadow">
             <ContestCard contest={contest} />
           </div>

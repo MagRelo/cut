@@ -28,7 +28,9 @@ function StorybookAppProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/contest/contest-fixture-1"]}>
+      <MemoryRouter
+        initialEntries={["/contest/0x1234567890123456789012345678901234567890"]}
+      >
         <StorybookAuthProvider>{children}</StorybookAuthProvider>
       </MemoryRouter>
     </QueryClientProvider>

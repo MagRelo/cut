@@ -11,7 +11,7 @@ const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
   hash: "",
 };
 
-/** List + detail under `/contests`… or singular `/contest/:id` lobby — not other top-level routes. */
+/** List + detail under `/contests`… or singular `/contest/:address` lobby — not other top-level routes. */
 const contestsMatch = (p: string) =>
   p === "/contests" || p.startsWith("/contests/") || p.startsWith("/contest/");
 const lineupsMatch = (p: string) => p.startsWith("/lineups");

@@ -10,6 +10,7 @@ import { PlayerSelectionModal } from "./PlayerSelectionModal";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
+import { contestLobbyPath } from "../../utils/contestRoutes";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import { useActiveTournament } from "../../hooks/useTournamentData";
@@ -278,7 +279,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                     return (
                       <div key={contestInfo.contest.id} className="flex items-center gap-2">
                         <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow-sm">
-                          <Link to={`/contest/${contestInfo.contest.id}`} className="block">
+                          <Link to={contestLobbyPath(contestInfo.contest.address)} className="block">
                             <ContestCard contest={contestInfo.contest} />
                           </Link>
                         </div>

@@ -18,6 +18,7 @@ import {
 import { isUserGroupMember } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
+import { resolveContestDbId } from "../utils/contestRouteParam.js";
 
 const contestRouter = new Hono();
 
@@ -335,7 +336,10 @@ contestRouter.get("/:id/timeline", async (c) => {
 // Get contest by ID (no embedded timeline — use GET /:id/timeline)
 contestRouter.get("/:id", async (c) => {
   try {
-    const contestId = c.req.param("id");
+    const contestId = await resolveContestDbId(c.req.param("id"));
+    if (!contestId) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
     const formattedContest = await loadFormattedContestById(contestId);
     if (!formattedContest) {
       return c.json({ error: "Contest not found" }, 404);
