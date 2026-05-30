@@ -23,6 +23,15 @@ function formatPlatformBalance(wei: string | null): string {
 
 const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC"] as const;
 
+function formatLastContestEntry(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function AdminUsersPage() {
   const [userTypeFilter, setUserTypeFilter] = useState<string>("USER");
   const { platformTokenSymbol } = useAuth();
@@ -36,7 +45,10 @@ export function AdminUsersPage() {
       <PageHeader title="Users" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-600 space-y-0.5">
-          <p>Staff-only list. {data ? `${data.total} user(s) total` : null}</p>
+          <p>
+            Staff-only list, sorted by last contest entry.{" "}
+            {data ? `${data.total} user(s) total` : null}
+          </p>
           {data ? (
             <p className="font-medium text-gray-800">
               Total on this page: {totalFormatted} {tokenLabel}
@@ -74,6 +86,7 @@ export function AdminUsersPage() {
               <tr className="border-b border-gray-200 bg-gray-50 text-left">
                 <th className="p-3 font-medium text-gray-700">Name</th>
                 <th className="p-3 font-medium text-gray-700">Email</th>
+                <th className="p-3 font-medium text-gray-700 whitespace-nowrap">Last contest entry</th>
                 <th className="p-3 font-medium text-gray-700 text-right whitespace-nowrap">
                   {tokenLabel} balance
                 </th>
@@ -89,6 +102,9 @@ export function AdminUsersPage() {
                   </td>
                   <td className="p-3 text-gray-600 max-w-[180px] truncate" title={u.email ?? ""}>
                     {u.email ?? "—"}
+                  </td>
+                  <td className="p-3 text-gray-600 whitespace-nowrap">
+                    {formatLastContestEntry(u.lastContestEntryAt)}
                   </td>
                   <td className="p-3 text-gray-800 text-right tabular-nums whitespace-nowrap">
                     {formatPlatformBalance(u.platformTokenBalanceWei ?? null)}

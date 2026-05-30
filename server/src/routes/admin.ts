@@ -96,24 +96,50 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
     const offset = Math.max(0, offsetRaw ? parseInt(offsetRaw, 10) || 0 : 0);
     const where = { userType };
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        skip: offset,
-        include: {
-          wallets: {
-            where: { chainId },
-            orderBy: { isPrimary: "desc" },
-          },
-        },
-      }),
+    type AdminUserSortRow = {
+      id: string;
+      lastContestEntryAt: Date | null;
+    };
+
+    const [sortedUserRows, total] = await Promise.all([
+      prisma.$queryRaw<AdminUserSortRow[]>`
+        SELECT u.id, MAX(cl."createdAt") AS "lastContestEntryAt"
+        FROM "User" u
+        LEFT JOIN "ContestLineup" cl ON cl."userId" = u.id
+        WHERE u."userType" = ${userType}
+        GROUP BY u.id
+        ORDER BY MAX(cl."createdAt") DESC NULLS LAST
+        LIMIT ${limit} OFFSET ${offset}
+      `,
       prisma.user.count({ where }),
     ]);
 
-    const items = users.map((u) => {
+    const userIds = sortedUserRows.map((r) => r.id);
+    const lastEntryByUserId = new Map(
+      sortedUserRows.map((r) => [r.id, r.lastContestEntryAt]),
+    );
+
+    const users =
+      userIds.length === 0
+        ? []
+        : await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            include: {
+              wallets: {
+                where: { chainId },
+                orderBy: { isPrimary: "desc" },
+              },
+            },
+          });
+
+    const usersById = new Map(users.map((u) => [u.id, u]));
+    const orderedUsers = userIds
+      .map((id) => usersById.get(id))
+      .filter((u): u is NonNullable<typeof u> => u !== undefined);
+
+    const items = orderedUsers.map((u) => {
       const wallet = pickWalletForChain(u.wallets, chainId);
+      const lastContestEntryAt = lastEntryByUserId.get(u.id);
       return {
         id: u.id,
         name: u.name,
@@ -121,6 +147,7 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
         phone: u.phone,
         userType: u.userType,
         createdAt: u.createdAt,
+        lastContestEntryAt: lastContestEntryAt?.toISOString() ?? null,
         chainId,
         walletAddress: wallet?.publicKey ?? null,
         wallet: wallet

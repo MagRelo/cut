@@ -5,6 +5,8 @@ export interface AdminUserListItem {
   phone: string | null;
   userType: string;
   createdAt: string;
+  /** Most recent `ContestLineup.createdAt`; null if the user has never entered a contest. */
+  lastContestEntryAt: string | null;
   chainId: number;
   walletAddress: string | null;
   wallet: { publicKey: string; isPrimary: boolean; chainId: number } | null;
