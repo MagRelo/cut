@@ -16,6 +16,7 @@ cronRouter.get("/status", (c) => {
     jobs: enabled
       ? [
           "Update Tournament (every 5 minutes)",
+          "Sync Field Withdrawals (every 5 minutes, pre-tournament only)",
           "Close Escrow Deposits (every 5 minutes)",
           "Distribute Contests (every 5 minutes)",
           "Update Tournament Players (every 5 minutes, conditional)",

@@ -20,4 +20,14 @@ describe("buildDedupeKey", () => {
       buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { tournamentId: "t1", userId: "u1" }),
     ).toBe("TOURNAMENT_RECAP:t1:u1");
   });
+
+  it("builds player withdrawal key", () => {
+    expect(
+      buildDedupeKey(EmailKind.PLAYER_WITHDRAWAL, {
+        tournamentId: "t1",
+        userId: "u1",
+        playerId: "p1",
+      }),
+    ).toBe("PLAYER_WITHDRAWAL:t1:u1:p1");
+  });
 });

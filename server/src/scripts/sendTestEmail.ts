@@ -5,7 +5,7 @@
  *   pnpm --filter server run script:send-test-email you@example.com welcome
  *   pnpm --filter server run script:send-test-email you@example.com new-tournament
  *
- * Kinds: minimal (default) | welcome | new-tournament | reminder | recap | behind-the-scenes
+ * Kinds: minimal (default) | welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal
  */
 
 import "dotenv/config";

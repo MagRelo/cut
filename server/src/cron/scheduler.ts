@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 
 // Import services
 import { updateTournament } from "../services/updateTournament.js";
+import { syncTournamentFieldWithdrawals } from "../services/syncTournamentFieldWithdrawals.js";
 import { updateTournamentPlayerScores } from "../services/updateTournamentPlayers.js";
 import { updateContestLineups } from "../services/updateContestLineups.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
@@ -93,6 +94,12 @@ class CronScheduler {
 
       // Step 1: Update tournament
       await this.executeWithErrorHandling("Update Tournament", updateTournament);
+
+      // Step 1b: Sync field withdrawals (pre-tournament only; no-ops when IN_PROGRESS)
+      await this.executeWithErrorHandling(
+        "Sync Field Withdrawals",
+        syncTournamentFieldWithdrawals,
+      );
 
       // Step 2: Update player scores & contest lineups 
       const shouldRunPlayerUpdates = await this.shouldRunPlayerUpdates();

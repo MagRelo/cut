@@ -33,6 +33,8 @@ export { renderTournamentRecapEmail } from "./emails/tournamentRecap.js";
 export type { TournamentRecapEmailData } from "./emails/tournamentRecap.js";
 export { renderBehindTheScenesEmail } from "./emails/behindTheScenes.js";
 export type { BehindTheScenesEmailData } from "./emails/behindTheScenes.js";
+export { renderPlayerWithdrawalEmail, buildPlayerWithdrawalHtml } from "./emails/playerWithdrawal.js";
+export type { PlayerWithdrawalEmailData } from "./emails/playerWithdrawal.js";
 
 export { getManualActiveTournamentId, loadTournamentForEmail } from "./data/tournament.js";
 

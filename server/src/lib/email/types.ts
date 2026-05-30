@@ -5,12 +5,14 @@ export enum EmailKind {
   REMINDER_NO_CONTEST = "REMINDER_NO_CONTEST",
   TOURNAMENT_RECAP = "TOURNAMENT_RECAP",
   BEHIND_THE_SCENES = "BEHIND_THE_SCENES",
+  PLAYER_WITHDRAWAL = "PLAYER_WITHDRAWAL",
 }
 
 export type EmailDedupeParams = {
   userId?: string;
   tournamentId?: string;
   campaignId?: string;
+  playerId?: string;
 };
 
 export function buildDedupeKey(kind: EmailKind, params: EmailDedupeParams): string {
@@ -31,6 +33,11 @@ export function buildDedupeKey(kind: EmailKind, params: EmailDedupeParams): stri
     case EmailKind.BEHIND_THE_SCENES:
       if (!params.campaignId) throw new Error("BEHIND_THE_SCENES requires campaignId");
       return `${kind}:${params.campaignId}`;
+    case EmailKind.PLAYER_WITHDRAWAL:
+      if (!params.tournamentId || !params.userId || !params.playerId) {
+        throw new Error("PLAYER_WITHDRAWAL requires tournamentId, userId, and playerId");
+      }
+      return `${kind}:${params.tournamentId}:${params.userId}:${params.playerId}`;
     default:
       throw new Error(`Unknown email kind: ${kind}`);
   }

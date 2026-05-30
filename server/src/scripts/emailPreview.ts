@@ -5,7 +5,7 @@
  *   pnpm --filter server run script:email-preview open
  *   pnpm --filter server run script:email-preview new-tournament
  *
- * Kinds: welcome | new-tournament | reminder | recap | behind-the-scenes | minimal
+ * Kinds: welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal | minimal
  */
 
 import { mkdir, writeFile } from "fs/promises";

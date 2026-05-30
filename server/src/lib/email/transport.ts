@@ -11,6 +11,8 @@ export interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  /** Transactional emails skip the marketing unsubscribe footer. */
+  skipUnsubscribe?: boolean;
 }
 
 const DEFAULT_FROM_NAME = "Play The Cut";
@@ -48,10 +50,15 @@ function getMailerSendClient(): MailerSend {
   return mailerSendClient;
 }
 
-export const sendEmail = async ({ to, subject, html }: EmailOptions): Promise<void> => {
+export const sendEmail = async ({
+  to,
+  subject,
+  html,
+  skipUnsubscribe = false,
+}: EmailOptions): Promise<void> => {
   const { fromEmail, fromName } = getEmailConfig();
   const mailerSend = getMailerSendClient();
-  const htmlWithUnsubscribe = appendUnsubscribeFooter(html, to);
+  const htmlToSend = skipUnsubscribe ? html : appendUnsubscribeFooter(html, to);
 
   const sentFrom = new Sender(fromEmail, fromName);
   const recipients = [new Recipient(to, to.split("@")[0])];
@@ -61,8 +68,8 @@ export const sendEmail = async ({ to, subject, html }: EmailOptions): Promise<vo
     .setTo(recipients)
     .setReplyTo(sentFrom)
     .setSubject(subject)
-    .setHtml(htmlWithUnsubscribe)
-    .setText(htmlWithUnsubscribe.replace(/<[^>]*>/g, ""));
+    .setHtml(htmlToSend)
+    .setText(htmlToSend.replace(/<[^>]*>/g, ""));
 
   try {
     await mailerSend.email.send(emailParams);
@@ -95,5 +102,5 @@ export async function sendSampleEmail(to: string, kind: PreviewKind = "minimal")
     throw new Error(`Unknown kind "${kind}". Use: ${PREVIEW_KINDS.join(", ")}`);
   }
   const { subject, html } = await renderPreviewEmailByKind(kind);
-  await sendEmail({ to, subject, html });
+  await sendEmail({ to, subject, html, skipUnsubscribe: kind === "player-withdrawal" });
 }

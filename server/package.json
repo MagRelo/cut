@@ -23,6 +23,7 @@
     "service:init-tournament": "tsx src/services/initTournament.ts",
     "script:backfill-player-identity": "tsx src/scripts/backfillPlayerIdentity.ts",
     "service:update-tournament": "tsx src/services/updateTournament.ts",
+    "service:sync-field-withdrawals": "tsx src/services/syncTournamentFieldWithdrawals.ts",
     "service:update-players": "tsx src/services/updateTournamentPlayers.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:close-escrow": "tsx src/services/closeEscrowDeposits.ts",

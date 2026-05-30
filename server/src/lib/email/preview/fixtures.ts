@@ -3,6 +3,7 @@ import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
 import type { TournamentRecapEmailData } from "../emails/tournamentRecap.js";
+import type { PlayerWithdrawalEmailData } from "../emails/playerWithdrawal.js";
 import type { WelcomeEmailData } from "../emails/welcome.js";
 import { loadSummarySectionsFromFile } from "../../tournamentSummary.js";
 
@@ -59,12 +60,21 @@ export function fixtureBehindTheScenes(): BehindTheScenesEmailData {
   };
 }
 
+export function fixturePlayerWithdrawal(): PlayerWithdrawalEmailData {
+  return {
+    tournamentName: "Charles Schwab Challenge",
+    playerName: "Scottie Scheffler",
+    lineupNames: ["Lineup #1", "Lineup #2"],
+  };
+}
+
 export type PreviewKind =
   | "welcome"
   | "new-tournament"
   | "reminder"
   | "recap"
   | "behind-the-scenes"
+  | "player-withdrawal"
   | "minimal";
 
 export const PREVIEW_KINDS: PreviewKind[] = [
@@ -73,5 +83,6 @@ export const PREVIEW_KINDS: PreviewKind[] = [
   "reminder",
   "recap",
   "behind-the-scenes",
+  "player-withdrawal",
   "minimal",
 ];

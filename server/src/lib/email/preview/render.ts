@@ -3,6 +3,7 @@ import { renderBehindTheScenesEmail } from "../emails/behindTheScenes.js";
 import { renderNewTournamentEmail } from "../emails/newTournament.js";
 import { renderReminderNoContestEmail } from "../emails/reminderNoContest.js";
 import { renderTournamentRecapEmail } from "../emails/tournamentRecap.js";
+import { renderPlayerWithdrawalEmail } from "../emails/playerWithdrawal.js";
 import { renderWelcomeEmail } from "../emails/welcome.js";
 import type { RenderedEmail } from "../types.js";
 import { appendUnsubscribeFooter } from "../unsubscribe.js";
@@ -10,6 +11,7 @@ import {
   fixtureBehindTheScenes,
   fixtureNewTournament,
   fixtureRecap,
+  fixturePlayerWithdrawal,
   fixtureReminder,
   fixtureWelcome,
   type PreviewKind,
@@ -32,6 +34,8 @@ export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<Rende
       return renderTournamentRecapEmail(fixtureRecap());
     case "behind-the-scenes":
       return renderBehindTheScenesEmail(fixtureBehindTheScenes());
+    case "player-withdrawal":
+      return renderPlayerWithdrawalEmail(fixturePlayerWithdrawal());
     case "minimal":
       return { subject: TEST_EMAIL_SUBJECT, html: buildTestEmailHtml() };
     default:
@@ -41,5 +45,8 @@ export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<Rende
 
 export async function buildPreviewHtmlByKind(kind: PreviewKind): Promise<string> {
   const { html } = await renderPreviewEmailByKind(kind);
+  if (kind === "player-withdrawal") {
+    return html;
+  }
   return appendUnsubscribeFooter(html, PREVIEW_EMAIL);
 }

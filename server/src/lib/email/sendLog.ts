@@ -1,6 +1,6 @@
 import { prisma } from "../prisma.js";
 import { sendEmail, type EmailOptions } from "./transport.js";
-import { buildDedupeKey, type EmailDedupeParams, type EmailKind } from "./types.js";
+import { buildDedupeKey, EmailKind, type EmailDedupeParams } from "./types.js";
 
 export async function hasEmailBeenSent(dedupeKey: string): Promise<boolean> {
   const row = await prisma.emailSendLog.findUnique({
@@ -62,6 +62,7 @@ export async function sendIfNotLogged(input: SendIfNotLoggedInput): Promise<Send
     to: input.to,
     subject: input.subject,
     html: input.html,
+    skipUnsubscribe: input.kind === EmailKind.PLAYER_WITHDRAWAL,
   };
   await sendEmail(payload);
 
