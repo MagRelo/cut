@@ -1,12 +1,12 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import {
   contestQuerySchema,
   createContestSchema,
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
-import { requireAuth } from "../middleware/auth.js";
-import { requireAdmin } from "../middleware/admin.js";
+import { requireAuth, optionalAuth, getOptionalUserId } from "../middleware/auth.js";
+import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
@@ -15,12 +15,27 @@ import {
   isDuplicateInContest,
   getPlayerIdsFromLineup,
 } from "../utils/lineupValidation.js";
-import { isUserGroupMember } from "../utils/userGroup.js";
+import {
+  canAccessLeagueContest,
+  getMemberUserGroupIds,
+  isUserGroupAdmin,
+} from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 
 const contestRouter = new Hono();
+
+async function leagueContestAccessDenied(
+  c: Context,
+  userGroupId: string | null,
+): Promise<Response | null> {
+  const allowed = await canAccessLeagueContest(getOptionalUserId(c), userGroupId);
+  if (!allowed) {
+    return c.json({ error: "Contest not found" }, 404);
+  }
+  return null;
+}
 
 type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 
@@ -154,7 +169,7 @@ export const formatContestResponse = (contest: any, fallbackTournamentId?: strin
 };
 
 // Get contests by tournament ID and chainId
-contestRouter.get("/", async (c) => {
+contestRouter.get("/", optionalAuth, async (c) => {
   try {
     const tournamentId = c.req.query("tournamentId");
     const chainId = c.req.query("chainId");
@@ -183,6 +198,8 @@ contestRouter.get("/", async (c) => {
       userGroupId: validUserGroupId,
     } = validation.data;
 
+    const userId = getOptionalUserId(c);
+
     // Build where clause - if chainId is not provided, return contests from all chains
     const whereClause: any = {
       tournamentId: validTournamentId,
@@ -197,9 +214,17 @@ contestRouter.get("/", async (c) => {
       };
     }
 
-    // Add userGroupId filter if provided
     if (validUserGroupId !== undefined) {
+      if (!userId || !(await canAccessLeagueContest(userId, validUserGroupId))) {
+        return c.json({ error: "Contest not found" }, 404);
+      }
       whereClause.userGroupId = validUserGroupId;
+    } else {
+      const memberGroupIds = userId ? await getMemberUserGroupIds(userId) : [];
+      whereClause.OR = [
+        { userGroupId: null },
+        ...(memberGroupIds.length > 0 ? [{ userGroupId: { in: memberGroupIds } }] : []),
+      ];
     }
 
     // List payload: scalars + slim contest lineups (no tournamentLineup / player joins).
@@ -220,6 +245,12 @@ contestRouter.get("/", async (c) => {
         results: true,
         createdAt: true,
         updatedAt: true,
+        userGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         contestLineups: {
           select: {
             id: true,
@@ -271,11 +302,17 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
 
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
-      select: { id: true, chainId: true, status: true },
+      select: { id: true, chainId: true, status: true, userGroupId: true },
     });
     if (!contest) {
       return c.json({ error: "Contest not found" }, 404);
     }
+
+    const accessDenied = await leagueContestAccessDenied(c, contest.userGroupId);
+    if (accessDenied) {
+      return accessDenied;
+    }
+
     if (contest.chainId !== chainId) {
       return c.json({ error: "chainId does not match contest" }, 400);
     }
@@ -315,16 +352,25 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
 });
 
 // Timeline chart data only (keeps GET /:id payload small; client loads both in parallel)
-contestRouter.get("/:id/timeline", async (c) => {
+contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   try {
-    const contestId = c.req.param("id");
-    const exists = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: { id: true },
-    });
-    if (!exists) {
+    const contestId = await resolveContestDbId(c.req.param("id"));
+    if (!contestId) {
       return c.json({ error: "Contest not found" }, 404);
     }
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { id: true, userGroupId: true },
+    });
+    if (!contest) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    const accessDenied = await leagueContestAccessDenied(c, contest.userGroupId);
+    if (accessDenied) {
+      return accessDenied;
+    }
+
     const timeline = await getContestTimelineData(contestId);
     return c.json(timeline);
   } catch (error) {
@@ -334,7 +380,7 @@ contestRouter.get("/:id/timeline", async (c) => {
 });
 
 // Get contest by ID (no embedded timeline — use GET /:id/timeline)
-contestRouter.get("/:id", async (c) => {
+contestRouter.get("/:id", optionalAuth, async (c) => {
   try {
     const contestId = await resolveContestDbId(c.req.param("id"));
     if (!contestId) {
@@ -344,6 +390,12 @@ contestRouter.get("/:id", async (c) => {
     if (!formattedContest) {
       return c.json({ error: "Contest not found" }, 404);
     }
+
+    const accessDenied = await leagueContestAccessDenied(c, formattedContest.userGroupId ?? null);
+    if (accessDenied) {
+      return accessDenied;
+    }
+
     return c.json(formattedContest);
   } catch (error) {
     console.error("Error fetching contest:", error);
@@ -352,7 +404,7 @@ contestRouter.get("/:id", async (c) => {
 });
 
 // Create new contest
-contestRouter.post("/", requireAuth, requireAdmin, async (c) => {
+contestRouter.post("/", requireAuth, async (c) => {
   try {
     const body = await c.req.json();
 
@@ -373,15 +425,16 @@ contestRouter.post("/", requireAuth, requireAdmin, async (c) => {
 
     const user = c.get("user");
 
-    // If userGroupId is provided, verify user is a member of that group
     if (userGroupId) {
-      const isMember = await isUserGroupMember(user.userId, userGroupId);
-      if (!isMember) {
+      const isAdmin = await isUserGroupAdmin(user.userId, userGroupId);
+      if (!isAdmin) {
         return c.json(
-          { error: "You must be a member of this userGroup to create contests for it" },
+          { error: "You must be a league admin to create contests for this group" },
           403
         );
       }
+    } else if (!isStaffUserType(user.userType)) {
+      return c.json({ error: "Forbidden" }, 403);
     }
 
     const endTime = new Date(endDate);
@@ -472,9 +525,9 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
 
     // If contest has a userGroupId, verify user is a member
     if (contestCheck.userGroupId) {
-      const isMember = await isUserGroupMember(user.userId, contestCheck.userGroupId);
-      if (!isMember) {
-        return c.json({ error: "You must be a member of this contest's userGroup to join" }, 403);
+      const accessDenied = await leagueContestAccessDenied(c, contestCheck.userGroupId);
+      if (accessDenied) {
+        return accessDenied;
       }
     }
 

@@ -1,5 +1,28 @@
 import { prisma } from "../lib/prisma.js";
 
+/** League IDs the user belongs to (for contest list scoping). */
+export async function getMemberUserGroupIds(userId: string): Promise<string[]> {
+  const memberships = await prisma.userGroupMember.findMany({
+    where: { userId },
+    select: { userGroupId: true },
+  });
+  return memberships.map((m) => m.userGroupId);
+}
+
+/** Public contests (no userGroupId) are visible to everyone; league contests require membership. */
+export async function canAccessLeagueContest(
+  userId: string | null,
+  userGroupId: string | null,
+): Promise<boolean> {
+  if (!userGroupId) {
+    return true;
+  }
+  if (!userId) {
+    return false;
+  }
+  return isUserGroupMember(userId, userGroupId);
+}
+
 /**
  * Check if a user is a member of a userGroup
  */

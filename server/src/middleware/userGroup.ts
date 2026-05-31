@@ -1,8 +1,10 @@
 import { Context, Next } from "hono";
+import { prisma } from "../lib/prisma.js";
 import { isUserGroupMember, isUserGroupAdmin } from "../utils/userGroup.js";
 
 /**
- * Middleware to verify user is a member of the specified userGroup
+ * Middleware to verify user is a member of the specified userGroup.
+ * Non-members and unknown IDs receive 404 to avoid league enumeration.
  * Expects userGroupId in route params as :id
  */
 export const requireUserGroupMember = async (c: Context, next: Next): Promise<Response | void> => {
@@ -14,10 +16,19 @@ export const requireUserGroupMember = async (c: Context, next: Next): Promise<Re
       return c.json({ error: "UserGroup ID is required" }, 400);
     }
 
+    const userGroup = await prisma.userGroup.findUnique({
+      where: { id: userGroupId },
+      select: { id: true },
+    });
+
+    if (!userGroup) {
+      return c.json({ error: "UserGroup not found" }, 404);
+    }
+
     const isMember = await isUserGroupMember(user.userId, userGroupId);
 
     if (!isMember) {
-      return c.json({ error: "You are not a member of this userGroup" }, 403);
+      return c.json({ error: "UserGroup not found" }, 404);
     }
 
     await next();

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireUserGroupAdmin } from "../middleware/userGroup.js";
+import { requireUserGroupAdmin, requireUserGroupMember } from "../middleware/userGroup.js";
 import {
   createUserGroupSchema,
   updateUserGroupSchema,
@@ -58,10 +58,11 @@ userGroupRouter.get("/", requireAuth, async (c) => {
   }
 });
 
-// Get userGroup by ID with members
-userGroupRouter.get("/:id", requireAuth, async (c) => {
+// Get userGroup by ID with members (members only)
+userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
   try {
     const userGroupId = c.req.param("id");
+    const user = c.get("user");
 
     const userGroup = await prisma.userGroup.findUnique({
       where: { id: userGroupId },
@@ -93,8 +94,6 @@ userGroupRouter.get("/:id", requireAuth, async (c) => {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    // Check if current user is a member
-    const user = c.get("user");
     type MemberItem = (typeof userGroup.members)[number];
     const currentUserMembership = userGroup.members.find(
       (m: MemberItem) => m.userId === user.userId,
@@ -108,8 +107,8 @@ userGroupRouter.get("/:id", requireAuth, async (c) => {
       updatedAt: userGroup.updatedAt,
       memberCount: userGroup._count.members,
       contestCount: userGroup._count.contests,
-      currentUserRole: currentUserMembership?.role || null,
-      isMember: !!currentUserMembership,
+      currentUserRole: currentUserMembership?.role ?? null,
+      isMember: true,
       members: userGroup.members.map((member: MemberItem) => ({
         id: member.id,
         userId: member.userId,
@@ -286,20 +285,10 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
   }
 });
 
-// Get members of a userGroup
-userGroupRouter.get("/:id/members", requireAuth, async (c) => {
+// Get members of a userGroup (members only)
+userGroupRouter.get("/:id/members", requireAuth, requireUserGroupMember, async (c) => {
   try {
     const userGroupId = c.req.param("id");
-
-    // Verify userGroup exists
-    const userGroup = await prisma.userGroup.findUnique({
-      where: { id: userGroupId },
-      select: { id: true },
-    });
-
-    if (!userGroup) {
-      return c.json({ error: "UserGroup not found" }, 404);
-    }
 
     const members = await prisma.userGroupMember.findMany({
       where: { userGroupId },

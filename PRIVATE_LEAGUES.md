@@ -30,7 +30,7 @@ flowchart TB
 | CRUD API (`server/src/routes/userGroup.ts`) | Implemented |
 | Admin adds member by wallet address | Implemented |
 | Contest `userGroupId`; non-members blocked on contest entry | Implemented |
-| Client pages under `/user-groups` | Implemented; no main nav link |
+| Client pages under `/user-groups` | Implemented; no main nav link (by design) |
 | `requireUserGroupMember` middleware | Defined; not applied to read routes |
 | Privacy, invite links, self-join | Not implemented |
 | Group contests hidden from public lobby/list | Not implemented |
@@ -49,7 +49,7 @@ flowchart TB
 | Delete league | League `ADMIN` | Existing `DELETE`; contests remain with `userGroupId` set null |
 | View league | Members only | Non-members receive 404 (no ID enumeration) |
 | List leagues | Member | `GET /api/userGroups` — membership-scoped only |
-| Discover leagues | — | No public directory |
+| Discover leagues | — | No public directory; members discover league contests on the main contest list when signed in |
 
 ### Membership
 
@@ -70,25 +70,25 @@ All four apply to v1:
 
 1. **Hide group** — no listing or search for leagues the user does not belong to.
 2. **Gate read** — `GET /userGroups/:id` and member list require membership; non-members get 404.
-3. **Hide contests** — contests with `userGroupId` excluded from default public contest list/lobby unless the caller is a member of that league.
+3. **Hide contests** — contests with `userGroupId` excluded from the contest list for unauthenticated callers and non-members. Signed-in members see their league contests merged into the main `/contests` list alongside public contests.
 4. **Gate contest entry** — non-members cannot enter league contests (extend to all entry paths; align `GET /contests/:id` for league contests).
 
 ```mermaid
 flowchart LR
-  subgraph publicSurface [Public]
-    ContestLobby[Contest lobby]
+  subgraph publicSurface [Public or signed out]
+    ContestListPublic[Contest list public only]
     NoDirectory[No league directory]
   end
-  subgraph leagueOnly [League members]
-    LeagueDetail[League detail]
-    LeagueContests[League contests]
-    JoinContest[Enter contest]
+  subgraph signedInMember [Signed in member]
+    ContestListMerged[Contest list public plus league]
+    LeagueDetail[League detail via invite or direct URL]
+    JoinContest[Enter league contest]
   end
+  Member --> ContestListMerged
   Member --> LeagueDetail
-  Member --> LeagueContests
   Member --> JoinContest
   NonMember -.->|404| LeagueDetail
-  NonMember -.->|hidden| LeagueContests
+  NonMember -.->|hidden| ContestListMerged
   NonMember -.->|blocked| JoinContest
 ```
 
@@ -97,7 +97,7 @@ flowchart LR
 | Action | Actor | Behavior |
 |--------|-------|----------|
 | Create league contest | League `ADMIN` only | Sets `Contest.userGroupId`; caller must be league admin (exception to app-wide admin-only contest create) |
-| View in lobby | League members | Filtered; deep link for non-member → 404 |
+| View in contest list | Signed-in league members | Merged into main `/contests` list; deep link for non-member → 404 |
 | Enter contest | League members | Membership check on join |
 | League hub | Members | League detail lists contests (not only a count) |
 
@@ -121,12 +121,12 @@ Key files: `server/src/routes/userGroup.ts`, `server/src/middleware/userGroup.ts
 
 ### C — Client UX
 
-- Nav / Account: “My Leagues” → `/user-groups`
-- Copy: League in UI; keep technical routes
-- League detail: contest list, invite UI, admin create contest
+- **Contest list is the discovery surface** — no main-nav link to `/user-groups`. When signed in, `GET /contests` returns public contests plus league contests for groups the user belongs to; the existing `/contests` page shows them together.
+- Copy: League in UI where league context appears (e.g. contest cards, league admin pages); keep technical routes `/user-groups/*`
+- League detail (`/user-groups/:id`): member management, invite UI, admin create contest — reachable via invite flow or direct URL, not global nav
 - Join page for invite code
 - Contest create: league picker for league admins only
-- Lobby/list: no leakage of league contests
+- Contest list: refetch when auth state changes so login reveals league contests; optional league label on contest cards
 
 Key files: `client/src/pages/UserGroup*.tsx`, `client/src/components/userGroup/*`, `client/src/components/contest/CreateContestForm.tsx`, contest lobby/list components.
 
@@ -144,7 +144,7 @@ Key files: `client/src/pages/UserGroup*.tsx`, `client/src/components/userGroup/*
 ## Phases
 
 **Phase 1 — Private by default (no invites)**  
-Membership gates on reads; contest list/detail filtering; league-admin contest create; nav + copy; league contest list on detail page.
+Membership gates on reads; contest list/detail filtering (signed-in members see league contests on main contest list); league-admin contest create; copy updates; league contest list on detail page.
 
 **Phase 2 — Invite links**  
 `inviteCode` on `UserGroup`, join API, join page, admin invite UI.
@@ -171,10 +171,9 @@ Wallet add retained; invite emails; onboarding screen; admin dashboard filters.
 
 ## Acceptance criteria
 
-- Only members see a league in “My Leagues” or via invite.
+- Signed-in members see league contests on the main contest list; signed-out users and non-members do not.
 - Non-members cannot load league detail, members, or league contest by ID.
-- Public contest lobby omits league contests for non-members.
-- Invite link → join → view and enter league contests.
+- Invite link → join → league contests appear on contest list; member can enter.
 - League admin creates a league contest without app admin role.
 - Admin can still add a member by wallet address.
 
