@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useChainId } from "wagmi";
 import { decodeEventLog, isAddress } from "viem";
 
@@ -50,11 +50,18 @@ function buildContestSettings(
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const lockedUserGroupId = searchParams.get("userGroupId") ?? undefined;
   const { tournament: currentTournament } = useActiveTournament();
   const createContestMutation = useCreateContestMutation();
   const { platformTokenSymbol, platformTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();
+
+  const adminLeagues = useMemo(
+    () => userGroupsData?.userGroups?.filter((group) => group.role === "ADMIN") ?? [],
+    [userGroupsData],
+  );
 
   const defaultExpiryDaysAfterTournament = 7;
 
@@ -84,6 +91,12 @@ export const CreateContestForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (lockedUserGroupId && adminLeagues.some((group) => group.id === lockedUserGroupId)) {
+      setFormData((prev) => ({ ...prev, userGroupId: lockedUserGroupId }));
+    }
+  }, [lockedUserGroupId, adminLeagues]);
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -97,7 +110,7 @@ export const CreateContestForm = () => {
         platformTokenSymbol ?? "",
       ),
       description: undefined,
-      userGroupId: undefined,
+      userGroupId: lockedUserGroupId || undefined,
     });
   };
 
@@ -388,27 +401,35 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="userGroupId" className="block font-medium">
-            User group (optional)
+            League (optional)
           </label>
-          <select
-            id="userGroupId"
-            name="userGroupId"
-            value={formData.userGroupId || ""}
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                userGroupId: e.target.value || undefined,
-              }));
-            }}
-            className="w-full p-2 border rounded-md"
-          >
-            <option value="">None (public)</option>
-            {userGroupsData?.userGroups?.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
+          {adminLeagues.length === 0 ? (
+            <p className="text-sm text-gray-600">
+              You are not an admin of any leagues. Leave unset to create a public contest (staff
+              only).
+            </p>
+          ) : (
+            <select
+              id="userGroupId"
+              name="userGroupId"
+              value={formData.userGroupId || ""}
+              onChange={(e) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  userGroupId: e.target.value || undefined,
+                }));
+              }}
+              disabled={!!lockedUserGroupId}
+              className="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:text-gray-600"
+            >
+              {!lockedUserGroupId && <option value="">None (public)</option>}
+              {adminLeagues.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="space-y-2">

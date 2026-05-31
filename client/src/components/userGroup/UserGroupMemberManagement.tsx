@@ -142,7 +142,7 @@ export const UserGroupMemberManagement = ({
             {!walletAddress.trim() && (
               <p className="text-xs text-gray-500">
                 Enter the wallet address (public address) of the person you want to add to this
-                group
+                league
               </p>
             )}
           </div>
@@ -240,7 +240,7 @@ export const UserGroupMemberManagement = ({
           {removeMemberMutation.error && <ErrorMessage message={getRemoveError()} />}
 
           <p className="text-gray-700">
-            Are you sure you want to remove this member from the group? This action cannot be
+            Are you sure you want to remove this member from the league? This action cannot be
             undone.
           </p>
 

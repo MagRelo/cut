@@ -21,18 +21,18 @@ export const UserGroupCreatePage = () => {
     <div className="space-y-4 p-4">
       <Breadcrumbs
         items={[
-          { label: "User Groups", path: "/user-groups" },
-          { label: "Create Group", path: "/user-groups/create" },
+          { label: "Leagues", path: "/user-groups" },
+          { label: "Create League", path: "/user-groups/create" },
         ]}
       />
-      <PageHeader title="Create User Group" />
+      <PageHeader title="Create League" />
       <div className="bg-white rounded-sm shadow p-4">
         <UserGroupForm
           onSubmit={handleSubmit as (data: CreateUserGroupInput | UpdateUserGroupInput) => void}
           isLoading={createMutation.isPending}
           error={
             createMutation.error
-              ? (createMutation.error as any)?.response?.data?.error || "Failed to create group"
+              ? (createMutation.error as any)?.response?.data?.error || "Failed to create league"
               : null
           }
         />

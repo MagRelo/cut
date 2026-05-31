@@ -19,7 +19,7 @@ export const UserGroupForm = ({
   onSubmit,
   isLoading = false,
   error,
-  submitLabel = "Create Group",
+  submitLabel = "Create League",
 }: UserGroupFormProps) => {
   const [name, setName] = useState(initialData?.name || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -29,9 +29,8 @@ export const UserGroupForm = ({
     e.preventDefault();
     setValidationError(null);
 
-    // Validation
     if (!name.trim()) {
-      setValidationError("Group name is required");
+      setValidationError("League name is required");
       return;
     }
 
@@ -50,7 +49,7 @@ export const UserGroupForm = ({
 
       <div className="space-y-2">
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Group Name <span className="text-red-500">*</span>
+          League Name <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -60,7 +59,7 @@ export const UserGroupForm = ({
           onChange={(e) => setName(e.target.value)}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter group name"
+          placeholder="Enter league name"
           disabled={isLoading}
         />
       </div>
@@ -76,7 +75,7 @@ export const UserGroupForm = ({
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter group description (optional)"
+          placeholder="Enter league description (optional)"
           disabled={isLoading}
         />
       </div>

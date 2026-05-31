@@ -13,12 +13,12 @@ export const UserGroupListPage = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <PageHeader title="User Groups" />
+        <PageHeader title="My Leagues" />
         <Link
           to="/user-groups/create"
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
         >
-          Create Group
+          Create League
         </Link>
       </div>
       <div className="bg-white rounded-sm shadow p-4">
@@ -27,7 +27,7 @@ export const UserGroupListPage = () => {
             <LoadingSpinner />
           </div>
         ) : error ? (
-          <ErrorMessage message={errorMessage || "Failed to load user groups"} />
+          <ErrorMessage message={errorMessage || "Failed to load leagues"} />
         ) : (
           <UserGroupList userGroups={data?.userGroups} loading={isLoading} error={errorMessage} />
         )}

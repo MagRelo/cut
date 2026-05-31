@@ -2,6 +2,7 @@ import { type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
+import { UserGroupIcon } from "@heroicons/react/24/outline";
 import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface ContestCardProps {
@@ -117,6 +118,12 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
         <h3 className="truncate text-lg font-bold leading-tight text-gray-900 font-display">
           {contest.name}
         </h3>
+        {contest.userGroup?.name ? (
+          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-blue-600">
+            <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {contest.userGroup.name}
+          </p>
+        ) : null}
         <p className="mt-0.5 text-xs font-medium leading-tight text-gray-500 truncate">
           {formatStatus(contest.status)}
         </p>

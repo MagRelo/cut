@@ -55,20 +55,20 @@ export const UserGroupSettings = ({
     if (error?.response?.data?.error) {
       return error.response.data.error;
     }
-    return "Failed to delete group";
+    return "Failed to delete league";
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Group Settings</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">League Settings</h3>
         <UserGroupForm
           initialData={initialData}
           onSubmit={handleUpdate}
           isLoading={updateMutation.isPending}
           error={
             updateMutation.error
-              ? (updateMutation.error as any)?.response?.data?.error || "Failed to update group"
+              ? (updateMutation.error as any)?.response?.data?.error || "Failed to update league"
               : null
           }
           submitLabel="Save Changes"
@@ -78,13 +78,13 @@ export const UserGroupSettings = ({
       <div className="border-t border-gray-200 pt-6">
         <h4 className="text-md font-semibold text-red-900 mb-2">Danger Zone</h4>
         <p className="text-sm text-gray-600 mb-4">
-          Once you delete a group, there is no going back. Please be certain.
+          Once you delete a league, there is no going back. Please be certain.
         </p>
         <button
           onClick={() => setShowDeleteModal(true)}
           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
         >
-          Delete Group
+          Delete League
         </button>
       </div>
 
@@ -92,15 +92,15 @@ export const UserGroupSettings = ({
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Group"
+        title="Delete League"
         maxWidth="md"
       >
         <div className="space-y-4 p-4">
           {deleteMutation.error && <ErrorMessage message={getDeleteError()} />}
 
           <p className="text-gray-700">
-            Are you sure you want to delete this group? This action cannot be undone. All contests
-            associated with this group will remain, but the group will be permanently deleted.
+            Are you sure you want to delete this league? This action cannot be undone. All contests
+            associated with this league will remain, but the league will be permanently deleted.
           </p>
 
           <div className="flex justify-end gap-3">
@@ -118,7 +118,7 @@ export const UserGroupSettings = ({
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {deleteMutation.isPending && <LoadingSpinnerSmall />}
-              Delete Group
+              Delete League
             </button>
           </div>
         </div>

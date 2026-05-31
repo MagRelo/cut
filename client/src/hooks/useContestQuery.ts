@@ -4,6 +4,7 @@ import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Contest, type TimelineData } from "../types/contest";
 import { normalizeContestAddress } from "../utils/contestRoutes";
+import { useAuth } from "../contexts/AuthContext";
 
 /**
  * Loads the contest lobby from a contract address in the URL.
@@ -28,30 +29,47 @@ export function useContestQuery(contestAddress: string | undefined) {
   });
 }
 
+interface UseContestsQueryOptions {
+  userGroupId?: string;
+}
+
 /**
- * Fetches all contests for a tournament
- *
- * @param tournamentId - The tournament ID
- * @param chainId - The chain ID to filter contests
+ * Fetches contests for a tournament. When signed in, the server merges public contests
+ * with league contests for groups the user belongs to.
  */
-export function useContestsQuery(tournamentId: string | undefined, chainId: number | undefined) {
+export function useContestsQuery(
+  tournamentId: string | undefined,
+  chainId: number | undefined,
+  options?: UseContestsQueryOptions,
+) {
+  const { user } = useAuth();
   const { isConnected } = useAccount();
+  const userGroupId = options?.userGroupId;
+  const userId = user?.id ?? null;
 
   return useQuery({
-    queryKey: queryKeys.contests.byTournament(tournamentId ?? "", chainId ?? "all"),
+    queryKey: queryKeys.contests.byTournament(
+      tournamentId ?? "",
+      chainId ?? "all",
+      userId,
+      userGroupId,
+    ),
     queryFn: async () => {
       if (!tournamentId) throw new Error("Tournament ID is required");
-      const url =
-        isConnected && chainId
-          ? `/contests?tournamentId=${tournamentId}&chainId=${chainId}`
-          : `/contests?tournamentId=${tournamentId}`;
-      return await apiClient.get<Contest[]>(url);
+      const params = new URLSearchParams({ tournamentId });
+      if (isConnected && chainId) {
+        params.set("chainId", String(chainId));
+      }
+      if (userGroupId) {
+        params.set("userGroupId", userGroupId);
+      }
+      return await apiClient.get<Contest[]>(`/contests?${params.toString()}`);
     },
     enabled: !!tournamentId,
-    staleTime: Infinity,
+    staleTime: userGroupId ? 2 * 60 * 1000 : Infinity,
     gcTime: 12 * 60 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: !!userGroupId,
     retry: 1,
-    placeholderData: (previousData) => previousData,
+    placeholderData: userGroupId ? undefined : (previousData) => previousData,
   });
 }

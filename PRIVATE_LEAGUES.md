@@ -122,6 +122,7 @@ Key files: `server/src/routes/userGroup.ts`, `server/src/middleware/userGroup.ts
 ### C — Client UX
 
 - **Contest list is the discovery surface** — no main-nav link to `/user-groups`. When signed in, `GET /contests` returns public contests plus league contests for groups the user belongs to; the existing `/contests` page shows them together.
+- **Account panel** — secondary link in Account Information (same row pattern as Contest History): label left, `View my leagues...` → `/user-groups`
 - Copy: League in UI where league context appears (e.g. contest cards, league admin pages); keep technical routes `/user-groups/*`
 - League detail (`/user-groups/:id`): member management, invite UI, admin create contest — reachable via invite flow or direct URL, not global nav
 - Join page for invite code
