@@ -1,0 +1,4 @@
+# Foundry build artifacts (regenerate via `forge build`)
+out/
+cache/
+broadcast/
