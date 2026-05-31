@@ -1,8 +1,58 @@
 # Simulate Oracle Fee → Invite Network Payouts
 
-Manual runbook for the current contest (~15.4 CUT in `accumulatedOracleFee`): claim oracle fees from the contest controller, split across operator-provided referrer wallets using `RewardCalculator` geometric decay, send ERC20 transfers from the oracle wallet, and patch `contest.results.rewardsPayouts` so the Results UI shows invite-network payouts.
+One-time manual runbook for the Charles Schwab contest (~15.4 CUT in `accumulatedOracleFee`). When **JSin** wins primary payout, claim oracle fees from the contest controller, split across two hardcoded referrer wallets (**BillyBall**, then **Noodles Classic**) using `RewardCalculator` geometric decay, send ERC20 transfers from the oracle wallet, and patch `contest.results.rewardsPayouts` so the Results UI shows invite-network payouts.
 
 The UI already labels oracle fees as **Invite Network** ([`client/src/components/contest/ContestPayoutsModal.tsx`](client/src/components/contest/ContestPayoutsModal.tsx)). Settlement does not distribute them yet. [`client/src/components/contest/ContestResultsPanel.tsx`](client/src/components/contest/ContestResultsPanel.tsx) renders `results.rewardsPayouts[]` when populated.
+
+## Hardcoded run (Charles Schwab / JSin wins)
+
+This scenario runs once. Contest, trigger user, and referrer order are fixed in the script — no operator JSON at run time.
+
+| Field | Value |
+|-------|-------|
+| Contest | Charles Schwab (`cmpmotf4f000x9uap786eysdq`) |
+| Controller | `0x2aa88f560f24F71eFEeBa0b2EebF27658fF5dF4b` |
+| `chainId` | `84532` (Base Sepolia) |
+| **When to run** | JSin is the primary payout winner (`results.winningEntries[0]` owner) |
+| `triggeringUser` | **JSin** (`cmp60py770045zo0h4scx1949`) — audit only; not paid |
+| JSin smart wallet | `0xc7389e4d457aca184942a494b2aebc01fa67824c` |
+| `accounts[0]` | **BillyBall** — smart wallet `0x4a3b0878549a68b05d890a623b805d3be6f646f9` |
+| `accounts[1]` | **Noodles Classic** — smart wallet `0x6569e9ba175fa46fff13bc649e0d92813e507a06` |
+| `totalWei` | `15400000000000000000` (~15.4 CUT, 18 decimals) |
+
+Payouts go to **Privy smart wallets** (same addresses the app uses for deposits and payouts via [`pickEvmWallet`](server/src/lib/privyUserProvisioning.ts) / [`useEffectiveWalletAddress`](client/src/hooks/useEffectiveWalletAddress.ts)). Do not send to EOAs (`0xbc4c…`, `0x9a83…`, `0xac52…`).
+
+JSin’s stored `referrerAddress` is BillyBall’s smart wallet — confirms referrer order for this run.
+
+### Expected split (2 referrers, 15.4 CUT)
+
+| Index | Username | Smart wallet | Share | Amount (CUT) | `amountWei` |
+|-------|----------|--------------|-------|--------------|-------------|
+| 0 | BillyBall | `0x4a3b0878549a68b05d890a623b805d3be6f646f9` | 10000/16000 | 9.625 | `9625000000000000000` |
+| 1 | Noodles Classic | `0x6569e9ba175fa46fff13bc649e0d92813e507a06` | 6000/16000 | 5.775 | `5775000000000000000` |
+
+Remainder wei (if any) goes to `accounts[0]` (BillyBall).
+
+### `rewardsPayouts` patch shape
+
+Same order as on-chain transfers — BillyBall first, Noodles Classic second:
+
+```json
+[
+  {
+    "walletAddress": "0x4a3b0878549a68b05d890a623b805d3be6f646f9",
+    "amountWei": "9625000000000000000",
+    "username": "BillyBall",
+    "userColor": "#0a73eb"
+  },
+  {
+    "walletAddress": "0x6569e9ba175fa46fff13bc649e0d92813e507a06",
+    "amountWei": "5775000000000000000",
+    "username": "Noodles Classic",
+    "userColor": "#A3A3A3"
+  }
+]
+```
 
 ## What this run uses
 
@@ -71,6 +121,8 @@ Script logic:
 2. `amounts = calculateRewards(totalWei, numRecipients)`
 3. `recipients[i] = accounts[i]`
 
+Example (2 referrers, 15.4 CUT — this run): ≈ 9.625 / 5.775 to BillyBall / Noodles Classic.
+
 Example (3 referrers, 10,000 CUT): ≈ 5,102 / 3,061 / 1,837 to `accounts[0]` / `[1]` / `[2]`.
 
 Implementation: TypeScript port of `calculateRewards` for `--dry-run`, or `eth_call` to Sepolia `RewardDistributor.rewardCalculator()` (`0x344C21c7DAffB5Fb9442b27e1E53051aE7faf926`).
@@ -79,16 +131,17 @@ Implementation: TypeScript port of `calculateRewards` for `--dry-run`, or `eth_c
 
 ```mermaid
 flowchart TD
-  subgraph input [Operator input]
-    A["targets.json: referrers accounts[]"]
+  subgraph input [Hardcoded config]
+    A["JSin wins → accounts[0]=BillyBall, accounts[1]=Noodles Classic"]
   end
   subgraph preflight [Pre-flight]
-    B[Identify contest] --> C["Read accumulatedOracleFee (~15.4 CUT)"]
+    B["contest cmpmotf4f000x9uap786eysdq"] --> C["Read accumulatedOracleFee (~15.4 CUT)"]
+    B --> B2["Assert JSin is primary winner"]
   end
   subgraph compute [Compute splits]
-    A --> D["calculateRewards(totalWei, accounts.length)"]
+    A --> D["calculateRewards(totalWei, 2)"]
     C --> D
-    D --> E["Zip accounts[i] → amounts[i]"]
+    D --> E["Zip BillyBall / Noodles Classic → amounts[i]"]
     E --> F["Verify sum === accumulatedOracleFee"]
   end
   subgraph execute [Execute]
@@ -104,51 +157,66 @@ flowchart TD
 
 ## Phase 1 — Pre-flight
 
-- Identify contest (`contestId` or controller address); confirm **SETTLED** (oracle fee claim is independent of payout push).
+- Load contest `cmpmotf4f000x9uap786eysdq` (Charles Schwab, controller `0x2aa88f560f24F71eFEeBa0b2EebF27658fF5dF4b`, `chainId` 84532); confirm **SETTLED** (oracle fee claim is independent of payout push).
+- Confirm **JSin** is the primary payout winner in `contest.results.winningEntries`; abort if not.
 - Read `accumulatedOracleFee()` — expect ~15.4 CUT (`15400000000000000000` wei for 18-decimal token).
 - Read `paymentToken()` and `decimals()` from the contest contract.
-- Record `chainId` for transfers and DB patch.
+- Optional sanity check: Privy `smart_wallet` for BillyBall / Noodles Classic still matches hardcoded addresses below.
 
-## Phase 2 — Operator config
+## Phase 2 — Hardcoded referrer config
 
-File: e.g. [`scripts/invite-rewards-targets.json`](scripts/invite-rewards-targets.json) (create at run time; not committed with real addresses).
+Constants at top of [`server/src/scripts/distributeContestInviteRewards.ts`](server/src/scripts/distributeContestInviteRewards.ts) (no external JSON):
 
-```json
-{
-  "triggeringUser": "0xDepositorWhoCausedFee…",
-  "accounts": [
-    "0xImmediateReferrer…",
-    "0xReferrerLevel2…",
-    "0xReferrerLevel3…"
-  ]
-}
+```typescript
+const CHARLES_SCHWAB_CONTEST_ID = "cmpmotf4f000x9uap786eysdq";
+const CONTEST_CONTROLLER = "0x2aa88f560f24F71eFEeBa0b2EebF27658fF5dF4b" as const;
+const CHAIN_ID = 84532;
+
+const TRIGGER_USER_ID = "cmp60py770045zo0h4scx1949"; // JSin
+const TRIGGER_SMART_WALLET = "0xc7389e4d457aca184942a494b2aebc01fa67824c" as const;
+
+/** Referrers only — ordered for calculateRewards / ERC20 transfer / rewardsPayouts */
+const REFERRER_ACCOUNTS = [
+  {
+    userId: "cmnovcrkn0012c0w25gq4ml06",
+    username: "BillyBall",
+    smartWallet: "0x4a3b0878549a68b05d890a623b805d3be6f646f9",
+    userColor: "#0a73eb",
+  },
+  {
+    userId: "cmnncvo990001b4vlvpbzsye3",
+    username: "Noodles Classic",
+    smartWallet: "0x6569e9ba175fa46fff13bc649e0d92813e507a06",
+    userColor: "#A3A3A3",
+  },
+] as const;
 ```
 
-- `accounts`: 1–10 referrer addresses, ordered from immediate referrer upward.
-- Do not include the triggering user/depositor in `accounts[]`.
-- `triggeringUser` is optional audit metadata only.
-- Script computes amounts from `accumulatedOracleFee`; no amounts in config.
+- `accounts[]` for transfers: BillyBall smart wallet first, Noodles Classic smart wallet second.
+- Do not include JSin in `accounts[]` (triggering user only).
+- Script computes amounts from `accumulatedOracleFee`; expected ~9.625 / ~5.775 CUT for this fee total.
 
 ## Phase 3 — Compute splits (`--dry-run`)
 
-1. `totalWei = accumulatedOracleFee`
-2. `amounts = calculateRewards(totalWei, accounts.length)`
-3. Print recipient table; assert `sum(amounts) === totalWei`
-4. Resolve `username` / `userColor` from DB for patch preview
+1. `totalWei = accumulatedOracleFee` (expect `15400000000000000000`)
+2. `amounts = calculateRewards(totalWei, 2)`
+3. Print BillyBall / Noodles Classic table; assert `sum(amounts) === totalWei`
+4. Assert primary winner userId === JSin
+5. Print hardcoded smart-wallet recipients and `userColor` values for patch preview
 
 Operator reviews dry-run output before execute.
 
 ## Phase 4 — Claim oracle fees
 
 ```bash
-pnpm run claim-oracle-fee -- <contestControllerAddress>
+pnpm run claim-oracle-fee -- 0x2aa88f560f24F71eFEeBa0b2EebF27658fF5dF4b
 ```
 
 Or [`server/src/services/contest/claimOracleFee.ts`](server/src/services/contest/claimOracleFee.ts). Record tx hash as `claimOracleFeeTx` in results patch.
 
 ## Phase 5 — Manual ERC20 transfers
 
-For each `(account, amountWei)` from Phase 3: `ERC20(paymentToken).transfer(account, amountWei)`. Save audit JSON with per-recipient tx hashes.
+For each `(smartWallet, amountWei)` from Phase 3: `ERC20(paymentToken).transfer(smartWallet, amountWei)` to BillyBall then Noodles Classic. Save audit JSON with per-recipient tx hashes.
 
 ## Phase 6 — Patch contest results
 
@@ -178,12 +246,12 @@ No client changes required — [`ContestResultsPanel`](client/src/components/con
 
 | Flag | Behavior |
 |------|----------|
-| `--contest-id <id>` | Load contest from DB |
-| `--targets <path>` | Operator JSON with ordered `accounts[]` |
-| `--dry-run` | Print split table; no txs, no DB write |
-| `--claim` | Call `claimOracleFee` only |
-| `--distribute` | Send transfers from dry-run / audit file |
+| `--dry-run` | Print BillyBall / Noodles Classic split; verify JSin won; no txs, no DB write |
+| `--claim` | Call `claimOracleFee` on Charles Schwab contest only |
+| `--distribute` | Send two ERC20 transfers (BillyBall, then Noodles Classic) |
 | `--patch` | Write `rewardsPayouts` + tx hashes to `contest.results` |
+
+Defaults: `contestId = cmpmotf4f000x9uap786eysdq`, referrers BillyBall → Noodles Classic. No `--targets` file.
 
 Shared helper: **`calculateGeometricRewards(totalWei, numRecipients)`** — TS port of [`RewardCalculator.calculateRewards`](contracts/lib/referralTree/src/core/RewardCalculator.sol).
 
@@ -194,13 +262,15 @@ Shared helper: **`calculateGeometricRewards(totalWei, numRecipients)`** — TS p
 | Split math | TS output matches on-chain `calculateRewards` for same inputs |
 | On-chain fee claimed | `accumulatedOracleFee() === 0` |
 | Transfers | Sum of sent amounts = claimed amount |
-| UI | Results → Rewards rows; payout modal Invite Network total ≈ 15.4 CUT |
+| UI | Results → Rewards: BillyBall (~9.625 CUT), Noodles Classic (~5.775 CUT); modal Invite Network total ≈ 15.4 CUT |
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| Wrong account order | Index 0 = immediate referrer; review dry-run |
+| Wrong recipient address | Transfers must hit smart wallets above, not EOAs |
+| Wrong account order | Index 0 = BillyBall smart wallet, index 1 = Noodles Classic smart wallet; review dry-run |
+| Run without JSin win | Script aborts unless primary winner is JSin |
 | Wrong token decimals | Read `paymentToken.decimals()` per contest |
 | Double send / double patch | Require `--dry-run` first; idempotency key = contestId + totalWei |
 | Account count > 10 | Script rejects; calculator caps at 10 |
@@ -214,13 +284,12 @@ Shared helper: **`calculateGeometricRewards(totalWei, numRecipients)`** — TS p
 
 ## Implementation tasks
 
-- [ ] Identify contest; verify `accumulatedOracleFee` ≈ 15.4 CUT
-- [ ] Prepare referrers-only `accounts[]` JSON
-- [ ] Implement `distributeContestInviteRewards.ts` with `--dry-run`
-- [ ] Claim oracle fees
-- [ ] Execute ERC20 transfers; save audit JSON
-- [ ] Add `RewardsPayoutResult` to server types; patch `contest.results`
-- [ ] Verify Contest Results UI Rewards section
+- [ ] Implement `distributeContestInviteRewards.ts` with hardcoded Charles Schwab / JSin / BillyBall / Noodles Classic constants
+- [ ] `--dry-run`: assert JSin is primary winner; verify split ≈ 9.625 / 5.775 CUT
+- [ ] Claim oracle fees on `cmpmotf4f000x9uap786eysdq`
+- [ ] Execute ERC20 transfers to BillyBall, then Noodles Classic; save audit JSON
+- [ ] Add `RewardsPayoutResult` to server types; patch `contest.results.rewardsPayouts` in that order
+- [ ] Verify Contest Results UI Rewards section (BillyBall first, Noodles Classic second)
 
 ### Relevant files
 
