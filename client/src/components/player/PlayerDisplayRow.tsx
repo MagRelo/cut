@@ -15,6 +15,8 @@ interface PlayerDisplayRowProps {
   onClick?: () => void;
   ownershipPercentage?: number;
   isOwnedByCurrentUser?: boolean;
+  /** Pre-tournament lineup editing — name/country only, no live scores or scorecard. */
+  preRoundLayout?: boolean;
   /** Icon beside PTS: scorecard (default) or share action. */
   rowTrailing?: "scorecard" | "share";
   /** Required when `rowTrailing` is `"share"`. */
@@ -26,6 +28,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   roundDisplay,
   onClick,
   ownershipPercentage,
+  preRoundLayout = false,
   rowTrailing = "scorecard",
   onShare,
 }) => {
@@ -36,7 +39,8 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
   const playerRowIsForCurrentWeek =
     Boolean(currentTournamentId) && player.tournamentId === currentTournamentId;
   /** Full row for any non–active-tournament player; for active-tournament players only when the event is live or completed. */
-  const resolvedIsActive = !playerRowIsForCurrentWeek || !isTournamentEditable;
+  const resolvedIsActive =
+    !preRoundLayout && (!playerRowIsForCurrentWeek || !isTournamentEditable);
 
   const totalPoints = player.tournamentData?.total || 0;
   const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;

@@ -16,6 +16,7 @@ import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
+import { LineupWinningScoreSlider } from "./LineupWinningScoreSlider";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -41,6 +42,8 @@ interface LineupContestCardProps {
   roundDisplay: string;
   contests?: ContestInfo[];
   isEditable?: boolean;
+  /** Storybook-only — renders tie-breaker slider mock at bottom of Players tab. */
+  showWinningScoreSliderPreview?: boolean;
 }
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
@@ -54,6 +57,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   roundDisplay,
   contests = [],
   isEditable = false,
+  showWinningScoreSliderPreview = false,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -111,7 +115,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const sideBetUserLabel = lineup.user?.name || lineup.user?.email || "Unknown User";
 
   return (
-    <div className="">
+    <div className="bg-white">
       {/* Header */}
       <div
         className="p-3 py-5 font-display"
@@ -190,6 +194,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                             <PlayerDisplayRow
                               player={player}
                               roundDisplay={roundDisplay}
+                              preRoundLayout
                               onClick={() => openDetailModal(player)}
                             />
                           </div>
@@ -258,6 +263,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   ))
                 )}
               </div>
+              {showWinningScoreSliderPreview && canEditSlots ? (
+                <LineupWinningScoreSlider value={150} />
+              ) : null}
             </TabPanel>
 
             {/* PARLAYS TAB */}

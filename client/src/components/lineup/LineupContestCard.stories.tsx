@@ -73,3 +73,12 @@ export const EditingNoContests: Story = {
     contests: [],
   },
 };
+
+/** Visual mock — tie-breaker slider at bottom of Players tab (no save logic). */
+export const TieBreakerSliderPreview: Story = {
+  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy"])],
+  args: {
+    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
+    showWinningScoreSliderPreview: true,
+  },
+};
