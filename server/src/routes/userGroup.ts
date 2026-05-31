@@ -7,7 +7,14 @@ import {
   createUserGroupSchema,
   updateUserGroupSchema,
   addUserGroupMemberSchema,
+  joinUserGroupSchema,
 } from "../schemas/contest.js";
+import { generateUniqueInviteCode } from "../utils/inviteCode.js";
+import { buildLeagueInviteUrl } from "../lib/appUrl.js";
+import {
+  formatUserGroupDetailResponse,
+  userGroupDetailInclude,
+} from "../utils/userGroup.js";
 
 const userGroupRouter = new Hono();
 
@@ -58,6 +65,71 @@ userGroupRouter.get("/", requireAuth, async (c) => {
   }
 });
 
+// Self-join via invite code (static path — register before /:id)
+userGroupRouter.post("/join", requireAuth, async (c) => {
+  try {
+    const body = await c.req.json();
+    const user = c.get("user");
+
+    const validation = joinUserGroupSchema.safeParse(body);
+    if (!validation.success) {
+      return c.json(
+        {
+          error: "Invalid request body",
+          details: validation.error.errors,
+        },
+        400,
+      );
+    }
+
+    const inviteCode = validation.data.inviteCode.trim();
+
+    const userGroup = await prisma.userGroup.findUnique({
+      where: { inviteCode },
+      include: userGroupDetailInclude,
+    });
+
+    if (!userGroup) {
+      return c.json({ error: "UserGroup not found" }, 404);
+    }
+
+    const existingMember = await prisma.userGroupMember.findUnique({
+      where: {
+        userId_userGroupId: {
+          userId: user.userId,
+          userGroupId: userGroup.id,
+        },
+      },
+    });
+
+    if (existingMember) {
+      return c.json({ error: "You are already a member of this userGroup" }, 409);
+    }
+
+    await prisma.userGroupMember.create({
+      data: {
+        userId: user.userId,
+        userGroupId: userGroup.id,
+        role: "MEMBER",
+      },
+    });
+
+    const updatedGroup = await prisma.userGroup.findUnique({
+      where: { id: userGroup.id },
+      include: userGroupDetailInclude,
+    });
+
+    if (!updatedGroup) {
+      return c.json({ error: "UserGroup not found" }, 404);
+    }
+
+    return c.json(formatUserGroupDetailResponse(updatedGroup, user.userId), 201);
+  } catch (error) {
+    console.error("Error joining userGroup:", error);
+    return c.json({ error: "Failed to join userGroup" }, 500);
+  }
+});
+
 // Get userGroup by ID with members (members only)
 userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
   try {
@@ -66,57 +138,14 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
 
     const userGroup = await prisma.userGroup.findUnique({
       where: { id: userGroupId },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: {
-            joinedAt: "asc",
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-            contests: true,
-          },
-        },
-      },
+      include: userGroupDetailInclude,
     });
 
     if (!userGroup) {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    type MemberItem = (typeof userGroup.members)[number];
-    const currentUserMembership = userGroup.members.find(
-      (m: MemberItem) => m.userId === user.userId,
-    );
-
-    return c.json({
-      id: userGroup.id,
-      name: userGroup.name,
-      description: userGroup.description,
-      createdAt: userGroup.createdAt,
-      updatedAt: userGroup.updatedAt,
-      memberCount: userGroup._count.members,
-      contestCount: userGroup._count.contests,
-      currentUserRole: currentUserMembership?.role ?? null,
-      isMember: true,
-      members: userGroup.members.map((member: MemberItem) => ({
-        id: member.id,
-        userId: member.userId,
-        user: member.user,
-        role: member.role,
-        joinedAt: member.joinedAt,
-      })),
-    });
+    return c.json(formatUserGroupDetailResponse(userGroup, user.userId));
   } catch (error) {
     console.error("Error fetching userGroup:", error);
     return c.json({ error: "Failed to fetch userGroup" }, 500);
@@ -506,6 +535,37 @@ userGroupRouter.delete("/:id/members/:userId", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error removing member from userGroup:", error);
     return c.json({ error: "Failed to remove member from userGroup" }, 500);
+  }
+});
+
+// Generate or rotate invite code (ADMIN only)
+userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c) => {
+  try {
+    const userGroupId = c.req.param("id");
+
+    const userGroup = await prisma.userGroup.findUnique({
+      where: { id: userGroupId },
+      select: { id: true },
+    });
+
+    if (!userGroup) {
+      return c.json({ error: "UserGroup not found" }, 404);
+    }
+
+    const inviteCode = await generateUniqueInviteCode();
+
+    await prisma.userGroup.update({
+      where: { id: userGroupId },
+      data: { inviteCode },
+    });
+
+    return c.json({
+      inviteCode,
+      inviteUrl: buildLeagueInviteUrl(inviteCode),
+    });
+  } catch (error) {
+    console.error("Error generating userGroup invite:", error);
+    return c.json({ error: "Failed to generate invite link" }, 500);
   }
 });
 

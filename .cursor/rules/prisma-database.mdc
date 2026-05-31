@@ -76,9 +76,8 @@ flowchart TB
 ### UserGroup
 
 - **Purpose:** Private league / friend group.
-- **Fields:** `id`, `name`, `description?`, `createdAt`, `updatedAt`
+- **Fields:** `id`, `name`, `description?`, `inviteCode?` (unique, admin-generated), `createdAt`, `updatedAt`
 - **Relations:** `members` (`UserGroupMember[]`), `contests` (`Contest[]`)
-- **Planned:** `isPrivate`, invite model — see `PRIVATE_LEAGUES.md`
 
 ### UserGroupMember
 

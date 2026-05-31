@@ -18,6 +18,13 @@ export const addUserGroupMemberSchema = z.object({
   role: z.enum(["MEMBER", "ADMIN"]).default("MEMBER"),
 });
 
+export const joinUserGroupSchema = z.object({
+  inviteCode: z
+    .string()
+    .min(1, "Invite code is required")
+    .max(32, "Invalid invite code"),
+});
+
 // Schema for creating a contest
 export const createContestSchema = z.object({
   name: z.string().min(1, "Contest name is required"),
@@ -126,6 +133,7 @@ export const contestQuerySchema = z.object({
 export type CreateUserGroupBody = z.infer<typeof createUserGroupSchema>;
 export type UpdateUserGroupBody = z.infer<typeof updateUserGroupSchema>;
 export type AddUserGroupMemberBody = z.infer<typeof addUserGroupMemberSchema>;
+export type JoinUserGroupBody = z.infer<typeof joinUserGroupSchema>;
 export type CreateContestBody = z.infer<typeof createContestSchema>;
 export type UpdateContestBody = z.infer<typeof updateContestSchema>;
 export type ContestIdParam = z.infer<typeof contestIdSchema>;

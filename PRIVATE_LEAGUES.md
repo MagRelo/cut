@@ -8,7 +8,7 @@ Authoritative product and implementation spec for private user leagues. In code 
 |-------|------|
 | User-facing copy | League |
 | Prisma / API | `UserGroup`, `/api/userGroups` |
-| URLs | `/user-groups`, `/user-groups/:id`, join path TBD (e.g. `/user-groups/join/:code`) |
+| URLs | `/user-groups`, `/user-groups/:id`, `/user-groups/join/:code` |
 
 ## Current state
 
@@ -113,7 +113,7 @@ On `UserGroup`:
 ### B — API authorization
 
 - Apply `requireUserGroupMember` on group read routes.
-- Join: `POST` with invite code (path TBD).
+- Join: `POST /api/userGroups/join` with body `{ inviteCode }`
 - Admin: generate or rotate `inviteCode`.
 - Contests: filter list; gate `GET` by id; allow league `ADMIN` to `POST` contests when `userGroupId` is set.
 
@@ -167,7 +167,7 @@ Wallet add retained; invite emails; onboarding screen; admin dashboard filters.
 | Topic | Recommendation |
 |-------|----------------|
 | Non-member errors | 404 for leagues and league contests |
-| Invite code format | Opaque cuid vs short human-readable code — decide in Phase 2 |
+| Invite code format | 8-char URL-safe opaque code (generated on admin request) |
 | Contest create | League `ADMIN` sufficient when `userGroupId` set (no app admin) |
 
 ## Acceptance criteria
