@@ -4,6 +4,7 @@ import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { UserGroupMembersList } from "../components/userGroup/UserGroupMembersList";
 import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
+import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
 import { ContestList } from "../components/contest/ContestList";
 import { useUserGroupQuery } from "../hooks/useUserGroupQuery";
 import { useContestsQuery } from "../hooks/useContestQuery";
@@ -109,6 +110,15 @@ export const UserGroupDetailPage = () => {
 
       {isAdmin && (
         <>
+          <div className="bg-white rounded-sm shadow p-4">
+            <UserGroupInvitePanel
+              userGroupId={userGroup.id}
+              inviteCode={userGroup.inviteCode}
+              inviteUrl={userGroup.inviteUrl}
+              onInviteUpdated={() => refetch()}
+            />
+          </div>
+
           <div className="bg-white rounded-sm shadow p-4">
             <UserGroupMemberManagement
               userGroupId={userGroup.id}

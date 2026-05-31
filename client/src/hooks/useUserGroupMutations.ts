@@ -5,6 +5,8 @@ import {
   type CreateUserGroupInput,
   type UpdateUserGroupInput,
   type AddUserGroupMemberInput,
+  type JoinUserGroupInput,
+  type LeagueInviteResponse,
   type UserGroupDetailResponse,
   type UserGroupMembersResponse,
 } from "../types/userGroup";
@@ -198,6 +200,50 @@ export function useRemoveUserGroupMember() {
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+    },
+  });
+}
+
+export function useGenerateLeagueInvite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userGroupId: string) => {
+      return await apiClient.post<LeagueInviteResponse>(`/userGroups/${userGroupId}/invite`);
+    },
+    onSuccess: (data, userGroupId) => {
+      queryClient.setQueryData<UserGroupDetailResponse>(
+        queryKeys.userGroups.byId(userGroupId),
+        (old) =>
+          old
+            ? {
+                ...old,
+                inviteCode: data.inviteCode,
+                inviteUrl: data.inviteUrl,
+              }
+            : old,
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(userGroupId) });
+    },
+    onError: (err) => {
+      console.error("Failed to generate league invite:", err);
+    },
+  });
+}
+
+export function useJoinLeague() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: JoinUserGroupInput) => {
+      return await apiClient.post<UserGroupDetailResponse>("/userGroups/join", params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
+    },
+    onError: (err) => {
+      console.error("Failed to join league:", err);
     },
   });
 }

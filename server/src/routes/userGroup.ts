@@ -103,7 +103,13 @@ userGroupRouter.post("/join", requireAuth, async (c) => {
     });
 
     if (existingMember) {
-      return c.json({ error: "You are already a member of this userGroup" }, 409);
+      return c.json(
+        {
+          error: "You are already a member of this userGroup",
+          userGroupId: userGroup.id,
+        },
+        409,
+      );
     }
 
     await prisma.userGroupMember.create({

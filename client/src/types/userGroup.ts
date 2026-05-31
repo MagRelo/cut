@@ -48,6 +48,8 @@ export interface UserGroupDetail {
   currentUserRole: UserGroupRole | null;
   isMember: boolean;
   members: UserGroupMemberResponse[];
+  inviteCode?: string | null;
+  inviteUrl?: string | null;
 }
 
 export interface UserGroupMemberResponse {
@@ -82,6 +84,15 @@ export interface UpdateUserGroupInput {
 export interface AddUserGroupMemberInput {
   walletAddress: string;
   role?: UserGroupRole;
+}
+
+export interface JoinUserGroupInput {
+  inviteCode: string;
+}
+
+export interface LeagueInviteResponse {
+  inviteCode: string;
+  inviteUrl: string;
 }
 
 // API Response types

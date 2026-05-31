@@ -50,6 +50,7 @@ import { AdminRoute } from "./components/common/AdminRoute";
 import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
+import { UserGroupJoinPage } from "./pages/UserGroupJoinPage";
 import { DebugPage } from "./pages/DebugPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { useAppLoadingGate } from "./hooks/useAppLoadingGate";
@@ -162,6 +163,14 @@ const AppShell: React.FC = () => {
                     element={
                       <ProtectedRoute>
                         <UserGroupCreatePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/user-groups/join/:code"
+                    element={
+                      <ProtectedRoute>
+                        <UserGroupJoinPage />
                       </ProtectedRoute>
                     }
                   />
