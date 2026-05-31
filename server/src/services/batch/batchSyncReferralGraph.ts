@@ -174,3 +174,16 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     results,
   };
 }
+
+// Main execution block (for direct script execution)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  batchSyncReferralGraph()
+    .then((result) => {
+      console.log("Batch sync referral graph completed:", result);
+      process.exit(result.failed > 0 ? 1 : 0);
+    })
+    .catch((error) => {
+      console.error("Batch sync referral graph failed:", error);
+      process.exit(1);
+    });
+}

@@ -33,6 +33,7 @@
     "service:batch-settle-contests": "tsx src/services/batch/batchSettleContests.ts",
     "service:push-contest-payouts": "tsx src/scripts/pushContestPayouts.ts",
     "service:batch-close-contests": "tsx src/services/batch/batchCloseContests.ts",
+    "service:batch-sync-referral-graph": "tsx src/services/batch/batchSyncReferralGraph.ts",
     "script:sync-user-wallets-from-privy": "tsx src/scripts/syncUserWalletsFromPrivy.ts",
     "script:send-test-email": "tsx src/scripts/sendTestEmail.ts",
     "script:email-preview": "tsx src/scripts/emailPreview.ts",
