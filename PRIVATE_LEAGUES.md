@@ -8,7 +8,7 @@ Authoritative product and implementation spec for private user leagues. In code 
 |-------|------|
 | User-facing copy | League |
 | Prisma / API | `UserGroup`, `/api/userGroups` |
-| URLs | `/user-groups`, `/user-groups/:id`, join path TBD (e.g. `/user-groups/join/:token`) |
+| URLs | `/user-groups`, `/user-groups/:id`, join path TBD (e.g. `/user-groups/join/:code`) |
 
 ## Current state
 
@@ -57,9 +57,9 @@ Primary v1 path: **invite link**. Secondary: admin add by wallet (existing).
 
 | Action | Actor | Behavior |
 |--------|-------|----------|
-| Generate invite | League `ADMIN` | Rotatable token(s) on league |
-| Share invite | Admin | Copy link to join route |
-| Accept invite | Signed-in user | Self-join as `MEMBER` when token valid |
+| Generate / rotate invite code | League `ADMIN` | Sets or replaces `UserGroup.inviteCode` |
+| Share invite | Admin | Copy link with invite code to join route |
+| Accept invite | Signed-in user | Self-join as `MEMBER` when code matches |
 | Add by wallet | League `ADMIN` | User must already exist (registered wallet) |
 | Leave | Member or `ADMIN` | Existing remove-member; last admin cannot be removed |
 | Request-to-join, email invite | — | Out of v1 |
@@ -105,18 +105,16 @@ flowchart LR
 
 ### A — Data model
 
-On `UserGroup` (and/or `UserGroupInvite` table):
+On `UserGroup`:
 
 - `isPrivate` default `true`
-- Invite records: token, `createdBy`, `expiresAt`, `revokedAt`, optional `maxUses`
-
-Prefer a dedicated invite table for multiple links, rotation, and audit.
+- `inviteCode` — unique, opaque short code; admin can regenerate to rotate
 
 ### B — API authorization
 
 - Apply `requireUserGroupMember` on group read routes.
-- Join: `POST` with invite token (path TBD).
-- Admin: create/revoke invites.
+- Join: `POST` with invite code (path TBD).
+- Admin: generate or rotate `inviteCode`.
 - Contests: filter list; gate `GET` by id; allow league `ADMIN` to `POST` contests when `userGroupId` is set.
 
 Key files: `server/src/routes/userGroup.ts`, `server/src/middleware/userGroup.ts`, `server/src/routes/contest.ts`.
@@ -126,7 +124,7 @@ Key files: `server/src/routes/userGroup.ts`, `server/src/middleware/userGroup.ts
 - Nav / Account: “My Leagues” → `/user-groups`
 - Copy: League in UI; keep technical routes
 - League detail: contest list, invite UI, admin create contest
-- Join page for invite token
+- Join page for invite code
 - Contest create: league picker for league admins only
 - Lobby/list: no leakage of league contests
 
@@ -149,7 +147,7 @@ Key files: `client/src/pages/UserGroup*.tsx`, `client/src/components/userGroup/*
 Membership gates on reads; contest list/detail filtering; league-admin contest create; nav + copy; league contest list on detail page.
 
 **Phase 2 — Invite links**  
-Schema, join API, join page, admin invite UI.
+`inviteCode` on `UserGroup`, join API, join page, admin invite UI.
 
 **Phase 3 — Polish**  
 Wallet add retained; invite emails; onboarding screen; admin dashboard filters.
@@ -168,8 +166,7 @@ Wallet add retained; invite emails; onboarding screen; admin dashboard filters.
 | Topic | Recommendation |
 |-------|----------------|
 | Non-member errors | 404 for leagues and league contests |
-| Invite token | Opaque cuid vs short code — decide in Phase 2 |
-| Multiple invites | Schema supports many; UI may ship one active link |
+| Invite code format | Opaque cuid vs short human-readable code — decide in Phase 2 |
 | Contest create | League `ADMIN` sufficient when `userGroupId` set (no app admin) |
 
 ## Acceptance criteria
