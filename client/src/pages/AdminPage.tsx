@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -41,9 +41,11 @@ function ContestStatusBadge({ status }: { status: string }) {
   );
 }
 
+type ContestScopeFilter = "all" | "public" | "league";
+
 function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
   if (contests.length === 0) {
-    return <p className="text-sm text-gray-500 py-4">No contests for this tournament.</p>;
+    return <p className="text-sm text-gray-500 py-4">No contests match this filter.</p>;
   }
   return (
     <div className="overflow-x-auto border border-gray-200 rounded-sm">
@@ -56,7 +58,7 @@ function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
             <th className="px-3 py-2 font-medium text-right">Lineups</th>
             <th className="px-3 py-2 font-medium text-right">Primary cash</th>
             <th className="px-3 py-2 font-medium text-right">Secondary</th>
-            <th className="px-3 py-2 font-medium">Group</th>
+            <th className="px-3 py-2 font-medium">League</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -105,6 +107,7 @@ function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
 
 export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [contestScope, setContestScope] = useState<ContestScopeFilter>("all");
   const dashboardQuery = useAdminDashboardQuery();
   const tournamentId = dashboardQuery.data?.tournament?.id;
   const sideReportQuery = useAdminSideBetReportQuery(
@@ -128,6 +131,16 @@ export const AdminPage: React.FC = () => {
 
   const t = dashboard?.tournament;
   const contests = dashboard?.contests;
+  const filteredContests = useMemo(() => {
+    const items = contests?.items ?? [];
+    if (contestScope === "public") {
+      return items.filter((contest) => !contest.userGroupName);
+    }
+    if (contestScope === "league") {
+      return items.filter((contest) => Boolean(contest.userGroupName));
+    }
+    return items;
+  }, [contests?.items, contestScope]);
   const parlays = dashboard?.parlays;
   const ops = dashboard?.operations;
 
@@ -201,14 +214,40 @@ export const AdminPage: React.FC = () => {
           </section>
 
           <section className="bg-white rounded-sm shadow border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">Contests</h2>
-            <p className="text-xs text-gray-500 mb-4">
-              {contests?.summary.total ?? 0} contest(s) —{" "}
-              {Object.entries(contests?.summary.byStatus ?? {})
-                .map(([s, n]) => `${s}: ${n}`)
-                .join(", ") || "none"}
-            </p>
-            <ContestsTable contests={contests?.items ?? []} />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-1">Contests</h2>
+                <p className="text-xs text-gray-500">
+                  {contests?.summary.total ?? 0} contest(s) —{" "}
+                  {Object.entries(contests?.summary.byStatus ?? {})
+                    .map(([s, n]) => `${s}: ${n}`)
+                    .join(", ") || "none"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["all", "All"],
+                    ["public", "Public"],
+                    ["league", "League"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setContestScope(value)}
+                    className={`px-3 py-1 text-xs font-medium rounded-sm border transition-colors ${
+                      contestScope === value
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ContestsTable contests={filteredContests} />
           </section>
 
           {ops?.sideBetsEnabled ? (

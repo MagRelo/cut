@@ -12,7 +12,7 @@ Authoritative product and implementation spec for private user leagues. In code 
 
 ## Current state
 
-The app ships a partial **UserGroup** layer. It is not the legacy League/Team design (see deprecated section in [`.cursor/rules/prisma-database.mdc`](.cursor/rules/prisma-database.mdc)).
+Private leagues ship as **UserGroup** in code (UI: **League**). This is not the legacy League/Team design (see deprecated section in [`.cursor/rules/prisma-database.mdc`](.cursor/rules/prisma-database.mdc)).
 
 ```mermaid
 flowchart TB
@@ -29,12 +29,16 @@ flowchart TB
 | `UserGroup`, `UserGroupMember` (roles `ADMIN`, `MEMBER`) | Implemented |
 | CRUD API (`server/src/routes/userGroup.ts`) | Implemented |
 | Admin adds member by wallet address | Implemented |
-| Contest `userGroupId`; non-members blocked on contest entry | Implemented |
-| Client pages under `/user-groups` | Implemented; no main nav link (by design) |
-| `requireUserGroupMember` middleware | Defined; not applied to read routes |
-| Privacy, invite links, self-join | Not implemented |
-| Group contests hidden from public lobby/list | Not implemented |
-| Group detail readable by any authenticated user with ID | Gap |
+| Membership-gated reads (`GET /:id`, members) — 404 for non-members | Implemented |
+| Contest list merges public + member league contests when signed in | Implemented |
+| Contest detail/timeline/entry gated for league contests | Implemented |
+| League admin creates contests (`userGroupId` set) without app admin | Implemented |
+| Invite links (`inviteCode`, join API, join page, admin invite UI) | Implemented |
+| Client: league labels on contest cards, league detail contest list | Implemented |
+| Account panel link to `/user-groups` | Implemented |
+| Contest discovery via main nav tab | Not used — contest list + Account link |
+| `isPrivate` schema flag | Not implemented (privacy enforced via membership) |
+| Invite email, onboarding league screen | Post-core (see Phase 3 in epics below) |
 
 **Contest visibility:** `Contest.settings` may include `contestType`, but create flow sets `"PUBLIC"` and the server does not enforce it. League privacy is defined by **`userGroupId` + membership**, not contest settings JSON alone.
 

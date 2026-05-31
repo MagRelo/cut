@@ -36,7 +36,7 @@ todos:
 
 One **primary action** per screen; everything else is **skippable** or **Continue** only if you want low friction.
 
-**Leagues / private groups** are **deferred**—revisit when league join flows are a priority.
+**Leagues** ship via invite links ([`PRIVATE_LEAGUES.md`](../../PRIVATE_LEAGUES.md)). A dedicated onboarding screen for “Play with friends” remains optional post-core; v1 onboarding still ends at fund account.
 
 ```mermaid
 flowchart LR

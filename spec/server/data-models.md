@@ -34,23 +34,25 @@ The database uses PostgreSQL with Prisma ORM. The schema is defined in `server/p
 - **Relations**:
   - `user`: User
 
-### UserGroup
-- **Purpose**: Groups of users (for private contests)
+### UserGroup (League)
+- **Purpose**: Private league / friend group for scoped contests
 - **Key Fields**:
   - `id`: Unique identifier
-  - `name`: Group name
+  - `name`: League name
   - `description`: Optional description
+  - `inviteCode`: Optional unique opaque code for self-join (admin-generated)
 - **Relations**:
   - `members`: UserGroupMember[]
   - `contests`: Contest[]
+- **Privacy**: No public directory; membership gates reads and league contest visibility
 
 ### UserGroupMember
-- **Purpose**: Junction table for user-group membership
+- **Purpose**: League membership and role
 - **Key Fields**:
   - `id`: Unique identifier
   - `userId`: Foreign key to User
   - `userGroupId`: Foreign key to UserGroup
-  - `role`: Member role (default: "MEMBER")
+  - `role`: `ADMIN` | `MEMBER` (default `MEMBER`)
 - **Relations**:
   - `user`: User
   - `userGroup`: UserGroup

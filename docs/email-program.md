@@ -100,7 +100,7 @@ flowchart LR
 | **Trigger** | **Manual:** operator sends when ready. Target **Wednesday 10:00 AM** `America/New_York`. Segment evaluated at send time. **At most once per user per tournament**. |
 | **Send window** | Operator-chosen; Wednesday morning ET is the intended slot. |
 | **Audience** | **Segment only:** played in **at least one of the last 3 tournaments** AND **zero contest entries** for **current** tournament. |
-| **Content pillars** | Short nudge; **your groups / open contests** (buy-ins, pools); lineup lock countdown; CTA: enter a contest. |
+| **Content pillars** | Short nudge; **your leagues / open contests** (buy-ins, pools); lineup lock countdown; CTA: enter a contest. |
 | **Skip if** | Not in segment; no email; already entered contest this week; already sent `REMINDER_NO_CONTEST` for this `tournamentId`. |
 | **Idempotency** | Log `tournamentId` + `REMINDER_NO_CONTEST` + `userId`. |
 
@@ -152,7 +152,7 @@ Mid-week contest energy is split: **New Tournament** = everyone (event + CTA); *
 
 ### Wednesday — Reminder (segment only)
 
-1. League / user group context (if user has groups)  
+1. League context (if user belongs to leagues with open contests)  
 2. Open contests & buy-ins for this week  
 3. Lock countdown  
 

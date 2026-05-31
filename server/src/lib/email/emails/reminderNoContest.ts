@@ -26,7 +26,7 @@ export function buildReminderNoContestHtml(data: ReminderNoContestEmailData): st
     : "Hi there,";
   const groupsLine =
     data.groupNames.length > 0
-      ? `Your groups: ${data.groupNames.map((g) => escapeHtml(g)).join(", ")}.`
+      ? `Your leagues: ${data.groupNames.map((g) => escapeHtml(g)).join(", ")}.`
       : "";
 
   const bodyHtml = `<h1 style="${BODY_TITLE_H1_STYLE}">Still time to enter</h1>

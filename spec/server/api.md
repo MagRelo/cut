@@ -92,27 +92,32 @@ The monolithic `GET /api/tournaments/active` and the split `active/metadata` + `
 ### Contests (`/api/contests`)
 
 #### `GET /api/contests`
-- **Description**: Get contests by tournament and chain
-- **Auth**: None
+- **Description**: List contests for a tournament. Returns public contests for all callers; when authenticated, also includes league contests for groups the caller belongs to.
+- **Auth**: Optional (`Authorization` merges league contests for members)
 - **Query Params**:
   - `tournamentId`: string (required)
-  - `chainId`: number (optional, defaults to all chains)
-  - `userGroupId`: string (optional)
-- **Response**: `Contest[]`
+  - `chainId`: number (optional — omit to return Base + Base Sepolia)
+  - `userGroupId`: string (optional — scope to one league; caller must be a member)
+- **Response**: `Contest[]` (includes `userGroup: { id, name }` when scoped to a league)
 
 #### `GET /api/contests/:id`
-- **Description**: Get contest by ID, including lineup timeline chart data (`timeline.teams` from `ContestLineupTimeline` snapshots).
-- **Auth**: None
-- **Response**: `Contest` (with lineups) and `timeline: { teams: TimelineTeam[] }`
+- **Description**: Get contest by database id or contract address. League contests return **404** for non-members.
+- **Auth**: Optional (required implicitly for league contests)
+- **Response**: `Contest`
+
+#### `GET /api/contests/:id/timeline`
+- **Description**: Timeline chart data for a contest. League contests return **404** for non-members.
+- **Auth**: Optional (required implicitly for league contests)
 
 #### `POST /api/contests`
 - **Description**: Create new contest
 - **Auth**: Required
+- **Authorization**: App staff (`ADMIN` / `SUPER_ADMIN`) for public contests; league `ADMIN` when `userGroupId` is set
 - **Body**: `{ name: string, description?: string, tournamentId: string, userGroupId?: string, endDate: string|number, address: string, chainId: number, settings?: object }`
 - **Response**: `Contest` (201)
 
 #### `POST /api/contests/:id/lineups`
-- **Description**: Add lineup to contest
+- **Description**: Add lineup to contest. League contests return **404** for non-members.
 - **Auth**: Required
 - **Body**: `{ tournamentLineupId: string, entryId: string }`
 - **Response**: `Contest` (201)
@@ -122,45 +127,66 @@ The monolithic `GET /api/tournaments/active` and the split `active/metadata` + `
 - **Auth**: Required
 - **Response**: `Contest`
 
-### User Groups (`/api/user-groups`)
+### User Groups / Leagues (`/api/userGroups`)
 
-#### `GET /api/user-groups`
-- **Description**: Get all user groups
+Product term: **League**. All routes require authentication unless noted.
+
+#### `GET /api/userGroups`
+- **Description**: List leagues the caller belongs to (membership-scoped; no public directory)
 - **Auth**: Required
-- **Response**: `UserGroup[]`
+- **Response**: `{ userGroups: UserGroupListItem[] }`
 
-#### `GET /api/user-groups/:id`
-- **Description**: Get user group by ID
+#### `POST /api/userGroups/join`
+- **Description**: Self-join a league via invite code
 - **Auth**: Required
-- **Response**: `UserGroup`
+- **Body**: `{ inviteCode: string }`
+- **Response**: `UserGroupDetail` (201)
+- **Errors**: `404` invalid code; `409` already a member (includes `userGroupId` in body)
 
-#### `POST /api/user-groups`
-- **Description**: Create new user group
+#### `GET /api/userGroups/:id`
+- **Description**: League detail with members
+- **Auth**: Required; **members only** (non-members receive `404`)
+- **Response**: `UserGroupDetail` — admins also receive `inviteCode` and `inviteUrl` when a code exists
+
+#### `POST /api/userGroups`
+- **Description**: Create league; creator becomes `ADMIN`
 - **Auth**: Required
 - **Body**: `{ name: string, description?: string }`
-- **Response**: `UserGroup` (201)
+- **Response**: `UserGroupDetail` (201)
 
-#### `PUT /api/user-groups/:id`
-- **Description**: Update user group
-- **Auth**: Required
+#### `PUT /api/userGroups/:id`
+- **Description**: Update league name/description
+- **Auth**: Required; league `ADMIN`
 - **Body**: `{ name?: string, description?: string }`
-- **Response**: `UserGroup`
+- **Response**: `{ id, name, description, memberCount, contestCount, ... }`
 
-#### `DELETE /api/user-groups/:id`
-- **Description**: Delete user group
-- **Auth**: Required
-- **Response**: `{ success: boolean }`
+#### `DELETE /api/userGroups/:id`
+- **Description**: Delete league and memberships; contests keep `userGroupId` → null
+- **Auth**: Required; league `ADMIN`
+- **Response**: `{ success: boolean, message: string }`
 
-#### `POST /api/user-groups/:id/members`
-- **Description**: Add member to user group
-- **Auth**: Required
-- **Body**: `{ userId: string }`
-- **Response**: `UserGroupMember`
+#### `GET /api/userGroups/:id/members`
+- **Description**: List league members
+- **Auth**: Required; **members only** (`404` for non-members)
+- **Response**: `{ members: UserGroupMember[] }`
 
-#### `DELETE /api/user-groups/:id/members/:memberId`
-- **Description**: Remove member from user group
+#### `POST /api/userGroups/:id/members`
+- **Description**: Add member by wallet address
+- **Auth**: Required; league `ADMIN`
+- **Body**: `{ walletAddress: string, role?: "MEMBER" | "ADMIN" }` (defaults to `MEMBER`)
+- **Response**: `UserGroupMember` (201)
+
+#### `DELETE /api/userGroups/:id/members/:userId`
+- **Description**: Remove member (admin or self; cannot remove last admin)
 - **Auth**: Required
-- **Response**: `{ success: boolean }`
+- **Response**: `{ success: boolean, message: string }`
+
+#### `POST /api/userGroups/:id/invite`
+- **Description**: Generate or rotate invite code
+- **Auth**: Required; league `ADMIN`
+- **Response**: `{ inviteCode: string, inviteUrl: string }` — `inviteUrl` uses `APP_PUBLIC_URL` / `PUBLIC_APP_URL`
+
+**Client routes:** `/user-groups`, `/user-groups/create`, `/user-groups/:id`, `/user-groups/join/:code`
 
 ### Cron (`/api/cron`)
 
