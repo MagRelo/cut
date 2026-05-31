@@ -32,7 +32,7 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
         {isMessage ? (
           <p
             className={classNames(
-              "max-w-[14rem] rounded-sm border px-3 py-2 text-center font-display text-sm leading-snug",
+              "max-w-[18rem] rounded-sm border px-6 py-5 text-center font-display text-sm leading-snug",
               state.kind === "error"
                 ? "border-red-200 bg-red-50 text-red-700"
                 : "border-gray-200 bg-white text-gray-800",
@@ -89,7 +89,9 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
                         "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
                       )}
                     >
-                      <span className="text-center text-sm leading-tight">{cell.americanDisplay}</span>
+                      <span className="text-center text-sm leading-tight">
+                        {cell.americanDisplay}
+                      </span>
                     </button>
                   );
                 })}

@@ -39,7 +39,7 @@ export function resolveSideBetMarketState(
     const message =
       status != null && CLOSED_MARKET_STATUSES.has(status)
         ? PARLAY_MARKET_CLOSED
-        : (query.data.unavailableReason ?? PARLAY_MARKET_UNAVAILABLE);
+        : PARLAY_MARKET_UNAVAILABLE;
     return { kind: "unavailable", message };
   }
   return { kind: "ready", selections: query.data?.selections ?? [] };

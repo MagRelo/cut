@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildBettableSideBetMarket } from "../../../../test/fixtures/sideBetMock";
-import { PARLAY_MARKET_CLOSED } from "../shared/sideBetConstants";
+import { PARLAY_MARKET_CLOSED, PARLAY_MARKET_UNAVAILABLE } from "../shared/sideBetConstants";
 import { resolveSideBetMarketState } from "./resolveSideBetMarketState";
 
 describe("resolveSideBetMarketState", () => {
@@ -36,14 +36,17 @@ describe("resolveSideBetMarketState", () => {
     expect(result.kind).toBe("error");
   });
 
-  it("returns unavailable when market is not bettable", () => {
+  it("returns user-facing unavailable copy when market is not bettable", () => {
     const result = resolveSideBetMarketState("lineup-1", {
-      data: buildBettableSideBetMarket({ bettable: false, unavailableReason: "Locked" }),
+      data: buildBettableSideBetMarket({
+        bettable: false,
+        unavailableReason: "MISSING_FINISH_DECIMAL",
+      }),
       isLoading: false,
       isFetching: false,
       isError: false,
     });
-    expect(result).toEqual({ kind: "unavailable", message: "Locked" });
+    expect(result).toEqual({ kind: "unavailable", message: PARLAY_MARKET_UNAVAILABLE });
   });
 
   it("returns closed copy when market status is LOCKED", () => {
