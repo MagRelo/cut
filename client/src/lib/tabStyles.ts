@@ -5,10 +5,7 @@ export const tabListClassName = (...extra: string[]) =>
 const segmentActive = "border-gray-500 text-gray-700 font-medium";
 const segmentInactive = "border-transparent text-blue-500 hover:text-blue-600";
 
-export function tabButtonClassName(
-  selected: boolean,
-  options?: { compact?: boolean },
-): string {
+export function tabButtonClassName(selected: boolean, options?: { compact?: boolean }): string {
   const padding = options?.compact ? "pb-0.5 pt-0.5" : "pb-0.5 pt-1";
   const base = `w-full border-b-2 ${padding} text-sm font-display leading-tight focus:outline-none`;
   return `${base} ${selected ? segmentActive : segmentInactive}`;
@@ -16,8 +13,7 @@ export function tabButtonClassName(
 
 /** Underline segment control (e.g. Timeline round picker). Same colors as tabs, different layout. */
 export function segmentButtonClassName(selected: boolean): string {
-  const base =
-    "flex-1 border-b-2 pb-0.5 pt-1 text-xs font-display leading-tight focus:outline-none";
+  const base = "flex-1 border-b-2 pb-1 pt-1 text-xs font-display leading-tight focus:outline-none";
   return `${base} ${selected ? segmentActive : segmentInactive}`;
 }
 
