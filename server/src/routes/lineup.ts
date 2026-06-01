@@ -5,51 +5,78 @@ import { requireTournamentEditable } from "../middleware/tournamentStatus.js";
 import { tournamentPlayerInclude, lineupPlayersInclude } from "../utils/prismaIncludes.js";
 import { transformLineupPlayer } from "../utils/playerTransform.js";
 import { isDuplicateLineup } from "../utils/lineupValidation.js";
+import {
+  DUPLICATE_LINEUP_PREDICTION_MESSAGE,
+  isValidWinningScorePrediction,
+  randomWinningScorePrediction,
+} from "../utils/winningScorePrediction.js";
 import { formatContestResponse } from "./contest.js";
 import { markSideBetMarketStaleAfterRosterChange } from "../services/sideBets/markSideBetMarketStaleAfterRosterChange.js";
 
 const lineupRouter = new Hono();
 
+function formatTournamentLineup(
+  lineup: { id: string; name: string; winningScorePrediction: number | null },
+  tournamentId: string,
+  lineupEntries: Array<{ tournamentPlayer: Parameters<typeof transformLineupPlayer>[0]["tournamentPlayer"] }>,
+) {
+  return {
+    id: lineup.id,
+    name: lineup.name,
+    winningScorePrediction: lineup.winningScorePrediction,
+    players: lineupEntries.map((lineupPlayer) => transformLineupPlayer(lineupPlayer as any, tournamentId)),
+  };
+}
+
 // Create a new lineup for a tournament
 lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, async (c) => {
   try {
     const tournamentId = c.req.param("tournamentId");
-    const { players, name = "My Lineup" } = await c.req.json();
+    const body = await c.req.json();
+    const { players, name = "My Lineup", winningScorePrediction: bodyPrediction } = body;
     const user = c.get("user");
 
     if (!Array.isArray(players) || players.length > 4) {
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
     }
 
-    // Check for duplicate lineup (skipped when players is empty)
-    const isDuplicate = await isDuplicateLineup(user.userId, tournamentId, players);
-    if (isDuplicate) {
-      return c.json(
-        { error: "You already have a lineup with these players for this tournament" },
-        400
-      );
+    let winningScorePrediction: number;
+    if (bodyPrediction !== undefined && bodyPrediction !== null) {
+      if (!isValidWinningScorePrediction(bodyPrediction)) {
+        return c.json({ error: "winningScorePrediction must be an integer from 1 to 250" }, 400);
+      }
+      winningScorePrediction = bodyPrediction;
+    } else {
+      winningScorePrediction = randomWinningScorePrediction();
     }
 
-    // Create a new tournament lineup
+    const isDuplicate = await isDuplicateLineup(
+      user.userId,
+      tournamentId,
+      players,
+      winningScorePrediction,
+    );
+    if (isDuplicate) {
+      return c.json({ error: DUPLICATE_LINEUP_PREDICTION_MESSAGE }, 400);
+    }
+
     const tournamentLineup = await prisma.tournamentLineup.create({
       data: {
         tournamentId,
         userId: user.userId,
         name,
+        winningScorePrediction,
       },
     });
 
-    // Delete existing lineup players
     await prisma.tournamentLineupPlayer.deleteMany({
       where: {
         tournamentLineupId: tournamentLineup.id,
       },
     });
 
-    // Create new lineup entries for each player
     const lineupEntries = await Promise.all(
-      players.map(async (playerId) => {
-        // Get the tournament player record
+      players.map(async (playerId: string) => {
         const tournamentPlayer = await prisma.tournamentPlayer.findUnique({
           where: {
             tournamentId_playerId: {
@@ -75,17 +102,14 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
             tournamentPlayer: tournamentPlayerInclude,
           },
         });
-      })
+      }),
     );
 
-    // Transform the data into TournamentLineup type
-    const formattedLineup = {
-      id: tournamentLineup.id,
-      name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, tournamentId)
-      ),
-    };
+    const formattedLineup = formatTournamentLineup(
+      tournamentLineup,
+      tournamentId,
+      lineupEntries,
+    );
 
     await markSideBetMarketStaleAfterRosterChange(tournamentLineup.id);
 
@@ -100,14 +124,18 @@ lineupRouter.post("/:tournamentId", requireAuth, requireTournamentEditable, asyn
 lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c) => {
   try {
     const lineupId = c.req.param("lineupId");
-    const { players, name } = await c.req.json();
+    const body = await c.req.json();
+    const { players, name, winningScorePrediction: bodyPrediction } = body;
     const user = c.get("user");
 
     if (!Array.isArray(players) || players.length > 4) {
       return c.json({ error: "Players must be an array of 0-4 players" }, 400);
     }
 
-    // Get the existing tournament lineup
+    if (bodyPrediction !== undefined && bodyPrediction !== null && !isValidWinningScorePrediction(bodyPrediction)) {
+      return c.json({ error: "winningScorePrediction must be an integer from 1 to 250" }, 400);
+    }
+
     const tournamentLineup = await prisma.tournamentLineup.findFirst({
       where: {
         id: lineupId,
@@ -119,39 +147,45 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
       return c.json({ error: "Lineup not found" }, 404);
     }
 
-    // Check for duplicate lineup (exclude current lineup)
+    const winningScorePrediction =
+      bodyPrediction !== undefined && bodyPrediction !== null
+        ? bodyPrediction
+        : tournamentLineup.winningScorePrediction;
+
     const isDuplicate = await isDuplicateLineup(
       user.userId,
       tournamentLineup.tournamentId,
       players,
-      lineupId
+      winningScorePrediction,
+      lineupId,
     );
     if (isDuplicate) {
-      return c.json(
-        { error: "You already have a lineup with these players for this tournament" },
-        400
-      );
+      return c.json({ error: DUPLICATE_LINEUP_PREDICTION_MESSAGE }, 400);
     }
 
-    // Update lineup name if provided
+    const updateData: { name?: string; winningScorePrediction?: number | null } = {};
     if (name) {
+      updateData.name = name;
+    }
+    if (bodyPrediction !== undefined && bodyPrediction !== null) {
+      updateData.winningScorePrediction = bodyPrediction;
+    }
+
+    if (Object.keys(updateData).length > 0) {
       await prisma.tournamentLineup.update({
         where: { id: lineupId },
-        data: { name },
+        data: updateData,
       });
     }
 
-    // Delete existing lineup players
     await prisma.tournamentLineupPlayer.deleteMany({
       where: {
         tournamentLineupId: tournamentLineup.id,
       },
     });
 
-    // Create new lineup entries for each player
     const lineupEntries = await Promise.all(
-      players.map(async (playerId) => {
-        // Get the tournament player record
+      players.map(async (playerId: string) => {
         const tournamentPlayer = await prisma.tournamentPlayer.findUnique({
           where: {
             tournamentId_playerId: {
@@ -177,17 +211,18 @@ lineupRouter.put("/:lineupId", requireAuth, requireTournamentEditable, async (c)
             tournamentPlayer: tournamentPlayerInclude,
           },
         });
-      })
+      }),
     );
 
-    // Transform the data into TournamentLineup type
-    const formattedLineup = {
-      id: tournamentLineup.id,
-      name: tournamentLineup.name,
-      players: lineupEntries.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, tournamentLineup.tournamentId)
-      ),
-    };
+    const refreshedLineup = await prisma.tournamentLineup.findUniqueOrThrow({
+      where: { id: lineupId },
+    });
+
+    const formattedLineup = formatTournamentLineup(
+      refreshedLineup,
+      tournamentLineup.tournamentId,
+      lineupEntries,
+    );
 
     await markSideBetMarketStaleAfterRosterChange(tournamentLineup.id);
 
@@ -216,12 +251,12 @@ lineupRouter.get("/lineup/:lineupId", requireAuth, async (c) => {
       return c.json({ error: "Lineup not found" }, 404);
     }
 
-    // Transform the data into TournamentLineup type
     const formattedLineup = {
       id: lineup.id,
       name: lineup.name,
+      winningScorePrediction: lineup.winningScorePrediction,
       players: lineup.players.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, lineup.tournamentId)
+        transformLineupPlayer(lineupPlayer, lineup.tournamentId),
       ),
     };
 
@@ -305,8 +340,9 @@ lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
     const formattedLineups = lineups.map((lineup: any) => ({
       id: lineup.id,
       name: lineup.name,
+      winningScorePrediction: lineup.winningScorePrediction,
       players: lineup.players.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, tournamentId)
+        transformLineupPlayer(lineupPlayer, tournamentId),
       ),
       contestLineups: lineup.contestLineups.map((cl: any) => ({
         id: cl.id,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Link } from "react-router-dom";
 import { PlayerDetailModal } from "../player/PlayerDetailModal";
@@ -17,6 +17,10 @@ import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
 import { LineupWinningScoreSlider } from "./LineupWinningScoreSlider";
+import {
+  defaultWinningScorePredictionForLineup,
+  DUPLICATE_LINEUP_PREDICTION_MESSAGE,
+} from "../../utils/winningScorePrediction";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -42,8 +46,6 @@ interface LineupContestCardProps {
   roundDisplay: string;
   contests?: ContestInfo[];
   isEditable?: boolean;
-  /** Storybook-only — renders tie-breaker slider mock at bottom of Players tab. */
-  showWinningScoreSliderPreview?: boolean;
 }
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
@@ -57,11 +59,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   roundDisplay,
   contests = [],
   isEditable = false,
-  showWinningScoreSliderPreview = false,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
+  const [sliderError, setSliderError] = useState<string | null>(null);
+  const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
   const { players: fieldPlayers, isTournamentEditable } = useActiveTournament();
   const { updateLineup, lineups } = useLineupData();
@@ -70,15 +73,79 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const initialPlayers = lineup.tournamentLineup?.players ?? [];
   const canEditSlots = Boolean(isEditable && isTournamentEditable && lineupId);
 
+  const serverPrediction = useMemo(() => {
+    const fromList = lineups.find((entry) => entry.id === lineupId)?.winningScorePrediction;
+    const fromLineup = lineup.tournamentLineup?.winningScorePrediction;
+    const value = fromList ?? fromLineup;
+    if (value != null) return value;
+    return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 150;
+  }, [lineup.tournamentLineup?.winningScorePrediction, lineupId, lineups]);
+
+  const [prediction, setPrediction] = useState(serverPrediction);
+
+  useEffect(() => {
+    setPrediction(serverPrediction);
+    setSliderError(null);
+  }, [lineupId, serverPrediction]);
+
   const slotEditor = useLineupSlotEditor({
     lineupId,
     initialPlayers,
     fieldPlayers: fieldPlayers ?? [],
     lineups,
+    winningScorePrediction: prediction,
     updateLineup,
   });
 
-  const slotActionsDisabled = !canEditSlots || slotEditor.isSaving;
+  const savePrediction = useCallback(
+    async (nextPrediction: number) => {
+      if (!canEditSlots || !lineupId) return;
+
+      const playerIds = slotEditor.selectedPlayerIds;
+      const duplicate = lineups.some((entry) => {
+        if (entry.id === lineupId) return false;
+        const existingIds = (entry.players ?? [])
+          .map((p) => p.id)
+          .sort()
+          .join(",");
+        const nextIds = [...playerIds].sort().join(",");
+        return (
+          existingIds === nextIds && entry.winningScorePrediction === nextPrediction
+        );
+      });
+
+      if (duplicate) {
+        setSliderError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
+        return;
+      }
+
+      setIsSavingPrediction(true);
+      setSliderError(null);
+      try {
+        await updateLineup(lineupId, playerIds, { winningScorePrediction: nextPrediction });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to save prediction";
+        setSliderError(message);
+        setPrediction(serverPrediction);
+      } finally {
+        setIsSavingPrediction(false);
+      }
+    },
+    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedPlayerIds, updateLineup],
+  );
+
+  useEffect(() => {
+    if (!canEditSlots || prediction === serverPrediction) return;
+
+    const timer = window.setTimeout(() => {
+      void savePrediction(prediction);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [canEditSlots, prediction, savePrediction, serverPrediction]);
+
+  const slotActionsDisabled = !canEditSlots || slotEditor.isSaving || isSavingPrediction;
 
   const openDetailModal = (player: PlayerWithTournamentData) => {
     setDetailPlayer(player);
@@ -263,8 +330,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   ))
                 )}
               </div>
-              {showWinningScoreSliderPreview && canEditSlots ? (
-                <LineupWinningScoreSlider value={150} />
+              {canEditSlots ? (
+                <LineupWinningScoreSlider
+                  value={prediction}
+                  onChange={setPrediction}
+                  disabled={slotActionsDisabled}
+                  error={sliderError}
+                />
               ) : null}
             </TabPanel>
 

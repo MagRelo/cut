@@ -17,12 +17,14 @@ interface CreateLineupParams {
   tournamentId: string;
   playerIds: string[];
   name?: string;
+  winningScorePrediction?: number;
 }
 
 interface UpdateLineupParams {
   lineupId: string;
   playerIds: string[];
   name?: string;
+  winningScorePrediction?: number;
 }
 
 function buildPlayersFromIds(
@@ -109,10 +111,11 @@ export function useCreateLineup() {
   const userId = user?.id;
 
   return useMutation({
-    mutationFn: async ({ tournamentId, playerIds, name }: CreateLineupParams) => {
+    mutationFn: async ({ tournamentId, playerIds, name, winningScorePrediction }: CreateLineupParams) => {
       const data = await apiClient.post<LineupResponse>(`/lineup/${tournamentId}`, {
         players: playerIds,
         name,
+        winningScorePrediction,
       });
       return data.lineups[0];
     },
@@ -189,15 +192,16 @@ export function useUpdateLineup() {
   const userId = user?.id;
 
   return useMutation({
-    mutationFn: async ({ lineupId, playerIds, name }: UpdateLineupParams) => {
+    mutationFn: async ({ lineupId, playerIds, name, winningScorePrediction }: UpdateLineupParams) => {
       const data = await apiClient.put<LineupResponse>(`/lineup/${lineupId}`, {
         players: playerIds,
         name,
+        winningScorePrediction,
       });
       return data.lineups[0];
     },
 
-    onMutate: async ({ lineupId, name, playerIds }) => {
+    onMutate: async ({ lineupId, name, playerIds, winningScorePrediction }) => {
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx) {
         return { previousLineups: undefined, tournamentId: undefined as string | undefined, lineupId };
@@ -227,6 +231,9 @@ export function useUpdateLineup() {
                   ...lineup,
                   name: name || lineup.name,
                   players: optimisticPlayers,
+                  ...(winningScorePrediction !== undefined
+                    ? { winningScorePrediction }
+                    : {}),
                 }
               : lineup
           )
@@ -269,6 +276,7 @@ export function useUpdateLineup() {
                 ? {
                     ...lineup,
                     players: data.players,
+                    winningScorePrediction: data.winningScorePrediction ?? lineup.winningScorePrediction,
                   }
                 : lineup,
             ) ?? current,

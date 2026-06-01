@@ -67,17 +67,19 @@ The monolithic `GET /api/tournaments/active` and the split `active/metadata` + `
 
 ### Lineups (`/api/lineup`)
 
+Full behavior for `winningScorePrediction`, duplicate rules, and contest ranking: [lineup tie-breaker](../../docs/lineup-tie-breaker.md).
+
 #### `POST /api/lineup/:tournamentId`
 - **Description**: Create new tournament lineup
 - **Auth**: Required
-- **Body**: `{ players: string[], name?: string }`
-- **Response**: `{ lineups: TournamentLineup[] }`
+- **Body**: `{ players: string[], name?: string, winningScorePrediction?: number }` — `winningScorePrediction` is 1–250; if omitted, server assigns a random value in 125–175
+- **Response**: `{ lineups: TournamentLineup[] }` (includes `winningScorePrediction`)
 
 #### `PUT /api/lineup/:lineupId`
 - **Description**: Update existing lineup
 - **Auth**: Required
-- **Body**: `{ players: string[], name?: string }`
-- **Response**: `{ lineups: TournamentLineup[] }`
+- **Body**: `{ players: string[], name?: string, winningScorePrediction?: number }` — optional prediction update (1–250)
+- **Response**: `{ lineups: TournamentLineup[] }` (includes `winningScorePrediction`)
 
 #### `GET /api/lineup/lineup/:lineupId`
 - **Description**: Get specific lineup by ID

@@ -217,12 +217,14 @@ model ContestLineupTimeline {
 }
 
 model TournamentLineup {
-  id            String     @id @default(cuid())
-  userId        String
-  tournamentId  String
-  name          String
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                     String     @id @default(cuid())
+  userId                 String
+  tournamentId           String
+  name                   String
+  /// User prediction of highest lineup score to win the contest (1–250 Stableford points).
+  winningScorePrediction Int?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
   
   // Relations
   user          User       @relation(fields: [userId], references: [id])

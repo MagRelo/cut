@@ -575,20 +575,34 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       }
     }
 
-    // Fetch the lineup and its players
+    const tournamentLineup = await prisma.tournamentLineup.findUnique({
+      where: { id: tournamentLineupId },
+      select: { winningScorePrediction: true },
+    });
+
+    if (!tournamentLineup) {
+      return c.json({ error: "Lineup not found" }, 404);
+    }
+
     const playerIds = await getPlayerIdsFromLineup(tournamentLineupId);
 
-    // Validate minimum players
     if (!hasMinimumPlayers(playerIds)) {
       return c.json({ error: "Lineup must have at least 1 player" }, 400);
     }
 
-    // Check if user already has this player set in this contest
-    const isDuplicate = await isDuplicateInContest(user.userId, contestId, playerIds);
+    const isDuplicate = await isDuplicateInContest(
+      user.userId,
+      contestId,
+      playerIds,
+      tournamentLineup.winningScorePrediction,
+    );
     if (isDuplicate) {
       return c.json(
-        { error: "You've already submitted a lineup with these players to this contest" },
-        400
+        {
+          error:
+            "You already have a lineup with these players and winning score prediction in this contest",
+        },
+        400,
       );
     }
 

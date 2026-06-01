@@ -63,14 +63,19 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
   );
 
   const updateLineup = useCallback(
-    async (lineupId: string, playerIds: string[], name?: string) => {
+    async (
+      lineupId: string,
+      playerIds: string[],
+      options?: { name?: string; winningScorePrediction?: number },
+    ) => {
       return await updateMutation.mutateAsync({
         lineupId,
         playerIds,
-        name,
+        name: options?.name,
+        winningScorePrediction: options?.winningScorePrediction,
       });
     },
-    [updateMutation]
+    [updateMutation],
   );
 
   const lineupError = useMemo(() => {

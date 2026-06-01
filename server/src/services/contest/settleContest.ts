@@ -26,6 +26,7 @@ import {
 } from "../shared/types.js";
 import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
+import { getContestWinningScore, sortContestLineups } from "../../utils/lineupTiebreaker.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -377,94 +378,54 @@ async function calculatePayouts(lineups: any[]): Promise<{
     throw new Error("No valid lineups found");
   }
 
-  // Sort lineups by score (descending - highest score wins)
-  const sortedLineups = [...validLineups].sort((a, b) => b.score - a.score);
+  const contestWinningScore = getContestWinningScore(validLineups);
+  const sortedLineups = sortContestLineups(validLineups, contestWinningScore);
 
-  // Define payout structure based on lineup count
   const isLargeContest = validLineups.length >= 10;
   const payoutStructure = isLargeContest
-    ? [7000, 2000, 1000] // 70%, 20%, 10% for positions 1, 2, 3
-    : [10000]; // 100% for position 1 only
+    ? [7000, 2000, 1000]
+    : [10000];
 
-  // Result arrays
   const winningEntries: string[] = [];
   const payoutBps: number[] = [];
   const detailedResults: DetailedResult[] = [];
-
-  // Process lineups by score groups (handle ties)
-  let currentPosition = 1;
-  let i = 0;
   let totalDistributed = 0;
 
-  while (i < sortedLineups.length) {
-    const currentScore = sortedLineups[i].score;
-    const tiedLineups: any[] = [];
+  sortedLineups.forEach((lineup, index) => {
+    const position = index + 1;
+    const payout = payoutStructure[position - 1] ?? 0;
 
-    // Collect all lineups with the same score
-    while (i < sortedLineups.length && sortedLineups[i].score === currentScore) {
-      tiedLineups.push(sortedLineups[i]);
-      i++;
+    const playerLastNames = (lineup.tournamentLineup?.players ?? [])
+      .slice()
+      .sort((a: any, b: any) => {
+        const aTotal = a?.tournamentPlayer?.total ?? 0;
+        const bTotal = b?.tournamentPlayer?.total ?? 0;
+        return bTotal - aTotal;
+      })
+      .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
+      .filter((name: unknown): name is string => Boolean(name));
+
+    const userSettings = lineup.user?.settings as any | undefined;
+    const userColor = userSettings?.color;
+    const resolvedUserColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
+
+    if (payout > 0) {
+      winningEntries.push(lineup.entryId);
+      payoutBps.push(payout);
+      totalDistributed += payout;
     }
 
-    const tieCount = tiedLineups.length;
-
-    // Calculate pooled payout for positions this tied group occupies
-    let pooledPayout = 0;
-    for (let pos = currentPosition; pos < currentPosition + tieCount; pos++) {
-      const posIndex = pos - 1;
-      if (posIndex < payoutStructure.length) {
-        pooledPayout += payoutStructure[posIndex] || 0;
-      }
-    }
-
-    // Split pooled payout evenly among tied players
-    const basePayoutPerPlayer = pooledPayout > 0 ? Math.floor(pooledPayout / tieCount) : 0;
-    const totalBaseForGroup = basePayoutPerPlayer * tieCount;
-    const remainderBasisPoints = pooledPayout - totalBaseForGroup;
-
-    // Process each tied lineup
-    for (let j = 0; j < tiedLineups.length; j++) {
-      const lineup = tiedLineups[j];
-
-      const playerLastNames = (lineup.tournamentLineup?.players ?? [])
-        .slice()
-        .sort((a: any, b: any) => {
-          const aTotal = a?.tournamentPlayer?.total ?? 0;
-          const bTotal = b?.tournamentPlayer?.total ?? 0;
-          return bTotal - aTotal;
-        })
-        .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
-        .filter((name: unknown): name is string => Boolean(name));
-
-      const userSettings = lineup.user?.settings as any | undefined;
-      const userColor = userSettings?.color;
-      const resolvedUserColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
-
-      // Distribute remainder to first players in tie
-      const payout = basePayoutPerPlayer + (j < remainderBasisPoints ? 1 : 0);
-
-      // Add to winners arrays if they receive a payout
-      if (payout > 0) {
-        winningEntries.push(lineup.entryId);
-        payoutBps.push(payout);
-        totalDistributed += payout;
-      }
-
-      // Add to detailed results for all players
-      detailedResults.push({
-        username: lineup.user?.name || "Unknown",
-        lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
-        entryId: lineup.entryId,
-        position: currentPosition,
-        score: currentScore,
-        payoutBasisPoints: payout,
-        playerLastNames,
-        userColor: resolvedUserColor,
-      });
-    }
-
-    currentPosition += tieCount;
-  }
+    detailedResults.push({
+      username: lineup.user?.name || "Unknown",
+      lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
+      entryId: lineup.entryId,
+      position,
+      score: lineup.score,
+      payoutBasisPoints: payout,
+      playerLastNames,
+      userColor: resolvedUserColor,
+    });
+  });
 
   // Add any dust to first winner to ensure total = 10000
   if (totalDistributed < 10000 && payoutBps.length > 0 && payoutBps[0] !== undefined) {

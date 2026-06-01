@@ -105,6 +105,7 @@ export interface TournamentLineup {
   id: string;
   name?: string;
   players: PlayerWithTournamentData[];
+  winningScorePrediction?: number | null;
 }
 
 // Zod Schemas

@@ -113,6 +113,7 @@ The database uses PostgreSQL with Prisma ORM. The schema is defined in `server/p
   - `userId`: Foreign key to User
   - `tournamentId`: Foreign key to Tournament
   - `name`: Lineup name
+  - `winningScorePrediction`: Optional int (1–250) — user's guess of the highest lineup score to win a contest; used for tie-breaking (see [lineup tie-breaker](../../docs/lineup-tie-breaker.md))
 - **Relations**:
   - `user`: User
   - `tournament`: Tournament

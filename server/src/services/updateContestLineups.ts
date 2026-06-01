@@ -1,6 +1,7 @@
 // this service will run periodcally to keep the tournament up to date
 
 import { prisma } from "../lib/prisma.js";
+import { getContestWinningScore, sortContestLineups } from "../utils/lineupTiebreaker.js";
 
 export async function updateContestLineups() {
   try {
@@ -13,7 +14,6 @@ export async function updateContestLineups() {
       return;
     }
 
-    // Get all contest lineups for this tournament
     const contestLineups = await prisma.contestLineup.findMany({
       where: {
         contest: {
@@ -38,17 +38,12 @@ export async function updateContestLineups() {
       },
     });
 
-    // update ContestLineup score
-    const updateContestScorePromises = contestLineups.map(async (contestLineup: any) => {
-      const totalScore = contestLineup.tournamentLineup.players.reduce(
-        (sum: any, lineupPlayer: any) => {
-          const player = lineupPlayer.tournamentPlayer;
-          return sum + (player.total ?? 0);
-        },
-        0
-      );
+    const updateContestScorePromises = contestLineups.map(async (contestLineup) => {
+      const totalScore = contestLineup.tournamentLineup.players.reduce((sum, lineupPlayer) => {
+        const player = lineupPlayer.tournamentPlayer;
+        return sum + (player.total ?? 0);
+      }, 0);
 
-      // Update the in-memory object with the new score
       contestLineup.score = totalScore;
 
       return prisma.contestLineup.update({
@@ -62,65 +57,37 @@ export async function updateContestLineups() {
     });
     await Promise.all(updateContestScorePromises);
 
-    // update contest lineup positions
-    const contestLineupsByContest = contestLineups.reduce((acc: any, lineup: any) => {
-      const contestId = lineup.contestId;
-      if (!acc[contestId]) {
-        acc[contestId] = [];
-      }
-      acc[contestId].push(lineup);
-      return acc;
-    }, {} as Record<string, any>);
-
-    // update ContestLineup position
-    const positionUpdatePromises = Object.entries(contestLineupsByContest).map(
-      async ([_contestId, lineups]: [string, any]) => {
-        // Sort lineups by score in descending order
-        const sortedLineups = [...lineups].sort((a: any, b: any) => {
-          const scoreA = a.score ?? 0;
-          const scoreB = b.score ?? 0;
-          return scoreB - scoreA;
-        });
-
-        // Update positions with tie handling
-        const positionUpdates: Promise<any>[] = [];
-        let currentPosition = 1;
-        let i = 0;
-
-        while (i < sortedLineups.length) {
-          const currentScore = sortedLineups[i].score ?? 0;
-          const tiedLineups: any[] = [];
-
-          // Collect all lineups with the same score
-          while (i < sortedLineups.length && (sortedLineups[i].score ?? 0) === currentScore) {
-            tiedLineups.push(sortedLineups[i]);
-            i++;
-          }
-
-          // Assign the same position to all tied lineups
-          for (const lineup of tiedLineups) {
-            positionUpdates.push(
-              prisma.contestLineup.update({
-                where: { id: lineup.id },
-                data: { position: currentPosition },
-              })
-            );
-          }
-
-          // Increment position by the number of tied players
-          currentPosition += tiedLineups.length;
+    const contestLineupsByContest = contestLineups.reduce(
+      (acc, lineup) => {
+        const contestId = lineup.contestId;
+        if (!acc[contestId]) {
+          acc[contestId] = [];
         }
-
-        return Promise.all(positionUpdates);
-      }
+        acc[contestId].push(lineup);
+        return acc;
+      },
+      {} as Record<string, typeof contestLineups>,
     );
+
+    const positionUpdatePromises = Object.values(contestLineupsByContest).map(async (lineups) => {
+      const contestWinningScore = getContestWinningScore(lineups);
+      const sortedLineups = sortContestLineups(lineups, contestWinningScore);
+
+      return Promise.all(
+        sortedLineups.map((lineup, index) =>
+          prisma.contestLineup.update({
+            where: { id: lineup.id },
+            data: { position: index + 1 },
+          }),
+        ),
+      );
+    });
     await Promise.all(positionUpdatePromises);
 
-    // Save timeline snapshots (score / round / position only; no on-chain share price reads)
     const currentRound = currentTournament.currentRound || 1;
     const timestamp = new Date();
 
-    const timelineSnapshots = contestLineups.map((contestLineup: (typeof contestLineups)[number]) => ({
+    const timelineSnapshots = contestLineups.map((contestLineup) => ({
       contestLineupId: contestLineup.id,
       contestId: contestLineup.contestId,
       timestamp,
@@ -141,7 +108,6 @@ export async function updateContestLineups() {
   }
 }
 
-// Main execution block
 if (import.meta.url === `file://${process.argv[1]}`) {
   updateContestLineups()
     .then(() => {

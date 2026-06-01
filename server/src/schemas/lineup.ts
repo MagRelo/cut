@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 // Schema for creating a tournament lineup
+export const winningScorePredictionSchema = z.number().int().min(1).max(250);
+
 export const createTournamentLineupSchema = z.object({
   userId: z.string().cuid('Invalid user ID'),
   tournamentId: z.string().cuid('Invalid tournament ID'),
@@ -9,6 +11,7 @@ export const createTournamentLineupSchema = z.object({
     .array(z.string().cuid('Invalid player ID'))
     .min(0)
     .max(4),
+  winningScorePrediction: winningScorePredictionSchema.optional(),
 });
 
 // Schema for updating a tournament lineup
@@ -19,6 +22,7 @@ export const updateTournamentLineupSchema = z.object({
     .min(0)
     .max(4)
     .optional(),
+  winningScorePrediction: winningScorePredictionSchema.optional(),
 });
 
 // Schema for lineup ID parameter

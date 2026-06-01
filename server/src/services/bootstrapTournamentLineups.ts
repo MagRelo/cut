@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { randomWinningScorePrediction } from "../utils/winningScorePrediction.js";
 
 /**
  * Creates one empty TournamentLineup ("Lineup #1") per user who has none for this tournament.
@@ -29,6 +30,7 @@ export async function bootstrapTournamentLineups(tournamentId: string): Promise<
       userId: user.id,
       tournamentId,
       name: "Lineup #1",
+      winningScorePrediction: randomWinningScorePrediction(),
     })),
   });
 

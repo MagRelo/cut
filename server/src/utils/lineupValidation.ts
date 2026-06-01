@@ -44,6 +44,22 @@ export function hasMinimumPlayers(playerIds: string[]): boolean {
   return playerIds.length >= 1;
 }
 
+/** Sync duplicate check: same normalized roster and same prediction. */
+export function isRosterPredictionDuplicate(
+  playerIds: string[],
+  winningScorePrediction: number | null | undefined,
+  otherPlayerIds: string[],
+  otherWinningScorePrediction: number | null | undefined,
+): boolean {
+  if (playerIds.length === 0) {
+    return false;
+  }
+  return (
+    normalizePlayerSet(playerIds) === normalizePlayerSet(otherPlayerIds) &&
+    winningScorePrediction === otherWinningScorePrediction
+  );
+}
+
 /**
  * Check if a lineup with this exact player set already exists for the user in a tournament
  * Used when creating or updating TournamentLineup
@@ -58,14 +74,13 @@ export async function isDuplicateLineup(
   userId: string,
   tournamentId: string,
   playerIds: string[],
+  winningScorePrediction: number | null | undefined,
   excludeLineupId?: string
 ): Promise<boolean> {
   // Empty lineups are not considered duplicates of each other
   if (playerIds.length === 0) {
     return false;
   }
-
-  const normalized = normalizePlayerSet(playerIds);
 
   // Fetch all lineups for this user in this tournament
   const userLineups = await prisma.tournamentLineup.findMany({
@@ -89,11 +104,14 @@ export async function isDuplicateLineup(
       return false;
     }
 
-    // Extract player IDs from this lineup
     const lineupPlayerIds = lineup.players.map((p: typeof lineup.players[number]) => p.tournamentPlayer.playerId);
 
-    // Compare normalized player sets
-    return normalizePlayerSet(lineupPlayerIds) === normalized;
+    return isRosterPredictionDuplicate(
+      playerIds,
+      winningScorePrediction,
+      lineupPlayerIds,
+      lineup.winningScorePrediction,
+    );
   });
 }
 
@@ -111,9 +129,12 @@ export async function isDuplicateInContest(
   userId: string,
   contestId: string,
   playerIds: string[],
+  winningScorePrediction: number | null | undefined,
   excludeLineupId?: string
 ): Promise<boolean> {
-  const normalized = normalizePlayerSet(playerIds);
+  if (playerIds.length === 0) {
+    return false;
+  }
 
   // Fetch all contest lineups for this user in this contest
   const contestLineups = await prisma.contestLineup.findMany({
@@ -146,8 +167,12 @@ export async function isDuplicateInContest(
       (p: typeof contestLineup.tournamentLineup.players[number]) => p.tournamentPlayer.playerId
     );
 
-    // Compare normalized player sets
-    return normalizePlayerSet(lineupPlayerIds) === normalized;
+    return isRosterPredictionDuplicate(
+      playerIds,
+      winningScorePrediction,
+      lineupPlayerIds,
+      contestLineup.tournamentLineup.winningScorePrediction,
+    );
   });
 }
 

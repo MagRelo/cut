@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PlayerWithTournamentData } from "../types/player";
 import type { TournamentLineupListItem } from "../types/lineup";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
 
 const SLOT_COUNT = 4;
 
@@ -16,12 +17,21 @@ function playerIdsFromSlots(slots: Array<PlayerWithTournamentData | null>): stri
   return slots.filter((p): p is PlayerWithTournamentData => p !== null).map((p) => p.id);
 }
 
+interface UpdateLineupOptions {
+  winningScorePrediction?: number;
+}
+
 interface UseLineupSlotEditorOptions {
   lineupId: string;
   initialPlayers: PlayerWithTournamentData[];
   fieldPlayers: PlayerWithTournamentData[];
   lineups: TournamentLineupListItem[];
-  updateLineup: (lineupId: string, playerIds: string[]) => Promise<unknown>;
+  winningScorePrediction: number;
+  updateLineup: (
+    lineupId: string,
+    playerIds: string[],
+    options?: UpdateLineupOptions,
+  ) => Promise<unknown>;
 }
 
 export function useLineupSlotEditor({
@@ -29,6 +39,7 @@ export function useLineupSlotEditor({
   initialPlayers,
   fieldPlayers,
   lineups,
+  winningScorePrediction,
   updateLineup,
 }: UseLineupSlotEditorOptions) {
   const [slots, setSlots] = useState<Array<PlayerWithTournamentData | null>>(() =>
@@ -46,7 +57,7 @@ export function useLineupSlotEditor({
   }, [lineupId, initialPlayerKey, isSaving, initialPlayers]);
 
   const checkForDuplicateLineup = useCallback(
-    (playerIds: string[]): boolean => {
+    (playerIds: string[], prediction: number): boolean => {
       if (playerIds.length === 0) return false;
       const normalized = [...playerIds].sort().join(",");
       return lineups.some((lineup) => {
@@ -56,7 +67,9 @@ export function useLineupSlotEditor({
           .map((p) => p.id)
           .sort()
           .join(",");
-        return existingIds === normalized;
+        return (
+          existingIds === normalized && lineup.winningScorePrediction === prediction
+        );
       });
     },
     [lineupId, lineups],
@@ -66,15 +79,15 @@ export function useLineupSlotEditor({
     async (newSlots: Array<PlayerWithTournamentData | null>) => {
       const playerIds = playerIdsFromSlots(newSlots);
 
-      if (checkForDuplicateLineup(playerIds)) {
-        setSaveError("You already have a lineup with these players for this tournament");
+      if (checkForDuplicateLineup(playerIds, winningScorePrediction)) {
+        setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
       }
 
       setIsSaving(true);
       setSaveError(null);
       try {
-        await updateLineup(lineupId, playerIds);
+        await updateLineup(lineupId, playerIds, { winningScorePrediction });
         return true;
       } catch (error) {
         const message =
@@ -85,7 +98,7 @@ export function useLineupSlotEditor({
         setIsSaving(false);
       }
     },
-    [checkForDuplicateLineup, lineupId, updateLineup],
+    [checkForDuplicateLineup, lineupId, updateLineup, winningScorePrediction],
   );
 
   const openSlot = useCallback(

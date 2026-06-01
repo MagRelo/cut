@@ -31,18 +31,35 @@ export function resetStorybookLineups(playerIds: string[] = []) {
 export function useLineupData(_options: { tournamentId?: string; enabled?: boolean } = {}) {
   const lineups = useSyncExternalStore(subscribe, getSnapshot);
 
-  const updateLineup = useCallback(async (lineupId: string, playerIds: string[]) => {
-    const players = buildLineupPlayersByIds(playerIds);
-    lineupsSnapshot = lineupsSnapshot.map((lineup) =>
-      lineup.id === lineupId ? { ...lineup, players } : lineup,
-    );
-    emitChange();
-    return {
-      id: lineupId,
-      name: lineupsSnapshot.find((entry) => entry.id === lineupId)?.name ?? "Lineup #1",
-      players,
-    };
-  }, []);
+  const updateLineup = useCallback(
+    async (
+      lineupId: string,
+      playerIds: string[],
+      options?: { winningScorePrediction?: number },
+    ) => {
+      const players = buildLineupPlayersByIds(playerIds);
+      lineupsSnapshot = lineupsSnapshot.map((lineup) =>
+        lineup.id === lineupId
+          ? {
+              ...lineup,
+              players,
+              ...(options?.winningScorePrediction !== undefined
+                ? { winningScorePrediction: options.winningScorePrediction }
+                : {}),
+            }
+          : lineup,
+      );
+      emitChange();
+      const updated = lineupsSnapshot.find((entry) => entry.id === lineupId);
+      return {
+        id: lineupId,
+        name: updated?.name ?? "Lineup #1",
+        players,
+        winningScorePrediction: updated?.winningScorePrediction,
+      };
+    },
+    [],
+  );
 
   const getLineupFromCache = useCallback(
     (lineupId: string): TournamentLineupListItem | null =>
@@ -82,5 +99,4 @@ export function useLineupData(_options: { tournamentId?: string; enabled?: boole
   };
 }
 
-/** Convenience for stories that need a stable lineup id. */
 export const STORYBOOK_DEFAULT_LINEUP_ID = STORYBOOK_LINEUP_ID;

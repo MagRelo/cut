@@ -136,6 +136,7 @@ export function buildContestLineupForCard(playerIds: string[] = []): ContestLine
       id: STORYBOOK_LINEUP_ID,
       name: "Lineup #1",
       players,
+      winningScorePrediction: 150,
     },
   };
 }
@@ -148,6 +149,7 @@ export function createStorybookLineupsList(
       id: STORYBOOK_LINEUP_ID,
       name: "Lineup #1",
       players: buildLineupPlayersByIds(playerIds),
+      winningScorePrediction: 150,
       contestLineups: [],
     },
   ];

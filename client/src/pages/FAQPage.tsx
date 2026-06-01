@@ -173,16 +173,18 @@ export const FAQPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">How are ties handled?</h3>
               <p className="text-gray-700 mb-2">
-                If two or more lineups finish with the same score, the prize money for the positions
-                they occupy is pooled together and split evenly between them.
+                Every lineup gets a unique rank—there are no shared positions or split payouts when
+                fantasy scores tie.
               </p>
               <p className="text-gray-700 mb-2">
-                For example, in a large contest, if two lineups tie for 1st place, the 1st and 2nd
-                place prizes (70% + 20% = 90%) are combined and each lineup receives 45% of the pot.
-                The next lineup down still receives the 3rd place prize.
+                When two or more lineups finish with the same fantasy score, we break the tie using
+                your <strong>predicted winning lineup score</strong> (the slider on your lineup).
+                The lineup whose prediction is closest to the actual highest score in that contest
+                ranks higher.
               </p>
               <p className="text-gray-700">
-                Tiebreakers are never used—every lineup with the same score is treated equally.
+                If predictions are still tied, the lineup that was entered into the contest earlier
+                wins the higher position.
               </p>
             </div>
 

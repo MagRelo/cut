@@ -1,16 +1,20 @@
 import React from "react";
 
-const MIN_SCORE = 1;
-const MAX_SCORE = 250;
-const DEFAULT_SCORE = 150;
+export const WINNING_SCORE_SLIDER_MIN = 1;
+export const WINNING_SCORE_SLIDER_MAX = 250;
 
 interface LineupWinningScoreSliderProps {
-  /** Display value only — slider is non-interactive in this preview component. */
-  value?: number;
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  error?: string | null;
 }
 
 export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> = ({
-  value = DEFAULT_SCORE,
+  value,
+  onChange,
+  disabled = false,
+  error = null,
 }) => {
   return (
     <div className="border-t border-gray-200 px-3 pb-1 pt-4">
@@ -27,12 +31,12 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
         <input
           id="winning-score-prediction"
           type="range"
-          min={MIN_SCORE}
-          max={MAX_SCORE}
+          min={WINNING_SCORE_SLIDER_MIN}
+          max={WINNING_SCORE_SLIDER_MAX}
           value={value}
-          readOnly
-          tabIndex={-1}
-          className="pointer-events-none h-2 w-full flex-1 accent-blue-500"
+          disabled={disabled}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="h-2 w-full flex-1 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Predicted winning lineup score"
         />
         <span className="w-10 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
@@ -40,9 +44,14 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
         </span>
       </div>
       <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
-        <span>{MIN_SCORE}</span>
-        <span>{MAX_SCORE}</span>
+        <span>{WINNING_SCORE_SLIDER_MIN}</span>
+        <span>{WINNING_SCORE_SLIDER_MAX}</span>
       </div>
+      {error ? (
+        <p className="mt-2 font-display text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 };
