@@ -8,19 +8,19 @@ import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { useAdminUserDetailQuery } from "../../hooks/useAdminUserQueries";
 import { useAuth } from "../../contexts/AuthContext";
+import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 
 export function AdminUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const chainId = useChainId();
-  const { platformTokenSymbol, paymentTokenSymbol } = useAuth();
+  const { paymentTokenSymbol, paymentTokenDecimals } = useAuth();
   const { data, isLoading, error } = useAdminUserDetailQuery(userId);
 
-  const platformTokenAddress = getContractAddress(chainId ?? 0, "platformTokenAddress") ?? "";
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress") ?? "";
 
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
   const recipient = data?.walletAddress?.trim() ?? "";
-  const showSend = Boolean(recipient && platformTokenAddress && paymentTokenAddress);
+  const showSend = Boolean(recipient && paymentTokenAddress);
 
   return (
     <div className="space-y-4 p-4 max-w-4xl mx-auto">
@@ -64,10 +64,9 @@ export function AdminUserDetailPage() {
             title="On-chain balances (this user)"
             address={data.walletAddress ?? ""}
             chainId={chainId ?? 0}
-            platformTokenAddress={platformTokenAddress}
             paymentTokenAddress={paymentTokenAddress}
-            platformTokenSymbol={platformTokenSymbol ?? "CUT"}
-            paymentTokenSymbol={paymentTokenSymbol ?? "USDC"}
+            paymentTokenSymbol={paymentTokenSymbol ?? "xUSDC"}
+            paymentTokenDecimals={paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS}
             addressMissingMessage="No wallet on file for the current network (X-Cut-Chain-Id). The user may need to connect on this chain first."
           />
 

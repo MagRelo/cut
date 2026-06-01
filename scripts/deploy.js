@@ -46,15 +46,13 @@ const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
  * `Deploy_sepolia.s.sol` and `Deploy_base.s.sol`, plus `ContestController` (instances are created
  * via ContestFactory; not deployed in those root scripts).
  *
- * Deploy_sepolia: MockUSDC, PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor
- * Deploy_base: PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor
+ * Deploy_sepolia: MockUSDC, ContestFactory, ReferralGraph, RewardDistributor
+ * Deploy_base: PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor (legacy mainnet)
  */
 const ARTIFACT_COPY = [
   { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
-  { dir: "DepositManager.sol", file: "DepositManager.json", dest: "DepositManager.json" },
   { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
   { dir: "ContestController.sol", file: "ContestController.json", dest: "ContestController.json" },
-  { dir: "PlatformToken.sol", file: "PlatformToken.json", dest: "PlatformToken.json" },
   { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
   { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
 ];
@@ -165,15 +163,22 @@ function updateConfigFiles(network, addresses) {
       ? BASE_MAINNET_AAVE_V3_POOL
       : undefined;
 
-  const config = {
-    paymentTokenAddress,
-    platformTokenAddress: addresses.PlatformToken,
-    depositManagerAddress: addresses.DepositManager,
-    contestFactoryAddress: addresses.ContestFactory,
-    aavePoolAddress,
-    referralGraphAddress: addresses.ReferralGraph,
-    rewardDistributorAddress: addresses.RewardDistributor,
-  };
+  const config = isSepolia
+    ? {
+        paymentTokenAddress,
+        contestFactoryAddress: addresses.ContestFactory,
+        referralGraphAddress: addresses.ReferralGraph,
+        rewardDistributorAddress: addresses.RewardDistributor,
+      }
+    : {
+        paymentTokenAddress,
+        platformTokenAddress: addresses.PlatformToken,
+        depositManagerAddress: addresses.DepositManager,
+        contestFactoryAddress: addresses.ContestFactory,
+        aavePoolAddress,
+        referralGraphAddress: addresses.ReferralGraph,
+        rewardDistributorAddress: addresses.RewardDistributor,
+      };
 
   const clientConfigPath = path.join(
     projectRoot,

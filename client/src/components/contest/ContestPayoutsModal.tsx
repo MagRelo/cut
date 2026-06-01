@@ -31,8 +31,9 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   onClose,
   contest,
 }) => {
-  const { platformTokenSymbol } = useAuth();
-  const tokenLabel = platformTokenSymbol ?? "CUT";
+  const { paymentTokenSymbol, paymentTokenDecimals } = useAuth();
+  const tokenDecimals = paymentTokenDecimals ?? 6;
+  const tokenLabel = paymentTokenSymbol ?? "xUSDC";
   const chainId = contest?.chainId as 8453 | 84532 | undefined;
   const referralNetworkBps = Math.max(
     0,
@@ -91,18 +92,20 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   // Calculate primary prize pool breakdown
   const primaryPrizePoolData = useMemo(() => {
-    const grossTotal = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
-    const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
-    return { grossTotal, netTotal };
-  }, [primaryPrizePool, referralNetworkBps]);
-
-  const secondaryLiquidityData = useMemo(() => {
-    const grossTotal = totalSecondaryLiquidity
-      ? Number(formatUnits(totalSecondaryLiquidity as bigint, 18))
+    const grossTotal = primaryPrizePool
+      ? Number(formatUnits(primaryPrizePool as bigint, tokenDecimals))
       : 0;
     const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
     return { grossTotal, netTotal };
-  }, [totalSecondaryLiquidity, referralNetworkBps]);
+  }, [primaryPrizePool, referralNetworkBps, tokenDecimals]);
+
+  const secondaryLiquidityData = useMemo(() => {
+    const grossTotal = totalSecondaryLiquidity
+      ? Number(formatUnits(totalSecondaryLiquidity as bigint, tokenDecimals))
+      : 0;
+    const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
+    return { grossTotal, netTotal };
+  }, [totalSecondaryLiquidity, referralNetworkBps, tokenDecimals]);
 
   // Top summary shows total pot before oracle fee (gross).
   const totalPrizePool = primaryPrizePoolData.grossTotal + secondaryLiquidityData.grossTotal;

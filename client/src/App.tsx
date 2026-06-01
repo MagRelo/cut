@@ -22,7 +22,6 @@ import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { UserPage } from "./pages/Account";
 import { UserHistoryPage } from "./pages/UserHistoryPage";
-import { CUTInfoPage } from "./pages/AccountCUTInfoPage";
 import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
@@ -122,7 +121,6 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route path="/usdc" element={<USDCInfoPage />} />
-                  <Route path="/cut" element={<CUTInfoPage />} />
 
                   {/* Contests */}
                   <Route path="/contests" element={<Contests />} />

@@ -27,6 +27,7 @@ import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.
 import type { DetailedResult } from "../services/shared/types.js";
 import { getRewardDistributorAddress } from "../lib/referralConfig.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
+import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
 
 const contestRouter = new Hono();
 
@@ -513,7 +514,10 @@ contestRouter.post("/", requireAuth, async (c) => {
         rewardDistributorAddress &&
         referralGroupId
       ) {
-        const primaryDepositAmountWei = BigInt(Math.floor(settings.primaryDeposit * 1e18)).toString();
+        const primaryDepositAmountWei = primaryDepositWeiFromSettings(
+          settings.primaryDeposit,
+          chainId,
+        ).toString();
         void queueVerifyContestContract({
           chainId,
           contestAddress: contest.address,

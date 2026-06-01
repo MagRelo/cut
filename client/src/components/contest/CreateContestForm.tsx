@@ -15,6 +15,7 @@ import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 
 import { getContractAddress } from "../../utils/blockchainUtils.tsx";
+import { primaryDepositWeiFromHuman } from "../../lib/paymentTokenSpend";
 
 const getStatusMessages = (
   defaultMessage: string = "idle",
@@ -58,7 +59,7 @@ export const CreateContestForm = () => {
   const lockedUserGroupId = searchParams.get("userGroupId") ?? undefined;
   const { tournament: currentTournament } = useActiveTournament();
   const createContestMutation = useCreateContestMutation();
-  const { platformTokenSymbol, platformTokenAddress } = useAuth();
+  const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();
 
@@ -77,8 +78,8 @@ export const CreateContestForm = () => {
     tournamentId: currentTournament?.id ?? "",
     settings: buildContestSettings(
       chainId ?? 0,
-      platformTokenAddress || "",
-      platformTokenSymbol ?? "",
+      paymentTokenAddress || "",
+      paymentTokenSymbol ?? "xUSDC",
     ),
     description: undefined,
     userGroupId: undefined,
@@ -110,8 +111,8 @@ export const CreateContestForm = () => {
       tournamentId: currentTournament?.id ?? "",
       settings: buildContestSettings(
         chainId ?? 0,
-        platformTokenAddress || "",
-        platformTokenSymbol ?? "",
+        paymentTokenAddress || "",
+        paymentTokenSymbol ?? "xUSDC",
       ),
       description: undefined,
       userGroupId: lockedUserGroupId || undefined,
@@ -263,7 +264,7 @@ export const CreateContestForm = () => {
       return;
     }
 
-    const paymentToken = platformTokenAddress || "";
+    const paymentToken = paymentTokenAddress || "";
     if (!paymentToken) {
       setError("Payment token is not configured.");
       return;
@@ -277,7 +278,7 @@ export const CreateContestForm = () => {
       settings: {
         ...s,
         paymentTokenAddress: paymentToken,
-        paymentTokenSymbol: platformTokenSymbol ?? "",
+        paymentTokenSymbol: paymentTokenSymbol ?? "xUSDC",
         oracle,
         chainId: chainId ?? 0,
         expiryTimestamp: s.expiryTimestamp,
@@ -285,7 +286,7 @@ export const CreateContestForm = () => {
     };
 
     pendingContestForApiRef.current = pending;
-    const primaryDepositAmount = BigInt(Math.floor(s.primaryDeposit * 1e18));
+    const primaryDepositAmount = primaryDepositWeiFromHuman(s.primaryDeposit);
     // `ContestFactory.createContest` → `ContestController` constructor (same order as Solidity NatSpec).
     const rewardDistributor = getContractAddress(chainId ?? 0, "rewardDistributorAddress");
     if (!rewardDistributor) {
@@ -369,7 +370,7 @@ export const CreateContestForm = () => {
               className="w-full p-2 border rounded-md pr-12"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {platformTokenSymbol}
+              {paymentTokenSymbol ?? "xUSDC"}
             </div>
           </div>
         </div>
@@ -462,9 +463,9 @@ export const CreateContestForm = () => {
             collateral, and payouts.
           </p>
           <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
-            {platformTokenAddress || "Not configured"}
+            {paymentTokenAddress || "Not configured"}
           </div>
-          <p className="text-sm text-gray-600">{platformTokenSymbol}</p>
+          <p className="text-sm text-gray-600">{paymentTokenSymbol ?? "xUSDC"}</p>
         </div>
 
         <div className="space-y-2">

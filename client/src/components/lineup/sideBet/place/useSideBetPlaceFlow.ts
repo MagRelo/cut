@@ -5,8 +5,9 @@ import { usePlaceSideBetTicketMutation } from "../../../../hooks/useSideBetQueri
 import type { BatchTransactionStatusData } from "../../../../hooks/useBlockchainTransaction";
 import type { SideBetMarketSelectionDto } from "../../../../types/sideBet";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { useModeAwareTransfer } from "../../../../hooks/useTokenOperations";
+import { useTransferTokens } from "../../../../hooks/useTokenOperations";
 import { ApiError } from "../../../../utils/apiError";
+import { PAYMENT_TOKEN_DECIMALS } from "../../../../lib/paymentTokenSpend";
 import {
   MAX_TICKET_PAYOUT_USD,
   MIN_STAKE,
@@ -31,19 +32,10 @@ export function useSideBetPlaceFlow({
 }: UseSideBetPlaceFlowOptions) {
   const [placeError, setPlaceError] = useState<string | null>(null);
   const { isConnected } = useAccount();
-  const {
-    platformTokenBalance,
-    paymentTokenBalance,
-    platformTokenDecimals,
-    paymentTokenDecimals,
-    balancesUnavailable,
-  } = useAuth();
+  const { paymentTokenBalance, paymentTokenDecimals, balancesUnavailable } = useAuth();
 
-  const resolvedPlatformDecimals = platformTokenDecimals ?? 18;
-  const resolvedPaymentDecimals = paymentTokenDecimals ?? 6;
-  const platformBalance = platformTokenBalance ?? 0n;
+  const resolvedStakeDecimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
   const paymentBalance = paymentTokenBalance ?? 0n;
-  const decimalScale = 10n ** BigInt(resolvedPlatformDecimals - resolvedPaymentDecimals);
 
   const pendingSideBetRef = useRef<{
     tournamentLineupId: string;
@@ -58,10 +50,9 @@ export function useSideBetPlaceFlow({
     execute,
     isProcessing: isPayingOracle,
     error: paymentTxError,
-    createModeAwareTransferCalls,
-  } = useModeAwareTransfer({
-    platformTokenDecimals: resolvedPlatformDecimals,
-    paymentTokenDecimals: resolvedPaymentDecimals,
+    createTransferCalls,
+  } = useTransferTokens({
+    tokenDecimals: resolvedStakeDecimals,
     onSuccess: async (statusData: BatchTransactionStatusData) => {
       const pending = pendingSideBetRef.current;
       pendingSideBetRef.current = null;
@@ -93,17 +84,17 @@ export function useSideBetPlaceFlow({
     const trimmed = stakeInput.trim();
     let stakeBn: bigint;
     try {
-      stakeBn = parseUnits(trimmed, resolvedPlatformDecimals);
+      stakeBn = parseUnits(trimmed, resolvedStakeDecimals);
     } catch {
       return null;
     }
-    const minBn = parseUnits(MIN_STAKE, resolvedPlatformDecimals);
+    const minBn = parseUnits(MIN_STAKE, resolvedStakeDecimals);
     if (stakeBn < minBn) return null;
     const stake = parseFloat(trimmed);
     const d = activeSelection.decimalOdds;
     if (!Number.isFinite(stake) || !Number.isFinite(d) || d <= 1) return null;
     return { totalReturn: stake * d, profit: stake * (d - 1) };
-  }, [activeSelection, stakeInput, resolvedPlatformDecimals]);
+  }, [activeSelection, stakeInput, resolvedStakeDecimals]);
 
   const exceedsMaxTicketPayout =
     payoutPreview !== null && payoutPreview.totalReturn >= MAX_TICKET_PAYOUT_USD;
@@ -122,19 +113,19 @@ export function useSideBetPlaceFlow({
       return;
     }
     const amountStr = stakeInput.trim();
-    let stakeUnitsPlatform: bigint;
+    let stakeUnits: bigint;
     try {
-      stakeUnitsPlatform = parseUnits(amountStr, resolvedPlatformDecimals);
+      stakeUnits = parseUnits(amountStr, resolvedStakeDecimals);
     } catch {
       setPlaceError("Enter a valid stake.");
       return;
     }
-    if (stakeUnitsPlatform <= 0n) {
+    if (stakeUnits <= 0n) {
       setPlaceError("Enter a valid stake.");
       return;
     }
-    const minStakeWei = parseUnits(MIN_STAKE, resolvedPlatformDecimals);
-    if (stakeUnitsPlatform < minStakeWei) {
+    const minStakeWei = parseUnits(MIN_STAKE, resolvedStakeDecimals);
+    if (stakeUnits < minStakeWei) {
       setPlaceError("Minimum stake is $0.01 (one cent).");
       return;
     }
@@ -166,8 +157,7 @@ export function useSideBetPlaceFlow({
       return;
     }
 
-    const maxPayablePlatform = platformBalance + paymentBalance * decimalScale;
-    if (stakeUnitsPlatform > maxPayablePlatform) {
+    if (stakeUnits > paymentBalance) {
       setPlaceError("Insufficient balance for this stake. Add funds in Account if needed.");
       return;
     }
@@ -180,22 +170,13 @@ export function useSideBetPlaceFlow({
       stakeAmount,
     };
 
-    let calls;
     try {
-      calls = createModeAwareTransferCalls({
-        mode: "internal",
-        recipient: oracle,
-        amount: amountStr,
-        platformTokenBalance: platformBalance,
-        paymentTokenBalance: paymentBalance,
-      });
+      const calls = createTransferCalls(oracle, amountStr);
+      await execute(calls);
     } catch (e: unknown) {
       pendingSideBetRef.current = null;
       setPlaceError(e instanceof Error ? e.message : "Could not prepare payment.");
-      return;
     }
-
-    await execute(calls);
   };
 
   return {
@@ -209,4 +190,4 @@ export function useSideBetPlaceFlow({
     exceedsMaxTicketPayout,
     modalStakeTicketLine,
   };
-}
+};

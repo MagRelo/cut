@@ -1,21 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { usePostHog } from "posthog-js/react";
-import { formatUnits, parseUnits } from "viem";
-
-/** Matches `useSpectatorOperations` / `createAddPredictionCalls` funding rules. */
-function canCoverSecondaryPurchase(
-  purchaseAmountWei: bigint,
-  platformTokenBalance: bigint,
-  paymentTokenBalance: bigint,
-): boolean {
-  if (purchaseAmountWei <= 0n) return false;
-  if (platformTokenBalance >= purchaseAmountWei) return true;
-  const platformShortfall = purchaseAmountWei - platformTokenBalance;
-  const human = formatUnits(platformShortfall, 18);
-  const paymentNeeded = parseUnits(human, 6);
-  return paymentTokenBalance >= paymentNeeded;
-}
+import { formatUnits } from "viem";
+import { useAccount, useBalance, useReadContract } from "wagmi";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import {
+  contestPaymentDecimals,
+  hasEnoughTokenBalance,
+  parseContestAmountFromHuman,
+} from "../../lib/paymentTokenSpend";
+import ContestContract from "../../utils/contracts/ContestController.json";
 import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useAuth } from "../../contexts/AuthContext";
@@ -75,12 +69,39 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 }) => {
   const location = useLocation();
   const posthog = usePostHog();
-  const { platformTokenBalance, paymentTokenBalance, user, balancesUnavailable, refetchBalances } =
-    useAuth();
+  const { address } = useAccount();
+  const { client: smartWalletClient } = useSmartWallets();
+  const balanceAddress = smartWalletClient?.account?.address ?? address;
+  const { paymentTokenBalance, user, balancesUnavailable, refetchBalances } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
+
+  const { data: contestPaymentTokenOnChain } = useReadContract({
+    address: contest.address as `0x${string}` | undefined,
+    abi: ContestContract.abi,
+    functionName: "paymentToken",
+    query: { enabled: !!contest.address },
+  });
+
+  const contestPaymentToken =
+    (typeof contestPaymentTokenOnChain === "string"
+      ? contestPaymentTokenOnChain
+      : contest.settings?.paymentTokenAddress) ?? "";
+
+  const contestAmountDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
+
+  const { data: contestTokenBalanceData } = useBalance({
+    address: balanceAddress,
+    token: contestPaymentToken as `0x${string}`,
+    query: {
+      enabled: !!balanceAddress && !!contestPaymentToken && !!user,
+    },
+  });
+
+  const spendableForContest =
+    contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
 
   const lineupForEntry = useMemo(
     () => contest.contestLineups?.find((l) => l.entryId === entryId) ?? null,
@@ -128,7 +149,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
     let amountBigInt: bigint;
     try {
-      amountBigInt = parseUnits(amount, 18);
+      amountBigInt = parseContestAmountFromHuman(amount, contest.chainId, contestPaymentToken);
     } catch {
       return empty;
     }
@@ -146,7 +167,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     const newSupply = sim.newSupply;
 
     const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : "—");
-    const fmtWei = (w: bigint) => fmt(Number(formatUnits(w, 18)));
+    const fmtWei = (w: bigint) => fmt(Number(formatUnits(w, contestAmountDecimals)));
 
     if (newSupply === 0n) {
       return empty;
@@ -189,21 +210,17 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const purchaseAmountWei = useMemo(() => {
     try {
       if (!amount || Number.parseFloat(amount) <= 0) return null;
-      return parseUnits(amount, 18);
+      return parseContestAmountFromHuman(amount, contest.chainId, contestPaymentToken);
     } catch {
       return null;
     }
-  }, [amount]);
+  }, [amount, contest.chainId, contestPaymentToken]);
 
   const canAffordPurchase = useMemo(() => {
     if (balancesUnavailable) return false;
     if (purchaseAmountWei === null) return false;
-    return canCoverSecondaryPurchase(
-      purchaseAmountWei,
-      platformTokenBalance ?? 0n,
-      paymentTokenBalance ?? 0n,
-    );
-  }, [balancesUnavailable, purchaseAmountWei, platformTokenBalance, paymentTokenBalance]);
+    return hasEnoughTokenBalance(spendableForContest, purchaseAmountWei);
+  }, [balancesUnavailable, purchaseAmountWei, spendableForContest]);
 
   useEffect(() => {
     setAmount("10");
@@ -269,19 +286,13 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
     let amountBigInt: bigint;
     try {
-      amountBigInt = parseUnits(amount, 18);
+      amountBigInt = parseContestAmountFromHuman(amount, contest.chainId, contestPaymentToken);
     } catch {
       setError("Please enter a valid amount");
       return;
     }
 
-    if (
-      !canCoverSecondaryPurchase(
-        amountBigInt,
-        platformTokenBalance ?? 0n,
-        paymentTokenBalance ?? 0n,
-      )
-    ) {
+    if (!hasEnoughTokenBalance(spendableForContest, amountBigInt)) {
       setError("Insufficient balance for this purchase amount.");
       return;
     }
@@ -291,8 +302,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         contest.address,
         Number.parseInt(entryId, 10),
         amountBigInt,
-        platformTokenBalance || 0n,
-        paymentTokenBalance || 0n,
+        contestPaymentToken,
       );
 
       await execute(calls);

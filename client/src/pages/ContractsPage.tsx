@@ -27,22 +27,10 @@ const ContractsPage: React.FC = () => {
 
     const contracts: Contract[] = [
       {
-        name: "Payment Token (USDC)",
+        name: "Payment Token (xUSDC)",
         address: config.paymentTokenAddress,
-        description: "USDC token contract for payments",
+        description: "ERC-20 used for contest entry fees, prizes, and transfers",
         blockExplorerUrl: explorer(config.paymentTokenAddress),
-      },
-      {
-        name: "Platform Token",
-        address: config.platformTokenAddress,
-        description: "Platform's native token contract",
-        blockExplorerUrl: explorer(config.platformTokenAddress),
-      },
-      {
-        name: "Deposit Manager",
-        address: config.depositManagerAddress,
-        description: "Manages user deposits and withdrawals",
-        blockExplorerUrl: explorer(config.depositManagerAddress),
       },
       {
         name: "Contest Factory",
@@ -51,15 +39,6 @@ const ContractsPage: React.FC = () => {
         blockExplorerUrl: explorer(config.contestFactoryAddress),
       },
     ];
-
-    if ("aavePoolAddress" in config && config.aavePoolAddress) {
-      contracts.push({
-        name: "Lending pool",
-        address: config.aavePoolAddress,
-        description: "Aave V3 Pool (mainnet) or test pool used by DepositManager",
-        blockExplorerUrl: explorer(config.aavePoolAddress),
-      });
-    }
 
     const extra = config as Record<string, string | undefined>;
     if (extra.referralGraphAddress) {

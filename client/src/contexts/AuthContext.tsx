@@ -3,7 +3,7 @@ import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract 
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQueryClient } from "@tanstack/react-query";
-import { erc20Abi, formatUnits, parseUnits } from "viem";
+import { erc20Abi } from "viem";
 import { usePostHog } from "posthog-js/react";
 import {
   captureAccountFirstFunded,
@@ -48,31 +48,17 @@ interface AuthContextData {
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   getCurrentUser: () => AuthUser | null;
-  platformTokenBalance: bigint | undefined;
   paymentTokenBalance: bigint | undefined;
-  platformTokenAddress: string | null;
   paymentTokenAddress: string | null;
   paymentTokenSymbol: string | undefined;
   paymentTokenDecimals: number | undefined;
-  platformTokenSymbol: string | undefined;
-  platformTokenDecimals: number | undefined;
   balancesLoading: boolean;
   /** True after a failed balance read while signed in (do not treat as $0). */
   balancesUnavailable: boolean;
-  platformBalanceUnavailable: boolean;
-  paymentBalanceUnavailable: boolean;
   refetchBalances: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
-
-const PAYMENT_TOKEN_DECIMALS = 6;
-const PLATFORM_TOKEN_DECIMALS = 18;
-
-function convertPaymentToPlatformTokens(paymentTokenAmount: bigint): bigint {
-  const humanReadableAmount = formatUnits(paymentTokenAmount, PAYMENT_TOKEN_DECIMALS);
-  return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
-}
 
 function firstFundedStorageKey(userId: string): string {
   return `cut_ph_account_first_funded_${userId}`;
@@ -101,25 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [serverSessionError, setServerSessionError] = useState<string | null>(null);
 
-  const platformTokenAddress = getContractAddress(currentChainId ?? 0, "platformTokenAddress");
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
-  const platformBalanceEnabled = !!balanceAddress && !!platformTokenAddress && !!user;
   const paymentBalanceEnabled = !!balanceAddress && !!paymentTokenAddress && !!user;
-
-  const {
-    data: platformTokenBalanceData,
-    isLoading: platformBalanceLoading,
-    isError: platformBalanceIsError,
-    refetch: refetchPlatformTokenBalance,
-  } = useBalance({
-    address: balanceAddress,
-    token: platformTokenAddress as `0x${string}`,
-    query: {
-      enabled: platformBalanceEnabled,
-      refetchInterval: user ? 30000 : false,
-    },
-  });
 
   const {
     data: paymentTokenBalanceData,
@@ -155,43 +125,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const { data: platformTokenSymbol } = useReadContract({
-    address: platformTokenAddress as `0x${string}`,
-    abi: erc20Abi,
-    functionName: "symbol",
-    query: {
-      enabled: !!platformTokenAddress,
-      staleTime: Infinity,
-    },
-  });
+  const balancesLoading = paymentBalanceLoading;
 
-  const { data: platformTokenDecimals } = useReadContract({
-    address: platformTokenAddress as `0x${string}`,
-    abi: erc20Abi,
-    functionName: "decimals",
-    query: {
-      enabled: !!platformTokenAddress,
-      staleTime: Infinity,
-    },
-  });
-
-  const balancesLoading = platformBalanceLoading || paymentBalanceLoading;
-
-  const platformBalanceUnavailable =
-    platformBalanceEnabled && !platformBalanceLoading && platformBalanceIsError;
-  const paymentBalanceUnavailable =
+  const balancesUnavailable =
     paymentBalanceEnabled && !paymentBalanceLoading && paymentBalanceIsError;
-  const balancesUnavailable = platformBalanceUnavailable || paymentBalanceUnavailable;
 
   const refetchBalances = useCallback(async () => {
-    await Promise.all([refetchPlatformTokenBalance(), refetchPaymentTokenBalance()]);
-  }, [refetchPlatformTokenBalance, refetchPaymentTokenBalance]);
+    await refetchPaymentTokenBalance();
+  }, [refetchPaymentTokenBalance]);
 
   const combinedSpendableWei = useMemo(() => {
-    const platform = platformTokenBalanceData?.value ?? 0n;
-    const payment = paymentTokenBalanceData?.value ?? 0n;
-    return platform + convertPaymentToPlatformTokens(payment);
-  }, [platformTokenBalanceData?.value, paymentTokenBalanceData?.value]);
+    return paymentTokenBalanceData?.value ?? 0n;
+  }, [paymentTokenBalanceData?.value]);
 
   const combinedPrevRef = useRef<bigint | null>(null);
 
@@ -232,7 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       captureAccountFirstFunded(posthog, {
         user_id: user.id,
         chain_id: user.chainId,
-        platform_balance_wei: (platformTokenBalanceData?.value ?? 0n).toString(),
         payment_balance_wei: (paymentTokenBalanceData?.value ?? 0n).toString(),
       });
     }
@@ -244,7 +188,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     balancesLoading,
     balancesUnavailable,
     combinedSpendableWei,
-    platformTokenBalanceData?.value,
     paymentTokenBalanceData?.value,
   ]);
 
@@ -537,18 +480,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       isAdmin,
       getCurrentUser,
-      platformTokenBalance: platformTokenBalanceData?.value,
       paymentTokenBalance: paymentTokenBalanceData?.value,
-      platformTokenAddress,
       paymentTokenAddress,
       paymentTokenSymbol: paymentTokenSymbol as string | undefined,
       paymentTokenDecimals: paymentTokenDecimals as number | undefined,
-      platformTokenSymbol: platformTokenSymbol as string | undefined,
-      platformTokenDecimals: platformTokenDecimals as number | undefined,
       balancesLoading,
       balancesUnavailable,
-      platformBalanceUnavailable,
-      paymentBalanceUnavailable,
       refetchBalances,
     }),
     [
@@ -564,18 +501,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       isAdmin,
       getCurrentUser,
-      platformTokenBalanceData?.value,
       paymentTokenBalanceData?.value,
-      platformTokenAddress,
       paymentTokenAddress,
       paymentTokenSymbol,
       paymentTokenDecimals,
-      platformTokenSymbol,
-      platformTokenDecimals,
       balancesLoading,
       balancesUnavailable,
-      platformBalanceUnavailable,
-      paymentBalanceUnavailable,
       refetchBalances,
     ],
   );
@@ -609,18 +540,12 @@ const storybookAuthContextValue: AuthContextData = {
   logout: async () => undefined,
   isAdmin: () => false,
   getCurrentUser: () => storybookAuthUser,
-  platformTokenBalance: BigInt(1000) * BigInt(10 ** 18),
   paymentTokenBalance: BigInt(100) * BigInt(10 ** 6),
-  platformTokenAddress: null,
   paymentTokenAddress: null,
-  paymentTokenSymbol: "USDC",
+  paymentTokenSymbol: "xUSDC",
   paymentTokenDecimals: 6,
-  platformTokenSymbol: "CUT",
-  platformTokenDecimals: 18,
   balancesLoading: false,
   balancesUnavailable: false,
-  platformBalanceUnavailable: false,
-  paymentBalanceUnavailable: false,
   refetchBalances: async () => undefined,
 };
 

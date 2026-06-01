@@ -32,15 +32,12 @@ const tabBase =
   "inline-flex items-center justify-center rounded-t-lg px-3.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-[color,background-color,border-color] shadow-sm relative border";
 
 export const Navigation: React.FC = () => {
-  const { user, platformTokenBalance, paymentTokenBalance, balancesUnavailable } = useAuth();
+  const { user, paymentTokenBalance, balancesUnavailable } = useAuth();
   const location = useLocation();
 
   const totalBalance = balancesUnavailable
     ? null
-    : (
-        Number(formatUnits(platformTokenBalance ?? 0n, 18)) +
-        Number(formatUnits(paymentTokenBalance ?? 0n, 6))
-      ).toFixed(2);
+    : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
 
   const tabs: NavTab[] = useMemo(() => {
     if (!user) {

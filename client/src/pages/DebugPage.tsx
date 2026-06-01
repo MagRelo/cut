@@ -71,20 +71,10 @@ export const DebugPage: React.FC = () => {
             </>
           )}
           <div>
-            <strong>Platform Token Balance:</strong>{" "}
-            {auth.platformBalanceUnavailable
-              ? "Error"
-              : auth.platformTokenBalance?.toString() ?? (auth.balancesLoading ? "Loading..." : "—")}
-          </div>
-          <div>
             <strong>Payment Token Balance:</strong>{" "}
-            {auth.paymentBalanceUnavailable
+            {auth.balancesUnavailable
               ? "Error"
               : auth.paymentTokenBalance?.toString() ?? (auth.balancesLoading ? "Loading..." : "—")}
-          </div>
-          <div>
-            <strong>Platform Token Address:</strong>{" "}
-            {auth.platformTokenAddress || "Not loaded"}
           </div>
           <div>
             <strong>Payment Token Address:</strong> {auth.paymentTokenAddress || "Not loaded"}

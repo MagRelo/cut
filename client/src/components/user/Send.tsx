@@ -1,14 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Tab, TabGroup, TabList } from "@headlessui/react";
-import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useModeAwareTransfer } from "../../hooks/useTokenOperations";
+import { useTransferTokens } from "../../hooks/useTokenOperations";
 import { useAuth } from "../../contexts/AuthContext";
-
-type SendMode = "internal" | "external";
-const ENABLE_EXTERNAL_SEND = false;
+import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 
 export type SendProps = {
   /** Pre-fill recipient (e.g. admin support: target user wallet). */
@@ -20,25 +16,18 @@ export type SendProps = {
 export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendProps) => {
   const { isConnected } = useAccount();
   const {
-    platformTokenBalance,
     paymentTokenBalance,
-    platformTokenAddress,
     paymentTokenAddress,
-    platformTokenSymbol,
     paymentTokenSymbol,
-    platformTokenDecimals,
     paymentTokenDecimals,
     balancesUnavailable,
     refetchBalances,
   } = useAuth();
 
-  const resolvedPlatformDecimals = platformTokenDecimals ?? 18;
-  const resolvedPaymentDecimals = paymentTokenDecimals ?? 6;
-  const platformBalance = platformTokenBalance ?? 0n;
+  const resolvedDecimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
   const paymentBalance = paymentTokenBalance ?? 0n;
-  const decimalScale = 10n ** BigInt(resolvedPlatformDecimals - resolvedPaymentDecimals);
+  const targetSymbol = paymentTokenSymbol ?? "xUSDC";
 
-  const [mode, setMode] = useState<SendMode>("internal");
   const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
   const [amount, setAmount] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
@@ -49,17 +38,6 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
     }
   }, [initialRecipientAddress]);
 
-  const targetDecimals = mode === "internal" ? resolvedPlatformDecimals : resolvedPaymentDecimals;
-  const targetSymbol =
-    mode === "internal" ? (platformTokenSymbol ?? "CUT") : (paymentTokenSymbol ?? "USDC");
-
-  const maxAmountInTargetUnits = useMemo(() => {
-    if (mode === "internal") {
-      return platformBalance + paymentBalance * decimalScale;
-    }
-    return paymentBalance + platformBalance / decimalScale;
-  }, [mode, platformBalance, paymentBalance, decimalScale]);
-
   const {
     execute,
     isProcessing,
@@ -67,12 +45,8 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
     isConfirmed,
     isFailed,
     error: transactionError,
-    createModeAwareTransferCalls,
-  } = useModeAwareTransfer({
-    platformTokenAddress: platformTokenAddress as string,
-    paymentTokenAddress: paymentTokenAddress as string,
-    platformTokenDecimals: resolvedPlatformDecimals,
-    paymentTokenDecimals: resolvedPaymentDecimals,
+    createTransferCalls,
+  } = useTransferTokens({
     onSuccess: () => {
       setRecipientAddress("");
       setAmount("");
@@ -85,228 +59,133 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
   const handleMaxSend = () => {
     if (balancesUnavailable) return;
-    setAmount(formatUnits(maxAmountInTargetUnits, targetDecimals));
+    setAmount(formatUnits(paymentBalance, resolvedDecimals));
     setSendError(null);
   };
 
   const handleSend = async () => {
-    if (!ENABLE_EXTERNAL_SEND && mode === "external") {
-      setSendError("External send is currently unavailable");
-      return;
-    }
-
     if (balancesUnavailable) {
       setSendError("Could not load your balances. Check your connection and try again.");
       return;
     }
 
-    if (!isConnected || !recipientAddress || !amount) {
-      setSendError("Please enter a valid recipient and amount");
+    if (!recipientAddress.trim()) {
+      setSendError("Please enter a recipient address");
       return;
     }
 
-    if (!(recipientAddress.startsWith("0x") && recipientAddress.length === 42)) {
-      setSendError("Recipient must be a valid wallet address");
+    if (!amount || Number.parseFloat(amount) <= 0) {
+      setSendError("Please enter a valid amount");
       return;
     }
 
-    let amountInTargetUnits: bigint;
+    let amountBigInt: bigint;
     try {
-      amountInTargetUnits = parseUnits(amount, targetDecimals);
+      amountBigInt = parseUnits(amount, resolvedDecimals);
     } catch {
       setSendError("Please enter a valid amount");
       return;
     }
 
-    if (amountInTargetUnits <= 0n) {
-      setSendError("Amount must be greater than 0");
+    if (amountBigInt > paymentBalance) {
+      setSendError("Insufficient balance");
       return;
     }
 
-    if (amountInTargetUnits > maxAmountInTargetUnits) {
-      setSendError("Insufficient combined balance");
+    if (!paymentTokenAddress) {
+      setSendError("Payment token is not configured");
       return;
     }
 
     setSendError(null);
-    let calls;
+
     try {
-      calls = createModeAwareTransferCalls({
-        mode,
-        recipient: recipientAddress,
-        amount,
-        platformTokenBalance: platformBalance,
-        paymentTokenBalance: paymentBalance,
-      });
-    } catch (error) {
-      setSendError(error instanceof Error ? error.message : "Unable to prepare transfer");
-      return;
+      const calls = createTransferCalls(recipientAddress.trim(), amount);
+      await execute(calls);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Transaction failed");
     }
-    await execute(calls);
   };
 
-  const formattedBalance = (balance: bigint, decimals: number) => {
-    return Number(formatUnits(balance, decimals)).toFixed(2);
-  };
-
-  const modeTitle = mode === "internal" ? "Player-to-Player Transfer" : "Offramp to exchange";
-  const modeCopy =
-    mode === "internal"
-      ? `You can send funds to another player at any time. Be sure to confirm the details before sending.`
-      : `You can withdraw funds to your exchange account. Be sure to confirm the details before withdrawing.`;
-  const selectedTabIndex = !ENABLE_EXTERNAL_SEND ? 0 : mode === "internal" ? 0 : 1;
+  const formattedBalance = (balance: bigint) =>
+    Number(formatUnits(balance, resolvedDecimals)).toFixed(2);
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="space-y-4">
-          {ENABLE_EXTERNAL_SEND ? (
-            <TabGroup
-              selectedIndex={selectedTabIndex}
-              onChange={(index) => {
-                if (!ENABLE_EXTERNAL_SEND) {
-                  setMode("internal");
-                } else {
-                  setMode(index === 0 ? "internal" : "external");
-                }
-                setAmount("");
-                setSendError(null);
-              }}
-            >
-              <TabList className={tabListClassName("space-x-1", "px-4")}>
-                <Tab
-                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-                >
-                  External
-                </Tab>
-              </TabList>
-            </TabGroup>
-          ) : null}
+    <div className="space-y-4 font-display">
+      <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Available</span>
+          <span className="font-semibold text-gray-900 tabular-nums">
+            {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
+          </span>
+        </div>
+      </div>
 
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-gray-800">{modeTitle}</h3>
-            <p className="text-sm text-gray-600 font-display">{modeCopy}</p>
-          </div>
+      <div>
+        <label htmlFor="recipient" className="block text-sm font-medium text-gray-700 mb-1">
+          Recipient address
+        </label>
+        <input
+          id="recipient"
+          type="text"
+          value={recipientAddress}
+          onChange={(e) => setRecipientAddress(e.target.value)}
+          readOnly={lockRecipient}
+          className="w-full p-2 border rounded-md font-mono text-sm disabled:bg-gray-100"
+          placeholder="0x..."
+        />
+      </div>
 
-          <div className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-sm font-display">
-            <div className="border-b border-blue-200 bg-blue-50/80 px-3 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">
-                Total Available
-              </div>
-            </div>
-            <div className="space-y-0.5 p-3">
-              <div className="text-lg font-semibold tabular-nums text-gray-900">
-                {balancesUnavailable ? (
-                  <span className="text-amber-900/90">
-                    —{" "}
-                    <button
-                      type="button"
-                      onClick={() => void refetchBalances()}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                    >
-                      Retry
-                    </button>
-                  </span>
-                ) : (
-                  formattedBalance(maxAmountInTargetUnits, targetDecimals)
-                )}
-              </div>
-              <div className="text-xs text-blue-800/80">{targetSymbol}</div>
-              <div className="text-xs text-gray-600 mt-1">
-                {balancesUnavailable ? (
-                  <span className="text-amber-900/90">Breakdown unavailable</span>
-                ) : (
-                  <>
-                    {formattedBalance(platformBalance, resolvedPlatformDecimals)}{" "}
-                    {platformTokenSymbol || "CUT"} +{" "}
-                    {formattedBalance(paymentBalance, resolvedPaymentDecimals)}{" "}
-                    {paymentTokenSymbol || "USDC"}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Account ID</label>
-            <input
-              type="text"
-              value={recipientAddress}
-              onChange={(e) => {
-                if (!lockRecipient) setRecipientAddress(e.target.value);
-              }}
-              readOnly={lockRecipient}
-              aria-readonly={lockRecipient}
-              placeholder="0x..."
-              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm ${
-                lockRecipient ? "bg-gray-50 cursor-not-allowed" : ""
-              }`}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount ({targetSymbol})
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={amount}
-                step="0.01"
-                max={formattedBalance(maxAmountInTargetUnits, targetDecimals)}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full px-4 py-2.5 pr-16 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-              />
-              <button
-                type="button"
-                onClick={handleMaxSend}
-                disabled={isProcessing || balancesUnavailable}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-semibold text-gray-700 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                MAX
-              </button>
-            </div>
-          </div>
-
-          {sendError && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-              {sendError}
-            </div>
-          )}
-
+      <div>
+        <label htmlFor="send-amount" className="block text-sm font-medium text-gray-700 mb-1">
+          Amount ({targetSymbol})
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="send-amount"
+            type="number"
+            min="0"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="flex-1 p-2 border rounded-md"
+          />
           <button
-            onClick={handleSend}
-            disabled={!recipientAddress || !amount || isProcessing || balancesUnavailable}
-            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-4 rounded-lg inline-flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md disabled:shadow-none"
+            type="button"
+            onClick={handleMaxSend}
+            className="px-3 py-2 text-sm border rounded-md hover:bg-gray-50"
           >
-            {isProcessing ? (
-              <>
-                <LoadingSpinnerSmall />
-                {isSending ? "Confirming..." : "Processing..."}
-              </>
-            ) : (
-              `Send ${targetSymbol}`
-            )}
+            Max
           </button>
         </div>
       </div>
 
-      {(transactionError || isFailed) && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
-          <div className="font-medium mb-1">Transaction failed</div>
-          <div className="text-red-600">
-            {transactionError ||
-              "The transaction was rejected or failed to execute. Please try again."}
-          </div>
-        </div>
+      {(sendError || transactionError) && (
+        <p className="text-sm text-red-600">{sendError || String(transactionError)}</p>
       )}
 
-      {isConfirmed && (
-        <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
-          <div className="text-green-700 font-medium">Send completed successfully!</div>
-        </div>
+      {balancesUnavailable && (
+        <p className="text-sm text-amber-800">
+          Could not load balance.{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => void refetchBalances()}
+          >
+            Retry
+          </button>
+        </p>
       )}
-    </>
+
+      <button
+        type="button"
+        onClick={() => void handleSend()}
+        disabled={!isConnected || isProcessing || balancesUnavailable}
+        className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {(isSending || isProcessing) && <LoadingSpinnerSmall />}
+        {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
+      </button>
+    </div>
   );
 };

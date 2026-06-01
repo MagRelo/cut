@@ -92,7 +92,6 @@ export const InsufficientBalance: Story = {
   args: {},
   decorators: [
     withAuthOverride({
-      platformTokenBalance: 0n,
       paymentTokenBalance: 0n,
     }),
   ],

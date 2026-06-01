@@ -119,7 +119,7 @@ export const FAQPage: React.FC = () => {
                 <li>
                   Contests are competitions where users enter lineups for a specific tournament
                 </li>
-                <li>Each contest has an entry fee (paid in CUT tokens)</li>
+                <li>Each contest has an entry fee (paid in xUSDC)</li>
                 <li>Entry fees create a prize pool distributed to winners</li>
                 <li>Lineups lock when the tournament begins</li>
               </ul>
@@ -560,59 +560,24 @@ export const FAQPage: React.FC = () => {
               </ul>
             </div>
 
-            {/* CUT Token */}
+            {/* xUSDC */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">What is CUT?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">What is xUSDC?</h3>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>CUT is the platform's token used for contest entry fees and prizes</li>
-                <li>Each CUT token is backed 1:1 by USDC (a US dollar stablecoin)</li>
-                <li>Your USDC deposits are supplied via Aave to earn yield</li>
-                <li>You can convert between CUT and USDC instantly at any time</li>
+                <li>xUSDC is the test stablecoin used for contest entry fees, prizes, and transfers</li>
+                <li>It behaves like USDC (6 decimals, $1 per token on testnet)</li>
                 <li>
-                  Learn more on the{" "}
-                  <Link to="/cut" className="text-blue-600 hover:underline">
-                    CUT info page
+                  Deposit or send xUSDC from{" "}
+                  <Link to="/account/funds" className="text-blue-600 hover:underline">
+                    Account → Manage funds
                   </Link>
                 </li>
-              </ul>
-            </div>
-
-            {/* USDC */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">What is USDC?</h3>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>USDC is a stablecoin pegged 1:1 to the US Dollar</li>
-
-                <li>You need USDC to buy CUT tokens on The Cut</li>
                 <li>
-                  See how to get USDC on the{" "}
+                  Learn more on the{" "}
                   <Link to="/usdc" className="text-blue-600 hover:underline">
                     USDC info page
                   </Link>
                 </li>
-              </ul>
-            </div>
-
-            {/* Buying/Selling CUT */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                How do I buy and sell CUT?
-              </h3>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>
-                  Go to your{" "}
-                  <Link to="/account" className="text-blue-600 hover:underline">
-                    Account page
-                  </Link>{" "}
-                  or the{" "}
-                  <Link to="/cut" className="text-blue-600 hover:underline">
-                    CUT page
-                  </Link>
-                </li>
-                <li>Use the "Buy" tab to convert USDC to CUT</li>
-                <li>Use the "Sell" tab to convert CUT back to USDC</li>
-                <li>Conversions happen instantly at a 1:1 ratio</li>
-                <li>Small gas fees (transaction fees) apply for blockchain transactions</li>
               </ul>
             </div>
 
@@ -687,20 +652,6 @@ export const FAQPage: React.FC = () => {
                 <li>No central authority can manipulate funds or results</li>
                 <li>All contract code is publicly verifiable on the blockchain</li>
                 <li>The Cut operates on the Base network (Ethereum Layer 2)</li>
-              </ul>
-            </div>
-
-            {/* CUT Token Contract */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                How does the CUT token contract work?
-              </h3>
-              <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                <li>The Platform Token contract manages CUT token minting and burning</li>
-                <li>When you deposit USDC, the contract mints CUT at 1:1 ratio</li>
-                <li>Your USDC is supplied via Aave to earn yield</li>
-                <li>When you sell CUT, the contract burns your tokens and returns USDC</li>
-                <li>The contract ensures CUT is always fully backed by USDC reserves</li>
               </ul>
             </div>
 
@@ -824,13 +775,13 @@ export const FAQPage: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link to="/cut" className="text-blue-600 hover:underline font-medium">
-                Learn More About CUT Token
+              <Link to="/usdc" className="text-blue-600 hover:underline font-medium">
+                About xUSDC / USDC
               </Link>
             </li>
             <li>
-              <Link to="/usdc" className="text-blue-600 hover:underline font-medium">
-                How to Get USDC
+              <Link to="/account/funds" className="text-blue-600 hover:underline font-medium">
+                Deposit or Send Funds
               </Link>
             </li>
           </ul>

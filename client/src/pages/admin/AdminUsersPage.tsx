@@ -6,13 +6,12 @@ import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminUsersQuery } from "../../hooks/useAdminUserQueries";
+import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 
-const PLATFORM_TOKEN_DECIMALS = 18;
-
-function formatPlatformBalance(wei: string | null): string {
+function formatPaymentBalance(wei: string | null): string {
   if (wei === null) return "—";
   try {
-    return Number(formatUnits(BigInt(wei), PLATFORM_TOKEN_DECIMALS)).toLocaleString(undefined, {
+    return Number(formatUnits(BigInt(wei), PAYMENT_TOKEN_DECIMALS)).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 4,
     });
@@ -34,11 +33,11 @@ function formatLastContestEntry(iso: string | null): string {
 
 export function AdminUsersPage() {
   const [userTypeFilter, setUserTypeFilter] = useState<string>("USER");
-  const { platformTokenSymbol } = useAuth();
-  const tokenLabel = platformTokenSymbol ?? "CUT";
+  const { paymentTokenSymbol } = useAuth();
+  const tokenLabel = paymentTokenSymbol ?? "xUSDC";
   const { data, isLoading, error } = useAdminUsersQuery(userTypeFilter);
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
-  const totalFormatted = data ? formatPlatformBalance(data.totalPlatformTokenBalanceWei) : null;
+  const totalFormatted = data ? formatPaymentBalance(data.totalPaymentTokenBalanceWei) : null;
 
   return (
     <div className="space-y-4 p-4">
@@ -107,7 +106,7 @@ export function AdminUsersPage() {
                     {formatLastContestEntry(u.lastContestEntryAt)}
                   </td>
                   <td className="p-3 text-gray-800 text-right tabular-nums whitespace-nowrap">
-                    {formatPlatformBalance(u.platformTokenBalanceWei ?? null)}
+                    {formatPaymentBalance(u.paymentTokenBalanceWei ?? null)}
                   </td>
                 </tr>
               ))}

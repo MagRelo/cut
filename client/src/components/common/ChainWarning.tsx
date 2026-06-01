@@ -62,12 +62,11 @@ export function RealMoneyWarning() {
       </div>
       <div className="text-sm text-blue-700">
         <p className="mb-2">
-          You'll need to fund your account with USDC tokens or CUT tokens in order to join contests.
-          If you're new to crypto, consider asking another user to transfer you some USDC to get
-          started.
+          You&apos;ll need xUSDC in your wallet to join contests and place parlays. If you&apos;re
+          new to crypto, ask another user to send you testnet xUSDC to get started.
         </p>
         <p className="mb-2">
-          If you already own USDC or CUT you can transfer it directly to your Cut account:
+          If you already have xUSDC you can transfer it directly to your Cut account:
         </p>
 
         <div className="text-center font-medium text-sm pt-4 pb-3">

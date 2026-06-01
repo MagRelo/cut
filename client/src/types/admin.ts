@@ -10,8 +10,8 @@ export interface AdminUserListItem {
   chainId: number;
   walletAddress: string | null;
   wallet: { publicKey: string; isPrimary: boolean; chainId: number } | null;
-  /** ERC-20 balance in wei (stringified bigint); null if no wallet on this chain or balance fetch failed. */
-  platformTokenBalanceWei: string | null;
+  /** Payment token balance in wei (stringified bigint); null if no wallet on this chain or balance fetch failed. */
+  paymentTokenBalanceWei: string | null;
 }
 
 export interface AdminUsersListResponse {
@@ -21,8 +21,8 @@ export interface AdminUsersListResponse {
   offset: number;
   chainId: number;
   userType: string;
-  /** Sum of listed users’ platform token balances (wei); excludes users without a wallet on this chain. */
-  totalPlatformTokenBalanceWei: string;
+  /** Sum of listed users’ payment token balances (wei); excludes users without a wallet on this chain. */
+  totalPaymentTokenBalanceWei: string;
 }
 
 export interface AdminUserDetailResponse {

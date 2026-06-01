@@ -345,12 +345,7 @@ export function UserPage() {
       {/* <MintingUserFundsPanel /> */}
 
       {/* Token Balances */}
-      <TokenBalances
-        showCutRow={false}
-        showCutInfoLink={false}
-        showUsdcRow={false}
-        showContestHistoryLink={false}
-      />
+      <TokenBalances showContestHistoryLink={false} />
 
       <ReferralNetworkPanel
         loading={referralLoading}

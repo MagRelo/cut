@@ -1,8 +1,8 @@
 import React, { Fragment, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { formatUnits, parseUnits } from "viem";
 import { usePostHog } from "posthog-js/react";
-import { useReadContract } from "wagmi";
+import { useAccount, useBalance, useReadContract } from "wagmi";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 
 import { Contest } from "src/types/contest";
@@ -19,8 +19,8 @@ import { generateEntryId } from "../../utils/entryIdUtils";
 import { captureContestEntryRecorded } from "../../lib/analytics/posthog";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
+import { hasEnoughTokenBalance } from "../../lib/paymentTokenSpend";
 
-// Import contract ABIs
 import ContestContract from "../../utils/contracts/ContestController.json";
 
 interface LineupManagementProps {
@@ -46,15 +46,6 @@ const getStatusMessages = (
   return defaultMessage;
 };
 
-// Helper functions for decimal conversion (kept for balance checking logic)
-const PAYMENT_TOKEN_DECIMALS = 6;
-const PLATFORM_TOKEN_DECIMALS = 18;
-
-const convertPaymentToPlatformTokens = (paymentTokenAmount: bigint): bigint => {
-  const humanReadableAmount = formatUnits(paymentTokenAmount, PAYMENT_TOKEN_DECIMALS);
-  return parseUnits(humanReadableAmount, PLATFORM_TOKEN_DECIMALS);
-};
-
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
 const isValidHexColor = (value: unknown): value is string => {
@@ -66,7 +57,10 @@ const isValidHexColor = (value: unknown): value is string => {
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData();
-  const { user, platformTokenBalance, paymentTokenBalance, balancesUnavailable } = useAuth();
+  const { address } = useAccount();
+  const { client: smartWalletClient } = useSmartWallets();
+  const balanceAddress = smartWalletClient?.account?.address ?? address;
+  const { user, paymentTokenBalance, balancesUnavailable } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
 
@@ -207,6 +201,30 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   const contestantDepositAmount: bigint | undefined =
     typeof primaryDepositRaw === "bigint" ? primaryDepositRaw : undefined;
 
+  const { data: contestPaymentTokenOnChain } = useReadContract({
+    address: contest.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "paymentToken",
+    args: [],
+    query: { enabled: !!contest.address },
+  });
+
+  const contestPaymentToken =
+    (typeof contestPaymentTokenOnChain === "string"
+      ? contestPaymentTokenOnChain
+      : contest.settings?.paymentTokenAddress) ?? "";
+
+  const { data: contestTokenBalanceData } = useBalance({
+    address: balanceAddress,
+    token: contestPaymentToken as `0x${string}`,
+    query: {
+      enabled: !!balanceAddress && !!contestPaymentToken && !!user,
+    },
+  });
+
+  const spendableForContest =
+    contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
+
   // Modals
   const [warningModal, setWarningModal] = useState<{
     open: boolean;
@@ -218,13 +236,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     if (contestantDepositAmount === undefined) return false;
     if (contestantDepositAmount === 0n) return true;
 
-    const platformTokenAmount = platformTokenBalance ?? 0n;
-    const paymentTokenAmount = paymentTokenBalance ?? 0n;
-    const paymentTokenAsPlatformTokens = convertPaymentToPlatformTokens(paymentTokenAmount);
-    const totalAvailableBalance = platformTokenAmount + paymentTokenAsPlatformTokens;
-
-    return totalAvailableBalance >= contestantDepositAmount;
-  }, [platformTokenBalance, paymentTokenBalance, contestantDepositAmount]);
+    return hasEnoughTokenBalance(spendableForContest, contestantDepositAmount);
+  }, [spendableForContest, contestantDepositAmount]);
 
   // Helper function to check if lineup with same players already exists in contest
   const checkForDuplicateInContest = useCallback(
@@ -305,16 +318,11 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     setPendingAction({ type: "join", lineupId, entryId: entryId.toString() });
     setSubmissionError(null);
 
-    const platformTokenAmount = platformTokenBalance ?? 0n;
-    const paymentTokenAmount = paymentTokenBalance ?? 0n;
-
-    // Create and execute the join contest calls
     const calls = createJoinContestCalls(
       contest.address as string,
       entryId,
       contestantDepositAmount,
-      platformTokenAmount,
-      paymentTokenAmount,
+      contestPaymentToken,
     );
 
     await executeJoinBlockchain(calls);

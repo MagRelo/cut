@@ -14,7 +14,7 @@ const baseSettings: ContestSettings = {
   chainId: 84532,
   expiryTimestamp: Math.floor(Date.now() / 1000) + 86400 * 7,
   paymentTokenAddress: "0x0000000000000000000000000000000000000001",
-  paymentTokenSymbol: "CUT",
+  paymentTokenSymbol: "xUSDC",
   oracle: "0x0000000000000000000000000000000000000002",
   primaryDeposit: 10,
   oracleFeeBps: 500,

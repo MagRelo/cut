@@ -7,10 +7,9 @@ export interface WalletTokenBalancesCardProps {
   title: string;
   address: string;
   chainId: number;
-  platformTokenAddress: string;
   paymentTokenAddress: string;
-  platformTokenSymbol?: string;
   paymentTokenSymbol?: string;
+  paymentTokenDecimals?: number;
   /** e.g. empty wallet on file */
   addressMissingMessage?: string;
 }
@@ -19,10 +18,9 @@ export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = (
   title,
   address,
   chainId,
-  platformTokenAddress,
   paymentTokenAddress,
-  platformTokenSymbol = "CUT",
-  paymentTokenSymbol = "USDC",
+  paymentTokenSymbol = "xUSDC",
+  paymentTokenDecimals = 6,
   addressMissingMessage,
 }) => {
   const addr = address as `0x${string}` | undefined;
@@ -34,21 +32,14 @@ export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = (
     query: { enabled: hasAddress },
   });
 
-  const { data: usdcBalance, isLoading: usdcLoading } = useBalance({
+  const { data: paymentBalance, isLoading: paymentLoading } = useBalance({
     address: addr,
     token: paymentTokenAddress as `0x${string}`,
     chainId: chainId as 8453 | 84532,
     query: { enabled: hasAddress && Boolean(paymentTokenAddress) },
   });
 
-  const { data: cutBalance, isLoading: cutLoading } = useBalance({
-    address: addr,
-    token: platformTokenAddress as `0x${string}`,
-    chainId: chainId as 8453 | 84532,
-    query: { enabled: hasAddress && Boolean(platformTokenAddress) },
-  });
-
-  const isLoading = hasAddress && (ethLoading || usdcLoading || cutLoading);
+  const isLoading = hasAddress && (ethLoading || paymentLoading);
 
   if (!hasAddress) {
     return (
@@ -105,33 +96,17 @@ export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = (
                 <span className="text-white font-bold text-sm">$</span>
               </div>
               <div>
-                <div className="text-sm text-gray-600 font-semibold">USD Coin</div>
+                <div className="text-sm text-gray-600 font-semibold">Payment token</div>
                 <div className="text-xs text-gray-500">{paymentTokenSymbol}</div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900">
-                {usdcBalance ? Number(formatUnits(usdcBalance.value, 6)).toFixed(2) : "0.00"}
+                {paymentBalance
+                  ? Number(formatUnits(paymentBalance.value, paymentTokenDecimals)).toFixed(2)
+                  : "0.00"}
               </div>
               <div className="text-xs text-gray-500">{paymentTokenSymbol}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-sm">{platformTokenSymbol}</span>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 font-semibold">Platform Token</div>
-                <div className="text-xs text-gray-500">{platformTokenSymbol}</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-gray-900">
-                {cutBalance ? Number(formatUnits(cutBalance.value, 18)).toFixed(2) : "0.00"}
-              </div>
-              <div className="text-xs text-gray-500">{platformTokenSymbol}</div>
             </div>
           </div>
         </div>

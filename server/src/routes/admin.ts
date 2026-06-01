@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { erc20Abi } from "viem";
 import { prisma } from "../lib/prisma.js";
 import { SideBetTicketStatus } from "@prisma/client";
-import { getPlatformTokenAddress } from "../lib/contractAddresses.js";
+import { getPaymentTokenAddress } from "../lib/contractAddresses.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
 import { getPublicClient } from "../services/shared/contractClient.js";
@@ -156,21 +156,21 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
       };
     });
 
-    const platformToken = getPlatformTokenAddress(chainId);
-    let totalPlatformTokenBalanceWei = "0";
+    const paymentToken = getPaymentTokenAddress(chainId);
+    let totalPaymentTokenBalanceWei = "0";
     let itemsWithBalances = items.map((item) => ({
       ...item,
-      platformTokenBalanceWei: null as string | null,
+      paymentTokenBalanceWei: null as string | null,
     }));
 
-    if (platformToken) {
+    if (paymentToken) {
       const indexByContractPos: number[] = [];
       const contracts = items.flatMap((item, i) => {
         if (!item.walletAddress) return [];
         indexByContractPos.push(i);
         return [
           {
-            address: platformToken,
+            address: paymentToken,
             abi: erc20Abi,
             functionName: "balanceOf" as const,
             args: [item.walletAddress as `0x${string}`],
@@ -191,15 +191,15 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
             balanceByUserIndex.set(userIdx, bal);
             totalWei += bal;
           });
-          totalPlatformTokenBalanceWei = totalWei.toString();
+          totalPaymentTokenBalanceWei = totalWei.toString();
           itemsWithBalances = items.map((item, i) => ({
             ...item,
-            platformTokenBalanceWei: item.walletAddress
+            paymentTokenBalanceWei: item.walletAddress
               ? (balanceByUserIndex.get(i) ?? 0n).toString()
               : null,
           }));
         } catch (e) {
-          console.error("admin users platform token multicall:", e);
+          console.error("admin users payment token multicall:", e);
         }
       }
     }
@@ -211,7 +211,7 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
       offset,
       chainId,
       userType,
-      totalPlatformTokenBalanceWei,
+      totalPaymentTokenBalanceWei,
     });
   } catch (error) {
     console.error("admin list users error:", error);
