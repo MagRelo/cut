@@ -4,6 +4,6 @@
   "depositManagerAddress": "0x08B73bA75138ffdeB23888e31bfDF4259e4ed67f",
   "contestFactoryAddress": "0x1B28BBCAB784EfB861d7ae13F12f4701164Ae627",
   "aavePoolAddress": "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27",
-  "referralGraphAddress": "0xD11F317D12ECCd56926B2bDC3144dDA103BB1fd0",
-  "rewardDistributorAddress": "0x344C21c7DAffB5Fb9442b27e1E53051aE7faf926"
+  "referralGraphAddress": "0xe86440c041028739995AF8E940DD327c99E234A5",
+  "rewardDistributorAddress": "0x68460F01c5b06b44caf4feB196b3a8c1ece9Dc4f"
 }

@@ -16,7 +16,7 @@ contract DeploySepolia is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address referralOracle = vm.envOr("REFERRAL_ORACLE", address(0));
+        address referralOracle = vm.envOr("REFERRAL_ORACLE", deployer);
 
         vm.startBroadcast(deployerPrivateKey);
 
