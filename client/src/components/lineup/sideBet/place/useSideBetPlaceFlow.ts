@@ -143,9 +143,11 @@ export function useSideBetPlaceFlow({
       return;
     }
 
-    const oracle = import.meta.env.VITE_ORACLE_ADDRESS?.trim() ?? "";
-    if (!oracle || !isAddress(oracle)) {
-      setPlaceError("Oracle payout address is not configured (VITE_ORACLE_ADDRESS).");
+    const stakeRecipient = import.meta.env.VITE_SIDE_BET_STAKE_RECIPIENT?.trim() ?? "";
+    if (!stakeRecipient || !isAddress(stakeRecipient)) {
+      setPlaceError(
+        "Side bet stake recipient is not configured (VITE_SIDE_BET_STAKE_RECIPIENT).",
+      );
       return;
     }
     if (!isConnected) {
@@ -171,7 +173,7 @@ export function useSideBetPlaceFlow({
     };
 
     try {
-      const calls = createTransferCalls(oracle, amountStr);
+      const calls = createTransferCalls(stakeRecipient, amountStr);
       await execute(calls);
     } catch (e: unknown) {
       pendingSideBetRef.current = null;
