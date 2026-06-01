@@ -1,4 +1,4 @@
-import { isAddress, type Hex } from "viem";
+import { getAddress, isAddress, type Hex } from "viem";
 import baseContracts from "../contracts/base.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 
@@ -61,3 +61,44 @@ export function getRewardDistributorAddress(chainId: number): `0x${string}` | nu
 
 /** REFERRAL_ROOT sentinel on ReferralGraph / RewardDistributor (no payable chain). */
 export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;
+
+const DEFAULT_REFERRAL_SYNC_CHAIN_ID = 84532;
+
+/** Chain id for referral graph sync scripts (default Base Sepolia). */
+export function getReferralSyncChainIdFromEnv(): number {
+  const raw = process.env.REFERRAL_SYNC_CHAIN_ID?.trim();
+  if (!raw) return DEFAULT_REFERRAL_SYNC_CHAIN_ID;
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || ![8453, 84532].includes(n)) {
+    throw new Error("REFERRAL_SYNC_CHAIN_ID must be 8453 or 84532");
+  }
+  return n;
+}
+
+/**
+ * Oracle wallet used as ultimate tree root under REFERRAL_ROOT (Option B).
+ * Prefers REFERRAL_ORACLE_ROOT_ADDRESS, then ORACLE_ADDRESS.
+ */
+export function getReferralOracleRootAddress(chainId: number): `0x${string}` {
+  const fromEnv =
+    process.env.REFERRAL_ORACLE_ROOT_ADDRESS?.trim() ||
+    process.env.ORACLE_ADDRESS?.trim();
+  if (!fromEnv || !isAddress(fromEnv)) {
+    throw new Error(
+      "REFERRAL_ORACLE_ROOT_ADDRESS or ORACLE_ADDRESS must be a valid EVM address",
+    );
+  }
+  const normalized = getAddress(fromEnv).toLowerCase() as `0x${string}`;
+  if (chainId !== 8453 && chainId !== 84532) {
+    throw new Error(`Unsupported referral chain id: ${chainId}`);
+  }
+  return normalized;
+}
+
+export function requireReferralGroupId(): Hex {
+  const id = parseReferralGroupIdFromEnv();
+  if (!id) {
+    throw new Error("REFERRAL_GROUP_ID is required for referral graph operations");
+  }
+  return id;
+}

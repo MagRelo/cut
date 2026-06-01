@@ -30,8 +30,10 @@ class CronScheduler {
 
       // If the task returns a BatchOperationResult, log it
       if (result && typeof result === "object" && "total" in result) {
+        const deferred =
+          "deferred" in result && typeof result.deferred === "number" ? result.deferred : 0;
         console.log(
-          `[CRON] ${jobName} - Completed: ${result.succeeded}/${result.total} succeeded, ${result.failed} failed`
+          `[CRON] ${jobName} - Completed: ${result.succeeded}/${result.total} succeeded, ${result.failed} failed${deferred > 0 ? `, ${deferred} deferred` : ""}`,
         );
       } else {
         console.log(`[CRON] ${jobName} - Completed`);

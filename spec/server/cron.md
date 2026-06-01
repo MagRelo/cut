@@ -97,10 +97,51 @@ flowchart TD
   - Update database status
 
 ### 7. Sync Referral Graph
-- **Service**: `batchSyncReferralGraph.ts`
-- **Purpose**: Push pending referral registrations to the on-chain ReferralGraph (`batchRegister`)
+- **Service**: [`batchSyncReferralGraph.ts`](../../server/src/services/batch/batchSyncReferralGraph.ts)
+- **Purpose**: Register invited users on the shared `ReferralGraph` (Option B — oracle-as-root model)
 - **Frequency**: Every 5 minutes (end of pipeline)
-- **Operations**: Load users with referral fields set but no `referralOnchainTxHash`; batch-register on chain
+- **Spec**: [docs/referral-network.md](../../docs/referral-network.md)
+
+#### Policy (Option B)
+
+| User type | DB | On-chain parent |
+|-----------|-----|-----------------|
+| Organic | `referrerAddress` null | Contest oracle wallet (under `REFERRAL_ROOT`) |
+| Invited | `referrerAddress` set | Inviter’s wallet |
+
+Organic registration at signup is handled in [`privyUserProvisioning.ts`](../../server/src/lib/privyUserProvisioning.ts). The cron job only processes **invite** rows that still need an on-chain tx.
+
+New contests on Base Sepolia use `referralGraphAddress` / `rewardDistributorAddress` from [`server/src/contracts/sepolia.json`](../../server/src/contracts/sepolia.json). Settlement requires the winner to be `isRegistered` on the graph ([`settleContest.ts`](../../server/src/services/contest/settleContest.ts)); `ReferralNetworkFeeToOracle` is a contract safety net only.
+
+#### Cron behavior
+
+1. Load users with full referral fields and `referralOnchainTxHash IS NULL`.
+2. Mark users already `isRegistered` with sentinel `already_registered`.
+3. **Wave sync**: batch-register only when `referrerAddress` is already on-chain; otherwise **defer** (retry next run).
+4. Log batch summary: `succeeded`, `failed`, `deferred` (see [`BatchOperationResult`](../../server/src/services/shared/types.ts)).
+
+#### One-time / repair scripts (not in cron)
+
+Run after a fresh graph deploy or before first production settle on a new graph:
+
+| Script | npm (from repo root) |
+|--------|----------------------|
+| Register oracle under `REFERRAL_ROOT` | `pnpm --filter server run script:bootstrap-referral-oracle-root` |
+| Register organic users (no DB referrer) under oracle | `pnpm --filter server run script:register-users-under-oracle-root` |
+| Dry-run for register-all | add `-- --dry-run` |
+
+Both scripts support `--dry-run`. Requires `REFERRAL_GROUP_ID` and `REFERRAL_ORACLE_ROOT_ADDRESS` (or `ORACLE_ADDRESS`) in `server/.env`.
+
+#### Environment
+
+| Variable | Purpose |
+|----------|---------|
+| `REFERRAL_GROUP_ID` | `bytes32` group on graph and contests |
+| `REFERRAL_ORACLE_ROOT_ADDRESS` | Oracle wallet as tree root (defaults to `ORACLE_ADDRESS`) |
+| `REFERRAL_SYNC_CHAIN_ID` | Optional; scripts default `84532` |
+| `ORACLE_PRIVATE_KEY` / `REFERRAL_ORACLE_PRIVATE_KEY` | Signs `register` / `batchRegister` txs |
+
+Contract addresses are read from `server/src/contracts/{sepolia,base}.json`, not env.
 
 ## Error Handling
 

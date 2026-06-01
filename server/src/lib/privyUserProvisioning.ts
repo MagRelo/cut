@@ -3,7 +3,12 @@ import { isAddress } from "viem";
 import { prisma } from "./prisma.js";
 import { getPrivyClient } from "./privyClient.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
-import { isReferralRequiredForSignup, requireReferralGroupIdForSignup } from "./referralConfig.js";
+import {
+  isReferralRequiredForSignup,
+  parseReferralGroupIdFromEnv,
+  requireReferralGroupIdForSignup,
+} from "./referralConfig.js";
+import { registerOrganicUserOnReferralGraph } from "../services/referral/registerOrganicUserOnGraph.js";
 
 /** Wallet already bound to a different Privy user — respond with 403, not a generic 401. */
 export class PrivyWalletIdentityConflictError extends Error {
@@ -396,6 +401,8 @@ export async function ensureCutUserFromPrivy(
     referral = await resolveReferralForNewUser(normalizedReferrer, chainId, address);
   }
 
+  const platformGroupId = parseReferralGroupIdFromEnv();
+
   await maybeMintTestnetUsdc(address, chainId);
 
   const email = pickEmailFromPrivyUser(privyUser);
@@ -421,10 +428,10 @@ export async function ensureCutUserFromPrivy(
       },
       ...(email ? { email } : {}),
       referrerAddress: referral?.referrerAddress ?? null,
-      referralGroupId: referral?.groupIdHex ?? null,
+      referralGroupId: referral?.groupIdHex ?? platformGroupId ?? null,
       referredByUserId: referral?.referredByUserId ?? null,
-      referralChainId: referral ? chainId : null,
-      referralRecordedAt: referral ? new Date() : null,
+      referralChainId: referral || platformGroupId ? chainId : null,
+      referralRecordedAt: referral || platformGroupId ? new Date() : null,
       wallets: {
         create: {
           chainId,
@@ -436,6 +443,17 @@ export async function ensureCutUserFromPrivy(
   });
 
   await syncUserWalletsForPrivyUser(user.id, privyUser, preferredChainId);
+
+  if (!referral && platformGroupId) {
+    try {
+      await registerOrganicUserOnReferralGraph(user.id, address, chainId);
+    } catch (e) {
+      console.error(
+        `[ensureCutUserFromPrivy] organic ReferralGraph register failed for user ${user.id}:`,
+        e,
+      );
+    }
+  }
 
   return {
     userId: user.id,

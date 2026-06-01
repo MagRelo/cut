@@ -161,6 +161,8 @@ export interface BatchOperationResult {
   total: number;
   succeeded: number;
   failed: number;
+  /** Invite sync: users skipped because referrer is not on-chain yet. */
+  deferred?: number;
   results: OperationResult[];
 }
 

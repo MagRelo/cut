@@ -52,6 +52,26 @@ export async function referralGraphIsRegistered(
   }) as Promise<boolean>;
 }
 
+export async function referralGraphRegister(
+  chainId: number,
+  contractAddress: `0x${string}`,
+  userAddress: `0x${string}`,
+  referrer: `0x${string}`,
+  groupId: Hex,
+): Promise<Hex> {
+  const { walletClient, chain } = getReferralWalletClient(chainId);
+  const publicClient = getReferralPublicClient(chainId);
+  const hash = await walletClient.writeContract({
+    address: contractAddress,
+    abi: ReferralGraph.abi,
+    functionName: "register",
+    args: [userAddress, referrer, groupId],
+    chain,
+  });
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
+}
+
 export async function referralGraphBatchRegister(
   chainId: number,
   contractAddress: `0x${string}`,

@@ -14,6 +14,7 @@ import {
 } from "../shared/contractClient.js";
 import { executeContestPayoutPushes } from "./pushContestPayouts.js";
 import { buildSettlementReferralArgs } from "./buildSettlementReferralArgs.js";
+import { assertWinnerRegisteredOnReferralGraph } from "../referral/assertWinnerRegisteredOnGraph.js";
 import { recordSettlementReferralPayments } from "./recordSettlementReferralPayments.js";
 import { getRewardDistributorAddress } from "../../lib/referralConfig.js";
 import {
@@ -200,6 +201,26 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         success: false,
         contestId,
         error: "No winning entry for settlement",
+      };
+    }
+
+    const referralNetworkBps = (await contract.read.referralNetworkBps!()) as bigint;
+    const referralGroupId = (await contract.read.referralGroupId!()) as `0x${string}`;
+    const winnerOwner = (await contract.read.entryOwner!([
+      BigInt(winningEntryStr),
+    ])) as `0x${string}`;
+
+    const winnerCheck = await assertWinnerRegisteredOnReferralGraph({
+      chainId: contest.chainId,
+      winnerWallet: winnerOwner,
+      referralGroupId,
+      referralNetworkBps,
+    });
+    if (!winnerCheck.ok) {
+      return {
+        success: false,
+        contestId,
+        error: winnerCheck.error,
       };
     }
 
