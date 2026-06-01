@@ -25,7 +25,7 @@ export async function insertOnchainPaymentRow(input: {
   tokenAddress: string;
   amountWei: string;
   transactionHash: string;
-  logIndex: number | null;
+  logIndex: number;
   metadata?: Record<string, unknown>;
 }): Promise<void> {
   const data: Prisma.OnchainPaymentUncheckedCreateInput = {
@@ -42,5 +42,8 @@ export async function insertOnchainPaymentRow(input: {
   if (input.metadata !== undefined) {
     data.metadata = input.metadata as Prisma.InputJsonValue;
   }
-  await prisma.onchainPayment.create({ data });
+  await prisma.onchainPayment.createMany({
+    data: [data],
+    skipDuplicates: true,
+  });
 }

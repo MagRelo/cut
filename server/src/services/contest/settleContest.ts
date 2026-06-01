@@ -6,8 +6,16 @@
  */
 
 import { prisma } from "../../lib/prisma.js";
-import { getContestContract, verifyOracle, readContestState } from "../shared/contractClient.js";
+import {
+  getContestContract,
+  getPublicClient,
+  verifyOracle,
+  readContestState,
+} from "../shared/contractClient.js";
 import { executeContestPayoutPushes } from "./pushContestPayouts.js";
+import { buildSettlementReferralArgs } from "./buildSettlementReferralArgs.js";
+import { recordSettlementReferralPayments } from "./recordSettlementReferralPayments.js";
+import { getRewardDistributorAddress } from "../../lib/referralConfig.js";
 import {
   ContestState,
   type OperationResult,
@@ -15,14 +23,8 @@ import {
   type DetailedResult,
   type ContestSnapshot,
 } from "../shared/types.js";
-import { getContract, createPublicClient, http, erc20Abi } from "viem";
-import { getChainConfig } from "../../lib/chainConfig.js";
-import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
+import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
-import {
-  applyOracleFeeWei,
-  buildGrossPrimaryPayoutPreview,
-} from "./primaryPayoutPreview.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
 const isValidHexColor = (value: unknown): value is string => {
@@ -158,7 +160,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       secondarySideBalance,
       totalSecondaryLiquidity,
       primaryDepositSecondarySubsidyBps,
-      oracleFeeBpsOnChain,
       paymentTokenAddress,
     ] = await Promise.all([
       contract.read.primaryPrizePool!() as Promise<bigint>,
@@ -166,15 +167,9 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       contract.read.getSecondarySideBalance!() as Promise<bigint>,
       contract.read.totalSecondaryLiquidity!() as Promise<bigint>,
       contract.read.primaryDepositSecondarySubsidyBps!() as Promise<bigint>,
-      contract.read.oracleFeeBps!() as Promise<bigint>,
       contract.read.paymentToken!() as Promise<`0x${string}`>,
     ]);
-    // Get contract token balance using ERC20 contract
-    const chainConfig = getChainConfig(contest.chainId);
-    const publicClient = createPublicClient({
-      chain: chainConfig.chain,
-      transport: http(chainConfig.rpcUrl),
-    });
+    const publicClient = getPublicClient(contest.chainId);
     const tokenContract = getContract({
       address: paymentTokenAddress,
       abi: erc20Abi,
@@ -199,48 +194,29 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       secondarySideBalance: snapshot.secondarySideBalance,
     });
 
-    // Preserve payout/bonus totals at settlement time.
-    // These on-chain values may be zeroed after users claim, but we want to
-    // keep the UI display consistent by storing them in `contest.results`.
-    // Store net-of-fee values so stored amounts match pushed payouts.
-    const oracleFeeBps = Number(oracleFeeBpsOnChain);
-
-    const secondaryWinningEntryBigInt = winningEntries[0] ? BigInt(winningEntries[0]) : undefined;
-    if (secondaryWinningEntryBigInt === undefined) {
+    const winningEntryStr = winningEntries[0];
+    if (!winningEntryStr) {
       return {
         success: false,
         contestId,
-        error: "No secondary winning entry available for settlement preview",
+        error: "No winning entry for settlement",
       };
     }
-    const winnerNetPositionWord = (await contract.read.netPosition!([
-      secondaryWinningEntryBigInt,
-    ])) as bigint;
-    const winnerSupply = sharesForSecondaryPricing(winnerNetPositionWord);
 
-    const primaryPayoutPreview = buildGrossPrimaryPayoutPreview({
-      primaryPrizePoolWei: primaryPrizePool,
-      totalSecondaryLiquidityWei: totalSecondaryLiquidity,
-      winningEntries,
-      payoutBps,
-      winnerSupply,
+    const referralArgs = await buildSettlementReferralArgs({
+      contestAddress: contest.address,
+      chainId: contest.chainId,
+      winningEntryId: winningEntryStr,
     });
 
-    detailedResults.forEach((r) => {
-      const grossPayoutAmountWei = primaryPayoutPreview.get(r.entryId) ?? 0n;
-      const payoutAmountWei = applyOracleFeeWei(grossPayoutAmountWei, oracleFeeBps);
-      r.payoutAmountWei = payoutAmountWei.toString();
-      r.positionBonusAmountWei = "0";
-    });
-
-    // Convert entryIds to BigInt for contract call
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
 
-    // Call contract to settle (wait for confirmation before push — pushPrimaryPayouts requires SETTLED)
     const hash = (await contract.write.settleContest!([
       winningEntriesBigInt,
       payoutBpsBigInt,
+      referralArgs.referralReward,
+      referralArgs.referralSignature,
     ])) as `0x${string}`;
 
     console.log(`[settleContest] Transaction submitted: ${hash}`);
@@ -255,6 +231,35 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       );
     }
     console.log(`[settleContest] Settlement confirmed on-chain: ${hash}`);
+
+    for (const row of detailedResults) {
+      if (row.payoutBasisPoints <= 0) {
+        row.payoutAmountWei = "0";
+        row.positionBonusAmountWei = "0";
+        continue;
+      }
+      const stored = (await contract.read.primaryPrizePoolPayouts!([
+        BigInt(row.entryId),
+      ])) as bigint;
+      row.payoutAmountWei = stored.toString();
+      row.positionBonusAmountWei = "0";
+    }
+
+    const rewardDistributorAddress = getRewardDistributorAddress(contest.chainId);
+    if (rewardDistributorAddress) {
+      await recordSettlementReferralPayments({
+        contestId,
+        chainId: contest.chainId,
+        contestAddress: contest.address,
+        paymentTokenAddress,
+        settleReceipt,
+        rewardDistributorAddress,
+      });
+    } else {
+      console.warn(
+        `[settleContest] No rewardDistributorAddress for chain ${contest.chainId}; skipping referral payment indexing`,
+      );
+    }
 
     const pushResult = await executeContestPayoutPushes({
       contestId,
@@ -273,7 +278,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       snapshot,
       pushPrimaryTxs: pushResult.primaryTxHashes.map((h) => ({ hash: h })),
       pushSecondaryTxs: pushResult.secondaryTxHashes.map((h) => ({ hash: h })),
-      secondaryPayouts: pushResult.secondaryPayouts,
       ...(pushResult.error ? { pushPayoutsError: pushResult.error } : {}),
     };
 

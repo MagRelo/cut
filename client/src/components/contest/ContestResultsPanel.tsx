@@ -1,13 +1,9 @@
-import { useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits } from "viem";
 
-import type {
-  Contest,
-  DetailedResult,
-  RewardsPayoutResult,
-  SecondaryPayoutResult,
-} from "../../types/contest";
+import type { Contest, OnchainPaymentView } from "../../types/contest";
+import { useContestPayoutSections } from "../../hooks/useContestPayoutSections";
 import { PositionBadge } from "./PositionBadge";
 import {
   ContestPayoutDividedRows,
@@ -64,29 +60,7 @@ function formatShareBps(shareBps: number) {
   return `${percent.toFixed(fractionDigits)}% of pool`;
 }
 
-function primaryPayoutWei(result: DetailedResult): bigint | null {
-  if (result.payoutBasisPoints <= 0) return null;
-  try {
-    if (result.payoutAmountWei !== undefined || result.positionBonusAmountWei !== undefined) {
-      const p = BigInt(result.payoutAmountWei ?? "0");
-      const b = BigInt(result.positionBonusAmountWei ?? "0");
-      return p + b;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function secondaryAmountWei(row: SecondaryPayoutResult): bigint | null {
-  try {
-    return BigInt(row.amountWei);
-  } catch {
-    return null;
-  }
-}
-
-function rewardsAmountWei(row: RewardsPayoutResult): bigint | null {
+function parseAmountWei(row: OnchainPaymentView): bigint | null {
   try {
     return BigInt(row.amountWei);
   } catch {
@@ -95,39 +69,7 @@ function rewardsAmountWei(row: RewardsPayoutResult): bigint | null {
 }
 
 export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contest }) => {
-  const primaryRowsWithPayout = useMemo(() => {
-    return [...(contest.results?.detailedResults ?? [])]
-      .filter((r) => r.payoutBasisPoints > 0)
-      .sort((a, b) => {
-        if (a.position !== b.position) return a.position - b.position;
-        return a.entryId.localeCompare(b.entryId);
-      });
-  }, [contest.results?.detailedResults]);
-
-  const sortedSecondaryPayouts = useMemo(() => {
-    const rows = contest.results?.secondaryPayouts ?? [];
-    return [...rows].sort((a, b) => {
-      const wa = secondaryAmountWei(a) ?? 0n;
-      const wb = secondaryAmountWei(b) ?? 0n;
-      if (wa === wb) return a.walletAddress.localeCompare(b.walletAddress);
-      return wa < wb ? 1 : -1;
-    });
-  }, [contest.results?.secondaryPayouts]);
-
-  const sortedRewardsPayouts = useMemo(() => {
-    const rows = contest.results?.rewardsPayouts ?? [];
-    return [...rows].sort((a, b) => {
-      const wa = rewardsAmountWei(a) ?? 0n;
-      const wb = rewardsAmountWei(b) ?? 0n;
-      if (wa === wb) return a.walletAddress.localeCompare(b.walletAddress);
-      return wa < wb ? 1 : -1;
-    });
-  }, [contest.results?.rewardsPayouts]);
-
-  const hasAnyRows =
-    primaryRowsWithPayout.length > 0 ||
-    sortedSecondaryPayouts.length > 0 ||
-    sortedRewardsPayouts.length > 0;
+  const { primary, secondary, referral, hasAnyRows } = useContestPayoutSections(contest);
 
   if (!hasAnyRows) {
     return (
@@ -150,52 +92,60 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
           </>
         }
       >
-        {primaryRowsWithPayout.length === 0 ? (
+        {primary.length === 0 ? (
           <p className="text-sm text-slate-500">No contest payouts recorded.</p>
         ) : (
           <ContestPayoutDividedRows>
-            {primaryRowsWithPayout.map((result, index) => {
-              const payoutWei = primaryPayoutWei(result);
+            {primary.map((row, index) => {
+              const payoutWei = parseAmountWei(row);
               return (
                 <ContestPayoutRow
-                  key={`${result.entryId}-${index}`}
+                  key={`${row.entryId ?? row.walletAddress}-${index}`}
                   left={
                     <div className="flex min-w-0 items-stretch gap-2">
-                      <div className="flex shrink-0 items-center">
-                        <PositionBadge
-                          position={result.position}
-                          isInTheMoney={result.payoutBasisPoints > 0}
-                          isUser={false}
-                          primaryActionsLocked
-                        />
-                      </div>
-                      {result.userColor ? (
+                      {row.position != null ? (
+                        <div className="flex shrink-0 items-center">
+                          <PositionBadge
+                            position={row.position}
+                            isInTheMoney
+                            isUser={false}
+                            primaryActionsLocked
+                          />
+                        </div>
+                      ) : null}
+                      {row.userColor ? (
                         <div
                           className="w-[3px] shrink-0 self-stretch rounded-full"
-                          style={{ backgroundColor: result.userColor }}
+                          style={{ backgroundColor: row.userColor }}
                           aria-hidden
                         />
                       ) : null}
                       <div className="min-w-0 flex-1 py-0.5">
-                        <ContestPayoutRowTitle>{result.username}</ContestPayoutRowTitle>
+                        <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
                         <ContestPayoutRowSubtitle>
-                          {result.playerLastNames?.length
-                            ? result.playerLastNames.join(", ")
-                            : result.lineupName}
+                          {row.playerLastNames?.length
+                            ? row.playerLastNames.join(", ")
+                            : row.lineupName}
                         </ContestPayoutRowSubtitle>
                       </div>
                     </div>
                   }
                   right={
-                    payoutWei !== null ? (
+                    payoutWei !== null && payoutWei > 0n ? (
                       <>
                         <ContestPayoutGradientMoney>
                           {formatDollarFromWei(payoutWei)}
                         </ContestPayoutGradientMoney>
-                        <ContestPayoutSubAmount>{result.score} pts</ContestPayoutSubAmount>
+                        {row.score != null ? (
+                          <ContestPayoutSubAmount>{row.score} pts</ContestPayoutSubAmount>
+                        ) : null}
                       </>
                     ) : (
-                      <ContestPayoutRowSubtitle>{result.score} pts</ContestPayoutRowSubtitle>
+                      row.score != null ? (
+                        <ContestPayoutRowSubtitle>{row.score} pts</ContestPayoutRowSubtitle>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )
                     )
                   }
                 />
@@ -218,15 +168,15 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
           </>
         }
       >
-        {sortedSecondaryPayouts.length === 0 ? (
+        {secondary.length === 0 ? (
           <p className="text-sm text-slate-500">No winner pool payouts recorded.</p>
         ) : (
           <ContestPayoutDividedRows>
-            {sortedSecondaryPayouts.map((row, index) => {
-              const wei = secondaryAmountWei(row);
+            {secondary.map((row, index) => {
+              const wei = parseAmountWei(row);
               return (
                 <ContestPayoutRow
-                  key={`${row.entryId}-${row.userId ?? "anon"}-${index}`}
+                  key={`${row.entryId}-${row.walletAddress}-${index}`}
                   left={
                     <div
                       className={`min-w-0 ${row.userColor ? "border-l-[3px] border-solid pl-2" : ""}`}
@@ -272,16 +222,15 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
           </>
         }
       >
-        {sortedRewardsPayouts.length === 0 ? (
+        {referral.length === 0 ? (
           <p className="text-sm text-slate-500">No rewards payouts recorded.</p>
         ) : (
           <ContestPayoutDividedRows>
-            {sortedRewardsPayouts.map((row, index) => {
-              const wei = rewardsAmountWei(row);
-              const key = row.entryId ?? `${row.walletAddress}-${index}`;
+            {referral.map((row, index) => {
+              const wei = parseAmountWei(row);
               return (
                 <ContestPayoutRow
-                  key={key}
+                  key={`${row.walletAddress}-${index}`}
                   left={
                     <div
                       className={`min-w-0 ${row.userColor ? "border-l-[3px] border-solid pl-2" : ""}`}

@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { encodeAbiParameters } from "viem";
+import { encodeAbiParameters, type Hex } from "viem";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,9 +15,11 @@ export interface VerifyContestContractParams {
   /** `_primaryDepositAmount` as uint256 decimal string (token base units, 18 decimals). */
   primaryDepositAmountWei: string;
 
-  oracleFeeBps: number;
+  referralNetworkBps: number;
   expiryTimestamp: number;
   primaryDepositSecondarySubsidyBps: number;
+  rewardDistributorAddress: string;
+  referralGroupId: Hex;
 }
 
 /**
@@ -36,8 +38,6 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
     throw new Error(`Unsupported chainId for verification: ${params.chainId}`);
   }
 
-  // Server build copies `server/src/contracts/*.json` into `dist/src/contracts/*.json`,
-  // so resolve relative to this module.
   const artifactPath = path.join(moduleDir, "..", "..", "contracts", "ContestController.json");
   const artifactRaw = fs.readFileSync(artifactPath, "utf8");
   const artifact = JSON.parse(artifactRaw) as {
@@ -60,7 +60,6 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
 
   const sources: Record<string, any> = (rawMetadata as any)?.sources ?? {};
   const license = Object.values(sources)[0]?.license as string | undefined;
-  // Blockscout expects lowercase short license identifiers like "mit", "gnu_gpl_v2", etc.
   const licenseType = license?.toLowerCase().includes("mit") ? "mit" : "mit";
 
   const constructorArgsHex = encodeAbiParameters(
@@ -71,18 +70,21 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       { type: "uint256" },
       { type: "uint256" },
       { type: "uint256" },
+      { type: "address" },
+      { type: "bytes32" },
     ],
     [
       params.paymentTokenAddress as `0x${string}`,
       params.oracle as `0x${string}`,
       BigInt(params.primaryDepositAmountWei),
-      BigInt(params.oracleFeeBps),
+      BigInt(params.referralNetworkBps),
       BigInt(params.expiryTimestamp),
       BigInt(params.primaryDepositSecondarySubsidyBps),
+      params.rewardDistributorAddress as `0x${string}`,
+      params.referralGroupId,
     ],
   );
 
-  // `encodeAbiParameters` returns a `0x...` hex string. Blockscout examples omit the `0x` prefix.
   const constructorArgs = constructorArgsHex.startsWith("0x") ? constructorArgsHex.slice(2) : constructorArgsHex;
 
   const contractName = "ContestController";
@@ -108,4 +110,3 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
     throw new Error(`Blockscout verification request failed (${response.status}): ${text}`);
   }
 }
-

@@ -1,5 +1,6 @@
 /**
  * Oracle-only push payouts after settleContest: primary then secondary.
+ * Referral-network fees are recorded at settlement (see recordSettlementReferralPayments.ts), not here.
  */
 
 import type { Abi } from "viem";
@@ -246,6 +247,7 @@ export async function executeContestPayoutPushes(params: {
         const payout = args.payout;
         if (payout === 0n) continue;
         const participant = args.participant;
+        const walletLower = participant.toLowerCase();
         const userId = await resolveUserIdForWallet(chainId, participant);
         await insertOnchainPaymentRow({
           kind: "SECONDARY",
@@ -257,9 +259,11 @@ export async function executeContestPayoutPushes(params: {
           amountWei: payout.toString(),
           transactionHash: receipt.transactionHash,
           logIndex: Number(log.logIndex),
-          metadata: { entryId: args.entryId.toString() },
+          metadata: {
+            entryId: args.entryId.toString(),
+            shareBps: shareBpsByWallet.get(walletLower) ?? 0,
+          },
         });
-        const walletLower = participant.toLowerCase();
         const display = ownerDisplayByWallet.get(walletLower) ?? {
           userId: null,
           username: "Unknown",

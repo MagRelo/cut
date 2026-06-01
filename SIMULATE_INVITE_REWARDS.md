@@ -1,8 +1,8 @@
-# Simulate Oracle Fee → Invite Network Payouts
+# Simulate Oracle Fee → Invite Network Payouts (legacy manual runbook)
+
+**Superseded for new contests:** referral network fees are taken in `settleContest`, indexed into `OnchainPayment` (`REFERRAL`), and shown on the Results panel from `GET /contests/:id` → `onchainPayments`. Use this document only for the one-off Charles Schwab / pre–ContestCatalyst migration scenario below.
 
 One-time manual runbook for the Charles Schwab contest (~15.4 CUT in `accumulatedOracleFee`). When **JSin** wins primary payout, claim oracle fees from the contest controller, split across two hardcoded referrer wallets (**BillyBall**, then **Noodles Classic**) using `RewardCalculator` geometric decay, send ERC20 transfers from the oracle wallet, and patch `contest.results.rewardsPayouts` so the Results UI shows invite-network payouts.
-
-The UI already labels oracle fees as **Invite Network** ([`client/src/components/contest/ContestPayoutsModal.tsx`](client/src/components/contest/ContestPayoutsModal.tsx)). Settlement does not distribute them yet. [`client/src/components/contest/ContestResultsPanel.tsx`](client/src/components/contest/ContestResultsPanel.tsx) renders `results.rewardsPayouts[]` when populated.
 
 ## Hardcoded run (Charles Schwab / JSin wins)
 

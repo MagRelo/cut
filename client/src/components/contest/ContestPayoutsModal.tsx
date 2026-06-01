@@ -34,7 +34,13 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const { platformTokenSymbol } = useAuth();
   const tokenLabel = platformTokenSymbol ?? "CUT";
   const chainId = contest?.chainId as 8453 | 84532 | undefined;
-  const oracleFeeBps = Math.max(0, Math.min(10000, contest?.settings?.oracleFeeBps ?? 0));
+  const referralNetworkBps = Math.max(
+    0,
+    Math.min(
+      10000,
+      contest?.settings?.referralNetworkBps ?? contest?.settings?.oracleFeeBps ?? 0,
+    ),
+  );
 
   // Read primary prize pool from contract
   const {
@@ -86,21 +92,21 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   // Calculate primary prize pool breakdown
   const primaryPrizePoolData = useMemo(() => {
     const grossTotal = primaryPrizePool ? Number(formatUnits(primaryPrizePool as bigint, 18)) : 0;
-    const netTotal = (grossTotal * (10000 - oracleFeeBps)) / 10000;
+    const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
     return { grossTotal, netTotal };
-  }, [primaryPrizePool, oracleFeeBps]);
+  }, [primaryPrizePool, referralNetworkBps]);
 
   const secondaryLiquidityData = useMemo(() => {
     const grossTotal = totalSecondaryLiquidity
       ? Number(formatUnits(totalSecondaryLiquidity as bigint, 18))
       : 0;
-    const netTotal = (grossTotal * (10000 - oracleFeeBps)) / 10000;
+    const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
     return { grossTotal, netTotal };
-  }, [totalSecondaryLiquidity, oracleFeeBps]);
+  }, [totalSecondaryLiquidity, referralNetworkBps]);
 
   // Top summary shows total pot before oracle fee (gross).
   const totalPrizePool = primaryPrizePoolData.grossTotal + secondaryLiquidityData.grossTotal;
-  const networkBonusTotal = (totalPrizePool * oracleFeeBps) / 10000;
+  const networkBonusTotal = (totalPrizePool * referralNetworkBps) / 10000;
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
   const readsFailed =
@@ -249,7 +255,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                     <>
                       <ContestPayoutRowTitle>Invite Network</ContestPayoutRowTitle>
                       <ContestPayoutRowSubtitle>
-                        {oracleFeeBps > 0
+                        {referralNetworkBps > 0
                           ? "Invite rewards"
                           : "No rewards allocation for this contest"}
                       </ContestPayoutRowSubtitle>

@@ -82,7 +82,6 @@ async function main() {
     ...resultsBase,
     pushPrimaryTxs: pushResult.primaryTxHashes.map((h) => ({ hash: h })),
     pushSecondaryTxs: pushResult.secondaryTxHashes.map((h) => ({ hash: h })),
-    secondaryPayouts: pushResult.secondaryPayouts,
   };
   if (pushResult.error) {
     updatedResults.pushPayoutsError = pushResult.error;

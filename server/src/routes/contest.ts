@@ -23,6 +23,10 @@ import {
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
+import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
+import type { DetailedResult } from "../services/shared/types.js";
+import { getRewardDistributorAddress } from "../lib/referralConfig.js";
+import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 
 const contestRouter = new Hono();
 
@@ -81,6 +85,16 @@ async function loadFormattedContestById(contestId: string) {
     select: {
       ...contestDetailSelect,
       contestLineups: contestLineupsIncludeWithoutPlayers,
+      onchainPayments: {
+        orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
+        select: {
+          kind: true,
+          amountWei: true,
+          walletAddress: true,
+          metadata: true,
+          user: { select: { name: true, settings: true } },
+        },
+      },
     },
   });
 
@@ -118,7 +132,18 @@ async function loadFormattedContestById(contestId: string) {
     }
   }
 
-  return formatContestResponse(toFormat);
+  const formatted = formatContestResponse(toFormat);
+  const results = toFormat.results as { detailedResults?: DetailedResult[] } | null;
+  const onchainPayments =
+    toFormat.onchainPayments?.length &&
+    (toFormat.status === "SETTLED" || toFormat.status === "CLOSED")
+      ? formatOnchainPaymentsForContest(
+          toFormat.onchainPayments,
+          results?.detailedResults,
+        )
+      : undefined;
+
+  return { ...formatted, onchainPayments };
 }
 
 const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tournamentId?: string) => {
@@ -469,11 +494,24 @@ contestRouter.post("/", requireAuth, async (c) => {
         settings.primaryDepositSecondarySubsidyBps ??
         (settings as any).primaryEntryInvestmentShareBps;
 
+      const referralNetworkBps =
+        typeof (settings as { referralNetworkBps?: number }).referralNetworkBps === "number"
+          ? (settings as { referralNetworkBps: number }).referralNetworkBps
+          : typeof settings.oracleFeeBps === "number"
+            ? settings.oracleFeeBps
+            : undefined;
+      const rewardDistributorAddress = getRewardDistributorAddress(chainId);
+      const referralGroupIdRaw =
+        (settings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
+      const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
+
       if (
         typeof settings.primaryDeposit === "number" &&
-        typeof settings.oracleFeeBps === "number" &&
+        typeof referralNetworkBps === "number" &&
         typeof settings.expiryTimestamp === "number" &&
-        typeof bps === "number"
+        typeof bps === "number" &&
+        rewardDistributorAddress &&
+        referralGroupId
       ) {
         const primaryDepositAmountWei = BigInt(Math.floor(settings.primaryDeposit * 1e18)).toString();
         void queueVerifyContestContract({
@@ -482,9 +520,11 @@ contestRouter.post("/", requireAuth, async (c) => {
           paymentTokenAddress: settings.paymentTokenAddress,
           oracle: settings.oracle,
           primaryDepositAmountWei,
-          oracleFeeBps: settings.oracleFeeBps,
+          referralNetworkBps,
           expiryTimestamp: settings.expiryTimestamp,
           primaryDepositSecondarySubsidyBps: bps,
+          rewardDistributorAddress,
+          referralGroupId,
         }).catch((err) => {
           console.error("Failed to queue contest contract verification:", err);
         });

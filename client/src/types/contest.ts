@@ -43,8 +43,12 @@ export interface ContestSettings {
    */
   primaryDeposit: number;
 
-  /** `_oracleFeeBps` */
-  oracleFeeBps: number;
+  /** `_referralNetworkBps` on-chain (invite network fee at settlement). */
+  referralNetworkBps?: number;
+  /** @deprecated Alias stored as `referralNetworkBps` on new contests. */
+  oracleFeeBps?: number;
+  /** `_referralGroupId` (bytes32 hex). */
+  referralGroupId?: string;
 
   /**
    * `_primaryDepositSecondarySubsidyBps` — BPS of each primary deposit credited to
@@ -81,6 +85,8 @@ export interface Contest {
   _count?: {
     contestLineups: number;
   };
+  /** Ledger rows for settled contests (amounts from chain events). */
+  onchainPayments?: OnchainPaymentView[];
   results?: {
     winningEntries: string[];
     payoutBps: number[];
@@ -99,6 +105,21 @@ export interface Contest {
   /** Merged from `GET /contests/:id/timeline` in `useContestQuery` (includes `contestFinished` + `isPrimaryPayoutWinner` per team). */
   timeline?: TimelineData;
 }
+
+export type OnchainPaymentView = {
+  kind: "PRIMARY" | "SECONDARY" | "REFERRAL";
+  amountWei: string;
+  walletAddress: string;
+  username: string;
+  userColor?: string;
+  entryId?: string;
+  shareBps?: number;
+  position?: number;
+  score?: number;
+  playerLastNames?: string[];
+  lineupName?: string;
+  metadata?: Record<string, unknown>;
+};
 
 export interface CreateContestInput {
   name: string;

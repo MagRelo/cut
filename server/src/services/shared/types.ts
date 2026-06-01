@@ -43,7 +43,11 @@ export interface ContestSettings {
   oracle: string;
   /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. `0` = free primary layer. */
   primaryDeposit: number;
-  oracleFeeBps: number;
+  /** `_referralNetworkBps` on ContestController. */
+  referralNetworkBps?: number;
+  /** @deprecated Stored on older contests; maps to referral network bps in UI. */
+  oracleFeeBps?: number;
+  referralGroupId?: string;
   /** BPS of each primary deposit to per-entry secondary subsidy (`primaryDepositSecondarySubsidyBps` on-chain). */
   primaryDepositSecondarySubsidyBps?: number;
 

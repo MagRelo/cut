@@ -66,8 +66,10 @@ Services contain business logic and are used by both API routes and cron jobs. T
 - **Operations**:
   - Calculate winners based on scores
   - Calculate payout distribution
-  - Call contract `settleContest()` function
-  - Update database status and results
+  - Call contract `settleContest(winners, payoutBps, referralReward, signature)` (referral fee at settlement when `referralNetworkBps > 0`)
+  - Record `REFERRAL` rows via `recordSettlementReferralPayments` from the settlement receipt
+  - Oracle push primary/secondary payouts (`pushContestPayouts.ts`); `PRIMARY` / `SECONDARY` ledger rows from push receipts
+  - Update database status and results (`detailedResults` for standings; payout amounts from `OnchainPayment` API)
 - **Usage**: Cron job (batch operation)
 
 #### `closeContest.ts`

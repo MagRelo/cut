@@ -308,6 +308,7 @@ model OnchainPayment {
   @@index([transactionHash])
   @@index([kind])
   @@index([notifiedAt])
+  @@unique([transactionHash, logIndex, walletAddress])
 }
 
 /// Wallets that opened a secondary position on a contest entry (for pushSecondaryPayouts).

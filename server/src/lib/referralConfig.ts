@@ -4,6 +4,7 @@ import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 
 type ChainContractJson = {
   referralGraphAddress?: string;
+  rewardDistributorAddress?: string;
 };
 
 function chainContractsForId(chainId: number): ChainContractJson | null {
@@ -49,3 +50,14 @@ export function getReferralGraphAddress(chainId: number): `0x${string}` | null {
   if (!raw || !isAddress(raw)) return null;
   return raw as `0x${string}`;
 }
+
+/** RewardDistributor address for the chain (from `server/src/contracts/{base,sepolia}.json`). */
+export function getRewardDistributorAddress(chainId: number): `0x${string}` | null {
+  const cfg = chainContractsForId(chainId);
+  const raw = cfg?.rewardDistributorAddress?.trim();
+  if (!raw || !isAddress(raw)) return null;
+  return raw as `0x${string}`;
+}
+
+/** REFERRAL_ROOT sentinel on ReferralGraph / RewardDistributor (no payable chain). */
+export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;

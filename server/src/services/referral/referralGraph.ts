@@ -8,7 +8,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import ReferralGraph from "../../contracts/ReferralGraph.json" with { type: "json" };
 
-function getReferralOraclePrivateKey(): Hex {
+export function getReferralOraclePrivateKey(): Hex {
   const raw = process.env.REFERRAL_ORACLE_PRIVATE_KEY?.trim() || process.env.ORACLE_PRIVATE_KEY?.trim();
   if (!raw || !raw.startsWith("0x") || raw.length !== 66) {
     throw new Error(

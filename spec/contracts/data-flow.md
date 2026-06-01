@@ -55,7 +55,8 @@ sequenceDiagram
     participant SecondaryWinner
     
     Oracle->>Server: Trigger settlement
-    Server->>Contest: settleContest(winningEntries, payouts)
+    Server->>Contest: settleContest(winningEntries, payouts, referralReward, signature)
+    Note over Server,Contest: Referral fee at settlement; REFERRAL rows from settlement receipt
     Contest->>Contest: Calculate primary payouts
     Contest->>Contest: Set secondary winner (first entry)
     Contest->>Contest: Update state to SETTLED

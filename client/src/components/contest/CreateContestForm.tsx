@@ -40,7 +40,11 @@ function buildContestSettings(
     paymentTokenSymbol, // display only
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "", // `_oracle`: address that drives contest lifecycle (onlyOracle)
     primaryDeposit: 10, // `_primaryDepositAmount`: fixed stake per primary participant
-    oracleFeeBps: Number(import.meta.env.VITE_ORACLE_FEE_BPS) || 500, // `_oracleFeeBps`: oracle cut of settlement, basis points (100 = 1%)
+    referralNetworkBps:
+      Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) ||
+      Number(import.meta.env.VITE_ORACLE_FEE_BPS) ||
+      500,
+    referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
     primaryDepositSecondarySubsidyBps:
       Number(import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS) ||
       Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) ||
@@ -241,7 +245,8 @@ export const CreateContestForm = () => {
       return;
     }
 
-    if (s.oracleFeeBps < 0 || s.oracleFeeBps > 1000) {
+    const referralBpsCheck = s.referralNetworkBps ?? s.oracleFeeBps ?? 0;
+    if (referralBpsCheck < 0 || referralBpsCheck > 1000) {
       setError("Oracle fee must be between 0 and 1000 basis points (0–10%).");
       return;
     }
@@ -282,13 +287,31 @@ export const CreateContestForm = () => {
     pendingContestForApiRef.current = pending;
     const primaryDepositAmount = BigInt(Math.floor(s.primaryDeposit * 1e18));
     // `ContestFactory.createContest` → `ContestController` constructor (same order as Solidity NatSpec).
+    const rewardDistributor = getContractAddress(chainId ?? 0, "rewardDistributorAddress");
+    if (!rewardDistributor) {
+      setError("Reward distributor is not configured for this chain.");
+      return;
+    }
+    const referralGroupId = (s.referralGroupId?.startsWith("0x")
+      ? s.referralGroupId
+      : s.referralGroupId
+        ? `0x${s.referralGroupId}`
+        : "") as `0x${string}`;
+    if (!referralGroupId || referralGroupId.length !== 66) {
+      setError("Referral group ID is not configured (VITE_REFERRAL_GROUP_ID).");
+      return;
+    }
+    const referralBps = s.referralNetworkBps ?? s.oracleFeeBps ?? 0;
+
     const calls = createContestCalls(
-      paymentToken, // paymentToken — ERC20 for all deposits and payouts
-      oracle, // oracle — lifecycle control (activate, lock, settle, cancel, etc.)
-      primaryDepositAmount, // contestantDepositAmount / _primaryDepositAmount — fixed primary entry stake
-      s.oracleFeeBps, // oracleFee — fee to oracle at settlement (bps, cap enforced on-chain)
-      BigInt(s.expiryTimestamp), // expiry — unix seconds; after this, refund paths apply per contract rules
-      s.primaryDepositSecondarySubsidyBps, // primaryDepositSecondarySubsidyBps — primary deposit carve to secondary subsidy
+      paymentToken,
+      oracle,
+      primaryDepositAmount,
+      referralBps,
+      BigInt(s.expiryTimestamp),
+      s.primaryDepositSecondarySubsidyBps,
+      rewardDistributor,
+      referralGroupId,
     );
 
     await execute(calls);
@@ -352,21 +375,21 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="oracleFeeBps" className="block font-medium">
-            Oracle fee BPS (0–1000)
+          <label htmlFor="referralNetworkBps" className="block font-medium">
+            Invite network fee BPS (0–1000)
           </label>
           <p className="text-xs text-gray-600">
-            <span className="font-mono">_oracleFeeBps</span>: fee to the oracle in basis points
-            (e.g. 100 = 1%), accumulated at settlement and claimable by the oracle.
+            <span className="font-mono">_referralNetworkBps</span>: share of contest TVL
+            distributed to the referral network at settlement (or to the oracle if no chain).
           </p>
           <input
             type="number"
-            id="oracleFeeBps"
+            id="referralNetworkBps"
             min={0}
             max={1000}
             step={1}
-            value={s.oracleFeeBps}
-            onChange={(e) => patchSettings({ oracleFeeBps: Number(e.target.value) })}
+            value={s.referralNetworkBps ?? s.oracleFeeBps ?? 0}
+            onChange={(e) => patchSettings({ referralNetworkBps: Number(e.target.value) })}
             className="w-full p-2 border rounded-md"
           />
         </div>
