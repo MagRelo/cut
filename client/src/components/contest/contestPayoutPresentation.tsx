@@ -9,7 +9,8 @@ export function ContestPayoutLayout({
   background?: "muted" | "white";
 }) {
   const surfaceClass = background === "white" ? "bg-white" : "bg-gray-100";
-  return <div className={`space-y-4 p-3 font-display ${surfaceClass}`}>{children}</div>;
+  const paddingClass = background === "white" ? "px-4 py-3" : "p-3";
+  return <div className={`space-y-4 ${paddingClass} font-display ${surfaceClass}`}>{children}</div>;
 }
 
 export function ContestPayoutHeroCard({

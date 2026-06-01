@@ -103,6 +103,8 @@ export interface ContestResults {
 export interface SecondaryPayoutResult {
   walletAddress: string;
   amountWei: string;
+  /** Share of winning-entry supply at push time (basis points; sums to ≤ 10000 across recipients). */
+  shareBps: number;
   /** Entry the shares were on (winning prediction entry when paid). */
   entryId: string;
   userId: string | null;

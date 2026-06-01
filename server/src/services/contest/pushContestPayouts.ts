@@ -100,6 +100,11 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+function secondaryShareBps(balance: bigint, supply: bigint): number {
+  if (supply === 0n || balance === 0n) return 0;
+  return Number((balance * 10000n) / supply);
+}
+
 export interface PushContestPayoutsResult {
   primaryTxHashes: string[];
   secondaryTxHashes: string[];
@@ -200,20 +205,29 @@ export async function executeContestPayoutPushes(params: {
     const balances = await Promise.all(
       addresses.map((addr) => balanceOf([addr, secondaryEntryId]) as Promise<bigint>),
     );
-    addresses = addresses.filter((_, i) => (balances[i] ?? 0n) > 0n);
+    const participantsWithBalance = addresses
+      .map((addr, i) => ({ addr, balance: balances[i] ?? 0n }))
+      .filter((p) => p.balance > 0n);
+    const shareBpsByWallet = new Map(
+      participantsWithBalance.map((p) => [
+        p.addr.toLowerCase(),
+        secondaryShareBps(p.balance, supply),
+      ]),
+    );
+    const participantAddresses = participantsWithBalance.map((p) => p.addr);
 
-    if (addresses.length === 0) {
+    if (participantAddresses.length === 0) {
       return { primaryTxHashes, secondaryTxHashes, secondaryPayouts };
     }
 
     const ticketBacking = await loadTicketBackingContext(contestId, winningEntryStr);
-    const ownerDisplayByWallet = await loadTicketOwnersDisplay(chainId, addresses);
+    const ownerDisplayByWallet = await loadTicketOwnersDisplay(chainId, participantAddresses);
 
     const pushSecondary = contract.write.pushSecondaryPayouts;
     if (!pushSecondary) {
       throw new Error("ContestController ABI missing pushSecondaryPayouts");
     }
-    for (const addrChunk of chunkArray(addresses, SECONDARY_PUSH_CHUNK)) {
+    for (const addrChunk of chunkArray(participantAddresses, SECONDARY_PUSH_CHUNK)) {
       if (addrChunk.length === 0) continue;
       const hash = (await pushSecondary([addrChunk, secondaryEntryId])) as `0x${string}`;
       secondaryTxHashes.push(hash);
@@ -254,6 +268,7 @@ export async function executeContestPayoutPushes(params: {
         secondaryPayouts.push({
           walletAddress: walletLower,
           amountWei: payout.toString(),
+          shareBps: shareBpsByWallet.get(walletLower) ?? 0,
           entryId: args.entryId.toString(),
           userId,
           username: display.username,

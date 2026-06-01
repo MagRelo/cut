@@ -115,6 +115,8 @@ export interface CreateContestInput {
 export interface SecondaryPayoutResult {
   walletAddress: string;
   amountWei: string;
+  /** Share of winning-entry supply at settlement (basis points). Omitted on older settlements. */
+  shareBps?: number;
   entryId: string;
   userId: string | null;
   username: string;

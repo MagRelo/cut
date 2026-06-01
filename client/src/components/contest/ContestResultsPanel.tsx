@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits } from "viem";
 
@@ -16,12 +16,33 @@ import {
   ContestPayoutRow,
   ContestPayoutRowSubtitle,
   ContestPayoutRowTitle,
-  ContestPayoutSection,
   ContestPayoutSubAmount,
 } from "./contestPayoutPresentation";
 
 interface ContestResultsPanelProps {
   contest: Contest;
+}
+
+function ContestResultsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-2 py-1">
+      <div>
+        <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
+        {description != null ? (
+          <div className="mt-1 text-xs leading-tight text-slate-500">{description}</div>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
 }
 
 function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
@@ -35,6 +56,12 @@ function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
 
 function formatDollarFromWei(valueWei: bigint, fractionDigits = 2) {
   return `$${formatTokenAmount(valueWei, fractionDigits)}`;
+}
+
+function formatShareBps(shareBps: number) {
+  const percent = shareBps / 100;
+  const fractionDigits = shareBps % 100 === 0 ? 0 : 2;
+  return `${percent.toFixed(fractionDigits)}% of pool`;
 }
 
 function primaryPayoutWei(result: DetailedResult): bigint | null {
@@ -112,7 +139,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
 
   return (
     <ContestPayoutLayout background="white">
-      <ContestPayoutSection
+      <ContestResultsSection
         title="Contest"
         description={
           <>
@@ -176,9 +203,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
             })}
           </ContestPayoutDividedRows>
         )}
-      </ContestPayoutSection>
+      </ContestResultsSection>
 
-      <ContestPayoutSection
+      <hr className="border-slate-200" />
+
+      <ContestResultsSection
         title="Winner Pool"
         description={
           <>
@@ -204,6 +233,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
                       style={row.userColor ? { borderLeftColor: row.userColor } : undefined}
                     >
                       <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
+                      {row.shareBps != null && row.shareBps > 0 ? (
+                        <ContestPayoutRowSubtitle>
+                          {formatShareBps(row.shareBps)}
+                        </ContestPayoutRowSubtitle>
+                      ) : null}
                     </div>
                   }
                   right={
@@ -223,9 +257,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
             })}
           </ContestPayoutDividedRows>
         )}
-      </ContestPayoutSection>
+      </ContestResultsSection>
 
-      <ContestPayoutSection
+      <hr className="border-slate-200" />
+
+      <ContestResultsSection
         title="Rewards"
         description={
           <>
@@ -271,7 +307,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
             })}
           </ContestPayoutDividedRows>
         )}
-      </ContestPayoutSection>
+      </ContestResultsSection>
     </ContestPayoutLayout>
   );
 };
