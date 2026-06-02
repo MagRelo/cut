@@ -1,6 +1,6 @@
-import { Dialog, DialogPanel } from "@headlessui/react";
+import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
@@ -49,117 +49,139 @@ export const MobileNavMenu: React.FC = () => {
         <Bars3Icon className="h-6 w-6" aria-hidden />
       </button>
 
-      <Dialog open={open} onClose={setOpen} className="relative z-50 md:hidden">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <Transition appear show={open} as={Fragment}>
+        <Dialog as="div" className="relative z-50 md:hidden" onClose={() => setOpen(false)}>
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          </TransitionChild>
 
-        <div className="fixed inset-0 overflow-hidden">
-          <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
-            <DialogPanel className="w-screen max-w-xs transform bg-white shadow-xl transition data-[closed]:translate-x-full">
-              <div className="flex h-full flex-col">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <Link
-                    to="/"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
-                  >
-                    <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
-                    <span className="font-display text-lg font-semibold uppercase tracking-widest text-slate-900">
-                      PlayTheCut
-                    </span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
-                    aria-label="Close menu"
-                  >
-                    <XMarkIcon className="h-5 w-5" aria-hidden />
-                  </button>
-                </div>
-
-                <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
-                  <div className="flex flex-col gap-0.5">
-                    {LEFT_TABS.map((tab) => (
+          <div className="fixed inset-0 overflow-hidden">
+            <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="translate-x-3 opacity-0"
+                enterTo="translate-x-0 opacity-100"
+                leave="ease-in duration-150"
+                leaveFrom="translate-x-0 opacity-100"
+                leaveTo="translate-x-3 opacity-0"
+              >
+                <DialogPanel className="w-screen max-w-xs transform bg-white shadow-xl">
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                       <Link
-                        key={tab.key}
-                        to={tab.to}
-                        state={tab.state}
-                        aria-current={tab.match(location.pathname) ? "page" : undefined}
-                        className={mobileNavItemClass(tab.match(location.pathname))}
+                        to="/"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                       >
-                        {tab.label}
+                        <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
+                        <span className="font-display text-lg font-semibold uppercase tracking-widest text-slate-900">
+                          PlayTheCut
+                        </span>
                       </Link>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                        aria-label="Close menu"
+                      >
+                        <XMarkIcon className="h-5 w-5" aria-hidden />
+                      </button>
+                    </div>
 
-                    {user ? (
-                      <>
-                        <Link
-                          to={LINEUPS_TAB.to}
-                          aria-current={LINEUPS_TAB.match(location.pathname) ? "page" : undefined}
-                          className={mobileNavItemClass(LINEUPS_TAB.match(location.pathname))}
-                        >
-                          {LINEUPS_TAB.label}
-                        </Link>
-
-                        {showAdminNav ? (
+                    <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+                      <div className="flex flex-col gap-0.5">
+                        {LEFT_TABS.map((tab) => (
                           <Link
-                            to={ADMIN_TAB.to}
-                            aria-current={ADMIN_TAB.match(location.pathname) ? "page" : undefined}
-                            className={mobileNavItemClass(ADMIN_TAB.match(location.pathname))}
+                            key={tab.key}
+                            to={tab.to}
+                            state={tab.state}
+                            aria-current={tab.match(location.pathname) ? "page" : undefined}
+                            className={mobileNavItemClass(tab.match(location.pathname))}
                           >
-                            {ADMIN_TAB.label}
+                            {tab.label}
                           </Link>
-                        ) : null}
+                        ))}
 
-                        <Link
-                          to="/account"
-                          aria-current={isAccountActive ? "page" : undefined}
-                          className={[
-                            mobileNavItemClass(isAccountActive),
-                            "inline-flex items-center justify-between gap-2 normal-case tracking-normal",
-                          ].join(" ")}
-                        >
-                          <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
-                            <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
-                            Account
-                          </span>
-                          {totalBalance !== null ? (
-                            <span className="font-semibold tabular-nums">${totalBalance}</span>
-                          ) : (
-                            <span className="tabular-nums text-amber-800">—</span>
-                          )}
-                        </Link>
+                        {user ? (
+                          <>
+                            <Link
+                              to={LINEUPS_TAB.to}
+                              aria-current={LINEUPS_TAB.match(location.pathname) ? "page" : undefined}
+                              className={mobileNavItemClass(LINEUPS_TAB.match(location.pathname))}
+                            >
+                              {LINEUPS_TAB.label}
+                            </Link>
 
-                        <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
-                          <Link to="/account/funds" className={mobileSubItemClass}>
-                            Manage Funds
-                          </Link>
-                          <button
-                            type="button"
-                            className={mobileSubItemClass}
-                            onClick={() => void logout()}
+                            {showAdminNav ? (
+                              <Link
+                                to={ADMIN_TAB.to}
+                                aria-current={ADMIN_TAB.match(location.pathname) ? "page" : undefined}
+                                className={mobileNavItemClass(ADMIN_TAB.match(location.pathname))}
+                              >
+                                {ADMIN_TAB.label}
+                              </Link>
+                            ) : null}
+
+                            <Link
+                              to="/account"
+                              aria-current={isAccountActive ? "page" : undefined}
+                              className={[
+                                mobileNavItemClass(isAccountActive),
+                                "inline-flex items-center justify-between gap-2 normal-case tracking-normal",
+                              ].join(" ")}
+                            >
+                              <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
+                                <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
+                                Account
+                              </span>
+                              {totalBalance !== null ? (
+                                <span className="font-semibold tabular-nums">${totalBalance}</span>
+                              ) : (
+                                <span className="tabular-nums text-amber-800">—</span>
+                              )}
+                            </Link>
+
+                            <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
+                              <Link to="/account/funds" className={mobileSubItemClass}>
+                                Manage Funds
+                              </Link>
+                              <button
+                                type="button"
+                                className={mobileSubItemClass}
+                                onClick={() => void logout()}
+                              >
+                                Sign Out
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <Link
+                            to="/connect"
+                            state={{ from: signInReturnFrom }}
+                            aria-current={location.pathname === "/connect" ? "page" : undefined}
+                            className={mobileNavItemClass(location.pathname === "/connect")}
                           >
-                            Sign Out
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <Link
-                        to="/connect"
-                        state={{ from: signInReturnFrom }}
-                        aria-current={location.pathname === "/connect" ? "page" : undefined}
-                        className={mobileNavItemClass(location.pathname === "/connect")}
-                      >
-                        Sign In
-                      </Link>
-                    )}
+                            Sign In
+                          </Link>
+                        )}
+                      </div>
+                    </nav>
                   </div>
-                </nav>
-              </div>
-            </DialogPanel>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
           </div>
-        </div>
-      </Dialog>
+        </Dialog>
+      </Transition>
     </>
   );
 };
