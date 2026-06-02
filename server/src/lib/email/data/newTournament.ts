@@ -1,3 +1,4 @@
+import { loadSummarySectionsFromFile } from "../../tournamentSummary.js";
 import {
   formatTournamentSubtitle,
   loadTournamentForEmail,
@@ -11,9 +12,14 @@ export async function loadNewTournamentEmailData(
   const tournament = await loadTournamentForEmail(tournamentId);
   if (!tournament) return null;
 
+  let summarySections = summarySectionsFromTournament(tournament);
+  if (!summarySections && tournament.pgaTourId) {
+    summarySections = await loadSummarySectionsFromFile(tournament.pgaTourId);
+  }
+
   return {
     tournamentName: tournament.name,
     subtitle: formatTournamentSubtitle(tournament),
-    summarySections: summarySectionsFromTournament(tournament),
+    summarySections,
   };
 }

@@ -1,21 +1,27 @@
 import type { BehindTheScenesEmailData } from "../emails/behindTheScenes.js";
 import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
+import { loadNewTournamentEmailData } from "../data/newTournament.js";
+import { getManualActiveTournamentId } from "../data/tournament.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
 import type { TournamentRecapEmailData } from "../emails/tournamentRecap.js";
 import type { PlayerWithdrawalEmailData } from "../emails/playerWithdrawal.js";
 import type { WelcomeEmailData } from "../emails/welcome.js";
-import { loadSummarySectionsFromFile } from "../../tournamentSummary.js";
-
-export const PREVIEW_PGA_TOUR_ID = "R2026021";
 
 export async function fixtureNewTournament(): Promise<NewTournamentEmailData> {
-  const summarySections = await loadSummarySectionsFromFile(PREVIEW_PGA_TOUR_ID);
-  return {
-    tournamentName: "Charles Schwab Challenge",
-    subtitle: "Colonial Country Club · Fort Worth, Texas — May 22–25, 2026",
-    summarySections,
-  };
+  const tournamentId = await getManualActiveTournamentId();
+  if (!tournamentId) {
+    throw new Error(
+      "No manualActive tournament; set one in the DB or run: pnpm --filter server run service:init-tournament -- R{pgaTourId}",
+    );
+  }
+
+  const data = await loadNewTournamentEmailData(tournamentId);
+  if (!data) {
+    throw new Error(`Tournament not found: ${tournamentId}`);
+  }
+
+  return data;
 }
 
 export function fixtureWelcome(): WelcomeEmailData {

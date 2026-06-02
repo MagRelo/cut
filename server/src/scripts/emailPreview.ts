@@ -5,6 +5,8 @@
  *   pnpm --filter server run script:email-preview open
  *   pnpm --filter server run script:email-preview new-tournament
  *
+ * new-tournament uses the DB tournament with manualActive=true (same as production blasts).
+ *
  * Kinds: welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal | minimal
  */
 
