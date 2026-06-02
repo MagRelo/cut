@@ -33,6 +33,7 @@ export const ContestSharesPieChart = ({ contest }: ContestSharesPieChartProps) =
     entryIds,
     enabled: Boolean(contest.address && entryIds.length > 0),
     chainId: contest.chainId,
+    paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
 
   const chartData = useMemo(() => {

@@ -43,6 +43,7 @@ export function useContestPredictionData(options: StorybookPredictionOptions = {
     secondaryTotalFunds: MOCK_SECONDARY_TOTAL_FUNDS,
     secondaryTotalFundsFormatted: MOCK_SECONDARY_TOTAL_FUNDS_FORMATTED,
     poolSnapshot: {},
+    paymentDecimals: 18,
     isLoading: false,
     contestChainReadsUnavailable: false,
     refetchContestChainReads: noopRefetch,

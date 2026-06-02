@@ -4,6 +4,7 @@ import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import ContestContract from "../../utils/contracts/ContestController.json";
+import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
 
 interface ContestCardProps {
   contest: Contest;
@@ -13,6 +14,9 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCardProps) => {
+  const contestPaymentToken = contest.settings?.paymentTokenAddress ?? "";
+  const paymentDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
+
   // Read primary prize pool from contract
   const {
     data: primaryPrizePool,
@@ -31,9 +35,8 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
 
   const primaryPrizePoolBig = primaryPrizePool as bigint | undefined;
 
-  // Calculate pot amount from contract data (with 18 decimals)
   const potAmount = primaryPrizePoolBig
-    ? Math.round(Number(formatUnits(primaryPrizePoolBig, 18)))
+    ? Math.round(Number(formatUnits(primaryPrizePoolBig, paymentDecimals)))
     : 0;
 
   // Fetch speculator pot - don't need entryIds to get total pot
@@ -46,6 +49,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     entryIds: [], // Empty array since we only need secondary prize pool data
     enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
     chainId: contest.chainId, // Use the contest's chainId, not the wallet's
+    paymentTokenAddress: contestPaymentToken,
   });
 
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
@@ -60,7 +64,7 @@ export const ContestCard = ({ contest, onPotClick, onSettingsClick }: ContestCar
     try {
       const primaryTotal = BigInt(snapshot.primarySideBalance);
       const secondaryTotal = BigInt(snapshot.secondarySideBalance);
-      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, 18)));
+      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, paymentDecimals)));
     } catch {
       return null;
     }

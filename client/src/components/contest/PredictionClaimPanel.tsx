@@ -29,6 +29,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
     entryIds,
     enabled: !!userAddress,
     chainId: contest.chainId,
+    paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
 
   // Filter to only show entries where user has a position

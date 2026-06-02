@@ -9,8 +9,6 @@ import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
 import type { ContestLineup } from "../types/lineup";
 
-const DEFAULT_TOKEN_DECIMALS = 18;
-
 interface UseContestSettlementClaimsOptions {
   contest?: Contest;
   contestLineups?: ContestLineup[];
@@ -87,9 +85,10 @@ export function useContestSettlementClaims(
     entryIds,
     enabled: enabledPredictionReads,
     chainId: supportedChainId,
+    paymentTokenAddress: contest?.settings?.paymentTokenAddress,
   });
 
-  const { entryData, isLoading: predictionLoading } = predictionData;
+  const { entryData, isLoading: predictionLoading, paymentDecimals } = predictionData;
 
   const entryDataMap = useMemo(() => {
     return entryData.reduce((map, entry) => {
@@ -190,16 +189,16 @@ export function useContestSettlementClaims(
         lineupName: entry.lineup.tournamentLineup?.name || "Lineup",
         playerLastNames: lineupResult?.playerLastNames,
         payoutAmount,
-        payoutAmountFormatted: formatUnits(payoutAmount, DEFAULT_TOKEN_DECIMALS),
+        payoutAmountFormatted: formatUnits(payoutAmount, paymentDecimals),
         claimableAmount,
-        claimableAmountFormatted: formatUnits(claimableAmount, DEFAULT_TOKEN_DECIMALS),
+        claimableAmountFormatted: formatUnits(claimableAmount, paymentDecimals),
         payoutBasisPoints: lineupResult?.payoutBasisPoints ?? 0,
         position: lineupResult?.position ?? entry.lineup.position ?? 0,
         score: lineupResult?.score ?? entry.lineup.score ?? 0,
         canClaim: isSettled && claimableAmount > 0n && Boolean(walletAddress) && payout > 0n,
       };
     });
-  }, [primaryReadResults, primaryEntries, resultsByEntry, isSettled, walletAddress]);
+  }, [primaryReadResults, primaryEntries, resultsByEntry, isSettled, walletAddress, paymentDecimals]);
 
   const winningEntryId = useMemo(() => {
     if (contest?.results?.winningEntries?.length) {
@@ -224,7 +223,7 @@ export function useContestSettlementClaims(
         balance,
         totalSupply,
         claimableAmount: 0n,
-        claimableAmountFormatted: formatUnits(0n, DEFAULT_TOKEN_DECIMALS),
+        claimableAmountFormatted: formatUnits(0n, paymentDecimals),
         canClaim: false,
       };
     }
@@ -235,10 +234,10 @@ export function useContestSettlementClaims(
       balance,
       totalSupply,
       claimableAmount,
-      claimableAmountFormatted: formatUnits(claimableAmount, DEFAULT_TOKEN_DECIMALS),
+      claimableAmountFormatted: formatUnits(claimableAmount, paymentDecimals),
       canClaim: claimableAmount > 0n,
     };
-  }, [winningEntryId, winningEntryData, isSettled]);
+  }, [winningEntryId, winningEntryData, isSettled, paymentDecimals]);
 
   const isLoading = Boolean(predictionLoading || isLoadingPrimary);
 

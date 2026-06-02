@@ -38,11 +38,13 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     secondaryTotalFundsFormatted,
     secondaryTotalFunds,
     poolSnapshot,
+    paymentDecimals,
   } = useContestPredictionData({
     contestAddress: contest.address,
     entryIds,
     enabled: true,
     chainId: contest.chainId,
+    paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
 
   const canOpenLineupModal = canPredict && !secondaryActionsLocked;
@@ -69,7 +71,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
               let tenDollarAmount: bigint;
               try {
-                tenDollarAmount = parseUnits("10", 18);
+                tenDollarAmount = parseUnits("10", paymentDecimals);
               } catch {
                 return "—";
               }
@@ -89,7 +91,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                 sim,
               );
               if (deltaWei === null) return "—";
-              const impliedRaw = Number(formatUnits(deltaWei, 18));
+              const impliedRaw = Number(formatUnits(deltaWei, paymentDecimals));
               if (!Number.isFinite(impliedRaw)) return "—";
               return impliedRaw.toFixed(2);
             })();

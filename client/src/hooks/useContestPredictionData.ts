@@ -3,6 +3,7 @@ import { useReadContract, useReadContracts, useChainId } from "wagmi";
 import { formatUnits, type Abi } from "viem";
 import { sharesForSecondaryPricing, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import ContestContract from "../utils/contracts/ContestController.json";
+import { contestPaymentDecimals } from "../lib/paymentTokenSpend";
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 
 // Contract state enum matching Contest.sol
@@ -23,6 +24,8 @@ interface UseContestPredictionDataOptions {
   entryIds?: string[]; // Array of entry IDs to fetch data for
   enabled?: boolean;
   chainId?: number; // Optional chainId - if not provided, uses connected wallet's chain
+  /** Fallback when on-chain `paymentToken()` has not loaded yet. */
+  paymentTokenAddress?: string;
 }
 
 /**
@@ -30,11 +33,31 @@ interface UseContestPredictionDataOptions {
  * Fetches secondary curve prices, user balances, contest state, and pool snapshot for simulations
  */
 export function useContestPredictionData(options: UseContestPredictionDataOptions) {
-  const { contestAddress, entryIds = [], enabled = true, chainId: providedChainId } = options;
+  const {
+    contestAddress,
+    entryIds = [],
+    enabled = true,
+    chainId: providedChainId,
+    paymentTokenAddress: paymentTokenAddressHint,
+  } = options;
   const userAddress = useEffectiveWalletAddress();
   const walletChainId = useChainId();
   const chainId = (providedChainId ?? walletChainId) as SupportedChainId;
   const contestAbi = ContestContract.abi as Abi;
+
+  const { data: paymentTokenOnChain } = useReadContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "paymentToken",
+    chainId,
+    query: {
+      enabled: enabled && !!contestAddress,
+    },
+  });
+
+  const paymentTokenAddress =
+    (typeof paymentTokenOnChain === "string" ? paymentTokenOnChain : paymentTokenAddressHint) ?? "";
+  const paymentDecimals = contestPaymentDecimals(chainId, paymentTokenAddress);
 
   // Read contest state
   const {
@@ -256,7 +279,7 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       totalSecondaryFunds > 0n
     ) {
       impliedWinnings = (balance * totalSecondaryFunds) / supply;
-      impliedWinningsFormatted = formatUnits(impliedWinnings, 18);
+      impliedWinningsFormatted = formatUnits(impliedWinnings, paymentDecimals);
     }
 
     return {
@@ -268,9 +291,9 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
       totalSupply: supply ?? 0n,
       totalSupplyFormatted: supply !== undefined ? formatUnits(supply, 18) : "0",
       entryLiquidity,
-      entryLiquidityFormatted: formatUnits(entryLiquidity, 18),
+      entryLiquidityFormatted: formatUnits(entryLiquidity, paymentDecimals),
       secondaryDepositedPerEntry,
-      secondaryDepositedFormatted: formatUnits(secondaryDepositedPerEntry, 18),
+      secondaryDepositedFormatted: formatUnits(secondaryDepositedPerEntry, paymentDecimals),
       impliedWinnings,
       impliedWinningsFormatted,
       hasPosition: balance ? balance > 0n : false,
@@ -327,12 +350,13 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     canClaim,
     entryData,
     secondaryPrizePool: totalSecondaryFunds,
-    secondaryPrizePoolFormatted: formatUnits(totalSecondaryFunds, 18),
+    secondaryPrizePoolFormatted: formatUnits(totalSecondaryFunds, paymentDecimals),
     secondaryPrizePoolSubsidy: 0n,
     secondaryPrizePoolSubsidyFormatted: "0",
     secondaryTotalFunds: totalSecondaryFunds,
-    secondaryTotalFundsFormatted: formatUnits(totalSecondaryFunds, 18),
+    secondaryTotalFundsFormatted: formatUnits(totalSecondaryFunds, paymentDecimals),
     poolSnapshot,
+    paymentDecimals,
     isLoading,
     contestChainReadsUnavailable,
     refetchContestChainReads,
