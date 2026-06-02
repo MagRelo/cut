@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
+import { PageSection } from "../components/layout/PageSection";
 import { UserGroupList } from "../components/userGroup/UserGroupList";
 import { useUserGroupsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -11,7 +12,7 @@ export const UserGroupListPage = () => {
   const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
 
   return (
-    <div className="space-y-4 p-4">
+    <>
       <div className="flex items-center justify-between">
         <PageHeader title="My Leagues" />
         <Link
@@ -21,7 +22,7 @@ export const UserGroupListPage = () => {
           Create League
         </Link>
       </div>
-      <div className="bg-white rounded-sm shadow p-4">
+      <PageSection>
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <LoadingSpinner />
@@ -31,7 +32,7 @@ export const UserGroupListPage = () => {
         ) : (
           <UserGroupList userGroups={data?.userGroups} loading={isLoading} error={errorMessage} />
         )}
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 };

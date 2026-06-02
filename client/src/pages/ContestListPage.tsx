@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { ContestList } from "../components/contest/ContestList";
+import { PageHeader } from "../components/common/PageHeader";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
@@ -30,8 +31,8 @@ export const Contests: React.FC = () => {
     isTournamentLoading || (isContestsLoading && contestsWithLineupsData === undefined);
 
   return (
-    <div className="space-y-4 p-4">
-      {/* <PageHeader title="Contests" className="" /> */}
+    <div className="space-y-4">
+      <PageHeader title="Live Contests" />
       <ContestList contests={contests} loading={showLoading} error={error} />
     </div>
   );

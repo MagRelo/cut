@@ -4,8 +4,10 @@ module.exports = {
   theme: {
     extend: {
       maxWidth: {
-        /** Slightly under `max-w-2xl` so dialogs don’t line up edge-to-edge with the main column */
-        modal: '37rem',
+        /** Main app column (nav, content, footer) */
+        shell: '56rem',
+        /** Slightly under the shell column so dialogs don’t line up edge-to-edge */
+        modal: '52rem',
         /** Slightly under `max-w-4xl` for wide picker-style dialogs */
         'modal-wide': '50rem',
       },

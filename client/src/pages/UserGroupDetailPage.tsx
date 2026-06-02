@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
+import { PageSection } from "../components/layout/PageSection";
 import { UserGroupMembersList } from "../components/userGroup/UserGroupMembersList";
 import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
@@ -46,24 +47,18 @@ export const UserGroupDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-4">
-        <div className="flex justify-center items-center py-12">
-          <LoadingSpinner />
-        </div>
+      <div className="flex justify-center items-center py-12">
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (error || !userGroup) {
-    return (
-      <div className="space-y-4 p-4">
-        <ErrorMessage message={errorMessage || "Failed to load league"} />
-      </div>
-    );
+    return <ErrorMessage message={errorMessage || "Failed to load league"} />;
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <>
       <Breadcrumbs
         items={[
           { label: "Leagues", path: "/user-groups" },
@@ -71,13 +66,13 @@ export const UserGroupDetailPage = () => {
         ]}
       />
       <PageHeader title={userGroup.name} />
-      {userGroup.description && (
-        <div className="bg-white rounded-sm shadow p-4">
+      {userGroup.description ? (
+        <PageSection>
           <p className="text-gray-700">{userGroup.description}</p>
-        </div>
-      )}
+        </PageSection>
+      ) : null}
 
-      <div className="bg-white rounded-sm shadow p-4">
+      <PageSection>
         <div className="mb-6">
           <div className="text-sm text-gray-500">Members</div>
           <div className="text-2xl font-bold text-gray-900">{userGroup.memberCount}</div>
@@ -87,9 +82,9 @@ export const UserGroupDetailPage = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Members</h3>
           <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
         </div>
-      </div>
+      </PageSection>
 
-      <div className="bg-white rounded-sm shadow p-4">
+      <PageSection>
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Contests</h3>
           {isAdmin && (
@@ -106,29 +101,29 @@ export const UserGroupDetailPage = () => {
           loading={isContestsLoading}
           error={contestsErrorMessage}
         />
-      </div>
+      </PageSection>
 
-      {isAdmin && (
+      {isAdmin ? (
         <>
-          <div className="bg-white rounded-sm shadow p-4">
+          <PageSection>
             <UserGroupInvitePanel
               userGroupId={userGroup.id}
               inviteCode={userGroup.inviteCode}
               inviteUrl={userGroup.inviteUrl}
               onInviteUpdated={() => refetch()}
             />
-          </div>
+          </PageSection>
 
-          <div className="bg-white rounded-sm shadow p-4">
+          <PageSection>
             <UserGroupMemberManagement
               userGroupId={userGroup.id}
               members={userGroup.members}
               onMemberAdded={() => refetch()}
               onMemberRemoved={() => refetch()}
             />
-          </div>
+          </PageSection>
 
-          <div className="bg-white rounded-sm shadow p-4">
+          <PageSection>
             <UserGroupSettings
               userGroupId={userGroup.id}
               initialData={{
@@ -138,9 +133,9 @@ export const UserGroupDetailPage = () => {
               onUpdated={() => refetch()}
               onDeleted={handleDeleted}
             />
-          </div>
+          </PageSection>
         </>
-      )}
-    </div>
+      ) : null}
+    </>
   );
 };

@@ -121,7 +121,7 @@ export function OnboardingPage() {
   const progressPct = ((step + 1) / STEP_COUNT) * 100;
 
   return (
-    <div className="flex-1 w-full min-w-0 flex flex-col px-4 pt-4 pb-4 sm:px-5 md:px-6 bg-gray-50 rounded-sm">
+    <div className="flex-1 w-full min-w-0 flex flex-col px-1 sm:px-0 pb-4">
       <div className="mb-5">
         <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
           <span>
@@ -144,7 +144,7 @@ export function OnboardingPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-sm shadow px-6 py-6 md:px-8 md:py-7 flex flex-col">
+      <div className="flex flex-col">
         {step === 0 && (
           <>
             <div className="flex min-w-0 flex-row flex-nowrap items-center justify-center gap-4 pb-2 mb-2 sm:gap-6">

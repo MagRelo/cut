@@ -163,31 +163,29 @@ const ContractsPage: React.FC = () => {
   );
 
   return (
-    <div className="mt-4">
-      <div className="bg-white rounded-sm shadow p-4 sm:p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Contract Addresses</h1>
-        </div>
-
-        {renderContractSection(
-          "Base Mainnet",
-          "Production contracts on Base Layer 2",
-          baseMainnetContracts,
-          "https://base.blockscout.com",
-          chainId === 8453
-        )}
-
-        <div className="my-8 border-t border-gray-200"></div>
-
-        {renderContractSection(
-          "Base Sepolia Testnet",
-          "Test contracts on Base Sepolia",
-          baseSepoliaContracts,
-          "https://base-sepolia.blockscout.com",
-          chainId === 84532
-        )}
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Contract Addresses</h1>
       </div>
-    </div>
+
+      {renderContractSection(
+        "Base Mainnet",
+        "Production contracts on Base Layer 2",
+        baseMainnetContracts,
+        "https://base.blockscout.com",
+        chainId === 8453
+      )}
+
+      <div className="my-8 border-t border-gray-200" />
+
+      {renderContractSection(
+        "Base Sepolia Testnet",
+        "Test contracts on Base Sepolia",
+        baseSepoliaContracts,
+        "https://base-sepolia.blockscout.com",
+        chainId === 84532
+      )}
+    </>
   );
 };
 

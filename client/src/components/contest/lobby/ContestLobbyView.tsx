@@ -36,15 +36,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
 
   return (
-    <div className="space-y-3 p-4">
-      <div className="rounded-sm border border-gray-200 bg-white shadow">
+    <div className="">
+      <div className="border-b border-gray-200">
         <div className="px-3 py-4">
           <ContestCard
             contest={contest}
             onPotClick={
-              viewModel.phase === "settled"
-                ? undefined
-                : () => setIsPayoutsModalOpen(true)
+              viewModel.phase === "settled" ? undefined : () => setIsPayoutsModalOpen(true)
             }
             onSettingsClick={undefined}
           />

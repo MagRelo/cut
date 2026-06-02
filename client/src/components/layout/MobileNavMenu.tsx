@@ -1,0 +1,165 @@
+import { Dialog, DialogPanel } from "@headlessui/react";
+import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { formatUnits } from "viem";
+import { useAuth } from "../../contexts/AuthContext";
+import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
+import { ADMIN_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+
+const mobileNavItemBase =
+  "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+
+function mobileNavItemClass(active: boolean) {
+  return [
+    mobileNavItemBase,
+    active
+      ? "bg-slate-100 text-slate-950 font-semibold"
+      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+  ].join(" ");
+}
+
+const mobileSubItemClass =
+  "block w-full rounded-md px-3 py-2 text-left text-sm font-display text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+
+export const MobileNavMenu: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const { user, logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const showAdminNav = Boolean(user) && isAdmin();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  const totalBalance = balancesUnavailable
+    ? null
+    : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
+
+  const isAccountActive = accountMatch(location.pathname);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        aria-label="Open menu"
+      >
+        <Bars3Icon className="h-6 w-6" aria-hidden />
+      </button>
+
+      <Dialog open={open} onClose={setOpen} className="relative z-50 md:hidden">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+        <div className="fixed inset-0 overflow-hidden">
+          <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
+            <DialogPanel className="w-screen max-w-xs transform bg-white shadow-xl transition data-[closed]:translate-x-full">
+              <div className="flex h-full flex-col">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <Link
+                    to="/"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                  >
+                    <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
+                    <span className="font-display text-lg font-semibold uppercase tracking-widest text-slate-900">
+                      PlayTheCut
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                    aria-label="Close menu"
+                  >
+                    <XMarkIcon className="h-5 w-5" aria-hidden />
+                  </button>
+                </div>
+
+                <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+                  <div className="flex flex-col gap-0.5">
+                    {LEFT_TABS.map((tab) => (
+                      <Link
+                        key={tab.key}
+                        to={tab.to}
+                        state={tab.state}
+                        aria-current={tab.match(location.pathname) ? "page" : undefined}
+                        className={mobileNavItemClass(tab.match(location.pathname))}
+                      >
+                        {tab.label}
+                      </Link>
+                    ))}
+
+                    {user ? (
+                      <>
+                        <Link
+                          to={LINEUPS_TAB.to}
+                          aria-current={LINEUPS_TAB.match(location.pathname) ? "page" : undefined}
+                          className={mobileNavItemClass(LINEUPS_TAB.match(location.pathname))}
+                        >
+                          {LINEUPS_TAB.label}
+                        </Link>
+
+                        {showAdminNav ? (
+                          <Link
+                            to={ADMIN_TAB.to}
+                            aria-current={ADMIN_TAB.match(location.pathname) ? "page" : undefined}
+                            className={mobileNavItemClass(ADMIN_TAB.match(location.pathname))}
+                          >
+                            {ADMIN_TAB.label}
+                          </Link>
+                        ) : null}
+
+                        <Link
+                          to="/account"
+                          aria-current={isAccountActive ? "page" : undefined}
+                          className={[
+                            mobileNavItemClass(isAccountActive),
+                            "inline-flex items-center justify-between gap-2 normal-case tracking-normal",
+                          ].join(" ")}
+                        >
+                          <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
+                            <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
+                            Account
+                          </span>
+                          {totalBalance !== null ? (
+                            <span className="font-semibold tabular-nums">${totalBalance}</span>
+                          ) : (
+                            <span className="tabular-nums text-amber-800">—</span>
+                          )}
+                        </Link>
+
+                        <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
+                          <Link to="/account/funds" className={mobileSubItemClass}>
+                            Manage Funds
+                          </Link>
+                          <button
+                            type="button"
+                            className={mobileSubItemClass}
+                            onClick={() => void logout()}
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <Link
+                        to="/connect"
+                        state={{ from: signInReturnFrom }}
+                        aria-current={location.pathname === "/connect" ? "page" : undefined}
+                        className={mobileNavItemClass(location.pathname === "/connect")}
+                      >
+                        Sign In
+                      </Link>
+                    )}
+                  </div>
+                </nav>
+              </div>
+            </DialogPanel>
+          </div>
+        </div>
+      </Dialog>
+    </>
+  );
+};

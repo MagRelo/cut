@@ -27,7 +27,7 @@ export function ConnectPage() {
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center gap-4 pt-8">
+    <div className="flex-1 w-full flex flex-col items-center gap-4">
       <div>
         {/* Title and Logo */}
         <div className="-ml-4 flex items-center gap-2 pb-1.5">

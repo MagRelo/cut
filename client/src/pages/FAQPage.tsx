@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
+import { PageSection } from "../components/layout/PageSection";
 
 export const FAQPage: React.FC = () => {
   const location = useLocation();
@@ -22,11 +23,11 @@ export const FAQPage: React.FC = () => {
   }, [location.pathname, location.hash]);
 
   return (
-    <div className="p-4">
+    <>
       <PageHeader title="FAQ" className="mb-3" />
 
       {/* Quick Navigation */}
-      <div className="bg-white rounded-sm shadow p-4 mb-4">
+      <PageSection>
         <h3 className="text-sm font-semibold text-gray-700 mb-2 font-display">Jump to Section</h3>
         <ul className="list-disc pl-6 space-y-1">
           <li>
@@ -60,11 +61,9 @@ export const FAQPage: React.FC = () => {
             </a>
           </li>
         </ul>
-      </div>
+      </PageSection>
 
-      <div className="space-y-4">
-        {/* Contest Gameplay Section */}
-        <div id="contest-gameplay" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+      <PageSection id="contest-gameplay" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Contest Gameplay</h2>
 
           <div className="space-y-4">
@@ -201,10 +200,10 @@ export const FAQPage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </PageSection>
 
         {/* Winner Pool Section */}
-        <div id="winner-pool" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+        <PageSection id="winner-pool" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Winner Pool</h2>
 
           <div className="space-y-4">
@@ -317,10 +316,10 @@ export const FAQPage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </PageSection>
 
         {/* Contest Status & Timeline Section */}
-        <div id="contest-status" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+        <PageSection id="contest-status" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">
             Contest Status & Timeline
           </h2>
@@ -538,10 +537,10 @@ export const FAQPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </PageSection>
 
         {/* Account Section */}
-        <div id="account" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+        <PageSection id="account" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Account & Wallet</h2>
 
           <div className="space-y-4">
@@ -600,10 +599,10 @@ export const FAQPage: React.FC = () => {
               </ul>
             </div>
           </div>
-        </div>
+        </PageSection>
 
         {/* Referral Network Section */}
-        <div id="referral-network" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+        <PageSection id="referral-network" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Invite Network</h2>
 
           <div className="space-y-4 text-gray-700">
@@ -626,10 +625,10 @@ export const FAQPage: React.FC = () => {
               referral chain.
             </p>
           </div>
-        </div>
+        </PageSection>
 
         {/* Contracts Section */}
-        <div id="contracts" className="bg-white rounded-sm shadow p-6 scroll-mt-4">
+        <PageSection id="contracts" className="scroll-mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 font-display">Smart Contracts</h2>
           <p className="text-gray-700 mb-4">
             Looking for deployed addresses and network details? Visit the{" "}
@@ -757,10 +756,10 @@ export const FAQPage: React.FC = () => {
               </ul>
             </div>
           </div>
-        </div>
+        </PageSection>
 
         {/* Additional Help */}
-        <div className="bg-blue-50 border border-blue-200 rounded-sm p-6">
+        <PageSection className="bg-blue-50 border border-blue-200 rounded-sm">
           <h2 className="text-xl font-bold text-gray-900 mb-3 font-display">Need More Help?</h2>
           <p className="text-gray-700 mb-2">
             Still have questions? Here are some helpful resources:
@@ -787,8 +786,7 @@ export const FAQPage: React.FC = () => {
               </Link>
             </li>
           </ul>
-        </div>
-      </div>
-    </div>
+        </PageSection>
+    </>
   );
 };

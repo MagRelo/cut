@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "../hooks/useLineupData";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { PageSection } from "../components/layout/PageSection";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 
 import { PageHeader } from "../components/common/PageHeader";
@@ -99,7 +100,7 @@ export const LineupList: React.FC = () => {
 
   if (isAuthLoading || isTournamentLoading || isLineupsLoading) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         {header}
         <div className="flex justify-center py-8">
           <LoadingSpinner />
@@ -110,7 +111,7 @@ export const LineupList: React.FC = () => {
 
   if (lineupError) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         {header}
         <ErrorMessage message={lineupError} />
       </div>
@@ -119,7 +120,7 @@ export const LineupList: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         {header}
         <ErrorMessage message="Sign in to view lineups." />
       </div>
@@ -127,7 +128,7 @@ export const LineupList: React.FC = () => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       {header}
 
       {createError ? <ErrorMessage message={createError} /> : null}
@@ -135,7 +136,7 @@ export const LineupList: React.FC = () => {
       {hasLineups && (
         <div>
           {listItems.map((row) => (
-            <div key={row.id} className="rounded-sm border border-gray-200 bg-white mb-4">
+            <div key={row.id} className="rounded-sm border border-gray-200 mb-4">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
                 roundDisplay={tournament?.roundDisplay || ""}
@@ -149,7 +150,7 @@ export const LineupList: React.FC = () => {
       )}
 
       {isTournamentEditable && !hasLineups && (
-        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+        <PageSection>
           <p className="text-base font-semibold text-gray-900 font-display mb-1">
             Build your first lineup
           </p>
@@ -167,11 +168,11 @@ export const LineupList: React.FC = () => {
               {isCreating ? "Creating..." : "Build Lineup"}
             </button>
           ) : null}
-        </div>
+        </PageSection>
       )}
 
       {!isTournamentEditable && !hasLineups && (
-        <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+        <PageSection>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-gray-600 text-lg">🏌️</span>
             <div className="text-lg font-semibold text-gray-900 font-display">
@@ -181,7 +182,7 @@ export const LineupList: React.FC = () => {
           <div className="text-sm text-gray-600">
             <p className="mb-2">Check back when the next tournament opens to create your lineup.</p>
           </div>
-        </div>
+        </PageSection>
       )}
     </div>
   );

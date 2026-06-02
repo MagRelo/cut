@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { PageSection } from "../components/layout/PageSection";
 import {
   useActiveTournament,
   useActiveTournamentLive,
@@ -16,11 +17,11 @@ export const DebugPage: React.FC = () => {
   const activeTournament = useActiveTournament();
 
   return (
-    <div className="p-4 space-y-6">
+    <>
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
 
       {/* Wagmi Account Status */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-blue-600">Wagmi Account Status</h2>
         <div className="space-y-2 text-sm">
           <div>
@@ -33,10 +34,10 @@ export const DebugPage: React.FC = () => {
             <strong>Status:</strong> {wagmiStatus}
           </div>
         </div>
-      </div>
+      </PageSection>
 
       {/* Auth context (Cut / Privy) */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-green-600">Auth context</h2>
         <div className="space-y-2 text-sm">
           <div>
@@ -86,10 +87,10 @@ export const DebugPage: React.FC = () => {
             <strong>Balances Unavailable:</strong> {auth.balancesUnavailable ? "true" : "false"}
           </div>
         </div>
-      </div>
+      </PageSection>
 
       {/* Tournament shell */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-purple-600">
           Tournament shell (useTournamentShell / GET active/shell)
         </h2>
@@ -118,10 +119,10 @@ export const DebugPage: React.FC = () => {
             </>
           )}
         </div>
-      </div>
+      </PageSection>
 
       {/* Active tournament live */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-indigo-600">
           Active live (useActiveTournamentLive / GET active/live)
         </h2>
@@ -150,10 +151,10 @@ export const DebugPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </PageSection>
 
       {/* Active Tournament State */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-orange-600">
           Active Tournament State (useActiveTournament)
         </h2>
@@ -177,7 +178,7 @@ export const DebugPage: React.FC = () => {
             {activeTournament.isTournamentEditable ? "true" : "false"}
           </div>
         </div>
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 };

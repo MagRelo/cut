@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
 
 type DraftState = {
@@ -54,7 +55,7 @@ export function UserSettings() {
   };
 
   return (
-    <div className="bg-white rounded-sm shadow p-4 mb-4">
+    <PageSection>
       <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Lineup Display</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,6 +132,6 @@ export function UserSettings() {
           </button>
         </div>
       </form>
-    </div>
+    </PageSection>
   );
 }

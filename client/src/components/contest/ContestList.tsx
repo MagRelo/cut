@@ -26,7 +26,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
 
   if (contests.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-sm shadow p-4">
+      <div>
         <p className="text-base font-semibold text-gray-900 font-display mb-1">No contests yet</p>
         <p className="text-sm text-gray-600 font-display leading-relaxed">
           New contests will show up here when they open. Check back soon.
@@ -39,7 +39,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
     <div className="grid gap-2">
       {contests.map((contest) => (
         <Link key={contest.id} to={contestLobbyPath(contest.address)} className="block min-w-0 w-full">
-          <div className="min-w-0 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 py-4 shadow">
+          <div className="min-w-0 overflow-hidden rounded-sm border border-gray-200 p-3 py-4">
             <ContestCard contest={contest} />
           </div>
         </Link>

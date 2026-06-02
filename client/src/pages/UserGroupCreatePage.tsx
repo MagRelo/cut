@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
+import { PageSection } from "../components/layout/PageSection";
 import { UserGroupForm } from "../components/userGroup/UserGroupForm";
 import { useCreateUserGroup } from "../hooks/useUserGroupMutations";
 import { type CreateUserGroupInput, type UpdateUserGroupInput } from "../types/userGroup";
@@ -18,7 +19,7 @@ export const UserGroupCreatePage = () => {
   };
 
   return (
-    <div className="space-y-4 p-4">
+    <>
       <Breadcrumbs
         items={[
           { label: "Leagues", path: "/user-groups" },
@@ -26,7 +27,7 @@ export const UserGroupCreatePage = () => {
         ]}
       />
       <PageHeader title="Create League" />
-      <div className="bg-white rounded-sm shadow p-4">
+      <PageSection>
         <UserGroupForm
           onSubmit={handleSubmit as (data: CreateUserGroupInput | UpdateUserGroupInput) => void}
           isLoading={createMutation.isPending}
@@ -36,7 +37,7 @@ export const UserGroupCreatePage = () => {
               : null
           }
         />
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 };

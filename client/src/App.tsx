@@ -33,11 +33,10 @@ import ContractsPage from "./pages/ContractsPage";
 
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 
-import { TournamentHeaderPanel } from "./components/tournament/TournamentHeaderPanel";
+import { AppLayout } from "./components/layout/AppLayout";
 
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { OnboardingRedirectGate } from "./components/common/OnboardingRedirectGate";
-import { Footer } from "./components/common/Footer";
 import { GlobalLoadingOverlay } from "./components/common/GlobalLoadingOverlay";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -74,15 +73,11 @@ const AppShell: React.FC = () => {
   return (
     <>
       <ReferralQueryCapture />
-      <div className="min-h-dvh bg-gray-100 flex flex-col">
+      <AppLayout>
         {/* TODO: Remove this when we're ready to go live */}
         {/* <MaintenanceOverlay /> */}
-        <main className="flex-1 min-h-0">
-          <div className="container mx-auto">
-            <OnboardingRedirectGate>
-              <div className="max-w-2xl mx-auto">
-                <TournamentHeaderPanel />
-                <Routes>
+        <OnboardingRedirectGate>
+          <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/faq" element={<FAQPage />} />
@@ -181,7 +176,7 @@ const AppShell: React.FC = () => {
                     }
                   />
 
-                  {/* Admin (staff only; not linked in global nav) */}
+                  {/* Admin (staff only; linked in nav when user is ADMIN / SUPER_ADMIN) */}
                   <Route
                     path="/admin"
                     element={
@@ -215,13 +210,9 @@ const AppShell: React.FC = () => {
 
                   {/* Debug */}
                   <Route path="/debug" element={<DebugPage />} />
-                </Routes>
-              </div>
-            </OnboardingRedirectGate>
-          </div>
-        </main>
-        <Footer />
-      </div>
+          </Routes>
+        </OnboardingRedirectGate>
+      </AppLayout>
       <GlobalLoadingOverlay isBlocking={isBlockingLoad} />
     </>
   );

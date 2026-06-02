@@ -2,7 +2,7 @@ import React from "react";
 
 export const TermsOfService: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-4 max-w-4xl">
+    <>
       <h1 className="text-3xl font-bold mb-6">Terms of Service & Privacy Policy</h1>
 
       <section className="mb-8">
@@ -191,6 +191,6 @@ export const TermsOfService: React.FC = () => {
           <a href="mailto:mattlovan+cut@gmail.com">mattlovan+cut@gmail.com</a>.
         </p>
       </section>
-    </div>
+    </>
   );
 };

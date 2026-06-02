@@ -1,6 +1,7 @@
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
+import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
 
 const manageLinkClass =
@@ -18,7 +19,7 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
     : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
 
   return (
-    <div className="bg-white rounded-sm shadow p-4 mb-4">
+    <PageSection>
       <div className={`flex items-center justify-between ${showContestHistoryLink ? "mb-2" : ""}`}>
         <div className="min-w-0 text-xl font-semibold text-gray-700 font-display">
           Balance
@@ -76,6 +77,6 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
           </Link>
         </div>
       )}
-    </div>
+    </PageSection>
   );
 }

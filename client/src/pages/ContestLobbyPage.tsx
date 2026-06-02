@@ -16,12 +16,8 @@ export const ContestLobby: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 p-4">
-        <div className="rounded-lg bg-white shadow">
-          <div className="flex min-h-[176px] items-center justify-center">
-            <LoadingSpinner />
-          </div>
-        </div>
+      <div className="flex min-h-[176px] items-center justify-center p-4">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -33,21 +29,17 @@ export const ContestLobby: React.FC = () => {
         : queryError.message;
 
     return (
-      <div className="space-y-3 p-4">
-        <div className="min-h-[176px] rounded-lg bg-white shadow">
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <p className="mb-2 text-lg font-medium text-gray-800">{message}</p>
-            {message !== "Contest not found" && (
-              <p className="text-sm text-gray-500">{queryError.message}</p>
-            )}
-          </div>
-        </div>
+      <div className="flex min-h-[176px] flex-col items-center justify-center p-8 text-center">
+        <p className="mb-2 text-lg font-medium text-gray-800">{message}</p>
+        {message !== "Contest not found" && (
+          <p className="text-sm text-gray-500">{queryError.message}</p>
+        )}
       </div>
     );
   }
 
   if (!contest || !viewModel) {
-    return <div className="space-y-3 p-4 font-display">Contest not found</div>;
+    return <div className="p-4 font-display">Contest not found</div>;
   }
 
   return (

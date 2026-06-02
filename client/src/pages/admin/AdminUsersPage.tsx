@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatUnits } from "viem";
 import { PageHeader } from "../../components/common/PageHeader";
+import { PageSection } from "../../components/layout/PageSection";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { useAuth } from "../../contexts/AuthContext";
@@ -40,7 +41,7 @@ export function AdminUsersPage() {
   const totalFormatted = data ? formatPaymentBalance(data.totalPaymentTokenBalanceWei) : null;
 
   return (
-    <div className="space-y-4 p-4">
+    <>
       <PageHeader title="Users" />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-600 space-y-0.5">
@@ -70,7 +71,7 @@ export function AdminUsersPage() {
         </label>
       </div>
 
-      <div className="bg-white rounded-sm shadow border border-gray-200 overflow-x-auto">
+      <PageSection className="overflow-x-auto">
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <LoadingSpinner />
@@ -113,7 +114,7 @@ export function AdminUsersPage() {
             </tbody>
           </table>
         )}
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 }

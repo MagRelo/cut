@@ -3,12 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { useActiveTournament } from "../hooks/useTournamentData";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
+import { PageHeader } from "../components/common/PageHeader";
 import { PlayerDetailModal } from "../components/player/PlayerDetailModal";
 import { PlayerDisplayRow } from "../components/player/PlayerDisplayRow";
 import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
 import type { PlayerWithTournamentData } from "../types/player";
 import { sortPlayersByLeaderboard } from "../utils/playerSorting";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 export const LeaderboardPage: React.FC = () => {
   const { tournament, players, isLoading, error } = useActiveTournament();
@@ -70,101 +70,65 @@ export const LeaderboardPage: React.FC = () => {
     return sortPlayersByLeaderboard(playersWithName, { sortByNameOnly });
   }, [players, tournament?.status]);
 
+  const header = <PageHeader title="Leaderboard" className="px-4 pt-4" />;
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
+      <div>
+        {header}
+        <div className="flex items-center justify-center min-h-[400px]">
+          <LoadingSpinner />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4">
-        <ErrorMessage message={error.message} />
+      <div>
+        {header}
+        <div className="p-4">
+          <ErrorMessage message={error.message} />
+        </div>
       </div>
     );
   }
 
   if (!tournament) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-gray-600">No tournament data available</p>
+      <div>
+        {header}
+        <div className="p-4 text-center">
+          <p className="text-gray-600">No tournament data available</p>
+        </div>
       </div>
     );
   }
 
   const roundDisplay = tournament.roundDisplay || "R1";
-  const locationDisplay = [tournament.city?.trim(), tournament.state?.trim()]
-    .filter(Boolean)
-    .join(", ");
 
   return (
-    <div className="p-4">
-      <div className="rounded-t-sm border border-gray-200 bg-white">
-        <div className="px-4 py-3.5">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-gray-900">
-              {tournament.name}
-            </h1>
-            {/* <button
-              type="button"
-              onClick={() => setIsSummaryModalOpen(true)}
-              className="inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-3 py-1 text-sm font-display text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-200"
-            >
-              Preview
-            </button> */}
-          </div>
-
-          <div className="space-y-0.5">
-            {tournament.course ? (
-              <p className="font-display text-base font-medium leading-snug text-gray-700">
-                {tournament.course}
-              </p>
-            ) : null}
-            {locationDisplay ? (
-              <p className="font-display text-sm leading-snug text-gray-500">{locationDisplay}</p>
-            ) : null}
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-sm font-medium text-gray-600">
-            <span>{roundDisplay}</span>
-            <span className="text-[9px] leading-none text-gray-300" aria-hidden>
-              ●
-            </span>
-            {tournament.roundStatusDisplay === "Suspended" ? (
-              <span className="inline-flex items-center gap-1 text-gray-600">
-                <ExclamationTriangleIcon className="h-3.5 w-3.5 text-gray-500" aria-hidden />
-                <span>{tournament.roundStatusDisplay || tournament.status}</span>
-              </span>
-            ) : (
-              <span>{tournament.roundStatusDisplay || tournament.status}</span>
-            )}
-          </div>
+    <>
+      {header}
+      {sortedPlayers.length === 0 ? (
+        <div className="px-4 py-6 text-center text-gray-500">
+          <p>No players found.</p>
         </div>
-      </div>
-
-      <div className="overflow-hidden rounded-b-sm border-x border-b border-gray-200 bg-white">
-        {sortedPlayers.length === 0 ? (
-          <div className="px-4 py-6 text-center text-gray-500">
-            <p>No players found.</p>
-          </div>
-        ) : (
-          <div className="p-2 pt-0">
-            {sortedPlayers.map((player) => (
-              <div key={player.id} className="border-b border-gray-200">
-                <div className="p-3">
-                  <PlayerDisplayRow
-                    player={player}
-                    roundDisplay={roundDisplay}
-                    onClick={() => openPlayerModal(player)}
-                  />
-                </div>
+      ) : (
+        <div className="p-2 pt-0">
+          {sortedPlayers.map((player) => (
+            <div key={player.id} className="border-b border-gray-200">
+              <div className="p-3">
+                <PlayerDisplayRow
+                  player={player}
+                  roundDisplay={roundDisplay}
+                  onClick={() => openPlayerModal(player)}
+                />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <TournamentSummaryModal
         isOpen={isSummaryModalOpen}
@@ -176,6 +140,6 @@ export const LeaderboardPage: React.FC = () => {
         onClose={closePlayerModal}
         player={selectedPlayer}
       />
-    </div>
+    </>
   );
 };

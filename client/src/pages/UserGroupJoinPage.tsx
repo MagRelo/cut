@@ -34,23 +34,23 @@ export const UserGroupJoinPage = () => {
 
   if (!code) {
     return (
-      <div className="space-y-4 p-4">
+      <>
         <ErrorMessage message="Invalid invite link" />
         <Link to="/user-groups" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to my leagues
         </Link>
-      </div>
+      </>
     );
   }
 
   if (isPending) {
     return (
-      <div className="space-y-4 p-4">
+      <>
         <PageHeader title="Joining league..." />
         <div className="flex justify-center items-center py-12">
           <LoadingSpinner />
         </div>
-      </div>
+      </>
     );
   }
 
@@ -63,21 +63,19 @@ export const UserGroupJoinPage = () => {
           : "Failed to join league";
 
     return (
-      <div className="space-y-4 p-4">
+      <>
         <PageHeader title="Join League" />
         <ErrorMessage message={message} />
         <Link to="/user-groups" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to my leagues
         </Link>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex justify-center items-center py-12">
-        <LoadingSpinner />
-      </div>
+    <div className="flex justify-center items-center py-12">
+      <LoadingSpinner />
     </div>
   );
 };

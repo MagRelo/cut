@@ -9,14 +9,14 @@ export function TransferFundsPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
-    <div className="p-4">
+    <>
       <Breadcrumbs
         items={[{ label: "Account", path: "/account" }, { label: "Manage" }]}
         className="mb-3"
       />
 
       <div className="space-y-4">
-        <div className="rounded-sm border border-gray-200 bg-white shadow">
+      <div className="rounded-sm border border-gray-200">
           <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <TabList className={tabListClassName("space-x-1", "px-4", "pt-2")}>
               <Tab
@@ -45,6 +45,6 @@ export function TransferFundsPage() {
           </TabGroup>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -48,7 +48,7 @@ interface LineupContestCardProps {
   isEditable?: boolean;
 }
 
-const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-2 pb-2 flow-root";
+const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-3 pb-2 flow-root";
 
 /** Matches the “no contests” badge on the Contests tab label. */
 const NO_CONTESTS_WARNING_BADGE_CLASS =
@@ -109,9 +109,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           .sort()
           .join(",");
         const nextIds = [...playerIds].sort().join(",");
-        return (
-          existingIds === nextIds && entry.winningScorePrediction === nextPrediction
-        );
+        return existingIds === nextIds && entry.winningScorePrediction === nextPrediction;
       });
 
       if (duplicate) {
@@ -124,8 +122,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       try {
         await updateLineup(lineupId, playerIds, { winningScorePrediction: nextPrediction });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to save prediction";
+        const message = error instanceof Error ? error.message : "Failed to save prediction";
         setSliderError(message);
         setPrediction(serverPrediction);
       } finally {
@@ -175,7 +172,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
   const sideBetLineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
-  const sideBetPlayerLastNames = (canEditSlots ? displayPlayers : sortPlayersByLeaderboard(initialPlayers))
+  const sideBetPlayerLastNames = (
+    canEditSlots ? displayPlayers : sortPlayersByLeaderboard(initialPlayers)
+  )
     .map((player) => player.pga_lastName)
     .filter(Boolean)
     .join(", ");
@@ -193,7 +192,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         }}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 text-left font-display pl-1">
+          <div className="min-w-0 flex-1 pl-1 text-left font-display">
             <div className="truncate text-xl font-semibold leading-tight text-gray-900">
               {lineup.user?.name || lineup.user?.email || "Unknown User"}
             </div>
@@ -252,83 +251,81 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             {/* PLAYERS TAB */}
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
               <div className="space-y-1">
-                {canEditSlots ? (
-                  slotEditor.slots.map((player, index) => (
-                    <div key={`slot-${index}`} className="p-3">
-                      {player ? (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <PlayerDisplayRow
-                              player={player}
-                              roundDisplay={roundDisplay}
-                              preRoundLayout
-                              onClick={() => openDetailModal(player)}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => slotEditor.openSlot(index)}
-                            disabled={slotActionsDisabled}
-                            className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Edit player in slot ${index + 1}`}
-                          >
-                            <svg
-                              className="h-4 w-4 shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              aria-hidden="true"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                {canEditSlots
+                  ? slotEditor.slots.map((player, index) => (
+                      <div key={`slot-${index}`} className="p-3">
+                        {player ? (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <PlayerDisplayRow
+                                player={player}
+                                roundDisplay={roundDisplay}
+                                preRoundLayout
+                                onClick={() => openDetailModal(player)}
                               />
-                            </svg>
-                            Edit
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => slotEditor.openSlot(index)}
-                            disabled={slotActionsDisabled}
-                            className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                              <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
                             </div>
-                            <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                              No player selected
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => slotEditor.openSlot(index)}
-                            disabled={slotActionsDisabled}
-                            className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Add player to slot ${index + 1}`}
-                          >
-                            <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-                            Add
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  displayPlayers.map((player) => (
-                    <div key={player.id} className="p-3">
-                      <PlayerDisplayRow
-                        player={player}
-                        roundDisplay={roundDisplay}
-                        onClick={() => openDetailModal(player)}
-                      />
-                    </div>
-                  ))
-                )}
+                            <button
+                              type="button"
+                              onClick={() => slotEditor.openSlot(index)}
+                              disabled={slotActionsDisabled}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Edit player in slot ${index + 1}`}
+                            >
+                              <svg
+                                className="h-4 w-4 shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                />
+                              </svg>
+                              Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => slotEditor.openSlot(index)}
+                              disabled={slotActionsDisabled}
+                              className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                                <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
+                              </div>
+                              <span className="truncate text-md font-semibold leading-tight text-slate-400">
+                                No player selected
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => slotEditor.openSlot(index)}
+                              disabled={slotActionsDisabled}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Add player to slot ${index + 1}`}
+                            >
+                              <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+                              Add
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  : displayPlayers.map((player) => (
+                      <div key={player.id} className="p-3">
+                        <PlayerDisplayRow
+                          player={player}
+                          roundDisplay={roundDisplay}
+                          onClick={() => openDetailModal(player)}
+                        />
+                      </div>
+                    ))}
               </div>
               {canEditSlots ? (
                 <LineupWinningScoreSlider
@@ -358,8 +355,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   contests.map((contestInfo) => {
                     return (
                       <div key={contestInfo.contest.id} className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0 bg-white rounded-sm border border-gray-200 p-3 py-4 shadow-sm">
-                          <Link to={contestLobbyPath(contestInfo.contest.address)} className="block">
+                        <div className="min-w-0 flex-1 rounded-sm border border-gray-200 bg-white p-3 py-4 shadow-sm">
+                          <Link
+                            to={contestLobbyPath(contestInfo.contest.address)}
+                            className="block"
+                          >
                             <ContestCard contest={contestInfo.contest} />
                           </Link>
                         </div>
@@ -379,7 +379,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                     </p>
                     <Link
                       to="/contests"
-                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-sm font-display text-white transition-colors hover:bg-blue-600"
+                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
                     >
                       Browse Contests
                     </Link>

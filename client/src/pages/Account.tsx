@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyButton } from "../components/common/CopyToClipboard";
+import { PageSection } from "../components/layout/PageSection";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
@@ -152,7 +153,7 @@ const ReferralNetworkPanel = ({
     return { depth, count: levelsByDepth.get(depth) ?? 0 };
   });
   return (
-    <div className="bg-white rounded-sm shadow p-4">
+    <PageSection>
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-1">
         <h2 className="text-lg font-semibold text-gray-700 font-display shrink-0">
           Your Invite Network
@@ -208,7 +209,7 @@ const ReferralNetworkPanel = ({
       ) : null}
 
       <ReferralLinkRow showSeparator />
-    </div>
+    </PageSection>
   );
 };
 
@@ -225,7 +226,7 @@ const WalletInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <div className="bg-white rounded-sm shadow p-4">
+    <PageSection>
       <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
 
       {userEmail ? (
@@ -299,28 +300,12 @@ const WalletInfo = ({
           </button>
         </div>
       )}
-    </div>
-  );
-};
-
-const AdminPanel = () => {
-  return (
-    <div className="bg-white rounded-sm shadow p-4">
-      <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Admin</h2>
-      <div className="flex flex-col gap-2 text-sm">
-        <Link to="/admin" className="text-blue-600 hover:text-blue-800 hover:underline">
-          Admin Tools
-        </Link>
-        <Link to="/admin/users" className="text-blue-600 hover:text-blue-800 hover:underline">
-          Manage Users
-        </Link>
-      </div>
-    </div>
+    </PageSection>
   );
 };
 
 export function UserPage() {
-  const { logout, user, isAdmin } = useAuth();
+  const { logout, user } = useAuth();
   const { address } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   const smartWalletAddress = smartWalletClient?.account?.address;
@@ -338,7 +323,7 @@ export function UserPage() {
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
-    <div className="p-4 space-y-4">
+    <>
       {/* <PageHeader title="Account" className="mb-3" /> */}
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
@@ -363,8 +348,6 @@ export function UserPage() {
         userEmail={user?.email}
         accountIdAddress={smartWalletAddress}
       />
-
-      {isAdmin() ? <AdminPanel /> : null}
-    </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
+import { PageSection } from "../components/layout/PageSection";
 import { AdminStatCard } from "../components/admin/AdminStatCard";
 import { AdminOperationsPanel } from "../components/admin/AdminOperationsPanel";
 import { useAdminDashboardQuery, useAdminSideBetReportQuery } from "../hooks/useAdminDashboard";
@@ -145,7 +146,7 @@ export const AdminPage: React.FC = () => {
   const ops = dashboard?.operations;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin dashboard</h1>
@@ -184,7 +185,7 @@ export const AdminPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <section className="bg-white rounded-sm shadow border border-gray-200 p-4 sm:p-5">
+          <PageSection>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">{t.name}</h2>
@@ -211,9 +212,9 @@ export const AdminPage: React.FC = () => {
                 Snapshot {new Date(dashboard.generatedAt).toLocaleString()}
               </p>
             ) : null}
-          </section>
+          </PageSection>
 
-          <section className="bg-white rounded-sm shadow border border-gray-200 p-4">
+          <PageSection>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-1">Contests</h2>
@@ -248,10 +249,10 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
             <ContestsTable contests={filteredContests} />
-          </section>
+          </PageSection>
 
           {ops?.sideBetsEnabled ? (
-            <section className="bg-white rounded-sm shadow border border-gray-200 p-4 space-y-4">
+            <PageSection className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-1">Parlays</h2>
                 <p className="text-xs text-gray-500">
@@ -346,17 +347,17 @@ export const AdminPage: React.FC = () => {
               ) : (
                 <p className="text-sm text-gray-500">No parlay tickets this week.</p>
               )}
-            </section>
+            </PageSection>
           ) : null}
 
-          <section className="bg-white rounded-sm shadow border border-gray-200 p-4">
+          <PageSection>
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Batch operations</h2>
             <AdminOperationsPanel
               tournamentId={tournamentId}
               sideBetsEnabled={ops?.sideBetsEnabled ?? false}
               onActionComplete={refreshAll}
             />
-          </section>
+          </PageSection>
         </>
       )}
     </div>

@@ -2,11 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Share } from "../components/common/Share";
 import { InfoScorecard } from "../components/common/InfoScorecard";
+import { PageSection } from "../components/layout/PageSection";
 import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
 
 export const Home: React.FC = () => {
   return (
-    <div className="flex-1 w-full min-w-0 flex flex-col items-center bg-gray-50 px-1 pb-8 pt-12 sm:px-0 sm:pt-8">
+    <div className="flex-1 w-full min-w-0 flex flex-col items-center pb-8 pt-6">
       <div className="w-full min-w-0 max-w-full">
         {/* Title and Logo — horizontal at all breakpoints */}
         <div className="flex justify-center px-2 pb-2 sm:px-0">
@@ -53,7 +54,7 @@ export const Home: React.FC = () => {
         <h3 className="text-2xl font-bold text-gray-400 mb-6 text-center">How To Win</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Way 1: Enter Contests */}
-          <div className="bg-white rounded-sm shadow p-6 border-2 border-green-200 hover:shadow-lg transition-shadow">
+          <div className="rounded-sm border-2 border-green-200 p-6 hover:border-green-300 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg  font-display">
                 1
@@ -67,7 +68,7 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Way 2: Predict Winners */}
-          <div className="bg-white rounded-sm shadow p-6 border-2 border-blue-200 hover:shadow-lg transition-shadow">
+          <div className="rounded-sm border-2 border-blue-200 p-6 hover:border-blue-300 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg font-display">
                 2
@@ -101,7 +102,7 @@ export const Home: React.FC = () => {
       {/* How To Play Contests */}
       <div className="w-full max-w-4xl px-4">
         <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">How To Play Contests</h3>
-        <div className="bg-white rounded-sm shadow p-4 mb-4">
+        <PageSection>
           <h3 className="text-lg font-medium text-gray-700 mb-4 font-display">
             1. Select four golfers from the field:
           </h3>
@@ -124,16 +125,16 @@ export const Home: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </PageSection>
 
-        <div className="bg-white rounded-sm shadow p-4 mb-4">
+        <PageSection>
           <h3 className="text-lg font-medium text-gray-700 mb-4 font-display">
             2. Score points based on golfer performance:
           </h3>
           <InfoScorecard />
-        </div>
+        </PageSection>
 
-        <div className="bg-white rounded-sm shadow p-4 mb-4">
+        <PageSection>
           <h3 className="text-lg font-medium text-gray-700 mb-4 font-display">
             3. Team with the highest score wins:
           </h3>
@@ -142,7 +143,7 @@ export const Home: React.FC = () => {
           <div className="border border-green-300 shadow-lg max-w-[18rem] mx-auto">
             <img src="/team-screenshot.png" alt="contest screenshot" className="w-full h-auto" />
           </div>
-        </div>
+        </PageSection>
       </div>
 
       <hr className="w-full border-gray-200 my-8" />
@@ -152,7 +153,7 @@ export const Home: React.FC = () => {
         <h3 className="text-2xl font-bold text-gray-400 mb-4 text-center">
           Referral Network Bonuses
         </h3>
-        <div className="bg-white rounded-sm shadow p-6 border-2 border-orange-200 hover:shadow-lg transition-shadow">
+        <PageSection className="border-2 border-orange-200 rounded-sm">
           <p className="text-gray-700 leading-relaxed font-display text-center mb-5 max-w-2xl mx-auto">
             Earn bonuses when you refer new players—and when <em>their</em> invites bring in more
             users. Rewards can stack across multiple levels, so your network keeps paying you back.
@@ -183,7 +184,7 @@ export const Home: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </PageSection>
       </div>
 
       <hr className="w-full border-gray-200 my-8" />

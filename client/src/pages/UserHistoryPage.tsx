@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
+import { PageSection } from "../components/layout/PageSection";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { useUserContestHistory, type UserContestHistoryItem } from "../hooks/useUserContestHistory";
 import { contestLobbyPath } from "../utils/contestRoutes";
@@ -29,7 +30,7 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
   return (
     <Link
       to={contestLobbyPath(contest.address)}
-      className="block min-w-0 w-full border bg-white rounded-sm p-3 hover:bg-gray-50 transition-colors"
+      className="block min-w-0 w-full border border-gray-200 rounded-sm p-3 hover:bg-gray-50 transition-colors"
     >
       <div className="flex min-w-0 items-center justify-between gap-4">
         <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gradient-to-b from-white to-gray-200 p-1.5 text-center shadow-sm ring-1 ring-inset ring-white/60">
@@ -44,7 +45,6 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
             buy-in
           </div>
         </div>
-        {/* Left Section - Contest Info */}
         <div className="min-w-0 flex-1 overflow-hidden">
           <h3 className="truncate text-base font-bold text-gray-900 font-display">
             {contest.name}
@@ -57,8 +57,6 @@ const ContestHistoryItem: React.FC<ContestHistoryItemProps> = ({ contest }) => {
             <span>Ended: {formatDate(contest.endTime)}</span>
           </div>
         </div>
-
-        {/* Right Section - Status & Date */}
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <span
             className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
@@ -84,35 +82,35 @@ export const UserHistoryPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-4">
+      <>
         <PageHeader title="Contest History" className="" />
-        <div className="bg-white rounded-sm shadow p-4">
+        <PageSection>
           <div className="text-center min-h-[200px] flex items-center justify-center">
             <LoadingSpinner />
           </div>
-        </div>
-      </div>
+        </PageSection>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-4 p-4">
+      <>
         <PageHeader title="Contest History" className="" />
-        <div className="bg-white rounded-sm shadow p-4">
+        <PageSection>
           <div className="text-center text-red-500 font-display">
             {error instanceof Error ? error.message : "Failed to load contest history"}
           </div>
-        </div>
-      </div>
+        </PageSection>
+      </>
     );
   }
 
   if (!contests || contests.length === 0) {
     return (
-      <div className="space-y-4 p-4">
+      <>
         <PageHeader title="Contest History" className="" />
-        <div className="bg-white rounded-sm shadow p-4">
+        <PageSection>
           <div className="text-center my-8">
             <p className="text-gray-400 font-semibold font-display mb-2">
               No contest history found
@@ -125,15 +123,15 @@ export const UserHistoryPage: React.FC = () => {
               to get started!
             </p>
           </div>
-        </div>
-      </div>
+        </PageSection>
+      </>
     );
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <>
       <PageHeader title="Contest History" className="" />
-      <div className="bg-white rounded-sm shadow p-4">
+      <PageSection>
         <div className="mb-4">
           <p className="text-sm text-gray-600 font-display">
             You've participated in <span className="font-semibold">{contests.length}</span>{" "}
@@ -145,7 +143,7 @@ export const UserHistoryPage: React.FC = () => {
             <ContestHistoryItem key={contest.id} contest={contest} />
           ))}
         </div>
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 };

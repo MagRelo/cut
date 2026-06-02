@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 // import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
+import { PageSection } from "../components/layout/PageSection";
 import { Receive } from "../components/user/Receive.tsx";
 import { Send } from "../components/user/Send.tsx";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
@@ -10,20 +11,18 @@ export function USDCInfoPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
-    <div className="p-4">
+    <>
       <Breadcrumbs
         items={[{ label: "Account", path: "/account" }, { label: "USDC" }]}
         className="mb-3"
       />
       {/* <PageHeader title="About USDC" className="mb-3" /> */}
 
-      <div className="space-y-4">
-        {/* What is USDC */}
-        <div className="bg-white rounded-sm shadow p-6">
-          <div className="flex items-center mb-4">
-            <img src="/usd-coin-usdc-logo.svg" alt="USDC" className="w-12 h-12 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">What is USDC?</h2>
-          </div>
+      <PageSection>
+        <div className="flex items-center mb-4">
+          <img src="/usd-coin-usdc-logo.svg" alt="USDC" className="w-12 h-12 mr-3" />
+          <h2 className="text-2xl font-bold text-gray-900">What is USDC?</h2>
+        </div>
           <div className="text-sm text-gray-700">
             <p>
               USD Coin (USDC) is a digital stablecoin that is pegged to the United States dollar.
@@ -31,11 +30,10 @@ export function USDCInfoPage() {
               reliable digital currency for transactions.
             </p>
           </div>
-        </div>
+      </PageSection>
 
-        {/* Receive/Send Tabs */}
-        <div className="bg-white rounded-sm shadow border border-gray-200">
-          <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+      <PageSection>
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <TabList className={tabListClassName("space-x-1", "px-4")}>
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
@@ -57,10 +55,9 @@ export function USDCInfoPage() {
               </TabPanel>
             </div>
           </TabGroup>
-        </div>
+      </PageSection>
 
-        {/* How to Get USDC */}
-        <div className="bg-white rounded-sm shadow p-6">
+      <PageSection>
           <h2 className="text-xl font-bold text-gray-900 mb-4">How to Get USDC</h2>
 
           <div className="space-y-4">
@@ -178,10 +175,9 @@ export function USDCInfoPage() {
               </ul>
             </div>
           </div>
-        </div>
+      </PageSection>
 
-        {/* Important Notes */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6">
+      <PageSection className="bg-yellow-50 border border-yellow-200 rounded-sm">
           <h2 className="text-xl font-bold text-gray-900 mb-3">⚠️ Important Notes</h2>
           <ul className="space-y-2 text-gray-700">
             <li className="flex items-start">
@@ -207,10 +203,9 @@ export function USDCInfoPage() {
               <span>Never share your private keys or seed phrase with anyone.</span>
             </li>
           </ul>
-        </div>
+      </PageSection>
 
-        {/* Helpful Resources */}
-        <div className="bg-white rounded-sm shadow p-6">
+      <PageSection>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Helpful Resources</h2>
           <div className="space-y-2">
             <a
@@ -246,8 +241,7 @@ export function USDCInfoPage() {
               Understanding Stablecoins (Ethereum.org) ↗
             </a>
           </div>
-        </div>
-      </div>
-    </div>
+      </PageSection>
+    </>
   );
 }
