@@ -34,14 +34,14 @@ function renderBatchSummary(
 }
 
 export interface AdminOperationsPanelProps {
+  section: "contest" | "side";
   tournamentId?: string;
-  sideBetsEnabled: boolean;
   onActionComplete?: () => void;
 }
 
 export const AdminOperationsPanel: React.FC<AdminOperationsPanelProps> = ({
+  section,
   tournamentId,
-  sideBetsEnabled,
   onActionComplete,
 }) => {
   const [lockRunning, setLockRunning] = useState(false);
@@ -139,10 +139,9 @@ export const AdminOperationsPanel: React.FC<AdminOperationsPanelProps> = ({
 
   const sideBusy = sideLockRunning || sideSettleRunning || sideCloseRunning;
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-sm border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-800 mb-2">Contest batch</h3>
+  if (section === "contest") {
+    return (
+      <div className="mt-6 pt-4 border-t border-gray-200">
         <p className="text-xs text-gray-600 mb-3">
           Lock on-chain winner-pool entries for every <span className="font-medium">ACTIVE</span> contest.
         </p>
@@ -161,51 +160,46 @@ export const AdminOperationsPanel: React.FC<AdminOperationsPanelProps> = ({
         ) : null}
         {renderBatchSummary("Lock", lockResult)}
       </div>
+    );
+  }
 
-      {sideBetsEnabled ? (
-        <div className="rounded-sm border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">Parlay batch</h3>
-          <p className="text-xs text-gray-600 mb-3">Scoped to the current tournament week.</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void runSideLock()}
-              disabled={sideBusy}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {sideLockRunning ? "Locking…" : "Lock"}
-            </button>
-            <button
-              type="button"
-              onClick={() => void runSideSettle()}
-              disabled={sideBusy}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-sm hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {sideSettleRunning ? "Settling…" : "Settle"}
-            </button>
-            <button
-              type="button"
-              onClick={() => void runSideClose()}
-              disabled={sideBusy}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-gray-800 rounded-sm hover:bg-gray-900 disabled:opacity-50"
-            >
-              {sideCloseRunning ? "Closing…" : "Close"}
-            </button>
-          </div>
-          {sideError ? (
-            <p className="mt-2 text-sm text-red-600" role="alert">
-              {sideError}
-            </p>
-          ) : null}
-          {renderBatchSummary("Lock", sideLockResult)}
-          {renderBatchSummary("Settle", sideSettleResult)}
-          {renderBatchSummary("Close", sideCloseResult)}
-        </div>
-      ) : (
-        <div className="rounded-sm border border-gray-200 p-4 text-sm text-gray-500">
-          Side bets disabled on this server.
-        </div>
-      )}
+  return (
+    <div className="mt-6 pt-4 border-t border-gray-200">
+      <p className="text-xs text-gray-600 mb-3">Batch lock, settle, and close for this tournament week.</p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => void runSideLock()}
+          disabled={sideBusy}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          {sideLockRunning ? "Locking…" : "Lock"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void runSideSettle()}
+          disabled={sideBusy}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-sm hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {sideSettleRunning ? "Settling…" : "Settle"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void runSideClose()}
+          disabled={sideBusy}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-gray-800 rounded-sm hover:bg-gray-900 disabled:opacity-50"
+        >
+          {sideCloseRunning ? "Closing…" : "Close"}
+        </button>
+      </div>
+      {sideError ? (
+        <p className="mt-2 text-sm text-red-600" role="alert">
+          {sideError}
+        </p>
+      ) : null}
+      {renderBatchSummary("Lock", sideLockResult)}
+      {renderBatchSummary("Settle", sideSettleResult)}
+      {renderBatchSummary("Close", sideCloseResult)}
     </div>
   );
 };

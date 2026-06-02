@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
+import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
 import { AdminStatCard } from "../components/admin/AdminStatCard";
 import { AdminOperationsPanel } from "../components/admin/AdminOperationsPanel";
@@ -12,10 +13,6 @@ import type { AdminDashboardContest } from "../types/admin";
 
 function formatUsd(amount: number): string {
   return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function statusBadgeClass(status: string): string {
@@ -130,7 +127,7 @@ export const AdminPage: React.FC = () => {
         ? String(dashboardQuery.error)
         : null;
 
-  const t = dashboard?.tournament;
+  const hasTournament = Boolean(dashboard?.tournament);
   const contests = dashboard?.contests;
   const filteredContests = useMemo(() => {
     const items = contests?.items ?? [];
@@ -145,32 +142,28 @@ export const AdminPage: React.FC = () => {
   const parlays = dashboard?.parlays;
   const ops = dashboard?.operations;
 
+  const headerActions = (
+    <div className="flex flex-wrap gap-2 items-center">
+      <button
+        type="button"
+        onClick={refreshAll}
+        disabled={dashboardQuery.isFetching}
+        className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 disabled:opacity-50"
+      >
+        {dashboardQuery.isFetching ? "Refreshing…" : "Refresh"}
+      </button>
+      <Link
+        to="/admin/users"
+        className="px-3 py-1.5 text-sm font-medium text-blue-700 border border-blue-200 rounded-sm hover:bg-blue-50"
+      >
+        Manage users
+      </Link>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Current week overview — contests, cash, and parlays.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button
-            type="button"
-            onClick={refreshAll}
-            disabled={dashboardQuery.isFetching}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 disabled:opacity-50"
-          >
-            {dashboardQuery.isFetching ? "Refreshing…" : "Refresh"}
-          </button>
-          <Link
-            to="/admin/users"
-            className="px-3 py-1.5 text-sm font-medium text-blue-700 border border-blue-200 rounded-sm hover:bg-blue-50"
-          >
-            Manage users
-          </Link>
-        </div>
-      </div>
+      <PageHeader title="Admin dashboard" className="mb-3" actions={headerActions} />
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -178,42 +171,13 @@ export const AdminPage: React.FC = () => {
         </div>
       ) : error ? (
         <ErrorMessage message={error} />
-      ) : !t ? (
+      ) : !hasTournament ? (
         <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 text-sm text-amber-900">
           No active tournament. Set <span className="font-medium">manualActive</span> on a tournament to
           populate this dashboard.
         </div>
       ) : (
         <>
-          <PageSection>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{t.name}</h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {formatDate(t.startDate)} – {formatDate(t.endDate)}
-                  <span className="mx-2 text-gray-300">|</span>
-                  <span className="font-medium text-gray-700">{t.status}</span>
-                  {t.roundDisplay ? (
-                    <>
-                      <span className="mx-2 text-gray-300">|</span>
-                      {t.roundDisplay}
-                      {t.currentRound != null ? ` (R${t.currentRound})` : ""}
-                    </>
-                  ) : null}
-                </p>
-                {t.cutLine ? (
-                  <p className="text-xs text-gray-500 mt-1">Cut: {t.cutLine}</p>
-                ) : null}
-              </div>
-              <p className="text-xs text-gray-400 font-mono">{t.id}</p>
-            </div>
-            {dashboard?.generatedAt ? (
-              <p className="text-xs text-gray-400 mt-3">
-                Snapshot {new Date(dashboard.generatedAt).toLocaleString()}
-              </p>
-            ) : null}
-          </PageSection>
-
           <PageSection>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
@@ -249,12 +213,13 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
             <ContestsTable contests={filteredContests} />
+            <AdminOperationsPanel section="contest" onActionComplete={refreshAll} />
           </PageSection>
 
           {ops?.sideBetsEnabled ? (
             <PageSection className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-1">Parlays</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-1">Side bets</h2>
                 <p className="text-xs text-gray-500">
                   Side-bet markets and tickets for this tournament.
                 </p>
@@ -347,17 +312,14 @@ export const AdminPage: React.FC = () => {
               ) : (
                 <p className="text-sm text-gray-500">No parlay tickets this week.</p>
               )}
+
+              <AdminOperationsPanel
+                section="side"
+                tournamentId={tournamentId}
+                onActionComplete={refreshAll}
+              />
             </PageSection>
           ) : null}
-
-          <PageSection>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Batch operations</h2>
-            <AdminOperationsPanel
-              tournamentId={tournamentId}
-              sideBetsEnabled={ops?.sideBetsEnabled ?? false}
-              onActionComplete={refreshAll}
-            />
-          </PageSection>
         </>
       )}
     </div>
