@@ -172,7 +172,7 @@ const ReferralNetworkPanel = ({
         </Link>
       </p>
 
-      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
         {!loading && error ? <p className="font-display text-sm text-red-600">{error}</p> : null}
         {loading ? (
           <div className="space-y-2 py-px" aria-busy="true">
@@ -283,7 +283,7 @@ const WalletInfo = ({
         <div className="mt-4 flex justify-center border-t border-gray-200 pt-4">
           <button
             type="button"
-            className="min-w-[120px] rounded border border-gray-300 bg-white px-4 py-1 font-display text-gray-600 transition-colors hover:bg-gray-50"
+            className="min-w-[120px] rounded border border-blue-500 bg-blue-500 px-4 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
             onClick={() => {
               void disconnect();
             }}
@@ -315,7 +315,8 @@ export function UserPage() {
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
-    <div className="space-y-5">
+    <div className="-m-4 bg-gray-100 p-4">
+      <div className="space-y-5">
       {/* <PageHeader title="Account" className="mb-3" /> */}
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
@@ -340,6 +341,7 @@ export function UserPage() {
         userEmail={user?.email}
         accountIdAddress={smartWalletAddress}
       />
+      </div>
     </div>
   );
 }
