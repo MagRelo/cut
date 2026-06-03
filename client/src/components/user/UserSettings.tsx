@@ -55,8 +55,8 @@ export function UserSettings() {
   };
 
   return (
-    <PageSection>
-      <div className="text-lg font-semibold text-gray-700 mb-2 font-display">Lineup Display</div>
+    <PageSection variant="card">
+      <h2 className="text-lg font-semibold text-gray-700 mb-3 font-display">Lineup Display</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">

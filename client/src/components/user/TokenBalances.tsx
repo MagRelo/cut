@@ -19,20 +19,22 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
     : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
 
   return (
-    <PageSection>
+    <PageSection variant="card">
       <div className={`flex items-center justify-between ${showContestHistoryLink ? "mb-2" : ""}`}>
-        <div className="min-w-0 text-xl font-semibold text-gray-700 font-display">
+        <h2 className="min-w-0 text-lg font-semibold text-gray-700 font-display">
           Balance
           <Link to="/account/funds" className={manageLinkClass}>
             manage...
           </Link>
-        </div>
+        </h2>
         <div className="min-w-0 justify-end text-right">
           {balanceTotal !== null ? (
-            <div className="text-xl font-semibold text-gray-900 font-display">${balanceTotal}</div>
+            <div className="text-lg font-semibold text-gray-800 font-display tabular-nums">
+              ${balanceTotal}
+            </div>
           ) : (
             <span
-              className="text-xl font-semibold text-amber-800 font-display tabular-nums"
+              className="text-lg font-semibold text-amber-800 font-display tabular-nums"
               title="Could not load balance from the network"
             >
               —
@@ -68,7 +70,7 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
       )}
 
       {showContestHistoryLink && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-gray-200">
           <Link
             to="/account/history"
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"

@@ -21,7 +21,7 @@ const referralLinkRowGridClass = "grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 it
 function ReferralUrlPreview({ url }: { url: string }) {
   return (
     <span
-      className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
+      className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
       title={url}
     >
       {truncateMiddle(url, 18, 6)}
@@ -64,7 +64,7 @@ function ShareInviteButton({ url }: { url: string }) {
       type="button"
       onClick={() => void handleClick()}
       aria-label={active ? label : "Share your invite link"}
-      className={`inline-flex items-center gap-1.5 shrink-0 rounded px-3 py-1 text-sm font-medium text-white font-display transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded px-3 py-1 font-display text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
         active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
       }`}
     >
@@ -88,7 +88,7 @@ function ReferralLinkRow({
 
   const shareRow = (
     <div className={`${referralLinkRowGridClass}${className ? ` ${className}` : ""}`}>
-      <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+      <span className="shrink-0 font-display text-sm font-medium text-gray-700">
         Share Your Link
       </span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
@@ -99,7 +99,7 @@ function ReferralLinkRow({
 
   const copyRow = (
     <div className={`${referralLinkRowGridClass} mt-3`}>
-      <span className="text-sm font-medium text-gray-700 font-display shrink-0">Invite Link</span>
+      <span className="shrink-0 font-display text-sm font-medium text-gray-700">Invite Link</span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
         <ReferralUrlPreview url={url} />
         <CopyButton text={url} />
@@ -109,11 +109,10 @@ function ReferralLinkRow({
 
   if (showSeparator) {
     return (
-      <>
-        <hr className="my-4 border-gray-200" />
+      <div className="mt-4">
         {shareRow}
         {/* {copyRow} */}
-      </>
+      </div>
     );
   }
   return (
@@ -153,60 +152,57 @@ const ReferralNetworkPanel = ({
     return { depth, count: levelsByDepth.get(depth) ?? 0 };
   });
   return (
-    <PageSection>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mb-1">
-        <h2 className="text-lg font-semibold text-gray-700 font-display shrink-0">
-          Your Invite Network
-        </h2>
+    <PageSection variant="card">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold text-gray-700">Your Invite Network</h2>
         {loading ? (
-          <div
-            className="h-7 w-10 justify-self-end rounded bg-gray-200 animate-pulse"
-            aria-busy="true"
-          />
+          <div className="h-7 w-10 animate-pulse rounded bg-gray-200" aria-busy="true" />
         ) : null}
         {!loading && !error ? (
-          <span className="text-lg font-semibold text-gray-800 text-right font-display">
+          <span className="font-display text-lg font-semibold tabular-nums text-gray-800">
             {totalPlayersInNetwork}
           </span>
         ) : null}
       </div>
 
-      <p className="text-sm text-gray-700 font-display mb-3">
+      <p className="mb-3 font-display text-sm text-gray-700">
         When they win, you earn.{" "}
         <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
           Learn more ...
         </Link>
       </p>
 
-      {!loading && error ? <p className="text-sm text-red-600 font-display">{error}</p> : null}
-      {loading ? (
-        <div className="space-y-2 py-px" aria-busy="true">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center text-sm font-display"
-            >
-              <div className="h-5 w-16 rounded bg-gray-200 animate-pulse" />
-              <div className="h-5 w-8 justify-self-end rounded bg-gray-200 animate-pulse" />
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {!loading && !error ? (
-        <div className="space-y-2 py-px">
-          {displayLevels.map((level) => (
-            <div
-              key={level.depth}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center text-sm font-display"
-            >
-              <span className="text-gray-700 font-medium font-display shrink-0">
-                {getDepthLabel(level.depth)}
-              </span>
-              <span className="text-gray-800 text-right">{level.count}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+        {!loading && error ? <p className="font-display text-sm text-red-600">{error}</p> : null}
+        {loading ? (
+          <div className="space-y-2 py-px" aria-busy="true">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
+              >
+                <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
+                <div className="h-5 w-8 animate-pulse justify-self-end rounded bg-gray-200" />
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {!loading && !error ? (
+          <div className="space-y-2 py-px">
+            {displayLevels.map((level) => (
+              <div
+                key={level.depth}
+                className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
+              >
+                <span className="shrink-0 font-display font-medium text-gray-700">
+                  {getDepthLabel(level.depth)}
+                </span>
+                <span className="text-right text-gray-800">{level.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <ReferralLinkRow showSeparator />
     </PageSection>
@@ -226,72 +222,68 @@ const WalletInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <PageSection>
-      <h2 className="text-lg font-semibold text-gray-700 font-display mb-3">Account Information</h2>
+    <PageSection variant="card">
+      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
 
-      {userEmail ? (
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mt-2">
-          <span className="text-sm font-medium text-gray-700 font-display shrink-0">Email</span>
-          <div className="flex min-w-0 justify-end text-gray-600 text-sm font-display break-all text-right">
-            {userEmail}
+      <div className="space-y-3">
+        {userEmail ? (
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+            <span className="shrink-0 font-display text-sm font-medium text-gray-700">Email</span>
+            <div className="flex min-w-0 justify-end break-all text-right font-display text-sm text-gray-600">
+              {userEmail}
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {accountIdAddress ? (
-        <div
-          className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail ? "mt-3" : ""}`}
-        >
-          <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-            Account ID
+        {accountIdAddress ? (
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+            <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+              Account ID
+            </span>
+            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+              <span
+                className="truncate text-right font-display text-xs text-gray-800"
+                title={accountIdAddress}
+              >
+                {truncateMiddle(accountIdAddress)}
+              </span>
+              <CopyButton text={accountIdAddress} />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+          <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+            Contest History
           </span>
           <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-            <span
-              className="text-xs text-gray-800 text-right truncate font-display"
-              title={accountIdAddress}
+            <Link
+              to="/account/history"
+              className="min-w-0 max-w-full truncate text-right font-display text-sm font-normal text-blue-600 hover:text-blue-700"
             >
-              {truncateMiddle(accountIdAddress)}
-            </span>
-            <CopyButton text={accountIdAddress} />
+              View contest history...
+            </Link>
           </div>
         </div>
-      ) : null}
 
-      <div
-        className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center ${userEmail || accountIdAddress ? "mt-3" : ""}`}
-      >
-        <span className="text-sm font-medium text-gray-700 font-display shrink-0">
-          Contest History
-        </span>
-        <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-          <Link
-            to="/account/history"
-            className="min-w-0 max-w-full truncate text-sm text-blue-600 hover:text-blue-700 text-right font-display font-normal"
-          >
-            View contest history...
-          </Link>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+          <span className="shrink-0 font-display text-sm font-medium text-gray-700">Leagues</span>
+          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+            <Link
+              to="/user-groups"
+              className="min-w-0 max-w-full truncate text-right font-display text-sm font-normal text-blue-600 hover:text-blue-700"
+            >
+              View my leagues...
+            </Link>
+          </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center mt-3">
-        <span className="text-sm font-medium text-gray-700 font-display shrink-0">Leagues</span>
-        <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-          <Link
-            to="/user-groups"
-            className="min-w-0 max-w-full truncate text-sm text-blue-600 hover:text-blue-700 text-right font-display font-normal"
-          >
-            View my leagues...
-          </Link>
-        </div>
-      </div>
-
-      <hr className="my-4 border-gray-200"></hr>
 
       {canSignOut && (
-        <div className="flex justify-center mt-4">
+        <div className="mt-4 flex justify-center border-t border-gray-200 pt-4">
           <button
             type="button"
-            className="min-w-[120px] bg-white hover:bg-gray-50 text-gray-600 font-display py-1 px-4 rounded border border-gray-300 transition-colors"
+            className="min-w-[120px] rounded border border-gray-300 bg-white px-4 py-1 font-display text-gray-600 transition-colors hover:bg-gray-50"
             onClick={() => {
               void disconnect();
             }}
@@ -323,7 +315,7 @@ export function UserPage() {
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
-    <>
+    <div className="space-y-5">
       {/* <PageHeader title="Account" className="mb-3" /> */}
 
       {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
@@ -348,6 +340,6 @@ export function UserPage() {
         userEmail={user?.email}
         accountIdAddress={smartWalletAddress}
       />
-    </>
+    </div>
   );
 }
