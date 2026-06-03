@@ -85,12 +85,12 @@ export const LineupList: React.FC = () => {
 
   const addLineupButton =
     showAddLineup && hasLineups ? (
-      <div className="mt-2 flex justify-center">
+      <div className="mb-6 mt-8 flex justify-center">
         <button
           type="button"
           onClick={() => void handleCreateLineup()}
           disabled={isCreating}
-          className="inline-flex items-center justify-center gap-2 rounded border border-blue-500 bg-blue-500 px-3 py-2 text-sm font-display text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
           {isCreating ? "Adding..." : "Add Lineup"}
@@ -136,7 +136,7 @@ export const LineupList: React.FC = () => {
       {hasLineups && (
         <div>
           {listItems.map((row) => (
-            <div key={row.id} className="rounded-sm border border-gray-200 mb-4">
+            <div key={row.id} className="mb-4 rounded-sm border border-gray-300 shadow-md">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
                 roundDisplay={tournament?.roundDisplay || ""}
@@ -151,10 +151,10 @@ export const LineupList: React.FC = () => {
 
       {isTournamentEditable && !hasLineups && (
         <PageSection>
-          <p className="text-base font-semibold text-gray-900 font-display mb-1">
+          <p className="mb-1 font-display text-base font-semibold text-gray-900">
             Build your first lineup
           </p>
-          <p className="text-sm text-gray-600 font-display leading-relaxed">
+          <p className="font-display text-sm leading-relaxed text-gray-600">
             Choose your players for{" "}
             <span className="font-medium text-gray-800">{tournamentName}</span>.
           </p>
@@ -163,7 +163,7 @@ export const LineupList: React.FC = () => {
               type="button"
               onClick={() => void handleCreateLineup()}
               disabled={isCreating}
-              className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 text-xs font-display text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCreating ? "Creating..." : "Build Lineup"}
             </button>
@@ -173,9 +173,9 @@ export const LineupList: React.FC = () => {
 
       {!isTournamentEditable && !hasLineups && (
         <PageSection>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-gray-600 text-lg">🏌️</span>
-            <div className="text-lg font-semibold text-gray-900 font-display">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-lg text-gray-600">🏌️</span>
+            <div className="font-display text-lg font-semibold text-gray-900">
               Tournament {tournamentStatusDisplay}!
             </div>
           </div>

@@ -51,7 +51,7 @@ export const TopNav: React.FC = () => {
           className="flex shrink-0 items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         >
           <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
-          <span className="font-display text-lg font-semibold uppercase tracking-widest text-slate-900">
+          <span className="font-display text-lg uppercase tracking-widest text-slate-900">
             PlayTheCut
           </span>
         </Link>

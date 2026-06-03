@@ -48,7 +48,7 @@ interface LineupContestCardProps {
   isEditable?: boolean;
 }
 
-const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] pt-3 pb-2 flow-root";
+const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] py-3 flow-root";
 
 /** Matches the “no contests” badge on the Contests tab label. */
 const NO_CONTESTS_WARNING_BADGE_CLASS =

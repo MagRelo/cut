@@ -17,15 +17,15 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   error = null,
 }) => {
   return (
-    <div className="border-t border-gray-200 px-3 pb-1 pt-4">
+    <div className="px-3 pb-1 pt-2">
       <label
         htmlFor="winning-score-prediction"
-        className="block font-display text-sm font-semibold text-gray-900"
+        className="text-medium block font-display text-base font-semibold text-gray-900"
       >
-        Predicted winning lineup score
+        Tie-Breaker
       </label>
       <p className="mt-0.5 font-display text-xs leading-relaxed text-gray-600">
-        Your guess for the highest lineup score in the contest. Used to break ties.
+        Guess how many points the winning lineup will score. Used to break ties.
       </p>
       <div className="mt-3 flex items-center gap-3">
         <input
