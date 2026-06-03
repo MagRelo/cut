@@ -249,6 +249,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
         .map((p) => p.id)
         .sort()
         .join(",");
+      const prediction = lineup.winningScorePrediction;
 
       return (
         contest.contestLineups?.some((contestLineup) => {
@@ -263,7 +264,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
             .map((p) => p.id)
             .sort()
             .join(",");
-          return contestPlayerIds === normalizedPlayerIds;
+          return (
+            contestPlayerIds === normalizedPlayerIds &&
+            contestTournamentLineup.winningScorePrediction === prediction
+          );
         }) || false
       );
     },
@@ -282,7 +286,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
 
     // Check for duplicate player set in contest
     if (checkForDuplicateInContest(lineupId)) {
-      setValidationError("You've already submitted a lineup with these players to this contest");
+      setValidationError(
+        "You already have a lineup with these players and tie-breaker in this contest",
+      );
       return;
     }
 

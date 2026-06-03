@@ -22,7 +22,6 @@ import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { UserPage } from "./pages/Account";
 import { UserHistoryPage } from "./pages/UserHistoryPage";
-import { USDCInfoPage } from "./pages/AccountUSDCInfoPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { LineupList } from "./pages/LineupListPage";
@@ -115,8 +114,6 @@ const AppShell: React.FC = () => {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/usdc" element={<USDCInfoPage />} />
-
                   {/* Contests */}
                   <Route path="/contests" element={<Contests />} />
                   <Route

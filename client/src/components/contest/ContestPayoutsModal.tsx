@@ -180,7 +180,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
               title="Contest"
               description={
                 <>
-                  Payouts are based on final standings. Ties pool winnings and split evenly.{" "}
+                  Payouts are based on final standings.{" "}
                   <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
                     Learn more...
                   </Link>

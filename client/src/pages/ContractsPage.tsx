@@ -2,7 +2,6 @@ import React from "react";
 import { useChainId } from "wagmi";
 import { getExplorerUrl } from "../utils/blockchainUtils";
 import sepoliaConfig from "../utils/contracts/sepolia.json";
-import baseConfig from "../utils/contracts/base.json";
 
 interface Contract {
   name: string;
@@ -17,11 +16,8 @@ const CONTRACT_EXPLORER_TAB = { tab: "read_write_contract" as const };
 const ContractsPage: React.FC = () => {
   const chainId = useChainId();
 
-  // Helper function to build contract list from deploy-generated JSON (sepolia.json / base.json)
-  const buildContractList = (
-    config: typeof sepoliaConfig | typeof baseConfig,
-    networkChainId: number
-  ): Contract[] => {
+  // Helper function to build contract list from deploy-generated JSON (sepolia.json)
+  const buildContractList = (config: typeof sepoliaConfig, networkChainId: number): Contract[] => {
     const explorer = (address: string) =>
       getExplorerUrl(address, networkChainId, CONTRACT_EXPLORER_TAB) ?? undefined;
 
@@ -61,7 +57,6 @@ const ContractsPage: React.FC = () => {
     return contracts;
   };
 
-  const baseMainnetContracts = buildContractList(baseConfig, 8453);
   const baseSepoliaContracts = buildContractList(sepoliaConfig, 84532);
 
   const renderContractSection = (
@@ -169,18 +164,8 @@ const ContractsPage: React.FC = () => {
       </div>
 
       {renderContractSection(
-        "Base Mainnet",
-        "Production contracts on Base Layer 2",
-        baseMainnetContracts,
-        "https://base.blockscout.com",
-        chainId === 8453
-      )}
-
-      <div className="my-8 border-t border-gray-200" />
-
-      {renderContractSection(
         "Base Sepolia Testnet",
-        "Test contracts on Base Sepolia",
+        "Deployed contracts on Base Sepolia",
         baseSepoliaContracts,
         "https://base-sepolia.blockscout.com",
         chainId === 84532
