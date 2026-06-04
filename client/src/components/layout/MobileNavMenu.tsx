@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
-import { ADMIN_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import { ADMIN_TAB, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
 
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
@@ -119,6 +119,14 @@ export const MobileNavMenu: React.FC = () => {
                               className={mobileNavItemClass(LINEUPS_TAB.match(location.pathname))}
                             >
                               {LINEUPS_TAB.label}
+                            </Link>
+
+                            <Link
+                              to={LEAGUES_TAB.to}
+                              aria-current={LEAGUES_TAB.match(location.pathname) ? "page" : undefined}
+                              className={mobileNavItemClass(LEAGUES_TAB.match(location.pathname))}
+                            >
+                              {LEAGUES_TAB.label}
                             </Link>
 
                             {showAdminNav ? (

@@ -1,64 +1,27 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useChainId } from "wagmi";
-import { decodeEventLog, isAddress } from "viem";
 
 import { type ContestSettings, type CreateContestInput } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
-import { useCreateContest as useCreateContestMutation } from "../../hooks/useContestMutations";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useCreateContest } from "../../hooks/useContestFactory";
-import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
-import ContestFactoryContract from "../../utils/contracts/ContestFactory.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
-
-import { getContractAddress } from "../../utils/blockchainUtils.tsx";
-import { primaryDepositWeiFromHuman } from "../../lib/paymentTokenSpend";
-
-const getStatusMessages = (
-  defaultMessage: string = "idle",
-  isUserWaiting: boolean = false,
-  isBlockchainWaiting: boolean = false,
-): string => {
-  if (isUserWaiting) return "User confirmation...";
-  if (isBlockchainWaiting) return "Network confirmation...";
-  return defaultMessage;
-};
-
-/** Defaults aligned with `ContestController` / `ContestFactory.createContest` constructor args where applicable. */
-function buildContestSettings(
-  chainId: number,
-  paymentTokenAddress: string,
-  paymentTokenSymbol: string,
-): ContestSettings {
-  return {
-    contestType: "PUBLIC", // app-only visibility; not on-chain
-    chainId, // app / API routing; not passed to factory
-    expiryTimestamp: 0, // `_expiryTimestamp`: filled from tournament end + “days after” (or manual)
-    paymentTokenAddress, // `_paymentToken`: ERC20 for deposits and payouts
-    paymentTokenSymbol, // display only
-    oracle: import.meta.env.VITE_ORACLE_ADDRESS || "", // `_oracle`: address that drives contest lifecycle (onlyOracle)
-    primaryDeposit: 10, // `_primaryDepositAmount`: fixed stake per primary participant
-    referralNetworkBps:
-      Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) ||
-      Number(import.meta.env.VITE_ORACLE_FEE_BPS) ||
-      500,
-    referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
-    primaryDepositSecondarySubsidyBps:
-      Number(import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS) ||
-      Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) ||
-      700, // `_primaryDepositSecondarySubsidyBps`: BPS of each primary deposit to per-entry secondary subsidy
-  };
-}
+import {
+  buildContestSettings,
+  DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT,
+} from "../../lib/contestCreation";
+import {
+  getCreateContestStatusMessage,
+  useCreateContestSubmission,
+} from "../../hooks/useCreateContestSubmission";
 
 export const CreateContestForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const lockedUserGroupId = searchParams.get("userGroupId") ?? undefined;
   const { tournament: currentTournament } = useActiveTournament();
-  const createContestMutation = useCreateContestMutation();
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();
@@ -67,8 +30,6 @@ export const CreateContestForm = () => {
     () => userGroupsData?.userGroups?.filter((group) => group.role === "ADMIN") ?? [],
     [userGroupsData],
   );
-
-  const defaultExpiryDaysAfterTournament = 7;
 
   const [formData, setFormData] = useState<CreateContestInput>(() => ({
     name: "",
@@ -86,15 +47,25 @@ export const CreateContestForm = () => {
   }));
 
   const [expiryDaysAfterTournament, setExpiryDaysAfterTournament] = useState(
-    defaultExpiryDaysAfterTournament,
+    DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT,
   );
-  /**
-   * Set synchronously before `execute()`; `useBlockchainTransaction` invokes the latest `onSuccess`,
-   * which reads this ref (not React state) so the API payload is always available after the tx.
-   */
-  const pendingContestForApiRef = useRef<CreateContestInput | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const {
+    submitContest,
+    loading,
+    error,
+    isProcessing,
+    isSending,
+    isConfirming,
+    isFailed,
+    transactionError,
+  } = useCreateContestSubmission({
+    onContestCreated: (contest) => {
+      resetForm();
+      setExpiryDaysAfterTournament(DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT);
+      navigate(contestLobbyPath(contest.address));
+    },
+  });
 
   useEffect(() => {
     if (lockedUserGroupId && adminLeagues.some((group) => group.id === lockedUserGroupId)) {
@@ -102,7 +73,7 @@ export const CreateContestForm = () => {
     }
   }, [lockedUserGroupId, adminLeagues]);
 
-  const resetForm = () => {
+  function resetForm() {
     setFormData({
       name: "",
       transactionId: "",
@@ -117,98 +88,7 @@ export const CreateContestForm = () => {
       description: undefined,
       userGroupId: lockedUserGroupId || undefined,
     });
-  };
-
-  const {
-    execute,
-    isProcessing,
-    isSending,
-    isConfirming,
-    isFailed,
-    error: transactionError,
-    createContestCalls,
-  } = useCreateContest({
-    onSuccess: async (statusData: BatchTransactionStatusData) => {
-      const pendingFromTx = pendingContestForApiRef.current;
-      if (!pendingFromTx) return;
-
-      setLoading(true);
-      try {
-        const tx = statusData;
-        let contestAddress: string | undefined;
-        const contestFactoryAddress = getContractAddress(chainId ?? 0, "contestFactoryAddress");
-
-        if (tx.receipts && tx.receipts.length > 0) {
-          for (const receipt of tx.receipts) {
-            if (receipt.logs && receipt.logs.length > 0) {
-              for (const log of receipt.logs) {
-                if (log.address?.toLowerCase() === contestFactoryAddress?.toLowerCase()) {
-                  try {
-                    const decodedLog = decodeEventLog({
-                      abi: ContestFactoryContract.abi,
-                      data: log.data!,
-                      topics: log.topics as [signature: `0x${string}`, ...args: `0x${string}`[]],
-                    });
-
-                    if (
-                      decodedLog.eventName === "ContestCreated" &&
-                      decodedLog.args &&
-                      typeof decodedLog.args === "object" &&
-                      "contest" in decodedLog.args
-                    ) {
-                      contestAddress = decodedLog.args.contest as string;
-                      break;
-                    }
-                  } catch (decodeError) {
-                    console.debug("Could not decode log, skipping:", decodeError);
-                  }
-                }
-              }
-            }
-            if (contestAddress) break;
-          }
-        }
-
-        if (!contestAddress) {
-          throw new Error("No contest address found in transaction logs");
-        }
-
-        createContestMutation.mutate(
-          {
-            ...pendingFromTx,
-            transactionId: tx.receipts?.[0]?.transactionHash || "",
-            address: contestAddress,
-          },
-          {
-            onSuccess: (contest) => {
-              pendingContestForApiRef.current = null;
-              resetForm();
-              setExpiryDaysAfterTournament(defaultExpiryDaysAfterTournament);
-              setLoading(false);
-
-              navigate(contestLobbyPath(contest.address));
-            },
-            onError: (err) => {
-              console.error("Error creating contest in backend:", err);
-              pendingContestForApiRef.current = null;
-              setError("Failed to create contest in backend");
-              setLoading(false);
-            },
-          },
-        );
-      } catch (err) {
-        console.error("Error processing transaction:", err);
-        pendingContestForApiRef.current = null;
-        setError("Failed to process transaction");
-        setLoading(false);
-      }
-    },
-    onError: () => {
-      setError("Blockchain transaction failed. Please try again.");
-      pendingContestForApiRef.current = null;
-      setLoading(false);
-    },
-  });
+  }
 
   const patchSettings = useCallback((patch: Partial<ContestSettings>) => {
     setFormData((prev) => ({
@@ -237,39 +117,8 @@ export const CreateContestForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     const s = formData.settings;
-    const oracle = s.oracle.trim();
-    if (!oracle || !isAddress(oracle)) {
-      setError("Enter a valid oracle address.");
-      return;
-    }
-
-    const referralBpsCheck = s.referralNetworkBps ?? s.oracleFeeBps ?? 0;
-    if (referralBpsCheck < 0 || referralBpsCheck > 1000) {
-      setError("Oracle fee must be between 0 and 1000 basis points (0–10%).");
-      return;
-    }
-
-    if (s.primaryDepositSecondarySubsidyBps < 0 || s.primaryDepositSecondarySubsidyBps > 10000) {
-      setError("Primary deposit secondary subsidy must be between 0 and 10000 basis points.");
-      return;
-    }
-
-    if (s.expiryTimestamp <= 0) {
-      setError(
-        "Set a valid expiry (`_expiryTimestamp`): choose a tournament and days after end, or enter Unix seconds.",
-      );
-      return;
-    }
-
-    const paymentToken = paymentTokenAddress || "";
-    if (!paymentToken) {
-      setError("Payment token is not configured.");
-      return;
-    }
-
     const pending: CreateContestInput = {
       ...formData,
       tournamentId: currentTournament?.id ?? "",
@@ -277,45 +126,15 @@ export const CreateContestForm = () => {
       userGroupId: formData.userGroupId || undefined,
       settings: {
         ...s,
-        paymentTokenAddress: paymentToken,
+        paymentTokenAddress: paymentTokenAddress || "",
         paymentTokenSymbol: paymentTokenSymbol ?? "xUSDC",
-        oracle,
+        oracle: s.oracle.trim(),
         chainId: chainId ?? 0,
         expiryTimestamp: s.expiryTimestamp,
       },
     };
 
-    pendingContestForApiRef.current = pending;
-    const primaryDepositAmount = primaryDepositWeiFromHuman(s.primaryDeposit);
-    // `ContestFactory.createContest` → `ContestController` constructor (same order as Solidity NatSpec).
-    const rewardDistributor = getContractAddress(chainId ?? 0, "rewardDistributorAddress");
-    if (!rewardDistributor) {
-      setError("Reward distributor is not configured for this chain.");
-      return;
-    }
-    const referralGroupId = (s.referralGroupId?.startsWith("0x")
-      ? s.referralGroupId
-      : s.referralGroupId
-        ? `0x${s.referralGroupId}`
-        : "") as `0x${string}`;
-    if (!referralGroupId || referralGroupId.length !== 66) {
-      setError("Referral group ID is not configured (VITE_REFERRAL_GROUP_ID).");
-      return;
-    }
-    const referralBps = s.referralNetworkBps ?? s.oracleFeeBps ?? 0;
-
-    const calls = createContestCalls(
-      paymentToken,
-      oracle,
-      primaryDepositAmount,
-      referralBps,
-      BigInt(s.expiryTimestamp),
-      s.primaryDepositSecondarySubsidyBps,
-      rewardDistributor,
-      referralGroupId,
-    );
-
-    await execute(calls);
+    await submitContest(pending);
   };
 
   const handleChange = (
@@ -553,7 +372,7 @@ export const CreateContestForm = () => {
           {loading || isProcessing ? (
             <div className="flex items-center gap-2 w-full justify-center">
               <LoadingSpinnerSmall />
-              {getStatusMessages("idle", isSending, isConfirming)}
+              {getCreateContestStatusMessage(isSending, isConfirming)}
             </div>
           ) : (
             "Create Contest"

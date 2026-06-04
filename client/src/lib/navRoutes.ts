@@ -14,6 +14,8 @@ export const contestsMatch = (pathname: string) =>
 
 export const lineupsMatch = (pathname: string) => pathname.startsWith("/lineups");
 
+export const userGroupsMatch = (pathname: string) => pathname.startsWith("/user-groups");
+
 export const leaderboardMatch = (pathname: string) => pathname === "/leaderboard";
 
 export const accountMatch = (pathname: string) =>

@@ -6,7 +6,7 @@ const segmentActive = "border-gray-500 text-gray-700 font-medium";
 const segmentInactive = "border-transparent text-blue-500 hover:text-blue-600";
 
 export function tabButtonClassName(selected: boolean, options?: { compact?: boolean }): string {
-  const padding = options?.compact ? "pb-0.5 pt-0.5" : "pb-0.5 pt-1";
+  const padding = options?.compact ? "py-0.5" : "py-1";
   const base = `w-full border-b-2 ${padding} text-sm font-display leading-tight focus:outline-none`;
   return `${base} ${selected ? segmentActive : segmentInactive}`;
 }

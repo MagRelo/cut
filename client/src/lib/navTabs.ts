@@ -1,5 +1,11 @@
 import type { Location } from "react-router-dom";
-import { adminMatch, contestsMatch, leaderboardMatch, lineupsMatch } from "./navRoutes";
+import {
+  adminMatch,
+  contestsMatch,
+  leaderboardMatch,
+  lineupsMatch,
+  userGroupsMatch,
+} from "./navRoutes";
 
 export type NavTab = {
   key: string;
@@ -29,6 +35,13 @@ export const LINEUPS_TAB: NavTab = {
   to: "/lineups",
   label: "My Lineups",
   match: lineupsMatch,
+};
+
+export const LEAGUES_TAB: NavTab = {
+  key: "leagues",
+  to: "/user-groups",
+  label: "My Leagues",
+  match: userGroupsMatch,
 };
 
 export const ADMIN_TAB: NavTab = {

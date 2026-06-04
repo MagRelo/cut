@@ -266,17 +266,6 @@ const WalletInfo = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-          <span className="shrink-0 font-display text-sm font-medium text-gray-700">Leagues</span>
-          <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-            <Link
-              to="/user-groups"
-              className="min-w-0 max-w-full truncate text-right font-display text-sm font-normal text-blue-600 hover:text-blue-700"
-            >
-              View my leagues...
-            </Link>
-          </div>
-        </div>
       </div>
 
       {canSignOut && (
