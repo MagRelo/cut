@@ -43,7 +43,8 @@ const scoreNum = "text-xs font-medium tabular-nums text-slate-600";
 const scoreChip = {
   eagleOrBetter:
     "inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-500 bg-emerald-400/10",
-  birdie: "inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-500",
+  birdie:
+    "inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-500",
   bogey: "inline-flex h-7 w-7 items-center justify-center border-2 border-red-400",
   doubleBogeyOrWorse:
     "inline-flex h-7 w-7 items-center justify-center border-2 border-red-400 bg-red-400/10",
@@ -76,15 +77,15 @@ export const StablefordDisplay: React.FC<StablefordDisplayProps> = ({
   }
 
   const tone =
-    points > 0 ? "font-semibold text-emerald-600/90" : points < 0 ? "font-semibold text-red-500/90" : "text-slate-700";
+    points > 0
+      ? "font-semibold text-emerald-600/90"
+      : points < 0
+        ? "font-semibold text-red-500/90"
+        : "text-slate-700";
 
   const displayValue = points > 0 ? `+${points}` : points.toString();
 
-  return (
-    <td className={`${pointsCell} ${tone} ${cellClassName}`.trim()}>
-      {displayValue}
-    </td>
-  );
+  return <td className={`${pointsCell} ${tone} ${cellClassName}`.trim()}>{displayValue}</td>;
 };
 
 interface ScoreDisplayProps {
@@ -125,7 +126,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
   };
 
   const roundData = getRoundData(selectedRound);
-  const hasHoleData = roundData?.holes?.scores && roundData.holes.scores.length > 0;
+  const hasHoleData = roundData?.holes?.scores?.[0] != null;
   const teeTimeLabel = getTeeTimeLabelForRound(player.tournamentData, `r${selectedRound}`);
 
   const holeRow = (
@@ -167,60 +168,66 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
 
   const scoreRow = roundData?.holes?.scores?.length
     ? (() => {
-      const pars = Array.from({ length: 18 }, (_, i) => roundData.holes?.par?.[i] ?? null);
-      const scoreTotal = roundData.holes.scores
-        .filter((s: number | null): s is number => s !== null)
-        .reduce((sum: number, s: number) => sum + s, 0);
+        const pars = Array.from({ length: 18 }, (_, i) => roundData.holes?.par?.[i] ?? null);
+        const scoreTotal = roundData.holes.scores
+          .filter((s: number | null): s is number => s !== null)
+          .reduce((sum: number, s: number) => sum + s, 0);
 
-      return (
-        <tr className={`${band} ${rowDivider}`}>
-          <th className={`${rowLabelBand} align-middle`} scope="row">
-            <div className={`${scoreRowSlot} justify-start`}>Score</div>
-          </th>
-          {roundData.holes.scores.map((score: number | null, i: number) => {
-            const par = pars[i];
-            if (score === null || par === null) {
-              return (
-                <td key={i} className={`${scoreCell} ${band} text-slate-600 ${holeCol} align-middle`}>
-                  <div className={scoreRowSlot}>
-                    <span className="text-slate-500">–</span>
-                  </div>
-                </td>
-              );
-            }
-            return <ScoreDisplay key={i} score={score} par={par} cellClassName={band} />;
-          })}
-          <td className={`${bandTotal} !py-2.5 align-middle`}>
-            <div className={scoreRowSlot}>
-              {roundData.holes.scores.some((s: number | null) => s !== null) ? scoreTotal : "–"}
-            </div>
-          </td>
-        </tr>
-      );
-    })()
+        return (
+          <tr className={`${band} ${rowDivider}`}>
+            <th className={`${rowLabelBand} align-middle`} scope="row">
+              <div className={`${scoreRowSlot} justify-start`}>Score</div>
+            </th>
+            {roundData.holes.scores.map((score: number | null, i: number) => {
+              const par = pars[i];
+              if (score === null || par === null) {
+                return (
+                  <td
+                    key={i}
+                    className={`${scoreCell} ${band} text-slate-600 ${holeCol} align-middle`}
+                  >
+                    <div className={scoreRowSlot}>
+                      <span className="text-slate-500">–</span>
+                    </div>
+                  </td>
+                );
+              }
+              return <ScoreDisplay key={i} score={score} par={par} cellClassName={band} />;
+            })}
+            <td className={`${bandTotal} !py-2.5 align-middle`}>
+              <div className={scoreRowSlot}>
+                {roundData.holes.scores.some((s: number | null) => s !== null) ? scoreTotal : "–"}
+              </div>
+            </td>
+          </tr>
+        );
+      })()
     : null;
 
   const pointsRow = roundData?.holes?.stableford?.length
     ? (() => {
-      const stableford = roundData.holes.stableford;
-      const total = stableford.reduce((sum: number, p: number | null) => sum + (p === null ? 0 : p), 0);
+        const stableford = roundData.holes.stableford;
+        const total = stableford.reduce(
+          (sum: number, p: number | null) => sum + (p === null ? 0 : p),
+          0,
+        );
 
-      return (
-        <tr className="border-t border-slate-200 bg-white">
-          <th className={rowLabelPoints} scope="row">
-            Points
-          </th>
-          {stableford.map((points: number | null, i: number) =>
-            points === null ? (
-              <td key={i} className={pointsCell} />
-            ) : (
-              <StablefordDisplay key={i} points={points} hideZero />
-            ),
-          )}
-          <td className={pointsTotal}>{total === 0 ? "" : total}</td>
-        </tr>
-      );
-    })()
+        return (
+          <tr className="border-t border-slate-200 bg-white">
+            <th className={rowLabelPoints} scope="row">
+              Points
+            </th>
+            {stableford.map((points: number | null, i: number) =>
+              points === null ? (
+                <td key={i} className={pointsCell} />
+              ) : (
+                <StablefordDisplay key={i} points={points} hideZero />
+              ),
+            )}
+            <td className={pointsTotal}>{total === 0 ? "" : total}</td>
+          </tr>
+        );
+      })()
     : null;
 
   return (
@@ -236,7 +243,7 @@ export const PlayerScorecard: React.FC<PlayerScorecardProps> = ({ player, select
             {pointsRow ? <tbody>{pointsRow}</tbody> : null}
           </table>
         ) : (
-          <div className="px-6 py-10 text-center font-display text-sm text-slate-600">
+          <div className="border-t border-slate-200 px-6 py-10 text-center font-display text-sm text-slate-600">
             {teeTimeLabel ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
