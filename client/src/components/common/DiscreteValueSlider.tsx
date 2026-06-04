@@ -3,7 +3,7 @@ import React from "react";
 interface DiscreteValueSliderProps {
   id: string;
   label: string;
-  description?: string;
+  description?: React.ReactNode;
   valueIndex: number;
   valueCount: number;
   displayValue: string;

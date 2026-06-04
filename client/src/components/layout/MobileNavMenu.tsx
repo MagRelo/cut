@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
-import { ADMIN_TAB, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import { ADMIN_MENU_LINKS, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
 
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
@@ -129,16 +129,6 @@ export const MobileNavMenu: React.FC = () => {
                               {LEAGUES_TAB.label}
                             </Link>
 
-                            {showAdminNav ? (
-                              <Link
-                                to={ADMIN_TAB.to}
-                                aria-current={ADMIN_TAB.match(location.pathname) ? "page" : undefined}
-                                className={mobileNavItemClass(ADMIN_TAB.match(location.pathname))}
-                              >
-                                {ADMIN_TAB.label}
-                              </Link>
-                            ) : null}
-
                             <Link
                               to="/account"
                               aria-current={isAccountActive ? "page" : undefined}
@@ -162,6 +152,23 @@ export const MobileNavMenu: React.FC = () => {
                               <Link to="/account/funds" className={mobileSubItemClass}>
                                 Manage Funds
                               </Link>
+                              {showAdminNav
+                                ? ADMIN_MENU_LINKS.map((link) => (
+                                    <Link
+                                      key={link.to}
+                                      to={link.to}
+                                      aria-current={
+                                        location.pathname === link.to ||
+                                        location.pathname.startsWith(`${link.to}/`)
+                                          ? "page"
+                                          : undefined
+                                      }
+                                      className={mobileSubItemClass}
+                                    >
+                                      {link.label}
+                                    </Link>
+                                  ))
+                                : null}
                               <button
                                 type="button"
                                 className={mobileSubItemClass}

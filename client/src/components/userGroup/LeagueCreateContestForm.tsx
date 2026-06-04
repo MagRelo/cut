@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
 
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
@@ -99,7 +99,9 @@ export const LeagueCreateContestForm = ({
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
       <div className="rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 shadow-inner ring-1 ring-inset ring-blue-100">
         {tournamentUnavailable ? (
-          <p className="font-display text-sm text-blue-800/80">No active tournament is available.</p>
+          <p className="font-display text-sm text-blue-800/80">
+            No active tournament is available.
+          </p>
         ) : (
           <dl className="space-y-1 font-display text-sm">
             <div>
@@ -119,7 +121,7 @@ export const LeagueCreateContestForm = ({
       <DiscreteValueSlider
         id="league-entry-fee"
         label="Entry Fee"
-        description="Fixed stake per lineup entry for this contest."
+        description="Entry fee per lineup"
         valueIndex={entryFeeIndex}
         valueCount={LEAGUE_ENTRY_FEE_OPTIONS.length}
         displayValue={formatLeagueEntryFee(entryFee, tokenSymbol)}
@@ -135,7 +137,14 @@ export const LeagueCreateContestForm = ({
       <DiscreteValueSlider
         id="league-invite-rewards"
         label="Invite Rewards"
-        description="Share of contest pool paid to the invite network."
+        description={
+          <>
+            Share of contest pool paid to the invite network.{" "}
+            <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+              Learn more...
+            </Link>
+          </>
+        }
         valueIndex={inviteRewardIndex}
         valueCount={LEAGUE_INVITE_REWARD_PERCENTS.length}
         displayValue={formatInviteRewardPercent(inviteRewardPercent)}

@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
-import { ADMIN_TAB, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import { LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { UserMenu } from "./UserMenu";
 
@@ -22,11 +22,7 @@ function NavTabLink({
   tab,
   pathname,
 }: {
-  tab:
-    | (typeof LEFT_TABS)[number]
-    | typeof LINEUPS_TAB
-    | typeof LEAGUES_TAB
-    | typeof ADMIN_TAB;
+  tab: (typeof LEFT_TABS)[number] | typeof LINEUPS_TAB;
   pathname: string;
 }) {
   const active = tab.match(pathname);
@@ -43,8 +39,7 @@ function NavTabLink({
 }
 
 export const TopNav: React.FC = () => {
-  const { user, isAdmin } = useAuth();
-  const showAdminNav = Boolean(user) && isAdmin();
+  const { user } = useAuth();
   const location = useLocation();
 
   return (
@@ -75,10 +70,6 @@ export const TopNav: React.FC = () => {
             {user ? (
               <>
                 <NavTabLink tab={LINEUPS_TAB} pathname={location.pathname} />
-                <NavTabLink tab={LEAGUES_TAB} pathname={location.pathname} />
-                {showAdminNav ? (
-                  <NavTabLink tab={ADMIN_TAB} pathname={location.pathname} />
-                ) : null}
                 <UserMenu />
               </>
             ) : (
