@@ -748,10 +748,9 @@ export const FAQPage: React.FC = () => {
               referralTree
             </a>
             —on-chain infrastructure built to fund communities and projects through referral
-            rewards. Here&apos;s how that network works when you play on The Cut:
+            rewards.
           </p>
-
-          <figure className="space-y-3 rounded-sm border border-emerald-200/80 border-l-4 border-l-emerald-600 bg-emerald-50/50 p-4 sm:p-5">
+          <figure className="space-y-3 rounded-sm border border-l-4 border-emerald-200/80 border-l-emerald-600 bg-emerald-50/50 p-4 sm:p-5">
             <figcaption className="font-display text-xs font-semibold uppercase tracking-[0.12em] text-emerald-900">
               From{" "}
               <a
@@ -763,7 +762,7 @@ export const FAQPage: React.FC = () => {
                 referralTree
               </a>
             </figcaption>
-            <blockquote className="space-y-3 border-0 p-0 text-gray-700 not-italic">
+            <blockquote className="space-y-3 border-0 p-0 not-italic text-gray-700">
               <p>
                 An invite network is built like a family tree. When you invite someone, they become
                 part of your first level. If that person invites someone else, that new person is on
@@ -771,17 +770,29 @@ export const FAQPage: React.FC = () => {
                 <strong>up to 10 levels deep</strong>.
               </p>
               <p>
-                When it comes time to distribute rewards the process runs in reverse—a portion of the
-                reward is distributed to the original referrer, a portion is distributed to the
+                When it comes time to distribute rewards the process runs in reverse—a portion of
+                the reward is distributed to the original referrer, a portion is distributed to the
                 referrer&apos;s referrers, and so on up the chain.
               </p>
               <p>
-                The more people you invite—and the more they invite—the faster your network can grow.
-                Over time it can reach hundreds of people, all connected back to you through the
-                referral chain.
+                The more people you invite—and the more they invite—the faster your network can
+                grow. Over time it can reach hundreds of people, all connected back to you through
+                the referral chain.
               </p>
             </blockquote>
           </figure>
+          <p>Here&apos;s how it works on Play The Cut:</p>
+          <p>
+            When someone creates a contest, they set the invite-network percentage for that
+            contest—how much of the total prize pool is reserved for referral rewards. That setting
+            is locked in on-chain when the contest is created (you can see the allocation on each
+            contest&apos;s payout breakdown).
+          </p>
+          <p>
+            Rewards are paid out when the contest settles and a winner is crowned. At settlement,
+            the invite rewards are distributed up the winner&apos;s invite chain: the person who
+            invited them, their inviter, and so on—using the multi-level rules above.
+          </p>
         </div>
       </PageSection>
 

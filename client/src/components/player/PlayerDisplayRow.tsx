@@ -43,8 +43,16 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     !preRoundLayout && (!playerRowIsForCurrentWeek || !isTournamentEditable);
 
   const totalPoints = player.tournamentData?.total || 0;
-  const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal;
-  const leaderboardTotalDisplay = leaderboardTotalRaw || "E";
+  const leaderboardTotalRaw = player.tournamentData?.leaderboardTotal?.trim();
+  const leaderboardPositionRaw = player.tournamentData?.leaderboardPosition?.trim();
+  const isPlaceholderLeaderboardValue = (value: string | undefined) =>
+    !value || value === "-" || value === "–";
+  const leaderboardPositionDisplay = isPlaceholderLeaderboardValue(leaderboardPositionRaw)
+    ? "\u00A0"
+    : leaderboardPositionRaw;
+  const leaderboardTotalDisplay = isPlaceholderLeaderboardValue(leaderboardTotalRaw)
+    ? "\u00A0"
+    : leaderboardTotalRaw;
 
   // Get hot/cold icon from current round
   const getCurrentRoundIcon = () => {
@@ -123,7 +131,7 @@ export const PlayerDisplayRow: React.FC<PlayerDisplayRowProps> = ({
     <div className="flex items-center justify-between gap-3">
       <div className="flex w-4 shrink-0 flex-col items-center justify-center gap-1.5 text-center tabular-nums">
         <span className="text-xs font-semibold leading-none text-gray-800">
-          {player.tournamentData?.leaderboardPosition || "–"}
+          {leaderboardPositionDisplay}
         </span>
         <span
           className={`text-xs font-semibold leading-none ${

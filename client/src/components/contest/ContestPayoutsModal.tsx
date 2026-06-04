@@ -250,7 +250,14 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
             <ContestPayoutSection
               title="Rewards"
-              description="Grow the game, reward the community, and give value back to players."
+              description={
+                <>
+                  Grow the game, reward the community, and give value back to players.{" "}
+                  <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                    Learn more...
+                  </Link>
+                </>
+              }
             >
               <ContestPayoutDividedRows>
                 <ContestPayoutRow

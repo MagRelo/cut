@@ -16,7 +16,7 @@ import { cn, segmentButtonClassName } from "../../lib/tabStyles";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 const ROUND_BUTTONS = [1, 2, 3, 4] as const;
 
-const OTHER_TEAM_LINE_OPACITY = 0.5;
+const OTHER_TEAM_LINE_OPACITY = 0.7;
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
 const USER_LINE_ORDER = 0;
 const PAYOUT_WINNER_LINE_ORDER = 5;
@@ -219,7 +219,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
       return {
         borderColor: lineColorForTeam(team),
-        borderWidth: !currentUserId ? 2 : isUser ? 3 : 1,
+        borderWidth: !currentUserId ? 2 : isUser ? 3 : 2,
         order: chartOrderForTeam(team, currentUserId, highlightWinners),
       };
     },
