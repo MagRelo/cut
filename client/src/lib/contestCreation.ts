@@ -24,10 +24,9 @@ export function buildContestSettings(
       Number(import.meta.env.VITE_ORACLE_FEE_BPS) ||
       500,
     referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
-    primaryDepositSecondarySubsidyBps:
-      Number(import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS) ||
-      Number(import.meta.env.VITE_PRIMARY_ENTRY_INVESTMENT_SHARE_BPS) ||
-      700,
+    primaryDepositSecondarySubsidyBps: Number(
+      import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS ?? 0,
+    ),
   };
 }
 
