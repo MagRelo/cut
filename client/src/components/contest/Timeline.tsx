@@ -16,7 +16,7 @@ import { cn, segmentButtonClassName } from "../../lib/tabStyles";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 const ROUND_BUTTONS = [1, 2, 3, 4] as const;
 
-const OTHER_TEAM_LINE_OPACITY = 0.7;
+const OTHER_TEAM_LINE_OPACITY = 0.6;
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
 const USER_LINE_ORDER = 0;
 const PAYOUT_WINNER_LINE_ORDER = 5;
