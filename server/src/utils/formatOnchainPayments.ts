@@ -40,43 +40,65 @@ type PaymentRow = {
   user: { name: string | null; settings: unknown } | null;
 };
 
+function parsePaymentMetadata(metadata: unknown): Record<string, unknown> {
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
+}
+
+function isOracleReferralPayment(
+  kind: PaymentKind,
+  walletAddress: string,
+  meta: Record<string, unknown>,
+  contestOracleAddress: string | undefined,
+): boolean {
+  if (kind !== "REFERRAL") return false;
+  if (meta.path === "oracle") return true;
+  if (!contestOracleAddress) return false;
+  return walletAddress.toLowerCase() === contestOracleAddress.toLowerCase();
+}
+
 export function formatOnchainPaymentsForContest(
   payments: PaymentRow[],
   detailedResults: DetailedResult[] | undefined,
+  contestOracleAddress?: string,
 ): OnchainPaymentView[] {
   const byEntryId = new Map<string, DetailedResult>();
   for (const r of detailedResults ?? []) {
     byEntryId.set(String(r.entryId), r);
   }
 
-  return payments.map((p) => {
-    const meta =
-      p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
-        ? (p.metadata as Record<string, unknown>)
-        : {};
-    const entryId = typeof meta.entryId === "string" ? meta.entryId : undefined;
-    const detail = entryId ? byEntryId.get(entryId) : undefined;
-    const shareBps =
-      typeof meta.shareBps === "number"
-        ? meta.shareBps
-        : typeof meta.shareBps === "string"
-          ? Number(meta.shareBps)
-          : undefined;
+  return payments
+    .filter((p) => {
+      const meta = parsePaymentMetadata(p.metadata);
+      return !isOracleReferralPayment(p.kind, p.walletAddress, meta, contestOracleAddress);
+    })
+    .map((p) => {
+      const meta = parsePaymentMetadata(p.metadata);
+      const entryId = typeof meta.entryId === "string" ? meta.entryId : undefined;
+      const detail = entryId ? byEntryId.get(entryId) : undefined;
+      const shareBps =
+        typeof meta.shareBps === "number"
+          ? meta.shareBps
+          : typeof meta.shareBps === "string"
+            ? Number(meta.shareBps)
+            : undefined;
 
-    const view: OnchainPaymentView = {
-      kind: p.kind,
-      amountWei: p.amountWei,
-      walletAddress: p.walletAddress,
-      username: p.user?.name ?? "Unknown",
-      userColor: pickUserColor(p.user?.settings),
-      metadata: meta,
-    };
-    if (entryId) view.entryId = entryId;
-    if (Number.isFinite(shareBps)) view.shareBps = shareBps as number;
-    if (detail?.position !== undefined) view.position = detail.position;
-    if (detail?.score !== undefined) view.score = detail.score;
-    if (detail?.playerLastNames) view.playerLastNames = detail.playerLastNames;
-    if (detail?.lineupName) view.lineupName = detail.lineupName;
-    return view;
-  });
+      const view: OnchainPaymentView = {
+        kind: p.kind,
+        amountWei: p.amountWei,
+        walletAddress: p.walletAddress,
+        username: p.user?.name ?? "Unknown",
+        userColor: pickUserColor(p.user?.settings),
+        metadata: meta,
+      };
+      if (entryId) view.entryId = entryId;
+      if (Number.isFinite(shareBps)) view.shareBps = shareBps as number;
+      if (detail?.position !== undefined) view.position = detail.position;
+      if (detail?.score !== undefined) view.score = detail.score;
+      if (detail?.playerLastNames) view.playerLastNames = detail.playerLastNames;
+      if (detail?.lineupName) view.lineupName = detail.lineupName;
+      return view;
+    });
 }

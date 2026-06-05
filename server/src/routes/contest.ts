@@ -135,12 +135,16 @@ async function loadFormattedContestById(contestId: string) {
 
   const formatted = formatContestResponse(toFormat);
   const results = toFormat.results as { detailedResults?: DetailedResult[] } | null;
+  const contestSettings = toFormat.settings as { oracle?: string } | null;
+  const contestOracleAddress =
+    typeof contestSettings?.oracle === "string" ? contestSettings.oracle : undefined;
   const onchainPayments =
     toFormat.onchainPayments?.length &&
     (toFormat.status === "SETTLED" || toFormat.status === "CLOSED")
       ? formatOnchainPaymentsForContest(
           toFormat.onchainPayments,
           results?.detailedResults,
+          contestOracleAddress,
         )
       : undefined;
 
