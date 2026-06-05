@@ -219,7 +219,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
       return {
         borderColor: lineColorForTeam(team),
-        borderWidth: !currentUserId ? 2 : isUser ? 3 : 2,
+        borderWidth: !currentUserId ? 2 : isUser ? 3 : 1,
         order: chartOrderForTeam(team, currentUserId, highlightWinners),
       };
     },

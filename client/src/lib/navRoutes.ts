@@ -8,6 +8,7 @@ export const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = 
 };
 
 export const contestsMatch = (pathname: string) =>
+  pathname === "/" ||
   pathname === "/contests" ||
   pathname.startsWith("/contests/") ||
   pathname.startsWith("/contest/");

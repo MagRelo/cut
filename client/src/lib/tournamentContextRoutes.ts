@@ -1,4 +1,5 @@
 const TOURNAMENT_CONTEXT_PATTERNS = [
+  /^\/$/,
   /^\/contests(\/|$)/,
   /^\/contest\//,
   /^\/lineups(\/|$)/,

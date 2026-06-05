@@ -77,7 +77,8 @@ const AppShell: React.FC = () => {
         {/* <MaintenanceOverlay /> */}
         <OnboardingRedirectGate>
           <Routes>
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Contests />} />
+                  <Route path="/home" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/faq" element={<FAQPage />} />
                   <Route
