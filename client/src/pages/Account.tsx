@@ -89,7 +89,7 @@ function ReferralLinkRow({
   const shareRow = (
     <div className={`${referralLinkRowGridClass}${className ? ` ${className}` : ""}`}>
       <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-        Share Your Link
+        Share Your Invite Link
       </span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
         <ShareInviteButton url={url} />
@@ -172,7 +172,7 @@ const ReferralNetworkPanel = ({
         </Link>
       </p>
 
-      <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+      <div className="space-y-3 rounded-sm border border-l-4 border-emerald-200/80 border-l-emerald-600 bg-emerald-50/50 p-4 sm:p-5">
         {!loading && error ? <p className="font-display text-sm text-red-600">{error}</p> : null}
         {loading ? (
           <div className="space-y-2 py-px" aria-busy="true">
@@ -181,8 +181,8 @@ const ReferralNetworkPanel = ({
                 key={index}
                 className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
               >
-                <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
-                <div className="h-5 w-8 animate-pulse justify-self-end rounded bg-gray-200" />
+                <div className="h-5 w-16 animate-pulse rounded bg-emerald-200/60" />
+                <div className="h-5 w-8 animate-pulse justify-self-end rounded bg-emerald-200/60" />
               </div>
             ))}
           </div>
@@ -194,10 +194,12 @@ const ReferralNetworkPanel = ({
                 key={level.depth}
                 className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
               >
-                <span className="shrink-0 font-display font-medium text-gray-700">
+                <span className="shrink-0 font-medium text-gray-700">
                   {getDepthLabel(level.depth)}
                 </span>
-                <span className="text-right text-gray-800">{level.count}</span>
+                <span className="text-right font-semibold tabular-nums text-emerald-900">
+                  {level.count}
+                </span>
               </div>
             ))}
           </div>
@@ -265,7 +267,6 @@ const WalletInfo = ({
             </Link>
           </div>
         </div>
-
       </div>
 
       {canSignOut && (
@@ -306,30 +307,30 @@ export function UserPage() {
   return (
     <div className="-m-4 bg-gray-100 p-4">
       <div className="space-y-5">
-      {/* <PageHeader title="Account" className="mb-3" /> */}
+        {/* <PageHeader title="Account" className="mb-3" /> */}
 
-      {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
-      {/* <MintingUserFundsPanel /> */}
+        {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
+        {/* <MintingUserFundsPanel /> */}
 
-      {/* Token Balances */}
-      <TokenBalances showContestHistoryLink={false} />
+        {/* Token Balances */}
+        <TokenBalances showContestHistoryLink={false} />
 
-      <ReferralNetworkPanel
-        loading={referralLoading}
-        error={referralError}
-        levels={referralLevels}
-      />
+        <ReferralNetworkPanel
+          loading={referralLoading}
+          error={referralError}
+          levels={referralLevels}
+        />
 
-      {/* User Settings */}
-      <UserSettings />
+        {/* User Settings */}
+        <UserSettings />
 
-      {/* Wallet Information */}
-      <WalletInfo
-        disconnect={logout}
-        canSignOut={!!address || !!smartWalletAddress}
-        userEmail={user?.email}
-        accountIdAddress={smartWalletAddress}
-      />
+        {/* Wallet Information */}
+        <WalletInfo
+          disconnect={logout}
+          canSignOut={!!address || !!smartWalletAddress}
+          userEmail={user?.email}
+          accountIdAddress={smartWalletAddress}
+        />
       </div>
     </div>
   );
