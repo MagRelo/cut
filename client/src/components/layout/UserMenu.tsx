@@ -4,7 +4,7 @@ import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
-import { ADMIN_MENU_LINKS, LEAGUES_TAB } from "../../lib/navTabs";
+import { ADMIN_MENU_LINKS, CONTEST_HISTORY_LINK, LEAGUES_TAB } from "../../lib/navTabs";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
@@ -66,6 +66,15 @@ export const UserMenu: React.FC = () => {
         <MenuItem>
           <Link to="/account/funds" className={menuItemClass}>
             Manage Funds
+          </Link>
+        </MenuItem>
+        <MenuItem>
+          <Link
+            to={CONTEST_HISTORY_LINK.to}
+            className={menuItemClass}
+            aria-current={CONTEST_HISTORY_LINK.match(location.pathname) ? "page" : undefined}
+          >
+            {CONTEST_HISTORY_LINK.label}
           </Link>
         </MenuItem>
         {showAdminNav

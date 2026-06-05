@@ -6,7 +6,13 @@ import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_WORDMARK } from "../../lib/brand";
 import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
-import { ADMIN_MENU_LINKS, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import {
+  ADMIN_MENU_LINKS,
+  CONTEST_HISTORY_LINK,
+  LEAGUES_TAB,
+  LEFT_TABS,
+  LINEUPS_TAB,
+} from "../../lib/navTabs";
 
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
@@ -101,15 +107,29 @@ export const MobileNavMenu: React.FC = () => {
                     <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
                       <div className="flex flex-col gap-0.5">
                         {LEFT_TABS.map((tab) => (
-                          <Link
-                            key={tab.key}
-                            to={tab.to}
-                            state={tab.state}
-                            aria-current={tab.match(location.pathname) ? "page" : undefined}
-                            className={mobileNavItemClass(tab.match(location.pathname))}
-                          >
-                            {tab.label}
-                          </Link>
+                          <Fragment key={tab.key}>
+                            <Link
+                              to={tab.to}
+                              state={tab.state}
+                              aria-current={tab.match(location.pathname) ? "page" : undefined}
+                              className={mobileNavItemClass(tab.match(location.pathname))}
+                            >
+                              {tab.label}
+                            </Link>
+                            {tab.key === "contests" && user ? (
+                              <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
+                                <Link
+                                  to={CONTEST_HISTORY_LINK.to}
+                                  aria-current={
+                                    CONTEST_HISTORY_LINK.match(location.pathname) ? "page" : undefined
+                                  }
+                                  className={mobileSubItemClass}
+                                >
+                                  {CONTEST_HISTORY_LINK.label}
+                                </Link>
+                              </div>
+                            ) : null}
+                          </Fragment>
                         ))}
 
                         {user ? (

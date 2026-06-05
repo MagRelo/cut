@@ -15,6 +15,12 @@ export type NavTab = {
   state?: Location["state"];
 };
 
+export const CONTEST_HISTORY_LINK = {
+  to: "/account/history",
+  label: "My Contest History",
+  match: (pathname: string) => pathname === "/account/history",
+} as const;
+
 export const LEFT_TABS: NavTab[] = [
   {
     key: "leaderboard",
@@ -25,7 +31,7 @@ export const LEFT_TABS: NavTab[] = [
   {
     key: "contests",
     to: "/contests",
-    label: "Contests",
+    label: "Live Contests",
     match: contestsMatch,
   },
 ];
