@@ -1,7 +1,7 @@
 {
   "name": "cut",
   "version": "1.0.0",
-  "description": "the Cut application",
+  "description": "Play The Cut application",
   "type": "module",
   "packageManager": "pnpm@10.14.0",
   "scripts": {

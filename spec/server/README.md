@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The server layer provides the backend API and services for Play the Cut:
+The server layer provides the backend API and services for Play The Cut:
 - **REST API**: HTTP endpoints for client communication
 - **Database Management**: PostgreSQL database with Prisma ORM
 - **PGA Tour Integration**: Scraping and syncing PGA Tour data

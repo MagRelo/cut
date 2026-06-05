@@ -1,10 +1,10 @@
-# Play the Cut - Specification Documentation
+# Play The Cut - Specification Documentation
 
-This directory contains high-level architecture specifications for the Play the Cut application, organized by layer (contracts, server, client).
+This directory contains high-level architecture specifications for the Play The Cut application, organized by layer (contracts, server, client).
 
 ## Overview
 
-Play the Cut is a web application that enables:
+Play The Cut is a web application that enables:
 
 - **Fantasy Golf Competitions**: Users create leagues, form teams, and compete in weekly tournaments
 - **Real-Money Betting**: Users can place and track bets using data from teams, leagues, or live tournament results

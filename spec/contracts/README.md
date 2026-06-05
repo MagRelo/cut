@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The contracts layer implements the core blockchain functionality for Play the Cut:
+The contracts layer implements the core blockchain functionality for Play The Cut:
 
 - **Contest Management**: Smart contracts for creating and managing fantasy golf contests
 - **Prediction Markets**: Secondary market for betting on contest outcomes using LMSR pricing

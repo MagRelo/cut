@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
+import { BRAND_WORDMARK } from "../../lib/brand";
 import { LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { UserMenu } from "./UserMenu";
@@ -51,7 +52,7 @@ export const TopNav: React.FC = () => {
         >
           <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
           <span className="font-display text-lg uppercase tracking-widest text-slate-900">
-            PlayTheCut
+            {BRAND_WORDMARK}
           </span>
         </Link>
 

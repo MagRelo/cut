@@ -1,4 +1,4 @@
-# Lineup tie-breaker — Play the Cut
+# Lineup tie-breaker — Play The Cut
 
 Product and engineering spec for **winning score prediction**: how users set it, how duplicates work, and how contests rank lineups and pay winners when fantasy scores tie.
 

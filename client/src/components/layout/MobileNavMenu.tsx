@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
+import { BRAND_WORDMARK } from "../../lib/brand";
 import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
 import { ADMIN_MENU_LINKS, LEAGUES_TAB, LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
 
@@ -84,7 +85,7 @@ export const MobileNavMenu: React.FC = () => {
                       >
                         <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
                         <span className="font-display text-lg uppercase tracking-widest text-slate-900">
-                          PlayTheCut
+                          {BRAND_WORDMARK}
                         </span>
                       </Link>
                       <button

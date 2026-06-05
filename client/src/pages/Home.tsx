@@ -3,23 +3,24 @@ import { Link } from "react-router-dom";
 import { Share } from "../components/common/Share";
 import { InfoScorecard } from "../components/common/InfoScorecard";
 import { PageSection } from "../components/layout/PageSection";
+import { BRAND_PROSE, BRAND_TAGLINE, BRAND_URL, BRAND_WORDMARK } from "../lib/brand";
 import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
 
 export const Home: React.FC = () => {
   return (
     <div className="flex w-full min-w-0 flex-1 flex-col items-center pb-8 pt-6">
       <div className="w-full min-w-0 max-w-full">
-        {/* Title and Logo — horizontal at all breakpoints */}
+        {/* Logo above wordmark — matches loading screen layout */}
         <div className="flex justify-center px-2 pb-2 sm:px-0">
-          <div className="flex min-w-0 max-w-full flex-row items-center justify-center gap-3 sm:gap-3">
+          <div className="flex min-w-0 max-w-full flex-col items-center justify-center gap-2">
             <img
               src="/logo-transparent.png"
-              alt="Cut Logo"
+              alt={`${BRAND_PROSE} logo`}
               className="h-24 w-auto flex-shrink-0 sm:h-32"
             />
 
-            <h1 className="min-w-0 text-4xl font-bold text-black sm:text-5xl md:text-6xl">
-              The Cut
+            <h1 className="min-w-0 text-center font-display text-4xl font-medium tracking-widest text-black sm:text-5xl md:text-6xl">
+              {BRAND_WORDMARK}
               <div className="text-xl font-bold text-gray-400 sm:text-2xl">Fantasy Golf</div>
             </h1>
           </div>
@@ -152,7 +153,7 @@ export const Home: React.FC = () => {
         <h3 className="mb-4 text-center text-2xl font-bold text-gray-400">Invite Rewards</h3>
         <div className="rounded-sm border border-l-4 border-emerald-200/80 border-l-emerald-600 bg-emerald-50/50 p-6">
           <p className="mx-auto mb-5 max-w-2xl text-center font-display leading-relaxed text-gray-700">
-            The Cut&apos;s invite rewards run on{" "}
+            {BRAND_PROSE}&apos;s invite rewards run on{" "}
             <a
               href="https://referraltree.mattlovan.dev/"
               target="_blank"
@@ -214,11 +215,7 @@ export const Home: React.FC = () => {
       <hr className="my-8 w-full border-gray-200" />
 
       {/* Share component */}
-      <Share
-        url="https://playthecut.com"
-        title="The Cut Fantasy Golf"
-        subtitle="Play The Cut Fantasy Golf"
-      />
+      <Share url={BRAND_URL} title={BRAND_TAGLINE} subtitle={BRAND_TAGLINE} />
     </div>
   );
 };

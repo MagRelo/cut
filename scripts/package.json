@@ -1,7 +1,7 @@
 {
   "name": "cut-scripts",
   "version": "1.0.0",
-  "description": "Scripts for Cut project",
+  "description": "Scripts for Play The Cut",
   "main": "index.js",
   "type": "module",
   "scripts": {

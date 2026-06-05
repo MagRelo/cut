@@ -70,7 +70,7 @@ export const FAQPage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">How does scoring work?</h3>
             <p className="mb-2 text-gray-700">
-              The Cut uses a Modified Stableford scoring system where players earn points based on
+              Play The Cut uses a Modified Stableford scoring system where players earn points based on
               their performance on each hole:
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
@@ -244,7 +244,7 @@ export const FAQPage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Are there any fees?</h3>
             <p className="mb-2 text-gray-700">
-              The Cut does not take platform fees. A portion of each pot (typically 7%) goes to the
+              Play The Cut does not take platform fees. A portion of each pot (typically 7%) goes to the
               invite network to grow the game and reward the community. Learn more about the invite
               network{" "}
               <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
@@ -600,7 +600,7 @@ export const FAQPage: React.FC = () => {
               How does sign-in and my wallet work?
             </h3>
             <p className="mb-2 text-gray-700">
-              When you sign in with your email, The Cut creates a smart wallet for you to hold xUSDC
+              When you sign in with your email, Play The Cut creates a smart wallet for you to hold xUSDC
               and handle on-chain actions like contest entries, sends, and claims.
             </p>
             <p className="mb-2 text-gray-700">
@@ -696,7 +696,7 @@ export const FAQPage: React.FC = () => {
               How does the Contest contract hold and pay prizes?
             </h3>
             <p className="mb-2 text-gray-700">
-              Each contest on The Cut has its own on-chain{" "}
+              Each contest on Play The Cut has its own on-chain{" "}
               <span className="font-medium">Contest</span> smart contract. Entry fees, the primary
               prize pool, and Winner Pool funds all live in that contract—not in a platform wallet.
             </p>
@@ -738,7 +738,7 @@ export const FAQPage: React.FC = () => {
 
         <div className="space-y-4 text-gray-700">
           <p>
-            The Cut&apos;s invite network runs on{" "}
+            Play The Cut&apos;s invite network runs on{" "}
             <a
               href="https://referraltree.mattlovan.dev/"
               target="_blank"

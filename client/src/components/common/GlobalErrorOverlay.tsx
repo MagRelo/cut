@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { type GlobalErrorDetails } from "../../contexts/GlobalErrorContext";
 
 interface GlobalErrorOverlayProps {
@@ -27,11 +28,13 @@ export const GlobalErrorOverlay: React.FC<GlobalErrorOverlayProps> = ({ error })
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4">
       <div className="relative max-w-md w-full rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl text-white">
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 h-16 w-16 rounded-full border border-white/40 bg-white/90 flex items-center justify-center shadow-xl">
-          <img src="/logo-transparent.png" alt="The Cut" className="h-12" />
+          <img src="/logo-transparent.png" alt={`${BRAND_PROSE} logo`} className="h-12" />
         </div>
 
         <div className="pt-14 pb-10 px-8 text-center">
-          <p className="text-sm font-semibold tracking-[0.3em] uppercase text-white/70">The Cut</p>
+          <p className="text-sm font-semibold tracking-[0.3em] uppercase text-white/70">
+            {BRAND_WORDMARK}
+          </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
             {error.title ?? "We hit a rough patch"}
           </h2>

@@ -1,6 +1,6 @@
 # Cron System
 
-This directory contains the cron job scheduler for the Cut application.
+This directory contains the cron job scheduler for the Play The Cut application.
 
 ## Overview
 

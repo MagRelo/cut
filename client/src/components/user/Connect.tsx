@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReferralCodeDetected } from "../../hooks/useReferralCapture";
+import { BRAND_PROSE } from "../../lib/brand";
 
 interface ConnectProps {
   onSuccess?: () => void;
@@ -44,7 +45,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         <div className="p-8 text-center">
           <div className="flex items-center gap-3 justify-center text-gray-400 font-medium">
             <LoadingSpinnerSmall color={"green"} />
-            Connecting to The Cut...
+            Connecting to {BRAND_PROSE}...
           </div>
         </div>
       ) : (

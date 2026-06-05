@@ -1,12 +1,12 @@
+import { BRAND_PROSE, BRAND_URL, BRAND_WORDMARK } from "../brand.js";
 import { escapeHtml } from "./escape.js";
 import { FONT_BODY, FONT_DISPLAY, GOOGLE_FONTS_URL } from "./styles.js";
 
 export { escapeHtml };
 
-const PRODUCT_NAME = "Play The Cut";
-/** Header wordmark next to logo (one word, uppercase). */
-const HEADER_BRAND_WORDMARK = "PLAYTHECUT";
-const DEFAULT_APP_URL = "https://playthecut.com";
+const PRODUCT_NAME = BRAND_PROSE;
+const HEADER_BRAND_WORDMARK = BRAND_WORDMARK;
+const DEFAULT_APP_URL = BRAND_URL;
 const LOGO_PATH = "/logo-transparent.png";
 /** Compact brand strip (email title lives in body). PNG aspect 678×787. */
 const LOGO_HEIGHT = 30;

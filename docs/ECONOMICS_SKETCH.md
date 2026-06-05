@@ -1,4 +1,4 @@
-# Economics sketch — Play the Cut
+# Economics sketch — Play The Cut
 
 Working model for **platform fee revenue** from primary contests and Winner Pool (secondary) activity. **Primary and secondary each use a 7% take** in all figures below. Cash amounts are in **USD** ($).
 

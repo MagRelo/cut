@@ -1,6 +1,6 @@
 {
-  "name": "The Cut",
-  "short_name": "The Cut",
+  "name": "Play The Cut",
+  "short_name": "Play The Cut",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",

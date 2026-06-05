@@ -1,5 +1,6 @@
 import { useAccount } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
+import { BRAND_PROSE } from "../../lib/brand";
 import { isChainSupported } from "../../utils/blockchainUtils";
 import { CopyToClipboard } from "./CopyToClipboard";
 
@@ -66,7 +67,7 @@ export function RealMoneyWarning() {
           new to crypto, ask another user to send you testnet xUSDC to get started.
         </p>
         <p className="mb-2">
-          If you already have xUSDC you can transfer it directly to your Cut account:
+          If you already have xUSDC you can transfer it directly to your {BRAND_PROSE} account:
         </p>
 
         <div className="text-center font-medium text-sm pt-4 pb-3">

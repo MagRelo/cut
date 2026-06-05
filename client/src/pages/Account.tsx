@@ -10,6 +10,7 @@ import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
+import { BRAND_PROSE } from "../lib/brand";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -36,8 +37,8 @@ function ShareInviteButton({ url }: { url: string }) {
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({
-          title: "Play The Cut",
-          text: "Join Play The Cut",
+          title: BRAND_PROSE,
+          text: `Join ${BRAND_PROSE}`,
           url,
         });
         setFeedback("shared");

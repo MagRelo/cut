@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { serveStatic } from "hono/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
+import { BRAND_PROSE } from "./lib/brand.js";
 import { prisma } from "./lib/prisma.js";
 
 // Create Hono app instance
@@ -19,7 +20,7 @@ type PageMetadata = {
 
 const DEFAULT_OG_IMAGE = "https://playthecut.com/cut-logo2-og.png";
 const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
-const TITLE_SUFFIX = " | The Cut";
+const TITLE_SUFFIX = ` | ${BRAND_PROSE}`;
 
 function getContestEntryLabel(settings: unknown): string | null {
   if (!settings || typeof settings !== "object") {
@@ -94,7 +95,7 @@ async function resolveMetadataForPath(
   const path = requestUrl.pathname;
   const requestPathWithQuery = `${requestUrl.pathname}${requestUrl.search}`;
   const defaults: PageMetadata = {
-    title: "The Cut",
+    title: BRAND_PROSE,
     description: DEFAULT_DESCRIPTION,
     image: DEFAULT_OG_IMAGE,
     url: `${baseUrl}${requestPathWithQuery}`,
@@ -136,7 +137,7 @@ async function resolveMetadataForPath(
           return {
             ...defaults,
             title: `${playerName} | ${tournament.name}`,
-            description: `View ${playerName} on the ${tournament.name} leaderboard on The Cut.`,
+            description: `View ${playerName} on the ${tournament.name} leaderboard on ${BRAND_PROSE}.`,
           };
         }
       }
@@ -145,7 +146,7 @@ async function resolveMetadataForPath(
         return {
           ...defaults,
           title: `${tournament.name}${TITLE_SUFFIX}`,
-          description: `Live leaderboard and scoring for ${tournament.name} on The Cut.`,
+          description: `Live leaderboard and scoring for ${tournament.name} on ${BRAND_PROSE}.`,
         };
       }
     } catch (error) {
@@ -184,7 +185,7 @@ async function resolveMetadataForPath(
         return {
           ...defaults,
           title,
-          description: contest.description?.trim() || "Join this contest on The Cut.",
+          description: contest.description?.trim() || `Join this contest on ${BRAND_PROSE}.`,
         };
       }
     } catch (error) {

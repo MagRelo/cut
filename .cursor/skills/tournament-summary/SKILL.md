@@ -1,7 +1,7 @@
 ---
 name: tournament-summary
 description: >-
-  Research and write PGA Tour tournament preview JSON for Play the Cut.
+  Research and write PGA Tour tournament preview JSON for Play The Cut.
   Use when the user provides a pgaTourId (e.g. R2026023), asks for a
   tournament summary, Perplexity-style preview, or updates
   server/src/tournamentSummaries/*.json.

@@ -1,4 +1,4 @@
-# Email program — Play the Cut
+# Email program — Play The Cut
 
 Product spec for transactional and lifecycle emails.
 

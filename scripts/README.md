@@ -1,6 +1,6 @@
 # Scripts
 
-This directory contains scripts for the Cut project: deployment, verification, and ad hoc chain interaction.
+This directory contains scripts for Play The Cut: deployment, verification, and ad hoc chain interaction.
 
 ## Scripts overview
 

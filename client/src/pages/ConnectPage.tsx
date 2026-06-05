@@ -1,6 +1,7 @@
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { Connect } from "../components/user/Connect";
+import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { useAuth } from "../contexts/AuthContext";
 
 export function ConnectPage() {
@@ -31,10 +32,10 @@ export function ConnectPage() {
       <div>
         {/* Title and Logo */}
         <div className="-ml-4 flex items-center gap-2 pb-1.5">
-          <img src="/logo-transparent.png" alt="Cut Logo" className="h-20 w-auto" />
+          <img src="/logo-transparent.png" alt={`${BRAND_PROSE} logo`} className="h-20 w-auto" />
 
           <h1 className="text-4xl leading-tight font-bold text-black">
-            The Cut
+            {BRAND_WORDMARK}
             {/* <div className="text-base font-bold text-gray-400">Fantasy Golf + </div>
             <div className="text-base font-bold text-gray-400">Prediction Market</div> */}
           </h1>

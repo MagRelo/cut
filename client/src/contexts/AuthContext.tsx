@@ -422,7 +422,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } else {
-            setServerSessionError("Could not connect to Cut. Please try again.");
+            setServerSessionError("Could not connect to Play The Cut. Please try again.");
           }
         }
       } finally {

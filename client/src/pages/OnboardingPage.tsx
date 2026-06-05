@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useActiveTournament } from "../hooks/useTournamentData";
+import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 
 const ACCENT_COLORS = [
@@ -150,11 +151,11 @@ export function OnboardingPage() {
             <div className="flex min-w-0 flex-row flex-nowrap items-center justify-center gap-4 pb-2 mb-2 sm:gap-6">
               <img
                 src="/logo-transparent.png"
-                alt="Cut Logo"
+                alt={`${BRAND_PROSE} logo`}
                 className="h-28 sm:h-36 md:h-44 w-auto flex-shrink-0"
               />
               <h1 className="min-w-0 text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
-                The Cut
+                {BRAND_WORDMARK}
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-400">
                   Fantasy Golf{" "}
                 </div>
@@ -162,7 +163,7 @@ export function OnboardingPage() {
             </div>
 
             <p className="text-gray-700 leading-relaxed font-display text-2xl mb-4 text-center">
-              Welcome to <strong>The Cut</strong>!
+              Welcome to <strong>{BRAND_PROSE}</strong>!
             </p>
             <p className="text-gray-700 leading-relaxed font-display text-lg sm:text-xl text-center">
               Let's get started...
