@@ -17,7 +17,7 @@ export const UserGroupListPage = () => {
         <PageHeader title="My Leagues" />
         <Link
           to="/user-groups/create"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
         >
           Create League
         </Link>

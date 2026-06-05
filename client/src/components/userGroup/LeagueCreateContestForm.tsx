@@ -18,9 +18,12 @@ import {
 import {
   formatInviteRewardPercent,
   formatLeagueEntryFee,
+  formatPrimarySubsidyPercent,
   inviteRewardPercentToBps,
   LEAGUE_ENTRY_FEE_OPTIONS,
   LEAGUE_INVITE_REWARD_PERCENTS,
+  LEAGUE_PRIMARY_SUBSIDY_PERCENTS,
+  primarySubsidyPercentToBps,
 } from "../../lib/leagueCreateContestOptions";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 
@@ -37,15 +40,17 @@ export const LeagueCreateContestForm = ({
 }: LeagueCreateContestFormProps) => {
   const navigate = useNavigate();
   const chainId = useChainId();
-  const { tournament } = useActiveTournament();
+  const { tournament, isTournamentEditable } = useActiveTournament();
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
 
-  const [entryFeeIndex, setEntryFeeIndex] = useState(1);
+  const [entryFeeIndex, setEntryFeeIndex] = useState(LEAGUE_ENTRY_FEE_OPTIONS.indexOf(20));
   const [inviteRewardIndex, setInviteRewardIndex] = useState(0);
+  const [primarySubsidyIndex, setPrimarySubsidyIndex] = useState(3);
 
   const tokenSymbol = paymentTokenSymbol ?? "xUSDC";
   const entryFee = LEAGUE_ENTRY_FEE_OPTIONS[entryFeeIndex];
   const inviteRewardPercent = LEAGUE_INVITE_REWARD_PERCENTS[inviteRewardIndex];
+  const primarySubsidyPercent = LEAGUE_PRIMARY_SUBSIDY_PERCENTS[primarySubsidyIndex];
 
   const {
     submitContest,
@@ -67,7 +72,7 @@ export const LeagueCreateContestForm = ({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!tournament?.id) {
+    if (!tournament?.id || !isTournamentEditable) {
       return;
     }
 
@@ -84,6 +89,7 @@ export const LeagueCreateContestForm = ({
       settings: {
         ...baseSettings,
         primaryDeposit: entryFee,
+        primaryDepositSecondarySubsidyBps: primarySubsidyPercentToBps(primarySubsidyPercent),
         referralNetworkBps: inviteRewardPercentToBps(inviteRewardPercent),
         expiryTimestamp,
         paymentTokenAddress: paymentTokenAddress || "",
@@ -94,6 +100,7 @@ export const LeagueCreateContestForm = ({
   };
 
   const tournamentUnavailable = !tournament?.id;
+  const canCreateContest = Boolean(tournament?.id && isTournamentEditable);
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
@@ -131,7 +138,22 @@ export const LeagueCreateContestForm = ({
           tokenSymbol,
         )}
         onChange={setEntryFeeIndex}
-        disabled={tournamentUnavailable || isProcessing}
+        disabled={!canCreateContest || isProcessing}
+      />
+
+      <DiscreteValueSlider
+        id="league-primary-subsidy"
+        label="Winner Pool Subsidy"
+        description="Share of each entry fee sent to the Winner Pool"
+        valueIndex={primarySubsidyIndex}
+        valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
+        displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
+        minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
+        maxLabel={formatPrimarySubsidyPercent(
+          LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
+        )}
+        onChange={setPrimarySubsidyIndex}
+        disabled={!canCreateContest || isProcessing}
       />
 
       <DiscreteValueSlider
@@ -153,12 +175,12 @@ export const LeagueCreateContestForm = ({
           LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
         )}
         onChange={setInviteRewardIndex}
-        disabled={tournamentUnavailable || isProcessing}
+        disabled={!canCreateContest || isProcessing}
       />
 
       <button
         type="submit"
-        disabled={tournamentUnavailable || loading || isProcessing}
+        disabled={!canCreateContest || loading || isProcessing}
         className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
       >
         {loading || isProcessing ? (
