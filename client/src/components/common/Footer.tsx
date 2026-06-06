@@ -1,6 +1,19 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
+const LEGAL_LINKS = [
+  { path: "/terms", label: "Terms" },
+  { path: "/privacy", label: "Privacy" },
+  { path: "/responsible-gaming", label: "Responsible Play" },
+  { path: "/disclosures", label: "Disclosures" },
+] as const;
+
+const legalLinkClass = (active: boolean) =>
+  [
+    "font-display text-xs font-normal tracking-wide transition-colors",
+    active ? "text-slate-700" : "text-slate-500 hover:text-slate-700",
+  ].join(" ");
+
 export const Footer: React.FC = () => {
   const location = useLocation();
 
@@ -8,23 +21,26 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="w-full shrink-0 border-t border-gray-200 bg-gray-100">
-      <div className="mx-auto flex h-12 max-w-shell items-center justify-end gap-4 px-4">
+      <div className="mx-auto flex max-w-shell flex-col items-end gap-2 px-4 py-3">
         <Link
           to="/faq"
-          className={`text-sm font-medium ${
-            isActive("/faq") ? "text-blue-500" : "text-gray-400 hover:text-gray-600"
-          }`}
+          className={[
+            "font-display text-sm font-normal tracking-wide transition-colors hover:text-blue-700",
+            isActive("/faq") ? "text-blue-700" : "text-blue-600",
+          ].join(" ")}
         >
-          FAQ
+          Help
         </Link>
-        <Link
-          to="/terms"
-          className={`text-sm font-medium ${
-            isActive("/terms") ? "text-blue-500" : "text-gray-400 hover:text-gray-600"
-          }`}
+        <nav
+          className="flex flex-col items-end gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1"
+          aria-label="Legal"
         >
-          Terms
-        </Link>
+          {LEGAL_LINKS.map(({ path, label }) => (
+            <Link key={path} to={path} className={legalLinkClass(isActive(path))}>
+              {label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );

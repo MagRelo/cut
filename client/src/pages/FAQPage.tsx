@@ -24,7 +24,7 @@ export const FAQPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader title="FAQ" className="mb-3" />
+      <PageHeader title="Frequently Asked Questions" className="mb-3" />
 
       {/* Quick Navigation */}
       <PageSection>
@@ -806,7 +806,16 @@ export const FAQPage: React.FC = () => {
         <p className="mb-3 text-sm text-gray-700">Still have questions? Try these pages:</p>
         <nav className="flex flex-col gap-2 font-display text-sm" aria-label="FAQ resources">
           <Link to="/terms" className="font-medium text-blue-600 hover:underline">
-            Terms of Service & Privacy Policy
+            Terms of Service
+          </Link>
+          <Link to="/privacy" className="font-medium text-blue-600 hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/responsible-gaming" className="font-medium text-blue-600 hover:underline">
+            Responsible Participation
+          </Link>
+          <Link to="/disclosures" className="font-medium text-blue-600 hover:underline">
+            Disclosures and Risk Statement
           </Link>
           <Link to="/contracts" className="font-medium text-blue-600 hover:underline">
             Smart contract addresses

@@ -39,6 +39,9 @@ import { OnboardingRedirectGate } from "./components/common/OnboardingRedirectGa
 import { GlobalLoadingOverlay } from "./components/common/GlobalLoadingOverlay";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
+import { ResponsibleGaming } from "./pages/ResponsibleGaming";
+import { Disclosures } from "./pages/Disclosures";
 import { FAQPage } from "./pages/FAQPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
@@ -80,6 +83,9 @@ const AppShell: React.FC = () => {
                   <Route path="/" element={<Contests />} />
                   <Route path="/home" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+                  <Route path="/disclosures" element={<Disclosures />} />
                   <Route path="/faq" element={<FAQPage />} />
                   <Route
                     path="/onboarding"
