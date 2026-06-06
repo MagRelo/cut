@@ -1,13 +1,14 @@
 import React, { useMemo } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { useReadContract } from "wagmi";
-import { formatUnits } from "viem";
+import { useBalance, useReadContract } from "wagmi";
+import { erc20Abi, formatUnits } from "viem";
 import { Modal } from "../common/Modal";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
+import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 import {
   ContestPayoutDividedRows,
   ContestPayoutGradientMoney,
@@ -26,6 +27,234 @@ interface ContestPayoutsModalProps {
   contest: Contest;
 }
 
+function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; isOpen: boolean }) {
+  const chainId = contest?.chainId as 8453 | 84532 | undefined;
+  const readsEnabled = !!contest?.address && isOpen;
+
+  const paymentTokenOnChain = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "paymentToken",
+    args: [],
+    chainId,
+    query: { enabled: readsEnabled },
+  }).data as `0x${string}` | undefined;
+
+  const fallbackPaymentTokenAddress = contest?.settings?.paymentTokenAddress as
+    | `0x${string}`
+    | undefined;
+
+  const paymentTokenAddress = paymentTokenOnChain ?? fallbackPaymentTokenAddress;
+
+  const paymentTokenSymbol = useReadContract({
+    address: paymentTokenAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "symbol",
+    args: [],
+    chainId,
+    query: { enabled: !!paymentTokenAddress && readsEnabled },
+  }).data as string | undefined;
+
+  const paymentTokenDecimals = useReadContract({
+    address: paymentTokenAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "decimals",
+    args: [],
+    chainId,
+    query: { enabled: !!paymentTokenAddress && readsEnabled },
+  }).data as number | undefined;
+
+  const { data: contractBalance } = useBalance({
+    address: contest?.address as `0x${string}`,
+    token: paymentTokenAddress as `0x${string}` | undefined,
+    chainId,
+    query: { enabled: readsEnabled && !!paymentTokenAddress },
+  });
+
+  const contractState = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "state",
+    args: [],
+    chainId,
+    query: { enabled: readsEnabled },
+  }).data as number | undefined;
+
+  const primarySideBalance = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "getPrimarySideBalance",
+    args: [],
+    chainId,
+    query: { enabled: readsEnabled },
+  }).data as bigint | undefined;
+
+  const totalSecondaryLiquidity = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "totalSecondaryLiquidity",
+    args: [],
+    chainId,
+    query: { enabled: readsEnabled },
+  }).data as bigint | undefined;
+
+  const primaryDepositSecondarySubsidyBps = useReadContract({
+    address: contest?.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "primaryDepositSecondarySubsidyBps",
+    args: [],
+    chainId,
+    query: { enabled: readsEnabled },
+  }).data as bigint | undefined;
+
+  const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
+  const tokenSymbol =
+    paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.paymentTokenSymbol ?? "";
+
+  const formatTokenAmount = (
+    value?: bigint,
+    {
+      fractionDigits = 2,
+      decimals = tokenDecimals,
+    }: { fractionDigits?: number; decimals?: number } = {},
+  ) => {
+    if (value === undefined) return "...";
+    try {
+      const normalized = formatUnits(value, decimals);
+      const numeric = Number.parseFloat(normalized);
+      if (Number.isNaN(numeric)) {
+        return normalized;
+      }
+      return numeric.toLocaleString(undefined, { maximumFractionDigits: fractionDigits });
+    } catch {
+      return value.toString();
+    }
+  };
+
+  const resolvedTokenSymbol = tokenSymbol || "TOKEN";
+
+  const primaryDepositSecondarySubsidyPercent =
+    primaryDepositSecondarySubsidyBps !== undefined
+      ? Number(primaryDepositSecondarySubsidyBps) / 100
+      : contest.settings?.primaryDepositSecondarySubsidyBps != null
+        ? contest.settings.primaryDepositSecondarySubsidyBps / 100
+        : undefined;
+
+  const entryFee = contest.settings?.primaryDeposit;
+  const inviteNetworkBps = Math.max(
+    0,
+    Math.min(10000, contest.settings?.referralNetworkBps ?? contest.settings?.oracleFeeBps ?? 0),
+  );
+  const inviteNetworkPercent = inviteNetworkBps / 100;
+
+  const formatEntryFee = () => {
+    if (entryFee === 0) return "Free";
+    if (entryFee != null) return `$${entryFee}`;
+    return "—";
+  };
+
+  const getStatusLabel = (state: number | undefined) => {
+    if (state === undefined) return "Unknown";
+    const statusMap: { [key: number]: string } = {
+      0: "Open",
+      1: "Active",
+      2: "Locked",
+      3: "Settled",
+      4: "Cancelled",
+      5: "Closed",
+    };
+    return statusMap[state] || "Unknown";
+  };
+
+  const getStatusColor = (state: number | undefined) => {
+    if (state === undefined) return "text-gray-600";
+    const colorMap: { [key: number]: string } = {
+      0: "text-green-700 font-semibold",
+      1: "text-blue-700 font-semibold",
+      2: "text-yellow-700 font-semibold",
+      3: "text-emerald-700 font-semibold",
+      4: "text-red-700 font-semibold",
+      5: "text-gray-700 font-semibold",
+    };
+    return colorMap[state] || "text-gray-600";
+  };
+
+  return (
+    <ContestPayoutSection title="Contest Smart Contract">
+      <div className="flex flex-col gap-1.5 font-mono text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Contest Entry Fee</span>
+          <span className="font-semibold text-gray-900">{formatEntryFee()}</span>
+        </div>
+
+        {primaryDepositSecondarySubsidyPercent !== undefined && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Winner Pool Subsidy</span>
+            <span className="font-semibold text-gray-900">
+              {primaryDepositSecondarySubsidyPercent.toFixed(2)}%
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Invite Network Reward</span>
+          <span className="font-semibold text-gray-900">{inviteNetworkPercent.toFixed(2)}%</span>
+        </div>
+
+        <hr className="my-2" />
+
+        {contractBalance?.value !== undefined && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Balance</span>
+            <span className="font-semibold text-gray-900">
+              {formatTokenAmount(contractBalance.value, {
+                fractionDigits: 4,
+                decimals: contractBalance.decimals,
+              })}{" "}
+              {tokenSymbol || contractBalance.symbol || resolvedTokenSymbol}
+            </span>
+          </div>
+        )}
+
+        {primarySideBalance !== undefined && (
+          <div className="flex items-center justify-between">
+            <span className="pl-4 text-gray-600">↳ Contest</span>
+            <span className="text-gray-900">
+              {formatTokenAmount(primarySideBalance, { fractionDigits: 4 })} {resolvedTokenSymbol}
+            </span>
+          </div>
+        )}
+
+        {totalSecondaryLiquidity !== undefined && (
+          <div className="flex items-center justify-between">
+            <span className="pl-4 text-gray-600">↳ Winner Pool</span>
+            <span className="text-gray-900">
+              {formatTokenAmount(totalSecondaryLiquidity, { fractionDigits: 4 })}{" "}
+              {resolvedTokenSymbol}
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Current State</span>
+          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
+        </div>
+      </div>
+
+      {contest?.address && chainId ? (
+        <div className="mt-4 border-t border-slate-200 pt-3 font-display text-sm">
+          {createExplorerLinkJSX(
+            contest.address,
+            chainId,
+            "View Contract",
+            "text-gray-600 underline hover:text-gray-800",
+          )}
+        </div>
+      ) : null}
+    </ContestPayoutSection>
+  );
+}
+
 export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   isOpen,
   onClose,
@@ -37,13 +266,9 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const chainId = contest?.chainId as 8453 | 84532 | undefined;
   const referralNetworkBps = Math.max(
     0,
-    Math.min(
-      10000,
-      contest?.settings?.referralNetworkBps ?? contest?.settings?.oracleFeeBps ?? 0,
-    ),
+    Math.min(10000, contest?.settings?.referralNetworkBps ?? contest?.settings?.oracleFeeBps ?? 0),
   );
 
-  // Read primary prize pool from contract
   const {
     data: primaryPrizePool,
     isLoading: isLoadingPrimary,
@@ -76,7 +301,6 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     },
   });
 
-  // Calculate payout structure based on number of entries
   const entryCount = contest?.contestLineups?.length ?? 0;
   const isLargeContest = entryCount >= 10;
   const payoutStructure = useMemo(() => {
@@ -90,7 +314,6 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     return [{ position: 1, percentage: 100, label: "1st Place" }];
   }, [isLargeContest]);
 
-  // Calculate primary prize pool breakdown
   const primaryPrizePoolData = useMemo(() => {
     const grossTotal = primaryPrizePool
       ? Number(formatUnits(primaryPrizePool as bigint, tokenDecimals))
@@ -107,16 +330,12 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     return { grossTotal, netTotal };
   }, [totalSecondaryLiquidity, referralNetworkBps, tokenDecimals]);
 
-  // Top summary shows total pot before oracle fee (gross).
   const totalPrizePool = primaryPrizePoolData.grossTotal + secondaryLiquidityData.grossTotal;
   const networkBonusTotal = (totalPrizePool * referralNetworkBps) / 10000;
 
   const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
   const readsFailed =
-    !!contest?.address &&
-    isOpen &&
-    !isLoading &&
-    (isErrorPrimary || isErrorSecondaryLiquidity);
+    !!contest?.address && isOpen && !isLoading && (isErrorPrimary || isErrorSecondaryLiquidity);
 
   const refetchPayoutReads = () =>
     void Promise.all([refetchPrimaryPrizePool(), refetchTotalSecondaryLiquidity()]);
@@ -151,7 +370,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 </div>
               </div>
               <div className="p-3">
-                <p className="text-sm text-amber-950/90 leading-relaxed">
+                <p className="text-sm leading-relaxed text-amber-950/90">
                   Couldn&apos;t load prize pool totals from the network. This is usually temporary
                   (RPC or connectivity).{" "}
                   <button
@@ -284,8 +503,16 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 />
               </ContestPayoutDividedRows>
             </ContestPayoutSection>
+
+            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
           </ContestPayoutLayout>
         )}
+
+        {isLoading || readsFailed ? (
+          <div className="p-3 pt-0 font-display">
+            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
+          </div>
+        ) : null}
       </div>
     </Modal>
   );

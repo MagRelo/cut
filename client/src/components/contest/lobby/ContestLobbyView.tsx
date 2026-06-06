@@ -3,9 +3,7 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
-import { Modal } from "../../common/Modal";
 import { ContestCard } from "../ContestCard";
-import { ContestSettings } from "../ContestSettings";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
@@ -31,8 +29,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   useEffect(() => {
     setSelectedIndex(viewModel.layout.defaultTabIndex);
   }, [viewModel.layout.layoutKey, viewModel.layout.defaultTabIndex]);
-  /** Settings modal kept for later; lobby header hides the trigger for now. */
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
 
   return (
@@ -44,7 +40,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             onPotClick={
               viewModel.phase === "settled" ? undefined : () => setIsPayoutsModalOpen(true)
             }
-            onSettingsClick={undefined}
           />
         </div>
 
@@ -103,18 +98,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           </TabPanels>
         </TabGroup>
       </div>
-
-      {/* Settings — wire onSettingsClick on ContestCard when re-enabled */}
-      <Modal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        title="Settings"
-        maxWidth="2xl"
-        scrollable
-        maxHeight="600px"
-      >
-        <ContestSettings contest={contest} />
-      </Modal>
 
       {viewModel.phase !== "settled" ? (
         <ContestPayoutsModal
