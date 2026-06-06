@@ -45,7 +45,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
           aria-label={`View ${contest.name} contest`}
           className="group block w-full min-w-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <div className="flex min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow,background-color] duration-200 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md">
+          <div className="flex min-w-0 overflow-hidden rounded-sm border border-slate-300 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow,background-color] duration-200 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md">
             <div className="min-w-0 flex-1 p-3 py-4">
               <ContestCard contest={contest} />
             </div>
