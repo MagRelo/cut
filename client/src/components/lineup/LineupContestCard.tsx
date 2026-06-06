@@ -78,7 +78,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     const fromLineup = lineup.tournamentLineup?.winningScorePrediction;
     const value = fromList ?? fromLineup;
     if (value != null) return value;
-    return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 150;
+    return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 120;
   }, [lineup.tournamentLineup?.winningScorePrediction, lineupId, lineups]);
 
   const [prediction, setPrediction] = useState(serverPrediction);

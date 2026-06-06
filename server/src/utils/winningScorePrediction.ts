@@ -4,9 +4,15 @@ export const WINNING_SCORE_PREDICTION_MAX = 250;
 export const DUPLICATE_LINEUP_PREDICTION_MESSAGE =
   "You already have a lineup with these players and winning score prediction for this tournament";
 
-/** Random int in [125, 175] for new or backfilled lineups. */
+/** Inclusive range for randomized defaults on new lineups (center 120, ±25). */
+export const WINNING_SCORE_PREDICTION_RANDOM_MIN = 95;
+export const WINNING_SCORE_PREDICTION_RANDOM_MAX = 145;
+
+/** Random int in [95, 145] for new or backfilled lineups. */
 export function randomWinningScorePrediction(): number {
-  return 125 + Math.floor(Math.random() * 51);
+  const span =
+    WINNING_SCORE_PREDICTION_RANDOM_MAX - WINNING_SCORE_PREDICTION_RANDOM_MIN + 1;
+  return WINNING_SCORE_PREDICTION_RANDOM_MIN + Math.floor(Math.random() * span);
 }
 
 export function isValidWinningScorePrediction(value: unknown): value is number {
