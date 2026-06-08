@@ -16,6 +16,7 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useAuth } from "../contexts/AuthContext";
 import { isApiError } from "../utils/apiError";
+import { StatsPanel } from "../components/common/StatsPanel";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
 
 export const UserGroupDetailPage = () => {
@@ -62,7 +63,7 @@ export const UserGroupDetailPage = () => {
 
   const overviewContent = (
     <div className="space-y-4">
-      <header className="space-y-1.5 border-b border-gray-200 pb-2">
+      <header className="space-y-1.5pb-2">
         <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
           {userGroup.name}
         </h1>
@@ -73,10 +74,10 @@ export const UserGroupDetailPage = () => {
         ) : null}
       </header>
 
-      <div>
-        <div className="text-sm text-gray-500">Members</div>
-        <div className="text-2xl font-bold text-gray-900">{userGroup.memberCount}</div>
-      </div>
+      <StatsPanel>
+        <StatsPanel.Entry label="Members" value={userGroup.memberCount} />
+        <StatsPanel.Entry label="Contests" value={userGroup.contestCount} />
+      </StatsPanel>
 
       <div>
         <h3 className="mb-4 text-lg font-semibold text-gray-900">Contests</h3>
