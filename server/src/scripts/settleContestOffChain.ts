@@ -138,20 +138,7 @@ type SimulationResult = {
   contractTokenBalanceWei: bigint;
 };
 
-function calculatePayouts(lineups: Array<{
-  user: { name: string | null; settings: unknown };
-  score: number;
-  entryId: string;
-  tournamentLineup: {
-    name: string | null;
-    players: Array<{
-      tournamentPlayer: {
-        total: number | null;
-        player: { pga_lastName: string | null } | null;
-      } | null;
-    }>;
-  } | null;
-}>): {
+function calculatePayouts(lineups: any[]): {
   winningEntries: string[];
   payoutBps: number[];
   detailedResults: DetailedResult[];
@@ -185,13 +172,13 @@ function calculatePayouts(lineups: Array<{
 
     const playerLastNames = (lineup.tournamentLineup?.players ?? [])
       .slice()
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         const aTotal = a?.tournamentPlayer?.total ?? 0;
         const bTotal = b?.tournamentPlayer?.total ?? 0;
         return bTotal - aTotal;
       })
-      .map((p) => p?.tournamentPlayer?.player?.pga_lastName)
-      .filter((name): name is string => Boolean(name));
+      .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
+      .filter((name: unknown): name is string => Boolean(name));
 
     const userSettings = lineup.user?.settings as { color?: string } | undefined;
     const userColor = isValidHexColor(userSettings?.color)
@@ -339,7 +326,7 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
     abi: MockUSDC.abi,
     client: publicClient,
   });
-  const contractTokenBalanceWei = (await paymentTokenContract.read.balanceOf([
+  const contractTokenBalanceWei = (await paymentTokenContract.read.balanceOf!([
     contest.address as Address,
   ])) as bigint;
 
