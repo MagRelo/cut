@@ -4,6 +4,7 @@ import { formatUnits } from "viem";
 
 import type { Contest, OnchainPaymentView } from "../../types/contest";
 import { useContestPayoutSections } from "../../hooks/useContestPayoutSections";
+import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
 import { PositionBadge } from "./PositionBadge";
 import {
   ContestPayoutDividedRows,
@@ -41,8 +42,8 @@ function ContestResultsSection({
   );
 }
 
-function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
-  const valueStr = formatUnits(valueWei, 18);
+function formatTokenAmount(valueWei: bigint, decimals: number, fractionDigits = 2) {
+  const valueStr = formatUnits(valueWei, decimals);
   const [whole, fraction = ""] = valueStr.split(".");
   const wholeWithCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   if (fractionDigits <= 0) return wholeWithCommas;
@@ -50,8 +51,8 @@ function formatTokenAmount(valueWei: bigint, fractionDigits = 2) {
   return `${wholeWithCommas}.${fixedFraction}`;
 }
 
-function formatDollarFromWei(valueWei: bigint, fractionDigits = 2) {
-  return `$${formatTokenAmount(valueWei, fractionDigits)}`;
+function formatDollarFromWei(valueWei: bigint, decimals: number, fractionDigits = 2) {
+  return `$${formatTokenAmount(valueWei, decimals, fractionDigits)}`;
 }
 
 function formatShareBps(shareBps: number) {
@@ -70,6 +71,10 @@ function parseAmountWei(row: OnchainPaymentView): bigint | null {
 
 export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contest }) => {
   const { primary, secondary, referral, hasAnyRows } = useContestPayoutSections(contest);
+  const paymentDecimals = contestPaymentDecimals(
+    contest.chainId,
+    contest.settings?.paymentTokenAddress ?? "",
+  );
 
   if (!hasAnyRows) {
     return (
@@ -134,7 +139,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
                     payoutWei !== null && payoutWei > 0n ? (
                       <>
                         <ContestPayoutGradientMoney>
-                          {formatDollarFromWei(payoutWei)}
+                          {formatDollarFromWei(payoutWei, paymentDecimals)}
                         </ContestPayoutGradientMoney>
                         {row.score != null ? (
                           <ContestPayoutSubAmount>{row.score} pts</ContestPayoutSubAmount>
@@ -194,7 +199,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
                     wei !== null ? (
                       <>
                         <ContestPayoutGradientMoney>
-                          {formatDollarFromWei(wei)}
+                          {formatDollarFromWei(wei, paymentDecimals)}
                         </ContestPayoutGradientMoney>
                         <ContestPayoutSubAmount>payout</ContestPayoutSubAmount>
                       </>
@@ -243,7 +248,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contes
                     wei !== null ? (
                       <>
                         <ContestPayoutGradientMoney>
-                          {formatDollarFromWei(wei)}
+                          {formatDollarFromWei(wei, paymentDecimals)}
                         </ContestPayoutGradientMoney>
                         <ContestPayoutSubAmount>reward</ContestPayoutSubAmount>
                       </>
