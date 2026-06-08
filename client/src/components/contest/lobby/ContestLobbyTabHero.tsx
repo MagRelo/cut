@@ -25,7 +25,7 @@ export const ContestLobbyTabHero: React.FC<ContestLobbyTabHeroProps> = ({
         className,
       )}
     >
-      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden px-3 py-3">
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden">
         {children}
       </div>
     </div>

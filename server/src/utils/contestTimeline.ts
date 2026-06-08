@@ -55,6 +55,7 @@ export type ContestTimelineData = {
     contestLineupId: string;
     userId: string;
     name: string;
+    userName: string;
     color: string;
     entryId: string | null;
     isPrimaryPayoutWinner: boolean;
@@ -78,16 +79,18 @@ type LineupMetaRow = {
 function buildLineupMetaMap(rows: LineupMetaRow[]) {
   const map = new Map<
     string,
-    { userId: string; name: string; color: string; entryId: string | null }
+    { userId: string; name: string; userName: string; color: string; entryId: string | null }
   >();
   for (const row of rows) {
     const userSettings = row.user.settings as { color?: string } | null;
     const userColor = userSettings?.color;
     const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
-    const displayName = `${row.user.name} - ${row.tournamentLineup.name}`;
+    const userName = row.user.name?.trim() || "Unknown";
+    const displayName = `${userName} - ${row.tournamentLineup.name}`;
     map.set(row.id, {
       userId: row.userId,
       name: displayName,
+      userName,
       color: resolvedColor,
       entryId: row.entryId,
     });
@@ -140,6 +143,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
     contestLineupId: string;
     userId: string;
     name: string;
+    userName: string;
     color: string;
     entryId: string | null;
     isPrimaryPayoutWinner: boolean;
@@ -154,6 +158,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
     if (!lineupMap.has(lineupId)) {
       const meta = metaByLineupId.get(lineupId);
       const displayName = meta?.name ?? "Unknown";
+      const userName = meta?.userName ?? "Unknown";
       const resolvedColor = meta?.color ?? DEFAULT_USER_COLOR;
       const entryId = meta?.entryId ?? null;
       const normalized = normalizeEntryIdForCompare(entryId);
@@ -164,6 +169,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
         contestLineupId: lineupId,
         userId: meta?.userId ?? "",
         name: displayName,
+        userName,
         color: resolvedColor,
         entryId,
         isPrimaryPayoutWinner,
@@ -185,6 +191,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       contestLineupId: lineup.contestLineupId,
       userId: lineup.userId,
       name: lineup.name,
+      userName: lineup.userName,
       color: lineup.color,
       entryId: lineup.entryId,
       isPrimaryPayoutWinner: lineup.isPrimaryPayoutWinner,

@@ -216,6 +216,8 @@ export interface TimelineTeam {
   contestLineupId: string;
   userId: string;
   name: string;
+  /** Username only (no lineup); used in chart legend */
+  userName?: string;
   color: string;
   entryId?: string | null;
   /** From `GET /contests/:id/timeline` settlement overlay */

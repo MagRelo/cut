@@ -13,6 +13,8 @@ export interface TimelineTeam {
   contestLineupId: string;
   userId: string;
   name: string;
+  /** Display name only (no lineup); used in chart legend */
+  userName: string;
   color: string;
   /** On-chain primary entry id */
   entryId?: string | null;

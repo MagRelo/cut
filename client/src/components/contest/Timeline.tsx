@@ -84,13 +84,27 @@ function orderTeamsForChart(
   return [...sortWinnersLast(mine), ...sortWinnersLast(others)];
 }
 
+function userNameForTeam(team: TimelineTeam): string {
+  if (team.userName?.trim()) return team.userName.trim();
+  const dashIdx = team.name.lastIndexOf(" - ");
+  if (dashIdx > 0) return team.name.slice(0, dashIdx);
+  return team.name;
+}
+
+function legendLabelForTeam(team: TimelineTeam, currentUserId: string | undefined): string {
+  const userName = userNameForTeam(team);
+  const isUser = isCurrentUserTeam(team, currentUserId);
+  if (isUser) return `${userName} (you)`;
+  if (team.isPrimaryPayoutWinner === true) return `${userName} (winner)`;
+  return userName;
+}
+
 function forwardFilledScores(
   sortedTimestamps: string[],
   points: Array<{ timestamp: string; roundNumber?: number; score: number }>,
 ): (number | null)[] {
   const sorted = [...points].sort(
-    (a, b) =>
-      a.timestamp.localeCompare(b.timestamp) || (a.roundNumber ?? 0) - (b.roundNumber ?? 0),
+    (a, b) => a.timestamp.localeCompare(b.timestamp) || (a.roundNumber ?? 0) - (b.roundNumber ?? 0),
   );
   let idx = 0;
   let last: number | null = null;
@@ -127,12 +141,11 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
-    return [...timelineData.teams]
-      .sort((a, b) => {
-        const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
-        const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
-        return bScore - aScore;
-      });
+    return [...timelineData.teams].sort((a, b) => {
+      const aScore = a.dataPoints[a.dataPoints.length - 1]?.score || 0;
+      const bScore = b.dataPoints[b.dataPoints.length - 1]?.score || 0;
+      return bScore - aScore;
+    });
   }, [timelineData.teams]);
 
   const availableRounds = useMemo(() => {
@@ -204,9 +217,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       if (!currentUserId) return team.color;
       if (isCurrentUserTeam(team, currentUserId)) return team.color;
       const isFinalWinner =
-        selectedRound === "final" &&
-        highlightPayoutWinners &&
-        team.isPrimaryPayoutWinner === true;
+        selectedRound === "final" && highlightPayoutWinners && team.isPrimaryPayoutWinner === true;
       if (isFinalWinner) return team.color;
       return colorWithOpacity(team.color, OTHER_TEAM_LINE_OPACITY);
     },
@@ -318,8 +329,13 @@ export const Timeline: React.FC<TimelineProps> = ({
         y: {
           display: true,
           title: {
-            display: false,
-            text: "Score",
+            display: true,
+            text: "PTS",
+            font: {
+              family: "'Outfit', sans-serif",
+              size: 9,
+            },
+            color: "#6B7280",
           },
           grid: {
             display: false,
@@ -341,12 +357,12 @@ export const Timeline: React.FC<TimelineProps> = ({
     return (
       <div
         className={cn(
-          "font-display flex items-center justify-center",
+          "flex items-center justify-center font-display",
           fitContainer && "h-full min-h-0 w-full",
           className,
         )}
       >
-        <div className="text-red-500 font-display">No timeline data provided</div>
+        <div className="font-display text-red-500">No timeline data provided</div>
       </div>
     );
   }
@@ -354,20 +370,24 @@ export const Timeline: React.FC<TimelineProps> = ({
   return (
     <div
       className={cn(
-        "font-display flex w-full flex-col",
+        "flex w-full flex-col overflow-hidden rounded-sm border border-gray-300 bg-white font-display",
         fitContainer && "h-full min-h-0",
         className,
       )}
     >
+      <div className="shrink-0 border-b border-gray-100 px-3 pb-2 pt-2.5">
+        <h3 className="text-sm font-semibold leading-tight text-gray-900">Contest Timeline</h3>
+        <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
+          Each line tracks a lineup&apos;s total points.
+        </p>
+      </div>
+
       <div
-        className={cn(
-          "timeline-chart min-h-0 bg-white p-2 pb-1",
-          fitContainer ? "flex-1" : "",
-        )}
-        style={fitContainer ? undefined : { height: "250px" }}
+        className={cn("timeline-chart min-h-0 px-2 pb-1 pt-1", fitContainer ? "flex-1" : "")}
+        style={fitContainer ? undefined : { height: "220px" }}
       >
         {selectedRoundTimestamps.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-gray-500 font-display">
+          <div className="flex h-full items-center justify-center font-display text-sm text-gray-500">
             {selectedRound === "final"
               ? "No timeline data available for the full tournament."
               : `No timeline data available for Round ${selectedRound}.`}
@@ -376,7 +396,37 @@ export const Timeline: React.FC<TimelineProps> = ({
           <Line data={chartData} options={options} />
         )}
       </div>
-      <div className="flex shrink-0 gap-2 bg-white px-4 pb-2 pt-1">
+
+      {teamsForChart.length > 0 ? (
+        <div className="shrink-0 border-t border-gray-100 px-3 py-1.5" aria-label="Team colors">
+          <div className="flex gap-3 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {teamsForChart.map((team) => {
+              const isUser = isCurrentUserTeam(team, currentUserId);
+              return (
+                <div
+                  key={team.contestLineupId}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 text-[11px] leading-none text-gray-600",
+                    isUser && "font-semibold text-gray-800",
+                  )}
+                  title={legendLabelForTeam(team, currentUserId)}
+                >
+                  <span
+                    className="inline-block h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: lineColorForTeam(team) }}
+                    aria-hidden
+                  />
+                  <span className="max-w-[88px] truncate">
+                    {legendLabelForTeam(team, currentUserId)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="flex shrink-0 gap-2 border-t border-gray-100 px-3 pb-2 pt-1">
         {ROUND_BUTTONS.map((round) => {
           const isActive = selectedRound === round;
           const hasData = availableRounds.has(round);
@@ -390,7 +440,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               onClick={() => setSelectedRound(round)}
               className={cn(
                 segmentButtonClassName(isActive),
-                !hasData && "invisible pointer-events-none",
+                !hasData && "pointer-events-none invisible",
               )}
               aria-pressed={isActive}
             >
@@ -407,7 +457,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             onClick={() => setSelectedRound("final")}
             className={cn(
               segmentButtonClassName(selectedRound === "final"),
-              !finalHasData && "invisible pointer-events-none",
+              !finalHasData && "pointer-events-none invisible",
             )}
             aria-pressed={selectedRound === "final"}
           >
