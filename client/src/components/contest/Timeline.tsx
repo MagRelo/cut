@@ -84,21 +84,6 @@ function orderTeamsForChart(
   return [...sortWinnersLast(mine), ...sortWinnersLast(others)];
 }
 
-function userNameForTeam(team: TimelineTeam): string {
-  if (team.userName?.trim()) return team.userName.trim();
-  const dashIdx = team.name.lastIndexOf(" - ");
-  if (dashIdx > 0) return team.name.slice(0, dashIdx);
-  return team.name;
-}
-
-function legendLabelForTeam(team: TimelineTeam, currentUserId: string | undefined): string {
-  const userName = userNameForTeam(team);
-  const isUser = isCurrentUserTeam(team, currentUserId);
-  if (isUser) return `${userName} (you)`;
-  if (team.isPrimaryPayoutWinner === true) return `${userName} (winner)`;
-  return userName;
-}
-
 function forwardFilledScores(
   sortedTimestamps: string[],
   points: Array<{ timestamp: string; roundNumber?: number; score: number }>,
@@ -330,7 +315,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           display: true,
           title: {
             display: true,
-            text: "PTS",
+            text: "Points",
             font: {
               family: "'Outfit', sans-serif",
               size: 9,
@@ -396,35 +381,6 @@ export const Timeline: React.FC<TimelineProps> = ({
           <Line data={chartData} options={options} />
         )}
       </div>
-
-      {teamsForChart.length > 0 ? (
-        <div className="shrink-0 border-t border-gray-100 px-3 py-1.5" aria-label="Team colors">
-          <div className="flex gap-3 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {teamsForChart.map((team) => {
-              const isUser = isCurrentUserTeam(team, currentUserId);
-              return (
-                <div
-                  key={team.contestLineupId}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 text-[11px] leading-none text-gray-600",
-                    isUser && "font-semibold text-gray-800",
-                  )}
-                  title={legendLabelForTeam(team, currentUserId)}
-                >
-                  <span
-                    className="inline-block h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: lineColorForTeam(team) }}
-                    aria-hidden
-                  />
-                  <span className="max-w-[88px] truncate">
-                    {legendLabelForTeam(team, currentUserId)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex shrink-0 gap-2 border-t border-gray-100 px-3 pb-2 pt-1">
         {ROUND_BUTTONS.map((round) => {
