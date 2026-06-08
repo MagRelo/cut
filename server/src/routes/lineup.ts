@@ -298,7 +298,6 @@ const contestSelectForLineupList = {
         select: {
           id: true,
           name: true,
-          email: true,
           settings: true,
         },
       },
@@ -325,7 +324,6 @@ lineupRouter.get("/:tournamentId", requireAuth, async (c) => {
               select: {
                 id: true,
                 name: true,
-                email: true,
                 settings: true,
               },
             },

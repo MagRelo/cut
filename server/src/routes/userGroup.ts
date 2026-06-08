@@ -14,6 +14,7 @@ import { buildLeagueInviteUrl } from "../lib/appUrl.js";
 import {
   formatUserGroupDetailResponse,
   userGroupDetailInclude,
+  userGroupMemberUserSelect,
 } from "../utils/userGroup.js";
 
 const userGroupRouter = new Hono();
@@ -194,11 +195,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
         members: {
           include: {
             user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+              select: userGroupMemberUserSelect,
             },
           },
         },
@@ -329,11 +326,7 @@ userGroupRouter.get("/:id/members", requireAuth, requireUserGroupMember, async (
       where: { userGroupId },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: userGroupMemberUserSelect,
         },
       },
       orderBy: {
@@ -434,11 +427,7 @@ userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (
       },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: userGroupMemberUserSelect,
         },
       },
     });

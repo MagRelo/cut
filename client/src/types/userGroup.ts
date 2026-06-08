@@ -57,8 +57,7 @@ export interface UserGroupMemberResponse {
   userId: string;
   user: {
     id: string;
-    name: string | null;
-    email: string;
+    name: string;
   };
   role: UserGroupRole;
   joinedAt: Date;

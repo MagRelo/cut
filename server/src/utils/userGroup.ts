@@ -1,15 +1,16 @@
 import { prisma } from "../lib/prisma.js";
 import { buildLeagueInviteUrl } from "../lib/appUrl.js";
 
+export const userGroupMemberUserSelect = {
+  id: true,
+  name: true,
+} as const;
+
 export const userGroupDetailInclude = {
   members: {
     include: {
       user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
+        select: userGroupMemberUserSelect,
       },
     },
     orderBy: {
@@ -36,7 +37,7 @@ type UserGroupDetailRecord = {
     userId: string;
     role: string;
     joinedAt: Date;
-    user: { id: string; name: string; email: string | null };
+    user: { id: string; name: string };
   }>;
   _count: { members: number; contests: number };
 };

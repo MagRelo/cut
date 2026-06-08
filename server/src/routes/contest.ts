@@ -297,7 +297,6 @@ contestRouter.get("/", optionalAuth, async (c) => {
               select: {
                 id: true,
                 name: true,
-                email: true,
                 settings: true,
               },
             },
