@@ -65,10 +65,10 @@ export function formatUserGroupDetailResponse(
       role: member.role,
       joinedAt: member.joinedAt,
     })),
-    ...(isAdmin && userGroup.inviteCode
+    ...(userGroup.inviteCode
       ? {
-          inviteCode: userGroup.inviteCode,
           inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode),
+          ...(isAdmin ? { inviteCode: userGroup.inviteCode } : {}),
         }
       : {}),
   };

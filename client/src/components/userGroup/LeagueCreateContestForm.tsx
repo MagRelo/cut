@@ -21,6 +21,7 @@ import {
   formatPrimarySubsidyPercent,
   inviteRewardPercentToBps,
   LEAGUE_ENTRY_FEE_OPTIONS,
+  LEAGUE_DEFAULT_INVITE_REWARD_PERCENT,
   LEAGUE_INVITE_REWARD_PERCENTS,
   LEAGUE_PRIMARY_SUBSIDY_PERCENTS,
   primarySubsidyPercentToBps,
@@ -44,7 +45,9 @@ export const LeagueCreateContestForm = ({
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
 
   const [entryFeeIndex, setEntryFeeIndex] = useState(LEAGUE_ENTRY_FEE_OPTIONS.indexOf(20));
-  const [inviteRewardIndex, setInviteRewardIndex] = useState(0);
+  const [inviteRewardIndex, setInviteRewardIndex] = useState(
+    LEAGUE_INVITE_REWARD_PERCENTS.indexOf(LEAGUE_DEFAULT_INVITE_REWARD_PERCENT),
+  );
   const [primarySubsidyIndex, setPrimarySubsidyIndex] = useState(3);
 
   const tokenSymbol = paymentTokenSymbol ?? "xUSDC";
@@ -80,7 +83,7 @@ export const LeagueCreateContestForm = ({
     const baseSettings = buildContestSettings(chainId ?? 0, paymentTokenAddress || "", tokenSymbol);
 
     await submitContest({
-      name: `${userGroupName} – ${tournament.name}`,
+      name: userGroupName,
       transactionId: "",
       address: "",
       chainId: chainId ?? 0,

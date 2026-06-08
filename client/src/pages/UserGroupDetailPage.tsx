@@ -90,7 +90,16 @@ export const UserGroupDetailPage = () => {
   );
 
   const membersContent = (
-    <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
+    <div className="space-y-5">
+      {userGroup.inviteUrl ? (
+        <UserGroupInvitePanel
+          userGroupId={userGroup.id}
+          inviteUrl={userGroup.inviteUrl}
+          variant="share"
+        />
+      ) : null}
+      <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
+    </div>
   );
 
   const manageContent = (
@@ -111,6 +120,7 @@ export const UserGroupDetailPage = () => {
             inviteCode={userGroup.inviteCode}
             inviteUrl={userGroup.inviteUrl}
             onInviteUpdated={() => refetch()}
+            variant="manage"
           />
         </PageSection>
 

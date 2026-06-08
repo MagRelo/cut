@@ -3,11 +3,14 @@ export const LEAGUE_ENTRY_FEE_OPTIONS = [0, 10, 20, 50, 100, 500, 1000] as const
 
 export type LeagueEntryFee = (typeof LEAGUE_ENTRY_FEE_OPTIONS)[number];
 
-/** Invite reward % for `_referralNetworkBps` (7%–20% in 0.5% steps). */
+/** Invite reward % for `_referralNetworkBps` (0%–20% in 0.5% steps). */
 export const LEAGUE_INVITE_REWARD_PERCENTS = Array.from(
-  { length: (20 - 7) / 0.5 + 1 },
-  (_, index) => 7 + index * 0.5,
+  { length: 20 / 0.5 + 1 },
+  (_, index) => index * 0.5,
 ) as readonly number[];
+
+/** Default league invite reward (7%). */
+export const LEAGUE_DEFAULT_INVITE_REWARD_PERCENT = 7;
 
 export function inviteRewardPercentToBps(percent: number): number {
   return Math.round(percent * 100);
