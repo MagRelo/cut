@@ -128,6 +128,12 @@ function getReferralOracleAddress() {
   return o;
 }
 
+function getReferralGroupId() {
+  const raw = process.env.REFERRAL_GROUP_ID?.trim();
+  if (!raw) return "0x0000000000000000000000000000000000000000000000000000000000000000";
+  return raw.startsWith("0x") ? raw : `0x${raw}`;
+}
+
 function parseDeploymentOutput(output) {
   const addresses = {};
   const lines = output.split("\n");
@@ -256,6 +262,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   const contractsDir = path.join(projectRoot, "contracts");
   const deployer = getDeployerAddress();
   const referralOracle = getReferralOracleAddress();
+  const referralGroupId = getReferralGroupId();
 
   const paths = {
     MockUSDC: "src/mocks/MockUSDC.sol",
@@ -293,9 +300,9 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     const sym = isSepolia ? "xCUT" : "CUT";
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
   } else if (contractName === "ReferralGraph" && deployer) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address)" ${deployer} ${referralOracle})`;
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
   } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${deployer} ${addresses.ReferralGraph} ${referralOracle})`;
+    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
   }
 
   return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;

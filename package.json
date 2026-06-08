@@ -42,6 +42,7 @@
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
     "deploy:contracts:base": "node scripts/deploy.js base",
     "sepolia:deploy-contest-factory": "node scripts/sepolia/deployContestFactory.js",
+    "sepolia:deploy-referral": "node scripts/sepolia/deployReferral.js",
     "deploy:copy-artifacts": "node scripts/deploy.js copy-artifacts",
     "deploy:full": "pnpm run deploy:contracts && pnpm run deploy",
     "verify:contracts": "node scripts/verify.js",

@@ -13,6 +13,7 @@ contract DeploySepolia is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         address referralOracle = vm.envOr("REFERRAL_ORACLE", deployer);
+        bytes32 referralGroupId = vm.envBytes32("REFERRAL_GROUP_ID");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -22,11 +23,11 @@ contract DeploySepolia is Script {
         ContestFactory contestFactory = new ContestFactory();
         console2.log("ContestFactory deployed to:", address(contestFactory));
 
-        ReferralGraph referralGraph = new ReferralGraph(deployer, referralOracle);
+        ReferralGraph referralGraph = new ReferralGraph(deployer, referralOracle, referralGroupId);
         console2.log("ReferralGraph deployed to:", address(referralGraph));
 
         RewardDistributor rewardDistributor =
-            new RewardDistributor(deployer, address(referralGraph), referralOracle);
+            new RewardDistributor(deployer, address(referralGraph), referralOracle, referralGroupId);
         console2.log("RewardDistributor deployed to:", address(rewardDistributor));
 
         vm.stopBroadcast();

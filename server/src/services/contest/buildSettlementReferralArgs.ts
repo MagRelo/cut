@@ -18,8 +18,6 @@ export type ChainRewardDataTuple = {
   rewardToken: `0x${string}`;
   groupId: Hex;
   eventId: Hex;
-  timestamp: bigint;
-  nonce: bigint;
 };
 
 const EMPTY_REFERRAL_REWARD: ChainRewardDataTuple = {
@@ -28,8 +26,6 @@ const EMPTY_REFERRAL_REWARD: ChainRewardDataTuple = {
   rewardToken: "0x0000000000000000000000000000000000000000",
   groupId: `0x${"0".repeat(64)}` as Hex,
   eventId: `0x${"0".repeat(64)}` as Hex,
-  timestamp: 0n,
-  nonce: 0n,
 };
 
 export type SettlementReferralArgs = {
@@ -48,7 +44,6 @@ export async function buildSettlementReferralArgs(params: {
 
   const [
     referralNetworkBps,
-    referralSettlementNonce,
     referralGroupId,
     paymentToken,
     primarySideBalance,
@@ -56,7 +51,6 @@ export async function buildSettlementReferralArgs(params: {
     winnerOwner,
   ] = await Promise.all([
     contract.read.referralNetworkBps!() as Promise<bigint>,
-    contract.read.referralSettlementNonce!() as Promise<bigint>,
     contract.read.referralGroupId!() as Promise<Hex>,
     contract.read.paymentToken!() as Promise<`0x${string}`>,
     contract.read.getPrimarySideBalance!() as Promise<bigint>,
@@ -97,9 +91,11 @@ export async function buildSettlementReferralArgs(params: {
   }
 
   const block = await publicClient.getBlock();
-  const timestamp = block.timestamp;
   const eventId = keccak256(
-    encodePacked(["address", "uint256"], [contestAddress as `0x${string}`, referralSettlementNonce]),
+    encodePacked(
+      ["address", "uint256", "uint256"],
+      [contestAddress as `0x${string}`, block.timestamp, BigInt(winningEntryId)],
+    ),
   );
 
   const referralReward: ChainRewardDataTuple = {
@@ -108,21 +104,17 @@ export async function buildSettlementReferralArgs(params: {
     rewardToken: getAddress(paymentToken),
     groupId: referralGroupId,
     eventId,
-    timestamp,
-    nonce: referralSettlementNonce,
   };
 
   const rewardHash = keccak256(
     encodePacked(
-      ["address", "uint256", "address", "bytes32", "bytes32", "uint256", "uint256"],
+      ["address", "uint256", "address", "bytes32", "bytes32"],
       [
         referralReward.user,
         referralReward.totalAmount,
         referralReward.rewardToken,
         referralReward.groupId,
         referralReward.eventId,
-        referralReward.timestamp,
-        referralReward.nonce,
       ],
     ),
   );

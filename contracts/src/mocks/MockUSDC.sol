@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Owned} from "solmate/auth/Owned.sol";
 
 /**
  * @title MockUSDC
  * @dev Mintable 6-decimal token for Base Sepolia only. Production uses real USDC.
  */
-contract MockUSDC is ERC20, Ownable {
+contract MockUSDC is ERC20, Owned {
     uint8 private constant DECIMALS = 6;
 
-    constructor() ERC20("USD Coin (xUSDC)", "xUSDC") Ownable(msg.sender) {}
-
-    function decimals() public pure override returns (uint8) {
-        return DECIMALS;
-    }
+    constructor() ERC20("USD Coin (xUSDC)", "xUSDC", DECIMALS) Owned(msg.sender) {}
 
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);

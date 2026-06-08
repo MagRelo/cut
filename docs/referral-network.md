@@ -63,15 +63,17 @@ Read from `server/src/contracts/{sepolia,base}.json` and `client/src/utils/contr
 
 ## Deploy graph (new environment or redeploy)
 
-From `contracts/` with `contracts/.env` loaded:
+Minimal Sepolia redeploy (keeps existing MockUSDC):
 
 ```bash
-forge script script/Deploy_sepolia_referral.s.sol \
-  --rpc-url "$BASE_SEPOLIA_RPC_URL" \
-  --broadcast
+# contracts/.env: PRIVATE_KEY, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID, REFERRAL_ORACLE
+pnpm run sepolia:deploy-referral
+pnpm run sepolia:deploy-contest-factory
 ```
 
-Update both `sepolia.json` files, run `pnpm run deploy:copy-artifacts` from repo root, and set `REFERRAL_ORACLE` to the server oracle (constructor authorizes it).
+Patch `referralGraphAddress`, `rewardDistributorAddress`, and `contestFactoryAddress` in both `sepolia.json` files (leave `paymentTokenAddress` unchanged). Then `pnpm run deploy:copy-artifacts`.
+
+Constructors authorize the oracle per `REFERRAL_GROUP_ID` on both `ReferralGraph` and `RewardDistributor`. Settlement signs a 5-field `ChainRewardData` hash (`user`, `totalAmount`, `rewardToken`, `groupId`, `eventId`) — no `timestamp` or `nonce`.
 
 ---
 
