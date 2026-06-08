@@ -61,14 +61,22 @@ class CronScheduler {
         return false;
       }
 
+      // PGA RoundStatus enum (GraphQL introspection) has no PLAYOFF value — only
+      // IN_PROGRESS, COMPLETE, OFFICIAL, SUSPENDED, GROUPINGS_OFFICIAL, UPCOMING.
+      // Playoff is signaled via roundDisplay ("Playoff") and currentRound (401+).
+      const isPlayoffRound =
+        currentTournament.roundDisplay === "Playoff" ||
+        (currentTournament.currentRound ?? 0) >= 401;
+
       const shouldRun =
         currentTournament.status === "IN_PROGRESS" &&
         (currentTournament.roundStatusDisplay === "In Progress" ||
-          currentTournament.roundStatusDisplay === "Complete");
+          currentTournament.roundStatusDisplay === "Complete" ||
+          isPlayoffRound);
 
       if (!shouldRun) {
         console.log(
-          `[CRON] Player Updates - Skipped: Tournament status is ${currentTournament.status}`
+          `[CRON] Player Updates - Skipped: Tournament status is ${currentTournament.status}, roundStatusDisplay is ${currentTournament.roundStatusDisplay ?? "null"}, roundDisplay is ${currentTournament.roundDisplay ?? "null"}, currentRound is ${currentTournament.currentRound ?? "null"}`
         );
       }
 
