@@ -43,13 +43,13 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
           key={contest.id}
           to={contestLobbyPath(contest.address)}
           aria-label={`View ${contest.name} contest`}
-          className="group block w-full min-w-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          className="group block w-full min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <div className="flex min-w-0 overflow-hidden rounded-sm border border-slate-300 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow,background-color] duration-200 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md">
+          <div className="flex min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow,background-color] duration-200 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md">
             <div className="min-w-0 flex-1 p-3 py-4">
               <ContestCard contest={contest} />
             </div>
-            <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-1 border-l border-slate-100 bg-gradient-to-b from-slate-50/90 to-white px-2 text-blue-600 transition-colors duration-200 group-hover:border-blue-100 group-hover:bg-blue-100/60 group-hover:text-blue-700">
+            <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-1 border-l border-slate-50 bg-gradient-to-b from-slate-50/90 to-white px-2 text-blue-600 transition-colors duration-200 group-hover:border-blue-50 group-hover:bg-blue-100/60 group-hover:text-blue-700">
               <ChevronRightIcon className="h-5 w-5 shrink-0" aria-hidden />
               <span className="font-display text-[10px] font-semibold uppercase leading-none tracking-wide">
                 View

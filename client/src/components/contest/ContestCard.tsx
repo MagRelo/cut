@@ -81,25 +81,6 @@ export const ContestCard = ({ contest, onPotClick }: ContestCardProps) => {
     !showLoading &&
     (primaryReadFailed || contestChainReadsUnavailable);
 
-  const formatStatus = (status: string) => {
-    const statusLabels: Record<string, string> = {
-      OPEN: "Pre-Tournament",
-      ACTIVE: "In Progress",
-      LOCKED: "Winner Pool Locked",
-      SETTLED: "Settled",
-      CLOSED: "Closed",
-    };
-
-    if (statusLabels[status]) {
-      return statusLabels[status];
-    }
-
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
   return (
     <div className="flex min-w-0 w-full items-center justify-between gap-2.5">
       {/* Left Section - Buy-in */}
@@ -122,14 +103,11 @@ export const ContestCard = ({ contest, onPotClick }: ContestCardProps) => {
           {contest.name}
         </h3>
         {contest.userGroup?.name ? (
-          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-blue-600">
+          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-emerald-600">
             <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {contest.userGroup.name}
           </p>
         ) : null}
-        <p className="mt-0.5 text-xs font-medium leading-tight text-gray-500 truncate">
-          {formatStatus(contest.status)}
-        </p>
       </div>
 
       {/* Right Section - Total Prize Pool */}

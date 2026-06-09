@@ -8,7 +8,6 @@ import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
-import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 import {
   ContestPayoutDividedRows,
   ContestPayoutGradientMoney,
@@ -180,8 +179,8 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
   };
 
   return (
-    <ContestPayoutSection title="Contest Smart Contract">
-      <div className="flex flex-col gap-1.5 font-mono text-xs">
+    <ContestPayoutSection title="Contest Contract">
+      <div className="flex flex-col gap-1.5 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Contest Entry Fee</span>
           <span className="font-semibold text-gray-900">{formatEntryFee()}</span>
@@ -201,7 +200,12 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
           <span className="font-semibold text-gray-900">{inviteNetworkPercent.toFixed(2)}%</span>
         </div>
 
-        <hr className="my-2" />
+        <hr className="my-1" />
+
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Current State</span>
+          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
+        </div>
 
         {contractBalance?.value !== undefined && (
           <div className="flex items-center justify-between">
@@ -234,23 +238,7 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
             </span>
           </div>
         )}
-
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Current State</span>
-          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
-        </div>
       </div>
-
-      {contest?.address && chainId ? (
-        <div className="mt-4 border-t border-slate-200 pt-3 font-display text-sm">
-          {createExplorerLinkJSX(
-            contest.address,
-            chainId,
-            "View Contract",
-            "text-gray-600 underline hover:text-gray-800",
-          )}
-        </div>
-      ) : null}
     </ContestPayoutSection>
   );
 }
