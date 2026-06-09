@@ -49,19 +49,18 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
           </div>
         </div>
       ) : (
-        <div className="flex w-full max-w-xs flex-col gap-4 items-center">
-          <div className="flex w-48 flex-col gap-4 items-stretch">
+        <div className="flex w-full max-w-xs flex-col items-center gap-5">
+          <div className="flex w-full flex-col gap-3">
             <button
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-display font-semibold py-2.5 px-4 rounded-sm border border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
+              className="w-full rounded-md border border-blue-500 bg-blue-500 px-6 py-3.5 font-display text-base font-semibold text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}
               onClick={handleConnect}
               type="button"
             >
               Sign in
             </button>
-            <hr className="border-0 border-t border-gray-200" />
             <button
-              className="w-full bg-white hover:bg-blue-50 text-blue-600 font-display font-semibold py-2.5 px-4 rounded-sm border border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base"
+              className="w-full rounded-md border border-blue-500 bg-white px-6 py-3.5 font-display text-base font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}
               onClick={handleConnect}
               type="button"

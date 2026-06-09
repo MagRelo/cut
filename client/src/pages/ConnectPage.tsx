@@ -28,23 +28,19 @@ export function ConnectPage() {
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center gap-4">
-      <div>
-        {/* Title and Logo */}
-        <div className="-ml-4 flex items-center gap-2 pb-1.5">
-          <img src="/logo-transparent.png" alt={`${BRAND_PROSE} logo`} className="h-20 w-auto" />
-
-          <h1 className="text-4xl leading-tight font-bold text-black">
-            {BRAND_WORDMARK}
-            {/* <div className="text-base font-bold text-gray-400">Fantasy Golf + </div>
-            <div className="text-base font-bold text-gray-400">Prediction Market</div> */}
-          </h1>
-        </div>
+    <div className="flex w-full flex-1 flex-col items-center px-6 py-10 sm:py-14">
+      <div className="mb-8 flex flex-col items-center gap-3 sm:mb-10 sm:gap-4">
+        <img
+          src="/logo-transparent.png"
+          alt={`${BRAND_PROSE} logo`}
+          className="h-16 w-auto sm:h-20"
+        />
+        <h1 className="text-center font-display text-3xl uppercase tracking-widest text-slate-900 sm:text-4xl md:text-5xl">
+          {BRAND_WORDMARK}
+        </h1>
       </div>
 
-      <div className="mt-4">
-        <Connect onSuccess={handleConnectSuccess} />
-      </div>
+      <Connect onSuccess={handleConnectSuccess} />
     </div>
   );
 }

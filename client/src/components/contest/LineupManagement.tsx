@@ -470,6 +470,13 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                         "Leave Contest"
                       )}
                     </button>
+                  ) : sortedPlayers.length === 0 ? (
+                    <Link
+                      to="/lineups"
+                      className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
+                    >
+                      Select players
+                    </Link>
                   ) : (
                     <button
                       onClick={() => handleJoinContest(lineup.id)}
@@ -495,9 +502,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
       {!isLineupsLoading && lineups.length === 0 && (
         <Link
           to="/lineups"
-          className="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
+          className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
         >
-          Add Lineup
+          Select players
         </Link>
       )}
 
