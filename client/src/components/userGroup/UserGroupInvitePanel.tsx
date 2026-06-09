@@ -21,10 +21,8 @@ export const UserGroupInvitePanel = ({
 }: UserGroupInvitePanelProps) => {
   const generateInviteMutation = useGenerateLeagueInvite();
 
-  const activeInviteUrl =
-    generateInviteMutation.data?.inviteUrl ?? inviteUrl ?? null;
-  const activeInviteCode =
-    generateInviteMutation.data?.inviteCode ?? inviteCode ?? null;
+  const activeInviteUrl = generateInviteMutation.data?.inviteUrl ?? inviteUrl ?? null;
+  const activeInviteCode = generateInviteMutation.data?.inviteCode ?? inviteCode ?? null;
 
   const handleGenerate = () => {
     generateInviteMutation.mutate(userGroupId, {
@@ -35,16 +33,16 @@ export const UserGroupInvitePanel = ({
   };
 
   const errorMessage =
-    generateInviteMutation.error instanceof Error
-      ? generateInviteMutation.error.message
-      : null;
+    generateInviteMutation.error instanceof Error ? generateInviteMutation.error.message : null;
 
   const isManageVariant = variant === "manage";
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="mb-1 font-display text-lg font-semibold text-gray-900">Invite Link</h3>
+        <h3 className="mb-1 font-display text-lg font-semibold text-gray-900">
+          League Invite Link
+        </h3>
         <p className="font-display text-sm leading-relaxed text-gray-600">
           {isManageVariant
             ? "Generate or rotate the league invite link. Rotating invalidates the old link."
@@ -56,13 +54,13 @@ export const UserGroupInvitePanel = ({
 
       {activeInviteUrl ? (
         <div className="space-y-3">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 items-center">
-            <span className="text-sm font-medium text-gray-700 font-display shrink-0">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+            <span className="shrink-0 font-display text-sm font-medium text-gray-700">
               Invite link
             </span>
             <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
               <span
-                className="min-w-0 max-w-full truncate text-xs text-gray-800 text-right font-display"
+                className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
                 title={activeInviteUrl}
               >
                 {activeInviteUrl}
@@ -88,7 +86,7 @@ export const UserGroupInvitePanel = ({
             type="button"
             onClick={handleGenerate}
             disabled={generateInviteMutation.isPending}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
+            className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
             {generateInviteMutation.isPending && <LoadingSpinnerSmall />}
             {activeInviteUrl ? "Rotate invite link" : "Generate invite link"}

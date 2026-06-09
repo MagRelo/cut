@@ -99,6 +99,8 @@ export const UserGroupDetailPage = () => {
           variant="share"
         />
       ) : null}
+
+      <hr className="my-4" />
       <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
     </div>
   );
