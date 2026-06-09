@@ -382,7 +382,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         )}
       </div>
 
-      <div className="flex shrink-0 gap-2 border-t border-gray-100 px-3 pb-2 pt-1">
+      <div className="flex shrink-0 gap-2 px-3 pb-3 pt-1">
         {ROUND_BUTTONS.map((round) => {
           const isActive = selectedRound === round;
           const hasData = availableRounds.has(round);
