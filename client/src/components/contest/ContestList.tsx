@@ -1,7 +1,8 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestCard } from "./ContestCard";
 
@@ -13,11 +14,26 @@ interface ContestListProps {
 }
 
 function PrivateLeagueNotice() {
+  const { user } = useAuth();
+  const location = useLocation();
+
   return (
     <>
       <hr className="my-4 border-gray-200" />
       <p className="text-center font-display text-sm leading-relaxed text-gray-600">
         All real-money contests take place in private leagues.{" "}
+        {!user ? (
+          <>
+            <Link
+              to="/connect"
+              state={{ from: location }}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              Sign in
+            </Link>{" "}
+            to see your private contests, or{" "}
+          </>
+        ) : null}
         <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
           Learn how to start a league
         </Link>
