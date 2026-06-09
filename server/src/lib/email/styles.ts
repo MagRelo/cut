@@ -18,8 +18,6 @@ export const QUOTE_TEXT_COLOR = "#1e40af";
 
 export const QUOTE_TEXT_STYLE = `font-family:${FONT_BODY};font-size:14px;font-weight:400;font-style:italic;line-height:1.55;color:${QUOTE_TEXT_COLOR};margin:0;`;
 
-export const QUOTE_ATTRIBUTION_STYLE = `font-family:${FONT_BODY};font-size:13px;font-weight:400;font-style:italic;line-height:1.45;color:${QUOTE_TEXT_COLOR};`;
-
 export const QUOTE_CELL_STYLE = `border-left:3px solid ${QUOTE_BORDER};background-color:${QUOTE_BG};padding:14px 16px;`;
 
 export const BODY_TITLE_H1_STYLE = `margin:0 0 4px;font-family:${FONT_DISPLAY};font-size:22px;font-weight:700;line-height:1.25;color:#18181b;`;
