@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
 
 export const LEAGUE_STARTER_GUIDE_PATH = "/guides/start-a-league";
@@ -24,7 +23,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
   return (
     <>
-      <PageHeader title="Start a League" className="mb-3" />
+      <h1 className="mb-3 font-display text-3xl font-bold text-gray-900">Start a League</h1>
       <p className="mb-4 font-display text-sm leading-relaxed text-gray-600">
         A quick guide for founding a private league—playing with friends, running contests, and
         getting everyone funded.
@@ -92,31 +91,6 @@ export const LeagueStarterGuidePage: React.FC = () => {
                 Learn more about the invite network
               </Link>
             </p>
-          </div>
-
-          <div className="rounded-sm border border-amber-200 bg-amber-50/80 p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">
-              League invite vs. platform referral link
-            </h3>
-            <p className="mb-2 text-sm">
-              These are two different links—both useful, but they do different jobs:
-            </p>
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              <li>
-                <strong>League invite link</strong> — adds someone to <em>your league</em> so they
-                can see and join league contests. You generate this on your league&apos;s{" "}
-                <strong>Manage</strong> tab.
-              </li>
-              <li>
-                <strong>Platform referral link</strong> — builds your on-chain invite tree for
-                contest payouts. Find it on your{" "}
-                <Link to="/account" className="text-blue-600 hover:underline">
-                  Account
-                </Link>{" "}
-                page (<code className="text-xs">/?ref=your-wallet-address</code>). Share this when
-                someone is signing up for Play The Cut.
-              </li>
-            </ul>
           </div>
         </div>
       </PageSection>
@@ -207,11 +181,35 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Invite link</h3>
-            <p>
+            <p className="mb-3">
               <strong>Generate</strong> a link if you don&apos;t have one yet.{" "}
               <strong>Rotate</strong> to issue a new link—the old one stops working immediately. Use
               rotation if a link was shared too widely or you want to stop new joins temporarily.
             </p>
+            <div className="rounded-sm border border-amber-200 bg-amber-50/80 p-4">
+              <h4 className="mb-2 text-sm font-semibold text-gray-900">
+                League invite link vs. User Invite Link
+              </h4>
+              <p className="mb-2 text-sm">
+                These are two different links—both useful, but they do different jobs:
+              </p>
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                <li>
+                  <strong>League invite link</strong> — adds someone to <em>your league</em> so they
+                  can see and join league contests. You generate this on your league&apos;s{" "}
+                  <strong>Manage</strong> tab.
+                </li>
+                <li>
+                  <strong>User Invite Link</strong> — builds your on-chain invite tree for contest
+                  payouts. Find it on your{" "}
+                  <Link to="/account" className="text-blue-600 hover:underline">
+                    Account
+                  </Link>{" "}
+                  page (<code className="text-xs">/?ref=your-wallet-address</code>). Share this when
+                  someone is signing up for Play The Cut.
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div>
@@ -299,16 +297,31 @@ export const LeagueStarterGuidePage: React.FC = () => {
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Tips for league founders</h3>
             <ul className="list-disc space-y-1 pl-6">
               <li>
-                Ask new members to sign up, then send them starter xUSDC from your account if
-                they&apos;re short on balance.
+                <strong>Onboard new members in order:</strong>
+                <ol className="mt-2 list-decimal space-y-1 pl-6">
+                  <li>
+                    Have them sign up using your <strong>User Invite Link</strong> from{" "}
+                    <Link to="/account" className="text-blue-600 hover:underline">
+                      Account
+                    </Link>{" "}
+                    so they join your invite network.
+                  </li>
+                  <li>
+                    Send your <strong>league invite link</strong> so they can join the league.
+                  </li>
+                </ol>
               </li>
               <li>
-                Have everyone confirm their balance on Account before contest lock—entry fees are
-                charged when they join a contest.
-              </li>
-              <li>
-                On testnet, new accounts may receive a starter balance automatically; on mainnet,
-                players fund via P2P or external deposit.
+                Users will need funds to join a contest. If they&apos;re short on balance, send
+                starter xUSDC from{" "}
+                <Link to="/account/funds" className="text-blue-600 hover:underline">
+                  Manage funds
+                </Link>
+                , and have everyone confirm their balance on{" "}
+                <Link to="/account" className="text-blue-600 hover:underline">
+                  Account
+                </Link>{" "}
+                before contest lock.
               </li>
             </ul>
           </div>
