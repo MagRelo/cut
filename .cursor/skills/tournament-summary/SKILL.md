@@ -30,7 +30,7 @@ Copy this checklist and track progress:
 
 ```
 - [ ] Step 1: Resolve tournament from pgaTourId
-- [ ] Step 2: Web research (multiple sources)
+- [ ] Step 2: Web research (5–10 sources; see source table below)
 - [ ] Step 3: Draft JSON in canonical format
 - [ ] Step 4: Validate JSON
 - [ ] Step 5: Write file (unless preview only)
@@ -50,8 +50,29 @@ Copy this checklist and track progress:
 
 ### Step 2: Web research
 
-Use web search (and fetch PGA Tour / tournament site pages when helpful).
-Cross-check facts across at least two sources.
+Use web search and fetch pages directly when helpful. **Check 5–10 different
+sources** before drafting — wider coverage produces sharper storylines, odds
+context, and course notes. Cross-check facts across at least two sources for
+anything that goes in the JSON.
+
+#### Recommended sources (pick 5–10 per event)
+
+| Source | Best for |
+|--------|----------|
+| [PGA TOUR](https://www.pgatour.com) | Official tournament coverage, field, dates, purse, live scoring, First Look previews |
+| [Golfweek](https://golfweek.usatoday.com) | News, rankings, weekly tour context |
+| [GOLF.com](https://golf.com) | News and analysis mix |
+| [Golf Channel](https://www.golfchannel.com) | News, analysis, odds roundups, broadcast schedules |
+| [Golf Monthly](https://www.golfmonthly.com) | Broader tour news plus equipment and instruction angles |
+| [CBS Sports Golf](https://www.cbssports.com/golf/) | Betting- and fantasy-friendly: news, odds, stats, projections |
+| [bunkered](https://www.bunkered.co.uk) | Opinionated, culture-heavy weekly reads |
+| Event site (e.g. `{eventname}.com`) | Field lists, local storylines, qualifying notes |
+| DraftKings / Yahoo Sports / Action Network | Odds boards and betting angles |
+
+**How to use them:** PGA TOUR for official facts; Golfweek and GOLF.com for
+narrative hooks; Golf Channel and CBS for odds and field analysis; Golf Monthly
+or bunkered when you need an extra storyline or cultural angle beyond the
+standard preview.
 
 | Section | What to find |
 |--------|----------------|
@@ -61,8 +82,8 @@ Cross-check facts across at least two sources.
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
 | Broadcast Information | TV/streaming windows (Golf Channel, CBS, ESPN, etc.) |
 
-**Odds sources:** DraftKings Network, CBS Sports, Yahoo Sports, Action Network,
-Sportsbook Review — report a **range** when books disagree.
+**Odds sources:** Golf Channel, CBS Sports, DraftKings, Yahoo Sports, Action
+Network — report a **range** when books disagree.
 
 **Do not invent** withdrawals, tee times, or odds. If data is unavailable, use
 honest placeholders only where the template allows (e.g. generic broadcast line).
@@ -113,7 +134,7 @@ server/src/tournamentSummaries/{pgaTourId}.json
 event, the user can re-run:
 
 ```bash
-cd server && pnpm run service:init-tournament -- R2026023
+cd server && pnpm run service:init-tournament R2026023
 ```
 
 ## Style reference

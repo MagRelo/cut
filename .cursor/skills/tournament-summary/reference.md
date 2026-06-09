@@ -84,11 +84,26 @@ Replace `{...}` placeholders. Keep valid JSON.
 
 ## Research checklist
 
+Check **5–10 sources** per event for storylines, odds, and course context.
+
+### Weekly golf news sources
+
+| Source | Best for |
+|--------|----------|
+| [PGA TOUR](https://www.pgatour.com) | Official tournament coverage and live scoring |
+| [Golfweek](https://golfweek.usatoday.com) | News and rankings |
+| [GOLF.com](https://golf.com) | News and analysis |
+| [Golf Channel](https://www.golfchannel.com) | News, analysis, odds, broadcast |
+| [Golf Monthly](https://www.golfmonthly.com) | Broader tour news, equipment, instruction |
+| [CBS Sports Golf](https://www.cbssports.com/golf/) | Betting/fantasy: news, odds, stats, projections |
+| [bunkered](https://www.bunkered.co.uk) | Opinionated, culture-heavy weekly reads |
+
 ### Primary URLs
 
 | Source | URL pattern |
 |--------|-------------|
 | PGA Tour overview | `https://www.pgatour.com/tournaments/2026/overview/{pgaTourId}` |
+| PGA Tour First Look | Search `{event name} first look site:pgatour.com` |
 | PGA Tour event page | Search `{event name} R{pgaTourId} site:pgatour.com` |
 | Tournament site | Many events have `{eventname}.com` with field/broadcast pages |
 
