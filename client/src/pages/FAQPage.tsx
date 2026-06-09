@@ -805,6 +805,9 @@ export const FAQPage: React.FC = () => {
         </h2>
         <p className="mb-3 text-sm text-gray-700">Still have questions? Try these pages:</p>
         <nav className="flex flex-col gap-2 font-display text-sm" aria-label="FAQ resources">
+          <Link to="/guides/start-a-league" className="font-medium text-blue-600 hover:underline">
+            Start a league guide
+          </Link>
           <Link to="/terms" className="font-medium text-blue-600 hover:underline">
             Terms of Service
           </Link>

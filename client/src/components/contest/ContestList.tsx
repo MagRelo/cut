@@ -18,14 +18,9 @@ function PrivateLeagueNotice() {
       <hr className="my-4 border-gray-200" />
       <p className="text-center font-display text-sm leading-relaxed text-gray-600">
         All real-money contests take place in private leagues.{" "}
-        <Link to="/user-groups" className="text-blue-600 hover:text-blue-700">
-          Join
-        </Link>{" "}
-        or{" "}
-        <Link to="/user-groups/create" className="text-blue-600 hover:text-blue-700">
-          create a league
-        </Link>{" "}
-        to play for real money.
+        <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
+          Learn how to start a league
+        </Link>
       </p>
     </>
   );

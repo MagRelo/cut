@@ -147,7 +147,7 @@ export const LeagueCreateContestForm = ({
       <DiscreteValueSlider
         id="league-primary-subsidy"
         label="Winner Pool Subsidy"
-        description="Share of each entry fee sent to the Winner Pool"
+        description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
         valueIndex={primarySubsidyIndex}
         valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
         displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
