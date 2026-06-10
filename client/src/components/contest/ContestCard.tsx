@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useReadContract } from "wagmi";
@@ -103,9 +104,19 @@ export const ContestCard = ({ contest, onPotClick }: ContestCardProps) => {
           {contest.name}
         </h3>
         {contest.userGroup?.name ? (
-          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-emerald-600">
+          <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs font-medium text-emerald-600">
             <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {contest.userGroup.name}
+            {contest.userGroup.id || contest.userGroupId ? (
+              <Link
+                to={`/user-groups/${contest.userGroup.id ?? contest.userGroupId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="truncate hover:underline focus:outline-none focus-visible:underline"
+              >
+                {contest.userGroup.name}
+              </Link>
+            ) : (
+              <span className="truncate">{contest.userGroup.name}</span>
+            )}
           </p>
         ) : null}
       </div>
