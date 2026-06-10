@@ -23,8 +23,7 @@ function PrivateLeagueNotice() {
       {!user ? (
         <div className="flex flex-col items-center gap-3 px-2 py-2 text-center">
           <p className="font-display text-sm leading-relaxed text-gray-700">
-            Ready to play? Sign in to build your lineup, join contests, and play in private
-            leagues.
+            Ready to play? Sign in to build your lineup, join contests, and play in private leagues.
           </p>
           <Link
             to="/connect"
@@ -36,9 +35,9 @@ function PrivateLeagueNotice() {
         </div>
       ) : (
         <p className="text-center font-display text-sm leading-relaxed text-gray-600">
-          Play with friends in a private league.{" "}
+          You can now create private leagues!{" "}
           <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
-            Learn how to start a league
+            Learn more...
           </Link>
         </p>
       )}
