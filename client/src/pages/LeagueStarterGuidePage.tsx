@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { PageSection } from "../components/layout/PageSection";
 
@@ -24,7 +25,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
   return (
     <>
       <h1 className="mb-3 font-display text-3xl font-bold text-gray-900">Start a League</h1>
-      <p className="mb-4 font-display text-sm leading-relaxed text-gray-600">
+      <p className="mb-4 text-gray-700">
         A quick guide for founding a private league—playing with friends, running contests, and
         getting everyone funded.
       </p>
@@ -255,11 +256,25 @@ export const LeagueStarterGuidePage: React.FC = () => {
         <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">Funding accounts</h2>
 
         <div className="space-y-4 text-gray-700">
-          <p>
-            Every player needs <strong>xUSDC</strong> in their smart wallet to pay contest entry
-            fees. Play The Cut does not hold balances on your behalf—funds live in your wallet and
-            you approve each spend.
-          </p>
+          <div
+            className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
+            role="note"
+          >
+            <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
+              <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                Testnet only
+              </div>
+            </div>
+            <div className="p-3">
+              <p className="text-sm leading-relaxed text-amber-950/90">
+                Play The Cut is currently on <strong>Base Sepolia testnet</strong>. Contests use
+                testnet <strong>xUSDC</strong>—not real USDC. Do not send mainnet funds or real USDC
+                to your wallet; deposits will not land and may be lost. We&apos;re transitioning to{" "}
+                <strong>Base mainnet</strong> soon—stay tuned for updates.
+              </p>
+            </div>
+          </div>
 
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Account ID</h3>
@@ -283,8 +298,8 @@ export const LeagueStarterGuidePage: React.FC = () => {
             </p>
             <ul className="list-disc space-y-1 pl-6">
               <li>
-                <strong>Deposit</strong> — copy your wallet address and receive xUSDC from another
-                player or an external sender on the correct network.
+                <strong>Deposit</strong> — copy your wallet address and receive funds from another
+                player or an external sender.
               </li>
               <li>
                 <strong>Send</strong> — peer-to-peer transfer: enter a recipient&apos;s wallet
@@ -309,19 +324,14 @@ export const LeagueStarterGuidePage: React.FC = () => {
                   <li>
                     Send your <strong>league invite link</strong> so they can join the league.
                   </li>
+                  <li>
+                    Send them funds from{" "}
+                    <Link to="/account/funds" className="text-blue-600 hover:underline">
+                      Manage funds
+                    </Link>{" "}
+                    to get them started.
+                  </li>
                 </ol>
-              </li>
-              <li>
-                Users will need funds to join a contest. If they&apos;re short on balance, send
-                starter xUSDC from{" "}
-                <Link to="/account/funds" className="text-blue-600 hover:underline">
-                  Manage funds
-                </Link>
-                , and have everyone confirm their balance on{" "}
-                <Link to="/account" className="text-blue-600 hover:underline">
-                  Account
-                </Link>{" "}
-                before contest lock.
               </li>
             </ul>
           </div>

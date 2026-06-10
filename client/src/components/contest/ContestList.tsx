@@ -20,24 +20,28 @@ function PrivateLeagueNotice() {
   return (
     <>
       <hr className="my-4 border-gray-200" />
-      <p className="text-center font-display text-sm leading-relaxed text-gray-600">
-        All real-money contests take place in private leagues.{" "}
-        {!user ? (
-          <>
-            <Link
-              to="/connect"
-              state={{ from: location }}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              Sign in
-            </Link>{" "}
-            to see your private contests, or{" "}
-          </>
-        ) : null}
-        <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
-          Learn how to start a league
-        </Link>
-      </p>
+      {!user ? (
+        <div className="flex flex-col items-center gap-3 px-2 py-2 text-center">
+          <p className="font-display text-sm leading-relaxed text-gray-700">
+            Ready to play? Sign in to build your lineup, join contests, and play in private
+            leagues.
+          </p>
+          <Link
+            to="/connect"
+            state={{ from: location }}
+            className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600"
+          >
+            Sign In
+          </Link>
+        </div>
+      ) : (
+        <p className="text-center font-display text-sm leading-relaxed text-gray-600">
+          Play with friends in a private league.{" "}
+          <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
+            Learn how to start a league
+          </Link>
+        </p>
+      )}
     </>
   );
 }
