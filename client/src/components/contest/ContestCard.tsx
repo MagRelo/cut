@@ -11,9 +11,10 @@ interface ContestCardProps {
   contest: Contest;
   preTournament?: boolean;
   onPotClick?: () => void;
+  linkUserGroup?: boolean;
 }
 
-export const ContestCard = ({ contest, onPotClick }: ContestCardProps) => {
+export const ContestCard = ({ contest, onPotClick, linkUserGroup = false }: ContestCardProps) => {
   const contestPaymentToken = contest.settings?.paymentTokenAddress ?? "";
   const paymentDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
 
@@ -106,10 +107,9 @@ export const ContestCard = ({ contest, onPotClick }: ContestCardProps) => {
         {contest.userGroup?.name ? (
           <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs font-medium text-emerald-600">
             <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {contest.userGroup.id || contest.userGroupId ? (
+            {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
               <Link
                 to={`/user-groups/${contest.userGroup.id ?? contest.userGroupId}`}
-                onClick={(e) => e.stopPropagation()}
                 className="truncate hover:underline focus:outline-none focus-visible:underline"
               >
                 {contest.userGroup.name}
