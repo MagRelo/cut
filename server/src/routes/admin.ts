@@ -18,6 +18,7 @@ import {
   sendSampleEmail,
   type PreviewKind,
 } from "../lib/email/index.js";
+import { pickWalletForChain } from "../utils/pickWalletForChain.js";
 
 const adminRouter = new Hono();
 
@@ -55,27 +56,6 @@ function getRequestChainId(c: { req: { header: (n: string) => string | undefined
   if (!raw) return null;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) ? n : null;
-}
-
-type WalletForChain = {
-  id: string;
-  publicKey: string;
-  chainId: number;
-  isPrimary: boolean;
-} | null;
-
-/**
- * Picks the wallet for a chain: prefer primary among rows for that chain.
- */
-function pickWalletForChain(
-  wallets: Array<{ id: string; publicKey: string; chainId: number; isPrimary: boolean }>,
-  chainId: number,
-): WalletForChain {
-  const forChain = wallets.filter((w) => w.chainId === chainId);
-  if (forChain.length === 0) return null;
-  forChain.sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
-  const w = forChain[0]!;
-  return { id: w.id, publicKey: w.publicKey, chainId: w.chainId, isPrimary: w.isPrimary };
 }
 
 // GET /api/admin/users

@@ -11,6 +11,7 @@ import {
   referralGraphIsRegistered,
 } from "../referral/referralGraph.js";
 import { type BatchOperationResult } from "../shared/types.js";
+import { pickWalletPublicKeyForChain } from "../../utils/pickWalletForChain.js";
 
 const BATCH_SIZE = 25;
 const ALREADY_ON_CHAIN = "already_registered";
@@ -34,8 +35,7 @@ async function loadPendingUsers() {
 function userWalletOnChain(u: PendingUser): string | null {
   const cid = u.referralChainId;
   if (cid == null) return null;
-  const w = u.wallets.find((x) => x.chainId === cid);
-  return w?.publicKey?.toLowerCase() ?? null;
+  return pickWalletPublicKeyForChain(u.wallets, cid);
 }
 
 type GroupAgg = {

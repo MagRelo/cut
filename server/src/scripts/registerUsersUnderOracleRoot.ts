@@ -16,6 +16,7 @@ import {
   registerWalletOnReferralGraph,
   resolveReferralGraphSetup,
 } from "../services/referral/referralGraphSetup.js";
+import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 
 const ALREADY_ON_CHAIN = "already_registered";
 
@@ -51,7 +52,7 @@ async function main() {
   let failed = 0;
 
   for (const u of users) {
-    const wallet = u.wallets.find((w) => w.chainId === chainId)?.publicKey?.toLowerCase();
+    const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
     if (!wallet) continue;
 
     if (wallet === setup.oracleRoot) {
