@@ -1,11 +1,13 @@
 /**
  * Settle a contest: ACTIVE/LOCKED → SETTLED
  *
- * Calculates winners and payouts, then calls contract settleContest() to store
- * payouts on-chain. This is pure accounting - no transfers happen in settlement.
+ * Calculates winners and payouts via the sport plugin, then calls settleContest()
+ * on-chain. Pure accounting — no transfers happen in settlement.
  */
 
+import { defaultPayoutVector } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
+import { requireSportModule } from "../../sports/registry.js";
 import {
   getContestContract,
   getPublicClient,
@@ -26,46 +28,43 @@ import {
 } from "../shared/types.js";
 import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
-import { getContestWinningScore, sortContestLineups } from "../../utils/lineupTiebreaker.js";
+import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
+import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
 
-const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex
+const DEFAULT_USER_COLOR = "#9CA3AF";
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
 
+type ContestLineupForSettlement = {
+  entryId: string | null;
+  score: number | null;
+  createdAt: Date;
+  user: {
+    name: string | null;
+    settings: unknown;
+  } | null;
+  lineup: {
+    name: string;
+    prediction: unknown;
+    picks: Array<{
+      eventParticipant: {
+        total: number | null;
+        participant: { metadata: unknown };
+      };
+    }>;
+  };
+};
+
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
-    // console.log(`[settleContest] Starting settlement for contest ${contestId}`);
-
-    // Fetch contest from database with all lineup data
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
       include: {
-        tournament: true,
-        contestLineups: {
-          include: {
-            user: {
-              include: {
-                wallets: true,
-              },
-            },
-            tournamentLineup: {
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        event: true,
+        contestLineups: contestLineupsInclude,
       },
     });
 
@@ -77,7 +76,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Validate contest status
     if (contest.status !== "ACTIVE" && contest.status !== "LOCKED") {
       return {
         success: false,
@@ -86,16 +84,16 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Validate tournament is completed
-    if (contest.tournament.status !== "COMPLETED") {
+    const sportModule = requireSportModule(contest.event.sportId);
+    const eventStatus = await sportModule.getEventStatus(contest.eventId);
+    if (!sportModule.shouldSettleContest(eventStatus)) {
       return {
         success: false,
         contestId,
-        error: `Tournament status is ${contest.tournament.status}, expected COMPLETED`,
+        error: `Event status is ${eventStatus}, expected COMPLETE before settlement`,
       };
     }
 
-    // Validate has lineups
     if (!contest.contestLineups || contest.contestLineups.length === 0) {
       return {
         success: false,
@@ -104,7 +102,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Verify oracle
     const isValidOracle = await verifyOracle(contest.address, contest.chainId);
     if (!isValidOracle) {
       return {
@@ -114,7 +111,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Check contract state
     const contractState = await readContestState(contest.address, contest.chainId);
     if (contractState !== ContestState.ACTIVE && contractState !== ContestState.LOCKED) {
       return {
@@ -124,9 +120,9 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Calculate winners and payouts
-    const { winningEntries, payoutBps, detailedResults } = await calculatePayouts(
-      contest.contestLineups
+    const { winningEntries, payoutBps, detailedResults } = calculatePayouts(
+      contest.contestLineups,
+      contest.event.sportId,
     );
 
     if (winningEntries.length === 0) {
@@ -137,7 +133,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    // Validate payouts sum to 10000 (100%)
     const totalBps = payoutBps.reduce((sum, bp) => sum + bp, 0);
     if (totalBps !== 10000) {
       return {
@@ -148,13 +143,11 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     }
 
     console.log(
-      `[settleContest] Winners: ${winningEntries.length}, Payouts: ${payoutBps.join(", ")} BP`
+      `[settleContest] Winners: ${winningEntries.length}, Payouts: ${payoutBps.join(", ")} BP`,
     );
 
-    // Get contract instance for reading values
     const contract = getContestContract(contest.address, contest.chainId);
 
-    // Capture snapshot values BEFORE settlement
     console.log(`[settleContest] Capturing snapshot values...`);
     const [
       primaryPrizePool,
@@ -181,7 +174,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       contest.address as `0x${string}`,
     ])) as bigint;
 
-    // Create snapshot
     const snapshot: ContestSnapshot = {
       contractBalance: contractBalance.toString(),
       primaryPrizePool: primaryPrizePool.toString(),
@@ -190,11 +182,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
       primaryDepositSecondarySubsidyBps: Number(primaryDepositSecondarySubsidyBps),
     };
-
-    console.log(`[settleContest] Snapshot captured:`, {
-      primarySideBalance: snapshot.primarySideBalance,
-      secondarySideBalance: snapshot.secondarySideBalance,
-    });
 
     const winningEntryStr = winningEntries[0];
     if (!winningEntryStr) {
@@ -291,7 +278,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       paymentTokenAddress,
     });
 
-    // Prepare results for database
     const results: ContestResults = {
       winningEntries,
       payoutBps,
@@ -303,7 +289,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       ...(pushResult.error ? { pushPayoutsError: pushResult.error } : {}),
     };
 
-    // Update database
     await prisma.contest.update({
       where: { id: contestId },
       data: {
@@ -326,7 +311,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       captureContestWinPayoutRecorded({
         distinctId: userId,
         contest_id: contestId,
-        tournament_id: contest.tournamentId,
+        tournament_id: contest.eventId,
         entry_id: String(row.entryId),
         user_id: userId,
         chain_id: contest.chainId,
@@ -352,15 +337,14 @@ export async function settleContest(contestId: string): Promise<OperationResult>
   }
 }
 
-/**
- * Calculate winners and payouts based on lineup scores
- */
-async function calculatePayouts(lineups: any[]): Promise<{
+function calculatePayouts(
+  lineups: ContestLineupForSettlement[],
+  sportId: string,
+): {
   winningEntries: string[];
   payoutBps: number[];
   detailedResults: DetailedResult[];
-}> {
-  // Validate lineups have required data
+} {
   const validLineups = lineups.filter((lineup) => {
     if (!lineup?.user) {
       throw new Error("Lineup missing user field");
@@ -378,56 +362,59 @@ async function calculatePayouts(lineups: any[]): Promise<{
     throw new Error("No valid lineups found");
   }
 
-  const contestWinningScore = getContestWinningScore(validLineups);
-  const sortedLineups = sortContestLineups(validLineups, contestWinningScore);
+  const sportModule = requireSportModule(sportId);
+  const lineupByEntryId = new Map(
+    validLineups.map((lineup) => [lineup.entryId as string, lineup]),
+  );
 
-  const isLargeContest = validLineups.length >= 10;
-  const payoutStructure = isLargeContest
-    ? [7000, 2000, 1000]
-    : [10000];
+  const ranked = sportModule.rankEntries(
+    validLineups.map((lineup) => ({
+      entryId: lineup.entryId!,
+      score: lineup.score,
+      prediction: lineup.lineup.prediction,
+      createdAt: lineup.createdAt,
+    })),
+  );
+
+  const payoutStructure =
+    sportModule.derivePayoutVector?.(ranked, ranked.length) ??
+    defaultPayoutVector(ranked.length);
 
   const winningEntries: string[] = [];
   const payoutBps: number[] = [];
   const detailedResults: DetailedResult[] = [];
   let totalDistributed = 0;
 
-  sortedLineups.forEach((lineup, index) => {
-    const position = index + 1;
-    const payout = payoutStructure[position - 1] ?? 0;
+  for (const row of ranked) {
+    const lineup = lineupByEntryId.get(row.entryId);
+    if (!lineup) {
+      continue;
+    }
 
-    const playerLastNames = (lineup.tournamentLineup?.players ?? [])
-      .slice()
-      .sort((a: any, b: any) => {
-        const aTotal = a?.tournamentPlayer?.total ?? 0;
-        const bTotal = b?.tournamentPlayer?.total ?? 0;
-        return bTotal - aTotal;
-      })
-      .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
-      .filter((name: unknown): name is string => Boolean(name));
-
-    const userSettings = lineup.user?.settings as any | undefined;
+    const payout = payoutStructure[row.position - 1] ?? 0;
+    const playerLastNames = sortedPlayerLastNamesFromPicks(lineup.lineup.picks);
+    const userSettings = lineup.user?.settings as { color?: string } | undefined;
     const userColor = userSettings?.color;
     const resolvedUserColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
 
     if (payout > 0) {
-      winningEntries.push(lineup.entryId);
+      winningEntries.push(row.entryId);
       payoutBps.push(payout);
       totalDistributed += payout;
     }
 
     detailedResults.push({
       username: lineup.user?.name || "Unknown",
-      lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
-      entryId: lineup.entryId,
-      position,
-      score: lineup.score,
+      lineupName: lineup.lineup.name || "Unnamed Lineup",
+      entryId: row.entryId,
+      position: row.position,
+      score: row.score,
       payoutBasisPoints: payout,
       playerLastNames,
       userColor: resolvedUserColor,
     });
-  });
+  }
 
-  // Add any dust to first winner to ensure total = 10000
   if (totalDistributed < 10000 && payoutBps.length > 0 && payoutBps[0] !== undefined) {
     const dust = 10000 - totalDistributed;
     payoutBps[0] += dust;

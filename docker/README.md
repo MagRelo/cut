@@ -52,5 +52,5 @@ The Docker image is built with:
 Required environment variables for production:
 
 - `NODE_ENV=production`
-- `DATABASE_URL=postgresql://user:password@db:5432/betthecut`
+- `DATABASE_URL=postgresql://playthecut:playthecut@db:5432/playthecut`
 - `JWT_SECRET=your-secret-here`

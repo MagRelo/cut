@@ -6,7 +6,13 @@ alwaysApply: true
 
 # Overview
 
-Play The Cut is a web application that allows users to participate in fantasy golf competitions and also to place and track real-money bets.
+Play The Cut is a multi-sport competition platform. Users pick a sport, build a lineup from that sport's candidate pool, and enter contests — public or within a league. The same account, wallet, and referral network work across every sport.
+
+**Target architecture:** [PLATFORM_ARCHITECTURE.md](../../PLATFORM_ARCHITECTURE.md)
+
+**Rewrite progress:** [PLATFORM_REWRITE.md](../../PLATFORM_REWRITE.md)
+
+The codebase on branch `v4` is a greenfield rewrite toward that architecture. PGA Golf is the first sport plugin. Legacy production remains unchanged until data migration and cutover.
 
 ## High-Level Summary of Features
 

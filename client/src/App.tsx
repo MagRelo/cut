@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { DEFAULT_SPORT_ID } from "./hooks/useSportData";
 
 import { WagmiProvider } from "@privy-io/wagmi";
 import { PrivyProvider } from "@privy-io/react-auth";
@@ -11,6 +12,7 @@ import { config } from "./wagmi";
 import { prefetchActiveTournament } from "./hooks/useTournamentData";
 
 import { AuthProvider } from "./contexts/AuthContext";
+import { SportProvider } from "./contexts/SportContext";
 import { useReferralCapture } from "./hooks/useReferralCapture";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
@@ -26,8 +28,12 @@ import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { LineupList } from "./pages/LineupListPage";
 
-import { Contests } from "./pages/ContestListPage";
+import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
+import {
+  SportContestRedirect,
+  UserGroupToLeagueRedirect,
+} from "./components/routing/LegacyRedirects";
 import ContractsPage from "./pages/ContractsPage";
 
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -81,7 +87,9 @@ const AppShell: React.FC = () => {
         {/* <MaintenanceOverlay /> */}
         <OnboardingRedirectGate>
           <Routes>
-                  <Route path="/" element={<Contests />} />
+                  <Route path="/" element={<Navigate to={`/sports/${DEFAULT_SPORT_ID}`} replace />} />
+                  <Route path="/sports/:sportId" element={<SportHubPage />} />
+                  <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
                   <Route path="/home" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -124,7 +132,10 @@ const AppShell: React.FC = () => {
                     }
                   />
                   {/* Contests */}
-                  <Route path="/contests" element={<Contests />} />
+                  <Route
+                    path="/contests"
+                    element={<Navigate to={`/sports/${DEFAULT_SPORT_ID}`} replace />}
+                  />
                   <Route
                     path="/contests/create"
                     element={
@@ -148,9 +159,9 @@ const AppShell: React.FC = () => {
                   {/* Leaderboard */}
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
 
-                  {/* User Groups */}
+                  {/* Leagues (canonical) */}
                   <Route
-                    path="/user-groups"
+                    path="/leagues"
                     element={
                       <ProtectedRoute>
                         <UserGroupListPage />
@@ -158,7 +169,7 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/create"
+                    path="/leagues/create"
                     element={
                       <ProtectedRoute>
                         <UserGroupCreatePage />
@@ -166,7 +177,7 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/join/:code"
+                    path="/leagues/join/:code"
                     element={
                       <ProtectedRoute>
                         <UserGroupJoinPage />
@@ -174,13 +185,18 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/:id"
+                    path="/leagues/:id"
                     element={
                       <ProtectedRoute>
                         <UserGroupDetailPage />
                       </ProtectedRoute>
                     }
                   />
+                  {/* Legacy user-group URLs */}
+                  <Route path="/user-groups" element={<Navigate to="/leagues" replace />} />
+                  <Route path="/user-groups/create" element={<Navigate to="/leagues/create" replace />} />
+                  <Route path="/user-groups/join/:code" element={<UserGroupToLeagueRedirect />} />
+                  <Route path="/user-groups/:id" element={<UserGroupToLeagueRedirect />} />
 
                   {/* Admin (staff only; linked in nav when user is ADMIN / SUPER_ADMIN) */}
                   <Route
@@ -239,7 +255,9 @@ export const App: React.FC = () => {
             <GlobalErrorProvider>
               <AuthProvider>
                 <Router>
-                  <AppShell />
+                  <SportProvider>
+                    <AppShell />
+                  </SportProvider>
                 </Router>
               </AuthProvider>
             </GlobalErrorProvider>

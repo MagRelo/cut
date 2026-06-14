@@ -1,7 +1,7 @@
 import type { BehindTheScenesEmailData } from "../emails/behindTheScenes.js";
 import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
-import { loadNewTournamentEmailData } from "../data/newTournament.js";
-import { getManualActiveTournamentId } from "../data/tournament.js";
+import { loadNewEventEmailData } from "../data/newTournament.js";
+import { getActiveEventId } from "../data/event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
 import type { TournamentRecapEmailData } from "../emails/tournamentRecap.js";
@@ -9,16 +9,16 @@ import type { PlayerWithdrawalEmailData } from "../emails/playerWithdrawal.js";
 import type { WelcomeEmailData } from "../emails/welcome.js";
 
 export async function fixtureNewTournament(): Promise<NewTournamentEmailData> {
-  const tournamentId = await getManualActiveTournamentId();
-  if (!tournamentId) {
+  const eventId = await getActiveEventId();
+  if (!eventId) {
     throw new Error(
-      "No manualActive tournament; set one in the DB or run: pnpm --filter server run service:init-tournament -- R{pgaTourId}",
+      "No active event; activate one in the DB or run: pnpm run service:init-event pga-golf R{pgaTourId}",
     );
   }
 
-  const data = await loadNewTournamentEmailData(tournamentId);
+  const data = await loadNewEventEmailData(eventId);
   if (!data) {
-    throw new Error(`Tournament not found: ${tournamentId}`);
+    throw new Error(`Event not found: ${eventId}`);
   }
 
   return data;

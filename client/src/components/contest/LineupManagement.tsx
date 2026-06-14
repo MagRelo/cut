@@ -82,7 +82,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   const enteredLineupsMap = useMemo(() => {
     const map = new Map<string, string>();
     userContestLineups.forEach((cl) => {
-      map.set(cl.tournamentLineupId, cl.id);
+      const key = cl.lineupId ?? cl.tournamentLineupId;
+      if (key) map.set(key, cl.id);
     });
     return map;
   }, [userContestLineups]);

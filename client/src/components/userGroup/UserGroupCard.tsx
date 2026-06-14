@@ -11,7 +11,7 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
   };
 
   return (
-    <Link to={`/user-groups/${userGroup.id}`}>
+    <Link to={`/leagues/${userGroup.id}`}>
       <div className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="min-w-0 flex-1 truncate text-lg font-bold text-gray-900 font-display">

@@ -1,110 +1,111 @@
-// this service will run periodcally to keep the tournament up to date
-
+import { parseGolfEventMetadata } from "@cut/sport-pga-golf";
 import { prisma } from "../lib/prisma.js";
-import { getContestWinningScore, sortContestLineups } from "../utils/lineupTiebreaker.js";
+import { requireSportModule } from "../sports/registry.js";
+import { lineupPicksInclude } from "../utils/prismaIncludes.js";
+import { getActiveEvents } from "./events/getActiveEvents.js";
 
-export async function updateContestLineups() {
-  try {
-    const currentTournament = await prisma.tournament.findFirst({
-      where: { manualActive: true },
-    });
+export async function updateContestLineupsForEvent(
+  eventId: string,
+  sportId: string,
+): Promise<void> {
+  const module = requireSportModule(sportId);
 
-    if (!currentTournament) {
-      console.error("No current tournament found");
-      return;
-    }
-
-    const contestLineups = await prisma.contestLineup.findMany({
-      where: {
-        contest: {
-          tournamentId: currentTournament.id,
-        },
+  const contestLineups = await prisma.contestLineup.findMany({
+    where: {
+      contest: { eventId },
+    },
+    include: {
+      contest: {
+        select: { id: true },
       },
-      include: {
-        contest: {
-          select: {
-            id: true,
-          },
-        },
-        tournamentLineup: {
-          include: {
-            players: {
-              include: {
-                tournamentPlayer: true,
-              },
-            },
-          },
-        },
+      lineup: {
+        include: lineupPicksInclude,
       },
-    });
+    },
+  });
 
-    const updateContestScorePromises = contestLineups.map(async (contestLineup) => {
-      const totalScore = contestLineup.tournamentLineup.players.reduce((sum, lineupPlayer) => {
-        const player = lineupPlayer.tournamentPlayer;
-        return sum + (player.total ?? 0);
-      }, 0);
+  if (contestLineups.length === 0) {
+    return;
+  }
 
-      contestLineup.score = totalScore;
-
-      return prisma.contestLineup.update({
-        where: {
-          id: contestLineup.id,
-        },
-        data: {
-          score: totalScore,
-        },
-      });
-    });
-    await Promise.all(updateContestScorePromises);
-
-    const contestLineupsByContest = contestLineups.reduce(
-      (acc, lineup) => {
-        const contestId = lineup.contestId;
-        if (!acc[contestId]) {
-          acc[contestId] = [];
-        }
-        acc[contestId].push(lineup);
-        return acc;
-      },
-      {} as Record<string, typeof contestLineups>,
+  for (const contestLineup of contestLineups) {
+    const eventParticipantIds = contestLineup.lineup.picks.map(
+      (pick) => pick.eventParticipantId,
     );
-
-    const positionUpdatePromises = Object.values(contestLineupsByContest).map(async (lineups) => {
-      const contestWinningScore = getContestWinningScore(lineups);
-      const sortedLineups = sortContestLineups(lineups, contestWinningScore);
-
-      return Promise.all(
-        sortedLineups.map((lineup, index) =>
-          prisma.contestLineup.update({
-            where: { id: lineup.id },
-            data: { position: index + 1 },
-          }),
-        ),
-      );
+    const totalScore = await module.aggregateLineupScore(eventId, eventParticipantIds);
+    contestLineup.score = totalScore;
+    await prisma.contestLineup.update({
+      where: { id: contestLineup.id },
+      data: { score: totalScore },
     });
-    await Promise.all(positionUpdatePromises);
+  }
 
-    const currentRound = currentTournament.currentRound || 1;
-    const timestamp = new Date();
+  const contestLineupsByContest = contestLineups.reduce(
+    (acc, lineup) => {
+      const contestId = lineup.contestId;
+      if (!acc[contestId]) {
+        acc[contestId] = [];
+      }
+      acc[contestId].push(lineup);
+      return acc;
+    },
+    {} as Record<string, typeof contestLineups>,
+  );
 
-    const timelineSnapshots = contestLineups.map((contestLineup) => ({
-      contestLineupId: contestLineup.id,
-      contestId: contestLineup.contestId,
-      timestamp,
-      roundNumber: currentRound,
-      score: contestLineup.score || 0,
-      position: contestLineup.position || 999,
-      sharePrice: null,
-    }));
+  for (const lineups of Object.values(contestLineupsByContest)) {
+    const ranked = module.rankEntries(
+      lineups
+        .filter((lineup) => lineup.entryId)
+        .map((lineup) => ({
+          entryId: lineup.entryId!,
+          score: lineup.score,
+          prediction: lineup.lineup.prediction,
+          createdAt: lineup.createdAt,
+        })),
+    );
+    const positionByEntryId = new Map(ranked.map((row) => [row.entryId, row.position]));
 
-    if (timelineSnapshots.length > 0) {
-      await prisma.contestLineupTimeline.createMany({
-        data: timelineSnapshots,
-      });
-    }
-  } catch (error) {
-    console.error("[CRON] Error in updateContestLineups:", error);
-    throw error;
+    await Promise.all(
+      lineups.map((lineup) => {
+        const position = lineup.entryId
+          ? (positionByEntryId.get(lineup.entryId) ?? 999)
+          : 999;
+        lineup.position = position;
+        return prisma.contestLineup.update({
+          where: { id: lineup.id },
+          data: { position },
+        });
+      }),
+    );
+  }
+
+  const event = await prisma.competitionEvent.findUnique({
+    where: { id: eventId },
+    select: { metadata: true },
+  });
+  const golfMeta = parseGolfEventMetadata(event?.metadata);
+  const currentRound = golfMeta?.currentRound ?? 1;
+  const timestamp = new Date();
+
+  const timelineSnapshots = contestLineups.map((contestLineup) => ({
+    contestLineupId: contestLineup.id,
+    contestId: contestLineup.contestId,
+    timestamp,
+    roundNumber: currentRound,
+    score: contestLineup.score ?? 0,
+    position: contestLineup.position ?? 999,
+    sharePrice: null,
+  }));
+
+  await prisma.contestLineupTimeline.createMany({
+    data: timelineSnapshots,
+  });
+}
+
+export async function updateContestLineups(): Promise<void> {
+  const events = await getActiveEvents();
+  for (const event of events) {
+    await updateContestLineupsForEvent(event.id, event.sportId);
   }
 }
 

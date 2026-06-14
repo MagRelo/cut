@@ -1,174 +1,135 @@
-# Server Services
+# Server services
 
-## Overview
+Business logic under `server/src/services/`, grouped by domain. Cron and routes call these — not the reverse.
 
-Services contain business logic and are used by both API routes and cron jobs. They encapsulate operations like tournament updates, contest management, and PGA Tour data integration.
+---
 
-## Tournament Services
+## Events & sports
 
-### `initTournament.ts`
-- **Purpose**: Initialize a new tournament
-- **Operations**:
-  - Fetch tournament data from PGA Tour
-  - Create Tournament record
-  - Fetch and create Player records
-  - Create TournamentPlayer records
-- **Usage**: Manual initialization of new tournaments
+| Service | Purpose |
+|---------|---------|
+| `events/getActiveEvents.ts` | All `isActive` events (cron) |
+| `events/getActiveEvent.ts` | Active event for one sport (API) |
+| `events/getEventCandidates.ts` | Candidate pool via sport plugin |
+| `sports/listEnabledSports.ts` | `GET /sports` |
+| `initEvent.ts` | CLI: `service:init-event` |
 
-### `updateTournament.ts`
-- **Purpose**: Update tournament data from PGA Tour
-- **Operations**:
-  - Scrape tournament data from PGA Tour website
-  - Update Tournament record
-  - Update status, rounds, leaderboard
-- **Usage**: Cron job (every 5 minutes)
+Golf sync handlers: `server/src/sports/pga-golf/` (`initEvent`, `syncMetadata`, `syncField`, `syncLiveScores`)
 
-### `updateTournamentPlayers.ts`
-- **Purpose**: Update player scores and leaderboard positions
-- **Operations**:
-  - Scrape player scorecards from PGA Tour
-  - Calculate Stableford scores
-  - Update TournamentPlayer records
-  - Update leaderboard positions
-- **Usage**: Cron job (every 5 minutes, when tournament active)
+---
 
-### `updateContestLineups.ts`
-- **Purpose**: Update contest lineup scores and create timeline snapshots
-- **Operations**:
-  - Calculate lineup scores from player scores
-  - Update ContestLineup records
-  - Create ContestLineupTimeline snapshots
-  - Update leaderboard positions
-- **Usage**: Cron job (every 5 minutes, after player updates)
+## Lineups
 
-## Contest Services
+| Service | Purpose |
+|---------|---------|
+| `lineups/getLineupsForEvent.ts` | List user lineups for an event |
+| `lineups/createLineupForEvent.ts` | Create lineup; duplicate check |
+| `lineups/updateLineupById.ts` | Update lineup by id |
+| `lineups/formatLineup.ts` | API response shape |
 
-### Contest Lifecycle Services (`services/contest/`)
+---
 
-#### `activateContest.ts`
-- **Purpose**: Activate a contest (OPEN → ACTIVE)
-- **Operations**:
-  - Verify contest is in OPEN state
-  - Call contract `activateContest()` function
-  - Update database status
-- **Usage**: Cron job (batch operation)
+## Contests
 
-#### `lockContest.ts`
-- **Purpose**: Lock a contest (ACTIVE → LOCKED)
-- **Operations**:
-  - Verify contest is in ACTIVE state
-  - Call contract `lockContest()` function
-  - Update database status
-- **Usage**: Cron job (batch operation)
+| Service | Purpose |
+|---------|---------|
+| `contest/settleContest.ts` | Rank + on-chain settlement |
+| `updateContestLineups.ts` | Live scores/positions for an event |
+| `batch/batchActivateContests.ts` | OPEN → ACTIVE |
+| `batch/batchSettleContests.ts` | ACTIVE/LOCKED → SETTLED |
+| `batch/batchCloseContests.ts` | Post-settlement cleanup |
+| `batch/batchLockContests.ts` | Admin lock eligible |
 
-#### `settleContest.ts`
-- **Purpose**: Settle a contest (ACTIVE/LOCKED → SETTLED)
-- **Operations**:
-  - Calculate winners based on scores
-  - Calculate payout distribution
-  - Call contract `settleContest(winners, payoutBps, referralReward, signature)` (referral fee at settlement when `referralNetworkBps > 0`)
-  - Record `REFERRAL` rows via `recordSettlementReferralPayments` from the settlement receipt
-  - Oracle push primary/secondary payouts (`pushContestPayouts.ts`); `PRIMARY` / `SECONDARY` ledger rows from push receipts
-  - Update database status and results (`detailedResults` for standings; payout amounts from `OnchainPayment` API)
-- **Usage**: Cron job (batch operation)
+Utilities: `utils/formatContestResponse.ts`, `utils/contestTimeline.ts`, `utils/lineupValidation.ts`
 
-#### `closeContest.ts`
-- **Purpose**: Close a contest (SETTLED → CLOSED)
-- **Operations**:
-  - Verify contest is SETTLED and past expiry
-  - Call contract `closeContest()` function
-  - Update database status
-- **Usage**: Cron job (batch operation)
+---
 
-#### `cancelContest.ts`
-- **Purpose**: Cancel a contest
-- **Operations**:
-  - Verify contest can be cancelled
-  - Call contract `cancelContest()` function
-  - Update database status
-- **Usage**: Manual/admin operation
+## Cron
 
-### Batch Services (`services/batch/`)
+| Service | Purpose |
+|---------|---------|
+| `cron/runSportEventPipeline.ts` | Per-event plugin sync + lineup score updates |
 
-#### `batchActivateContests.ts`
-- **Purpose**: Activate multiple contests
-- **Operations**:
-  - Find contests that should be activated
-  - Call `activateContest()` for each
-  - Return batch results
-- **Usage**: Cron job
+Orchestrated by `cron/scheduler.ts`.
 
-#### `batchLockContests.ts`
-- **Purpose**: Lock multiple contests
-- **Operations**:
-  - Find contests with status ACTIVE on supported chains (Base / Base Sepolia)
-  - Call `lockContest()` for each
-  - Return batch results
-- **Usage**: Admin API (`POST /api/admin/contests/lock-eligible`) / manual CLI (`service:batch-lock-contests`); not run on cron
+---
 
-#### `batchSettleContests.ts`
-- **Purpose**: Settle multiple contests
-- **Operations**:
-  - Find contests that should be settled
-  - Call `settleContest()` for each
-  - Return batch results
-- **Usage**: Cron job
+## Side bets (platform)
 
-#### `batchCloseContests.ts`
-- **Purpose**: Close multiple contests
-- **Operations**:
-  - Find contests that should be closed
-  - Call `closeContest()` for each
-  - Return batch results
-- **Usage**: Cron job
+| Service | Purpose |
+|---------|---------|
+| `propBets/ingestPropBetQuoteForLineup.ts` | Registry → module → persist |
+| `propBets/persistMarketSnapshot.ts` | Write `SideBetMarket` / selections |
+| `sideBets/refreshOpenSideBetQuotes.ts` | Cron batch quote refresh |
+| `sideBets/markSideBetMarketStaleAfterRosterChange.ts` | After lineup save |
+| `sideBets/lineupSideBetUtils.ts` | Placement names, sorted IDs |
+| `sideBets/fetchSideBetDataGolfSnapshot.ts` | Shared DataGolf fetch for batch |
+| `betting/settleSideBetTicket.ts` | Grade via `PropBetModule` |
+| `batch/batchLockSideBetMarkets.ts` | Admin |
+| `batch/batchSettleSideBets.ts` | Admin |
+| `batch/batchCloseSideBetMarkets.ts` | Admin |
 
-## Utility Services
+Golf quote logic: `sports/pga-golf/buildGolfMarketSnapshot.ts`
 
-### `mintUserTokens.ts`
-- **Purpose**: Mint test tokens to new users
-- **Operations**:
-  - Mint USDC to user wallet (testnet only)
-  - Used during user registration
-- **Usage**: Auth service (on new user creation)
+---
 
-## Service Patterns
+## Admin
 
-### Error Handling
-- Services throw errors that are caught by routes/cron
-- Errors are logged with context
-- Database errors are handled gracefully
+| Service | Purpose |
+|---------|---------|
+| `admin/getAdminDashboard.ts` | Dashboard aggregates |
+| `admin/adminEventContext.ts` | Resolve active event; `eventId` / `tournamentId` alias |
 
-### Transaction Management
-- Prisma transactions used for multi-step operations
-- Rollback on errors
-- Atomic updates
+---
 
-### External API Integration
-- PGA Tour scraping via cheerio
-- Blockchain RPC calls via viem
-- Retry logic for transient failures
+## Auth & referrals
 
-### Data Transformation
-- Raw PGA Tour data → normalized database records
-- Database records → API response format
-- Score calculations (Stableford system)
+| Service | Purpose |
+|---------|---------|
+| `lib/privyUserProvisioning.ts` | User + wallet from Privy |
+| `batch/batchSyncReferralGraph.ts` | On-chain referral graph sync |
 
-## Service Dependencies
+Middleware: `middleware/auth.ts`
 
-### Database
-- All services use Prisma for database access
-- Type-safe queries
-- Transaction support
+---
 
-### External Services
-- **PGA Tour**: Web scraping for tournament data
-- **Base Blockchain**: RPC calls for contract interactions
-- **Privy**: Not called directly from services; token verification happens in auth middleware before route handlers run
+## Email
 
-## Testing Considerations
+| Path | Purpose |
+|------|---------|
+| `lib/email/` | Templates, blasts, dedupe via `EmailSendLog.eventId` |
+| `lib/email/data/event.ts` | Load active event for email content |
 
-- Services should be testable in isolation
-- Mock external dependencies
-- Test error cases
-- Test transaction rollbacks
+Scripts: `scripts/sendBlastEmail.ts`, `scripts/emailPreview.ts`
 
+---
+
+## On-chain
+
+| Service | Purpose |
+|---------|---------|
+| `services/shared/contractClient.ts` | Viem public client |
+| Contest join/leave flows | Invoked from `routes/contest.ts` + client wagmi |
+
+Contract ABIs: `server/src/contracts/`
+
+---
+
+## Odds (golf side bets)
+
+| Path | Purpose |
+|------|---------|
+| `services/odds/calculateRoundRobinOdds.ts` | 4-player parlay matrix |
+| `services/odds/dataGolf*.ts` | DataGolf API clients |
+
+Used by golf `PropBetModule` ingest path only.
+
+---
+
+## Excluded / legacy (not in v4 build)
+
+These files remain in the repo for reference or migration but are **not** mounted or compiled on v4:
+
+- `services/initTournament.ts`, `updateTournament*.ts`
+- `services/syncTournamentFieldWithdrawals.ts`
+- `routes/tournament.ts`, `routes/lineup.ts`

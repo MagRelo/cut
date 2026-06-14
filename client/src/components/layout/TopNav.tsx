@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import { BRAND_WORDMARK } from "../../lib/brand";
 import { LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import { SportPicker } from "../sport/SportPicker";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { UserMenu } from "./UserMenu";
 
@@ -68,6 +69,7 @@ export const TopNav: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <SportPicker />
             {user ? (
               <>
                 <NavTabLink tab={LINEUPS_TAB} pathname={location.pathname} />

@@ -1,114 +1,122 @@
-# Play The Cut - Specification Documentation
+# Play The Cut — Specification (v4 platform)
 
-This directory contains high-level architecture specifications for the Play The Cut application, organized by layer (contracts, server, client).
+Architecture and behavior documentation for the **v4 platform rewrite** (`v4` branch). This reflects the code as implemented today — not legacy tournament-centric production.
 
-## Overview
+**North star:** [PLATFORM_ARCHITECTURE.md](../PLATFORM_ARCHITECTURE.md)  
+**Implementation tracker:** [PLATFORM_REWRITE.md](../PLATFORM_REWRITE.md)  
+**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md)
 
-Play The Cut is a web application that enables:
+---
 
-- **Fantasy Golf Competitions**: Users create leagues, form teams, and compete in weekly tournaments
-- **Real-Money Betting**: Users can place and track bets using data from teams, leagues, or live tournament results
-- **PGA Tour Data Integration**: Pulls and displays data from the PGA Tour including player data, tournament results, and schedules
+## What changed from legacy specs
 
-## Architecture Layers
+| Area | Legacy (pre-v4) | Platform (v4) |
+|------|-----------------|-----------------|
+| Competition unit | `Tournament` | `CompetitionEvent` per sport |
+| User roster | `TournamentLineup` + `TournamentPlayer` | `Lineup` + `LineupPick` → `EventParticipant` (many per user per event) |
+| Contest FK | `tournamentId` | `eventId` |
+| Contest entry FK | `tournamentLineupId` | `lineupId` |
+| APIs | `/api/tournaments`, `/api/lineup` | `/api/sports`, `/api/lineups` |
+| Sport logic | Inline PGA services | `SportModule` + `PropBetModule` plugins |
+| Client routing | Tournament-centric home | `/sports/:sportId`, `/leagues/*` |
 
-The application is organized into three main layers:
+Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
 
-1. **Contracts** (`spec/contracts/`) - Smart contracts on Base blockchain
+---
 
-   - Contest management and prediction markets
-   - Token minting and deposit management
-   - Economic model implementation
+## Implementation next
 
-2. **Server** (`spec/server/`) - Node.js backend (Hono/Express)
+**Phases 1–8 are done.** Next work is **Phase 9 — data migration** ([PLATFORM_REWRITE.md](../PLATFORM_REWRITE.md)): `migrate-from-legacy.ts`, preserve `entryId` / contract addresses, validation on prod snapshot. Phase 10 is cutover + legacy cleanup after that.
 
-   - REST API for client communication
-   - Database management (Prisma/PostgreSQL)
-   - PGA Tour data integration
-   - Cron jobs for automated updates
+---
 
-3. **Client** (`spec/client/`) - React frontend (Vite)
-   - User interface and interactions
-   - Privy for authentication and wallets; Wagmi for chain operations
-   - State management (React Query)
-   - Component architecture
+## Architecture walkthrough progress (optional — resume anytime)
 
-## Documentation Structure
+Educational tour of `spec/`; separate from implementation phase numbers.
 
-Each layer has:
+| # | Topic | Status |
+|---|-------|--------|
+| 1 | Platform product model | ✅ Done (incl. multi-lineup per event) |
+| 2 | Plugin system + booting a sport | ✅ Done (incl. `RosterRules` / `RankedEntry` deep dive) |
+| 3 | Server architecture | ✅ Done |
+| 4 | Data models | ✅ Done |
+| 5 | API reference | — See [server/api.md](server/api.md) |
+| 6 | Services | ✅ Done |
+| 7 | Cron pipeline | — See [server/cron.md](server/cron.md) |
+| 8 | Client architecture | ✅ Done |
+| 9 | Client components | Paused — [component-structure.md](client/component-structure.md) |
+| 10 | Client data flow | Pending |
+| 11 | Cross-layer | Pending |
+| 12 | Contracts | Pending |
 
-- **README.md** - Overview, key components, dependencies, and quick links
-- **architecture.md** - High-level architecture with diagrams
-- **data-flow.md** - How data moves through the system
-- Additional layer-specific documentation files
+---
 
-## Planning Process
+Use this order for a full architecture walkthrough:
 
-This documentation supports a systematic cleanup process:
+| # | Doc | What you'll learn |
+|---|-----|-------------------|
+| 1 | [Platform overview](platform/README.md) | Product model, layers, package layout |
+| 2 | [Plugin system](platform/plugins.md) | `SportModule`, `SportUIPlugin`, `PropBetModule` |
+| 3 | [Server architecture](server/architecture.md) | Hono app, registries, request flow |
+| 4 | [Data models](server/data-models.md) | Prisma schema (platform) |
+| 5 | [API reference](server/api.md) | Live HTTP routes |
+| 6 | [Services](server/services.md) | Business logic layout |
+| 7 | [Cron pipeline](server/cron.md) | 5-minute multi-sport job |
+| 8 | [Client architecture](client/architecture.md) | Providers, routing, sport context |
+| 9 | [Client components](client/component-structure.md) | Platform shell vs sport UI |
+| 10 | [Client data flow](client/data-flow.md) | React Query, adapters, on-chain |
+| 11 | [Cross-layer](cross-layer.md) | Auth, contests, settlement end-to-end |
+| 12 | [Contracts](contracts/README.md) | On-chain layer (unchanged, sport-agnostic) |
 
-### Phase 1: Discovery (Current State)
+### Deep dives (outside `spec/`)
 
-- Document what exists in each layer
-- Map dependencies between layers
-- Identify patterns (good and bad)
-- List unknowns
+| Topic | Doc |
+|-------|-----|
+| Side bet odds | [docs/side-bet-odds-methodology.md](../docs/side-bet-odds-methodology.md) |
+| Side bet ops | [docs/SIDE_BET_PRODUCTION_PLAN.md](../docs/SIDE_BET_PRODUCTION_PLAN.md) |
+| Tie-breakers | [docs/lineup-tie-breaker.md](../docs/lineup-tie-breaker.md) |
+| Referrals | [docs/referral-network.md](../docs/referral-network.md) |
+| Email program | [docs/email-program.md](../docs/email-program.md) |
 
-### Phase 2: Analysis (Identify Issues)
+### Legacy / planning artifacts
 
-- Code smells and problematic patterns
-- Inconsistencies across layers
-- Technical debt
-- Missing abstractions
-- Documentation gaps
+| File | Status |
+|------|--------|
+| [analysis.md](analysis.md) | Pre-rewrite discovery notes — historical |
+| [cleanup-backlog.md](cleanup-backlog.md) | Pre-rewrite cleanup list — largely superseded |
+| [onboarding-content-plan.md](onboarding-content-plan.md) | Content planning — still useful |
+| [docs/tournament-activation-runbook.md](../docs/tournament-activation-runbook.md) | **Deprecated** — use event runbook |
 
-### Phase 3: Prioritization (What to Clean Up)
+---
 
-- Categorize issues by type
-- Assess impact (High/Medium/Low)
-- Estimate effort
-- Create prioritized cleanup backlog
+## Repo layout (v4)
 
-### Phase 4: Execution (Clean Up)
+```
+packages/
+  sport-sdk/           Shared types + SportModule, SportUIPlugin, PropBetModule interfaces
+  sport-pga-golf/      PGA golf server plugin (ranking, validation, prop grading)
+  secondary-pricing/   Bonding curve math (sport-agnostic)
 
-- Work through backlog
-- Update specs as code changes
-- Validate changes don't break functionality
+server/
+  src/sports/          Sport + prop bet registries, pga-golf handlers
+  src/routes/          Hono routers (api.ts mounts live routes)
+  src/services/        Platform business logic
+  src/cron/            Scheduler
+  prisma/              Platform schema
 
-## Quick Links
+client/
+  src/sports/          UI plugin registry + pga-golf components
+  src/components/platform/   Sport-agnostic shell (picker, event header, lineup rows)
+  src/pages/           Route pages
+  src/hooks/           Data hooks (useSportData, bridges to legacy shapes where needed)
 
-### Contracts
+contracts/             Solidity (ContestController, Factory, tokens)
+```
 
-- [Contracts Overview](contracts/README.md)
-- [Contract Architecture](contracts/architecture.md)
-- [Contract Data Flow](contracts/data-flow.md)
-
-### Server
-
-- [Server Overview](server/README.md)
-- [Server Architecture](server/architecture.md)
-- [API Documentation](server/api.md)
-- [Data Models](server/data-models.md)
-- [Services](server/services.md)
-- [Cron Jobs](server/cron.md)
-
-### Client
-
-- [Client Overview](client/README.md)
-- [Client Architecture](client/architecture.md)
-- [Component Structure](client/component-structure.md)
-- [State Management](client/state-management.md)
-- [Client Data Flow](client/data-flow.md)
-
-## How to Use This Documentation
-
-1. **For Understanding**: Start with layer README files to understand what each layer does
-2. **For Architecture**: Review architecture.md files to understand how components relate
-3. **For Data Flow**: Check data-flow.md files to understand how data moves through the system
-4. **For Cleanup**: Use the analysis and backlog to prioritize cleanup efforts
+---
 
 ## Maintenance
 
-- Keep specs updated as code changes
-- Add new components/patterns as they're introduced
-- Document architectural decisions and rationale
-- Update cleanup backlog as issues are resolved
+- Update `spec/` when behavior changes on `v4`.
+- `PLATFORM_ARCHITECTURE.md` is the design intent; `spec/` is the as-built reference.
+- Production cutover (Phase 10) may add a short migration appendix — not yet written.

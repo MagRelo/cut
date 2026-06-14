@@ -1,8 +1,10 @@
 import type { Location } from "react-router-dom";
+import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 import {
   adminMatch,
   contestsMatch,
   leaderboardMatch,
+  leaguesMatch,
   lineupsMatch,
   userGroupsMatch,
 } from "./navRoutes";
@@ -30,7 +32,7 @@ export const LEFT_TABS: NavTab[] = [
   },
   {
     key: "contests",
-    to: "/contests",
+    to: `/sports/${DEFAULT_SPORT_ID}`,
     label: "Live Contests",
     match: contestsMatch,
   },
@@ -45,9 +47,9 @@ export const LINEUPS_TAB: NavTab = {
 
 export const LEAGUES_TAB: NavTab = {
   key: "leagues",
-  to: "/user-groups",
+  to: "/leagues",
   label: "My Leagues",
-  match: userGroupsMatch,
+  match: (pathname) => leaguesMatch(pathname) || userGroupsMatch(pathname),
 };
 
 export const ADMIN_TAB: NavTab = {

@@ -14,7 +14,6 @@ dotenv.config({ path: ".env", override: true });
 // Import other modules after env vars are loaded
 import { serve } from "@hono/node-server";
 import app from "./app.js";
-import CronScheduler from "./cron/scheduler.js";
 const requiredEnvVars = [
   "DATABASE_URL",
   "PRIVY_APP_ID",
@@ -28,22 +27,19 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
-// Initialize cron scheduler
-const ENABLE_CRON = process.env.ENABLE_CRON === "true";
-let cronScheduler: CronScheduler | null = null;
-if (ENABLE_CRON) {
-  console.log("Initializing cron scheduler...");
-  cronScheduler = new CronScheduler(true);
-  cronScheduler.start();
-} else {
-  console.log("Cron scheduler disabled (ENABLE_CRON not set to 'true')");
-}
+async function startServer() {
+  let cronScheduler: InstanceType<typeof import("./cron/scheduler.js").default> | null = null;
+  if (process.env.ENABLE_CRON === "true") {
+    const { default: CronScheduler } = await import("./cron/scheduler.js");
+    cronScheduler = new CronScheduler(true);
+    cronScheduler.start();
+    console.log("[SERVER] Cron scheduler enabled");
+  } else {
+    console.log("Cron scheduler disabled (ENABLE_CRON not set to 'true')");
+  }
 
-try {
-  // App port
   const port = process.env.PORT || 3000;
 
-  // Serve app
   serve({
     fetch: app.fetch,
     port: Number(port),
@@ -52,23 +48,23 @@ try {
   console.log(`[SERVER] Server running on port ${port}`);
   console.log(`[SERVER] Environment: ${process.env.NODE_ENV || "development"}`);
 
-  // Graceful shutdown
+  const shutdown = () => {
+    cronScheduler?.stop();
+    process.exit(0);
+  };
+
   process.on("SIGTERM", () => {
     console.log("SIGTERM received, shutting down gracefully...");
-    if (cronScheduler) {
-      cronScheduler.stop();
-    }
-    process.exit(0);
+    shutdown();
   });
 
   process.on("SIGINT", () => {
     console.log("SIGINT received, shutting down gracefully...");
-    if (cronScheduler) {
-      cronScheduler.stop();
-    }
-    process.exit(0);
+    shutdown();
   });
-} catch (error) {
+}
+
+startServer().catch((error) => {
   console.error("[HONO SERVER] Server startup failed:", error);
   process.exit(1);
-}
+});

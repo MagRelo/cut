@@ -69,7 +69,9 @@ export interface Contest {
   id: string;
   name: string;
   description: string | null;
-  tournamentId: string;
+  eventId: string;
+  /** @deprecated Use eventId — kept for transitional client code. */
+  tournamentId?: string;
   userGroupId: string;
   endTime: Date;
   status: ContestStatus;
@@ -123,7 +125,9 @@ export type OnchainPaymentView = {
 
 export interface CreateContestInput {
   name: string;
-  tournamentId: string;
+  eventId: string;
+  /** @deprecated Use eventId */
+  tournamentId?: string;
   transactionId: string;
   address: string;
   chainId: number;

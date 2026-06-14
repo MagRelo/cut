@@ -1,234 +1,166 @@
-# Server Data Models
+# Server data models (v4 platform)
 
-## Database Schema Overview
+Schema: `server/prisma/schema.prisma`  
+Baseline migration: `20260611153145_init_platform_schema`
 
-The database uses PostgreSQL with Prisma ORM. The schema is defined in `server/prisma/schema.prisma`.
+Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`TournamentLineup`** were removed on v4.
 
-## Core Models
+---
+
+## Identity & social
 
 ### User
-- **Purpose**: User accounts
-- **Key Fields**:
-  - `id`: Unique identifier (CUID)
-  - `privyUserId`: Privy user id (optional, unique) — links the Cut user to Privy for login and provisioning
-  - `email`: Email address (optional, unique)
-  - `phone`: Phone number (optional, unique)
-  - `name`: Display name
-  - `userType`: User type (default: "USER")
-  - `settings`: JSON settings object
-  - `isVerified`: Verification status
-- **Relations**:
-  - `wallets`: UserWallet[]
-  - `tournamentLineups`: TournamentLineup[]
-  - `contestLineups`: ContestLineup[]
-  - `userGroups`: UserGroupMember[]
+- Privy-linked (`privyUserId`), profile, `settings` JSON
+- Referral fields: `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
+- Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`, `sideBetTickets`
 
 ### UserWallet
-- **Purpose**: Blockchain wallet addresses linked to users
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `userId`: Foreign key to User
-  - `chainId`: Blockchain chain ID (8453 = Base, 84532 = Base Sepolia)
-  - `publicKey`: Wallet address
-  - `isPrimary`: Primary wallet flag
-- **Relations**:
-  - `user`: User
+- `chainId` + `publicKey` (unique per chain)
+- `isPrimary` for default wallet
 
-### UserGroup (League)
-- **Purpose**: Private league / friend group for scoped contests
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `name`: League name
-  - `description`: Optional description
-  - `inviteCode`: Optional unique opaque code for self-join (admin-generated)
-- **Relations**:
-  - `members`: UserGroupMember[]
-  - `contests`: Contest[]
-- **Privacy**: No public directory; membership gates reads and league contest visibility
+### UserGroup (league)
+- **No sport field** — cross-sport by design
+- Optional `inviteCode` for self-join
 
 ### UserGroupMember
-- **Purpose**: League membership and role
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `userId`: Foreign key to User
-  - `userGroupId`: Foreign key to UserGroup
-  - `role`: `ADMIN` | `MEMBER` (default `MEMBER`)
-- **Relations**:
-  - `user`: User
-  - `userGroup`: UserGroup
+- `role`: `ADMIN` | `MEMBER`
 
-## Tournament Models
+---
 
-### Tournament
-- **Purpose**: PGA Tour tournament data
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `pgaTourId`: PGA Tour tournament ID
-  - `name`: Tournament name
-  - `startDate`: Tournament start date
-  - `endDate`: Tournament end date
-  - `status`: Tournament status
-  - `manualActive`: Flag for active tournament
-  - `roundStatusDisplay`: Current round status
-  - `currentRound`: Current round number
-- **Relations**:
-  - `tournamentPlayers`: TournamentPlayer[]
-  - `tournamentLineups`: TournamentLineup[]
-  - `contests`: Contest[]
+## Sport registry
 
-### Player
-- **Purpose**: Golf player data from PGA Tour
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `pga_pgaTourId`: PGA Tour player ID (unique)
-  - `pga_displayName`: Display name
-  - `pga_imageUrl`: Player image URL
-  - `isActive`: Active player flag
-  - `inField`: In current tournament field
-- **Relations**:
-  - `tournamentPlayers`: TournamentPlayer[]
+### Sport
+| Field | Example |
+|-------|---------|
+| `id` | `pga-golf` |
+| `slug` | URL segment |
+| `rosterRules` | `{ slotCount: 4, minPicks: 0, maxPicks: 4, allowDuplicates: false }` |
+| `scoringRules` | `{ aggregation: "sum", direction: "higher_wins" }` |
 
-### TournamentPlayer
-- **Purpose**: Player participation in a tournament
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `tournamentId`: Foreign key to Tournament
-  - `playerId`: Foreign key to Player
-  - `leaderboardPosition`: Current position
-  - `r1`, `r2`, `r3`, `r4`: Round scores (JSON)
-  - `cut`: Cut score
-  - `bonus`: Bonus points
-  - `total`: Total score
-- **Relations**:
-  - `player`: Player
-  - `tournament`: Tournament
-  - `tournamentLineups`: TournamentLineupPlayer[]
+### CompetitionEvent
+| Field | Purpose |
+|-------|---------|
+| `sportId` | FK → Sport |
+| `externalId` | Sport-native id (golf: `R2026033`) |
+| `isActive` | Only one active per sport (set by init) |
+| `metadata` | Sport-specific JSON (name, dates, course, summary, round status, …) |
 
-## Lineup Models
+### Participant
+- Global competitor per sport (`externalId`, `displayName`, `metadata`)
 
-### TournamentLineup
-- **Purpose**: User's lineup for a tournament
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `userId`: Foreign key to User
-  - `tournamentId`: Foreign key to Tournament
-  - `name`: Lineup name
-  - `winningScorePrediction`: Optional int (1–250) — user's guess of the highest lineup score to win a contest; used for tie-breaking (see [lineup tie-breaker](../../docs/lineup-tie-breaker.md))
-- **Relations**:
-  - `user`: User
-  - `tournament`: Tournament
-  - `players`: TournamentLineupPlayer[]
-  - `contestLineups`: ContestLineup[]
+### EventParticipant
+- Competitor in one event
+- `scoreData` JSON (golf: `leaderboardPosition`, hole scores, …)
+- `total` — aggregated score for lineup sum
 
-### TournamentLineupPlayer
-- **Purpose**: Junction table for lineup players
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `tournamentLineupId`: Foreign key to TournamentLineup
-  - `tournamentPlayerId`: Foreign key to TournamentPlayer
-- **Relations**:
-  - `tournamentLineup`: TournamentLineup
-  - `tournamentPlayer`: TournamentPlayer
+---
 
-## Contest Models
+## Lineups
+
+### Lineup
+- `userId` + `eventId` — **many lineups per user per event** (same as legacy `TournamentLineup`)
+- `prediction` JSON (golf: `{ type: "winningScore", value: number }`)
+- `name` optional display label
+
+### LineupPick
+- `lineupId` + `eventParticipantId`
+- `slotIndex` optional ordering
+
+```
+Lineup ──< LineupPick >── EventParticipant
+```
+
+---
+
+## Contests
 
 ### Contest
-- **Purpose**: Contest instance (linked to blockchain contract)
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `name`: Contest name
-  - `address`: Blockchain contract address
-  - `chainId`: Blockchain chain ID
-  - `tournamentId`: Foreign key to Tournament
-  - `userGroupId`: Optional foreign key to UserGroup
-  - `status`: Contest status (OPEN, ACTIVE, LOCKED, SETTLED, CLOSED, CANCELLED)
-  - `endTime`: Contest end time
-  - `settings`: JSON settings
-  - `results`: JSON results
-- **Relations**:
-  - `tournament`: Tournament
-  - `userGroup`: UserGroup? (optional)
-  - `contestLineups`: ContestLineup[]
-  - `timelines`: ContestLineupTimeline[]
+| Field | Notes |
+|-------|-------|
+| `eventId` | Determines sport via event |
+| `userGroupId` | Optional league scope |
+| `address` | On-chain `ContestController` |
+| `chainId` | 8453 / 84532 |
+| `status` | `OPEN` \| `ACTIVE` \| `LOCKED` \| `SETTLED` \| `CLOSED` |
+| `settings` | Primary deposit, oracle, expiry, subsidy bps, … |
+| `results` | Settlement snapshot JSON |
 
 ### ContestLineup
-- **Purpose**: User's lineup entered in a contest
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `contestId`: Foreign key to Contest
-  - `tournamentLineupId`: Foreign key to TournamentLineup
-  - `userId`: Foreign key to User
-  - `entryId`: Blockchain entry ID (uint256 as string)
-  - `status`: Lineup status
-  - `score`: Calculated score
-  - `position`: Leaderboard position
-- **Relations**:
-  - `contest`: Contest
-  - `tournamentLineup`: TournamentLineup
-  - `user`: User
-  - `timelines`: ContestLineupTimeline[]
+- Links `contestId` + `lineupId` + `userId`
+- `entryId` — on-chain entry (uint256)
+- `score`, `position` — updated during live play / settlement
 
 ### ContestLineupTimeline
-- **Purpose**: Historical snapshots of contest lineup scores
-- **Key Fields**:
-  - `id`: Unique identifier
-  - `contestLineupId`: Foreign key to ContestLineup
-  - `contestId`: Foreign key to Contest
-  - `timestamp`: Snapshot timestamp
-  - `roundNumber`: Round number
-  - `score`: Score at this timestamp
-  - `position`: Position at this timestamp
-- **Relations**:
-  - `contestLineup`: ContestLineup
-  - `contest`: Contest
+- Time series of score/position per entry for charts
 
-## Data Relationships
+### ContestSecondaryParticipant
+- Secondary market buyers indexed from chain events
+
+### OnchainPayment
+- Indexed payout rows (`PRIMARY`, `SECONDARY`, `REFERRAL`)
+
+---
+
+## Side bets
+
+### SideBetMarket
+- One per `lineupId` (unique)
+- `eventId`, `status`, `quoteVersion`
+- DataGolf metadata: `dgEventId`, `dgEventName`, timestamps
+
+**Status:** `UNAVAILABLE` → `OPEN` → `LOCKED` → `SETTLED` / `VOID` / `CLOSED`
+
+### SideBetSelection
+- Priced cell: `hitsRequired`, `topN`, `decimalOdds`, `americanDisplay`, `quoteVersion`
+
+### SideBetTicket
+- User stake on a market
+- `eventParticipantIds` — four IDs frozen at placement
+- `status`: `OPEN` \| `WON` \| `LOST` \| `VOID` \| `REFUND_PENDING`
+
+---
+
+## Email
+
+### EmailSendLog
+- `dedupeKey` unique — idempotency
+- `eventId` optional FK (was `tournamentId` in legacy)
+- `kind`: `WELCOME`, `NEW_TOURNAMENT`, `REMINDER_NO_CONTEST`, etc.
+
+---
+
+## Entity relationship (simplified)
 
 ```mermaid
 erDiagram
-    User ||--o{ UserWallet : has
-    User ||--o{ TournamentLineup : creates
-    User ||--o{ ContestLineup : enters
-    User ||--o{ UserGroupMember : belongs_to
-    
-    Tournament ||--o{ TournamentPlayer : has
-    Tournament ||--o{ TournamentLineup : for
-    Tournament ||--o{ Contest : has
-    
-    Player ||--o{ TournamentPlayer : participates_in
-    
-    TournamentLineup ||--o{ TournamentLineupPlayer : contains
-    TournamentLineup ||--o{ ContestLineup : used_in
-    TournamentLineupPlayer }o--|| TournamentPlayer : references
-    
-    Contest ||--o{ ContestLineup : contains
-    Contest ||--o{ ContestLineupTimeline : tracks
-    Contest }o--o| UserGroup : belongs_to
-    
-    UserGroup ||--o{ UserGroupMember : has
-    UserGroup ||--o{ Contest : has
+  Sport ||--o{ CompetitionEvent : has
+  Sport ||--o{ Participant : has
+  CompetitionEvent ||--o{ EventParticipant : has
+  Participant ||--o{ EventParticipant : appears_in
+  CompetitionEvent ||--o{ Lineup : has
+  Lineup ||--o{ LineupPick : has
+  LineupPick }o--|| EventParticipant : picks
+  CompetitionEvent ||--o{ Contest : has
+  UserGroup ||--o{ Contest : hosts
+  Contest ||--o{ ContestLineup : has
+  ContestLineup }o--|| Lineup : uses
+  Lineup ||--o| SideBetMarket : optional
+  SideBetMarket ||--o{ SideBetTicket : has
 ```
 
-## Key Design Decisions
+---
 
-### Why Separate TournamentLineup and ContestLineup?
-- **TournamentLineup**: User's lineup for a tournament (reusable)
-- **ContestLineup**: Entry in a specific contest (links to blockchain)
-- Allows users to reuse lineups across multiple contests
+## Golf metadata conventions
 
-### Why ContestLineupTimeline?
-- Historical tracking of scores over time
-- Enables timeline visualizations
-- Snapshot-based for performance
+Stored on `CompetitionEvent.metadata` and `Participant.metadata`:
 
-### Why JSON Fields?
-- **settings**: Flexible contest configuration
-- **results`: Flexible result storage
-- **r1-r4**: Round scores stored as JSON (flexible structure)
-- **venue`, `weather`, `performance`: Flexible PGA Tour data
+| Key | Usage |
+|-----|-------|
+| `name`, `startDate`, `endDate` | Display, email, expiry |
+| `course`, `city`, `state` | Event header |
+| `status`, `roundDisplay`, `currentRound` | Live state |
+| `summarySections` | Tournament preview JSON |
+| `pgaTourId` | External id alias |
+| Participant `pga_firstName` / rankings | Candidate display |
 
-### Indexing Strategy
-- Indexes on foreign keys for join performance
-- Indexes on frequently queried fields (status, chainId, etc.)
-- Composite indexes for common query patterns
-
+Tournament summary files: `server/src/tournamentSummaries/{externalId}.json`

@@ -1,8 +1,18 @@
 import { useMemo } from "react";
-import { useQuery, QueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../utils/queryKeys";
-import apiClient from "../utils/apiClient";
+import { QueryClient } from "@tanstack/react-query";
 import { resolveTournamentRoundNumber } from "../components/player/playerRoundUtils";
+import {
+  candidateToPlayer,
+  golfEventToTournament,
+  golfEventToTournamentLive,
+  golfEventToTournamentShell,
+} from "../lib/golfEventAdapter";
+import {
+  DEFAULT_SPORT_ID,
+  prefetchActiveEvent,
+  useActiveEventQuery,
+  useEventCandidatesQuery,
+} from "./useSportData";
 import {
   mergeTournament,
   type Tournament,
@@ -10,6 +20,7 @@ import {
   type TournamentLive,
 } from "../types/tournament";
 import { type PlayerWithTournamentData } from "../types/player";
+import { useSportContext } from "../contexts/SportContext";
 
 export interface ActiveTournamentShellResponse {
   tournament: TournamentShell;
@@ -29,45 +40,8 @@ export interface ActiveTournamentState {
   isTournamentEditable: boolean;
   tournamentStatusDisplay: string;
   refetch: () => Promise<void>;
-}
-
-const SHELL_STALE_MS = 24 * 60 * 60 * 1000;
-const SHELL_GC_MS = 24 * 60 * 60 * 1000;
-
-const LIVE_STALE_MS = 5 * 60 * 1000;
-const LIVE_REFETCH_MS = 5 * 60 * 1000;
-const LIVE_GC_MS = 30 * 60 * 1000;
-
-/** Week/setup fields (GET /tournaments/active/shell). Long-lived cache. */
-export function useTournamentShell() {
-  return useQuery({
-    queryKey: queryKeys.tournaments.activeShell(),
-    queryFn: async () => {
-      const data = await apiClient.get<ActiveTournamentShellResponse>("/tournaments/active/shell");
-      return data;
-    },
-    staleTime: SHELL_STALE_MS,
-    gcTime: SHELL_GC_MS,
-    refetchOnWindowFocus: "always",
-    placeholderData: (previousData) => previousData,
-  });
-}
-
-/** Cron-updated round status + player scores (GET /tournaments/active/live). */
-export function useActiveTournamentLive(tournamentId: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.tournaments.activeLive(tournamentId ?? ""),
-    queryFn: async () => {
-      const data = await apiClient.get<ActiveTournamentLiveResponse>("/tournaments/active/live");
-      return data;
-    },
-    enabled: Boolean(tournamentId),
-    staleTime: LIVE_STALE_MS,
-    refetchInterval: LIVE_REFETCH_MS,
-    refetchOnWindowFocus: false,
-    gcTime: LIVE_GC_MS,
-    placeholderData: (previousData) => previousData,
-  });
+  eventId: string | undefined;
+  sportId: string;
 }
 
 function formatTournamentStatusDisplay(status: string | undefined): string {
@@ -79,28 +53,75 @@ function formatTournamentStatusDisplay(status: string | undefined): string {
   );
 }
 
-/** Primary hook: merged tournament + live players + derived flags. */
+/** @deprecated Debug helper — maps active event to legacy shell shape. */
+export function useTournamentShell() {
+  const { sportId } = useSportContext();
+  const activeQuery = useActiveEventQuery(sportId);
+
+  return {
+    ...activeQuery,
+    data: activeQuery.data
+      ? { tournament: golfEventToTournamentShell(activeQuery.data) }
+      : undefined,
+  };
+}
+
+/** @deprecated Debug helper — maps candidates to legacy live shape. */
+export function useActiveTournamentLive(eventId: string | undefined) {
+  const { sportId } = useSportContext();
+  const activeQuery = useActiveEventQuery(sportId);
+  const candidatesQuery = useEventCandidatesQuery(sportId, eventId);
+
+  const data = useMemo(() => {
+    if (!activeQuery.data || !eventId || !candidatesQuery.data) {
+      return undefined;
+    }
+    return {
+      tournament: golfEventToTournamentLive(activeQuery.data),
+      players: candidatesQuery.data.map((candidate) =>
+        candidateToPlayer(candidate, eventId),
+      ),
+    } satisfies ActiveTournamentLiveResponse;
+  }, [activeQuery.data, candidatesQuery.data, eventId]);
+
+  return {
+    isLoading: activeQuery.isLoading || candidatesQuery.isLoading,
+    isFetching: activeQuery.isFetching || candidatesQuery.isFetching,
+    error: activeQuery.error ?? candidatesQuery.error,
+    data,
+    dataUpdatedAt: Math.max(activeQuery.dataUpdatedAt, candidatesQuery.dataUpdatedAt),
+    refetch: async () => {
+      await Promise.all([activeQuery.refetch(), candidatesQuery.refetch()]);
+    },
+  };
+}
+
+/** Primary hook: active event mapped to legacy tournament shape for existing UI. */
 export function useActiveTournament(): ActiveTournamentState {
-  const shellQuery = useTournamentShell();
-  const tournamentId = shellQuery.data?.tournament?.id;
-  const liveQuery = useActiveTournamentLive(tournamentId);
+  const { sportId } = useSportContext();
+  const activeQuery = useActiveEventQuery(sportId);
+  const eventId = activeQuery.data?.event.id;
+  const candidatesQuery = useEventCandidatesQuery(sportId, eventId);
 
   const tournament = useMemo(() => {
-    const shell = shellQuery.data?.tournament;
-    const live = liveQuery.data?.tournament;
-    if (!shell || !live) return null;
-    return mergeTournament(shell, live);
-  }, [shellQuery.data?.tournament, liveQuery.data?.tournament]);
+    if (!activeQuery.data) return null;
+    return golfEventToTournament(activeQuery.data);
+  }, [activeQuery.data]);
 
-  const players = liveQuery.data?.players ?? [];
+  const players = useMemo(() => {
+    if (!eventId) return [];
+    return (candidatesQuery.data ?? []).map((candidate) =>
+      candidateToPlayer(candidate, eventId),
+    );
+  }, [candidatesQuery.data, eventId]);
 
   const isLoading =
-    shellQuery.isLoading || (Boolean(tournamentId) && liveQuery.isLoading);
-  const isFetching = shellQuery.isFetching || liveQuery.isFetching;
+    activeQuery.isLoading || (Boolean(eventId) && candidatesQuery.isLoading);
+  const isFetching = activeQuery.isFetching || candidatesQuery.isFetching;
 
-  const rawError = shellQuery.error ?? liveQuery.error;
+  const rawError = activeQuery.error ?? candidatesQuery.error;
   const error =
-    rawError instanceof Error ? rawError : rawError ? new Error("Failed to load tournament") : null;
+    rawError instanceof Error ? rawError : rawError ? new Error("Failed to load event") : null;
 
   const isTournamentEditable =
     tournament?.status !== "IN_PROGRESS" && tournament?.status !== "COMPLETED";
@@ -108,7 +129,7 @@ export function useActiveTournament(): ActiveTournamentState {
   const tournamentStatusDisplay = formatTournamentStatusDisplay(tournament?.status);
 
   const refetch = async () => {
-    await Promise.all([shellQuery.refetch(), liveQuery.refetch()]);
+    await Promise.all([activeQuery.refetch(), candidatesQuery.refetch()]);
   };
 
   return {
@@ -120,10 +141,11 @@ export function useActiveTournament(): ActiveTournamentState {
     isTournamentEditable,
     tournamentStatusDisplay,
     refetch,
+    eventId,
+    sportId,
   };
 }
 
-/** Active tournament round label and 1–4 number for scorecard / player UI. */
 export function useActiveTournamentRound() {
   const { tournament } = useActiveTournament();
   const roundDisplay = tournament?.roundDisplay ?? "R1";
@@ -133,34 +155,34 @@ export function useActiveTournamentRound() {
 }
 
 export async function prefetchTournamentShell(queryClient: QueryClient) {
+  await prefetchActiveEvent(queryClient, DEFAULT_SPORT_ID);
+}
+
+export async function prefetchActiveTournamentLive(queryClient: QueryClient, eventId: string) {
+  const { queryKeys } = await import("../utils/queryKeys");
+  const apiClient = (await import("../utils/apiClient")).default;
   await queryClient.prefetchQuery({
-    queryKey: queryKeys.tournaments.activeShell(),
+    queryKey: queryKeys.sports.candidates(DEFAULT_SPORT_ID, eventId),
     queryFn: async () => {
-      const data = await apiClient.get<ActiveTournamentShellResponse>("/tournaments/active/shell");
-      return data;
+      const data = await apiClient.get<{ candidates: import("@cut/sport-sdk").Candidate[] }>(
+        `/sports/${DEFAULT_SPORT_ID}/events/${eventId}/candidates`,
+      );
+      return data.candidates;
     },
-    staleTime: SHELL_STALE_MS,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
-export async function prefetchActiveTournamentLive(queryClient: QueryClient, tournamentId: string) {
-  await queryClient.prefetchQuery({
-    queryKey: queryKeys.tournaments.activeLive(tournamentId),
-    queryFn: async () => {
-      const data = await apiClient.get<ActiveTournamentLiveResponse>("/tournaments/active/live");
-      return data;
-    },
-    staleTime: LIVE_STALE_MS,
-  });
-}
-
-/** Prefetch shell then live (uses tournament id from cached shell). */
 export async function prefetchActiveTournament(queryClient: QueryClient) {
-  await prefetchTournamentShell(queryClient);
-  const tid = queryClient.getQueryData<ActiveTournamentShellResponse>(
-    queryKeys.tournaments.activeShell(),
-  )?.tournament?.id;
-  if (tid) {
-    await prefetchActiveTournamentLive(queryClient, tid);
+  await prefetchActiveEvent(queryClient, DEFAULT_SPORT_ID);
+  const { queryKeys } = await import("../utils/queryKeys");
+  const active = queryClient.getQueryData<{ event: { id: string } }>(
+    queryKeys.sports.activeEvent(DEFAULT_SPORT_ID),
+  );
+  if (active?.event?.id) {
+    await prefetchActiveTournamentLive(queryClient, active.event.id);
   }
 }
+
+// Re-export for any code still importing mergeTournament from this module.
+export { mergeTournament };

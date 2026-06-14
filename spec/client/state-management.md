@@ -1,245 +1,128 @@
-# Client State Management
+# Client state management (v4)
 
-## State Management Strategy
+Three state domains: **server cache** (React Query), **session** (Context), **chain** (Wagmi).
 
-The client uses a multi-layered state management approach:
+---
 
-1. **Server State**: React Query (@tanstack/react-query)
-2. **Client State**: React Context API
-3. **Form State**: React Hook Form
-4. **Blockchain State**: Wagmi hooks
-5. **Local State**: React useState
+## Server state — React Query
 
-## Server State (React Query)
+**Single `queryClient`** in `lib/queryClient.ts`, provided at app root.
 
-### Configuration
-- **staleTime**: 1 minute (data is fresh)
-- **gcTime**: 5 minutes (cache time)
-- **retry**: 1 (retry failed requests once)
-- **refetchOnWindowFocus**: true
-- **refetchOnReconnect**: true
+### Patterns
 
-### Query Patterns
+| Pattern | Usage |
+|---------|-------|
+| `useQuery` | Reads — events, lineups, contests, side bets |
+| `useMutation` | Writes — lineup save, profile update |
+| `prefetchQuery` | App boot active event |
+| `invalidateQueries` | After mutations that affect related reads |
+| `enabled` | Gate queries until `eventId` / `userId` known |
 
-#### Data Fetching
+### Stale / refetch defaults
+
+| Query | staleTime | refetchInterval |
+|-------|-----------|-----------------|
+| Sports list | 24h | — |
+| Active event | 5m | 5m |
+| Candidates | 5m | 5m |
+| Contests | hook-specific | often on focus |
+
+Global defaults in `queryClient.ts` apply where hooks do not override.
+
+### User-scoped keys
+
+Lineup keys include `userId` so switching accounts does not leak cached rosters:
+
 ```typescript
-const { data, isLoading, error } = useQuery({
-  queryKey: ['tournament', tournamentId],
-  queryFn: () => fetchTournament(tournamentId),
-});
+lineups.byEvent(userId, eventId)
 ```
 
-#### Mutations
-```typescript
-const mutation = useMutation({
-  mutationFn: createContest,
-  onSuccess: () => {
-    queryClient.invalidateQueries(['contests']);
-  },
-});
-```
+---
 
-### Custom Hooks
-- **useTournamentData** (`useTournamentShell`, `useActiveTournamentLive`, `useActiveTournament`): shell (24h cache) + live (5 min poll); primary UI uses merged `useActiveTournament()`
-- **useContestQuery**: Contest data fetching
-- **useLineupData**: Lineup operations
-- **useContestMutations**: Contest mutations
+## Session state — Context
 
-### Caching Strategy
-- **Tournament Data**: Prefetched on app load
-- **Contest Data**: Cached per contest ID
-- **Lineup Data**: Cached per tournament/user
-- **Token Balances**: Polled every 30 seconds
+### AuthContext
 
-## Client State (Context API)
+| State | Source |
+|-------|--------|
+| `user` | `GET /auth/me` |
+| `isAuthenticated` | Privy `authenticated` |
+| `tokenBalances` | wagmi `useReadContracts` + poll |
+| `authFlow` | connect / network selection UI state |
+| `startAuthFlow` | imperative connect helper |
 
-### AuthContext (`AuthProvider` / `useAuth`)
-- **Purpose**: Privy session, Cut user from `/auth/me`, token balances, and guided connect flow
-- **State**:
-  - `user`: Current Cut user object (from API)
-  - `loading`: Auth / profile loading
-  - `platformTokenBalance`, `paymentTokenBalance`: ERC-20 balances for configured tokens
-  - Token addresses, symbols, decimals
-  - `authFlow`: Phase, busy flag, and error for connect/network steps
-- **Methods**:
-  - `startAuthFlow(network)`: Privy login + enforce Base vs Base Sepolia
-  - `updateUser()`, `updateUserSettings()`, `logout()`
-  - `isAdmin()`, `getCurrentUser()`
+Registers Privy token getter with `apiClient` on mount.
+
+### SportContext
+
+| State | Source |
+|-------|--------|
+| `sportId` | URL param or path parse; default `pga-golf` |
+
+Read-only for the route tree. Changing sport = navigation via `SportPicker`.
 
 ### GlobalErrorContext
-- **Purpose**: Global error handling
-- **State**:
-  - `errors`: Array of error messages
-- **Methods**:
-  - `showError()`: Display error message
-  - `clearError()`: Clear error message
 
-## Form State (React Hook Form)
+App-level error message queue for non-field errors (failed loads, unexpected API failures).
 
-### Form Management
-```typescript
-const { register, handleSubmit, formState: { errors } } = useForm({
-  resolver: yupResolver(schema),
-});
-```
+---
 
-### Validation
-- **Yup**: Schema validation
-- **Zod**: Type validation (some forms)
-- **Server Validation**: Always validate on server
+## Chain state — Wagmi
 
-## Blockchain State (Wagmi)
+| Concern | Hooks |
+|---------|-------|
+| Account / chain | `useAccount`, `useChainId` |
+| Contract reads | `useReadContract`, `useReadContracts` |
+| Writes | `useWriteContract` wrapped in `useBlockchainTransaction` |
+| Contest ops | `useContestantOperations` |
+| Token buy/sell | `useTokenOperations` |
 
-### Account State
-- **useAccount**: Connected wallet, chain ID, status
-- **useSwitchChain**: Chain switching
-- **useDisconnect**: Wallet disconnection
+Wagmi config in `wagmi.ts` — chains: Base (8453), Base Sepolia (84532).
 
-### Contract Reads
-- **useReadContract**: Read contract state
-- **useBalance**: Token balances
-- **Custom Hooks**: Wrap Wagmi for specific contracts
+Privy `SmartWalletsProvider` supplies paymaster for sponsored txs where configured.
 
-### Contract Writes
-- **useWalletClient** + **writeContract**: Used by `useBlockchainTransaction` for sequential contract calls
-- **usePublicClient** + **waitForTransactionReceipt**: Confirms each transaction
-- **useBlockchainTransaction**: Batches multiple `writeContract` calls in order (e.g. approve then deposit)
+---
 
-## Local State (useState)
+## Local component state
 
-### Component State
-- Form inputs (managed by React Hook Form)
-- UI state (modals, dropdowns, etc.)
-- Temporary calculations
-- Component-specific flags
+| Use case | Tool |
+|----------|------|
+| Modal open/close | `useState` |
+| Form drafts | `react-hook-form` |
+| Optimistic UI | mutation `onMutate` (selective) |
 
-## State Flow Patterns
+Prefer server cache over duplicating API data in local state.
 
-### Server Data Flow
-```mermaid
-graph LR
-    A[Component] --> B[Custom Hook]
-    B --> C[React Query]
-    C --> D[API Client]
-    D --> E[Server]
-    E --> D
-    D --> C
-    C --> B
-    B --> A
-```
+---
 
-### Blockchain Data Flow
-```mermaid
-graph LR
-    A[Component] --> B[Custom Hook]
-    B --> C[Wagmi Hook]
-    C --> D[Blockchain]
-    D --> C
-    C --> B
-    B --> A
-```
+## What is NOT in global state
 
-### Context State Flow
-```mermaid
-graph TD
-    A[AuthProvider] --> B[AuthContext]
-    B --> C[Components]
-    C --> D[useAuth]
-    D --> B
-```
+- Contest list for an event — always React Query
+- Candidate pool — React Query, keyed by event
+- Lineup picks during edit — local form state until save
+- Contract entry state — Wagmi reads at lobby time
 
-## State Synchronization
+---
 
-### Server ↔ Client
-- React Query handles synchronization
-- Automatic refetching on focus/reconnect
-- Manual invalidation after mutations
+## Invalidation map
 
-### Blockchain ↔ Client
-- Wagmi handles synchronization
-- Polling for balances (30 seconds)
-- Event listening (if implemented)
+| Mutation | Invalidate |
+|----------|------------|
+| Save lineup | `lineups.byEvent`, `sideBet.market`, sometimes `auth/me` lineups |
+| Join/leave contest | `contests.byId`, `contests.byEvent`, lobby route key |
+| Update profile | `auth` user query |
+| Place side bet | `sideBet.tickets`, `sideBet.market` |
 
-### Context ↔ Components
-- Context provides state to components
-- Components update context via hooks
-- Re-renders when context changes
+Centralized in mutation hooks (`useLineupMutations`, `useContestMutations`, etc.).
 
-## State Updates
+---
 
-### Optimistic Updates
-- Some mutations use optimistic updates
-- UI updates immediately
-- Rollback on error
+## DevTools
 
-### Cache Invalidation
-- After mutations, invalidate related queries
-- Ensures fresh data
-- Example: After creating contest, invalidate contest list
+`ReactQueryDevtools` mounted in development only (`App.tsx`).
 
-### Refetching
-- Automatic refetch on window focus
-- Automatic refetch on reconnect
-- Manual refetch via `refetch()` function
+---
 
-## Performance Considerations
+## Migration note (Phase 10)
 
-### Memoization
-- `useMemo` for expensive calculations
-- `useCallback` for stable function references
-- `React.memo` for component memoization
-
-### Query Optimization
-- Query keys for precise cache targeting
-- Selective refetching
-- Background updates
-
-### Context Optimization
-- Split contexts by concern
-- Avoid unnecessary re-renders
-- Use refs for non-reactive values
-
-## Error Handling
-
-### Query Errors
-- React Query handles retries
-- Error states in components
-- Global error context for critical errors
-
-### Mutation Errors
-- No automatic retry
-- Error handling in components
-- User-friendly error messages
-
-### Blockchain Errors
-- Transaction errors caught in hooks
-- User-friendly error messages
-- Retry logic for transient failures
-
-## State Persistence
-
-### Session Storage
-- Privy persists its own session (embedded wallet / login state)
-- User preferences (if implemented)
-
-### Local Storage
-- Wallet connection state (via Wagmi / Privy)
-- UI preferences (if implemented)
-
-### No Persistence
-- Cut user profile: Loaded from `/auth/me` when authenticated
-- Blockchain data: Fetched from chain
-- Form data: Not persisted
-
-## Testing State
-
-### Unit Testing
-- Test hooks in isolation
-- Mock React Query
-- Mock Wagmi hooks
-
-### Integration Testing
-- Test state updates
-- Test cache invalidation
-- Test error handling
-
+Query keys and hooks still expose `tournamentId` aliases (`byTournament`, `prefetchActiveTournament`). New code should use `eventId` naming; aliases will be removed after legacy types are deleted.

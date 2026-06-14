@@ -22,5 +22,26 @@
     "noUncheckedIndexedAccess": true
   },
   "include": ["src/**/*", "prisma/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "prisma/seedPGA.ts",
+    "src/cron-app.ts",
+    "src/scripts/**",
+    "src/**/*.test.ts",
+    "src/services/odds/**",
+    "src/routes/lineup.ts",
+    "src/routes/tournament.ts",
+    "src/scripts/backfillPlayerIdentity.ts",
+    "src/scripts/migrate-from-legacy.ts",
+    "src/scripts/settleContestOffChain.ts",
+    "src/services/bootstrapTournamentLineups.ts",
+    "src/services/initTournament.ts",
+    "src/services/syncTournamentFieldWithdrawals.ts",
+    "src/services/syncTournamentTeeTimes.ts",
+    "src/services/updateTournament.ts",
+    "src/services/syncTournamentTeeTimes.ts",
+    "src/services/updateTournamentPlayers.ts",
+    "src/middleware/tournamentStatus.ts",
+    "src/utils/mergePlayerIdentity.ts"
+  ]
 }

@@ -9,6 +9,14 @@
  */
 
 export const queryKeys = {
+  sports: {
+    all: ["sports"] as const,
+    list: () => [...queryKeys.sports.all, "list"] as const,
+    activeEvent: (sportId: string) =>
+      [...queryKeys.sports.all, "activeEvent", sportId] as const,
+    candidates: (sportId: string, eventId: string) =>
+      [...queryKeys.sports.all, "candidates", sportId, eventId] as const,
+  },
   tournaments: {
     all: ["tournaments"] as const,
     /** Week/setup fields (GET /tournaments/active/shell). */
@@ -22,8 +30,8 @@ export const queryKeys = {
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
     /** Lobby page loaded from `/contest/:address` (address in URL only). */
     byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
-    byTournament: (
-      tournamentId: string,
+    byEvent: (
+      eventId: string,
       chainId: number | "all",
       userId?: string | null,
       userGroupId?: string,
@@ -31,17 +39,27 @@ export const queryKeys = {
       [
         ...queryKeys.contests.all,
         "list",
-        tournamentId,
+        eventId,
         chainId,
         userId ?? "anon",
         userGroupId ?? "all",
       ] as const,
+    /** @deprecated Use byEvent — eventId replaces tournamentId. */
+    byTournament: (
+      eventId: string,
+      chainId: number | "all",
+      userId?: string | null,
+      userGroupId?: string,
+    ) => queryKeys.contests.byEvent(eventId, chainId, userId, userGroupId),
   },
   lineups: {
     all: ["lineups"] as const,
     /** Scoped by user so cache cannot leak across account switches. */
-    byTournament: (userId: string, tournamentId: string) =>
-      [...queryKeys.lineups.all, "tournament", userId, tournamentId] as const,
+    byEvent: (userId: string, eventId: string) =>
+      [...queryKeys.lineups.all, "event", userId, eventId] as const,
+    /** @deprecated Use byEvent — eventId replaces tournamentId. */
+    byTournament: (userId: string, eventId: string) =>
+      queryKeys.lineups.byEvent(userId, eventId),
     byId: (userId: string, lineupId: string) =>
       [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
@@ -71,6 +89,8 @@ export const queryKeys = {
   userGroups: {
     all: ["userGroups"] as const,
     byId: (id: string) => [...queryKeys.userGroups.all, id] as const,
+    contests: (id: string, chainId: number | "all") =>
+      [...queryKeys.userGroups.all, id, "contests", chainId] as const,
     members: (id: string) => [...queryKeys.userGroups.all, id, "members"] as const,
   },
   admin: {

@@ -225,24 +225,26 @@ Core platform endpoints:
 
 | Route | Scope |
 |-------|-------|
-| `/sports/:sportId` | Sport home — active event, lineup management, public contests |
-| `/sports/:sportId/contests/:id` | Contest detail and leaderboard |
-| `/leagues/:id` | Cross-sport league — contest list grouped by sport/event |
+| `/sports/:sportId` | Sport home — active event contest list (`SportHubPage`) |
+| `/contest/:address` | Contest lobby (on-chain address in URL) |
+| `/leagues/:id` | Cross-sport league — contests grouped by event |
 | `/account` | Wallet, referrals, settings (sport-neutral) |
 
-`SportContext` provides `sportId`, `rosterRules`, `activeEvent`, and the resolved `SportUIPlugin` to all routes under `/sports/:sportId`.
+`/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`.
+
+`SportContext` provides `sportId` from the URL (default `pga-golf`). Active event, roster rules, and UI plugin are resolved in hooks/components via `useActiveEventQuery` and `requireSportUIPlugin(sportId)`.
 
 ### Component layers
 
-**Platform components** (sport-agnostic shell):
+**Platform components** (sport-agnostic shell in `client/src/components/platform/`):
 
-- `LineupSlotEditor` — N slots driven by `rosterRules.slotCount`
-- `CandidatePicker` — search and sort over generic `Candidate[]`
-- `LineupContestCard` — roster editor + contest entry tabs
-- `ContestLeaderboard` — scores, positions, timeline charts
-- `LineupManagement` — on-chain join/leave flow
-- `LeagueContestList` — cross-sport contest roster with sport badges
-- `LeagueCreateContestForm` — sport → event → settings → deploy
+- `LineupSlotPicker` — N slots driven by sport `rosterRules`
+- `CandidatePicker` — search and sort over `Candidate[]`
+- `SportLineupPickRow` — single pick row in roster editor
+- `SportEventHeader` / `SportEventContextBar` — event chrome
+- `SportPredictionField` — delegates to plugin prediction input
+
+Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for lobby, league, and list views. Many screens still consume legacy `Tournament` types via `golfEventAdapter` until Phase 10 cleanup.
 
 **Sport UI plugins** (injected via registry):
 
@@ -322,15 +324,17 @@ packages/
   secondary-pricing/      # Bonding curve math (sport-agnostic)
 
 server/
-  src/sports/registry.ts  # Plugin registry
-  src/routes/event.ts     # Generic event/candidate APIs
-  src/services/contest/   # Lifecycle + settlement (unchanged)
-  src/cron/scheduler.ts   # Multi-sport pipeline
+  src/sports/registry.ts       # SportModule registry
+  src/sports/propBetRegistry.ts # PropBetModule registry
+  src/routes/sports.ts         # GET /sports, active event, candidates
+  src/routes/lineups.ts        # Lineup CRUD
+  src/services/contest/        # Lifecycle + settlement
+  src/cron/scheduler.ts        # Multi-sport pipeline + side-bet quotes
 
 client/
-  src/sports/registry.ts  # UI plugin registry
-  src/components/lineup/   # Generic lineup shell
-  src/sports/pga-golf/    # Golf-specific UI components
+  src/sports/registry.ts       # SportUIPlugin registry
+  src/components/platform/     # Generic lineup/event shell
+  src/sports/pga-golf/         # Golf-specific UI components
 ```
 
 ---

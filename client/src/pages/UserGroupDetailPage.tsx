@@ -8,10 +8,8 @@ import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
 import { LeagueCreateContestForm } from "../components/userGroup/LeagueCreateContestForm";
-import { ContestList } from "../components/contest/ContestList";
-import { useUserGroupQuery } from "../hooks/useUserGroupQuery";
-import { useContestsQuery } from "../hooks/useContestQuery";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { GroupedContestList } from "../components/contest/GroupedContestList";
+import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useAuth } from "../contexts/AuthContext";
@@ -25,12 +23,12 @@ export const UserGroupDetailPage = () => {
   const { user } = useAuth();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { data: userGroup, isLoading, error, refetch } = useUserGroupQuery(id);
-  const { tournament } = useActiveTournament();
   const {
     data: leagueContests,
     isLoading: isContestsLoading,
     error: contestsError,
-  } = useContestsQuery(tournament?.id, undefined, { userGroupId: id });
+    refetch: refetchContests,
+  } = useUserGroupContestsQuery(id);
 
   const errorMessage =
     error && isApiError(error) && error.statusCode === 404
@@ -46,7 +44,7 @@ export const UserGroupDetailPage = () => {
   const isAdmin = userGroup?.currentUserRole === "ADMIN";
 
   const handleDeleted = () => {
-    navigate("/user-groups");
+    navigate("/leagues");
   };
 
   if (isLoading) {
@@ -81,7 +79,7 @@ export const UserGroupDetailPage = () => {
 
       <div>
         <h3 className="mb-4 text-lg font-semibold text-gray-900">Contests</h3>
-        <ContestList
+        <GroupedContestList
           contests={leagueContests ?? []}
           loading={isContestsLoading}
           error={contestsErrorMessage}
@@ -113,7 +111,10 @@ export const UserGroupDetailPage = () => {
           <LeagueCreateContestForm
             userGroupId={userGroup.id}
             userGroupName={userGroup.name}
-            onContestCreated={() => void refetch()}
+            onContestCreated={() => {
+              void refetch();
+              void refetchContests();
+            }}
           />
         </PageSection>
 
@@ -155,8 +156,8 @@ export const UserGroupDetailPage = () => {
     <>
       <Breadcrumbs
         items={[
-          { label: "My Leagues", path: "/user-groups" },
-          { label: userGroup.name, path: `/user-groups/${id}` },
+          { label: "My Leagues", path: "/leagues" },
+          { label: userGroup.name, path: `/leagues/${id}` },
         ]}
       />
 

@@ -6,7 +6,8 @@ import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
 import { ContestCard } from "../contest/ContestCard";
 import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
-import { PlayerSelectionModal } from "./PlayerSelectionModal";
+import { LineupSlotPicker } from "../platform/LineupSlotPicker";
+import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import type { PlayerWithTournamentData } from "../../types/player";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
@@ -16,7 +17,8 @@ import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import { useActiveTournament } from "../../hooks/useTournamentData";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
-import { LineupWinningScoreSlider } from "./LineupWinningScoreSlider";
+import { SportPredictionField } from "../platform/SportPredictionField";
+import { golfPredictionValue, toGolfPrediction } from "../../lib/golfPrediction";
 import {
   defaultWinningScorePredictionForLineup,
   DUPLICATE_LINEUP_PREDICTION_MESSAGE,
@@ -66,7 +68,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const { players: fieldPlayers, isTournamentEditable } = useActiveTournament();
+  const { players: fieldPlayers, isTournamentEditable, eventId } = useActiveTournament();
   const { updateLineup, lineups } = useLineupData();
 
   const lineupId = lineup.tournamentLineup?.id ?? "";
@@ -257,10 +259,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                         {player ? (
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <PlayerDisplayRow
+                              <SportLineupPickRow
                                 player={player}
+                                slotIndex={index}
                                 roundDisplay={roundDisplay}
-                                preRoundLayout
                                 onClick={() => openDetailModal(player)}
                               />
                             </div>
@@ -328,9 +330,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                     ))}
               </div>
               {canEditSlots ? (
-                <LineupWinningScoreSlider
-                  value={prediction}
-                  onChange={setPrediction}
+                <SportPredictionField
+                  value={toGolfPrediction(prediction)}
+                  onChange={(value) => {
+                    const next = golfPredictionValue(value);
+                    if (next != null) setPrediction(next);
+                  }}
                   disabled={slotActionsDisabled}
                   error={sliderError}
                 />
@@ -391,13 +396,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         </TabGroup>
       </div>
 
-      {canEditSlots ? (
-        <PlayerSelectionModal
+      {canEditSlots && eventId ? (
+        <LineupSlotPicker
+          eventId={eventId}
           isOpen={slotEditor.selectedSlotIndex !== null}
           onClose={slotEditor.closeSlot}
-          onSelect={slotEditor.handlePlayerSelect}
-          availablePlayers={fieldPlayers ?? []}
-          selectedPlayers={slotEditor.selectedPlayerIds}
+          onSelectParticipant={slotEditor.handlePlayerSelect}
+          selectedParticipantIds={slotEditor.selectedPlayerIds}
           isSaving={slotEditor.isSaving}
           saveError={slotEditor.saveError}
         />

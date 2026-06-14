@@ -22,7 +22,7 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * One field-updates + three outrights calls, spaced slightly to reduce burst rate-limit risk.
- * Use this once per cron batch then pass the snapshot into each `ingestSideBetQuoteForLineup`.
+ * Use this once per cron batch then pass the snapshot into each `ingestPropBetQuoteForLineup`.
  */
 export async function fetchSideBetDataGolfSnapshot(tour: DataGolfTourParam): Promise<SideBetDataGolfSnapshot> {
   const field = await fetchDataGolfFieldUpdates(tour);

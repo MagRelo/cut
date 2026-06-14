@@ -29,7 +29,7 @@ export const joinUserGroupSchema = z.object({
 export const createContestSchema = z.object({
   name: z.string().min(1, "Contest name is required"),
   description: z.string().optional(),
-  tournamentId: z.string().cuid("Invalid tournament ID"),
+  eventId: z.string().cuid("Invalid event ID"),
   userGroupId: z.string().cuid("Invalid user group ID").optional(),
   startDate: z.string().datetime("Invalid start date").optional(),
   /** Contest end: ISO datetime string or Unix ms (client sends `expiryTimestamp * 1000`). */
@@ -122,7 +122,7 @@ export const recordContestSecondaryParticipantSchema = z.object({
 
 // Schema for contest query parameters
 export const contestQuerySchema = z.object({
-  tournamentId: z.string().cuid("Invalid tournament ID"),
+  eventId: z.string().cuid("Invalid event ID"),
   chainId: z
     .number()
     .int()

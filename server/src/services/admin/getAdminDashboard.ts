@@ -1,6 +1,11 @@
 import { SideBetTicketStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { sideBetsEnabled } from "../sideBets/featureFlag.js";
+import {
+  eventToDashboardTournament,
+  isEventCompleteForSettlement,
+  resolveAdminEvent,
+} from "./adminEventContext.js";
 
 function parsePrimaryDeposit(settings: unknown): number {
   if (typeof settings !== "object" || settings === null) return 0;
@@ -9,100 +14,77 @@ function parsePrimaryDeposit(settings: unknown): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+const emptyDashboard = {
+  contests: {
+    summary: {
+      total: 0,
+      byStatus: {} as Record<string, number>,
+      totalLineups: 0,
+      totalPrimaryCash: 0,
+      totalSecondaryParticipants: 0,
+    },
+    items: [] as Array<{
+      id: string;
+      name: string;
+      status: string;
+      chainId: number;
+      primaryDeposit: number;
+      lineupCount: number;
+      secondaryParticipantCount: number;
+      estimatedPrimaryCash: number;
+      userGroupName: string | null;
+      endTime: string;
+    }>,
+  },
+  parlays: {
+    marketsByStatus: {} as Record<string, number>,
+    ticketsByStatus: {} as Record<string, number>,
+    totals: { stakeInflow: 0, openStake: 0, openLiability: 0, ticketCount: 0 },
+    byParlayType: [] as Array<{
+      hitsRequired: number;
+      topN: number;
+      ticketCount: number;
+      stakeTotal: number;
+      openCount: number;
+      openLiability: number;
+    }>,
+  },
+  operations: {
+    activeContests: 0,
+    contestsNeedingLock: 0,
+    openSideBetMarkets: 0,
+    openSideBetTickets: 0,
+    lockedSideBetMarkets: 0,
+    sideBetsEnabled: sideBetsEnabled(),
+    tournamentIsComplete: false,
+    suggestedActions: ["Set an active competition event to view this week's data."],
+  },
+};
+
 export type AdminDashboardResponse = Awaited<ReturnType<typeof getAdminDashboard>>;
 
-export async function getAdminDashboard(tournamentIdOverride?: string) {
-  let tournamentId = tournamentIdOverride?.trim() ?? "";
-  let tournament: {
-    id: string;
-    name: string;
-    status: string;
-    currentRound: number | null;
-    roundDisplay: string | null;
-    roundStatusDisplay: string | null;
-    cutLine: string | null;
-    startDate: Date;
-    endDate: Date;
-  } | null = null;
+export async function getAdminDashboard(eventIdOverride?: string) {
+  const eventRow = await resolveAdminEvent(eventIdOverride);
 
-  if (!tournamentId) {
-    const active = await prisma.tournament.findFirst({
-      where: { manualActive: true },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        currentRound: true,
-        roundDisplay: true,
-        roundStatusDisplay: true,
-        cutLine: true,
-        startDate: true,
-        endDate: true,
-      },
-    });
-    tournament = active;
-    tournamentId = active?.id ?? "";
-  } else {
-    tournament = await prisma.tournament.findUnique({
-      where: { id: tournamentId },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        currentRound: true,
-        roundDisplay: true,
-        roundStatusDisplay: true,
-        cutLine: true,
-        startDate: true,
-        endDate: true,
-      },
-    });
-  }
-
-  if (!tournament) {
+  if (!eventRow) {
     return {
       generatedAt: new Date().toISOString(),
       tournament: null,
-      contests: {
-        summary: {
-          total: 0,
-          byStatus: {} as Record<string, number>,
-          totalLineups: 0,
-          totalPrimaryCash: 0,
-          totalSecondaryParticipants: 0,
-        },
-        items: [],
+      weekCounts: {
+        tournamentLineups: 0,
+        contestLineups: 0,
       },
-      parlays: {
-        marketsByStatus: {} as Record<string, number>,
-        ticketsByStatus: {} as Record<string, number>,
-        totals: { stakeInflow: 0, openStake: 0, openLiability: 0, ticketCount: 0 },
-        byParlayType: [] as Array<{
-          hitsRequired: number;
-          topN: number;
-          ticketCount: number;
-          stakeTotal: number;
-          openCount: number;
-          openLiability: number;
-        }>,
-      },
-      operations: {
-        activeContests: 0,
-        contestsNeedingLock: 0,
-        openSideBetMarkets: 0,
-        openSideBetTickets: 0,
-        lockedSideBetMarkets: 0,
-        sideBetsEnabled: sideBetsEnabled(),
-        tournamentIsComplete: false,
-        suggestedActions: ["Set a tournament to manualActive to view this week's data."],
-      },
+      ...emptyDashboard,
     };
   }
 
-  const [contests, sideBetMarkets, sideBetTickets, lineupCount, tournamentLineupCount] =
+  const tournament = eventToDashboardTournament(eventRow);
+  const eventId = eventRow.id;
+
+  const [contests, sideBetMarkets, sideBetTickets, lineupCount, eventLineupCount] =
     await Promise.all([
       prisma.contest.findMany({
-        where: { tournamentId: tournament.id },
+        where: { eventId },
         orderBy: [{ status: "asc" }, { name: "asc" }],
         select: {
           id: true,
@@ -121,11 +103,11 @@ export async function getAdminDashboard(tournamentIdOverride?: string) {
         },
       }),
       prisma.sideBetMarket.findMany({
-        where: { tournamentId: tournament.id },
+        where: { eventId },
         select: { status: true },
       }),
       prisma.sideBetTicket.findMany({
-        where: { sideBetMarket: { tournamentId: tournament.id } },
+        where: { sideBetMarket: { eventId } },
         select: {
           status: true,
           stakeAmount: true,
@@ -135,41 +117,41 @@ export async function getAdminDashboard(tournamentIdOverride?: string) {
         },
       }),
       prisma.contestLineup.count({
-        where: { contest: { tournamentId: tournament.id } },
+        where: { contest: { eventId } },
       }),
-      prisma.tournamentLineup.count({
-        where: { tournamentId: tournament.id },
+      prisma.lineup.count({
+        where: { eventId },
       }),
     ]);
 
   const contestsByStatus: Record<string, number> = {};
   let totalPrimaryCash = 0;
   let totalSecondaryParticipants = 0;
-  const contestItems = contests.map((c) => {
-    const primaryDeposit = parsePrimaryDeposit(c.settings);
-    const lineupCount = c._count.contestLineups;
-    const secondaryParticipantCount = c._count.secondaryParticipants;
-    const estimatedPrimaryCash = primaryDeposit * lineupCount;
-    contestsByStatus[c.status] = (contestsByStatus[c.status] ?? 0) + 1;
+  const contestItems = contests.map((contest) => {
+    const primaryDeposit = parsePrimaryDeposit(contest.settings);
+    const contestLineupCount = contest._count.contestLineups;
+    const secondaryParticipantCount = contest._count.secondaryParticipants;
+    const estimatedPrimaryCash = primaryDeposit * contestLineupCount;
+    contestsByStatus[contest.status] = (contestsByStatus[contest.status] ?? 0) + 1;
     totalPrimaryCash += estimatedPrimaryCash;
     totalSecondaryParticipants += secondaryParticipantCount;
     return {
-      id: c.id,
-      name: c.name,
-      status: c.status,
-      chainId: c.chainId,
+      id: contest.id,
+      name: contest.name,
+      status: contest.status,
+      chainId: contest.chainId,
       primaryDeposit,
-      lineupCount,
+      lineupCount: contestLineupCount,
       secondaryParticipantCount,
       estimatedPrimaryCash,
-      userGroupName: c.userGroup?.name ?? null,
-      endTime: c.endTime.toISOString(),
+      userGroupName: contest.userGroup?.name ?? null,
+      endTime: contest.endTime.toISOString(),
     };
   });
 
   const marketsByStatus: Record<string, number> = {};
-  for (const m of sideBetMarkets) {
-    marketsByStatus[m.status] = (marketsByStatus[m.status] ?? 0) + 1;
+  for (const market of sideBetMarkets) {
+    marketsByStatus[market.status] = (marketsByStatus[market.status] ?? 0) + 1;
   }
 
   const ticketsByStatus: Record<string, number> = {};
@@ -178,26 +160,33 @@ export async function getAdminDashboard(tournamentIdOverride?: string) {
   let openLiability = 0;
   const parlayMap = new Map<
     string,
-    { hitsRequired: number; topN: number; ticketCount: number; stakeTotal: number; openCount: number; openLiability: number }
+    {
+      hitsRequired: number;
+      topN: number;
+      ticketCount: number;
+      stakeTotal: number;
+      openCount: number;
+      openLiability: number;
+    }
   >();
 
-  for (const t of sideBetTickets) {
-    stakeInflow += t.stakeAmount;
-    ticketsByStatus[t.status] = (ticketsByStatus[t.status] ?? 0) + 1;
-    const key = `${t.hitsRequired}/${t.topN}`;
+  for (const ticket of sideBetTickets) {
+    stakeInflow += ticket.stakeAmount;
+    ticketsByStatus[ticket.status] = (ticketsByStatus[ticket.status] ?? 0) + 1;
+    const key = `${ticket.hitsRequired}/${ticket.topN}`;
     const row = parlayMap.get(key) ?? {
-      hitsRequired: t.hitsRequired,
-      topN: t.topN,
+      hitsRequired: ticket.hitsRequired,
+      topN: ticket.topN,
       ticketCount: 0,
       stakeTotal: 0,
       openCount: 0,
       openLiability: 0,
     };
     row.ticketCount += 1;
-    row.stakeTotal += t.stakeAmount;
-    if (t.status === SideBetTicketStatus.OPEN) {
-      openStake += t.stakeAmount;
-      const liability = t.stakeAmount * t.decimalOddsAtPlacement;
+    row.stakeTotal += ticket.stakeAmount;
+    if (ticket.status === SideBetTicketStatus.OPEN) {
+      openStake += ticket.stakeAmount;
+      const liability = ticket.stakeAmount * ticket.decimalOddsAtPlacement;
       openLiability += liability;
       row.openCount += 1;
       row.openLiability += liability;
@@ -209,21 +198,29 @@ export async function getAdminDashboard(tournamentIdOverride?: string) {
   const openSideBetMarkets = marketsByStatus.OPEN ?? 0;
   const lockedSideBetMarkets = marketsByStatus.LOCKED ?? 0;
   const openSideBetTickets = ticketsByStatus.OPEN ?? 0;
-  const tournamentIsComplete = tournament.status === "COMPLETED";
+  const tournamentIsComplete = isEventCompleteForSettlement(eventRow.metadata);
   const enabled = sideBetsEnabled();
 
   const suggestedActions: string[] = [];
   if (activeContests > 0) {
-    suggestedActions.push(`${activeContests} contest(s) ACTIVE — lock winner pool when secondary entries should close.`);
+    suggestedActions.push(
+      `${activeContests} contest(s) ACTIVE — lock winner pool when secondary entries should close.`,
+    );
   }
   if (enabled && openSideBetMarkets > 0 && tournamentIsComplete) {
-    suggestedActions.push(`${openSideBetMarkets} side-bet market(s) still OPEN — lock before settling.`);
+    suggestedActions.push(
+      `${openSideBetMarkets} side-bet market(s) still OPEN — lock before settling.`,
+    );
   }
   if (enabled && lockedSideBetMarkets > 0 && tournamentIsComplete) {
-    suggestedActions.push(`${lockedSideBetMarkets} locked market(s) ready to settle against final results.`);
+    suggestedActions.push(
+      `${lockedSideBetMarkets} locked market(s) ready to settle against final results.`,
+    );
   }
   if (enabled && openSideBetTickets > 0) {
-    suggestedActions.push(`${openSideBetTickets} open parlay ticket(s) — open liability ${openLiability.toFixed(2)}.`);
+    suggestedActions.push(
+      `${openSideBetTickets} open parlay ticket(s) — open liability ${openLiability.toFixed(2)}.`,
+    );
   }
   if (suggestedActions.length === 0) {
     suggestedActions.push("No urgent batch actions detected for this week.");
@@ -243,7 +240,7 @@ export async function getAdminDashboard(tournamentIdOverride?: string) {
       endDate: tournament.endDate.toISOString(),
     },
     weekCounts: {
-      tournamentLineups: tournamentLineupCount,
+      tournamentLineups: eventLineupCount,
       contestLineups: lineupCount,
     },
     contests: {

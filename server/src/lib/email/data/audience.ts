@@ -1,4 +1,5 @@
 import { prisma } from "../../prisma.js";
+import { previousEventIdsForSport } from "./event.js";
 
 export type EmailRecipient = {
   id: string;
@@ -20,48 +21,47 @@ export async function loadAllEmailRecipients(): Promise<EmailRecipient[]> {
     select: { id: true, email: true, name: true, settings: true },
   });
   return users
-    .filter((u) => !isMarketingUnsubscribed(u.settings))
-    .filter((u): u is typeof u & { email: string } => Boolean(u.email?.trim()))
-    .map((u) => ({ id: u.id, email: u.email.trim(), name: u.name }));
+    .filter((user) => !isMarketingUnsubscribed(user.settings))
+    .filter((user): user is typeof user & { email: string } => Boolean(user.email?.trim()))
+    .map((user) => ({ id: user.id, email: user.email.trim(), name: user.name }));
 }
 
 /**
- * Segment: played in ≥1 of the previous 3 tournaments (by startDate), no contest entry this week.
+ * Segment: played in ≥1 of the previous 3 events (same sport), no contest entry this week.
  */
-export async function loadReminderNoContestSegment(
-  tournamentId: string,
-): Promise<EmailRecipient[]> {
-  const current = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true, startDate: true },
+export async function loadReminderNoContestSegment(eventId: string): Promise<EmailRecipient[]> {
+  const current = await prisma.competitionEvent.findUnique({
+    where: { id: eventId },
+    select: { id: true, sportId: true, metadata: true, createdAt: true },
   });
   if (!current) return [];
 
-  const previousTournaments = await prisma.tournament.findMany({
-    where: { startDate: { lt: current.startDate } },
-    orderBy: { startDate: "desc" },
-    take: 3,
-    select: { id: true },
-  });
-  const prevIds = previousTournaments.map((t) => t.id);
+  const prevIds = await previousEventIdsForSport(current.sportId, current.id);
   if (prevIds.length === 0) return [];
 
   const users = await prisma.user.findMany({
     where: {
       email: { not: null },
       OR: [
-        { tournamentLineups: { some: { tournamentId: { in: prevIds } } } },
-        { contestLineups: { some: { contest: { tournamentId: { in: prevIds } } } } },
+        { lineups: { some: { eventId: { in: prevIds } } } },
+        { contestLineups: { some: { contest: { eventId: { in: prevIds } } } } },
       ],
       contestLineups: {
-        none: { contest: { tournamentId: current.id } },
+        none: { contest: { eventId: current.id } },
       },
     },
     select: { id: true, email: true, name: true, settings: true },
   });
 
   return users
-    .filter((u) => !isMarketingUnsubscribed(u.settings))
-    .filter((u): u is typeof u & { email: string } => Boolean(u.email?.trim()))
-    .map((u) => ({ id: u.id, email: u.email.trim(), name: u.name }));
+    .filter((user) => !isMarketingUnsubscribed(user.settings))
+    .filter((user): user is typeof user & { email: string } => Boolean(user.email?.trim()))
+    .map((user) => ({ id: user.id, email: user.email.trim(), name: user.name }));
+}
+
+/** @deprecated Use loadReminderNoContestSegment */
+export async function loadReminderNoContestSegmentForTournament(
+  eventId: string,
+): Promise<EmailRecipient[]> {
+  return loadReminderNoContestSegment(eventId);
 }

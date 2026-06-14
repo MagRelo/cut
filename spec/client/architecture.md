@@ -1,248 +1,140 @@
-# Client Architecture
+# Client architecture (v4)
 
-## High-Level Architecture
+---
+
+## Provider stack
 
 ```mermaid
 graph TB
-    subgraph providers[Providers]
-        PRIVY[PrivyProvider]
-        QUERY[QueryClientProvider]
-        WAGMI[WagmiProvider]
-        ERROR[GlobalErrorProvider]
-        AUTH[AuthProvider]
-        ROUTER[BrowserRouter]
-    end
-    
-    subgraph app[App Component]
-        ROUTES[Routes]
-        PAGES[Pages]
-    end
-    
-    subgraph components[Components]
-        COMMON[Common Components]
-        CONTEST[Contest Components]
-        LINEUP[Lineup Components]
-        USER[User Components]
-    end
-    
-    subgraph hooks[Hooks]
-        DATA[Data Hooks]
-        MUTATION[Mutation Hooks]
-        BLOCKCHAIN[Blockchain Hooks]
-    end
-    
-    subgraph external[External Services]
-        API[Server API]
-        BLOCKCHAIN[Base Blockchain]
-    end
-    
-    PRIVY --> QUERY
-    QUERY --> WAGMI
-    WAGMI --> ERROR
-    ERROR --> AUTH
-    AUTH --> ROUTER
-    ROUTER --> ROUTES
-    ROUTES --> PAGES
-    PAGES --> COMPONENTS
-    COMPONENTS --> HOOKS
-    HOOKS --> API
-    HOOKS --> BLOCKCHAIN
+  PRIVY[PrivyProvider] --> SW[SmartWalletsProvider]
+  SW --> RQ[QueryClientProvider]
+  RQ --> WAGMI[WagmiProvider]
+  WAGMI --> ERR[GlobalErrorProvider]
+  ERR --> AUTH[AuthProvider]
+  AUTH --> ROUTER[BrowserRouter]
+  ROUTER --> SPORT[SportProvider]
+  SPORT --> APP[AppShell / Routes]
 ```
 
-## Component Hierarchy
+| Provider | Role |
+|----------|------|
+| `PrivyProvider` | Login, embedded wallet, `getAccessToken` |
+| `SmartWalletsProvider` | Paymaster config for gas sponsorship |
+| `QueryClientProvider` | Server state cache |
+| `WagmiProvider` | Contract reads/writes on Base / Base Sepolia |
+| `GlobalErrorProvider` | App-wide error surfacing |
+| `AuthProvider` | Cut user from `/auth/me`, balances, connect flow |
+| `SportProvider` | `sportId` from `/sports/:sportId` or default `pga-golf` |
+
+On mount, `App` prefetches the active event via `prefetchActiveTournament` (wraps `prefetchActiveEvent`).
+
+---
+
+## Routing model
 
 ```mermaid
-graph TD
-    App[App] --> Router[BrowserRouter]
-    Router --> Providers[Provider Stack]
-    Providers --> Routes[Routes]
-    Routes --> Home[Home Page]
-    Routes --> ContestList[Contest List]
-    Routes --> ContestLobby[Contest Lobby]
-    Routes --> LineupCreate[Lineup Create]
-    Routes --> Account[Account]
-    
-    ContestLobby --> LineupManagement[LineupManagement]
-    ContestLobby --> ContestResults[ContestResults]
-    LineupManagement --> PlayerSelection[PlayerSelection]
-    LineupManagement --> BlockchainHooks[Blockchain Hooks]
-    
-    Account --> TokenOperations[Token Operations]
-    TokenOperations --> BlockchainHooks
+flowchart LR
+  ROOT["/"] --> HUB["/sports/:sportId"]
+  HUB --> CONTESTS[Contest list for active event]
+  LOBBY["/contest/:address"] --> CONTEST[Contest lobby]
+  LINEUPS["/lineups"] --> MY[User lineups]
+  LEAGUES["/leagues/:id"] --> LEAGUE[League + cross-event contests]
 ```
 
-## Provider Stack
+- **Sport hub** (`SportHubPage`) renders the contest list for the active event of the selected sport.
+- **Contest lobby** is keyed by **contract address**, not database id.
+- **Leagues** are sport-agnostic; each contest carries `eventId` → sport via server.
+- Legacy `/user-groups/*` and `/sports/:sportId/contests/:id` redirect to canonical paths.
+
+---
+
+## Sport context
+
+`SportContext` exposes `sportId`:
+
+- From route param `:sportId` when present
+- Parsed from `/sports/{id}/...` pathname
+- Falls back to `DEFAULT_SPORT_ID` (`pga-golf`)
+
+Hooks like `useActiveEventQuery(sportId)` and `useSportEventHeader` read this context so nav and pages stay in sync when switching sports via `SportPicker`.
+
+---
+
+## Plugin boundary
 
 ```mermaid
-graph LR
-    A[PrivyProvider] --> B[QueryClientProvider]
-    B --> C[WagmiProvider]
-    C --> D[GlobalErrorProvider]
-    D --> E[AuthProvider]
-    E --> F[BrowserRouter]
-    F --> G[App Content]
+flowchart TB
+  subgraph platform[Platform shell]
+    Header[SportEventHeader]
+    Picker[CandidatePicker / LineupSlotPicker]
+    Pred[SportPredictionField]
+  end
+  subgraph plugin[SportUIPlugin]
+  Golf[pga-golf: CandidateRow, EventSummary, PredictionField]
+  end
+  Header --> plugin
+  Picker --> plugin
+  Pred --> plugin
 ```
 
-## Data Flow Patterns
+`client/src/sports/registry.ts` maps `sportId` → `SportUIPlugin`. Platform components call `requireSportUIPlugin(sportId)` for sport-specific rendering (row layout, scorecard, prediction input).
 
-### Server Data Flow
+Only **pga-golf** is registered today. Adding a sport = new package folder + registry entry (server plugin must exist first).
 
-```mermaid
-sequenceDiagram
-    participant Component
-    participant Hook
-    participant ReactQuery
-    participant ApiClient
-    participant Server
-    
-    Component->>Hook: useQuery/useMutation
-    Hook->>ReactQuery: Query/Mutation
-    ReactQuery->>ApiClient: HTTP Request
-    ApiClient->>Server: API Call
-    Server-->>ApiClient: Response
-    ApiClient-->>ReactQuery: Data
-    ReactQuery-->>Hook: Cached Data
-    Hook-->>Component: State
-```
+---
 
-### Blockchain Data Flow
+## Data layers
 
-```mermaid
-sequenceDiagram
-    participant Component
-    participant Hook
-    participant Wagmi
-    participant Blockchain
-    
-    Component->>Hook: execute(calls)
-    Hook->>Wagmi: walletClient.writeContract (per call)
-    Wagmi->>Blockchain: Broadcast transaction
-    Blockchain-->>Wagmi: Transaction hash
-    Hook->>Wagmi: waitForTransactionReceipt
-    Wagmi-->>Hook: Receipt
-    Hook-->>Component: Loading/Success/Error
-```
+| Layer | Tool | Examples |
+|-------|------|----------|
+| Server state | React Query | events, lineups, contests, side bets |
+| Auth state | Context | user, balances, `startAuthFlow` |
+| Chain state | Wagmi | contest contract, token balances |
+| Local UI | useState | modals, form drafts |
 
-## Key Architectural Patterns
+See [data-flow.md](data-flow.md) and [state-management.md](state-management.md).
 
-### Provider Pattern
-- **PrivyProvider**: Privy app id and login/session
-- **QueryClientProvider**: React Query for server state
-- **WagmiProvider**: Blockchain wallet and contract access (Privy-integrated config)
-- **GlobalErrorProvider**: Centralized error handling
-- **AuthProvider**: Cut user profile, balances, connect flow (`startAuthFlow`), and API token registration
-- **BrowserRouter**: Client-side routing
+---
 
-### Custom Hooks Pattern
-- Encapsulate data fetching logic
-- Reusable across components
-- Type-safe with TypeScript
-- Handle loading/error states
+## Legacy bridge
 
-### Component Composition
-- Small, focused components
-- Composition over inheritance
-- Props for configuration
-- Context for shared state
+Until Phase 10 cleanup, two parallel type systems coexist:
 
-### Separation of Concerns
-- **Pages**: Route-level components
-- **Components**: Reusable UI
-- **Hooks**: Data and logic
-- **Utils**: Pure functions
-- **Contexts**: App-wide state
+| Platform (target) | Bridge (transitional) |
+|-------------------|----------------------|
+| `ActiveEventResponse` | `Tournament` via `golfEventToTournament*` |
+| `Candidate` | `PlayerWithTournamentData` via `candidateToPlayer` |
+| `PlatformLineup` | `TournamentLineup` via adapter |
+| `eventId` | sometimes still named `tournamentId` in query keys |
 
-## State Management Architecture
+`useActiveTournament` is the main entry point for components that have not migrated.
 
-### Server State (React Query)
-- **Queries**: Read operations (GET)
-- **Mutations**: Write operations (POST, PUT, DELETE)
-- **Caching**: Automatic caching and invalidation
-- **Refetching**: Automatic refetch on focus/reconnect
+---
 
-### Client State (Context API)
-- **AuthContext** (`useAuth`): Privy session, Cut `user` from `/auth/me`, token balances, `authFlow` / `startAuthFlow` for network selection
-- **GlobalErrorContext**: Error messages and handling
-- **Component State**: Local component state (useState)
+## Loading gate
 
-### Blockchain State (Wagmi)
-- **Account State**: Connected wallet, chain ID
-- **Contract Reads**: Contract state queries
-- **Transaction State**: Pending, confirmed, failed
+`useAppLoadingGate` + `GlobalLoadingOverlay` block the shell until Privy auth and initial sport/event prefetch settle, reducing flash of empty state on first paint.
 
-## Key Design Decisions
+`OnboardingRedirectGate` sends new users through `/onboarding` when settings indicate incomplete onboarding.
 
-### Why React Query?
-- **Automatic Caching**: Reduces API calls
-- **Background Updates**: Keeps data fresh
-- **Optimistic Updates**: Better UX
-- **Error Handling**: Built-in retry logic
-- **DevTools**: Great debugging experience
+---
 
-### Why Wagmi?
-- **Type Safety**: Full TypeScript support
-- **Hooks-Based**: React-friendly API
-- **Multi-Chain**: Easy chain switching
-- **Transaction Management**: Built-in transaction handling
+## Security
 
-### Why Context API?
-- **Simple**: No external dependencies
-- **Built-in**: Part of React
-- **App-Level State**: Perfect for auth and errors
-- **Performance**: Fine for low-frequency updates
+- API: short-lived Privy bearer tokens via `registerAuthTokenHandlers` in `AuthProvider`
+- Routes: `ProtectedRoute` for authenticated pages; `AdminRoute` for staff
+- Forms: client-side Yup/Zod; server is authoritative
+- No secrets in client bundle beyond public Privy app id and RPC URLs
 
-### Why Component Organization?
-- **Pages**: Clear route boundaries
-- **Components**: Reusable UI pieces
-- **Hooks**: Reusable logic
-- **Separation**: Easy to find and maintain
+---
 
-## Performance Considerations
+## Performance defaults
 
-### Code Splitting
-- Route-based code splitting (React Router)
-- Lazy loading for heavy components
-- Dynamic imports where appropriate
+| Data | staleTime / poll |
+|------|------------------|
+| Sports list | 24h |
+| Active event | 5 min + refetch on focus |
+| Candidates | 5 min |
+| Token balances | ~30s poll in AuthContext |
 
-### Caching Strategy
-- React Query: 1 minute stale time, 5 minute cache
-- Token balances: 30 second polling
-- Tournament data: Prefetched on app load
-
-### Optimization
-- React.memo for expensive components
-- useMemo for computed values
-- useCallback for stable function references
-- Virtualization for long lists (if needed)
-
-## Security Considerations
-
-### Authentication
-- Privy handles wallet login and sessions
-- API calls use short-lived Privy access tokens in the `Authorization` header (Bearer)
-- `AuthProvider` wires `getAccessToken()` into `apiClient` via `registerAuthTokenHandlers`
-
-### Input Validation
-- Yup/Zod schemas for form validation
-- Server-side validation (never trust client)
-- Sanitization of user input
-
-### XSS Prevention
-- React's built-in XSS protection
-- No dangerous HTML rendering
-- Sanitize any user-generated content
-
-## Scalability Considerations
-
-### Current Architecture
-- Single-page application
-- Client-side routing
-- API-based backend communication
-
-### Future Considerations
-- **Code Splitting**: Already implemented
-- **Lazy Loading**: Can add more
-- **Service Workers**: For offline support
-- **CDN**: Static assets can be CDN-hosted
-- **Micro-Frontends**: Could split into modules if needed
-
+Route-based code splitting is available; heavy admin/debug pages are natural lazy-load candidates.

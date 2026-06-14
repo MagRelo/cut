@@ -1,244 +1,142 @@
-# Client Component Structure
+# Client component structure (v4)
 
-## Component Organization
+Components are grouped by **platform vs sport** and by **feature domain**. Pages compose feature components; feature components call hooks.
 
-Components are organized by feature/domain:
+---
 
-```
-components/
-├── common/          # Shared components
-├── contest/         # Contest-related components
-├── lineup/          # Lineup management components
-├── player/           # Player display components
-├── tournament/       # Tournament display components
-├── user/            # User account components
-└── userGroup/       # User group components
-```
+## Platform shell (`components/platform/`)
 
-## Common Components
+Sport-agnostic building blocks. They accept platform types (`Candidate`, `ActiveEventResponse`) and delegate visual details to `SportUIPlugin`.
 
-### Navigation & Layout
-- **Navigation.tsx**: Main navigation bar
-- **Footer.tsx**: Site footer
-- **PageHeader.tsx**: Page header component
-- **Breadcrumbs.tsx**: Breadcrumb navigation
+| Component | Purpose |
+|-----------|---------|
+| `SportEventHeader` | Event name, dates, status bar |
+| `SportEventContextBar` | Compact context on sub-pages |
+| `CandidatePicker` | Searchable candidate list for lineup build |
+| `LineupSlotPicker` | Slot-based roster assembly |
+| `SportLineupPickRow` | Single pick row with remove/replace |
+| `SportPredictionField` | Wrapper → plugin prediction input |
 
-### UI Elements
-- **Modal.tsx**: Reusable modal component
-- **LoadingSpinner.tsx**: Loading indicator
-- **LoadingSpinnerSmall.tsx**: Small loading indicator
-- **ErrorMessage.tsx**: Error message display
-- **CopyToClipboard.tsx**: Copy to clipboard utility
+Used by: lineup pages, contest lobby, onboarding.
 
-### Blockchain
-- **ChainWarning.tsx**: Wrong chain warning
-- **NetworkStatus.tsx**: Network status indicator
-- **ProtectedRoute.tsx**: Route protection (auth required)
+---
 
-### Data Display
-- **CutAmountDisplay.tsx**: Token amount display
-- **InfoScorecard.tsx**: Scorecard information display
-- **Share.tsx**: Share functionality
+## Sport chrome (`components/sport/`)
 
-### Error Handling
-- **GlobalErrorOverlay.tsx**: Global error overlay
-- **MaintenanceOverlay.tsx**: Maintenance mode overlay
+| Component | Purpose |
+|-----------|---------|
+| `SportPicker` | Nav dropdown — lists enabled sports from `GET /sports` |
 
-## Contest Components
+---
 
-### Contest Management
-- **ContestCard.tsx**: Contest card display
-- **ContestList.tsx**: List of contests
-- **CreateContestForm.tsx**: Create contest form
-- **ContestSettings.tsx**: Contest settings
+## Sport plugins (`sports/pga-golf/`)
 
-### Contest Display
-- **ContestLobbyPage.tsx**: Main contest page (thin container; uses `useContestLobbyState` + `ContestLobbyView`)
-- **contest/lobby/ContestLobbyView.tsx**: Lobby shell (static tabs, modals)
-- **contest/lobby/ContestPrimaryTab.tsx**: Contest tab (enter CTA or timeline + entry list)
-- **contest/lobby/ContestPredictionsPanel.tsx**: Winner Pool tab (pie chart, prediction nested tabs, claim)
-- **contest/lobby/ContestLineupModal.tsx**: Lineup management dialog
-- **contest/lobby/ContestTimelinesSection.tsx**: Timeline wrapper for lobby
-- **ContestResultsPanel.tsx**: Results display
-- **ContestPayoutsModal.tsx**: Payout information modal
+Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`:
 
-### Contest Lineups
-- **LineupManagement.tsx**: Manage lineups in contest
-- **ContestEntryList.tsx**: List of contest entries
-- **ContestEntryModal.tsx**: Entry details modal
-- **EntryHeader.tsx**: Entry header display
+| Export | Purpose |
+|--------|---------|
+| `CandidateRow` | Player row in picker (rank, name, status) |
+| `PickDetail` | Expanded pick / scorecard modal content |
+| `EventSummary` | Tournament preview sections |
+| `EventDetails` | Course, weather, metadata panel |
+| `PredictionField` | Winning-score prediction input |
 
-### Predictions
-- **PredictionEntryForm.tsx**: Prediction entry form (embedded in **PredictionEntryModal**)
-- **PredictionLineupsList.tsx**: List of prediction lineups
-- **PredictionPositionsList.tsx**: List of prediction positions
-- **PredictionClaimPanel.tsx**: Claim prediction winnings
+Plugin interface: `packages/sport-sdk/src/ui-plugin.ts` (`SportUIPlugin`).
 
-### Timeline
-- **Timeline.tsx**: Contest timeline visualization
+---
 
-## Lineup Components
+## Contest (`components/contest/`)
 
-### Lineup Management
-- **LineupCard.tsx**: Lineup card display
-- **LineupForm.tsx**: Lineup creation/edit form
-- **LineupContestCard.tsx**: Contest card in lineup context
+| Component | Purpose |
+|-----------|---------|
+| `ContestList` | Grid/list of contests for an event |
+| `GroupedContestList` | Contests grouped by event (league view) |
+| `CreateContestEventPicker` | Pick `eventId` when creating from a league |
+| Contest cards, timeline, secondary market UI | Lobby sub-components |
 
-### Player Selection
-- **PlayerSelectionButton.tsx**: Player selection button
-- **PlayerSelectionCard.tsx**: Player selection card
-- **PlayerSelectionModal.tsx**: Player selection modal
+Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreatePage`.
 
-## Player Components
+---
 
-- **PlayerDetailModal.tsx**: Player detail dialog (card + scorecard)
-- **PlayerDisplayCard.tsx**: Player card display
-- **PlayerDisplayRow.tsx**: Player row display
-- **PlayerScorecard.tsx**: Player scorecard display
+## Lineup (`components/lineup/`)
 
-## Tournament Components
+| Component | Purpose |
+|-----------|---------|
+| `LineupContestCard` | Lineup summary + linked contests |
+| Lineup management in lobby | Join flow, pick editing |
 
-- **TournamentHeaderPanel.tsx**: Tournament header
-- **TournamentInfoPanel.tsx**: Tournament information
-- **TournamentSummaryModal.tsx**: Tournament summary modal
-- **CountdownTimer.tsx**: Tournament countdown timer
+Pages: `LineupListPage`, contest lobby.
 
-## User Components
+---
 
-### Authentication
-- **Connect.tsx**: Wallet connection component
+## Tournament-named legacy (`components/tournament/`, `components/player/`)
 
-### Token Operations
-- **Buy.tsx**: Buy tokens (USDC → CUT)
-- **Sell.tsx**: Sell tokens (CUT → USDC)
-- **Send.tsx**: Send tokens
-- **Receive.tsx**: Receive tokens display
-- **TokenBalances.tsx**: Token balance display
-- **MintingUserFundsPanel.tsx**: Minting status panel
+Folders retain pre-v4 names but are fed by **adapters**, not `/api/tournaments`:
 
-### Account
-- **UserSettings.tsx**: User settings component
+| Component | Data source |
+|-----------|-------------|
+| `TournamentInfoPanel` | `useActiveTournament` |
+| `TournamentSummaryModal` | `summarySections` from event metadata |
+| `PlayerDisplayRow` / `PlayerDisplayCard` | `PlayerWithTournamentData` from candidates |
+| `PlayerDetailModal` | Candidate + live score fields |
 
-## User Group Components
+These will shrink or rename in Phase 10.
 
-- **UserGroupCard.tsx**: User group card
-- **UserGroupForm.tsx**: User group form
-- **UserGroupList.tsx**: List of user groups
-- **UserGroupMemberManagement.tsx**: Member management
-- **UserGroupMembersList.tsx**: Members list
-- **UserGroupSettings.tsx**: User group settings
+---
 
-## Component Patterns
+## Leagues (`components/userGroup/`)
 
-### Container/Presentational Pattern
-- **Container Components**: Handle data fetching and logic
-- **Presentational Components**: Display data and handle UI
+| Component | Purpose |
+|-----------|---------|
+| `LeagueCreateContestForm` | Create contest scoped to league + event |
+| Group cards, member lists | Standard league CRUD UI |
 
-### Compound Components
-- Some components use compound component pattern
-- Example: Modal with Modal.Header, Modal.Body, Modal.Footer
+Pages: `UserGroupListPage`, `UserGroupDetailPage`, etc. Routes under `/leagues/*`.
 
-### Controlled Components
-- Form components are controlled
-- State managed by React Hook Form
-- Validation via Yup/Zod schemas
+---
 
-## Component Props Patterns
+## Common (`components/common/`)
 
-### Standard Props
-```typescript
-interface ComponentProps {
-  id: string;
-  data: DataType;
-  onAction: (id: string) => void;
-  className?: string;
-}
+| Component | Purpose |
+|-----------|---------|
+| `AppLayout` | Nav, footer, sport picker |
+| `ProtectedRoute` | Requires Privy session |
+| `AdminRoute` | Requires `ADMIN` / `SUPER_ADMIN` |
+| `OnboardingRedirectGate` | Onboarding funnel |
+| `GlobalLoadingOverlay` | Initial load blocker |
+| Modals, toasts, error boundaries | Shared UX |
+
+Nav tabs defined in `lib/navTabs.ts` — contests tab points to `/sports/{defaultSport}`.
+
+---
+
+## Routing helpers (`components/routing/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `LegacyRedirects` | `/user-groups/*` → `/leagues/*`, old contest URLs |
+
+---
+
+## Composition example: contest lobby
+
+```mermaid
+flowchart TD
+  Lobby[ContestLobbyPage] --> CQ[useContestQuery]
+  Lobby --> AT[useActiveTournament]
+  Lobby --> LQ[useLineupQueries]
+  Lobby --> LM[LineupManagement]
+  LM --> LSP[LineupSlotPicker]
+  LSP --> CP[CandidatePicker]
+  CP --> CR[CandidateRow via plugin]
+  LM --> Chain[useContestantOperations]
 ```
 
-### Children Pattern
-```typescript
-interface ComponentProps {
-  children: React.ReactNode;
-  title?: string;
-}
-```
+---
 
-### Render Props (if used)
-```typescript
-interface ComponentProps {
-  render: (data: DataType) => React.ReactNode;
-}
-```
+## Adding a new sport (client)
 
-## Component State Management
-
-### Local State
-- `useState` for component-local state
-- Form state managed by React Hook Form
-
-### Context State
-- `useAuth()` for user profile, balances, and connect flow
-- `useGlobalError()` for error state
-
-### Server State
-- React Query hooks for server data
-- Custom hooks wrap React Query
-
-### Blockchain State
-- Wagmi hooks for blockchain data
-- Custom hooks wrap Wagmi
-
-## Component Communication
-
-### Parent → Child
-- Props for data and callbacks
-- Context for shared state
-
-### Child → Parent
-- Callback props
-- Context updates (via hooks)
-
-### Sibling Components
-- Shared context
-- Shared React Query cache
-- Event system (if needed)
-
-## Reusability Patterns
-
-### Custom Hooks
-- Extract reusable logic
-- Used across multiple components
-- Examples: `useContestQuery`, `useLineupData`
-
-### Higher-Order Components (if used)
-- Wrap components with shared logic
-- Less common in modern React
-
-### Render Props (if used)
-- Share logic between components
-- Less common with hooks
-
-## Styling Patterns
-
-### Tailwind CSS
-- Utility-first CSS
-- Component classes
-- Responsive design utilities
-
-### Component Styling
-- Inline styles for dynamic values
-- Tailwind classes for static styles
-- CSS modules (if used)
-
-## Testing Considerations
-
-### Component Testing
-- Test presentational components in isolation
-- Mock hooks and context
-- Test user interactions
-
-### Integration Testing
-- Test component interactions
-- Test with real hooks (if possible)
-- Test error states
-
+1. Create `client/src/sports/{sport-id}/` implementing `SportUIPlugin`
+2. Register in `sports/registry.ts`
+3. Reuse platform shell components — no changes to `CandidatePicker` unless roster rules differ structurally
+4. Ensure server `SportModule` is registered and sport appears in `GET /sports`

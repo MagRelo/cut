@@ -27,6 +27,7 @@ function buildContest(overrides: Partial<Contest> & { status: ContestStatus }): 
     id: "contest-fixture-1",
     name: "Weekend Cut",
     description: null,
+    eventId: "tournament-1",
     tournamentId: "tournament-1",
     userGroupId: "group-1",
     endTime: new Date(Date.now() + 86400 * 1000 * 3),

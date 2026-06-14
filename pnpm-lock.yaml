@@ -29,6 +29,9 @@ importers:
       '@cut/secondary-pricing':
         specifier: workspace:*
         version: link:../packages/secondary-pricing
+      '@cut/sport-sdk':
+        specifier: workspace:*
+        version: link:../packages/sport-sdk
       '@headlessui/react':
         specifier: ^2.2.4
         version: 2.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -184,11 +187,39 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.30)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
+  packages/sport-pga-golf:
+    dependencies:
+      '@cut/sport-sdk':
+        specifier: workspace:*
+        version: link:../sport-sdk
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
+  packages/sport-sdk:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.10
+        version: 19.2.10
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
   server:
     dependencies:
       '@cut/secondary-pricing':
         specifier: workspace:*
         version: link:../packages/secondary-pricing
+      '@cut/sport-pga-golf':
+        specifier: workspace:*
+        version: link:../packages/sport-pga-golf
+      '@cut/sport-sdk':
+        specifier: workspace:*
+        version: link:../packages/sport-sdk
       '@hono/node-server':
         specifier: ^1.19.3
         version: 1.19.9(hono@4.11.7)

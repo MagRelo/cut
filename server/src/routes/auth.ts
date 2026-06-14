@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { transformLineupPlayer } from "../utils/playerTransform.js";
+import { formatLineupResponse, lineupDetailInclude } from "../services/lineups/formatLineup.js";
 
 const authRouter = new Hono();
 const MAX_REFERRAL_SUMMARY_DEPTH = 10;
@@ -101,33 +101,14 @@ authRouter.get("/me", requireAuth, async (c) => {
   try {
     const user = c.get("user");
 
-    // get active tournament
-    const activeTournament = await prisma.tournament.findFirst({
-      where: {
-        manualActive: true,
-      },
+    const activeEvent = await prisma.competitionEvent.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
     });
 
-    // Get user's data including tournament lineups and groups
     const userData = await prisma.user.findUnique({
       where: { id: user.userId },
       include: {
-        tournamentLineups: activeTournament?.id
-          ? {
-              where: { tournamentId: activeTournament.id },
-              include: {
-                players: {
-                  include: {
-                    tournamentPlayer: {
-                      include: {
-                        player: true,
-                      },
-                    },
-                  },
-                },
-              },
-            }
-          : false,
         userGroups: {
           include: {
             userGroup: true,
@@ -140,15 +121,15 @@ authRouter.get("/me", requireAuth, async (c) => {
       return c.json({ error: "User not found" }, 404);
     }
 
-    // filter out user info that is not needed
-    const { tournamentLineups, userGroups, ...userInfo } = userData;
-    // Format tournamentLineups to match TournamentLineup type
-    const formattedLineups = (tournamentLineups || []).map((lineup: any) => ({
-      id: lineup.id,
-      players: lineup.players.map((lineupPlayer: any) =>
-        transformLineupPlayer(lineupPlayer, lineup.tournamentId),
-      ),
-    }));
+    const activeLineups = activeEvent?.id
+      ? await prisma.lineup.findMany({
+          where: { userId: user.userId, eventId: activeEvent.id },
+          include: lineupDetailInclude,
+        })
+      : [];
+
+    const { userGroups, ...userInfo } = userData;
+    const formattedLineups = activeLineups.map((lineup) => formatLineupResponse(lineup));
 
     const response = {
       id: userInfo.id,
@@ -159,7 +140,7 @@ authRouter.get("/me", requireAuth, async (c) => {
       email: userInfo.email,
       isVerified: userInfo.isVerified,
       createdAt: userInfo.createdAt,
-      tournamentLineups: formattedLineups,
+      lineups: formattedLineups,
       userGroups,
       walletAddress: user.address,
       chainId: user.chainId,
@@ -241,7 +222,6 @@ authRouter.get("/contests", requireAuth, async (c) => {
   try {
     const user = c.get("user");
 
-    // Get all contest lineups for this user, including contest and tournament data
     const contestLineups = await prisma.contestLineup.findMany({
       where: {
         userId: user.userId,
@@ -249,12 +229,12 @@ authRouter.get("/contests", requireAuth, async (c) => {
       include: {
         contest: {
           include: {
-            tournament: {
+            event: {
               select: {
                 id: true,
-                name: true,
-                startDate: true,
-                endDate: true,
+                sportId: true,
+                externalId: true,
+                metadata: true,
               },
             },
             userGroup: {
@@ -302,7 +282,7 @@ authRouter.get("/contests", requireAuth, async (c) => {
         status: item.contest.status,
         endTime: item.contest.endTime,
         createdAt: item.contest.createdAt,
-        tournament: item.contest.tournament,
+        event: item.contest.event,
         userGroup: item.contest.userGroup,
         lineupCount: item.lineupCount,
         totalEntries: item.contest._count.contestLineups,

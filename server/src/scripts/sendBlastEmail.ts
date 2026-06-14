@@ -7,12 +7,12 @@
  *   pnpm --filter server run script:send-blast recap [--dry-run] [--force]
  *   pnpm --filter server run script:send-blast behind-the-scenes [--dry-run] [--force]
  *
- * Uses manualActive tournament for tournament-scoped blasts unless TOURNAMENT_ID is set.
+ * Uses the active platform event for event-scoped blasts unless EVENT_ID (or TOURNAMENT_ID) is set.
  */
 
 import "dotenv/config";
 import {
-  getManualActiveTournamentId,
+  getActiveEventId,
   isEmailConfigured,
   sendBehindTheScenesBlast,
   sendNewTournamentBlast,
@@ -30,11 +30,11 @@ function usage(): never {
   process.exit(1);
 }
 
-async function resolveTournamentId(): Promise<string> {
-  const fromEnv = process.env.TOURNAMENT_ID?.trim();
+async function resolveEventId(): Promise<string> {
+  const fromEnv = process.env.EVENT_ID?.trim() || process.env.TOURNAMENT_ID?.trim();
   if (fromEnv) return fromEnv;
-  const id = await getManualActiveTournamentId();
-  if (!id) throw new Error("No manualActive tournament; set TOURNAMENT_ID");
+  const id = await getActiveEventId();
+  if (!id) throw new Error("No active event; set EVENT_ID");
   return id;
 }
 
@@ -63,21 +63,21 @@ async function main() {
     return;
   }
 
-  const tournamentId = await resolveTournamentId();
+  const eventId = await resolveEventId();
 
   if (type === "new-tournament") {
-    const result = await sendNewTournamentBlast({ tournamentId, dryRun, force });
+    const result = await sendNewTournamentBlast({ eventId, dryRun, force });
     console.log(JSON.stringify(result, null, 2));
     return;
   }
 
   if (type === "reminder") {
-    const result = await sendReminderNoContestBlast({ tournamentId, dryRun });
+    const result = await sendReminderNoContestBlast({ eventId, dryRun });
     console.log(JSON.stringify(result, null, 2));
     return;
   }
 
-  const result = await sendTournamentRecapBlast({ tournamentId, dryRun, force });
+  const result = await sendTournamentRecapBlast({ eventId, dryRun, force });
   console.log(JSON.stringify(result, null, 2));
 }
 

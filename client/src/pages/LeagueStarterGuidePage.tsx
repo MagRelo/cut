@@ -106,7 +106,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </li>
           <li>
             Go to{" "}
-            <Link to="/user-groups" className="text-blue-600 hover:underline">
+            <Link to="/leagues" className="text-blue-600 hover:underline">
               My Leagues
             </Link>{" "}
             and tap <strong>Create League</strong>.
@@ -136,7 +136,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
         <div className="mt-6">
           <Link
-            to="/user-groups/create"
+            to="/leagues/create"
             className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Create a league
@@ -244,7 +244,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
         <div className="mt-6">
           <Link
-            to="/user-groups"
+            to="/leagues"
             className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Go to My Leagues
@@ -370,7 +370,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           <Link to="/faq#referral-network" className="font-medium text-blue-600 hover:underline">
             Invite network deep dive
           </Link>
-          <Link to="/user-groups/create" className="font-medium text-blue-600 hover:underline">
+          <Link to="/leagues/create" className="font-medium text-blue-600 hover:underline">
             Create a league
           </Link>
         </nav>

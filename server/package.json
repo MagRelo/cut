@@ -21,6 +21,10 @@
     "db:seed": "pnpm run prisma:seed",
     "db:seedPGA": "pnpm run prisma:seedPGA",
     "service:init-tournament": "tsx src/services/initTournament.ts",
+    "service:init-event": "tsx src/services/initEvent.ts",
+    "service:sync-event-metadata": "tsx src/sports/pga-golf/runSyncMetadata.ts",
+    "service:sync-event-field": "tsx src/sports/pga-golf/runSyncField.ts",
+    "service:sync-event-scores": "tsx src/sports/pga-golf/runSyncScores.ts",
     "script:backfill-player-identity": "tsx src/scripts/backfillPlayerIdentity.ts",
     "service:update-tournament": "tsx src/services/updateTournament.ts",
     "service:sync-field-withdrawals": "tsx src/services/syncTournamentFieldWithdrawals.ts",
@@ -39,9 +43,12 @@
     "script:sync-user-wallets-from-privy": "tsx src/scripts/syncUserWalletsFromPrivy.ts",
     "script:send-test-email": "tsx src/scripts/sendTestEmail.ts",
     "script:email-preview": "tsx src/scripts/emailPreview.ts",
-    "script:send-blast": "tsx src/scripts/sendBlastEmail.ts"
+    "script:send-blast": "tsx src/scripts/sendBlastEmail.ts",
+    "script:migrate-from-legacy": "tsx src/scripts/migrate-from-legacy.ts"
   },
   "dependencies": {
+    "@cut/sport-pga-golf": "workspace:*",
+    "@cut/sport-sdk": "workspace:*",
     "@cut/secondary-pricing": "workspace:*",
     "@hono/node-server": "^1.19.3",
     "@prisma/client": "^5.10.0",

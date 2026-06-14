@@ -13,7 +13,7 @@ export const UserGroupCreatePage = () => {
   const handleSubmit = (data: CreateUserGroupInput) => {
     createMutation.mutate(data, {
       onSuccess: (userGroup) => {
-        navigate(`/user-groups/${userGroup.id}`);
+        navigate(`/leagues/${userGroup.id}`);
       },
     });
   };
@@ -22,8 +22,8 @@ export const UserGroupCreatePage = () => {
     <>
       <Breadcrumbs
         items={[
-          { label: "Leagues", path: "/user-groups" },
-          { label: "Create League", path: "/user-groups/create" },
+          { label: "Leagues", path: "/leagues" },
+          { label: "Create League", path: "/leagues/create" },
         ]}
       />
       <PageHeader title="Create League" />

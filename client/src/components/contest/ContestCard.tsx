@@ -109,7 +109,7 @@ export const ContestCard = ({ contest, onPotClick, linkUserGroup = false }: Cont
             <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
               <Link
-                to={`/user-groups/${contest.userGroup.id ?? contest.userGroupId}`}
+                to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
                 className="truncate hover:underline focus:outline-none focus-visible:underline"
               >
                 {contest.userGroup.name}

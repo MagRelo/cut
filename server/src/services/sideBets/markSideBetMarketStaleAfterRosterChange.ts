@@ -16,16 +16,16 @@ const SKIP_MARK_STALE: SideBetMarketStatus[] = [
  * Cron `refreshOpenSideBetQuotes` will repopulate OPEN markets.
  */
 export async function markSideBetMarketStaleAfterRosterChange(
-  tournamentLineupId: string,
+  lineupId: string,
 ): Promise<void> {
   if (!sideBetsEnabled()) {
     return;
   }
 
-  const lineup = await prisma.tournamentLineup.findUnique({
-    where: { id: tournamentLineupId },
+  const lineup = await prisma.lineup.findUnique({
+    where: { id: lineupId },
     select: {
-      tournamentId: true,
+      eventId: true,
       sideBetMarket: { select: { status: true } },
     },
   });
@@ -43,10 +43,10 @@ export async function markSideBetMarketStaleAfterRosterChange(
 
   await prisma.$transaction(async (tx) => {
     const market = await tx.sideBetMarket.upsert({
-      where: { tournamentLineupId },
+      where: { lineupId },
       create: {
-        tournamentLineupId,
-        tournamentId: lineup.tournamentId,
+        lineupId,
+        eventId: lineup.eventId,
         status: SideBetMarketStatus.UNAVAILABLE,
         unavailableReason: "ROSTER_CHANGED",
         quoteVersion: 0,

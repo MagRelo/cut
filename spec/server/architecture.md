@@ -1,190 +1,98 @@
-# Server Architecture
+# Server architecture
 
-## High-Level Architecture
-
-```mermaid
-graph TB
-    subgraph client[Client Layer]
-        UI[React UI]
-    end
-    
-    subgraph server[Server Layer]
-        APP[app.ts - Hono App]
-        API[API Routes]
-        MW[Middleware]
-        SVC[Services]
-        CRON[Cron Scheduler]
-    end
-    
-    subgraph database[Database]
-        PG[(PostgreSQL)]
-        PRISMA[Prisma ORM]
-    end
-    
-    subgraph external[External Services]
-        PGA[PGA Tour Website]
-        BLOCKCHAIN[Base Blockchain]
-        PRIVY[Privy]
-    end
-    
-    UI -->|HTTP/REST| APP
-    APP -->|routes| API
-    API -->|uses| MW
-    API -->|calls| SVC
-    SVC -->|queries| PRISMA
-    PRISMA -->|connects to| PG
-    
-    CRON -->|triggers| SVC
-    SVC -->|scrapes| PGA
-    SVC -->|reads/writes| BLOCKCHAIN
-    
-    MW -->|verifies token| PRIVY
-```
-
-## Request Flow
+## Request flow
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant App
-    participant Middleware
-    participant Route
-    participant Service
-    participant Prisma
-    participant Database
-    
-    Client->>App: HTTP Request
-    App->>Middleware: CORS, Logging
-    Middleware->>Route: Route Handler
-    Route->>Middleware: Auth Check (if needed)
-    Middleware->>Route: User Context
-    Route->>Service: Business Logic
-    Service->>Prisma: Database Query
-    Prisma->>Database: SQL
-    Database-->>Prisma: Results
-    Prisma-->>Service: Typed Data
-    Service-->>Route: Processed Data
-    Route-->>App: JSON Response
-    App-->>Client: HTTP Response
+  participant Client
+  participant Hono as app.ts
+  participant MW as Middleware
+  participant Route
+  participant Svc as Service
+  participant Plugin as SportModule
+  participant DB as Prisma
+
+  Client->>Hono: HTTP /api/*
+  Hono->>MW: CORS, logging
+  Route->>MW: requireAuth (optional)
+  Route->>Svc: business logic
+  Svc->>Plugin: sport-specific ops
+  Svc->>DB: queries
+  DB-->>Client: JSON
 ```
 
-## Component Relationships
+## Layering
 
-### App → Routes → Services → Prisma
-- **App** (`app.ts`): Main Hono application, middleware setup
-- **Routes** (`routes/*.ts`): HTTP endpoint handlers
-- **Services** (`services/*.ts`): Business logic, external integrations
-- **Prisma**: Database access layer
+| Layer | Responsibility |
+|-------|----------------|
+| **Routes** (`src/routes/*.ts`) | HTTP parsing, status codes, auth gates |
+| **Services** (`src/services/**`) | Platform business rules, batch ops, orchestration |
+| **Plugins** (`src/sports/registry.ts`, `propBetRegistry.ts`) | Sport-specific ingest, scoring, prop quotes |
+| **Prisma** | Typed DB access |
 
-### Cron → Services
-- **Cron Scheduler**: Triggers services on schedule
-- **Services**: Execute business logic (tournament updates, contest operations)
+Routes stay thin; reusable logic lives in services so cron and admin can share it.
 
-## Key Architectural Patterns
+## Registries
 
-### Layered Architecture
-- **Presentation Layer**: Routes handle HTTP
-- **Business Layer**: Services contain logic
-- **Data Layer**: Prisma handles database
-
-### Middleware Pattern
-- **CORS**: Cross-origin resource sharing
-- **Logging**: Request/response logging
-- **Authentication**: Privy access token verification
-- **Error Handling**: Centralized error responses
-
-### Service Pattern
-- Services encapsulate business logic
-- Reusable across routes and cron jobs
-- Single responsibility per service
-- Testable in isolation
-
-### Repository Pattern (via Prisma)
-- Prisma provides type-safe database access
-- Abstracts SQL queries
-- Handles migrations and schema management
-
-## Data Flow Patterns
-
-### Read Flow (Tournament Data)
-```
-Client Request → Route → Service → Prisma → Database
-                                    ↓
-                              Transform Data
-                                    ↓
-Client Response ← Route ← Service ← Prisma
+```mermaid
+graph LR
+  API[Routes / Services] --> SR[sports/registry.ts]
+  API --> PR[propBetRegistry.ts]
+  SR --> Golf["@cut/sport-pga-golf + handlers"]
+  PR --> GolfProp[pga-golf PropBetModule]
 ```
 
-### Write Flow (Create Contest)
-```
-Client Request → Route → Auth Middleware → Service → Prisma → Database
-                                                          ↓
-                                                    Create Record
-                                                          ↓
-Client Response ← Route ← Service ← Prisma ← Database
-```
+- `requireSportModule(sportId)` — throws if sport not registered
+- `getPropBetModule(sportId)` — returns `undefined` if sport has no props
 
-### Cron Flow (Update Tournament)
-```
-Cron Scheduler → Service → PGA Scraping → Transform → Prisma → Database
-                                                              ↓
-                                                        Update Records
-```
+## Middleware
 
-## Key Design Decisions
+| Middleware | File | Usage |
+|------------|------|-------|
+| `requireAuth` | `middleware/auth.ts` | Privy token → Cut user; provisions wallet |
+| `requireAdmin` | `middleware/admin.ts` | Staff user types |
+| `requireEventEditable` | `middleware/eventEditable.ts` | Blocks lineup writes after event starts |
+| `requireUserGroupMember` | `middleware/userGroup.ts` | League access |
+| `requireUserGroupAdmin` | `middleware/userGroup.ts` | League admin actions |
 
-### Why Hono Instead of Express?
-- **Performance**: Faster, lighter weight
-- **TypeScript**: Better TypeScript support
-- **Modern**: Built for modern JavaScript
-- **Compatibility**: Similar API to Express
+## Major subsystems
 
-### Why Prisma?
-- **Type Safety**: Generated TypeScript types
-- **Migrations**: Built-in migration system
-- **Developer Experience**: Great tooling
-- **Query Builder**: Type-safe queries
+### Events & lineups
 
-### Why Separate Services?
-- **Reusability**: Used by routes and cron jobs
-- **Testability**: Easy to test in isolation
-- **Maintainability**: Clear separation of concerns
-- **Scalability**: Can be moved to separate services later
+- Active event: `CompetitionEvent.isActive` (one per sport, set by init)
+- Candidates: sport plugin `getCandidatePool`
+- Lineup create/update: `services/lineups/createLineupForEvent.ts` / `updateLineupById.ts` → validates via plugin, marks side-bet stale
 
-### Why Cron Jobs?
-- **Automation**: No manual intervention needed
-- **Reliability**: Runs on schedule
-- **Efficiency**: Batch operations
-- **Consistency**: Regular updates
+### Contests
 
-## Security Patterns
+- HTTP: `routes/contest.ts`
+- Lifecycle batches: `services/batch/batchActivateContests.ts`, `batchSettleContests.ts`, `batchCloseContests.ts`
+- Settlement: `services/contest/settleContest.ts` → plugin ranking + on-chain oracle
 
-### Authentication
-- Privy access tokens in the `Authorization` header
-- `requireAuth` middleware verifies tokens and provisions or resolves Cut users
+### Side bets
 
-### Authorization
-- Middleware checks user permissions
-- User group membership validation
-- Contest ownership checks
+- HTTP: `routes/bets.ts`
+- Ingest: `services/propBets/` + `PropBetModule`
+- Admin: `routes/admin.ts` lock/settle/close batches
 
-### Error Handling
-- Centralized error handler
-- Consistent error responses
-- Error logging for debugging
-- No sensitive data in errors
+### Email
 
-## Scalability Considerations
+- `lib/email/` — templates keyed by `eventId` in `EmailSendLog`
+- Blasts: `scripts/sendBlastEmail.ts`
 
-### Current Architecture
-- Single server instance
-- Direct database connections
-- Synchronous operations
+### Legacy
 
-### Future Considerations
-- **Horizontal Scaling**: Stateless API allows multiple instances
-- **Database**: Connection pooling via Prisma
-- **Caching**: Can add Redis for frequently accessed data
-- **Queue System**: Can move cron jobs to background workers
-- **CDN**: Static files can be served from CDN
+- `routes/legacy.ts` — 501 for `/tournaments` and `/lineup`
+- Old route files (`tournament.ts`, `lineup.ts`) excluded from build; not mounted
 
+## Security
+
+- Privy Bearer tokens on protected routes
+- League contests hidden from non-members (404)
+- Admin routes require staff `userType`
+- Side bets gated by `SIDE_BETS_ENABLED`
+
+## Scalability notes
+
+- API is stateless; cron uses in-process lock (`pipelineRunning`) to prevent overlap
+- Single `mainPipeline` cron job (every 5 min) — not per-legacy-job names in old `/cron/status` copy

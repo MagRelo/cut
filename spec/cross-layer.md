@@ -1,283 +1,263 @@
-# Cross-Layer Interactions
+# Cross-layer interactions (v4)
 
-## System Architecture Overview
+End-to-end flows across client, server, chain, and external services. Terminology: **event** (not tournament), **lineup** (not tournament lineup).
+
+---
+
+## System overview
 
 ```mermaid
 graph TB
-    subgraph client[Client Layer]
-        UI[React UI]
-        WAGMI[Wagmi]
-        QUERY[React Query]
-    end
-    
-    subgraph server[Server Layer]
-        API[REST API]
-        SVC[Services]
-        CRON[Cron Jobs]
-    end
-    
-    subgraph blockchain[Blockchain Layer]
-        CONTRACTS[Smart Contracts]
-        BASE[Base Network]
-    end
-    
-    subgraph external[External Services]
-        PGA[PGA Tour]
-        PRIVY[Privy]
-    end
-    
-    UI -->|HTTP| API
-    UI -->|RPC| CONTRACTS
-    WAGMI -->|RPC| BASE
-    QUERY -->|HTTP| API
-    
-    API -->|Read/Write| CONTRACTS
-    SVC -->|Scrape| PGA
-    SVC -->|Read/Write| CONTRACTS
-    CRON -->|Triggers| SVC
-    
-    UI -->|Auth + wallet| PRIVY
-    API -->|Verify token| PRIVY
+  subgraph client[Client]
+    UI[React + SportUIPlugin]
+    RQ[React Query]
+    WAGMI[Wagmi / Privy]
+  end
+
+  subgraph server[Server]
+    API[Hono /api]
+    REG[SportModule + PropBetModule registries]
+    SVC[Services]
+    CRON[Cron pipeline]
+  end
+
+  subgraph chain[Base]
+    CC[ContestController]
+    FACTORY[ContestFactory]
+  end
+
+  subgraph external[External]
+    PGA[PGA Tour / DataGolf]
+    PRIVY[Privy]
+  end
+
+  UI --> RQ
+  RQ --> API
+  UI --> WAGMI
+  WAGMI --> CC
+  API --> REG
+  API --> SVC
+  SVC --> CC
+  CRON --> REG
+  CRON --> SVC
+  REG --> PGA
+  UI --> PRIVY
+  API --> PRIVY
 ```
 
-## Layer Interactions
+---
 
-### Client ↔ Server
-
-#### Authentication Flow
-1. User signs in with Privy in the client (embedded or external wallet)
-2. Client obtains a Privy access token (`getAccessToken`)
-3. Client sends `Authorization: Bearer <token>` on API requests; may send `X-Cut-Chain-Id` for chain-specific wallet resolution
-4. Server verifies the token with Privy and attaches the Cut user context
-5. Protected routes use middleware that re-verifies the token per request
-
-#### Data Flow
-- **Client → Server**: HTTP requests (GET, POST, PUT, DELETE)
-- **Server → Client**: JSON responses
-- **Caching**: React Query caches server responses
-- **Real-time**: Polling for updates (token balances)
-
-### Client ↔ Blockchain
-
-#### Read Operations
-- **Client → Blockchain**: RPC calls via Wagmi
-- **Blockchain → Client**: Contract state data
-- **Caching**: Wagmi caches contract reads
-- **Polling**: Token balances polled every 30 seconds
-
-#### Write Operations
-- **Client → Wallet**: Transaction signing request
-- **Wallet → Client**: Signed transaction
-- **Client → Blockchain**: Transaction broadcast
-- **Blockchain → Client**: Transaction receipt
-
-### Server ↔ Blockchain
-
-#### Read Operations
-- **Server → Blockchain**: RPC calls via viem
-- **Blockchain → Server**: Contract state data
-- **Usage**: Contest state synchronization, balance checks
-
-#### Write Operations
-- **Server → Blockchain**: Oracle/admin transactions
-- **Blockchain → Server**: Transaction receipts
-- **Usage**: Contest lifecycle management (activate, lock, settle, close)
-
-### Server ↔ External Services
-
-#### PGA Tour Integration
-- **Server → PGA Tour**: Web scraping
-- **PGA Tour → Server**: Tournament data, player scores
-- **Frequency**: Every 5 minutes via cron
-
-#### Privy
-- **Client → Privy**: Login, wallet, signing
-- **Server → Privy**: Access token verification (Privy server SDK)
-- **Usage**: Authenticated API access and user provisioning (`User`, `UserWallet`)
-
-## Data Flow Across Layers
-
-### Contest Creation Flow
+## Identity & auth
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Client
-    participant Server
-    participant Blockchain
-    
-    User->>Client: Create Contest Form
-    Client->>Server: POST /api/contests
-    Server->>Server: Create Contest Record
-    Server-->>Client: Contest Data
-    Client->>Blockchain: Deploy Contest Contract
-    Blockchain-->>Client: Contract Address
-    Client->>Server: Update Contest with Address
-    Server-->>Client: Updated Contest
-    Client-->>User: Contest Created
+  participant User
+  participant Client
+  participant Privy
+  participant API as POST/GET /api/auth
+  participant DB
+
+  User->>Client: Sign in
+  Client->>Privy: OAuth / wallet
+  Privy-->>Client: access token
+  Client->>API: Bearer token
+  API->>Privy: verify
+  API->>DB: provision User + UserWallet
+  API-->>Client: profile, lineups, leagues
 ```
 
-### Contest Join Flow
+- **Authoritative user record:** Postgres (`User`, `UserWallet`)
+- **Authoritative wallet for txs:** Privy-connected address on chosen chain
+- **Staff:** `role` on user → `AdminRoute` / `/api/admin`
+
+---
+
+## Event lifecycle (golf example)
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Client
-    participant Server
-    participant Blockchain
-    
-    User->>Client: Join Contest
-    Client->>Blockchain: addPrimaryPosition(entryId)
-    Blockchain-->>Client: Transaction Hash
-    Client->>Blockchain: Wait for Confirmation
-    Blockchain-->>Client: Confirmed
-    Client->>Server: POST /api/contests/:id/lineups
-    Server->>Server: Create ContestLineup Record
-    Server-->>Client: Updated Contest
-    Client-->>User: Joined Contest
+  participant Ops as Operator CLI
+  participant Mod as SportModule pga-golf
+  participant DB as CompetitionEvent
+  participant Cron
+  participant PGA
+
+  Ops->>Mod: initEvent R2026033
+  Mod->>DB: create event, set isActive
+  Cron->>Mod: syncEventMetadata / syncField
+  Mod->>PGA: field + metadata
+  Cron->>Mod: syncLiveScores when LIVE
+  Mod->>DB: EventParticipant.scoreData, total
+  Cron->>SVC: updateContestLineupsForEvent
 ```
 
-### Tournament Update Flow
+| Phase | Server status | Client sees |
+|-------|---------------|-------------|
+| Pre-event | `SCHEDULED` | Editable lineups, OPEN contests |
+| Live | `LIVE` | Scores update ~5 min; contests ACTIVE |
+| Complete | `COMPLETE` | Lineups locked; settlement runs |
+
+Init: `pnpm run service:init-event pga-golf R2026033`  
+Ops runbook: [docs/event-activation-runbook.md](../docs/event-activation-runbook.md)
+
+---
+
+## Lineup → contest entry
 
 ```mermaid
 sequenceDiagram
-    participant Cron
-    participant Server
-    participant PGA
-    participant Database
-    participant Blockchain
-    
-    Cron->>Server: Trigger Update
-    Server->>PGA: Scrape Tournament Data
-    PGA-->>Server: Tournament Data
-    Server->>Database: Update Tournament
-    Server->>PGA: Scrape Player Scores
-    PGA-->>Server: Player Scores
-    Server->>Database: Update Players
-    Server->>Database: Update Contest Lineups
-    Server->>Blockchain: Check Contest States
-    Blockchain-->>Server: Contest States
-    Server->>Blockchain: Activate/Lock/Settle Contests
-    Blockchain-->>Server: Transaction Receipts
-    Server->>Database: Update Contest States
+  participant User
+  participant Client
+  participant API
+  participant Mod as SportModule
+  participant Chain
+
+  User->>Client: Build 4 picks + prediction
+  Client->>API: POST /lineups/:eventId
+  API->>Mod: validateRoster
+  API->>API: mark side-bet stale
+  User->>Client: Join contest
+  Client->>Chain: addPrimaryPosition
+  Chain-->>Client: confirmed
+  Client->>API: POST /contests/:id/lineups
+  API-->>Client: ContestLineup + entryId
 ```
 
-## Integration Points
+- **Lineup** is per user per event (reused across contests for that event)
+- **ContestLineup** links lineup to a specific contest with on-chain `entryId`
 
-### Authentication Integration
-- **Client**: Privy + Wagmi for wallet and transactions
-- **Server**: Bearer token verification via Privy
-- **Blockchain**: Wallet address tied to Cut user via `UserWallet`
+---
 
-### Contest State Synchronization
-- **Blockchain**: Source of truth for contest state
-- **Server**: Mirrors blockchain state in database
-- **Client**: Reads from both (blockchain for real-time, server for historical)
+## Contest lifecycle & settlement
 
-### Token Operations
-- **Client**: Initiates token operations
-- **Blockchain**: Executes operations
-- **Server**: Tracks operations (if needed)
+```mermaid
+stateDiagram-v2
+  [*] --> OPEN: create
+  OPEN --> ACTIVE: batchActivate + on-chain
+  ACTIVE --> LOCKED: admin lock or policy
+  LOCKED --> SETTLED: batchSettle + oracle
+  SETTLED --> CLOSED: batchClose
+```
 
-### Tournament Data
-- **External**: PGA Tour website
-- **Server**: Scrapes and stores data
-- **Client**: Reads from server
+| Layer | Responsibility |
+|-------|----------------|
+| Chain | Deposits, entry positions, oracle `settle`, payouts |
+| Server | Mirror status, rank entries via `SportModule.rankEntries`, push oracle tx |
+| Client | Join/leave txs, display ranks from server + chain reads |
 
-## Data Consistency
+Settlement uses aggregated lineup scores from `EventParticipant.total` and sport tie-break rules.
 
-### Contest State
-- **Blockchain**: Authoritative source
-- **Server**: Mirrors blockchain state
-- **Client**: Reads from blockchain for current state
-- **Sync**: Server updates database after blockchain operations
+---
 
-### User Data
-- **Server**: Authoritative source
-- **Client**: Reads from server
-- **Blockchain**: Wallet addresses only
+## Cron pipeline (server-only)
 
-### Tournament Data
-- **Server**: Authoritative source
-- **Client**: Reads from server
-- **External**: PGA Tour (scraped by server)
+Every 5 minutes (`ENABLE_CRON=true`):
 
-## Error Handling Across Layers
+1. For each active event → `runSportEventPipeline` (plugin sync + lineup scores)
+2. `refreshOpenSideBetQuotes` (DataGolf → `PropBetModule`)
+3. `batchActivateContests` / `batchSettleContests` / `batchCloseContests`
+4. `batchSyncReferralGraph`
 
-### Client Errors
-- **Network Errors**: Retry logic in React Query
-- **Blockchain Errors**: User-friendly messages
-- **Server Errors**: Displayed to user
+Client does **not** trigger cron; it benefits from fresher scores and contest status on next query/refetch.
 
-### Server Errors
-- **Database Errors**: Logged and handled gracefully
-- **Blockchain Errors**: Retry logic for transient failures
-- **External API Errors**: Fallback behavior
+Side-bet **lock / settle / close** are admin API actions, not cron.
 
-### Blockchain Errors
-- **Transaction Failures**: Caught and displayed
-- **RPC Errors**: Retry logic
-- **Network Errors**: User notification
+---
 
-## Security Considerations
+## Side bets (prop markets)
 
-### Authentication
-- **Client**: Privy session and wallet
-- **Server**: Privy access token verification
-- **Blockchain**: Address validation
+```mermaid
+flowchart LR
+  DG[DataGolf API] --> Mod[PropBetModule pga-golf]
+  Mod --> DB[SideBetMarket + selections]
+  Cron[refreshOpenSideBetQuotes] --> Mod
+  User[User ticket] --> API[POST /bets/side/tickets]
+  Admin[Admin settle] --> Grade[gradeTicket]
+  Grade --> DB
+```
 
-### Authorization
-- **Server**: User context from verified token (user id, wallet, chain)
-- **Blockchain**: Contract-based permissions
-- **Client**: Route protection (`ProtectedRoute`)
+- One market per lineup (4 picks required for golf parlay)
+- Grading: `PropBetModule.gradeTicket` — "N of 4 finish top X"
+- Client reads market via `GET /bets/side/lineup/:lineupId/market`
 
-### Data Validation
-- **Client**: Form validation (Yup/Zod)
-- **Server**: Schema validation (Zod)
-- **Blockchain**: Contract validation
+---
 
-## Performance Considerations
+## Leagues (cross-sport)
 
-### Caching Strategy
-- **Client**: React Query caches server data
-- **Client**: Wagmi caches blockchain data
-- **Server**: No caching (database is cache)
+```mermaid
+flowchart TB
+  UG[UserGroup league] --> C1[Contest eventId=golf]
+  UG --> C2[Contest eventId=nfl future]
+  C1 --> E1[CompetitionEvent pga-golf]
+  C2 --> E2[CompetitionEvent nfl]
+```
 
-### Polling Strategy
-- **Client**: Token balances (30 seconds)
-- **Server**: Tournament updates (5 minutes)
-- **Blockchain**: Block-based updates
+- League has **no** `sportId`
+- `GET /userGroups/:id/contests` returns contests across events with `eventSummary`
+- Client: `GroupedContestList`, `CreateContestEventPicker`
 
-### Optimization
-- **Prefetching**: Tournament data on app load
-- **Lazy Loading**: Route-based code splitting
-- **Batch Operations**: Server batches contest operations
+---
 
-## Monitoring and Observability
+## Email program
 
-### Client Monitoring
-- **PostHog**: User analytics and error tracking
-- **Console Logging**: Development debugging
+| Trigger | Data source |
+|---------|-------------|
+| Welcome, reminders, blasts | `lib/email/*` |
+| Event context | `lib/email/data/event.ts` → active `CompetitionEvent` |
+| Dedupe | `EmailSendLog.dedupeKey` + `eventId` |
 
-### Server Monitoring
-- **Console Logging**: Request/error logging
-- **Cron Logging**: Job execution logs
+Admin test: `POST /api/admin/email/test`.  
+Scripts: `pnpm --filter server run script:send-blast ...`
 
-### Blockchain Monitoring
-- **Transaction Tracking**: Via Wagmi
-- **Event Listening**: (If implemented)
+---
 
-## Future Integration Considerations
+## Data authority
 
-### Real-time Updates
-- **WebSockets**: For live tournament updates
-- **Contract Events**: For contest state changes
+| Data | Source of truth |
+|------|-----------------|
+| User profile | Server DB |
+| Active event, scores, lineups | Server DB (synced from sport APIs) |
+| Contest ranks / timeline | Server DB (derived from scores + chain) |
+| Deposits, entry ownership, payouts | On-chain contracts |
+| Contest status | Both — server mirrors after chain ops |
+| Side-bet odds | Server DB (ingested quotes) |
+| Auth session | Privy |
 
-### Offline Support
-- **Service Workers**: For offline functionality
-- **Local Storage**: For offline data
+---
 
-### Multi-chain Support
-- **Current**: Base and Base Sepolia
-- **Future**: Additional chains via Wagmi
+## Consistency & failure modes
 
+| Scenario | Behavior |
+|----------|----------|
+| Tx succeeds, API fails | User may need support reconcile; client should retry API record |
+| API succeeds, tx fails | No `ContestLineup` created; user sees error |
+| Stale React Query cache | Refetch on focus; 5m poll on active event |
+| Cron overlap | `pipelineRunning` guard skips duplicate run |
+| No active event | `GET .../active` → 404; client empty state |
+
+---
+
+## Security boundaries
+
+| Layer | Control |
+|-------|---------|
+| Client | Privy session, route guards, form validation |
+| API | Bearer verification, Zod bodies, `requireEventEditable` |
+| Admin | Staff role + separate batch endpoints |
+| Chain | Contract access control, oracle role on server |
+
+---
+
+## Observability
+
+| Layer | Tooling |
+|-------|---------|
+| Client | PostHog (if configured), React Query DevTools |
+| Server | Console logs, cron step logging |
+| Chain | Tx hashes in UI, indexed in `OnchainPayment` |
+
+---
+
+## Phase 10 cutover (planned)
+
+Legacy `/api/tournaments` and `/api/lineup` return 501. Remaining client bridge (`golfEventAdapter`, `useActiveTournament`) will be removed after production migration script (`migrate-from-legacy.ts`) and type cleanup.

@@ -4,8 +4,12 @@ import { useChainId } from "wagmi";
 
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import {
+  CreateContestEventPicker,
+  useSelectedSportEvent,
+} from "../contest/CreateContestEventPicker";
 import { useAuth } from "../../contexts/AuthContext";
-import { useActiveTournament } from "../../hooks/useTournamentData";
+import { DEFAULT_SPORT_ID } from "../../hooks/useSportData";
 import {
   getCreateContestStatusMessage,
   useCreateContestSubmission,
@@ -13,7 +17,6 @@ import {
 import {
   buildContestSettings,
   computeExpiryTimestampFromTournamentEnd,
-  formatTournamentDateRange,
 } from "../../lib/contestCreation";
 import {
   formatInviteRewardPercent,
@@ -41,7 +44,8 @@ export const LeagueCreateContestForm = ({
 }: LeagueCreateContestFormProps) => {
   const navigate = useNavigate();
   const chainId = useChainId();
-  const { tournament, isTournamentEditable } = useActiveTournament();
+  const [sportId, setSportId] = useState(DEFAULT_SPORT_ID);
+  const { selection: selectedEvent } = useSelectedSportEvent(sportId);
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
 
   const [entryFeeIndex, setEntryFeeIndex] = useState(LEAGUE_ENTRY_FEE_OPTIONS.indexOf(20));
@@ -75,11 +79,11 @@ export const LeagueCreateContestForm = ({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!tournament?.id || !isTournamentEditable) {
+    if (!selectedEvent?.eventId || !selectedEvent.isEditable) {
       return;
     }
 
-    const expiryTimestamp = computeExpiryTimestampFromTournamentEnd(tournament.endDate);
+    const expiryTimestamp = computeExpiryTimestampFromTournamentEnd(selectedEvent.endDate);
     const baseSettings = buildContestSettings(chainId ?? 0, paymentTokenAddress || "", tokenSymbol);
 
     await submitContest({
@@ -87,7 +91,7 @@ export const LeagueCreateContestForm = ({
       transactionId: "",
       address: "",
       chainId: chainId ?? 0,
-      tournamentId: tournament.id,
+      eventId: selectedEvent.eventId,
       userGroupId,
       settings: {
         ...baseSettings,
@@ -102,31 +106,15 @@ export const LeagueCreateContestForm = ({
     });
   };
 
-  const tournamentUnavailable = !tournament?.id;
-  const canCreateContest = Boolean(tournament?.id && isTournamentEditable);
+  const canCreateContest = Boolean(selectedEvent?.eventId && selectedEvent.isEditable);
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
-      <div className="rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 shadow-inner ring-1 ring-inset ring-blue-100">
-        {tournamentUnavailable ? (
-          <p className="font-display text-sm text-blue-800/80">
-            No active tournament is available.
-          </p>
-        ) : (
-          <dl className="space-y-1 font-display text-sm">
-            <div>
-              <dt className="sr-only">Tournament name</dt>
-              <dd className="font-semibold text-blue-950">{tournament.name}</dd>
-            </div>
-            <div>
-              <dt className="sr-only">Tournament dates</dt>
-              <dd className="text-blue-800/75">
-                {formatTournamentDateRange(tournament.startDate, tournament.endDate)}
-              </dd>
-            </div>
-          </dl>
-        )}
-      </div>
+      <CreateContestEventPicker
+        sportId={sportId}
+        onSportIdChange={setSportId}
+        disabled={isProcessing}
+      />
 
       <DiscreteValueSlider
         id="league-entry-fee"

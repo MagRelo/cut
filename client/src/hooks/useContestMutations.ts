@@ -6,8 +6,10 @@ import { type ContestLineup } from "../types/lineup";
 
 interface JoinContestParams {
   contestId: string;
-  tournamentLineupId: string;
-  entryId: string; // Blockchain entry ID (required)
+  lineupId?: string;
+  /** @deprecated Use lineupId */
+  tournamentLineupId?: string;
+  entryId: string;
 }
 
 interface LeaveContestParams {
@@ -23,9 +25,14 @@ export function useCreateContest() {
 
   return useMutation({
     mutationFn: async (params: CreateContestInput) => {
-      const { settings, ...rest } = params;
+      const { settings, tournamentId, ...rest } = params;
+      const eventId = rest.eventId ?? tournamentId;
+      if (!eventId) {
+        throw new Error("Event ID is required");
+      }
       return await apiClient.post<Contest>("/contests", {
         ...rest,
+        eventId,
         endDate: settings.expiryTimestamp * 1000,
         settings,
       });
@@ -34,7 +41,10 @@ export function useCreateContest() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.contests.byTournament(variables.tournamentId, variables.chainId),
+        queryKey: queryKeys.contests.byEvent(
+          variables.eventId ?? variables.tournamentId ?? "",
+          variables.chainId,
+        ),
       });
     },
 
@@ -51,14 +61,19 @@ export function useJoinContest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ contestId, tournamentLineupId, entryId }: JoinContestParams) => {
+    mutationFn: async ({ contestId, lineupId, tournamentLineupId, entryId }: JoinContestParams) => {
+      const resolvedLineupId = lineupId ?? tournamentLineupId;
+      if (!resolvedLineupId) {
+        throw new Error("Lineup ID is required");
+      }
       return await apiClient.post<Contest>(`/contests/${contestId}/lineups`, {
-        tournamentLineupId,
+        lineupId: resolvedLineupId,
         entryId,
       });
     },
 
-    onMutate: async ({ contestId, tournamentLineupId }) => {
+    onMutate: async ({ contestId, lineupId, tournamentLineupId }) => {
+      const resolvedLineupId = lineupId ?? tournamentLineupId;
       await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
 
       const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
@@ -70,7 +85,8 @@ export function useJoinContest() {
           const optimisticLineup: ContestLineup = {
             id: `temp-${Date.now()}`,
             contestId,
-            tournamentLineupId,
+            lineupId: resolvedLineupId,
+            tournamentLineupId: resolvedLineupId,
             userId: "",
             status: "ACTIVE",
             position: 0,

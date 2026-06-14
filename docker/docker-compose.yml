@@ -1,20 +1,20 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: betthecut-db-porto
+    container_name: playthecut-local
     environment:
-      POSTGRES_USER: betthecut
-      POSTGRES_PASSWORD: betthecut
-      POSTGRES_DB: betthecut
+      POSTGRES_USER: playthecut
+      POSTGRES_PASSWORD: playthecut
+      POSTGRES_DB: playthecut
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - playthecut_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U betthecut"]
+      test: ["CMD-SHELL", "pg_isready -U playthecut"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres_data:
+  playthecut_postgres_data:

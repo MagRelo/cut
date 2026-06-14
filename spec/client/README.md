@@ -1,129 +1,113 @@
-# Client Layer Overview
+# Client layer overview (v4)
 
-## Purpose
+React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Default entry: `/sports/pga-golf`.
 
-The client layer provides the user interface for Play The Cut:
-- **React Application**: Modern React 19 with TypeScript
-- **Blockchain Integration**: Wagmi for wallet connections and contract interactions
-- **State Management**: React Query for server state, Context API for app state
-- **Routing**: React Router for client-side routing
-- **UI Components**: Tailwind CSS for styling, Headless UI for accessible components
+---
 
-## Key Components
+## Responsibilities
 
-### Pages (`client/src/pages/`)
-- **Home.tsx**: Landing page
-- **ContestListPage.tsx**: List of contests
-- **ContestLobbyPage.tsx**: Contest detail and management
-- **ContestCreatePage.tsx**: Create new contest
-- **LineupListPage.tsx**: User's lineups
-- **LineupCreatePage.tsx**: Create/edit lineup
-- **LeaderboardPage.tsx**: Tournament leaderboard
-- **Account.tsx**: User account page
-- **UserHistoryPage.tsx**: User's contest history
-- **UserGroupListPage.tsx**: User groups list
-- **UserGroupDetailPage.tsx**: User group detail
-- **UserGroupCreatePage.tsx**: Create user group
-- **ConnectPage.tsx**: Wallet connection page
-- **AdminPage.tsx**: Admin panel
-- **DebugPage.tsx**: Debug utilities
+| Area | Implementation |
+|------|----------------|
+| Routing | React Router 7 — sport hub, contest lobby, leagues, account |
+| Server data | TanStack React Query + `apiClient` |
+| Auth & wallet | Privy + `@privy-io/wagmi` |
+| On-chain | Wagmi/viem — contest join, secondary market, token ops |
+| Sport UI | `SportUIPlugin` registry (`pga-golf` only today) |
+| Legacy bridge | `golfEventAdapter.ts` + `useActiveTournament` map platform APIs → old `Tournament` types |
 
-### Components (`client/src/components/`)
-- **common/**: Shared components (Navigation, Footer, Modals, etc.)
-- **contest/**: Contest-related components
-- **lineup/**: Lineup management components
-- **player/**: Player display components
-- **tournament/**: Tournament display components
-- **user/**: User account components
-- **userGroup/**: User group components
+---
 
-### Hooks (`client/src/hooks/`)
-- **useTournamentData.ts**: Active tournament metadata shell, active players query, and composed `useActiveTournament`
-- **useContestQuery.ts**: Contest data fetching
-- **useLineupData.ts**: Lineup data operations
-- **useContestMutations.ts**: Contest mutations
-- **useBlockchainTransaction.ts**: Blockchain transaction handling
-- **useContestantOperations.ts**: Contest join/leave operations
-- **useTokenOperations.ts**: Token buy/sell operations
-- **useContestPredictionData.ts**: Prediction market data
+## Directory map
 
-### Contexts (`client/src/contexts/`)
-- **AuthContext.tsx** (`AuthProvider`, `useAuth`): Authentication, Cut user profile from `/auth/me`, token balances, and connect/network flow
-- **GlobalErrorContext.tsx**: Global error handling
+```
+client/src/
+  pages/              Route-level screens
+  components/
+    platform/         Sport-agnostic lineup/event UI
+    sport/            SportPicker, shared sport chrome
+    contest/          Contest list, cards, create forms
+    lineup/           Lineup cards, management
+    tournament/       Legacy-named display (fed by adapters)
+    userGroup/        League UI
+    common/           Nav, ProtectedRoute, modals
+  sports/
+    registry.ts       SportUIPlugin map
+    pga-golf/         Golf-specific rows, summary, prediction field
+  hooks/
+    useSportData.ts   GET /sports, active event, candidates
+    useTournamentData.ts   Bridge → legacy tournament shapes
+    useLineupQueries.ts    GET/POST /lineups/:eventId
+    useContestQuery.ts     Contest fetch by id/address
+  contexts/
+    AuthContext.tsx   Privy session, /auth/me, token balances
+    SportContext.tsx  sportId from URL
+  lib/
+    golfEventAdapter.ts   CompetitionEvent → Tournament
+    lineupApi.ts          Lineup POST helpers
+    navTabs.ts            Primary nav (sport-scoped contests tab)
+  utils/
+    apiClient.ts        Bearer auth, X-Cut-Chain-Id
+    queryKeys.ts        Centralized React Query keys
+```
 
-### Libraries (`client/src/lib/`)
-- **authToken.ts**: Registers Privy `getAccessToken` (and optional chain id) so `apiClient` can attach `Authorization: Bearer` and `X-Cut-Chain-Id` headers
+---
 
-### Utilities (`client/src/utils/`)
-- **apiClient.ts**: HTTP client for API calls (Bearer auth, no cookies)
-- **blockchainUtils.tsx**: Blockchain utility functions
-- **queryKeys.ts**: React Query key factories
-- **contracts/**: Contract ABIs and addresses
+## Key pages
+
+| Route | Page | Notes |
+|-------|------|-------|
+| `/` | redirect | → `/sports/pga-golf` |
+| `/sports/:sportId` | `SportHubPage` | Active event contest list |
+| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL |
+| `/contests/create` | `ContestCreatePage` | Staff / league admin |
+| `/lineups` | `LineupListPage` | User lineups across events |
+| `/leaderboard` | `LeaderboardPage` | Sport leaderboard |
+| `/leagues/*` | User group pages | Canonical league URLs |
+| `/user-groups/*` | redirects | → `/leagues/*` |
+| `/account/*` | Account, history, funds | |
+| `/admin/*` | Admin dashboard | `ADMIN` / `SUPER_ADMIN` |
+
+---
 
 ## Dependencies
 
-### Core Libraries
-- **React 19**: UI framework
-- **React Router 7**: Client-side routing
-- **TypeScript**: Type safety
+| Category | Libraries |
+|----------|-----------|
+| Core | React 19, React Router 7, TypeScript |
+| Data | @tanstack/react-query |
+| Auth | @privy-io/react-auth, @privy-io/wagmi |
+| Chain | wagmi, viem |
+| UI | Tailwind, Headless UI, Heroicons, Chart.js |
+| Forms | react-hook-form, yup, zod |
 
-### State Management
-- **@tanstack/react-query**: Server state management
-- **React Context API**: App-level state (auth, errors)
+---
 
-### Blockchain & authentication
-- **@privy-io/react-auth**: Login, embedded wallet, and access tokens
-- **@privy-io/wagmi**: Wagmi config wired for Privy wallets
-- **wagmi**: Ethereum wallet integration (Base, Base Sepolia)
-- **viem**: Ethereum utilities
+## Server integration
 
-### UI Libraries
-- **Tailwind CSS**: Styling
-- **@headlessui/react**: Accessible components
-- **@heroicons/react**: Icons
-- **chart.js**: Charts for leaderboards
+- Base path: `/api` via `apiClient`
+- Auth: `Authorization: Bearer <privy_access_token>`
+- Optional: `X-Cut-Chain-Id` for multi-chain wallet resolution
+- Live APIs: `/sports`, `/lineups`, `/contests`, `/userGroups`, `/bets`, `/auth`
+- Legacy `/tournaments` and `/lineup` return **501** — client must not call them on v4
 
-### Form Handling
-- **react-hook-form**: Form management
-- **yup**: Schema validation
-- **zod**: Type validation
+---
 
-## Interfaces
+## Transitional bridge (Phase 6–9)
 
-### With Server
-- **REST API**: HTTP requests via `apiClient`
-- **Authentication**: Privy access token on each request as `Authorization: Bearer <token>`; optional `X-Cut-Chain-Id` when the client needs the server to resolve the user for a specific chain
-- **CORS**: Configured for server origin
+Many components still consume `Tournament` / `PlayerWithTournamentData` types. The bridge:
 
-### With Blockchain
-- **Wagmi**: Wallet connections and contract reads
-- **Viem**: Contract writes and transaction handling
-- **Privy**: Embedded wallet and signing for connected users
+1. `useActiveEventQuery` / `useEventCandidatesQuery` — platform APIs
+2. `golfEventAdapter.ts` — maps to legacy shapes
+3. `useActiveTournament` — composed hook used by lineup/contest UI
 
-## Key Concepts
+Phase 10 will remove this bridge once all consumers use `ActiveEventResponse` and `Candidate` directly.
 
-### State Management Strategy
-- **Server State**: React Query for API data
-- **Client State**: React Context for auth, errors
-- **Form State**: React Hook Form for forms
-- **Blockchain State**: Wagmi hooks for contract data
+---
 
-### Data Fetching
-- **React Query**: Caching, refetching, mutations
-- **Prefetching**: Tournament data prefetched on app load
-- **Polling**: Token balances polled every 30 seconds
-- **Optimistic Updates**: Some mutations use optimistic updates
+## Quick links
 
-### Component Organization
-- **Pages**: Top-level route components
-- **Components**: Reusable UI components
-- **Hooks**: Custom hooks for data and logic
-- **Contexts**: App-wide state providers
-
-## Quick Links
-
-- [Client Architecture](architecture.md)
-- [Component Structure](component-structure.md)
-- [State Management](state-management.md)
-- [Client Data Flow](data-flow.md)
-
+- [Architecture](architecture.md)
+- [Components](component-structure.md)
+- [Data flow](data-flow.md)
+- [State management](state-management.md)
+- [Plugin system (client)](../platform/plugins.md#sportuiplugin-client)

@@ -1,37 +1,44 @@
 /**
  * Batch settle contests (for cron jobs)
- * 
- * Finds all ACTIVE or LOCKED contests where the tournament is COMPLETED,
- * then settles each one.
+ *
+ * Finds ACTIVE or LOCKED contests whose event is complete per the sport plugin.
  */
 
-import { prisma } from '../../lib/prisma.js';
-import { settleContest } from '../contest/settleContest.js';
-import { type BatchOperationResult } from '../shared/types.js';
+import { prisma } from "../../lib/prisma.js";
+import { requireSportModule } from "../../sports/registry.js";
+import { settleContest } from "../contest/settleContest.js";
+import { type BatchOperationResult } from "../shared/types.js";
 
 export async function batchSettleContests(): Promise<BatchOperationResult> {
-  // console.log('[batchSettleContests] Starting batch settlement');
-
   try {
-    // Find all ACTIVE or LOCKED contests where tournament is COMPLETED
-    const contests = await prisma.contest.findMany({
+    const activeContests = await prisma.contest.findMany({
       where: {
         status: {
-          in: ['ACTIVE', 'LOCKED'],
+          in: ["ACTIVE", "LOCKED"],
         },
         chainId: {
-          in: [8453, 84532], // Base and Base Sepolia
-        },
-        tournament: {
-          status: 'COMPLETED',
+          in: [8453, 84532],
         },
       },
       select: {
         id: true,
         name: true,
         chainId: true,
+        eventId: true,
+        event: {
+          select: { sportId: true },
+        },
       },
     });
+
+    const contests = [];
+    for (const contest of activeContests) {
+      const sportModule = requireSportModule(contest.event.sportId);
+      const eventStatus = await sportModule.getEventStatus(contest.eventId);
+      if (sportModule.shouldSettleContest(eventStatus)) {
+        contests.push(contest);
+      }
+    }
 
     if (contests.length === 0) {
       return {
@@ -42,19 +49,16 @@ export async function batchSettleContests(): Promise<BatchOperationResult> {
       };
     }
 
-    // Settle each contest sequentially to avoid nonce conflicts
     const results = [];
     for (const contest of contests) {
       const result = await settleContest(contest.id);
       results.push(result);
-      
-      // Add a small delay between transactions to ensure nonce propagation
+
       if (result.success) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
-    // Count successes and failures
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
@@ -65,21 +69,19 @@ export async function batchSettleContests(): Promise<BatchOperationResult> {
       results,
     };
   } catch (error) {
-    console.error('Error in batch operation:', error);
+    console.error("Error in batch operation:", error);
     throw error;
   }
 }
 
-// Main execution block (for direct script execution)
 if (import.meta.url === `file://${process.argv[1]}`) {
   batchSettleContests()
     .then((result) => {
-      console.log('Batch settle contests completed:', result);
+      console.log("Batch settle contests completed:", result);
       process.exit(result.failed > 0 ? 1 : 0);
     })
     .catch((error) => {
-      console.error('Batch settle contests failed:', error);
+      console.error("Batch settle contests failed:", error);
       process.exit(1);
     });
 }
-

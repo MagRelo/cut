@@ -37,7 +37,7 @@ export const UserGroupListPage = () => {
             </Link>
           </p>
           <Link
-            to="/user-groups/create"
+            to="/leagues/create"
             className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600"
           >
             <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />

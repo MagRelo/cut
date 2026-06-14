@@ -8,42 +8,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Identity & social (sport-agnostic)
+// ---------------------------------------------------------------------------
+
 model User {
-  id                String             @id @default(cuid())
-  privyUserId       String?            @unique
-  email             String?            @unique
-  phone             String?            @unique
-  password          String?
-  name              String
-  userType          String             @default("USER")
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  settings          Json?
-  isVerified        Boolean            @default(false)
-  lastLoginAt       DateTime?
-  loginAttempts     Int                @default(0)
-  lockedUntil       DateTime?
-  verificationCode  String?
+  id                        String    @id @default(cuid())
+  privyUserId               String?   @unique
+  email                     String?   @unique
+  phone                     String?   @unique
+  password                  String?
+  name                      String
+  userType                  String    @default("USER")
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  settings                  Json?
+  isVerified                Boolean   @default(false)
+  lastLoginAt               DateTime?
+  loginAttempts             Int       @default(0)
+  lockedUntil               DateTime?
+  verificationCode          String?
   verificationCodeExpiresAt DateTime?
 
-  referrerAddress         String?
-  referralGroupId         String?
-  referredByUserId        String?
-  referralChainId         Int?
-  referralRecordedAt      DateTime?
-  referralOnchainTxHash   String?
+  referrerAddress       String?
+  referralGroupId       String?
+  referredByUserId      String?
+  referralChainId       Int?
+  referralRecordedAt    DateTime?
+  referralOnchainTxHash String?
 
-  // Relations
-  userGroups        UserGroupMember[]
-  tournamentLineups TournamentLineup[]
-  contestLineups    ContestLineup[]
-  onchainPayments   OnchainPayment[]
+  userGroups                   UserGroupMember[]
+  lineups                      Lineup[]
+  contestLineups               ContestLineup[]
+  onchainPayments              OnchainPayment[]
   contestSecondaryParticipants ContestSecondaryParticipant[]
-  wallets           UserWallet[]
-  sideBetTickets    SideBetTicket[]
-  emailSendLogs     EmailSendLog[]
-  referredBy        User?              @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
-  referredUsers     User[]             @relation("UserReferrals")
+  wallets                      UserWallet[]
+  sideBetTickets               SideBetTicket[]
+  emailSendLogs                EmailSendLog[]
+  referredBy                   User?                         @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referredUsers                User[]                        @relation("UserReferrals")
 
   @@index([email])
   @@index([phone])
@@ -54,16 +57,15 @@ model User {
 }
 
 model UserWallet {
-  id              String    @id @default(cuid())
-  userId          String
-  chainId         Int       // Chain ID (1 for Ethereum mainnet, 137 for Polygon, etc.)
-  publicKey       String    // The wallet address/public key
-  isPrimary       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  chainId   Int
+  publicKey String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  user            User      @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([chainId, publicKey])
   @@index([userId])
@@ -72,212 +74,213 @@ model UserWallet {
 }
 
 model UserGroup {
-  id          String           @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  inviteCode  String?          @unique
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  
-  // Relations
-  members     UserGroupMember[]
-  contests    Contest[]
+  inviteCode  String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members  UserGroupMember[]
+  contests Contest[]
 
   @@index([name])
 }
 
 model UserGroupMember {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   userGroupId String
-  role        String    @default("MEMBER")
-  joinedAt    DateTime  @default(now())
-  
-  // Relations
-  user        User      @relation(fields: [userId], references: [id])
-  userGroup   UserGroup @relation(fields: [userGroupId], references: [id])
+  role        String   @default("MEMBER")
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  userGroup UserGroup @relation(fields: [userGroupId], references: [id])
 
   @@unique([userId, userGroupId])
 }
 
-model Player {
-  id                String             @id @default(cuid())
-  pga_pgaTourId     String?            @unique
-  pga_imageUrl      String?
-  pga_displayName   String?
-  pga_firstName     String?
-  pga_lastName      String?
-  pga_shortName     String?
-  pga_country       String?
-  pga_countryFlag   String?
-  pga_age           Int?
-  pga_owgr          String?
-  pga_fedex         String?
-  pga_performance   Json?
-  isActive          Boolean            @default(false)
-  inField           Boolean            @default(false)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  lastSyncedAt      DateTime?
-  
-  // Relations
-  tournamentPlayers TournamentPlayer[]
+// ---------------------------------------------------------------------------
+// Sport registry & competition events
+// ---------------------------------------------------------------------------
 
-  @@index([pga_pgaTourId])
-  @@index([isActive])
-  @@index([inField])
+model Sport {
+  id           String  @id
+  name         String
+  slug         String  @unique
+  isEnabled    Boolean @default(true)
+  rosterRules  Json
+  scoringRules Json
+
+  events       CompetitionEvent[]
+  participants Participant[]
 }
 
-model Tournament {
-  id                 String             @id @default(cuid())
-  pgaTourId          String
-  name               String
-  startDate          DateTime
-  endDate            DateTime
-  course             String
-  city               String
-  state              String
-  timezone           String
-  venue              Json?
-  purse              Float?
-  status             String
-  roundStatusDisplay String?
-  roundDisplay       String?
-  currentRound       Int?
-  weather            Json?
-  beautyImage        String?
-  cutLine            String?
-  cutRound           String?
-  summarySections   Json?
-  manualActive       Boolean            @default(false)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  
-  // Relations
-  tournamentPlayers  TournamentPlayer[]
-  tournamentLineups  TournamentLineup[]
-  contests          Contest[]
-  sideBetMarkets    SideBetMarket[]
-  emailSendLogs     EmailSendLog[]
+model CompetitionEvent {
+  id         String   @id @default(cuid())
+  sportId    String
+  externalId String
+  isActive   Boolean  @default(false)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  @@index([pgaTourId])
+  sport          Sport              @relation(fields: [sportId], references: [id])
+  participants   EventParticipant[]
+  lineups        Lineup[]
+  contests       Contest[]
+  sideBetMarkets SideBetMarket[]
+  emailSendLogs  EmailSendLog[]
+
+  @@unique([sportId, externalId])
+  @@index([sportId, isActive])
+  @@index([sportId, externalId])
+}
+
+model Participant {
+  id          String   @id @default(cuid())
+  sportId     String
+  externalId  String?
+  displayName String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sport             Sport              @relation(fields: [sportId], references: [id])
+  eventParticipants EventParticipant[]
+
+  @@unique([sportId, externalId])
+  @@index([sportId])
+}
+
+model EventParticipant {
+  id            String   @id @default(cuid())
+  eventId       String
+  participantId String
+  scoreData     Json?
+  total         Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event       CompetitionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant Participant      @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  lineupPicks LineupPick[]
+
+  @@unique([eventId, participantId])
+  @@index([eventId])
+  @@index([participantId])
+}
+
+// ---------------------------------------------------------------------------
+// Lineups & contest entries
+// ---------------------------------------------------------------------------
+
+model Lineup {
+  id         String   @id @default(cuid())
+  userId     String
+  eventId    String
+  name       String
+  prediction Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  event          CompetitionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  picks          LineupPick[]
+  contestLineups ContestLineup[]
+  sideBetMarket  SideBetMarket?
+
+  @@index([userId, eventId])
+}
+
+model LineupPick {
+  id                 String   @id @default(cuid())
+  lineupId           String
+  eventParticipantId String
+  slotIndex          Int?
+  createdAt          DateTime @default(now())
+
+  lineup           Lineup           @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  eventParticipant EventParticipant @relation(fields: [eventParticipantId], references: [id], onDelete: Cascade)
+
+  @@unique([lineupId, eventParticipantId])
+  @@index([lineupId])
+}
+
+model Contest {
+  id          String   @id @default(cuid())
+  name        String
+  endTime     DateTime
+  address     String
+  chainId     Int
+  eventId     String
+  status      String
+  userGroupId String?
+  description String?
+  settings    Json?
+  results     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event                 CompetitionEvent              @relation(fields: [eventId], references: [id])
+  userGroup             UserGroup?                      @relation(fields: [userGroupId], references: [id])
+  contestLineups        ContestLineup[]
+  secondaryParticipants ContestSecondaryParticipant[]
+  onchainPayments       OnchainPayment[]
+  timelines             ContestLineupTimeline[]
+
+  @@index([eventId])
+  @@index([userGroupId])
   @@index([status])
-  @@index([startDate])
-  @@index([manualActive])
+  @@index([chainId])
+  @@index([chainId, eventId])
 }
 
-model TournamentPlayer {
-  id                  String     @id @default(cuid())
-  tournamentId        String
-  playerId            String
-  leaderboardPosition String?
-  r1                  Json?
-  r2                  Json?
-  r3                  Json?
-  r4                  Json?
-  rCurrent            Json?
-  cut                 Int?
-  bonus               Int?
-  stableford          Int?
-  total               Int?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-  leaderboardTotal    String?
-  /// Per-round tee times from DataGolf field-updates: [{ roundNum, teetimeIso, label }]
-  teeTimes            Json?
+model ContestLineup {
+  id        String   @id @default(cuid())
+  contestId String
+  lineupId  String
+  userId    String
+  entryId   String?
+  status    String
+  score     Int?
+  position  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Relations
-  player              Player     @relation(fields: [playerId], references: [id])
-  tournament          Tournament @relation(fields: [tournamentId], references: [id])
-  tournamentLineups   TournamentLineupPlayer[]
+  contest   Contest                 @relation(fields: [contestId], references: [id])
+  lineup    Lineup                  @relation(fields: [lineupId], references: [id])
+  user      User                    @relation(fields: [userId], references: [id])
+  timelines ContestLineupTimeline[]
 
-  @@unique([tournamentId, playerId])
-  @@index([tournamentId])
-  @@index([playerId])
+  @@unique([contestId, lineupId])
+  @@unique([contestId, entryId])
+  @@index([contestId])
+  @@index([userId])
+  @@index([status])
 }
 
 model ContestLineupTimeline {
-  id                String           @id @default(cuid())
-  contestLineupId   String
-  contestId         String
-  timestamp         DateTime
-  roundNumber       Int
-  score             Int
-  position          Int
-  /// Cost per $1 of potential winnings from a fixed $10 secondary buy (matches PredictionLineupsList / secondary-pricing sim)
-  sharePrice        Float?
-  createdAt         DateTime         @default(now())
-  
-  // Relations
-  contestLineup     ContestLineup    @relation(fields: [contestLineupId], references: [id])
-  contest           Contest          @relation(fields: [contestId], references: [id])
+  id              String   @id @default(cuid())
+  contestLineupId String
+  contestId       String
+  timestamp       DateTime
+  roundNumber     Int
+  score           Int
+  position        Int
+  sharePrice      Float?
+  createdAt       DateTime @default(now())
+
+  contestLineup ContestLineup @relation(fields: [contestLineupId], references: [id])
+  contest       Contest       @relation(fields: [contestId], references: [id])
 
   @@index([contestId, timestamp])
   @@index([contestLineupId, timestamp])
 }
 
-model TournamentLineup {
-  id                     String     @id @default(cuid())
-  userId                 String
-  tournamentId           String
-  name                   String
-  /// User prediction of highest lineup score to win the contest (1–250 Stableford points).
-  winningScorePrediction Int?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-  
-  // Relations
-  user          User       @relation(fields: [userId], references: [id])
-  tournament    Tournament @relation(fields: [tournamentId], references: [id])
-  players       TournamentLineupPlayer[]
-  contestLineups ContestLineup[]
-  sideBetMarket  SideBetMarket?
-
-  @@index([userId, tournamentId])
-}
-
-model TournamentLineupPlayer {
-  id                  String           @id @default(cuid())
-  tournamentLineupId  String
-  tournamentPlayerId  String
-  createdAt           DateTime         @default(now())
-  
-  // Relations
-  tournamentLineup    TournamentLineup @relation(fields: [tournamentLineupId], references: [id])
-  tournamentPlayer    TournamentPlayer @relation(fields: [tournamentPlayerId], references: [id])
-
-  @@unique([tournamentLineupId, tournamentPlayerId])
-}
-
-model Contest {
-  id              String           @id @default(cuid())
-  name            String
-  endTime         DateTime
-  address         String
-  chainId         Int              // Chain ID (8453 for Base, 84532 for Base Sepolia)
-  tournamentId    String
-  status          String
-  userGroupId     String?
-  description     String?
-  settings        Json?
-  results         Json?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  
-  // Relations
-  tournament      Tournament       @relation(fields: [tournamentId], references: [id])
-  userGroup       UserGroup?       @relation(fields: [userGroupId], references: [id])
-  contestLineups  ContestLineup[]
-  secondaryParticipants ContestSecondaryParticipant[]
-  onchainPayments OnchainPayment[]
-  timelines       ContestLineupTimeline[]
-
-  @@index([tournamentId])
-  @@index([userGroupId])
-  @@index([status])
-  @@index([chainId])
-  @@index([chainId, tournamentId])
-}
+// ---------------------------------------------------------------------------
+// On-chain payments & secondary market
+// ---------------------------------------------------------------------------
 
 enum PaymentKind {
   PRIMARY
@@ -285,35 +288,32 @@ enum PaymentKind {
   REFERRAL
 }
 
-/// Oracle-pushed or referral payouts to users (contest primary/secondary or future RewardDistributor).
 model OnchainPayment {
-  id                String      @id @default(cuid())
-  kind              PaymentKind
-  walletAddress     String
-  userId            String?
-  contestId         String?
-  chainId           Int
-  tokenAddress      String
-  amountWei         String
-  transactionHash   String
-  logIndex          Int?
-  metadata          Json?
-  /// When the user was notified about this payout (`null` = not notified yet).
-  notifiedAt        DateTime?
-  createdAt         DateTime    @default(now())
+  id              String      @id @default(cuid())
+  kind            PaymentKind
+  walletAddress   String
+  userId          String?
+  contestId       String?
+  chainId         Int
+  tokenAddress    String
+  amountWei       String
+  transactionHash String
+  logIndex        Int?
+  metadata        Json?
+  notifiedAt      DateTime?
+  createdAt       DateTime    @default(now())
 
   user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   contest Contest? @relation(fields: [contestId], references: [id], onDelete: SetNull)
 
+  @@unique([transactionHash, logIndex, walletAddress])
   @@index([userId])
   @@index([contestId])
   @@index([transactionHash])
   @@index([kind])
   @@index([notifiedAt])
-  @@unique([transactionHash, logIndex, walletAddress])
 }
 
-/// Wallets that opened a secondary position on a contest entry (for pushSecondaryPayouts).
 model ContestSecondaryParticipant {
   id                  String   @id @default(cuid())
   contestId           String
@@ -333,30 +333,9 @@ model ContestSecondaryParticipant {
   @@index([walletAddress])
 }
 
-model ContestLineup {
-  id                String           @id @default(cuid())
-  contestId         String
-  tournamentLineupId String
-  userId            String
-  entryId           String?          // Blockchain entry ID (uint256 as string)
-  status            String
-  score             Int?
-  position          Int?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  
-  // Relations
-  contest           Contest          @relation(fields: [contestId], references: [id])
-  tournamentLineup  TournamentLineup @relation(fields: [tournamentLineupId], references: [id])
-  user              User             @relation(fields: [userId], references: [id])
-  timelines         ContestLineupTimeline[]
-
-  @@unique([contestId, tournamentLineupId])
-  @@unique([contestId, entryId])
-  @@index([contestId])
-  @@index([userId])
-  @@index([status])
-}
+// ---------------------------------------------------------------------------
+// Side bets (prop bets — optional per sport)
+// ---------------------------------------------------------------------------
 
 enum SideBetMarketStatus {
   UNAVAILABLE
@@ -377,10 +356,10 @@ enum SideBetTicketStatus {
 }
 
 model SideBetMarket {
-  id                   String              @id @default(cuid())
-  tournamentLineupId String              @unique
-  tournamentId       String
-  status             SideBetMarketStatus   @default(UNAVAILABLE)
+  id                 String              @id @default(cuid())
+  lineupId           String              @unique
+  eventId            String
+  status             SideBetMarketStatus @default(UNAVAILABLE)
   unavailableReason  String?
   quoteVersion       Int                 @default(0)
   dgEventId          Int?
@@ -394,43 +373,23 @@ model SideBetMarket {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
-  tournamentLineup TournamentLineup @relation(fields: [tournamentLineupId], references: [id], onDelete: Cascade)
-  tournament       Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  selections       SideBetSelection[]
-  tickets          SideBetTicket[]
+  lineup     Lineup            @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  event      CompetitionEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  selections SideBetSelection[]
+  tickets    SideBetTicket[]
 
-  @@index([tournamentId])
+  @@index([eventId])
   @@index([status])
 }
 
-/// Idempotent record for transactional / lifecycle email sends (see docs/email-program.md).
-model EmailSendLog {
-  id             String   @id @default(cuid())
-  kind           String
-  dedupeKey      String   @unique
-  recipientEmail String
-  userId         String?
-  tournamentId   String?
-  campaignId     String?
-  sentAt         DateTime @default(now())
-
-  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
-
-  @@index([kind])
-  @@index([userId])
-  @@index([tournamentId])
-  @@index([campaignId])
-}
-
 model SideBetSelection {
-  id              String   @id @default(cuid())
+  id              String @id @default(cuid())
   sideBetMarketId String
   hitsRequired    Int
   topN            Int
   decimalOdds     Float
   americanDisplay String
-  quoteVersion     Int
+  quoteVersion    Int
 
   sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
 
@@ -439,7 +398,7 @@ model SideBetSelection {
 }
 
 model SideBetTicket {
-  id                         String             @id @default(cuid())
+  id                         String              @id @default(cuid())
   sideBetMarketId            String
   userId                     String
   hitsRequired               Int
@@ -448,14 +407,13 @@ model SideBetTicket {
   decimalOddsAtPlacement     Float
   americanDisplayAtPlacement String
   quoteVersionAtPlacement    Int
-  /// Four `TournamentPlayer.id` values for this tournament (sorted); set at placement for settlement. Empty = not set (legacy / invalid).
-  playerIds                  String[]           @default([])
+  /// Four `EventParticipant.id` values for this event (sorted); set at placement for settlement.
+  eventParticipantIds        String[]            @default([])
   status                     SideBetTicketStatus @default(OPEN)
-  // Set when status is REFUND_PENDING — idempotent key for stake tx after a failed book attempt.
   fundingTxHash              String?
   settlementNotes            Json?
-  createdAt                  DateTime           @default(now())
-  updatedAt                  DateTime           @updatedAt
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
 
   sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -464,4 +422,27 @@ model SideBetTicket {
   @@index([userId])
   @@index([sideBetMarketId])
   @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Email program
+// ---------------------------------------------------------------------------
+
+model EmailSendLog {
+  id             String   @id @default(cuid())
+  kind           String
+  dedupeKey      String   @unique
+  recipientEmail String
+  userId         String?
+  eventId        String?
+  campaignId     String?
+  sentAt         DateTime @default(now())
+
+  user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event CompetitionEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([kind])
+  @@index([userId])
+  @@index([eventId])
+  @@index([campaignId])
 }

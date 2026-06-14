@@ -8,8 +8,12 @@ export interface ContestLineup {
   status: "ACTIVE" | "INACTIVE";
   position: number;
   score: number;
+  lineup?: TournamentLineup;
+  lineupId?: string;
+  /** @deprecated Use lineup */
   tournamentLineup?: TournamentLineup;
-  tournamentLineupId: string;
+  /** @deprecated Use lineupId */
+  tournamentLineupId?: string;
   entryId?: string; // Blockchain entry ID (uint256 as string)
   createdAt: Date;
   updatedAt: Date;
