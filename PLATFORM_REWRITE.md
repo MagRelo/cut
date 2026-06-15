@@ -75,7 +75,7 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 - [x] Phase 6: Contest/lineup hooks use `eventId` and `/api/lineups/:eventId`
 - [x] Phase 6: Platform shell — `SportEventHeader`, `CandidatePicker`, `SportPredictionField`, `useSportUI`
 - [x] Phase 6: `LineupSlotPicker` wires `CandidatePicker` into lineup slot editor
-- [x] Phase 7: `client/src/sports/pga-golf/` `SportUIPlugin` (`CandidateRow`, `PickDetail`, `PredictionField`, `EventSummary`, `EventDetails`)
+- [x] Phase 7: `client/src/sports/pga-golf/` `SportUIPlugin` (`CandidateRow`, `ParticipantRow`, `PredictionField`, `EventSummary`, `EventDetails`)
 - [x] Phase 7: Golf UI in hub, lineup editor, slot picker, and editable pick rows (`SportLineupPickRow`)
 - [x] Phase 8 (partial): Side bets API remounted at `/api/bets` (`lineupId`, `eventParticipantIds`)
 - [x] Phase 8 (partial): Side bet services + batch lock/settle/close ported to platform schema
@@ -101,6 +101,11 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 
 - [x] Client type foundation (`PlatformLineup`, `useActiveEvent`, platform lineup hooks)
 - [x] Migrate pages off `useActiveTournament` bridge (pages + contest lobby)
+- [x] `ParticipantRow` plugin slot — leaderboard, contest entries, lineup card, live picker delegate
+- [x] Full golf live score sync (`transformGolfParticipantScores` in `@cut/sport-pga-golf`)
+- [x] Client sport UI boundaries documented — `spec/client/sport-ui-plugins.md`
+- [x] Track A client cleanup — delete orphaned lineup UI, tournament preview on `useActiveEvent`, `LineupManagement` plugin rows, remove `PlayerDisplayRow`
+- [x] `ParticipantDetail` plugin slot — scorecard modal; replaces `PlayerDetailModal` / `PlayerDisplayCard` / `candidateToPlayer` in detail flow
 - [ ] Staging dry-run with migrated data
 - [ ] Production cutover (see `docs/platform-cutover-plan.md`)
 
@@ -221,7 +226,10 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [client/src/components/platform/](client/src/components/platform/) | Platform shell: event header, picker, prediction, lineup rows | ✅ |
 | [client/src/sports/pga-golf/EventDetails.tsx](client/src/sports/pga-golf/EventDetails.tsx) | Golf event hero text (replaces `TournamentContextDetails`) | ✅ |
 | [client/src/components/platform/LineupSlotPicker.tsx](client/src/components/platform/LineupSlotPicker.tsx) | Bridges participant IDs ↔ `CandidatePicker` | ✅ |
-| [client/src/components/platform/SportLineupPickRow.tsx](client/src/components/platform/SportLineupPickRow.tsx) | Sport `PickDetail` in lineup slots | ✅ |
+| [client/src/components/platform/SportParticipantRow.tsx](client/src/components/platform/SportParticipantRow.tsx) | Platform shell → plugin `ParticipantRow` | ✅ |
+| [client/src/components/platform/SportParticipantDetailModal.tsx](client/src/components/platform/SportParticipantDetailModal.tsx) | Platform shell → plugin `ParticipantDetail` | ✅ |
+| [client/src/sports/pga-golf/ParticipantDetail.tsx](client/src/sports/pga-golf/ParticipantDetail.tsx) | Golf scorecard detail modal body | ✅ |
+| [client/src/components/platform/SportLineupPickRow.tsx](client/src/components/platform/SportLineupPickRow.tsx) | Editable lineup slot wrapper | ✅ |
 | [client/src/hooks/useSportUI.ts](client/src/hooks/useSportUI.ts) | Resolve UI plugin from sport context | ✅ |
 | [server/src/routes/bets.ts](server/src/routes/bets.ts) | Side bets API (`lineupId`, `eventId`) | ✅ |
 | [server/src/services/sideBets/](server/src/services/sideBets/) | Quote ingest + stale marking (platform schema) | ✅ |

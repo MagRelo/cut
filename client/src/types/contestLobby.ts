@@ -2,12 +2,7 @@ export type ContestLobbyPhase = "preRound" | "live" | "locked" | "settled";
 
 export type PrimaryTabMode = "enterContest" | "liveTimeline";
 
-export type PredictionsPanelMode =
-  | "wager"
-  | "positions"
-  | "claim"
-  | "locked"
-  | "connectWallet";
+export type PredictionsPanelMode = "wager" | "positions" | "claim" | "locked" | "connectWallet";
 
 export interface ContestLobbyViewModel {
   phase: ContestLobbyPhase;

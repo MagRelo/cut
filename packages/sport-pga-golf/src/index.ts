@@ -20,6 +20,20 @@ export { rankGolfEntries, getContestWinningScore, tiebreakerDistance } from "./r
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 
 export {
+  applyGolfRoundIcons,
+  cutBonus,
+  formatHolesFromRoundScores,
+  positionBonus,
+  transformGolfParticipantScores,
+  type GolfFormattedHoles,
+  type GolfLeaderboardRowInput,
+  type GolfParticipantScoreUpdate,
+  type GolfRoundIconConfig,
+  type GolfRoundScoreUpdate,
+  type GolfScorecardInput,
+} from "./live-scores.js";
+
+export {
   createPgaGolfModule,
   golfShouldActivateFromMetadata,
   golfShouldSettleFromMetadata,

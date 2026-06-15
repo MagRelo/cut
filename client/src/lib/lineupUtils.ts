@@ -1,8 +1,6 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineup, PlatformLineupPick } from "../types/event";
-import type { PlatformLineupListItem } from "../types/lineup";
-import type { PlayerWithTournamentData } from "../types/player";
-import { candidateToPlayer } from "./golfEventAdapter";
+import { candidatesForLineupPicks } from "./candidateUtils";
 import { golfPredictionValue } from "./golfPrediction";
 
 export function buildCandidatesByParticipantId(
@@ -21,20 +19,11 @@ export function platformLineupParticipantIds(lineup: PlatformLineup): string[] {
     .filter((id): id is string => Boolean(id));
 }
 
-export function platformLineupToPlayers(
+export function candidatesForPlatformLineup(
   lineup: PlatformLineup,
-  eventId: string,
   candidatesByParticipantId: Map<string, Candidate>,
-): PlayerWithTournamentData[] {
-  return lineup.picks
-    .map((pick) => {
-      const participantId = pick.participant?.id;
-      if (!participantId) return null;
-      const candidate = candidatesByParticipantId.get(participantId);
-      if (!candidate) return null;
-      return candidateToPlayer(candidate, eventId);
-    })
-    .filter((player): player is PlayerWithTournamentData => player !== null);
+): Candidate[] {
+  return candidatesForLineupPicks(lineup.picks, candidatesByParticipantId);
 }
 
 export function buildOptimisticPicks(
@@ -60,20 +49,4 @@ export function buildOptimisticPicks(
       total: null,
     };
   });
-}
-
-export function enrichLineupListItem(
-  lineup: PlatformLineupListItem,
-  eventId: string,
-  candidates: Candidate[],
-): PlatformLineupListItem & {
-  players: PlayerWithTournamentData[];
-  winningScorePrediction: number | null;
-} {
-  const candidatesByParticipantId = buildCandidatesByParticipantId(candidates);
-  return {
-    ...lineup,
-    players: platformLineupToPlayers(lineup, eventId, candidatesByParticipantId),
-    winningScorePrediction: platformLineupPrediction(lineup),
-  };
 }

@@ -1,50 +1,12 @@
-import React, { useMemo } from "react";
-import type { LineupPickShell } from "@cut/sport-sdk/ui";
-import type { PlayerWithTournamentData } from "../../types/player";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
-import { useEventCandidatesQuery } from "../../hooks/useSportData";
-import { useSportUIPlugin } from "../../hooks/useSportUI";
-import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
+import React from "react";
+import type { Candidate } from "@cut/sport-sdk";
+import { SportParticipantRow } from "./SportParticipantRow";
 
 interface SportLineupPickRowProps {
-  player: PlayerWithTournamentData;
-  slotIndex: number;
-  roundDisplay: string;
+  candidate: Candidate;
   onClick?: () => void;
 }
 
-export const SportLineupPickRow: React.FC<SportLineupPickRowProps> = ({
-  player,
-  slotIndex,
-  roundDisplay,
-  onClick,
-}) => {
-  const plugin = useSportUIPlugin();
-  const { eventId, sportId } = useActiveEvent();
-  const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
-  const PickDetail = plugin?.PickDetail;
-
-  const pick = useMemo((): LineupPickShell | null => {
-    const candidate = candidates.find((entry) => entry.participantId === player.id);
-    if (!candidate) return null;
-    return {
-      id: `${slotIndex}-${candidate.eventParticipantId}`,
-      eventParticipantId: candidate.eventParticipantId,
-      slotIndex,
-      metadata: candidate.metadata,
-    };
-  }, [candidates, player.id, slotIndex]);
-
-  if (!PickDetail || !pick) {
-    return (
-      <PlayerDisplayRow
-        player={player}
-        roundDisplay={roundDisplay}
-        preRoundLayout
-        onClick={onClick}
-      />
-    );
-  }
-
-  return <PickDetail pick={pick} />;
+export const SportLineupPickRow: React.FC<SportLineupPickRowProps> = ({ candidate, onClick }) => {
+  return <SportParticipantRow candidate={candidate} onClick={onClick} />;
 };

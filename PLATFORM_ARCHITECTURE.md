@@ -250,8 +250,9 @@ Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for 
 
 ```typescript
 interface SportUIPlugin {
-  CandidateRow: React.FC<{ candidate: Candidate }>;
-  PickDetail: React.FC<{ pick: LineupPick }>;
+  CandidateRow: React.FC<CandidateRowProps>;
+  ParticipantRow: React.FC<ParticipantRowProps>;
+  ParticipantDetail: React.FC<ParticipantDetailProps>;
   PredictionField?: React.FC<PredictionProps>;
   EventSummary?: React.FC<{ event: CompetitionEvent }>;
 }

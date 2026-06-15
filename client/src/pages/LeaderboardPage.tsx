@@ -1,69 +1,68 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import type { Candidate } from "@cut/sport-sdk";
 import { useActiveEvent } from "../hooks/useActiveEvent";
-import { candidateToPlayer } from "../lib/golfEventAdapter";
+import {
+  candidateHasDisplayName,
+  externalIdFromCandidate,
+  sortCandidatesByLeaderboard,
+} from "../lib/candidateSorting";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
-import { PlayerDetailModal } from "../components/player/PlayerDetailModal";
-import { PlayerDisplayRow } from "../components/player/PlayerDisplayRow";
+import { SportParticipantDetailModal } from "../components/platform/SportParticipantDetailModal";
+import { SportParticipantRow } from "../components/platform/SportParticipantRow";
 import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
-import type { PlayerWithTournamentData } from "../types/player";
-import { sortPlayersByLeaderboard } from "../utils/playerSorting";
 
 export const LeaderboardPage: React.FC = () => {
-  const {
-    eventId,
-    status,
-    candidates,
-    isLoading,
-    error,
-    roundDisplay,
-  } = useActiveEvent();
+  const { eventId, status, candidates, isLoading, error } = useActiveEvent();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
-
-  const players = useMemo(() => {
-    if (!eventId) return [];
-    return candidates.map((candidate) => candidateToPlayer(candidate, eventId));
-  }, [candidates, eventId]);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
   const playerIdParam = searchParams.get("playerId");
   const pgaTourIdParam = searchParams.get("pgaTourId");
 
-  useEffect(() => {
-    if (isLoading || players.length === 0) return;
+  const sortedCandidates = useMemo(() => {
+    const sortByNameOnly = status === "SCHEDULED";
+    const withNames = candidates.filter(candidateHasDisplayName);
+    return sortCandidatesByLeaderboard(withNames, { sortByNameOnly });
+  }, [candidates, status]);
 
-    let match: PlayerWithTournamentData | undefined;
+  useEffect(() => {
+    if (isLoading || sortedCandidates.length === 0) return;
+
+    let match: Candidate | undefined;
 
     if (playerIdParam?.trim()) {
       const normalizedPlayerId = playerIdParam.trim();
-      match = players.find((p) => String(p.id).trim() === normalizedPlayerId);
+      match = sortedCandidates.find(
+        (candidate) => String(candidate.participantId).trim() === normalizedPlayerId,
+      );
     }
 
     if (!match && pgaTourIdParam?.trim()) {
-      const normalizedPgaTourId = pgaTourIdParam.trim();
-      match = players.find(
-        (p) => p.pga_pgaTourId != null && String(p.pga_pgaTourId).trim() === normalizedPgaTourId,
+      const normalizedExternalId = pgaTourIdParam.trim();
+      match = sortedCandidates.find(
+        (candidate) => externalIdFromCandidate(candidate)?.trim() === normalizedExternalId,
       );
     }
 
     if (match) {
-      setSelectedPlayer(match);
+      setSelectedCandidate(match);
       setIsPlayerModalOpen(true);
     }
-  }, [isLoading, playerIdParam, pgaTourIdParam, players]);
+  }, [isLoading, playerIdParam, pgaTourIdParam, sortedCandidates]);
 
-  const openPlayerModal = (player: PlayerWithTournamentData) => {
-    setSelectedPlayer(player);
+  const openPlayerModal = (candidate: Candidate) => {
+    setSelectedCandidate(candidate);
     setIsPlayerModalOpen(true);
   };
 
   const closePlayerModal = () => {
     setIsPlayerModalOpen(false);
-    setSelectedPlayer(null);
+    setSelectedCandidate(null);
     if (searchParams.has("pgaTourId") || searchParams.has("playerId")) {
       const next = new URLSearchParams(searchParams);
       next.delete("pgaTourId");
@@ -72,24 +71,14 @@ export const LeaderboardPage: React.FC = () => {
     }
   };
 
-  const sortedPlayers = useMemo(() => {
-    const sortByNameOnly = status === "SCHEDULED";
-    const playersWithName = players.filter((player) => {
-      const hasLastName = Boolean((player.pga_lastName || "").trim());
-      const hasDisplayName = Boolean((player.pga_displayName || "").trim());
-      return hasLastName || hasDisplayName;
-    });
-
-    return sortPlayersByLeaderboard(playersWithName, { sortByNameOnly });
-  }, [players, status]);
-
   const header = <PageHeader title="Leaderboard" className="px-4 pt-4" />;
+  const resolvedStatus = status ?? "SCHEDULED";
 
   if (isLoading) {
     return (
       <div>
         {header}
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex min-h-[400px] items-center justify-center">
           <LoadingSpinner />
         </div>
       </div>
@@ -118,24 +107,22 @@ export const LeaderboardPage: React.FC = () => {
     );
   }
 
-  const displayRound = roundDisplay || "R1";
-
   return (
     <>
       {header}
-      {sortedPlayers.length === 0 ? (
+      {sortedCandidates.length === 0 ? (
         <div className="px-4 py-6 text-center text-gray-500">
           <p>No players found.</p>
         </div>
       ) : (
         <div className="p-2 pt-0">
-          {sortedPlayers.map((player) => (
-            <div key={player.id} className="border-b border-gray-200">
+          {sortedCandidates.map((candidate) => (
+            <div key={candidate.participantId} className="border-b border-gray-200">
               <div className="p-3">
-                <PlayerDisplayRow
-                  player={player}
-                  roundDisplay={displayRound}
-                  onClick={() => openPlayerModal(player)}
+                <SportParticipantRow
+                  candidate={candidate}
+                  status={resolvedStatus}
+                  onClick={() => openPlayerModal(candidate)}
                 />
               </div>
             </div>
@@ -148,10 +135,10 @@ export const LeaderboardPage: React.FC = () => {
         onClose={() => setIsSummaryModalOpen(false)}
       />
 
-      <PlayerDetailModal
+      <SportParticipantDetailModal
         isOpen={isPlayerModalOpen}
         onClose={closePlayerModal}
-        player={selectedPlayer}
+        candidate={selectedCandidate}
       />
     </>
   );

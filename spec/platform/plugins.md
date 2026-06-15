@@ -18,6 +18,7 @@ interface SportModule {
   syncEventMetadata(eventId: string): Promise<void>;
   syncParticipantField(eventId: string): Promise<void>;
   syncLiveScores(eventId: string): Promise<void>;
+  shouldSyncLiveScores(eventId: string): Promise<boolean>;
   getEventStatus(eventId: string): Promise<"SCHEDULED" | "LIVE" | "COMPLETE">;
   handleWithdrawals?(eventId: string): Promise<void>;
 
@@ -38,7 +39,7 @@ interface SportModule {
 
 | Layer | Location |
 |-------|----------|
-| Pure logic | `packages/sport-pga-golf/` — ranking, validation, status, candidates |
+| Pure logic | `packages/sport-pga-golf/` — ranking, validation, status, candidates, **live score transform** |
 | Factory | `createPgaGolfModule(handlers)` in `create-module.ts` |
 | IO handlers | `server/src/sports/pga-golf/handlers.ts` — Prisma, PGA APIs, DataGolf |
 | CLI | `pnpm run service:init-event pga-golf R2026033` |
@@ -65,12 +66,17 @@ Handlers inject all database and external API access so the package stays testab
 
 ```typescript
 interface SportUIPlugin {
-  CandidateRow: React.FC<{ candidate: Candidate; onSelect?; isSelected?; disabled? }>;
-  PickDetail: React.FC<{ pick: LineupPickShell }>;
+  CandidateRow: React.FC<CandidateRowProps>;       // picker (scheduled card; live delegates to ParticipantRow)
+  ParticipantRow: React.FC<ParticipantRowProps>;   // display lists (leaderboard, lineup slots, contest entries)
+  ParticipantDetail: React.FC<ParticipantDetailProps>; // detail modal (scorecard header + round tabs + hole table)
   PredictionField?: React.FC<PredictionFieldProps>;
   EventSummary?: React.FC<{ event: CompetitionEventShell }>;
 }
 ```
+
+`ParticipantRowProps`: `{ candidate, status: EventStatus, onClick?, ownershipPercentage? }`. Platform passes `status` from `useActiveEvent()`; golf reads `roundDisplay` from event metadata internally.
+
+`ParticipantDetailProps`: `{ candidate, status: EventStatus, rowTrailing?, onShare? }`. Round tab state is owned by the plugin; [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) provides dialog chrome and share URL handling.
 
 Golf also provides `EventDetails` (hero text) used by `SportEventContextBar`.
 
@@ -82,11 +88,15 @@ Golf also provides `EventDetails` (hero text) used by `SportEventContextBar`.
 | `SportEventHeader` | Resolves plugin `EventSummary` |
 | `CandidatePicker` | Search/sort over `Candidate[]` |
 | `LineupSlotPicker` | Bridges slot IDs ↔ picker |
-| `SportLineupPickRow` | Renders plugin `PickDetail` in editable slots |
+| `SportLineupPickRow` | Thin wrapper → `SportParticipantRow` in editable lineup slots |
+| `SportParticipantRow` | Resolves plugin `ParticipantRow`; defaults `status` from active event |
+| `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail`; share URL helper |
 | `SportPredictionField` | Renders plugin `PredictionField` |
 | `CreateContestEventPicker` | Sport + active event for contest create |
 
 `useSportUI()` resolves the plugin from `SportContext`.
+
+**Client detail:** [sport-ui-plugins.md](../client/sport-ui-plugins.md) — slot purposes, usage map, legacy inventory, conventions.
 
 ### Transitional bridge
 

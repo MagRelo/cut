@@ -5,6 +5,7 @@ import {
   golfEventStatusFromMetadata,
   golfShouldActivateContest,
   golfShouldSettleContest,
+  golfShouldSyncLiveScores,
 } from "./status.js";
 import { PGA_GOLF_SPORT_ID } from "./metadata.js";
 
@@ -37,6 +38,11 @@ export function createPgaGolfModule(handlers: PgaGolfHandlers): SportModule {
     syncParticipantField: handlers.syncParticipantField,
     syncLiveScores: handlers.syncLiveScores,
     handleWithdrawals: handlers.handleWithdrawals,
+
+    async shouldSyncLiveScores(eventId) {
+      const metadata = await handlers.getEventMetadata(eventId);
+      return golfShouldSyncLiveScores(metadata);
+    },
 
     async getEventStatus(eventId) {
       const metadata = await handlers.getEventMetadata(eventId);

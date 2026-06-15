@@ -142,6 +142,13 @@ export function candidateToPlayer(
         typeof scoreData.leaderboardTotal === "string" ? scoreData.leaderboardTotal : undefined,
       cut: typeof scoreData.cut === "number" ? scoreData.cut : undefined,
       bonus: typeof scoreData.bonus === "number" ? scoreData.bonus : undefined,
+      r1: scoreData.r1 as PlayerWithTournamentData["tournamentData"]["r1"],
+      r2: scoreData.r2 as PlayerWithTournamentData["tournamentData"]["r2"],
+      r3: scoreData.r3 as PlayerWithTournamentData["tournamentData"]["r3"],
+      r4: scoreData.r4 as PlayerWithTournamentData["tournamentData"]["r4"],
+      teeTimes: Array.isArray(scoreData.teeTimes)
+        ? (scoreData.teeTimes as PlayerWithTournamentData["tournamentData"]["teeTimes"])
+        : undefined,
     },
   };
 }

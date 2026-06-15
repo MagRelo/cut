@@ -141,9 +141,7 @@ export function buildContestLineupForCard(playerIds: string[] = []): ContestLine
   };
 }
 
-export function createStorybookLineupsList(
-  playerIds: string[] = [],
-): TournamentLineupListItem[] {
+export function createStorybookLineupsList(playerIds: string[] = []): TournamentLineupListItem[] {
   return [
     {
       id: STORYBOOK_LINEUP_ID,
@@ -156,7 +154,6 @@ export function createStorybookLineupsList(
 }
 
 export const lineupContestCardStoryDefaults = {
-  roundDisplay: "R1",
   isEditable: true,
   contests: [
     {

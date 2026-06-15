@@ -10,11 +10,14 @@ import { useLineupData } from "../../hooks/useLineupData";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportContext } from "../../contexts/SportContext";
 import {
+  candidatesForPlatformLineup,
   platformLineupParticipantIds,
   platformLineupPrediction,
-  platformLineupToPlayers,
-  buildCandidatesByParticipantId,
 } from "../../lib/lineupUtils";
+import { candidatesByParticipantIdMap } from "../../lib/candidateUtils";
+import { sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -26,7 +29,6 @@ import {
 import { generateEntryId } from "../../utils/entryIdUtils";
 import { captureContestEntryRecorded } from "../../lib/analytics/posthog";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 import { hasEnoughTokenBalance } from "../../lib/paymentTokenSpend";
 
 import ContestContract from "../../utils/contracts/ContestController.json";
@@ -65,12 +67,14 @@ const isValidHexColor = (value: unknown): value is string => {
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
   const { sportId } = useSportContext();
+  const { status } = useActiveEvent();
+  const resolvedStatus = status ?? "SCHEDULED";
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData({
     eventId: contest.eventId,
   });
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, contest.eventId);
   const candidatesByParticipantId = useMemo(
-    () => buildCandidatesByParticipantId(candidates),
+    () => candidatesByParticipantIdMap(candidates),
     [candidates],
   );
   const { address } = useAccount();
@@ -350,7 +354,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     setSubmissionError(null);
 
     const contestLineup = contest.contestLineups?.find(
-      (cl) => cl.tournamentLineupId === lineupId && cl.userId === user?.id,
+      (cl) => (cl.lineupId ?? cl.tournamentLineupId) === lineupId && cl.userId === user?.id,
     );
 
     if (!contestLineup?.entryId) {
@@ -393,8 +397,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
           const isEntered = enteredLineupsMap.has(lineup.id);
           const isPending = pendingAction?.lineupId === lineup.id;
           const isProcessing = isPending && (isSending || isConfirming);
-          const sortedPlayers = sortPlayersByLeaderboard(
-            platformLineupToPlayers(lineup, contest.eventId, candidatesByParticipantId),
+          const sortedCandidates = sortCandidatesByLeaderboard(
+            candidatesForPlatformLineup(lineup, candidatesByParticipantId),
           );
 
           return (
@@ -434,36 +438,20 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                     )}
                   </div>
 
-                  {sortedPlayers.length === 0 ? (
+                  {sortedCandidates.length === 0 ? (
                     <p className="px-3 py-6 text-center font-display text-sm text-slate-700">
                       No players selected
                     </p>
                   ) : (
                     <div className="divide-y divide-slate-100">
-                      {sortedPlayers.map((player, pickIndex) => {
-                        const first = (player.pga_firstName ?? "").trim();
-                        const last = (player.pga_lastName ?? "").trim();
-                        const displayName =
-                          player.pga_displayName?.trim() ||
-                          (first && last ? `${first} ${last}` : first || last) ||
-                          "Unknown Player";
-                        return (
-                          <div
-                            key={player.id}
-                            className="flex min-w-0 items-center gap-3 px-3 py-2.5"
-                          >
-                            <span
-                              className="w-6 shrink-0 text-center font-display text-xs font-bold tabular-nums text-slate-400"
-                              aria-hidden
-                            >
-                              {pickIndex + 1}
-                            </span>
-                            <span className="min-w-0 truncate font-display text-sm font-semibold leading-snug text-slate-800">
-                              {displayName}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      {sortedCandidates.map((candidate) => (
+                        <div key={candidate.participantId} className="px-3 py-1">
+                          <SportParticipantRow
+                            candidate={candidate}
+                            status={resolvedStatus}
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -484,7 +472,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                         "Leave Contest"
                       )}
                     </button>
-                  ) : sortedPlayers.length === 0 ? (
+                  ) : sortedCandidates.length === 0 ? (
                     <Link
                       to="/lineups"
                       className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"

@@ -44,7 +44,7 @@ Educational tour of `spec/`; separate from implementation phase numbers.
 | 6 | Services | ✅ Done |
 | 7 | Cron pipeline | — See [server/cron.md](server/cron.md) |
 | 8 | Client architecture | ✅ Done |
-| 9 | Client components | Paused — [component-structure.md](client/component-structure.md) |
+| 9 | Client components | [component-structure.md](client/component-structure.md) · [sport-ui-plugins.md](client/sport-ui-plugins.md) |
 | 10 | Client data flow | Pending |
 | 11 | Cross-layer | Pending |
 | 12 | Contracts | Pending |
@@ -64,6 +64,7 @@ Use this order for a full architecture walkthrough:
 | 7 | [Cron pipeline](server/cron.md) | 5-minute multi-sport job |
 | 8 | [Client architecture](client/architecture.md) | Providers, routing, sport context |
 | 9 | [Client components](client/component-structure.md) | Platform shell vs sport UI |
+| 9b | [Sport UI plugins](client/sport-ui-plugins.md) | `CandidateRow` / `ParticipantRow` boundaries, usage, legacy |
 | 10 | [Client data flow](client/data-flow.md) | React Query, adapters, on-chain |
 | 11 | [Cross-layer](cross-layer.md) | Auth, contests, settlement end-to-end |
 | 12 | [Contracts](contracts/README.md) | On-chain layer (unchanged, sport-agnostic) |

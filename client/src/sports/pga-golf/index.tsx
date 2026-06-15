@@ -3,19 +3,22 @@ import { GolfCandidateRow } from "./CandidateRow";
 import { CandidateSelectionCard } from "./CandidateSelectionCard";
 import { GolfEventDetails } from "./EventDetails";
 import { GolfEventSummary } from "./EventSummary";
-import { GolfPickDetail } from "./PickDetail";
+import { GolfParticipantDetail } from "./ParticipantDetail";
+import { GolfParticipantRow } from "./ParticipantRow";
 import { GolfPredictionField } from "./PredictionField";
 
 export const pgaGolfUIPlugin: SportUIPlugin = {
   CandidateRow: (props) => <GolfCandidateRow {...props} />,
-  PickDetail: ({ pick }) => <GolfPickDetail pick={pick} />,
+  ParticipantRow: (props) => <GolfParticipantRow {...props} />,
+  ParticipantDetail: (props) => <GolfParticipantDetail {...props} />,
   PredictionField: GolfPredictionField,
   EventSummary: GolfEventSummary,
 };
 
 export {
   GolfCandidateRow,
-  GolfPickDetail,
+  GolfParticipantDetail,
+  GolfParticipantRow,
   GolfPredictionField,
   GolfEventSummary,
   GolfEventDetails,

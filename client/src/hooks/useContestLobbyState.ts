@@ -17,10 +17,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
   const hasWallet = Boolean(useEffectiveWalletAddress());
   const { activeEvent, eventName, eventStartDate, roundDisplay, status } = useActiveEvent();
 
-  const {
-    data: contestStateOnChain,
-    isLoading: isChainStateLoading,
-  } = useReadContract({
+  const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
     address: contest?.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "state",

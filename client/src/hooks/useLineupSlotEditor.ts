@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { PlayerWithTournamentData } from "../types/player";
+import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineupListItem } from "../types/lineup";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
 import {
@@ -9,16 +9,18 @@ import {
 
 const SLOT_COUNT = 4;
 
-function padToSlots(players: PlayerWithTournamentData[]): Array<PlayerWithTournamentData | null> {
-  const slots: Array<PlayerWithTournamentData | null> = [...players];
+function padToSlots(candidates: Candidate[]): Array<Candidate | null> {
+  const slots: Array<Candidate | null> = [...candidates];
   while (slots.length < SLOT_COUNT) {
     slots.push(null);
   }
   return slots.slice(0, SLOT_COUNT);
 }
 
-function playerIdsFromSlots(slots: Array<PlayerWithTournamentData | null>): string[] {
-  return slots.filter((p): p is PlayerWithTournamentData => p !== null).map((p) => p.id);
+function participantIdsFromSlots(slots: Array<Candidate | null>): string[] {
+  return slots
+    .filter((candidate): candidate is Candidate => candidate !== null)
+    .map((candidate) => candidate.participantId);
 }
 
 interface UpdateLineupOptions {
@@ -27,8 +29,8 @@ interface UpdateLineupOptions {
 
 interface UseLineupSlotEditorOptions {
   lineupId: string;
-  initialPlayers: PlayerWithTournamentData[];
-  fieldPlayers: PlayerWithTournamentData[];
+  initialCandidates: Candidate[];
+  fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
   winningScorePrediction: number;
   updateLineup: (
@@ -40,30 +42,30 @@ interface UseLineupSlotEditorOptions {
 
 export function useLineupSlotEditor({
   lineupId,
-  initialPlayers,
-  fieldPlayers,
+  initialCandidates,
+  fieldCandidates,
   lineups,
   winningScorePrediction,
   updateLineup,
 }: UseLineupSlotEditorOptions) {
-  const [slots, setSlots] = useState<Array<PlayerWithTournamentData | null>>(() =>
-    padToSlots(initialPlayers),
+  const [slots, setSlots] = useState<Array<Candidate | null>>(() =>
+    padToSlots(initialCandidates),
   );
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const initialPlayerKey = initialPlayers.map((p) => p.id).join(",");
+  const initialCandidateKey = initialCandidates.map((c) => c.participantId).join(",");
 
   useEffect(() => {
     if (isSaving) return;
-    setSlots(padToSlots(initialPlayers));
-  }, [lineupId, initialPlayerKey, isSaving, initialPlayers]);
+    setSlots(padToSlots(initialCandidates));
+  }, [lineupId, initialCandidateKey, isSaving, initialCandidates]);
 
   const checkForDuplicateLineup = useCallback(
-    (playerIds: string[], prediction: number): boolean => {
-      if (playerIds.length === 0) return false;
-      const normalized = [...playerIds].sort().join(",");
+    (participantIds: string[], prediction: number): boolean => {
+      if (participantIds.length === 0) return false;
+      const normalized = [...participantIds].sort().join(",");
       return lineups.some((lineup) => {
         if (lineup.id === lineupId) return false;
         const existingIds = platformLineupParticipantIds(lineup).sort().join(",");
@@ -74,10 +76,10 @@ export function useLineupSlotEditor({
   );
 
   const saveSlots = useCallback(
-    async (newSlots: Array<PlayerWithTournamentData | null>) => {
-      const playerIds = playerIdsFromSlots(newSlots);
+    async (newSlots: Array<Candidate | null>) => {
+      const participantIds = participantIdsFromSlots(newSlots);
 
-      if (checkForDuplicateLineup(playerIds, winningScorePrediction)) {
+      if (checkForDuplicateLineup(participantIds, winningScorePrediction)) {
         setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
       }
@@ -85,7 +87,7 @@ export function useLineupSlotEditor({
       setIsSaving(true);
       setSaveError(null);
       try {
-        await updateLineup(lineupId, playerIds, { winningScorePrediction });
+        await updateLineup(lineupId, participantIds, { winningScorePrediction });
         return true;
       } catch (error) {
         const message =
@@ -114,22 +116,24 @@ export function useLineupSlotEditor({
   }, []);
 
   const handlePlayerSelect = useCallback(
-    async (playerId: string | null) => {
+    async (participantId: string | null) => {
       if (selectedSlotIndex === null || isSaving) return;
 
       const newSlots = [...slots];
 
-      if (playerId) {
-        const selectedPlayer = fieldPlayers.find((p) => p.id === playerId);
-        if (selectedPlayer) {
-          newSlots[selectedSlotIndex] = selectedPlayer;
+      if (participantId) {
+        const selectedCandidate = fieldCandidates.find(
+          (candidate) => candidate.participantId === participantId,
+        );
+        if (selectedCandidate) {
+          newSlots[selectedSlotIndex] = selectedCandidate;
         }
       } else {
         newSlots.splice(selectedSlotIndex, 1);
       }
 
       const paddedSlots = padToSlots(
-        newSlots.filter((p): p is PlayerWithTournamentData => p !== null),
+        newSlots.filter((candidate): candidate is Candidate => candidate !== null),
       );
 
       setSlots(paddedSlots);
@@ -137,27 +141,27 @@ export function useLineupSlotEditor({
       if (ok) {
         setSelectedSlotIndex(null);
       } else {
-        setSlots(padToSlots(initialPlayers));
+        setSlots(padToSlots(initialCandidates));
       }
     },
-    [fieldPlayers, initialPlayers, isSaving, saveSlots, selectedSlotIndex, slots],
+    [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slots],
   );
 
-  const selectedPlayerIds = slots
-    .filter((p): p is PlayerWithTournamentData => p !== null)
-    .map((p) => p.id);
+  const selectedParticipantIds = slots
+    .filter((candidate): candidate is Candidate => candidate !== null)
+    .map((candidate) => candidate.participantId);
 
-  const filledCount = selectedPlayerIds.length;
+  const filledCount = selectedParticipantIds.length;
 
   return {
     slots,
     filledCount,
     selectedSlotIndex,
-    selectedPlayerIds,
+    selectedParticipantIds,
     isSaving,
     saveError,
     openSlot,
     closeSlot,
     handlePlayerSelect,
   };
-}
+};

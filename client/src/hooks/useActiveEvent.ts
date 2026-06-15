@@ -74,17 +74,12 @@ export function useActiveEvent(): ActiveEventState {
     [metadata.status, activeQuery.data?.status],
   );
 
-  const isLoading =
-    activeQuery.isLoading || (Boolean(eventId) && candidatesQuery.isLoading);
+  const isLoading = activeQuery.isLoading || (Boolean(eventId) && candidatesQuery.isLoading);
   const isFetching = activeQuery.isFetching || candidatesQuery.isFetching;
 
   const rawError = activeQuery.error ?? candidatesQuery.error;
   const error =
-    rawError instanceof Error
-      ? rawError
-      : rawError
-        ? new Error("Failed to load event")
-        : null;
+    rawError instanceof Error ? rawError : rawError ? new Error("Failed to load event") : null;
 
   const refetch = async () => {
     await Promise.all([activeQuery.refetch(), candidatesQuery.refetch()]);

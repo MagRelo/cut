@@ -103,7 +103,7 @@ Until Phase 10 cleanup, two parallel type systems coexist:
 | Platform (target) | Bridge (transitional) |
 |-------------------|----------------------|
 | `ActiveEventResponse` | `Tournament` via `golfEventToTournament*` |
-| `Candidate` | `PlayerWithTournamentData` via `candidateToPlayer` |
+| `Candidate` | `PlayerWithTournamentData` via `candidateToPlayer` (`useTournamentData` / debug only; UI plugins read `candidate.metadata` directly) |
 | `PlatformLineup` | `TournamentLineup` via adapter |
 | `eventId` | sometimes still named `tournamentId` in query keys |
 

@@ -1,22 +1,32 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Link } from "react-router-dom";
-import { PlayerDetailModal } from "../player/PlayerDetailModal";
-import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
+import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { ContestCard } from "../contest/ContestCard";
 import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 import { LineupSlotPicker } from "../platform/LineupSlotPicker";
 import { SportLineupPickRow } from "../platform/SportLineupPickRow";
-import type { PlayerWithTournamentData } from "../../types/player";
+import { SportParticipantRow } from "../platform/SportParticipantRow";
+import type { Candidate } from "@cut/sport-sdk";
 import type { ContestLineup } from "../../types/lineup";
 import type { Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import { useActiveEvent } from "../../hooks/useActiveEvent";
-import { candidateToPlayer } from "../../lib/golfEventAdapter";
 import {
+  candidatesByParticipantIdMap,
+  candidatesForLineupPicks,
+  contestLineupDisplayName,
+  lineupPicksFromContestLineup,
+} from "../../lib/candidateUtils";
+import {
+  participantLastName,
+  sortCandidatesByLeaderboard,
+} from "../../lib/candidateSorting";
+import { candidateStableford } from "../../sports/pga-golf/utils";
+import {
+  candidatesForPlatformLineup,
   platformLineupParticipantIds,
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
@@ -50,7 +60,6 @@ interface ContestInfo {
 
 interface LineupContestCardProps {
   lineup: ContestLineup;
-  roundDisplay: string;
   contests?: ContestInfo[];
   isEditable?: boolean;
 }
@@ -63,35 +72,48 @@ const NO_CONTESTS_WARNING_BADGE_CLASS =
 
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
-  roundDisplay,
   contests = [],
   isEditable = false,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const { candidates, isEventEditable, eventId } = useActiveEvent();
-  const fieldPlayers = useMemo(() => {
-    if (!eventId) return [];
-    return candidates.map((candidate) => candidateToPlayer(candidate, eventId));
-  }, [candidates, eventId]);
+  const { candidates, isEventEditable, eventId, status } = useActiveEvent();
+  const candidatesByParticipantId = useMemo(
+    () => candidatesByParticipantIdMap(candidates),
+    [candidates],
+  );
   const { updateLineup, lineups } = useLineupData({ eventId });
 
-  const lineupId = lineup.tournamentLineup?.id ?? "";
-  const initialPlayers = lineup.tournamentLineup?.players ?? [];
+  const platformLineup =
+    lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
+  const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
+  const lineupName = contestLineupDisplayName(lineup);
+  const initialCandidates = useMemo(() => {
+    if (platformLineup) {
+      return candidatesForPlatformLineup(platformLineup, candidatesByParticipantId);
+    }
+    return candidatesForLineupPicks(
+      lineupPicksFromContestLineup(lineup),
+      candidatesByParticipantId,
+    );
+  }, [platformLineup, lineup, candidatesByParticipantId]);
   const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
 
   const serverPrediction = useMemo(() => {
     const fromList = lineups.find((entry) => entry.id === lineupId);
     const fromListValue = fromList ? platformLineupPrediction(fromList) : null;
-    const fromLineup = lineup.tournamentLineup?.winningScorePrediction;
+    const fromLineup =
+      platformLineup && "prediction" in platformLineup
+        ? golfPredictionValue(platformLineup.prediction)
+        : null;
     const value = fromListValue ?? fromLineup;
     if (value != null) return value;
     return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 120;
-  }, [lineup.tournamentLineup?.winningScorePrediction, lineupId, lineups]);
+  }, [platformLineup, lineupId, lineups]);
 
   const [prediction, setPrediction] = useState(serverPrediction);
 
@@ -102,8 +124,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const slotEditor = useLineupSlotEditor({
     lineupId,
-    initialPlayers,
-    fieldPlayers: fieldPlayers ?? [],
+    initialCandidates,
+    fieldCandidates: candidates,
     lineups,
     winningScorePrediction: prediction,
     updateLineup,
@@ -113,7 +135,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     async (nextPrediction: number) => {
       if (!canEditSlots || !lineupId) return;
 
-      const playerIds = slotEditor.selectedPlayerIds;
+      const playerIds = slotEditor.selectedParticipantIds;
       const duplicate = lineups.some((entry) => {
         if (entry.id === lineupId) return false;
         const existingIds = platformLineupParticipantIds(entry).sort().join(",");
@@ -138,7 +160,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         setIsSavingPrediction(false);
       }
     },
-    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedPlayerIds, updateLineup],
+    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedParticipantIds, updateLineup],
   );
 
   useEffect(() => {
@@ -153,25 +175,26 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const slotActionsDisabled = !canEditSlots || slotEditor.isSaving || isSavingPrediction;
 
-  const openDetailModal = (player: PlayerWithTournamentData) => {
-    setDetailPlayer(player);
+  const openDetailModal = (candidate: Candidate) => {
+    setDetailCandidate(candidate);
     setIsDetailModalOpen(true);
   };
 
   const closeDetailModal = () => {
     setIsDetailModalOpen(false);
-    setDetailPlayer(null);
+    setDetailCandidate(null);
   };
 
-  const displayPlayers = canEditSlots
-    ? slotEditor.slots.filter((p): p is PlayerWithTournamentData => p !== null)
-    : sortPlayersByLeaderboard(initialPlayers);
+  const displayCandidates = canEditSlots
+    ? slotEditor.slots.filter((candidate): candidate is Candidate => candidate !== null)
+    : sortCandidatesByLeaderboard(initialCandidates);
 
-  const playerCount = canEditSlots ? slotEditor.filledCount : initialPlayers.length;
+  const playerCount = canEditSlots ? slotEditor.filledCount : initialCandidates.length;
 
-  const totalPoints = (canEditSlots ? displayPlayers : initialPlayers).reduce((sum, player) => {
-    return sum + (player.tournamentData?.total || 0);
-  }, 0);
+  const totalPoints = displayCandidates.reduce(
+    (sum, candidate) => sum + candidateStableford(candidate),
+    0,
+  );
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =
@@ -180,12 +203,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
-  const sideBetLineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
-  const sideBetPlayerLastNames = (
-    canEditSlots ? displayPlayers : sortPlayersByLeaderboard(initialPlayers)
-  )
-    .map((player) => player.pga_lastName)
-    .filter(Boolean)
+  const sideBetLineupNumberLabel = getLineupNumberLabel(lineupName);
+  const sideBetPlayerLastNames = displayCandidates
+    .map((candidate) => participantLastName(candidate))
     .join(", ");
   const sideBetUserLabel = lineup.user?.name || lineup.user?.email || "Unknown User";
 
@@ -206,7 +226,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               {lineup.user?.name || lineup.user?.email || "Unknown User"}
             </div>
             <div className="truncate text-sm leading-tight text-gray-700">
-              {lineup.tournamentLineup?.name || `Lineup ${lineup.id.slice(-6)}`}
+              {lineupName || `Lineup ${lineup.id.slice(-6)}`}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 pr-5 text-right">
@@ -261,16 +281,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
               <div className="space-y-1">
                 {canEditSlots
-                  ? slotEditor.slots.map((player, index) => (
+                  ? slotEditor.slots.map((candidate, index) => (
                       <div key={`slot-${index}`} className="p-3">
-                        {player ? (
+                        {candidate ? (
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <SportLineupPickRow
-                                player={player}
-                                slotIndex={index}
-                                roundDisplay={roundDisplay}
-                                onClick={() => openDetailModal(player)}
+                                candidate={candidate}
+                                onClick={() => openDetailModal(candidate)}
                               />
                             </div>
                             <button
@@ -326,12 +344,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                         )}
                       </div>
                     ))
-                  : displayPlayers.map((player) => (
-                      <div key={player.id} className="p-3">
-                        <PlayerDisplayRow
-                          player={player}
-                          roundDisplay={roundDisplay}
-                          onClick={() => openDetailModal(player)}
+                  : displayCandidates.map((candidate) => (
+                      <div key={candidate.participantId} className="p-3">
+                        <SportParticipantRow
+                          candidate={candidate}
+                          status={status ?? "SCHEDULED"}
+                          onClick={() => openDetailModal(candidate)}
                         />
                       </div>
                     ))}
@@ -356,7 +374,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 userLabel={sideBetUserLabel}
                 lineupNumberLabel={sideBetLineupNumberLabel}
                 playerLastNamesLine={sideBetPlayerLastNames}
-                tournamentLineupId={lineup.tournamentLineup?.id ?? null}
+                tournamentLineupId={lineupId}
               />
             </TabPanel>
 
@@ -409,16 +427,16 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           isOpen={slotEditor.selectedSlotIndex !== null}
           onClose={slotEditor.closeSlot}
           onSelectParticipant={slotEditor.handlePlayerSelect}
-          selectedParticipantIds={slotEditor.selectedPlayerIds}
+          selectedParticipantIds={slotEditor.selectedParticipantIds}
           isSaving={slotEditor.isSaving}
           saveError={slotEditor.saveError}
         />
       ) : null}
 
-      <PlayerDetailModal
+      <SportParticipantDetailModal
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
-        player={detailPlayer}
+        candidate={detailCandidate}
       />
     </div>
   );

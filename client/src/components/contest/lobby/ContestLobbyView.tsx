@@ -78,7 +78,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 entryListOpensModal={viewModel.primary.entryListOpensModal}
                 eventName={viewModel.primary.eventName}
                 eventStartDate={viewModel.primary.eventStartDate}
-                roundDisplay={viewModel.primary.roundDisplay}
                 currentUserId={currentUserId}
                 onEnterContest={() => setIsLineupModalOpen(true)}
               />

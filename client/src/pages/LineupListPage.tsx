@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "../hooks/useLineupData";
@@ -11,24 +11,17 @@ import { PageHeader } from "../components/common/PageHeader";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import type { AuthUser } from "../contexts/AuthContext";
 import type { ContestLineup, PlatformLineupListItem } from "../types/lineup";
-import { enrichLineupListItem } from "../lib/lineupUtils";
 
 function contestLineupForCard(
-  row: ReturnType<typeof enrichLineupListItem>,
+  row: PlatformLineupListItem,
   user: AuthUser,
 ): ContestLineup {
-  const tournamentLineup = {
-    id: row.id,
-    name: row.name,
-    players: row.players,
-    winningScorePrediction: row.winningScorePrediction,
-  };
   const first = row.contestLineups[0];
   if (first) {
     return {
       ...first,
-      tournamentLineup,
-      lineup: tournamentLineup,
+      lineup: row,
+      lineupId: row.id,
       user: first.user ?? (user as unknown as ContestLineup["user"]),
     };
   }
@@ -36,13 +29,11 @@ function contestLineupForCard(
     id: row.id,
     contestId: "",
     userId: user.id,
-    tournamentLineupId: row.id,
     lineupId: row.id,
     position: 0,
     score: 0,
     status: "ACTIVE",
-    tournamentLineup,
-    lineup: tournamentLineup,
+    lineup: row,
     user: user as unknown as ContestLineup["user"],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -64,23 +55,17 @@ export const LineupList: React.FC = () => {
     eventName,
     isEventEditable,
     eventStatusDisplay,
-    candidates,
-    roundDisplay,
   } = useActiveEvent();
   const { lineups, lineupError, isLoading: isLineupsLoading, createLineup } = useLineupData();
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const listItems = useMemo(() => {
-    if (!eventId) return [];
-    return lineups.map((row) => enrichLineupListItem(row, eventId, candidates));
-  }, [lineups, eventId, candidates]);
+  const listItems = eventId ? lineups : [];
 
   const hasLineups = listItems.length > 0;
   const displayEventName = eventName ?? "this event";
 
-  const showAddLineup =
-    isEventEditable && !isAuthLoading && !isEventLoading && !isLineupsLoading;
+  const showAddLineup = isEventEditable && !isAuthLoading && !isEventLoading && !isLineupsLoading;
 
   const handleCreateLineup = async () => {
     if (!eventId || isCreating) return;
@@ -154,7 +139,6 @@ export const LineupList: React.FC = () => {
             <div key={row.id} className="mb-4 rounded-sm border border-gray-300 shadow-md">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
-                roundDisplay={roundDisplay || "R1"}
                 contests={contestsForCard(row)}
                 isEditable={isEventEditable}
               />

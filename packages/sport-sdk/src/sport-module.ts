@@ -15,6 +15,7 @@ export interface SportModule {
   syncEventMetadata(eventId: string): Promise<void>;
   syncParticipantField(eventId: string): Promise<void>;
   syncLiveScores(eventId: string): Promise<void>;
+  shouldSyncLiveScores(eventId: string): Promise<boolean>;
   getEventStatus(eventId: string): Promise<EventStatus>;
 
   getCandidatePool(eventId: string): Promise<Candidate[]>;

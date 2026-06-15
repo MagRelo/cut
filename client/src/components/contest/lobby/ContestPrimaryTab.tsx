@@ -13,7 +13,6 @@ export interface ContestPrimaryTabProps {
   entryListOpensModal: boolean;
   eventName?: string | null;
   eventStartDate?: string | Date | null;
-  roundDisplay?: string | null;
   currentUserId?: string;
   onEnterContest: () => void;
 }
@@ -25,7 +24,6 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   entryListOpensModal,
   eventName,
   eventStartDate,
-  roundDisplay,
   currentUserId,
   onEnterContest,
 }) => {
@@ -74,7 +72,6 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
 
       <ContestEntryList
         contestLineups={contest.contestLineups}
-        roundDisplay={roundDisplay ?? undefined}
         contestStatus={contest.status}
         entryListOpensModal={entryListOpensModal}
       />

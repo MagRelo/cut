@@ -2,22 +2,26 @@
 
 Components are grouped by **platform vs sport** and by **feature domain**. Pages compose feature components; feature components call hooks.
 
+**Sport UI boundaries (detailed):** [sport-ui-plugins.md](sport-ui-plugins.md)
+
 ---
 
 ## Platform shell (`components/platform/`)
 
-Sport-agnostic building blocks. They accept platform types (`Candidate`, `ActiveEventResponse`) and delegate visual details to `SportUIPlugin`.
+Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventStatus`) and delegate visual details to `SportUIPlugin`.
 
 | Component | Purpose |
 |-----------|---------|
-| `SportEventHeader` | Event name, dates, status bar |
-| `SportEventContextBar` | Compact context on sub-pages |
-| `CandidatePicker` | Searchable candidate list for lineup build |
-| `LineupSlotPicker` | Slot-based roster assembly |
-| `SportLineupPickRow` | Single pick row with remove/replace |
-| `SportPredictionField` | Wrapper → plugin prediction input |
+| `SportEventHeader` | Event name, dates, status bar → plugin `EventSummary` |
+| `SportEventContextBar` | Route-gated hero in `AppLayout` |
+| `SportParticipantRow` | Wrapper → plugin `ParticipantRow` (defaults `status` from `useActiveEvent`) |
+| `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
+| `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
+| `CandidatePicker` | Search/sort over `Candidate[]` → plugin `CandidateRow` |
+| `LineupSlotPicker` | Bridges participant IDs ↔ `CandidatePicker` |
+| `SportPredictionField` | Wrapper → plugin `PredictionField` |
 
-Used by: lineup pages, contest lobby, onboarding.
+Used by: leaderboard, lineup list/card, contest entry list/modal, contest lobby slot editor.
 
 ---
 
@@ -31,17 +35,18 @@ Used by: lineup pages, contest lobby, onboarding.
 
 ## Sport plugins (`sports/pga-golf/`)
 
-Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`:
+Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`. See [sport-ui-plugins.md](sport-ui-plugins.md) for props, usage map, and conventions.
 
 | Export | Purpose |
 |--------|---------|
-| `CandidateRow` | Player row in picker (rank, name, status) |
-| `PickDetail` | Expanded pick / scorecard modal content |
-| `EventSummary` | Tournament preview sections |
-| `EventDetails` | Course, weather, metadata panel |
-| `PredictionField` | Winning-score prediction input |
+| `CandidateRow` | Picker only (scheduled card; live/complete → `ParticipantRow`) |
+| `ParticipantRow` | All display lists |
+| `ParticipantDetail` | Scorecard detail modal (header, round tabs, hole table) |
+| `EventSummary` | Tournament preview in event header |
+| `EventDetails` | Course/weather (used inside `EventSummary`, not on interface) |
+| `PredictionField` | Winning-score prediction slider |
 
-Plugin interface: `packages/sport-sdk/src/ui-plugin.ts` (`SportUIPlugin`).
+Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 
 ---
 
@@ -52,6 +57,8 @@ Plugin interface: `packages/sport-sdk/src/ui-plugin.ts` (`SportUIPlugin`).
 | `ContestList` | Grid/list of contests for an event |
 | `GroupedContestList` | Contests grouped by event (league view) |
 | `CreateContestEventPicker` | Pick `eventId` when creating from a league |
+| `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow` |
+| `LineupManagement` | Join contest flow (text player names; not plugin rows) |
 | Contest cards, timeline, secondary market UI | Lobby sub-components |
 
 Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreatePage`.
@@ -62,25 +69,23 @@ Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreat
 
 | Component | Purpose |
 |-----------|---------|
-| `LineupContestCard` | Lineup summary + linked contests |
-| Lineup management in lobby | Join flow, pick editing |
+| `LineupContestCard` | Primary lineup UI — plugin rows, slot picker, prediction |
+| `LineupManagement` | Contest lobby join/leave — `SportParticipantRow` for roster |
 
 Pages: `LineupListPage`, contest lobby.
 
+**Deleted:** `LineupCard`, `PlayerSelectionModal`, `PlayerSelectionButton`, `PlayerSelectionCard`.
+
 ---
 
-## Tournament-named legacy (`components/tournament/`, `components/player/`)
+## Legacy (`components/tournament/`, `components/player/`)
 
-Folders retain pre-v4 names but are fed by **adapters**, not `/api/tournaments`:
+See [sport-ui-plugins.md § Legacy inventory](sport-ui-plugins.md#legacy-inventory).
 
-| Component | Data source |
-|-----------|-------------|
-| `TournamentInfoPanel` | `useActiveTournament` |
-| `TournamentSummaryModal` | `summarySections` from event metadata |
-| `PlayerDisplayRow` / `PlayerDisplayCard` | `PlayerWithTournamentData` from candidates |
-| `PlayerDetailModal` | Candidate + live score fields |
-
-These will shrink or rename in Phase 10.
+| Component | Status |
+|-----------|--------|
+| `TournamentSummaryModal`, `TournamentInfoPanel` | ✅ `useActiveEvent` |
+| `PlayerScorecard` | `ScoreDisplay` / `StablefordDisplay` primitives for `InfoScorecard` demo |
 
 ---
 
@@ -118,18 +123,19 @@ Nav tabs defined in `lib/navTabs.ts` — contests tab points to `/sports/{defaul
 
 ---
 
-## Composition example: contest lobby
+## Composition example: lineup edit
 
 ```mermaid
 flowchart TD
-  Lobby[ContestLobbyPage] --> CQ[useContestQuery]
-  Lobby --> AT[useActiveTournament]
-  Lobby --> LQ[useLineupQueries]
-  Lobby --> LM[LineupManagement]
-  LM --> LSP[LineupSlotPicker]
+  Card[LineupContestCard] --> AE[useActiveEvent]
+  Card --> Editor[useLineupSlotEditor Candidate slots]
+  Card --> SPR[SportLineupPickRow / SportParticipantRow]
+  SPR --> Plugin[GolfParticipantRow]
+  Card --> LSP[LineupSlotPicker]
   LSP --> CP[CandidatePicker]
-  CP --> CR[CandidateRow via plugin]
-  LM --> Chain[useContestantOperations]
+  CP --> CR[GolfCandidateRow]
+  Card --> PDF[SportParticipantDetailModal]
+  PDF --> PD[GolfParticipantDetail]
 ```
 
 ---
@@ -140,3 +146,6 @@ flowchart TD
 2. Register in `sports/registry.ts`
 3. Reuse platform shell components — no changes to `CandidatePicker` unless roster rules differ structurally
 4. Ensure server `SportModule` is registered and sport appears in `GET /sports`
+
+See [sport-ui-plugins.md](sport-ui-plugins.md) for `CandidateRow` vs `ParticipantRow` rules.
+

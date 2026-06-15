@@ -1,6 +1,7 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useMemo } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
-import { useActiveTournament } from "../../hooks/useTournamentData";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { parseGolfEventMetadata } from "../../sports/pga-golf/utils";
 import type { TournamentSummarySections } from "../../types/tournament";
 
 interface TournamentSummaryModalProps {
@@ -8,20 +9,32 @@ interface TournamentSummaryModalProps {
   onClose: () => void;
 }
 
+function summarySectionsFromMetadata(metadata: unknown): TournamentSummarySections | undefined {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return undefined;
+  }
+  const sections = (metadata as Record<string, unknown>).summarySections;
+  return Array.isArray(sections) ? (sections as TournamentSummarySections) : undefined;
+}
+
 export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { tournament } = useActiveTournament();
+  const { event, eventName } = useActiveEvent();
+  const golfMeta = useMemo(() => parseGolfEventMetadata(event?.metadata), [event?.metadata]);
+  const summarySections = useMemo(
+    () => summarySectionsFromMetadata(event?.metadata),
+    [event?.metadata],
+  );
 
-  const summarySections: TournamentSummarySections | undefined = tournament?.summarySections;
   const headerLocation =
-    tournament?.city && tournament?.state
-      ? `${tournament.city}, ${tournament.state}`
-      : tournament?.city
-        ? tournament.city
-        : tournament?.state
-          ? tournament.state
+    golfMeta.city && golfMeta.state
+      ? `${golfMeta.city}, ${golfMeta.state}`
+      : golfMeta.city
+        ? golfMeta.city
+        : golfMeta.state
+          ? golfMeta.state
           : "";
 
   return (
@@ -54,11 +67,9 @@ export const TournamentSummaryModal: React.FC<TournamentSummaryModalProps> = ({
                 <div className="p-4 sm:p-6">
                   <div className="space-y-1 pb-4 border-b border-gray-200">
                     <DialogTitle className="font-display text-2xl font-extrabold tracking-tight text-gray-900">
-                      {tournament?.name ?? "Tournament Summary"}
+                      {golfMeta.name ?? eventName ?? "Tournament Summary"}
                     </DialogTitle>
-                    <p className="text-sm font-semibold text-gray-700">
-                      {tournament?.course ?? "—"}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-700">{golfMeta.course ?? "—"}</p>
                     <p className="text-xs text-gray-500 font-medium">{headerLocation || "—"}</p>
                   </div>
 

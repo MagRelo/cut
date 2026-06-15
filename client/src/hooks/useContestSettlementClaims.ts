@@ -186,7 +186,7 @@ export function useContestSettlementClaims(
         entryId: entry.entryId,
         lineupId: entry.lineup.id,
         username: entry.lineup.user?.name || entry.lineup.user?.email || "Unknown User",
-        lineupName: entry.lineup.tournamentLineup?.name || "Lineup",
+        lineupName: entry.lineup.lineup?.name || "Lineup",
         playerLastNames: lineupResult?.playerLastNames,
         payoutAmount,
         payoutAmountFormatted: formatUnits(payoutAmount, paymentDecimals),

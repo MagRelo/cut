@@ -8,6 +8,11 @@ import {
 } from "../../types/contest";
 import { type ContestLineup } from "../../types/lineup";
 import { type ContestLobbyViewModel } from "../../types/contestLobby";
+import {
+  FIXTURE_CANDIDATES,
+  buildFixtureLineupPick,
+  buildFixturePlatformLineup,
+} from "./candidates";
 
 const baseSettings: ContestSettings = {
   contestType: "PUBLIC",
@@ -108,13 +113,20 @@ export const contestFixtures = {
 };
 
 export function buildContestLineup(overrides: Partial<ContestLineup> = {}): ContestLineup {
+  const lineup = buildFixturePlatformLineup("tl-1", "Lineup #1", [
+    buildFixtureLineupPick(0, FIXTURE_CANDIDATES[0]),
+    buildFixtureLineupPick(1, FIXTURE_CANDIDATES[1]),
+    buildFixtureLineupPick(2, FIXTURE_CANDIDATES[2]),
+    buildFixtureLineupPick(3, FIXTURE_CANDIDATES[3]),
+  ]);
+
   return {
     id: "lineup-1",
     contestId: contestFixtures.open.id,
     status: "ACTIVE",
     position: 1,
     score: 12,
-    tournamentLineupId: "tl-1",
+    lineupId: "tl-1",
     entryId: "1",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -129,11 +141,7 @@ export function buildContestLineup(overrides: Partial<ContestLineup> = {}): Cont
       updatedAt: new Date(),
       settings: { color: "#3B82F6" },
     },
-    tournamentLineup: {
-      id: "tl-1",
-      name: "Lineup #1",
-      players: [],
-    },
+    lineup,
     ...overrides,
   };
 }
@@ -167,6 +175,13 @@ export const contestWithLineups: Contest = {
       entryId: "2",
       position: 2,
       score: 8,
+      lineupId: "tl-2",
+      lineup: buildFixturePlatformLineup("tl-2", "Lineup #2", [
+        buildFixtureLineupPick(0, FIXTURE_CANDIDATES[1]),
+        buildFixtureLineupPick(1, FIXTURE_CANDIDATES[2]),
+        buildFixtureLineupPick(2, FIXTURE_CANDIDATES[3]),
+        buildFixtureLineupPick(3, FIXTURE_CANDIDATES[0]),
+      ]),
       userId: "user-2",
       user: {
         id: "user-2",
@@ -178,7 +193,6 @@ export const contestWithLineups: Contest = {
         updatedAt: new Date(),
         settings: { color: "#10B981" },
       },
-      tournamentLineup: { id: "tl-2", name: "Lineup #2", players: [] },
     }),
   ],
 };
@@ -216,7 +230,6 @@ export const contestWithPredictions: Contest = {
         updatedAt: new Date(),
         settings: { color: "#10B981" },
       },
-      tournamentLineup: { id: "tl-2", name: "Lineup #2", players: [] },
     }),
     buildContestLineup({
       id: "lineup-3",
@@ -234,8 +247,7 @@ export const contestWithPredictions: Contest = {
         updatedAt: new Date(),
         settings: { color: "#F59E0B" },
       },
-      tournamentLineup: { id: "tl-3", name: "Lineup #3", players: [] },
-    }),
+      }),
     buildContestLineup({
       id: "lineup-4",
       entryId: "4",
@@ -252,8 +264,7 @@ export const contestWithPredictions: Contest = {
         updatedAt: new Date(),
         settings: { color: "#8B5CF6" },
       },
-      tournamentLineup: { id: "tl-4", name: "Lineup #4", players: [] },
-    }),
+      }),
   ],
 };
 

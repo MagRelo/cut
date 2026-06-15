@@ -3,10 +3,20 @@ import { formatUnits, parseUnits } from "viem";
 import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
+import {
+  candidatesByParticipantIdMap,
+  candidatesForLineupPicks,
+  contestLineupDisplayName,
+  lineupPicksFromContestLineup,
+} from "../../lib/candidateUtils";
+import {
+  participantLastName,
+  sortCandidatesByLeaderboard,
+} from "../../lib/candidateSorting";
 
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 
@@ -16,6 +26,11 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const { candidates } = useActiveEvent();
+  const candidatesByParticipantId = useMemo(
+    () => candidatesByParticipantIdMap(candidates),
+    [candidates],
+  );
 
   // Compute secondary actions lock based on contest status
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
@@ -65,7 +80,8 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
           .map((entry) => {
             const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
             const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
-            const lineupNumberLabel = getLineupNumberLabel(lineup?.tournamentLineup?.name);
+            const lineupName = lineup ? contestLineupDisplayName(lineup) : "";
+            const lineupNumberLabel = getLineupNumberLabel(lineupName);
             const tenDollarReturnLabel = (() => {
               if (!poolSnapshot) return "—";
 
@@ -135,14 +151,16 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                     </div>
                     <div className="text-xs text-gray-500 truncate">
                       {(() => {
-                        const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
-                        const name = lineup?.tournamentLineup?.name || "";
-                        const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
-                          .map((player) => player.pga_lastName)
-                          .filter(Boolean)
+                        if (!lineup) return "No players";
+                        const lineupCandidates = candidatesForLineupPicks(
+                          lineupPicksFromContestLineup(lineup),
+                          candidatesByParticipantId,
+                        );
+                        const sortedPlayerNames = sortCandidatesByLeaderboard(lineupCandidates)
+                          .map((candidate) => participantLastName(candidate))
                           .join(", ");
 
-                        return sortedPlayerNames || name || "No players";
+                        return sortedPlayerNames || lineupName || "No players";
                       })()}
                     </div>
                   </div>

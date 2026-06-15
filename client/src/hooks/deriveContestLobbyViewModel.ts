@@ -1,8 +1,4 @@
-import {
-  arePrimaryActionsLocked,
-  areSecondaryActionsLocked,
-  type Contest,
-} from "../types/contest";
+import { arePrimaryActionsLocked, areSecondaryActionsLocked, type Contest } from "../types/contest";
 import {
   type ContestLobbyPhase,
   type ContestLobbyViewModel,
@@ -88,9 +84,7 @@ export function deriveContestLobbyViewModel(
   );
 
   const showCountdown =
-    !primaryActionsLocked &&
-    input.eventNotStarted === true &&
-    Boolean(input.eventStartDate);
+    !primaryActionsLocked && input.eventNotStarted === true && Boolean(input.eventStartDate);
 
   return {
     phase,

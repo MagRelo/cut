@@ -9,7 +9,7 @@ export interface ContestLineup {
   status: "ACTIVE" | "INACTIVE";
   position: number;
   score: number;
-  lineup?: TournamentLineup;
+  lineup?: PlatformLineup | Pick<PlatformLineup, "id" | "name">;
   lineupId?: string;
   /** @deprecated Use lineup */
   tournamentLineup?: TournamentLineup;

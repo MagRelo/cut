@@ -1,5 +1,4 @@
 import type { Candidate } from "@cut/sport-sdk";
-import type { LineupPickShell } from "@cut/sport-sdk/ui";
 
 type GolfCandidateMetadata = {
   participant?: {
@@ -15,6 +14,11 @@ type GolfCandidateMetadata = {
     leaderboardPosition?: string | null;
     leaderboardTotal?: string | null;
     stableford?: number | null;
+    r1?: unknown;
+    r2?: unknown;
+    r3?: unknown;
+    r4?: unknown;
+    teeTimes?: Array<{ roundNum: number; label: string }>;
   };
 };
 
@@ -26,6 +30,7 @@ type GolfEventMetadata = {
   status?: string;
   roundDisplay?: string | null;
   roundStatusDisplay?: string | null;
+  currentRound?: number | null;
   beautyImage?: string | null;
 };
 
@@ -34,13 +39,6 @@ export function parseGolfCandidateMetadata(candidate: Candidate): GolfCandidateM
     return {};
   }
   return candidate.metadata as GolfCandidateMetadata;
-}
-
-export function parseGolfPickMetadata(pick: LineupPickShell): GolfCandidateMetadata {
-  if (!pick.metadata || typeof pick.metadata !== "object") {
-    return {};
-  }
-  return pick.metadata as GolfCandidateMetadata;
 }
 
 export function parseGolfEventMetadata(metadata: unknown): GolfEventMetadata {
