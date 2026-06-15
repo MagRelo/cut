@@ -13,6 +13,10 @@ import { ContestState } from "./useContestPredictionData";
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
   hasWallet?: boolean;
+  eventStartDate?: string | Date | null;
+  eventName?: string | null;
+  eventNotStarted?: boolean;
+  roundDisplay?: string | null;
 }
 
 export function deriveContestLobbyPhase(contest: Contest): ContestLobbyPhase {
@@ -85,8 +89,8 @@ export function deriveContestLobbyViewModel(
 
   const showCountdown =
     !primaryActionsLocked &&
-    contest.tournament?.status === "NOT_STARTED" &&
-    Boolean(contest.tournament?.startDate);
+    input.eventNotStarted === true &&
+    Boolean(input.eventStartDate);
 
   return {
     phase,
@@ -101,6 +105,9 @@ export function deriveContestLobbyViewModel(
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",
       showCountdown,
       entryListOpensModal: primaryActionsLocked,
+      eventName: input.eventName ?? contest.tournament?.name ?? null,
+      eventStartDate: input.eventStartDate ?? contest.tournament?.startDate ?? null,
+      roundDisplay: input.roundDisplay ?? contest.tournament?.roundDisplay ?? null,
     },
     predictions: {
       mode: predictionsMode,

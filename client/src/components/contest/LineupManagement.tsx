@@ -7,6 +7,14 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@
 
 import { Contest } from "src/types/contest";
 import { useLineupData } from "../../hooks/useLineupData";
+import { useEventCandidatesQuery } from "../../hooks/useSportData";
+import { useSportContext } from "../../contexts/SportContext";
+import {
+  platformLineupParticipantIds,
+  platformLineupPrediction,
+  platformLineupToPlayers,
+  buildCandidatesByParticipantId,
+} from "../../lib/lineupUtils";
 import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -56,7 +64,15 @@ const isValidHexColor = (value: unknown): value is string => {
 
 export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
   const posthog = usePostHog();
-  const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData();
+  const { sportId } = useSportContext();
+  const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData({
+    eventId: contest.eventId,
+  });
+  const { data: candidates = [] } = useEventCandidatesQuery(sportId, contest.eventId);
+  const candidatesByParticipantId = useMemo(
+    () => buildCandidatesByParticipantId(candidates),
+    [candidates],
+  );
   const { address } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
   const balanceAddress = smartWalletClient?.account?.address ?? address;
@@ -246,28 +262,23 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
       const lineup = lineups.find((l) => l.id === lineupId);
       if (!lineup) return false;
 
-      const normalizedPlayerIds = lineup.players
-        .map((p) => p.id)
-        .sort()
-        .join(",");
-      const prediction = lineup.winningScorePrediction;
+      const normalizedPlayerIds = platformLineupParticipantIds(lineup).sort().join(",");
+      const prediction = platformLineupPrediction(lineup);
 
       return (
         contest.contestLineups?.some((contestLineup) => {
           if (contestLineup.userId !== user?.id) return false;
 
-          const contestTournamentLineup = lineups.find(
-            (l) => l.id === contestLineup.tournamentLineupId,
-          );
-          if (!contestTournamentLineup) return false;
+          const contestLineupId = contestLineup.lineupId ?? contestLineup.tournamentLineupId;
+          const contestPlatformLineup = lineups.find((l) => l.id === contestLineupId);
+          if (!contestPlatformLineup) return false;
 
-          const contestPlayerIds = contestTournamentLineup.players
-            .map((p) => p.id)
+          const contestPlayerIds = platformLineupParticipantIds(contestPlatformLineup)
             .sort()
             .join(",");
           return (
             contestPlayerIds === normalizedPlayerIds &&
-            contestTournamentLineup.winningScorePrediction === prediction
+            platformLineupPrediction(contestPlatformLineup) === prediction
           );
         }) || false
       );
@@ -280,7 +291,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     const lineup = lineups.find((l) => l.id === lineupId);
 
     // Validate lineup has at least 1 player
-    if (!lineup || lineup.players.length === 0) {
+    if (!lineup || platformLineupParticipantIds(lineup).length === 0) {
       setValidationError("Lineup must have at least 1 player");
       return;
     }
@@ -382,7 +393,9 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
           const isEntered = enteredLineupsMap.has(lineup.id);
           const isPending = pendingAction?.lineupId === lineup.id;
           const isProcessing = isPending && (isSending || isConfirming);
-          const sortedPlayers = sortPlayersByLeaderboard(lineup.players ?? []);
+          const sortedPlayers = sortPlayersByLeaderboard(
+            platformLineupToPlayers(lineup, contest.eventId, candidatesByParticipantId),
+          );
 
           return (
             <Fragment key={lineup.id}>

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import type { LineupPickShell } from "@cut/sport-sdk/ui";
 import type { PlayerWithTournamentData } from "../../types/player";
-import { useActiveTournament } from "../../hooks/useTournamentData";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
@@ -20,7 +20,7 @@ export const SportLineupPickRow: React.FC<SportLineupPickRowProps> = ({
   onClick,
 }) => {
   const plugin = useSportUIPlugin();
-  const { eventId, sportId } = useActiveTournament();
+  const { eventId, sportId } = useActiveEvent();
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
   const PickDetail = plugin?.PickDetail;
 

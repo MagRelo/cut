@@ -1,21 +1,20 @@
 import React, { useMemo } from "react";
 import { ContestList } from "../components/contest/ContestList";
 import { PageHeader } from "../components/common/PageHeader";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { useActiveEvent } from "../hooks/useActiveEvent";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
 export const Contests: React.FC = () => {
-  const { tournament, isLoading: isTournamentLoading, error: fetchError } = useActiveTournament();
-  const tournamentId = tournament?.id;
+  const { eventId, isLoading: isEventLoading, error: fetchError } = useActiveEvent();
 
   const {
     data: contestsWithLineupsData,
     isLoading: isContestsLoading,
     error: contestsError,
-  } = useContestsQuery(tournamentId, undefined);
-  const tournamentError = fetchError instanceof Error ? fetchError.message : null;
+  } = useContestsQuery(eventId, undefined);
+  const eventError = fetchError instanceof Error ? fetchError.message : null;
   const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
-  const error = tournamentError ?? contestsErrorMessage;
+  const error = eventError ?? contestsErrorMessage;
 
   // Sort contests by entry fee (highest first)
   const contests = useMemo(() => {
@@ -28,7 +27,7 @@ export const Contests: React.FC = () => {
   }, [contestsWithLineupsData]);
 
   const showLoading =
-    isTournamentLoading || (isContestsLoading && contestsWithLineupsData === undefined);
+    isEventLoading || (isContestsLoading && contestsWithLineupsData === undefined);
 
   return (
     <div className="mb-4 space-y-4">

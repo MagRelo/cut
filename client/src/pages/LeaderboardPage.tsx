@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { useActiveEvent } from "../hooks/useActiveEvent";
+import { candidateToPlayer } from "../lib/golfEventAdapter";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
@@ -11,11 +12,23 @@ import type { PlayerWithTournamentData } from "../types/player";
 import { sortPlayersByLeaderboard } from "../utils/playerSorting";
 
 export const LeaderboardPage: React.FC = () => {
-  const { tournament, players, isLoading, error } = useActiveTournament();
+  const {
+    eventId,
+    status,
+    candidates,
+    isLoading,
+    error,
+    roundDisplay,
+  } = useActiveEvent();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTournamentData | null>(null);
+
+  const players = useMemo(() => {
+    if (!eventId) return [];
+    return candidates.map((candidate) => candidateToPlayer(candidate, eventId));
+  }, [candidates, eventId]);
 
   const playerIdParam = searchParams.get("playerId");
   const pgaTourIdParam = searchParams.get("pgaTourId");
@@ -60,7 +73,7 @@ export const LeaderboardPage: React.FC = () => {
   };
 
   const sortedPlayers = useMemo(() => {
-    const sortByNameOnly = tournament?.status === "NOT_STARTED";
+    const sortByNameOnly = status === "SCHEDULED";
     const playersWithName = players.filter((player) => {
       const hasLastName = Boolean((player.pga_lastName || "").trim());
       const hasDisplayName = Boolean((player.pga_displayName || "").trim());
@@ -68,7 +81,7 @@ export const LeaderboardPage: React.FC = () => {
     });
 
     return sortPlayersByLeaderboard(playersWithName, { sortByNameOnly });
-  }, [players, tournament?.status]);
+  }, [players, status]);
 
   const header = <PageHeader title="Leaderboard" className="px-4 pt-4" />;
 
@@ -94,18 +107,18 @@ export const LeaderboardPage: React.FC = () => {
     );
   }
 
-  if (!tournament) {
+  if (!eventId) {
     return (
       <div>
         {header}
         <div className="p-4 text-center">
-          <p className="text-gray-600">No tournament data available</p>
+          <p className="text-gray-600">No active event available</p>
         </div>
       </div>
     );
   }
 
-  const roundDisplay = tournament.roundDisplay || "R1";
+  const displayRound = roundDisplay || "R1";
 
   return (
     <>
@@ -121,7 +134,7 @@ export const LeaderboardPage: React.FC = () => {
               <div className="p-3">
                 <PlayerDisplayRow
                   player={player}
-                  roundDisplay={roundDisplay}
+                  roundDisplay={displayRound}
                   onClick={() => openPlayerModal(player)}
                 />
               </div>

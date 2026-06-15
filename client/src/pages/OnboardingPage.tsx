@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { useActiveEvent } from "../hooks/useActiveEvent";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 
@@ -40,9 +40,9 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser, updateUserSettings } = useAuth();
-  const { isTournamentEditable } = useActiveTournament();
-  /** Lineup create/edit closed (tournament in progress or completed). */
-  const editingNotAllowed = !isTournamentEditable;
+  const { isEventEditable } = useActiveEvent();
+  /** Lineup create/edit closed (event in progress or completed). */
+  const editingNotAllowed = !isEventEditable;
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);

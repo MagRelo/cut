@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getActivePlayers } from "../../lib/pgaField.js";
 import { fetchPGATourPlayers } from "../../lib/pgaPlayers.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import { enrichGolfParticipantProfiles } from "./enrichParticipantProfiles.js";
 
 export async function syncGolfParticipantField(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -96,5 +97,14 @@ export async function syncGolfParticipantField(eventId: string) {
         },
       });
     }
+  }
+
+  try {
+    await enrichGolfParticipantProfiles(event.id);
+  } catch (error) {
+    console.warn(
+      "[syncGolfParticipantField] Profile enrichment failed (field sync still succeeded):",
+      error instanceof Error ? error.message : error,
+    );
   }
 }

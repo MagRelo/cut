@@ -14,7 +14,12 @@ import type { Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
-import { useActiveTournament } from "../../hooks/useTournamentData";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { candidateToPlayer } from "../../lib/golfEventAdapter";
+import {
+  platformLineupParticipantIds,
+  platformLineupPrediction,
+} from "../../lib/lineupUtils";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
 import { SportPredictionField } from "../platform/SportPredictionField";
@@ -68,17 +73,22 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const { players: fieldPlayers, isTournamentEditable, eventId } = useActiveTournament();
-  const { updateLineup, lineups } = useLineupData();
+  const { candidates, isEventEditable, eventId } = useActiveEvent();
+  const fieldPlayers = useMemo(() => {
+    if (!eventId) return [];
+    return candidates.map((candidate) => candidateToPlayer(candidate, eventId));
+  }, [candidates, eventId]);
+  const { updateLineup, lineups } = useLineupData({ eventId });
 
   const lineupId = lineup.tournamentLineup?.id ?? "";
   const initialPlayers = lineup.tournamentLineup?.players ?? [];
-  const canEditSlots = Boolean(isEditable && isTournamentEditable && lineupId);
+  const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
 
   const serverPrediction = useMemo(() => {
-    const fromList = lineups.find((entry) => entry.id === lineupId)?.winningScorePrediction;
+    const fromList = lineups.find((entry) => entry.id === lineupId);
+    const fromListValue = fromList ? platformLineupPrediction(fromList) : null;
     const fromLineup = lineup.tournamentLineup?.winningScorePrediction;
-    const value = fromList ?? fromLineup;
+    const value = fromListValue ?? fromLineup;
     if (value != null) return value;
     return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 120;
   }, [lineup.tournamentLineup?.winningScorePrediction, lineupId, lineups]);
@@ -106,12 +116,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       const playerIds = slotEditor.selectedPlayerIds;
       const duplicate = lineups.some((entry) => {
         if (entry.id === lineupId) return false;
-        const existingIds = (entry.players ?? [])
-          .map((p) => p.id)
-          .sort()
-          .join(",");
+        const existingIds = platformLineupParticipantIds(entry).sort().join(",");
         const nextIds = [...playerIds].sort().join(",");
-        return existingIds === nextIds && entry.winningScorePrediction === nextPrediction;
+        return existingIds === nextIds && platformLineupPrediction(entry) === nextPrediction;
       });
 
       if (duplicate) {

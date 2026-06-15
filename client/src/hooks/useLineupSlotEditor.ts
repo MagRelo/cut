@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PlayerWithTournamentData } from "../types/player";
-import type { TournamentLineupListItem } from "../types/lineup";
+import type { PlatformLineupListItem } from "../types/lineup";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
+import {
+  platformLineupParticipantIds,
+  platformLineupPrediction,
+} from "../lib/lineupUtils";
 
 const SLOT_COUNT = 4;
 
@@ -25,7 +29,7 @@ interface UseLineupSlotEditorOptions {
   lineupId: string;
   initialPlayers: PlayerWithTournamentData[];
   fieldPlayers: PlayerWithTournamentData[];
-  lineups: TournamentLineupListItem[];
+  lineups: PlatformLineupListItem[];
   winningScorePrediction: number;
   updateLineup: (
     lineupId: string,
@@ -62,14 +66,8 @@ export function useLineupSlotEditor({
       const normalized = [...playerIds].sort().join(",");
       return lineups.some((lineup) => {
         if (lineup.id === lineupId) return false;
-        const existing = Array.isArray(lineup.players) ? lineup.players : [];
-        const existingIds = existing
-          .map((p) => p.id)
-          .sort()
-          .join(",");
-        return (
-          existingIds === normalized && lineup.winningScorePrediction === prediction
-        );
+        const existingIds = platformLineupParticipantIds(lineup).sort().join(",");
+        return existingIds === normalized && platformLineupPrediction(lineup) === prediction;
       });
     },
     [lineupId, lineups],

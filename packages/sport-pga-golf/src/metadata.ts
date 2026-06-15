@@ -37,6 +37,15 @@ export interface GolfParticipantMetadata {
   dataGolf?: unknown;
   inField?: boolean;
   isActive?: boolean;
+  /** Season stat rows from PGA playerProfileOverview.performance */
+  performance?: unknown;
+  /** FedExCup standings row from PGA profileStandings */
+  standings?: {
+    rank?: string | null;
+    owgr?: string | null;
+    total?: string | null;
+    title?: string | null;
+  } | null;
 }
 
 export interface GolfScoreData {

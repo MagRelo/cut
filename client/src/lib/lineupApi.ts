@@ -3,13 +3,7 @@ import type { Candidate } from "@cut/sport-sdk";
 import apiClient from "../utils/apiClient";
 import { queryKeys } from "../utils/queryKeys";
 import type { PlatformLineup } from "../types/event";
-import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 import { toGolfPrediction } from "./golfPrediction";
-import {
-  candidateToPlayer,
-  platformLineupToTournamentLineup,
-} from "./golfEventAdapter";
-import type { TournamentLineup } from "../types/player";
 
 function candidateMaps(candidates: Candidate[]) {
   const eventParticipantIdByParticipantId = new Map(
@@ -81,32 +75,13 @@ export async function resolveEventParticipantIds(
   return eventParticipantIds;
 }
 
-async function lineupToTournamentShape(
-  lineup: PlatformLineup,
-  sportId: string,
-  eventId: string,
-): Promise<TournamentLineup> {
-  const candidatesResponse = await apiClient.get<{ candidates: Candidate[] }>(
-    `/sports/${sportId}/events/${eventId}/candidates`,
-  );
-  const playersByParticipantId = new Map(
-    candidatesResponse.candidates.map((candidate) => [
-      candidate.participantId,
-      candidateToPlayer(candidate, eventId),
-    ]),
-  );
-
-  return platformLineupToTournamentLineup(lineup, playersByParticipantId);
-}
-
 export async function createLineupForEvent(params: {
   eventId: string;
   sportId?: string;
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
-}): Promise<TournamentLineup> {
-  const sportId = params.sportId ?? DEFAULT_SPORT_ID;
+}): Promise<PlatformLineup> {
   const response = await apiClient.post<{ lineup: PlatformLineup }>(
     `/lineups/${params.eventId}`,
     {
@@ -116,7 +91,7 @@ export async function createLineupForEvent(params: {
     },
   );
 
-  return lineupToTournamentShape(response.lineup, sportId, params.eventId);
+  return response.lineup;
 }
 
 export async function updateLineupById(params: {
@@ -126,8 +101,7 @@ export async function updateLineupById(params: {
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
-}): Promise<TournamentLineup> {
-  const sportId = params.sportId ?? DEFAULT_SPORT_ID;
+}): Promise<PlatformLineup> {
   const response = await apiClient.put<{ lineup: PlatformLineup }>(
     `/lineups/${params.lineupId}`,
     {
@@ -137,7 +111,7 @@ export async function updateLineupById(params: {
     },
   );
 
-  return lineupToTournamentShape(response.lineup, sportId, params.eventId);
+  return response.lineup;
 }
 
 /** @deprecated Use createLineupForEvent or updateLineupById */
@@ -147,6 +121,6 @@ export async function saveLineupForEvent(params: {
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
-}): Promise<TournamentLineup> {
+}): Promise<PlatformLineup> {
   return createLineupForEvent(params);
 }

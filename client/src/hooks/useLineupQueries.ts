@@ -1,23 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Candidate } from "@cut/sport-sdk";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import type { PlatformLineup } from "../types/event";
+import type { PlatformLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
-import { candidateToPlayer, platformLineupToListItem } from "../lib/golfEventAdapter";
 import { DEFAULT_SPORT_ID } from "./useSportData";
 
 interface LineupsResponse {
-  lineups: PlatformLineup[];
-}
-
-function buildPlayersMap(candidates: Candidate[], eventId: string) {
-  return new Map(
-    candidates.map((candidate) => [
-      candidate.participantId,
-      candidateToPlayer(candidate, eventId),
-    ]),
-  );
+  lineups: PlatformLineupListItem[];
 }
 
 /**
@@ -27,7 +16,7 @@ export function useLineupsQuery(
   eventId: string | undefined,
   enabled: boolean = true,
   userId: string | undefined,
-  sportId: string = DEFAULT_SPORT_ID,
+  _sportId: string = DEFAULT_SPORT_ID,
 ) {
   const canRun = !!eventId && !!userId && enabled;
 
@@ -35,18 +24,8 @@ export function useLineupsQuery(
     queryKey: queryKeys.lineups.byEvent(userId ?? "_", eventId ?? "_"),
     queryFn: async () => {
       if (!eventId) throw new Error("Event ID is required");
-
-      const [lineupsResponse, candidatesResponse] = await Promise.all([
-        apiClient.get<LineupsResponse>(`/lineups/${eventId}`),
-        apiClient.get<{ candidates: Candidate[] }>(
-          `/sports/${sportId}/events/${eventId}/candidates`,
-        ),
-      ]);
-
-      const playersByParticipantId = buildPlayersMap(candidatesResponse.candidates, eventId);
-      return lineupsResponse.lineups.map((lineup) =>
-        platformLineupToListItem(lineup, playersByParticipantId),
-      );
+      const lineupsResponse = await apiClient.get<LineupsResponse>(`/lineups/${eventId}`);
+      return lineupsResponse.lineups;
     },
     enabled: canRun,
     staleTime: Infinity,
@@ -63,7 +42,7 @@ export function useLineupQuery(
   eventId: string | undefined,
   enabled: boolean = true,
   userId: string | undefined,
-  sportId: string = DEFAULT_SPORT_ID,
+  _sportId: string = DEFAULT_SPORT_ID,
 ) {
   const canRun = !!lineupId && !!eventId && !!userId && enabled;
 
@@ -72,20 +51,8 @@ export function useLineupQuery(
     queryFn: async () => {
       if (!eventId || !lineupId) throw new Error("Event and lineup ID are required");
 
-      const [lineupsResponse, candidatesResponse] = await Promise.all([
-        apiClient.get<LineupsResponse>(`/lineups/${eventId}`),
-        apiClient.get<{ candidates: Candidate[] }>(
-          `/sports/${sportId}/events/${eventId}/candidates`,
-        ),
-      ]);
-
-      const lineup = lineupsResponse.lineups.find((row) => row.id === lineupId);
-      if (!lineup) {
-        return null;
-      }
-
-      const playersByParticipantId = buildPlayersMap(candidatesResponse.candidates, eventId);
-      return platformLineupToListItem(lineup, playersByParticipantId);
+      const lineupsResponse = await apiClient.get<LineupsResponse>(`/lineups/${eventId}`);
+      return lineupsResponse.lineups.find((row) => row.id === lineupId) ?? null;
     },
     enabled: canRun,
     staleTime: Infinity,

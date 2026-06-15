@@ -86,33 +86,35 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                 />
               </div>
 
-              <div className="relative min-h-0 flex-1 overflow-y-auto">
+              <div className="relative min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-gray-600 via-gray-700 to-gray-900">
                 {isLoading ? (
                   <div className="flex justify-center py-12">
                     <LoadingSpinner />
                   </div>
                 ) : !CandidateRow ? (
-                  <p className="p-4 text-sm text-gray-500">No picker available for this sport.</p>
+                  <p className="p-4 text-sm text-gray-300">No picker available for this sport.</p>
                 ) : (
-                  filtered.map((candidate: Candidate) => {
-                    const isAlreadySelected = selectedEventParticipantIds.includes(
-                      candidate.eventParticipantId,
-                    );
-                    return (
-                      <CandidateRow
-                        key={candidate.eventParticipantId}
-                        candidate={candidate}
-                        onSelect={() => void onSelect(candidate.eventParticipantId)}
-                        isSelected={isAlreadySelected}
-                        disabled={isSaving || isAlreadySelected}
-                      />
-                    );
-                  })
+                  <div className="flex flex-col gap-3 p-3">
+                    {filtered.map((candidate: Candidate) => {
+                      const isAlreadySelected = selectedEventParticipantIds.includes(
+                        candidate.eventParticipantId,
+                      );
+                      return (
+                        <CandidateRow
+                          key={candidate.eventParticipantId}
+                          candidate={candidate}
+                          onSelect={() => void onSelect(candidate.eventParticipantId)}
+                          isSelected={isAlreadySelected}
+                          disabled={isSaving || isAlreadySelected}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
                 {isSaving ? (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/70">
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-gray-900/60">
                     <LoadingSpinner />
-                    <span className="font-display text-sm font-medium text-gray-700">Saving...</span>
+                    <span className="font-display text-sm font-medium text-white">Saving...</span>
                   </div>
                 ) : null}
               </div>

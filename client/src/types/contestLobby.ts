@@ -21,6 +21,9 @@ export interface ContestLobbyViewModel {
     mode: PrimaryTabMode;
     showCountdown: boolean;
     entryListOpensModal: boolean;
+    eventName?: string | null;
+    eventStartDate?: string | Date | null;
+    roundDisplay?: string | null;
   };
   predictions: {
     mode: PredictionsPanelMode;

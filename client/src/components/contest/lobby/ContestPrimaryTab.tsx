@@ -11,6 +11,9 @@ export interface ContestPrimaryTabProps {
   mode: PrimaryTabMode;
   showCountdown: boolean;
   entryListOpensModal: boolean;
+  eventName?: string | null;
+  eventStartDate?: string | Date | null;
+  roundDisplay?: string | null;
   currentUserId?: string;
   onEnterContest: () => void;
 }
@@ -20,6 +23,9 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   mode,
   showCountdown,
   entryListOpensModal,
+  eventName,
+  eventStartDate,
+  roundDisplay,
   currentUserId,
   onEnterContest,
 }) => {
@@ -43,15 +49,21 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
               </span>
             </button>
 
-            {showCountdown && contest.tournament?.startDate ? (
+            {showCountdown && eventStartDate ? (
               <p className="text-center text-xs text-gray-800">
                 <span>
-                  <strong>{contest.tournament.name}</strong> starts in
+                  <strong>{eventName ?? "Event"}</strong> starts in
                 </span>
                 <br />
                 <strong>
                   <span className="inline-block min-w-[120px] whitespace-nowrap pt-1 tabular-nums">
-                    <CountdownTimer targetDate={contest.tournament.startDate} />
+                    <CountdownTimer
+                      targetDate={
+                        typeof eventStartDate === "string"
+                          ? eventStartDate
+                          : eventStartDate.toISOString()
+                      }
+                    />
                   </span>
                 </strong>
               </p>
@@ -62,7 +74,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
 
       <ContestEntryList
         contestLineups={contest.contestLineups}
-        roundDisplay={contest.tournament?.roundDisplay}
+        roundDisplay={roundDisplay ?? undefined}
         contestStatus={contest.status}
         entryListOpensModal={entryListOpensModal}
       />

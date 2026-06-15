@@ -1,21 +1,25 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
+import type { Candidate } from "@cut/sport-sdk";
 import { queryKeys } from "../utils/queryKeys";
-import { type PlayerWithTournamentData } from "../types/player";
-import type { TournamentLineupListItem } from "../types/lineup";
+import type { PlatformLineupListItem } from "../types/lineup";
 import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
-import type { ActiveTournamentLiveResponse } from "./useTournamentData";
 import {
   createLineupForEvent,
   resolveEventParticipantIds,
   updateLineupById,
 } from "../lib/lineupApi";
 import { useSportContext } from "../contexts/SportContext";
+import {
+  buildOptimisticPicks,
+  platformLineupParticipantIds,
+  platformLineupPrediction,
+} from "../lib/lineupUtils";
 
 interface CreateLineupParams {
-  tournamentId: string;
+  eventId: string;
   playerIds: string[];
   name?: string;
   winningScorePrediction?: number;
@@ -26,36 +30,6 @@ interface UpdateLineupParams {
   playerIds: string[];
   name?: string;
   winningScorePrediction?: number;
-}
-
-function buildPlayersFromIds(
-  queryClient: QueryClient,
-  eventId: string,
-  playerIds: string[],
-  lineups: TournamentLineupListItem[],
-): PlayerWithTournamentData[] {
-  const playerMap = new Map<string, PlayerWithTournamentData>();
-
-  const fieldData = queryClient.getQueryData<ActiveTournamentLiveResponse>(
-    queryKeys.tournaments.activeLive(eventId),
-  );
-  for (const player of fieldData?.players ?? []) {
-    if (!playerMap.has(player.id)) {
-      playerMap.set(player.id, player);
-    }
-  }
-
-  for (const lineup of lineups) {
-    for (const player of lineup.players ?? []) {
-      if (!playerMap.has(player.id)) {
-        playerMap.set(player.id, player);
-      }
-    }
-  }
-
-  return playerIds
-    .map((id) => playerMap.get(id))
-    .filter((p): p is PlayerWithTournamentData => p !== undefined);
 }
 
 function resetSideBetMarketCache(queryClient: QueryClient, lineupId: string) {
@@ -81,7 +55,7 @@ function findLineupListContext(
   queryClient: QueryClient,
   lineupId: string,
 ): { userId: string; eventId: string } | null {
-  const entries = queryClient.getQueriesData<TournamentLineupListItem[]>({
+  const entries = queryClient.getQueriesData<PlatformLineupListItem[]>({
     queryKey: queryKeys.lineups.all,
   });
   for (const [queryKey, lineups] of entries) {
@@ -99,6 +73,14 @@ function findLineupListContext(
   return null;
 }
 
+function getCandidates(
+  queryClient: QueryClient,
+  sportId: string,
+  eventId: string,
+): Candidate[] {
+  return queryClient.getQueryData<Candidate[]>(queryKeys.sports.candidates(sportId, eventId)) ?? [];
+}
+
 export function useCreateLineup() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
@@ -108,7 +90,7 @@ export function useCreateLineup() {
 
   return useMutation({
     mutationFn: async ({
-      tournamentId: eventId,
+      eventId,
       playerIds,
       name,
       winningScorePrediction,
@@ -128,26 +110,31 @@ export function useCreateLineup() {
       });
     },
 
-    onMutate: async ({ tournamentId: eventId, name }) => {
+    onMutate: async ({ eventId, name }) => {
       if (!userId) {
         return { previousLineups: undefined, eventId };
       }
 
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
 
-      const previousLineups = queryClient.getQueryData<TournamentLineupListItem[]>(
+      const previousLineups = queryClient.getQueryData<PlatformLineupListItem[]>(
         queryKeys.lineups.byEvent(userId, eventId),
       );
 
       if (previousLineups !== undefined) {
-        const optimisticLineup: TournamentLineupListItem = {
+        const now = new Date().toISOString();
+        const optimisticLineup: PlatformLineupListItem = {
           id: `temp-${Date.now()}`,
+          eventId,
           name: name || "New Lineup",
-          players: [],
+          prediction: null,
+          picks: [],
           contestLineups: [],
+          createdAt: now,
+          updatedAt: now,
         };
 
-        queryClient.setQueryData<TournamentLineupListItem[]>(
+        queryClient.setQueryData<PlatformLineupListItem[]>(
           queryKeys.lineups.byEvent(userId, eventId),
           [...previousLineups, optimisticLineup],
         );
@@ -156,7 +143,7 @@ export function useCreateLineup() {
       return { previousLineups, eventId };
     },
 
-    onError: (err, { tournamentId: eventId }, context) => {
+    onError: (err, { eventId }, context) => {
       console.error("Failed to create lineup:", err);
       if (context?.previousLineups !== undefined && userId) {
         queryClient.setQueryData(
@@ -166,7 +153,7 @@ export function useCreateLineup() {
       }
     },
 
-    onSuccess: (data, { tournamentId: eventId }, context) => {
+    onSuccess: (data, { eventId }, context) => {
       if (userId && data?.id) {
         const isFirstLineup =
           context?.previousLineups === undefined || context.previousLineups.length === 0;
@@ -174,7 +161,7 @@ export function useCreateLineup() {
           user_id: userId,
           tournament_id: eventId,
           lineup_id: data.id,
-          player_count: Array.isArray(data.players) ? data.players.length : 0,
+          player_count: data.picks.length,
           is_first_lineup: isFirstLineup,
         });
       }
@@ -231,31 +218,26 @@ export function useUpdateLineup() {
       }
 
       const { userId: uid, eventId } = ctx;
+      const candidates = getCandidates(queryClient, sportId, eventId);
 
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byEvent(uid, eventId) });
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byId(uid, lineupId) });
 
-      const previousLineups = queryClient.getQueryData<TournamentLineupListItem[]>(
+      const previousLineups = queryClient.getQueryData<PlatformLineupListItem[]>(
         queryKeys.lineups.byEvent(uid, eventId),
       );
 
       if (previousLineups) {
-        const optimisticPlayers = buildPlayersFromIds(
-          queryClient,
-          eventId,
-          playerIds,
-          previousLineups,
-        );
-        queryClient.setQueryData<TournamentLineupListItem[]>(
+        queryClient.setQueryData<PlatformLineupListItem[]>(
           queryKeys.lineups.byEvent(uid, eventId),
           previousLineups.map((lineup) =>
             lineup.id === lineupId
               ? {
                   ...lineup,
                   name: name || lineup.name,
-                  players: optimisticPlayers,
+                  picks: buildOptimisticPicks(playerIds, candidates),
                   ...(winningScorePrediction !== undefined
-                    ? { winningScorePrediction }
+                    ? { prediction: { type: "winningScore", value: winningScorePrediction } }
                     : {}),
                 }
               : lineup,
@@ -281,7 +263,7 @@ export function useUpdateLineup() {
     },
 
     onSuccess: (data, _variables, context) => {
-      const eventId = data?.players?.[0]?.tournamentId ?? context?.eventId;
+      const eventId = data?.eventId ?? context?.eventId;
       if (userId && data?.id && eventId) {
         captureLineupUpdated(posthog, {
           user_id: userId,
@@ -289,26 +271,10 @@ export function useUpdateLineup() {
           tournament_id: eventId,
         });
       }
-      if (userId && context?.eventId && data?.id && Array.isArray(data.players)) {
-        queryClient.setQueryData<TournamentLineupListItem[]>(
-          queryKeys.lineups.byEvent(userId, context.eventId),
-          (current) =>
-            current?.map((lineup) =>
-              lineup.id === data.id
-                ? {
-                    ...lineup,
-                    players: data.players,
-                    winningScorePrediction:
-                      data.winningScorePrediction ?? lineup.winningScorePrediction,
-                  }
-                : lineup,
-            ) ?? current,
-        );
-      }
-      if (userId) {
-        if (eventId) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
-        }
+      if (userId && context?.eventId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.lineups.byEvent(userId, context.eventId),
+        });
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
       }
       if (data?.id) {
@@ -330,3 +296,6 @@ export function useLineupActions() {
     isLoading: create.isPending || update.isPending,
   };
 }
+
+// Re-export helpers used by slot editor duplicate checks
+export { platformLineupParticipantIds, platformLineupPrediction };

@@ -1,5 +1,6 @@
 import type { SportUIPlugin } from "@cut/sport-sdk/ui";
 import { GolfCandidateRow } from "./CandidateRow";
+import { CandidateSelectionCard } from "./CandidateSelectionCard";
 import { GolfEventDetails } from "./EventDetails";
 import { GolfEventSummary } from "./EventSummary";
 import { GolfPickDetail } from "./PickDetail";
@@ -18,4 +19,5 @@ export {
   GolfPredictionField,
   GolfEventSummary,
   GolfEventDetails,
+  CandidateSelectionCard,
 };

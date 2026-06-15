@@ -61,7 +61,38 @@ export function useEventCandidatesQuery(
 export async function prefetchActiveEvent(queryClient: QueryClient, sportId = DEFAULT_SPORT_ID) {
   await queryClient.prefetchQuery({
     queryKey: queryKeys.sports.activeEvent(sportId),
-    queryFn: () => apiClient.get<ActiveEventResponse>(`/sports/${sportId}/events/active`),
+    queryFn: async () => {
+      try {
+        return await apiClient.get<ActiveEventResponse>(`/sports/${sportId}/events/active`);
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
     staleTime: ACTIVE_EVENT_STALE_MS,
   });
+}
+
+export async function prefetchActiveEventWithCandidates(
+  queryClient: QueryClient,
+  sportId = DEFAULT_SPORT_ID,
+) {
+  await prefetchActiveEvent(queryClient, sportId);
+  const active = queryClient.getQueryData<ActiveEventResponse | null>(
+    queryKeys.sports.activeEvent(sportId),
+  );
+  if (active?.event?.id) {
+    await queryClient.prefetchQuery({
+      queryKey: queryKeys.sports.candidates(sportId, active.event.id),
+      queryFn: async () => {
+        const data = await apiClient.get<{ candidates: Candidate[] }>(
+          `/sports/${sportId}/events/${active.event.id}/candidates`,
+        );
+        return data.candidates;
+      },
+      staleTime: CANDIDATES_STALE_MS,
+    });
+  }
 }

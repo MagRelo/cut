@@ -17,7 +17,7 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 | 5 | Contests, settlement, cron | ✅ Done |
 | 6–7 | Client shell, routing, golf UI plugin | ✅ Done |
 | 8 | Account, leagues, side bets, email, admin | ✅ Done |
-| 9–10 | Migration + cutover | Phase 9 in progress |
+| 9–10 | Migration + cutover | Phase 9 done; Phase 10 in progress |
 | 11 | NFL / future sports | Post-v1 |
 
 **Live APIs:** `/sports`, `/lineups`, `/contests`, `/bets`, `/admin`, `/userGroups`  
@@ -91,26 +91,25 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 - [x] Phase 8 (partial): `docs/event-activation-runbook.md`
 - [x] Phase 8 (partial): Email templates + `EmailSendLog` ported to `eventId` / `CompetitionEvent`
 - [x] Phase 8: Side bets refactored to `PropBetModule` (golf quote ingest + grading)
+- [x] Phase 9: Prod DB snapshot migration validated (`--apply` + `--validate` passed)
 
 ---
 
 ## In Progress Tasks
 
-- [ ] Validation and reconciliation on prod DB snapshot (run `--validate` after `--apply`)
+### Phase 10 — Architecture cleanup + cutover
+
+- [x] Client type foundation (`PlatformLineup`, `useActiveEvent`, platform lineup hooks)
+- [x] Migrate pages off `useActiveTournament` bridge (pages + contest lobby)
+- [ ] Staging dry-run with migrated data
+- [ ] Production cutover (see `docs/platform-cutover-plan.md`)
 
 ---
 
 ## Future Tasks
 
-### Phase 9 — Data migration
+### Phase 10 — Remaining cleanup (post-migration)
 
-- [x] Build `server/src/scripts/migrate-from-legacy.ts` (`--dry-run`, `--apply`, `--validate`)
-- [x] Preserve `ContestLineup.entryId` and `Contest.address` invariants
-- [ ] Validation and reconciliation scripts on prod DB snapshot
-
-### Phase 10 — Cutover and cleanup
-
-- [ ] Staging dry-run with migrated data
 - [ ] Production cutover (maintenance window)
 - [ ] Remove legacy routes, services, and client pages
 - [x] Update `spec/` docs to match new architecture
@@ -239,4 +238,7 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [server/src/sports/propBetRegistry.ts](server/src/sports/propBetRegistry.ts) | Prop bet plugin registry | ✅ |
 | [packages/sport-pga-golf/src/prop-bet.ts](packages/sport-pga-golf/src/prop-bet.ts) | Golf prop grading + snapshot metadata types | ✅ |
 | [server/src/services/propBets/](server/src/services/propBets/) | Platform ingest persistence + orchestration | ✅ |
-| [server/src/scripts/migrate-from-legacy.ts](server/src/scripts/migrate-from-legacy.ts) | Prod data migration (`LEGACY_DATABASE_URL` → `DATABASE_URL`) | ✅ |
+| [server/src/scripts/migrate-from-legacy.ts](server/src/scripts/migrate-from-legacy.ts) | Prod data migration (`LEGACY_DATABASE_URL` → `DATABASE_URL`) | ✅ validated |
+| [client/src/hooks/useActiveEvent.ts](client/src/hooks/useActiveEvent.ts) | Primary active event hook (platform types) | ✅ |
+| [client/src/lib/lineupUtils.ts](client/src/lib/lineupUtils.ts) | Platform lineup helpers + player bridge for UI | ✅ |
+| [docs/platform-cutover-plan.md](docs/platform-cutover-plan.md) | Production cutover runbook (ops reference) | ✅ |

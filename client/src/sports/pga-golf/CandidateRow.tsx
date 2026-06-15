@@ -1,9 +1,8 @@
 import React from "react";
 import type { Candidate } from "@cut/sport-sdk";
-import {
-  candidateStableford,
-  parseGolfCandidateMetadata,
-} from "./utils";
+import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { candidateStableford, parseGolfCandidateMetadata } from "./utils";
+import { CandidateSelectionCard } from "./CandidateSelectionCard";
 
 interface GolfCandidateRowProps {
   candidate: Candidate;
@@ -12,12 +11,12 @@ interface GolfCandidateRowProps {
   disabled?: boolean;
 }
 
-export const GolfCandidateRow: React.FC<GolfCandidateRowProps> = ({
+function LiveCandidateRow({
   candidate,
   onSelect,
-  isSelected = false,
-  disabled = false,
-}) => {
+  isSelected,
+  disabled,
+}: GolfCandidateRowProps) {
   const meta = parseGolfCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
   const owgr = participant.owgr ?? candidate.sortKeys.owgr;
@@ -79,5 +78,49 @@ export const GolfCandidateRow: React.FC<GolfCandidateRowProps> = ({
     <div className="flex w-full items-center justify-between gap-3 border-b border-gray-100 px-3 py-2.5">
       {content}
     </div>
+  );
+}
+
+export const GolfCandidateRow: React.FC<GolfCandidateRowProps> = (props) => {
+  const { onSelect, isSelected = false, disabled = false } = props;
+  const { status } = useActiveEvent();
+
+  if (status === "LIVE" || status === "COMPLETE") {
+    return <LiveCandidateRow {...props} />;
+  }
+
+  if (!onSelect) {
+    return <CandidateSelectionCard candidate={props.candidate} />;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      className={`relative w-full rounded-sm text-left transition-all ${
+        disabled ? "cursor-not-allowed opacity-60" : ""
+      }`}
+    >
+      {isSelected ? (
+        <div className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-sm bg-green-600 px-2 py-1">
+          <svg
+            className="h-4 w-4 shrink-0 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+      ) : null}
+      <CandidateSelectionCard candidate={props.candidate} />
+    </button>
   );
 };

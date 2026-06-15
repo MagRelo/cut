@@ -107,10 +107,10 @@ export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [contestScope, setContestScope] = useState<ContestScopeFilter>("all");
   const dashboardQuery = useAdminDashboardQuery();
-  const tournamentId = dashboardQuery.data?.tournament?.id;
+  const eventId = dashboardQuery.data?.tournament?.id;
   const sideReportQuery = useAdminSideBetReportQuery(
-    tournamentId,
-    Boolean(tournamentId) && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
+    eventId,
+    Boolean(eventId) && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
   );
 
   const refreshAll = useCallback(() => {
@@ -315,7 +315,7 @@ export const AdminPage: React.FC = () => {
 
               <AdminOperationsPanel
                 section="side"
-                tournamentId={tournamentId}
+                tournamentId={eventId}
                 onActionComplete={refreshAll}
               />
             </PageSection>

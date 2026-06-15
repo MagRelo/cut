@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useSportsQuery, useActiveEventQuery } from "../../hooks/useSportData";
-import { golfEventToTournamentShell } from "../../lib/golfEventAdapter";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import type { EventStatus } from "../../types/event";
 
@@ -30,14 +29,18 @@ export function useSelectedSportEvent(sportId: string): {
 
   const selection = useMemo((): SelectedSportEvent | null => {
     if (!active?.event) return null;
-    const shell = golfEventToTournamentShell(active);
+    const meta = (active.event.metadata ?? {}) as {
+      name?: string;
+      startDate?: string;
+      endDate?: string;
+    };
     const isEditable = active.status !== "LIVE" && active.status !== "COMPLETE";
     return {
       sportId,
       eventId: active.event.id,
-      eventName: shell.name,
-      startDate: shell.startDate,
-      endDate: shell.endDate,
+      eventName: meta.name ?? "Event",
+      startDate: meta.startDate ?? active.event.createdAt,
+      endDate: meta.endDate ?? active.event.createdAt,
       status: active.status,
       isEditable,
     };

@@ -119,4 +119,4 @@ contracts/             Solidity (ContestController, Factory, tokens)
 
 - Update `spec/` when behavior changes on `v4`.
 - `PLATFORM_ARCHITECTURE.md` is the design intent; `spec/` is the as-built reference.
-- Production cutover (Phase 10) may add a short migration appendix — not yet written.
+- Production cutover steps: [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md).

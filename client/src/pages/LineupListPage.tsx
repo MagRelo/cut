@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "../hooks/useLineupData";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { useActiveEvent } from "../hooks/useActiveEvent";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { PageSection } from "../components/layout/PageSection";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -10,19 +10,25 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { LineupContestCard } from "../components/lineup/LineupContestCard";
 import type { AuthUser } from "../contexts/AuthContext";
-import type { ContestLineup, TournamentLineupListItem } from "../types/lineup";
+import type { ContestLineup, PlatformLineupListItem } from "../types/lineup";
+import { enrichLineupListItem } from "../lib/lineupUtils";
 
-function contestLineupForCard(row: TournamentLineupListItem, user: AuthUser): ContestLineup {
+function contestLineupForCard(
+  row: ReturnType<typeof enrichLineupListItem>,
+  user: AuthUser,
+): ContestLineup {
   const tournamentLineup = {
     id: row.id,
     name: row.name,
     players: row.players,
+    winningScorePrediction: row.winningScorePrediction,
   };
   const first = row.contestLineups[0];
   if (first) {
     return {
       ...first,
       tournamentLineup,
+      lineup: tournamentLineup,
       user: first.user ?? (user as unknown as ContestLineup["user"]),
     };
   }
@@ -31,17 +37,19 @@ function contestLineupForCard(row: TournamentLineupListItem, user: AuthUser): Co
     contestId: "",
     userId: user.id,
     tournamentLineupId: row.id,
+    lineupId: row.id,
     position: 0,
     score: 0,
     status: "ACTIVE",
     tournamentLineup,
+    lineup: tournamentLineup,
     user: user as unknown as ContestLineup["user"],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 }
 
-function contestsForCard(row: TournamentLineupListItem) {
+function contestsForCard(row: PlatformLineupListItem) {
   return row.contestLineups.map((cl) => ({
     contest: cl.contest,
     position: cl.position ?? 0,
@@ -51,29 +59,36 @@ function contestsForCard(row: TournamentLineupListItem) {
 export const LineupList: React.FC = () => {
   const { loading: isAuthLoading, user } = useAuth();
   const {
-    isLoading: isTournamentLoading,
-    tournament,
-    isTournamentEditable,
-    tournamentStatusDisplay,
-  } = useActiveTournament();
+    isLoading: isEventLoading,
+    eventId,
+    eventName,
+    isEventEditable,
+    eventStatusDisplay,
+    candidates,
+    roundDisplay,
+  } = useActiveEvent();
   const { lineups, lineupError, isLoading: isLineupsLoading, createLineup } = useLineupData();
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const listItems = lineups as TournamentLineupListItem[];
+  const listItems = useMemo(() => {
+    if (!eventId) return [];
+    return lineups.map((row) => enrichLineupListItem(row, eventId, candidates));
+  }, [lineups, eventId, candidates]);
+
   const hasLineups = listItems.length > 0;
-  const tournamentName = tournament?.name ?? "this tournament";
+  const displayEventName = eventName ?? "this event";
 
   const showAddLineup =
-    isTournamentEditable && !isAuthLoading && !isTournamentLoading && !isLineupsLoading;
+    isEventEditable && !isAuthLoading && !isEventLoading && !isLineupsLoading;
 
   const handleCreateLineup = async () => {
-    if (!tournament?.id || isCreating) return;
+    if (!eventId || isCreating) return;
     const nextName = `Lineup #${listItems.length + 1}`;
     setIsCreating(true);
     setCreateError(null);
     try {
-      await createLineup(tournament.id, [], nextName);
+      await createLineup(eventId, [], nextName);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to create lineup");
     } finally {
@@ -98,7 +113,7 @@ export const LineupList: React.FC = () => {
       </div>
     ) : null;
 
-  if (isAuthLoading || isTournamentLoading || isLineupsLoading) {
+  if (isAuthLoading || isEventLoading || isLineupsLoading) {
     return (
       <div className="space-y-4">
         {header}
@@ -139,9 +154,9 @@ export const LineupList: React.FC = () => {
             <div key={row.id} className="mb-4 rounded-sm border border-gray-300 shadow-md">
               <LineupContestCard
                 lineup={contestLineupForCard(row, user)}
-                roundDisplay={tournament?.roundDisplay || ""}
+                roundDisplay={roundDisplay || "R1"}
                 contests={contestsForCard(row)}
-                isEditable={isTournamentEditable}
+                isEditable={isEventEditable}
               />
             </div>
           ))}
@@ -152,14 +167,14 @@ export const LineupList: React.FC = () => {
         </div>
       )}
 
-      {isTournamentEditable && !hasLineups && (
+      {isEventEditable && !hasLineups && (
         <PageSection>
           <p className="mb-1 font-display text-base font-semibold text-gray-900">
             Build your first lineup
           </p>
           <p className="font-display text-sm leading-relaxed text-gray-600">
             Choose your players for{" "}
-            <span className="font-medium text-gray-800">{tournamentName}</span>.
+            <span className="font-medium text-gray-800">{displayEventName}</span>.
           </p>
           {showAddLineup ? (
             <button
@@ -174,16 +189,16 @@ export const LineupList: React.FC = () => {
         </PageSection>
       )}
 
-      {!isTournamentEditable && !hasLineups && (
+      {!isEventEditable && !hasLineups && (
         <PageSection>
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg text-gray-600">🏌️</span>
             <div className="font-display text-lg font-semibold text-gray-900">
-              Tournament {tournamentStatusDisplay}!
+              Event {eventStatusDisplay}!
             </div>
           </div>
           <div className="text-sm text-gray-600">
-            <p className="mb-2">Check back when the next tournament opens to create your lineup.</p>
+            <p className="mb-2">Check back when the next event opens to create your lineup.</p>
           </div>
         </PageSection>
       )}
