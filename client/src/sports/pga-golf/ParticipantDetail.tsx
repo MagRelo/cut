@@ -1,7 +1,7 @@
 import { ArrowTopRightOnSquareIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import type { ParticipantDetailProps } from "@cut/sport-sdk/ui";
-import type { RoundData, TournamentPlayerData } from "../../types/player";
+import type { RoundData, TournamentPlayerData } from "./types";
 import { useActiveEvent } from "../../hooks/useActiveEvent";
 import {
   formatRoundStrokesVsPar,
@@ -11,8 +11,8 @@ import {
   isScorecardRoundSelectable,
   resolveTournamentRoundNumber,
   roundHasBeenPlayed,
-} from "../../components/player/playerRoundUtils";
-import { GolfParticipantScorecard } from "./ParticipantScorecard";
+} from "./scorecard/roundUtils";
+import { GolfParticipantScorecard } from "./scorecard/ParticipantScorecard";
 import { candidateStableford, parseGolfCandidateMetadata, parseGolfEventMetadata } from "./utils";
 
 function isPlaceholderLeaderboardValue(value: string | undefined): boolean {

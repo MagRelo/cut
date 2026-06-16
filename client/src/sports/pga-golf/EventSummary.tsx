@@ -3,7 +3,7 @@ import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
 import {
   DEFAULT_TOURNAMENT_BEAUTY_IMAGE,
   resolveTournamentBeautyImage,
-} from "../../types/tournament";
+} from "./eventMedia";
 import { parseGolfEventMetadata } from "./utils";
 import { GolfEventDetails } from "./EventDetails";
 

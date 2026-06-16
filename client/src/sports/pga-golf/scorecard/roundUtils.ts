@@ -1,4 +1,4 @@
-import type { RoundData, TournamentPlayerData } from "../../types/player";
+import type { RoundData, TournamentPlayerData } from "../types";
 
 /** Same idea as `holesRemainingRatio` in `server/.../updateTournamentPlayers.ts`: played / total holes in the round. */
 export function getRoundHoleProgress(roundData: RoundData | undefined): {

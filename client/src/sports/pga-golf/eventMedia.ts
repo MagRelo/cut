@@ -1,5 +1,3 @@
-/** Golf event preview sections and hero image helpers. */
-
 /** Used when `beautyImage` is unset, empty, or null. */
 export const DEFAULT_TOURNAMENT_BEAUTY_IMAGE =
   "https://res.cloudinary.com/pgatour-prod/w_854,h_480,c_fill,f_auto,q_auto/pgatour/news/editorial/2023/04/30/quail-hollow-1694-kk.png";
@@ -9,11 +7,3 @@ export function resolveTournamentBeautyImage(beautyImage: string | null | undefi
   const trimmed = beautyImage?.trim();
   return trimmed || DEFAULT_TOURNAMENT_BEAUTY_IMAGE;
 }
-
-export type TournamentSummarySections = Array<{
-  title: string;
-  items: Array<{
-    label?: string;
-    body: string;
-  }>;
-}>;

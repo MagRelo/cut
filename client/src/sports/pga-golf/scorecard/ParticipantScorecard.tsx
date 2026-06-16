@@ -1,7 +1,7 @@
 import React from "react";
-import type { RoundData, TournamentPlayerData } from "../../types/player";
-import { ScoreDisplay, StablefordDisplay } from "../../components/player/PlayerScorecard";
-import { getTeeTimeLabelForRound } from "../../components/player/playerRoundUtils";
+import type { RoundData, TournamentPlayerData } from "../types";
+import { ScoreDisplay, StablefordDisplay } from "./ScoreDisplay";
+import { getTeeTimeLabelForRound } from "./roundUtils";
 
 const band = "bg-slate-100";
 const rowDivider = "border-t border-slate-200/80";

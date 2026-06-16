@@ -1,5 +1,5 @@
 import type { Candidate } from "@cut/sport-sdk";
-import type { RoundData } from "../../types/player";
+import type { RoundData } from "../../sports/pga-golf/types";
 
 const STORYBOOK_EVENT_ID = "tournament-storybook-detail";
 

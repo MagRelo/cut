@@ -1,14 +1,14 @@
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { ParticipantRowProps } from "@cut/sport-sdk/ui";
-import type { RoundData, TournamentPlayerData } from "../../types/player";
+import type { RoundData, TournamentPlayerData } from "./types";
 import { useActiveEvent } from "../../hooks/useActiveEvent";
 import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
   getRoundHoleProgress,
   getTeeTimeLabelForRound,
-} from "../../components/player/playerRoundUtils";
+} from "./scorecard/roundUtils";
 import { candidateStableford, parseGolfCandidateMetadata, parseGolfEventMetadata } from "./utils";
 
 function isPlaceholderLeaderboardValue(value: string | undefined): boolean {
