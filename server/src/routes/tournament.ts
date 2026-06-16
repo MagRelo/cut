@@ -78,7 +78,9 @@ tournamentRouter.get("/active/shell", async (c) => {
       return c.json({ error: "No active tournament found" }, 404);
     }
 
-    c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+    // React Query caches shell for 24h; avoid HTTP caching — same URL must reflect
+    // manualActive switches immediately (Chrome mobile aggressively caches public max-age).
+    c.header("Cache-Control", "private, no-cache, must-revalidate");
 
     return c.json({ tournament });
   } catch (error) {

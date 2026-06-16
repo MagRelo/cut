@@ -49,6 +49,7 @@ export function useTournamentShell() {
     staleTime: SHELL_STALE_MS,
     gcTime: SHELL_GC_MS,
     refetchOnWindowFocus: "always",
+    refetchOnMount: "always",
     placeholderData: (previousData) => previousData,
   });
 }
