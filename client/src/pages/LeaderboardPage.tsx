@@ -1,13 +1,14 @@
 import React from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { PageHeader } from "../components/common/PageHeader";
 import { EventLeaderboardPanel } from "../components/platform/EventLeaderboardPanel";
-import { useSportContext } from "../contexts/SportContext";
+import { SportEventHeader } from "../components/platform/SportEventHeader";
+import { ErrorMessage } from "../components/common/ErrorMessage";
 
 export const LeaderboardPage: React.FC = () => {
-  const { sportId } = useSportContext();
-  const { eventId, metadata } = useSportActiveEvent(sportId);
+  const { sportId } = useParams<{ sportId: string }>();
+  const { eventId, metadata } = useSportActiveEvent(sportId ?? "");
   const [searchParams, setSearchParams] = useSearchParams();
 
   const playerIdParam = searchParams.get("playerId");
@@ -21,9 +22,18 @@ export const LeaderboardPage: React.FC = () => {
     setSearchParams(next, { replace: true });
   };
 
+  if (!sportId) {
+    return (
+      <div className="p-4">
+        <ErrorMessage message="Sport is required in the URL." />
+      </div>
+    );
+  }
+
   if (!eventId) {
     return (
       <div>
+        <SportEventHeader sportId={sportId} variant="context" />
         <PageHeader title="Leaderboard" className="px-4 pt-4" />
         <div className="p-4 text-center">
           <p className="text-gray-600">No active event available</p>
@@ -34,6 +44,7 @@ export const LeaderboardPage: React.FC = () => {
 
   return (
     <div>
+      <SportEventHeader sportId={sportId} variant="context" />
       <PageHeader title="Leaderboard" className="px-4 pt-4" />
       <EventLeaderboardPanel
         sportId={sportId}

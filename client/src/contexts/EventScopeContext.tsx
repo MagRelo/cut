@@ -4,10 +4,9 @@ import type { CompetitionEventShell } from "@cut/sport-sdk";
 import type { Contest } from "../types/contest";
 import type { EventStatus } from "../types/event";
 import { useContestEvent } from "../hooks/useContestEvent";
-import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 
 export type EventScopeValue = {
-  kind: "sportActive" | "contest";
+  kind: "contest";
   sportId: string;
   eventId: string;
   metadata: unknown;
@@ -19,30 +18,6 @@ export type EventScopeValue = {
 };
 
 const EventScopeContext = createContext<EventScopeValue | null>(null);
-
-function scopeFromSportActive(
-  sportId: string,
-  state: ReturnType<typeof useSportActiveEvent>,
-): EventScopeValue | null {
-  if (!state.eventId || !state.event) return null;
-  return {
-    kind: "sportActive",
-    sportId,
-    eventId: state.eventId,
-    metadata: state.metadata,
-    status: state.status ?? "SCHEDULED",
-    eventShell: {
-      id: state.event.id,
-      sportId: state.event.sportId,
-      externalId: state.event.externalId,
-      isActive: state.event.isActive,
-      metadata: state.event.metadata,
-    },
-    candidates: state.candidates,
-    isLoading: state.isLoading,
-    error: state.error,
-  };
-}
 
 function scopeFromContest(state: ReturnType<typeof useContestEvent>): EventScopeValue | null {
   if (!state.sportId || !state.eventShell) return null;
@@ -57,19 +32,6 @@ function scopeFromContest(state: ReturnType<typeof useContestEvent>): EventScope
     isLoading: state.isLoading,
     error: state.error,
   };
-}
-
-export function SportActiveEventScopeProvider({
-  sportId,
-  children,
-}: {
-  sportId: string;
-  children: React.ReactNode;
-}) {
-  const state = useSportActiveEvent(sportId);
-  const value = useMemo(() => scopeFromSportActive(sportId, state), [sportId, state]);
-
-  return <EventScopeContext.Provider value={value}>{children}</EventScopeContext.Provider>;
 }
 
 export function ContestEventScopeProvider({
@@ -88,7 +50,7 @@ export function ContestEventScopeProvider({
 export function useEventScope(): EventScopeValue {
   const scope = useContext(EventScopeContext);
   if (!scope) {
-    throw new Error("useEventScope must be used within an EventScope provider");
+    throw new Error("useEventScope must be used within ContestEventScopeProvider");
   }
   return scope;
 }

@@ -1,6 +1,6 @@
 # Client layer overview (v4)
 
-React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Default entry: `/sports/pga-golf`.
+React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Default entry: `/` → `/contests`.
 
 ---
 
@@ -39,8 +39,8 @@ client/src/
     useLineupQueries.ts    GET/POST /lineups/:eventId
     useContestQuery.ts     Contest fetch by id/address
   contexts/
-    AuthContext.tsx   Privy session, /auth/me, token balances
-    SportContext.tsx  sportId from URL
+    AuthContext.tsx         Privy session, /auth/me, token balances
+    EventScopeContext.tsx   Contest-scoped event + sportId (`ContestEventScopeProvider` on lobby)
   lib/
     candidateUtils.ts   lineup picks → Candidate[]
     lineupScore.ts      display score from API
@@ -66,7 +66,6 @@ client/src/
 | `/sports/:sportId/leaderboard` | `LeaderboardPage` | Sport-scoped field leaderboard (share links) |
 | `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; local event header; Lineups, Field, Contest, Winner Pool / Results tabs |
 | `/contests/create` | `ContestCreatePage` | Staff / league admin |
-| `/leaderboard` | `LeaderboardPage` | Legacy golf-default field leaderboard |
 | `/leagues/*` | User group pages | Canonical league URLs |
 | `/user-groups/*` | redirects | → `/leagues/*` |
 | `/account/*` | Account, history, funds | |
@@ -99,8 +98,9 @@ client/src/
 
 ## Platform / plugin boundary
 
-- **Event scope:** Sport surfaces use `useSportActiveEvent(sportId)` (`GET /sports/:sportId/events/active`). Contest surfaces use `useContestEvent(contest)` (`contest.event` + `contest.eventId`). No implicit fallbacks.
-- **Event headers:** Global `SportEventContextBar` on sport-active routes only (`/sports/:sportId`, `/leaderboard`, `/contests/create`). Contest lobby renders `EventSummary` locally above the contest card.
+- **Sport scope:** `sportId` from URL (`useParams` on `/sports/:sportId/*`) or `ContestEventScopeProvider` on contest lobby. No global `SportProvider` or default sport constant.
+- **Event scope:** Sport surfaces use `useSportActiveEvent(sportId)`. Contest surfaces use `useContestEvent(contest)`. No implicit fallbacks.
+- **Event headers:** Page-local only — contest lobby `EventSummary` above contest card; leaderboard `SportEventHeader` on `/sports/:sportId/leaderboard` (uses `useSportActiveEvent(sportId)` directly). `AppLayout` has no event bar.
 - **Platform** fetches `Candidate[]` and `PlatformLineup`; passes `Candidate` + `EventStatus` + optional `eventMetadata` into shell components.
 - **Plugin** (`sports/pga-golf/`) owns all golf presentation — rows, scorecard, event hero, prediction field.
 - Lineup totals: `ContestLineup.score` and `PlatformLineup.score` from the server ([`lineupScore.ts`](../../client/src/lib/lineupScore.ts)).

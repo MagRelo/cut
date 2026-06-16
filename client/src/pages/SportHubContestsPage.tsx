@@ -1,14 +1,17 @@
 import React, { useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { ContestList } from "../components/contest/ContestList";
 import { PageHeader } from "../components/common/PageHeader";
+import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useContestsQuery } from "../hooks/useContestQuery";
-import { useSportContext } from "../contexts/SportContext";
 
 /** Contests for the active event of the sport in the URL (`/sports/:sportId`). */
 export const SportHubContests: React.FC = () => {
-  const { sportId } = useSportContext();
-  const { eventId, isLoading: isEventLoading, error: fetchError } = useSportActiveEvent(sportId);
+  const { sportId } = useParams<{ sportId: string }>();
+  const { eventId, isLoading: isEventLoading, error: fetchError } = useSportActiveEvent(
+    sportId ?? "",
+  );
 
   const {
     data: contestsWithLineupsData,
@@ -30,6 +33,14 @@ export const SportHubContests: React.FC = () => {
 
   const showLoading =
     isEventLoading || (isContestsLoading && contestsWithLineupsData === undefined);
+
+  if (!sportId) {
+    return (
+      <div className="p-4">
+        <ErrorMessage message="Sport is required in the URL." />
+      </div>
+    );
+  }
 
   return (
     <div className="mb-4 space-y-4">

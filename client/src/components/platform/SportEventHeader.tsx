@@ -1,20 +1,37 @@
-import React from "react";
-import { useSportEventHeader } from "../../hooks/useSportEventHeader";
+import React, { useMemo } from "react";
+import type { CompetitionEventShell } from "@cut/sport-sdk";
+import { useSportActiveEvent } from "../../hooks/useSportActiveEvent";
+import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 
 type SportEventHeaderVariant = "context" | "standalone";
 
 interface SportEventHeaderProps {
-  /** `context` = AppLayout hero bar; `standalone` = in-page card with spinner while loading. */
+  sportId: string;
+  /** `context` = flush hero bar; `standalone` = in-page card with spinner while loading. */
   variant?: SportEventHeaderVariant;
 }
 
 export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
+  sportId,
   variant = "standalone",
 }) => {
-  const { event, isLoading, isFetching, error, EventSummary } = useSportEventHeader();
+  const { event, isLoading, isFetching, error } = useSportActiveEvent(sportId);
+  const plugin = useSportUIPlugin(sportId);
+  const EventSummary = plugin?.EventSummary;
 
-  if ((isLoading || isFetching) && !event) {
+  const eventShell = useMemo((): CompetitionEventShell | null => {
+    if (!event) return null;
+    return {
+      id: event.id,
+      sportId: event.sportId,
+      externalId: event.externalId,
+      isActive: event.isActive,
+      metadata: event.metadata,
+    };
+  }, [event]);
+
+  if ((isLoading || isFetching) && !eventShell) {
     if (variant === "context") {
       return (
         <div
@@ -31,9 +48,9 @@ export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
     );
   }
 
-  if (error || !event || !EventSummary) {
+  if (error || !eventShell || !EventSummary) {
     return null;
   }
 
-  return <EventSummary event={event} />;
+  return <EventSummary event={eventShell} />;
 };

@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { withActiveEventFixture } from "../../../.storybook/decorators/activeEventFixture";
-import { DEFAULT_SPORT_ID } from "../../hooks/useSportData";
 import {
   FIXTURE_CANDIDATE_DETAIL_LIVE,
   PARTICIPANT_DETAIL_FIXTURE_EVENT_ID,
@@ -33,7 +32,7 @@ const meta = {
     isOpen: true,
     onClose: fn(),
     candidate: FIXTURE_CANDIDATE_DETAIL_LIVE,
-    sportId: DEFAULT_SPORT_ID,
+    sportId: "pga-golf",
     status: "LIVE",
     onShare: fn(),
   },

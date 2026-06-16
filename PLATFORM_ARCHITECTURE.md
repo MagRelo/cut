@@ -225,14 +225,16 @@ Core platform endpoints:
 
 | Route | Scope |
 |-------|-------|
+| `/contests` | Multi-sport live contests hub |
 | `/sports/:sportId` | Sport home — active event contest list (`SportHubPage`) |
+| `/sports/:sportId/leaderboard` | Leaderboard + `SportEventHeader` |
 | `/contest/:address` | Contest lobby (on-chain address in URL) |
 | `/leagues/:id` | Cross-sport league — contests grouped by event |
 | `/account` | Wallet, referrals, settings (sport-neutral) |
 
-`/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`.
+`/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`. No legacy `/leaderboard` or `/lineups` routes.
 
-`SportContext` provides `sportId` from the URL (default `pga-golf`). Active event, roster rules, and UI plugin are resolved in hooks/components via `useActiveEventQuery` and `requireSportUIPlugin(sportId)`.
+**Sport scope** — explicit at route boundary: `useParams().sportId` on sport routes, `contest.event.sportId` via `ContestEventScopeProvider` on contest lobby, `useFirstEnabledSportId()` on create forms. **Event scope** — `useSportActiveEvent(sportId)` or `useContestEvent(contest)`. Plugin hooks resolve via `useSportUIPlugin(sportId?)`.
 
 ### Component layers
 
@@ -241,7 +243,7 @@ Core platform endpoints:
 - `LineupSlotPicker` — N slots driven by sport `rosterRules`
 - `CandidatePicker` — search and sort over `Candidate[]`
 - `SportLineupPickRow` — single pick row in roster editor
-- `SportEventHeader` / `SportEventContextBar` — event chrome
+- `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
 - `SportPredictionField` — delegates to plugin prediction input
 
 Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for lobby, league, and list views using platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.

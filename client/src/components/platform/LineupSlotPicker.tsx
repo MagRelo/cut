@@ -47,6 +47,7 @@ export const LineupSlotPicker: React.FC<LineupSlotPickerProps> = ({
 
   return (
     <CandidatePicker
+      sportId={sportId}
       eventId={eventId}
       isOpen={isOpen}
       onClose={onClose}

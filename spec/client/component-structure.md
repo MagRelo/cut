@@ -12,16 +12,17 @@ Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventS
 
 | Component | Purpose |
 |-----------|---------|
-| `SportEventHeader` | Event name, dates, status bar → plugin `EventSummary` |
-| `SportEventContextBar` | Route-gated hero in `AppLayout` |
-| `SportParticipantRow` | Wrapper → plugin `ParticipantRow` (defaults `status` from `useActiveEvent`) |
+| `SportEventHeader` | Event hero on leaderboard — `sportId` prop → `useSportActiveEvent` → plugin `EventSummary` |
+| `SportParticipantRow` | Wrapper → plugin `ParticipantRow` (`status` required; `eventMetadata` optional) |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
 | `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
 | `CandidatePicker` | Search/sort over `Candidate[]` → plugin `CandidateRow` |
 | `LineupSlotPicker` | Bridges participant IDs ↔ `CandidatePicker` |
 | `SportPredictionField` | Wrapper → plugin `PredictionField` |
 
-Used by: leaderboard, lineup list/card, contest entry list/modal, contest lobby slot editor.
+Used by: leaderboard, lineup card, contest entry list/modal, contest lobby slot editor.
+
+Event heroes on contest lobby are rendered in `ContestLobbyView` (plugin `EventSummary`), not in `AppLayout`.
 
 ---
 
@@ -29,7 +30,7 @@ Used by: leaderboard, lineup list/card, contest entry list/modal, contest lobby 
 
 | Component | Purpose |
 |-----------|---------|
-| `SportPicker` | Nav dropdown — lists enabled sports from `GET /sports` |
+| `SportPicker` | Lists enabled sports from `GET /sports` (inline on create-contest forms; not in TopNav) |
 
 ---
 
@@ -42,7 +43,7 @@ Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`. See [sport-ui-p
 | `CandidateRow` | Picker only (scheduled card; live/complete → `ParticipantRow`) |
 | `ParticipantRow` | All display lists |
 | `ParticipantDetail` | Scorecard detail modal (header, round tabs, hole table) |
-| `EventSummary` | Event hero in `SportEventContextBar` |
+| `EventSummary` | Event hero on lobby + leaderboard |
 | `EventDetails` | Course/weather (used inside `EventSummary`, not on interface) |
 | `PredictionField` | Winning-score prediction slider |
 | `scorecard/` | Hole table, score chips, round utils (plugin-internal) |
@@ -63,9 +64,10 @@ Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 | `CreateContestEventPicker` | Pick `eventId` when creating from a league |
 | `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow`; totals from `lineup.score` |
 | `LineupManagement` | Join contest flow — `SportParticipantRow` for roster |
+| `ContestLobbyView` | Lobby shell — plugin `EventSummary`, tabs (entries, lineups, etc.) |
 | Contest cards, timeline, secondary market UI | Lobby sub-components |
 
-Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreatePage`.
+Pages: `ContestListPage` (`/contests`), `SportHubPage`, `ContestLobbyPage`, `ContestCreatePage`.
 
 ---
 
@@ -77,7 +79,7 @@ Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreat
 | `LineupWinningScoreSlider` | Tie-breaker range input (wrapped by golf `PredictionField`) |
 | Side bet subfolder | Platform-owned betting UI |
 
-Pages: `LineupListPage`, contest lobby.
+Used on contest lobby Lineups tab (no standalone `/lineups` page).
 
 ---
 
@@ -92,11 +94,18 @@ Pages: `UserGroupListPage`, `UserGroupDetailPage`, etc. Routes under `/leagues/*
 
 ---
 
+## Layout (`components/layout/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `AppLayout` | TopNav + page panel + footer (no global event bar) |
+| `TopNav` | Primary nav tabs |
+| `PageContentPanel` | Content width wrapper |
+
 ## Common (`components/common/`)
 
 | Component | Purpose |
 |-----------|---------|
-| `AppLayout` | Nav, footer, sport picker |
 | `ProtectedRoute` | Requires Privy session |
 | `AdminRoute` | Requires `ADMIN` / `SUPER_ADMIN` |
 | `OnboardingRedirectGate` | Onboarding funnel |
@@ -105,7 +114,7 @@ Pages: `UserGroupListPage`, `UserGroupDetailPage`, etc. Routes under `/leagues/*
 | `InfoScorecard` | Home page marketing demo (imports plugin score chips) |
 | Modals, toasts, error boundaries | Shared UX |
 
-Nav tabs defined in `lib/navTabs.ts` — contests tab points to `/sports/{defaultSport}`.
+Nav tabs defined in `lib/navTabs.ts` — Contests tab → `/contests`.
 
 ---
 
@@ -117,11 +126,11 @@ Nav tabs defined in `lib/navTabs.ts` — contests tab points to `/sports/{defaul
 
 ---
 
-## Composition example: lineup edit
+## Composition example: lineup edit (contest lobby)
 
 ```mermaid
 flowchart TD
-  Card[LineupContestCard] --> AE[useActiveEvent]
+  Card[LineupContestCard] --> Scope[ContestEventScopeProvider]
   Card --> Editor[useLineupSlotEditor Candidate slots]
   Card --> SPR[SportLineupPickRow / SportParticipantRow]
   SPR --> Plugin[GolfParticipantRow]

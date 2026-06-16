@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
 
@@ -9,7 +9,7 @@ import {
   useSelectedSportEvent,
 } from "../contest/CreateContestEventPicker";
 import { useAuth } from "../../contexts/AuthContext";
-import { DEFAULT_SPORT_ID } from "../../hooks/useSportData";
+import { useFirstEnabledSportId } from "../../hooks/useSportData";
 import {
   getCreateContestStatusMessage,
   useCreateContestSubmission,
@@ -44,7 +44,13 @@ export const LeagueCreateContestForm = ({
 }: LeagueCreateContestFormProps) => {
   const navigate = useNavigate();
   const chainId = useChainId();
-  const [sportId, setSportId] = useState(DEFAULT_SPORT_ID);
+  const firstSportId = useFirstEnabledSportId();
+  const [sportId, setSportId] = useState("");
+  useEffect(() => {
+    if (!sportId && firstSportId) {
+      setSportId(firstSportId);
+    }
+  }, [firstSportId, sportId]);
   const { selection: selectedEvent } = useSelectedSportEvent(sportId);
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
 

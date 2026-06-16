@@ -1,11 +1,14 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSportsQuery } from "../../hooks/useSportData";
-import { useSportContext } from "../../contexts/SportContext";
 
-export const SportPicker: React.FC = () => {
+interface SportPickerProps {
+  sportId: string;
+  onSportChange: (sportId: string) => void;
+}
+
+export const SportPicker: React.FC<SportPickerProps> = ({ sportId, onSportChange }) => {
   const { data: sports = [], isLoading } = useSportsQuery();
-  const { sportId } = useSportContext();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -14,6 +17,7 @@ export const SportPicker: React.FC = () => {
   }
 
   const onChange = (nextSportId: string) => {
+    onSportChange(nextSportId);
     if (location.pathname.startsWith("/sports/")) {
       const rest = location.pathname.replace(/^\/sports\/[^/]+/, "");
       navigate(`/sports/${nextSportId}${rest || ""}`);

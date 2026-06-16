@@ -74,27 +74,28 @@ interface SportUIPlugin {
 }
 ```
 
-`ParticipantRowProps`: `{ candidate, status: EventStatus, onClick?, ownershipPercentage? }`. Platform passes `status` from `useActiveEvent()`; golf reads `roundDisplay` from event metadata internally.
+`ParticipantRowProps`: `{ candidate, status: EventStatus, onClick?, ownershipPercentage?, eventMetadata? }`. Platform passes `status` from the parent event hook; golf reads `roundDisplay` from `eventMetadata` internally.
 
-`ParticipantDetailProps`: `{ candidate, status: EventStatus, rowTrailing?, onShare? }`. Round tab state is owned by the plugin; [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) provides dialog chrome and share URL handling.
+`ParticipantDetailProps`: `{ candidate, status: EventStatus, rowTrailing?, onShare?, eventMetadata? }`. Round tab state is owned by the plugin; [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) provides dialog chrome and share URL handling.
 
-Golf also provides `EventDetails` (hero text) used by `SportEventContextBar`.
+Golf also provides `EventDetails` (hero text) used inside `EventSummary`.
 
 ### Platform shell (sport-agnostic)
 
 | Component | Role |
 |-----------|------|
-| `SportEventContextBar` | Route-gated event hero in `AppLayout` |
-| `SportEventHeader` | Resolves plugin `EventSummary` |
+| `SportEventHeader` | Leaderboard event hero → plugin `EventSummary` (`sportId` prop) |
 | `CandidatePicker` | Search/sort over `Candidate[]` |
 | `LineupSlotPicker` | Bridges slot IDs ↔ picker |
 | `SportLineupPickRow` | Thin wrapper → `SportParticipantRow` in editable lineup slots |
-| `SportParticipantRow` | Resolves plugin `ParticipantRow`; defaults `status` from active event |
+| `SportParticipantRow` | Resolves plugin `ParticipantRow`; passes `status` + optional `eventMetadata` |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail`; share URL helper |
 | `SportPredictionField` | Renders plugin `PredictionField` |
 | `CreateContestEventPicker` | Sport + active event for contest create |
 
-`useSportUI()` resolves the plugin from `SportContext`.
+Contest lobby renders plugin `EventSummary` in `ContestLobbyView` (not in `AppLayout`).
+
+`useSportUIPlugin(sportId?)` resolves the plugin from an explicit argument or `ContestEventScopeProvider`.
 
 **Client detail:** [sport-ui-plugins.md](../client/sport-ui-plugins.md) — slot purposes, usage map, conventions.
 

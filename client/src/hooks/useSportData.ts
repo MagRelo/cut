@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { SportSummary } from "@cut/sport-sdk";
 import type { Candidate } from "@cut/sport-sdk";
@@ -10,14 +11,17 @@ const SPORTS_STALE_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_EVENT_STALE_MS = 5 * 60 * 1000;
 const CANDIDATES_STALE_MS = 5 * 60 * 1000;
 
-export const DEFAULT_SPORT_ID = "pga-golf";
-
 export function useSportsQuery() {
   return useQuery({
     queryKey: queryKeys.sports.list(),
     queryFn: () => apiClient.get<SportSummary[]>("/sports"),
     staleTime: SPORTS_STALE_MS,
   });
+}
+
+export function useFirstEnabledSportId(): string | undefined {
+  const { data: sports = [] } = useSportsQuery();
+  return useMemo(() => sports.find((sport) => sport.isEnabled)?.id, [sports]);
 }
 
 export function useActiveEventQuery(sportId: string) {
@@ -36,6 +40,7 @@ export function useActiveEventQuery(sportId: string) {
     staleTime: ACTIVE_EVENT_STALE_MS,
     refetchInterval: ACTIVE_EVENT_STALE_MS,
     refetchOnWindowFocus: true,
+    enabled: Boolean(sportId),
   });
 }
 

@@ -3,7 +3,6 @@ import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import type { PlatformLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
-import { DEFAULT_SPORT_ID } from "./useSportData";
 
 interface LineupsResponse {
   lineups: PlatformLineupListItem[];
@@ -16,7 +15,6 @@ export function useLineupsQuery(
   eventId: string | undefined,
   enabled: boolean = true,
   userId: string | undefined,
-  _sportId: string = DEFAULT_SPORT_ID,
 ) {
   const canRun = !!eventId && !!userId && enabled;
 
@@ -42,7 +40,6 @@ export function useLineupQuery(
   eventId: string | undefined,
   enabled: boolean = true,
   userId: string | undefined,
-  _sportId: string = DEFAULT_SPORT_ID,
 ) {
   const canRun = !!lineupId && !!eventId && !!userId && enabled;
 

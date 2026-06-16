@@ -10,10 +10,11 @@ Only **PGA Golf** (`pga-golf`) is fully implemented on v4. The architecture supp
 
 ```mermaid
 flowchart TB
-  User --> Nav[Sport picker / hub]
+  User --> Contests["/contests"]
   User --> Leagues["/leagues/:id"]
-  Nav --> Golf["/sports/pga-golf"]
-  Golf --> Event[Active CompetitionEvent]
+  Contests --> Live[Live contests across sports]
+  User --> Hub["/sports/:sportId"]
+  Hub --> Event[Active CompetitionEvent]
   Event --> Lineup[Lineup + picks]
   Lineup --> Contest[Contest entries]
   Leagues --> Contest
@@ -126,15 +127,16 @@ Details: [server/cron.md](../server/cron.md)
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Redirect → `/sports/pga-golf` |
-| `/sports/:sportId` | Sport hub — event header, contests, lineup CTA |
+| `/` | Redirect → `/contests` |
+| `/contests` | Multi-sport live contests hub |
+| `/sports/:sportId` | Sport hub — active-event contest list |
+| `/sports/:sportId/leaderboard` | Sport leaderboard + event header |
 | `/contest/:address` | Contest lobby (on-chain address in URL) |
-| `/lineups` | User's lineups for active event |
 | `/leagues/*` | League list, detail, create, join |
 | `/user-groups/*` | Redirect → `/leagues/*` |
 | `/account` | Wallet, referrals, settings |
 
-`SportContext` provides `sportId` from the URL on sport-scoped routes.
+`sportId` is explicit per route: URL param on sport pages, `contest.event.sportId` on contest lobby, or first enabled sport on create forms. No global `SportProvider`.
 
 Details: [client/architecture.md](../client/architecture.md)
 

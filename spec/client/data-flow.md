@@ -29,25 +29,30 @@
 
 ---
 
-## Active event flow
+## Event data sources
+
+Two explicit sources — no global active-event hook:
+
+| Surface | Hook | API |
+|---------|------|-----|
+| Sport hub, leaderboard, onboarding | `useSportActiveEvent(sportId)` | `GET /sports/:sportId/events/active` + candidates |
+| Contest lobby | `useContestEvent(contest)` via `ContestEventScopeProvider` | `contest.event` + `GET .../events/:eventId/candidates` |
 
 ```mermaid
 sequenceDiagram
-  participant App
+  participant Page
   participant RQ as React Query
   participant API as GET /sports/.../active
   participant UI
 
-  App->>RQ: prefetchActiveEventWithCandidates(pga-golf)
-  UI->>RQ: useActiveEventQuery(sportId)
+  Page->>RQ: useSportActiveEvent(sportId)
   RQ->>API: fetch active event
   API-->>RQ: ActiveEventResponse
-  UI->>RQ: useEventCandidatesQuery(sportId, eventId)
-  RQ->>API: fetch candidates
+  RQ->>API: fetch candidates for eventId
   API-->>RQ: Candidate[]
 ```
 
-[`useActiveEvent`](../../client/src/hooks/useActiveEvent.ts) composes active event + candidates queries for pages and platform shells.
+Contest lobby follows the same pattern with `useContestEvent` keyed on `contest.eventId`.
 
 ---
 
@@ -68,7 +73,7 @@ sequenceDiagram
   Hook->>RQ: invalidate lineups.byEvent, sideBet.market
 ```
 
-Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
+`useLineupMutations` reads `sportId` from `ContestEventScopeProvider` (required for participant ID resolution). Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
 
 ---
 
@@ -94,11 +99,13 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 
 ## Contest list flow
 
-`ContestListPage` / `SportHubPage`:
+**Multi-sport hub** (`/contests`): `useLiveContestsAcrossSports` — per-sport active events, merged contest lists.
 
-1. `useSportContext()` → `sportId`
-2. `useActiveEventQuery(sportId)` → `eventId`
-3. `useContestsQuery({ eventId, chainId, userGroupId? })` → `GET /contests?eventId=`
+**Sport hub** (`/sports/:sportId`):
+
+1. `useParams().sportId`
+2. `useSportActiveEvent(sportId)` → `eventId`
+3. `useContestsQuery(eventId, ...)` → `GET /contests?eventId=`
 
 League detail uses `useUserGroupContestsQuery` → `GET /userGroups/:id/contests` (cross-event with `eventSummary`).
 
@@ -136,11 +143,11 @@ sequenceDiagram
 
 ---
 
-## Prefetch strategy
+## Cache strategy
 
 | When | What |
 |------|------|
-| App mount | `prefetchActiveEvent` for default sport |
+| Route mount | React Query fetches on demand (no app-wide event prefetch) |
 | Contest lobby navigation | contest query by address |
 | After mutation | targeted `queryClient.invalidateQueries` |
 

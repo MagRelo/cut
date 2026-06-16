@@ -71,7 +71,7 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 ---
 
 - [x] Phase 6: `/sports/:sportId` hub + contest redirect; `/leagues/*` canonical; `/user-groups/*` redirects
-- [x] Phase 6: `SportContext`, client sport registry, sport picker in TopNav
+- [x] Phase 6: Client sport registry; sport picker on create forms
 - [x] Phase 6: `useActiveTournament` bridges to `/api/sports` + candidates (legacy tournament shape)
 - [x] Phase 6: Contest/lineup hooks use `eventId` and `/api/lineups/:eventId`
 - [x] Phase 6: Platform shell — `SportEventHeader`, `CandidatePicker`, `SportPredictionField`, `useSportUI`
@@ -83,7 +83,7 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 - [x] Phase 8: Side bets refactored to `PropBetModule` (golf quote ingest + grading)
 - [x] Phase 8: Multi-lineup per event restored (`GET` list, `POST` create, `PUT` update by `lineupId`)
 - [x] Spec docs rewritten under `spec/` (platform, server, client, cross-layer)
-- [x] Phase 8 (partial): `SportEventContextBar` replaces legacy `TournamentContextBar`
+- [x] Phase 8 (partial): Page-local event headers (lobby `EventSummary`, leaderboard `SportEventHeader`)
 - [x] Phase 8 (partial): Admin API remounted at `/api/admin` (`tournamentId` alias for `eventId`)
 - [x] Phase 8 (partial): Account/wallet/referral — already on `/api/auth` + Privy provisioning (verified)
 - [x] Phase 8 (partial): `GET /api/userGroups/:id/contests` — league contests across events
@@ -100,12 +100,12 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 
 ### Phase 10 — Architecture cleanup + cutover
 
-- [x] Client type foundation (`PlatformLineup`, `useActiveEvent`, platform lineup hooks)
+- [x] Client type foundation (`PlatformLineup`, `useSportActiveEvent` / `useContestEvent`, platform lineup hooks)
 - [x] Migrate pages off `useActiveTournament` bridge (pages + contest lobby)
 - [x] `ParticipantRow` plugin slot — leaderboard, contest entries, lineup card, live picker delegate
 - [x] Full golf live score sync (`transformGolfParticipantScores` in `@cut/sport-pga-golf`)
 - [x] Client sport UI boundaries documented — `spec/client/sport-ui-plugins.md`
-- [x] Track A client cleanup — delete orphaned lineup UI, tournament preview on `useActiveEvent`, `LineupManagement` plugin rows, remove `PlayerDisplayRow`
+- [x] Track A client cleanup — delete orphaned lineup UI, tournament preview on sport-active event hook, `LineupManagement` plugin rows, remove `PlayerDisplayRow`
 - [x] `ParticipantDetail` plugin slot — scorecard modal; replaces `PlayerDetailModal` / `PlayerDisplayCard` / `candidateToPlayer` in detail flow
 - [x] Client plugin boundary cleanup — scorecard primitives in `sports/pga-golf/scorecard/`; removed `components/player/`, `components/tournament/`, `types/player.ts`, `types/tournament.ts`
 - [x] Lineup display scores from API (`PlatformLineup.score`, `lineupDisplayScore`) — no client golf aggregation in platform components
@@ -191,6 +191,8 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 
 ## Relevant Files
 
+> **Note (2026-06):** Phase 10 removed global sport/event scope (`SportContext`, `useActiveEvent`, `SportEventContextBar`, legacy `/leaderboard`). See `spec/client/` and `PLATFORM_ARCHITECTURE.md` for current patterns.
+
 | File | Purpose | Status |
 |---|---|---|
 | [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) | Target architecture spec | ✅ |
@@ -218,14 +220,14 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [server/src/utils/formatContestResponse.ts](server/src/utils/formatContestResponse.ts) | Contest list/detail formatting | ✅ |
 | [server/src/utils/lineupValidation.ts](server/src/utils/lineupValidation.ts) | Duplicate checks on event lineups | ✅ |
 | [server/src/utils/contestTimeline.ts](server/src/utils/contestTimeline.ts) | Timeline data (lineup-based) | ✅ |
-| [client/src/contexts/SportContext.tsx](client/src/contexts/SportContext.tsx) | Sport id from URL | ✅ |
+| [client/src/contexts/EventScopeContext.tsx](client/src/contexts/EventScopeContext.tsx) | Contest-scoped event + sportId (`ContestEventScopeProvider`) | ✅ |
 | [client/src/sports/registry.ts](client/src/sports/registry.ts) | Client UI plugin registry | ✅ |
 | [client/src/hooks/useSportData.ts](client/src/hooks/useSportData.ts) | Sports list + active event queries | ✅ |
 | [client/src/lib/lineupScore.ts](client/src/lib/lineupScore.ts) | Display lineup score from API | ✅ |
-| [client/src/pages/SportHubPage.tsx](client/src/pages/SportHubPage.tsx) | Sport-scoped contest list + event header | ✅ |
+| [client/src/pages/SportHubPage.tsx](client/src/pages/SportHubPage.tsx) | Sport-scoped contest list | ✅ |
 | [client/src/App.tsx](client/src/App.tsx) | `/sports/:sportId`, `/leagues/*` routing | ✅ |
 | [client/src/sports/pga-golf/](client/src/sports/pga-golf/) | Golf `SportUIPlugin` + scorecard/, types, eventMedia | ✅ |
-| [client/src/components/platform/SportEventContextBar.tsx](client/src/components/platform/SportEventContextBar.tsx) | AppLayout event hero (route-gated) → `SportEventHeader` → plugin | ✅ |
+| [client/src/components/platform/SportEventHeader.tsx](client/src/components/platform/SportEventHeader.tsx) | Leaderboard event hero → plugin `EventSummary` | ✅ |
 | [client/src/components/platform/](client/src/components/platform/) | Platform shell: event header, picker, prediction, lineup rows | ✅ |
 | [client/src/sports/pga-golf/EventDetails.tsx](client/src/sports/pga-golf/EventDetails.tsx) | Golf event hero text (replaces `TournamentContextDetails`) | ✅ |
 | [client/src/components/platform/LineupSlotPicker.tsx](client/src/components/platform/LineupSlotPicker.tsx) | Bridges participant IDs ↔ `CandidatePicker` | ✅ |
@@ -233,7 +235,7 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [client/src/components/platform/SportParticipantDetailModal.tsx](client/src/components/platform/SportParticipantDetailModal.tsx) | Platform shell → plugin `ParticipantDetail` | ✅ |
 | [client/src/sports/pga-golf/ParticipantDetail.tsx](client/src/sports/pga-golf/ParticipantDetail.tsx) | Golf scorecard detail modal body | ✅ |
 | [client/src/components/platform/SportLineupPickRow.tsx](client/src/components/platform/SportLineupPickRow.tsx) | Editable lineup slot wrapper | ✅ |
-| [client/src/hooks/useSportUI.ts](client/src/hooks/useSportUI.ts) | Resolve UI plugin from sport context | ✅ |
+| [client/src/hooks/useSportUI.ts](client/src/hooks/useSportUI.ts) | Resolve UI plugin from explicit sportId or EventScopeContext | ✅ |
 | [server/src/routes/bets.ts](server/src/routes/bets.ts) | Side bets API (`lineupId`, `eventId`) | ✅ |
 | [server/src/services/sideBets/](server/src/services/sideBets/) | Quote ingest + stale marking (platform schema) | ✅ |
 | [server/src/routes/admin.ts](server/src/routes/admin.ts) | Admin HTTP API (dashboard, users, side-bet batch ops) | ✅ |
@@ -250,6 +252,7 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [packages/sport-pga-golf/src/prop-bet.ts](packages/sport-pga-golf/src/prop-bet.ts) | Golf prop grading + snapshot metadata types | ✅ |
 | [server/src/services/propBets/](server/src/services/propBets/) | Platform ingest persistence + orchestration | ✅ |
 | [server/src/scripts/migrate-from-legacy.ts](server/src/scripts/migrate-from-legacy.ts) | Prod data migration (`LEGACY_DATABASE_URL` → `DATABASE_URL`) | ✅ validated |
-| [client/src/hooks/useActiveEvent.ts](client/src/hooks/useActiveEvent.ts) | Primary active event hook (platform types) | ✅ |
+| [client/src/hooks/useSportActiveEvent.ts](client/src/hooks/useSportActiveEvent.ts) | Sport-scoped active event hook | ✅ |
+| [client/src/hooks/useContestEvent.ts](client/src/hooks/useContestEvent.ts) | Contest-scoped event hook | ✅ |
 | [client/src/lib/lineupUtils.ts](client/src/lib/lineupUtils.ts) | Platform lineup helpers + player bridge for UI | ✅ |
 | [docs/platform-cutover-plan.md](docs/platform-cutover-plan.md) | Production cutover runbook (ops reference) | ✅ |

@@ -45,11 +45,11 @@ Good IA feels invisible. Bad IA forces everyone through the same front door when
 | Desktop primary nav | Live Contests · User menu (Sign In when logged out) |
 | Mobile nav | Hamburger — Live Contests; leagues in menu |
 | Leagues | Cross-sport by design; in user menu / hamburger |
-| Sport context | `SportContext` reads `sportId` from `/sports/:sportId` URL; defaults to `pga-golf` elsewhere |
+| Sport context | `sportId` from URL on sport routes or `contest.event` on lobby — no global provider |
 | Live Contests | `/contests` — all active events across sports; public + member league contests merged per event |
 | Field leaderboard | **Field** tab on contest lobby (scoped to contest event); share links at `/sports/:sportId/leaderboard` |
 | Lineups | **Lineups** tab on contest lobby (event-scoped); same rosters when opening any contest for that event |
-| Event context | Two explicit sources — no global `useActiveEvent`: sport-active on hub/leaderboard; `contest.event` on lobby (local header, no global bar) |
+| Event context | Explicit event sources; page-local headers on contest lobby + `/sports/:sportId/leaderboard` only |
 | Sport picker | Not in global header; sport implied by contest/event groups on `/contests` |
 | Sport hub | `/sports/:sportId` remains for deep links (legacy bookmarks) |
 
@@ -68,7 +68,8 @@ Near-term nav changes without conditional routing or persona-based home redirect
 | Lineups in lobby | `/contest/:address` → **Lineups** tab (first tab; default pre-round) |
 | My Lineups route removed | `/lineups` page removed — manage rosters from contest lobby |
 | Leaderboard removed from header | Standalone route for shares only |
-| Contest event header local | `/contest/:address` — `EventSummary` in lobby; global sport bar hidden on contest routes |
+| Contest event header local | `/contest/:address` — `EventSummary` in lobby |
+| Leaderboard event header local | `/sports/:sportId/leaderboard` only; legacy `/leaderboard` removed |
 | Sport picker removed from header | Sport on contest cards and event group headers |
 | Internal share links | `/sports/:sportId/leaderboard?playerId=…` |
 

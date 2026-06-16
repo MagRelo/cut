@@ -14,9 +14,8 @@ Three state domains: **server cache** (React Query), **session** (Context), **ch
 |---------|-------|
 | `useQuery` | Reads — events, lineups, contests, side bets |
 | `useMutation` | Writes — lineup save, profile update |
-| `prefetchQuery` | App boot active event |
 | `invalidateQueries` | After mutations that affect related reads |
-| `enabled` | Gate queries until `eventId` / `userId` known |
+| `enabled` | Gate queries until `eventId` / `userId` / `sportId` known |
 
 ### Stale / refetch defaults
 
@@ -53,17 +52,32 @@ lineups.byEvent(userId, eventId)
 
 Registers Privy token getter with `apiClient` on mount.
 
-### SportContext
+### EventScopeContext (contest lobby only)
 
 | State | Source |
 |-------|--------|
-| `sportId` | URL param or path parse; default `pga-golf` |
+| `sportId`, `eventId`, `metadata`, `status`, `candidates` | `ContestEventScopeProvider` → `useContestEvent(contest)` |
 
-Read-only for the route tree. Changing sport = navigation via `SportPicker`.
+Used on `/contest/:address` so deep lobby trees (`ContestEntryList`, lineup mutations, plugin hooks) share one contest-scoped event. **Not** app-wide; leaderboard uses `useSportActiveEvent(sportId)` from the URL directly.
 
 ### GlobalErrorContext
 
 App-level error message queue for non-field errors (failed loads, unexpected API failures).
+
+---
+
+## Sport scope (no global context)
+
+`sportId` is explicit per surface:
+
+| Surface | Source |
+|---------|--------|
+| `/sports/:sportId/*` | `useParams().sportId` |
+| Contest lobby | `contest.event.sportId` via `ContestEventScopeProvider` |
+| Create-contest forms | First enabled sport from `GET /sports` (local form state) |
+| Plugin hooks | `useSportUIPlugin(sportId?)` — explicit arg or `EventScopeContext` |
+
+There is no `SportProvider` and no default sport constant.
 
 ---
 
@@ -98,9 +112,10 @@ Prefer server cache over duplicating API data in local state.
 ## What is NOT in global state
 
 - Contest list for an event — always React Query
-- Candidate pool — React Query, keyed by event
+- Candidate pool — React Query, keyed by `(sportId, eventId)`
 - Lineup picks during edit — local form state until save
 - Contract entry state — Wagmi reads at lobby time
+- Active event for a sport — React Query per `sportId`; not a global hook
 
 ---
 

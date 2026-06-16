@@ -11,7 +11,7 @@ import {
   resolveEventParticipantIds,
   updateLineupById,
 } from "../lib/lineupApi";
-import { useSportContext } from "../contexts/SportContext";
+import { useOptionalEventScope } from "../contexts/EventScopeContext";
 import {
   buildOptimisticPicks,
   platformLineupParticipantIds,
@@ -85,7 +85,7 @@ export function useCreateLineup() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const { user } = useAuth();
-  const { sportId } = useSportContext();
+  const scopeSportId = useOptionalEventScope()?.sportId;
   const userId = user?.id;
 
   return useMutation({
@@ -95,15 +95,18 @@ export function useCreateLineup() {
       name,
       winningScorePrediction,
     }: CreateLineupParams) => {
+      if (!scopeSportId) {
+        throw new Error("Lineup mutations require an EventScope provider with sportId");
+      }
       const picks = await resolveEventParticipantIds(
         queryClient,
-        sportId,
+        scopeSportId,
         eventId,
         playerIds,
       );
       return await createLineupForEvent({
         eventId,
-        sportId,
+        sportId: scopeSportId,
         picks,
         name,
         winningScorePrediction,
@@ -182,7 +185,7 @@ export function useUpdateLineup() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const { user } = useAuth();
-  const { sportId } = useSportContext();
+  const scopeSportId = useOptionalEventScope()?.sportId;
   const userId = user?.id;
 
   return useMutation({
@@ -192,20 +195,23 @@ export function useUpdateLineup() {
       name,
       winningScorePrediction,
     }: UpdateLineupParams) => {
+      if (!scopeSportId) {
+        throw new Error("Lineup mutations require an EventScope provider with sportId");
+      }
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx) {
         throw new Error(`Lineup ${lineupId} not found in cache`);
       }
       const picks = await resolveEventParticipantIds(
         queryClient,
-        sportId,
+        scopeSportId,
         ctx.eventId,
         playerIds,
       );
       return await updateLineupById({
         lineupId,
         eventId: ctx.eventId,
-        sportId,
+        sportId: scopeSportId,
         picks,
         name,
         winningScorePrediction,
@@ -214,12 +220,12 @@ export function useUpdateLineup() {
 
     onMutate: async ({ lineupId, name, playerIds, winningScorePrediction }) => {
       const ctx = findLineupListContext(queryClient, lineupId);
-      if (!ctx) {
+      if (!ctx || !scopeSportId) {
         return { previousLineups: undefined, eventId: undefined as string | undefined, lineupId };
       }
 
       const { userId: uid, eventId } = ctx;
-      const candidates = getCandidates(queryClient, sportId, eventId);
+      const candidates = getCandidates(queryClient, scopeSportId, eventId);
 
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byEvent(uid, eventId) });
       await queryClient.cancelQueries({ queryKey: queryKeys.lineups.byId(uid, lineupId) });

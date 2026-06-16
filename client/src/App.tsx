@@ -10,7 +10,6 @@ import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
 
 import { AuthProvider } from "./contexts/AuthContext";
-import { SportProvider } from "./contexts/SportContext";
 import { useReferralCapture } from "./hooks/useReferralCapture";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
@@ -141,9 +140,6 @@ const AppShell: React.FC = () => {
                   />
                   <Route path="/contest/:address" element={<ContestLobby />} />
 
-                  {/* Leaderboard */}
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-
                   {/* Leagues (canonical) */}
                   <Route
                     path="/leagues"
@@ -234,9 +230,7 @@ export const App: React.FC = () => {
             <GlobalErrorProvider>
               <AuthProvider>
                 <Router>
-                  <SportProvider>
-                    <AppShell />
-                  </SportProvider>
+                  <AppShell />
                 </Router>
               </AuthProvider>
             </GlobalErrorProvider>

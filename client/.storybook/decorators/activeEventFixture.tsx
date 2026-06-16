@@ -3,11 +3,13 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Candidate } from "@cut/sport-sdk";
 import type { Decorator } from "@storybook/react-vite";
-import { DEFAULT_SPORT_ID } from "../../src/hooks/useSportData";
 import type { ActiveEventResponse, EventStatus } from "../../src/types/event";
 import { queryKeys } from "../../src/utils/queryKeys";
 
+const STORYBOOK_SPORT_ID = "pga-golf";
+
 export type ActiveEventFixtureOptions = {
+  sportId?: string;
   status?: EventStatus;
   eventId?: string;
   eventMetadata?: Record<string, unknown>;
@@ -15,12 +17,13 @@ export type ActiveEventFixtureOptions = {
 };
 
 function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEventResponse {
+  const sportId = options.sportId ?? STORYBOOK_SPORT_ID;
   const eventId = options.eventId ?? "tournament-1";
   const status = options.status ?? "LIVE";
 
   return {
     sport: {
-      id: DEFAULT_SPORT_ID,
+      id: sportId,
       name: "PGA Golf",
       slug: "golf",
       isEnabled: true,
@@ -29,7 +32,7 @@ function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEve
     },
     event: {
       id: eventId,
-      sportId: DEFAULT_SPORT_ID,
+      sportId,
       externalId: "R2026001",
       isActive: true,
       metadata: options.eventMetadata ?? {
@@ -46,6 +49,7 @@ function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEve
 }
 
 export function withActiveEventFixture(options: ActiveEventFixtureOptions = {}): Decorator {
+  const sportId = options.sportId ?? STORYBOOK_SPORT_ID;
   const eventId = options.eventId ?? "tournament-1";
   const status = options.status ?? "LIVE";
   const eventMetadata = options.eventMetadata;
@@ -57,17 +61,15 @@ export function withActiveEventFixture(options: ActiveEventFixtureOptions = {}):
 
       useEffect(() => {
         const activeEvent = buildActiveEventResponse({
+          sportId,
           status,
           eventId,
           eventMetadata,
           candidates,
         });
-        queryClient.setQueryData(queryKeys.sports.activeEvent(DEFAULT_SPORT_ID), activeEvent);
+        queryClient.setQueryData(queryKeys.sports.activeEvent(sportId), activeEvent);
         if (candidates) {
-          queryClient.setQueryData(
-            queryKeys.sports.candidates(DEFAULT_SPORT_ID, eventId),
-            candidates,
-          );
+          queryClient.setQueryData(queryKeys.sports.candidates(sportId, eventId), candidates);
         }
       }, [queryClient]);
 

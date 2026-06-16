@@ -1,13 +1,13 @@
 import React, { Fragment, useMemo, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import type { Candidate } from "@cut/sport-sdk";
-import { useSportContext } from "../../contexts/SportContext";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 
 interface CandidatePickerProps {
+  sportId: string;
   eventId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +19,7 @@ interface CandidatePickerProps {
 }
 
 export const CandidatePicker: React.FC<CandidatePickerProps> = ({
+  sportId,
   eventId,
   isOpen,
   onClose,
@@ -28,8 +29,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
   isSaving = false,
   saveError = null,
 }) => {
-  const { sportId } = useSportContext();
-  const plugin = useSportUIPlugin();
+  const plugin = useSportUIPlugin(sportId);
   const { data: candidates = [], isLoading } = useEventCandidatesQuery(sportId, eventId);
   const [searchQuery, setSearchQuery] = useState("");
   const CandidateRow = plugin?.CandidateRow;

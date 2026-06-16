@@ -12,8 +12,7 @@ graph TB
   WAGMI --> ERR[GlobalErrorProvider]
   ERR --> AUTH[AuthProvider]
   AUTH --> ROUTER[BrowserRouter]
-  ROUTER --> SPORT[SportProvider]
-  SPORT --> APP[AppShell / Routes]
+  ROUTER --> APP[AppShell / Routes]
 ```
 
 | Provider | Role |
@@ -24,9 +23,8 @@ graph TB
 | `WagmiProvider` | Contract reads/writes on Base / Base Sepolia |
 | `GlobalErrorProvider` | App-wide error surfacing |
 | `AuthProvider` | Cut user from `/auth/me`, balances, connect flow |
-| `SportProvider` | `sportId` from `/sports/:sportId` or default `pga-golf` |
 
-On mount, `App` prefetches the active event via `prefetchActiveEventWithCandidates`.
+Event and sport scope are provided at **page boundaries** — `ContestEventScopeProvider` on contest lobby; leaderboard passes `sportId` from the URL into `useSportActiveEvent` directly (no scope provider).
 
 ---
 
@@ -34,29 +32,31 @@ On mount, `App` prefetches the active event via `prefetchActiveEventWithCandidat
 
 ```mermaid
 flowchart LR
-  ROOT["/"] --> HUB["/sports/:sportId"]
-  HUB --> CONTESTS[Contest list for active event]
-  LOBBY["/contest/:address"] --> CONTEST[Contest lobby]
-  LINEUPS["/lineups"] --> MY[User lineups]
+  ROOT["/"] --> CONTESTS["/contests"]
+  HUB["/sports/:sportId"] --> HUB_LIST[Active-event contest list]
+  LOBBY["/contest/:address"] --> CONTEST[Contest lobby + Lineups tab]
   LEAGUES["/leagues/:id"] --> LEAGUE[League + cross-event contests]
 ```
 
-- **Sport hub** (`SportHubPage`) renders the contest list for the active event of the selected sport.
-- **Contest lobby** is keyed by **contract address**, not database id.
+- **Default home** (`/contests`) — multi-sport live contests hub.
+- **Sport hub** (`SportHubPage`) — contest list for the active event of `sportId` in the URL.
+- **Contest lobby** is keyed by **contract address**; lineups are managed on the lobby **Lineups** tab (no `/lineups` route).
 - **Leagues** are sport-agnostic; each contest carries `eventId` → sport via server.
 - Legacy `/user-groups/*` and `/sports/:sportId/contests/:id` redirect to canonical paths.
 
 ---
 
-## Sport context
+## Sport and event scope
 
-`SportContext` exposes `sportId`:
+**Sport** — explicit at route boundary:
 
-- From route param `:sportId` when present
-- Parsed from `/sports/{id}/...` pathname
-- Falls back to `DEFAULT_SPORT_ID` (`pga-golf`)
+- `/sports/:sportId/*` → `useParams().sportId`
+- `/contest/:address` → `contest.event.sportId` via `ContestEventScopeProvider`
+- Create-contest forms → first enabled sport from `GET /sports` (local form state)
 
-Hooks like `useActiveEventQuery(sportId)` and `useSportEventHeader` read this context so nav and pages stay in sync when switching sports via `SportPicker`.
+**Event** — `useSportActiveEvent(sportId)` or `useContestEvent(contest)`; see [README](README.md).
+
+Plugin hooks (`useSportUIPlugin`) resolve `sportId` from an explicit argument or `EventScopeContext`.
 
 ---
 
@@ -115,7 +115,7 @@ Some query keys and admin types still expose `tournamentId` aliases; new code sh
 
 ## Loading gate
 
-`useAppLoadingGate` + `GlobalLoadingOverlay` block the shell until Privy auth and initial sport/event prefetch settle, reducing flash of empty state on first paint.
+`useAppLoadingGate` + `GlobalLoadingOverlay` block the shell until Privy auth settles, reducing flash of empty state on first paint.
 
 `OnboardingRedirectGate` sends new users through `/onboarding` when settings indicate incomplete onboarding.
 

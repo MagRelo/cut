@@ -1,14 +1,16 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PageSection } from "../components/layout/PageSection";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
-import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const sportActive = useSportActiveEvent(DEFAULT_SPORT_ID);
+  const [searchParams] = useSearchParams();
+  const debugSportId = searchParams.get("sportId") ?? undefined;
+  const sportActive = useSportActiveEvent(debugSportId ?? "");
 
   return (
     <>
@@ -81,38 +83,47 @@ export const DebugPage: React.FC = () => {
         </div>
       </PageSection>
 
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-purple-600">
-          Sport active event (useSportActiveEvent)
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Loading:</strong> {sportActive.isLoading ? "true" : "false"}
+      {debugSportId ? (
+        <PageSection>
+          <h2 className="text-lg font-semibold mb-3 text-purple-600">
+            Sport active event (useSportActiveEvent)
+          </h2>
+          <div className="space-y-2 text-sm">
+            <div>
+              <strong>Loading:</strong> {sportActive.isLoading ? "true" : "false"}
+            </div>
+            <div>
+              <strong>Error:</strong>{" "}
+              {sportActive.error ? String(sportActive.error.message) : "None"}
+            </div>
+            <div>
+              <strong>Sport ID:</strong> {sportActive.sportId}
+            </div>
+            <div>
+              <strong>Event ID:</strong> {sportActive.eventId ?? "—"}
+            </div>
+            <div>
+              <strong>Event name:</strong> {sportActive.eventName ?? "—"}
+            </div>
+            <div>
+              <strong>Status:</strong> {sportActive.status ?? "—"}
+            </div>
+            <div>
+              <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
+            </div>
+            <div>
+              <strong>Candidates count:</strong> {sportActive.candidates.length}
+            </div>
           </div>
-          <div>
-            <strong>Error:</strong>{" "}
-            {sportActive.error ? String(sportActive.error.message) : "None"}
-          </div>
-          <div>
-            <strong>Sport ID:</strong> {sportActive.sportId}
-          </div>
-          <div>
-            <strong>Event ID:</strong> {sportActive.eventId ?? "—"}
-          </div>
-          <div>
-            <strong>Event name:</strong> {sportActive.eventName ?? "—"}
-          </div>
-          <div>
-            <strong>Status:</strong> {sportActive.status ?? "—"}
-          </div>
-          <div>
-            <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
-          </div>
-          <div>
-            <strong>Candidates count:</strong> {sportActive.candidates.length}
-          </div>
-        </div>
-      </PageSection>
+        </PageSection>
+      ) : (
+        <PageSection>
+          <p className="text-sm text-gray-600">
+            Add <code className="font-mono">?sportId=…</code> to the URL to load sport-active
+            event debug info.
+          </p>
+        </PageSection>
+      )}
     </>
   );
 };
