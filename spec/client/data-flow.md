@@ -24,10 +24,8 @@
 | `sports.candidates(sportId, eventId)` | `GET .../candidates` | |
 | `contests.byEvent(eventId, ...)` | `GET /contests?eventId=` | Replaces `byTournament` |
 | `contests.byLobbyRoute(address)` | `GET /contests/:address` | |
-| `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped |
+| `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped; response includes `PlatformLineup.score` |
 | `sideBet.market(lineupId)` | `GET /bets/side/lineup/:id/market` | |
-
-Legacy `tournaments.*` keys remain for debug helpers only.
 
 ---
 
@@ -38,22 +36,18 @@ sequenceDiagram
   participant App
   participant RQ as React Query
   participant API as GET /sports/.../active
-  participant Adapter as golfEventAdapter
   participant UI
 
-  App->>RQ: prefetchActiveEvent(pga-golf)
+  App->>RQ: prefetchActiveEventWithCandidates(pga-golf)
   UI->>RQ: useActiveEventQuery(sportId)
-  RQ->>API: fetch
+  RQ->>API: fetch active event
   API-->>RQ: ActiveEventResponse
-  UI->>Adapter: golfEventToTournament (bridge)
-  Adapter-->>UI: Tournament shape
+  UI->>RQ: useEventCandidatesQuery(sportId, eventId)
+  RQ->>API: fetch candidates
+  API-->>RQ: Candidate[]
 ```
 
-`useActiveTournament` combines:
-
-1. `useActiveEventQuery` — event metadata + status
-2. `useEventCandidatesQuery` — field when `eventId` known
-3. `mergeTournament` — shell + live fields
+[`useActiveEvent`](../../client/src/hooks/useActiveEvent.ts) composes active event + candidates queries for pages and platform shells.
 
 ---
 

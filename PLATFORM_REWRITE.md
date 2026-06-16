@@ -107,7 +107,8 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 - [x] Client sport UI boundaries documented — `spec/client/sport-ui-plugins.md`
 - [x] Track A client cleanup — delete orphaned lineup UI, tournament preview on `useActiveEvent`, `LineupManagement` plugin rows, remove `PlayerDisplayRow`
 - [x] `ParticipantDetail` plugin slot — scorecard modal; replaces `PlayerDetailModal` / `PlayerDisplayCard` / `candidateToPlayer` in detail flow
-- [x] Remove legacy routes, services, and client bridges (`golfEventAdapter`, `useTournamentData`, 501 stubs, API fallbacks)
+- [x] Client plugin boundary cleanup — scorecard primitives in `sports/pga-golf/scorecard/`; removed `components/player/`, `components/tournament/`, `types/player.ts`, `types/tournament.ts`
+- [x] Lineup display scores from API (`PlatformLineup.score`, `lineupDisplayScore`) — no client golf aggregation in platform components
 - [ ] Staging dry-run with migrated data
 - [ ] Production cutover (see `docs/platform-cutover-plan.md`)
 
@@ -220,10 +221,10 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [client/src/contexts/SportContext.tsx](client/src/contexts/SportContext.tsx) | Sport id from URL | ✅ |
 | [client/src/sports/registry.ts](client/src/sports/registry.ts) | Client UI plugin registry | ✅ |
 | [client/src/hooks/useSportData.ts](client/src/hooks/useSportData.ts) | Sports list + active event queries | ✅ |
-| [client/src/lib/golfEventAdapter.ts](client/src/lib/golfEventAdapter.ts) | Event → legacy tournament/player shape | ✅ |
+| [client/src/lib/lineupScore.ts](client/src/lib/lineupScore.ts) | Display lineup score from API | ✅ |
 | [client/src/pages/SportHubPage.tsx](client/src/pages/SportHubPage.tsx) | Sport-scoped contest list + event header | ✅ |
 | [client/src/App.tsx](client/src/App.tsx) | `/sports/:sportId`, `/leagues/*` routing | ✅ |
-| [client/src/sports/pga-golf/](client/src/sports/pga-golf/) | Golf `SportUIPlugin` components | ✅ |
+| [client/src/sports/pga-golf/](client/src/sports/pga-golf/) | Golf `SportUIPlugin` + scorecard/, types, eventMedia | ✅ |
 | [client/src/components/platform/SportEventContextBar.tsx](client/src/components/platform/SportEventContextBar.tsx) | AppLayout event hero (route-gated) → `SportEventHeader` → plugin | ✅ |
 | [client/src/components/platform/](client/src/components/platform/) | Platform shell: event header, picker, prediction, lineup rows | ✅ |
 | [client/src/sports/pga-golf/EventDetails.tsx](client/src/sports/pga-golf/EventDetails.tsx) | Golf event hero text (replaces `TournamentContextDetails`) | ✅ |

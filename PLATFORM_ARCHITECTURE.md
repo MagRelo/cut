@@ -244,7 +244,7 @@ Core platform endpoints:
 - `SportEventHeader` / `SportEventContextBar` — event chrome
 - `SportPredictionField` — delegates to plugin prediction input
 
-Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for lobby, league, and list views. Many screens still consume legacy `Tournament` types via `golfEventAdapter` until Phase 10 cleanup.
+Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for lobby, league, and list views using platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
 
 **Sport UI plugins** (injected via registry):
 

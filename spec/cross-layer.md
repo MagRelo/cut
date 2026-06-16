@@ -260,4 +260,4 @@ Scripts: `pnpm --filter server run script:send-blast ...`
 
 ## Phase 10 cutover (planned)
 
-Legacy `/api/tournaments` and `/api/lineup` return 501. Remaining client bridge (`golfEventAdapter`, `useActiveTournament`) will be removed after production migration script (`migrate-from-legacy.ts`) and type cleanup.
+Legacy `/api/tournaments` and `/api/lineup` return 501. Client legacy bridge (`golfEventAdapter`, `useTournamentData`) is removed; production cutover uses `migrate-from-legacy.ts` for data only.

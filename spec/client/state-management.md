@@ -123,6 +123,6 @@ Centralized in mutation hooks (`useLineupMutations`, `useContestMutations`, etc.
 
 ---
 
-## Migration note (Phase 10)
+## Naming
 
-Query keys and hooks still expose `tournamentId` aliases (`byTournament`, `prefetchActiveTournament`). New code should use `eventId` naming; aliases will be removed after legacy types are deleted.
+Production hooks and query keys use `eventId`. Some server admin APIs still accept `tournamentId` as an alias for `eventId`.

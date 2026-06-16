@@ -37,14 +37,18 @@ Used by: leaderboard, lineup list/card, contest entry list/modal, contest lobby 
 
 Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`. See [sport-ui-plugins.md](sport-ui-plugins.md) for props, usage map, and conventions.
 
-| Export | Purpose |
-|--------|---------|
+| Export / module | Purpose |
+|-----------------|---------|
 | `CandidateRow` | Picker only (scheduled card; live/complete → `ParticipantRow`) |
 | `ParticipantRow` | All display lists |
 | `ParticipantDetail` | Scorecard detail modal (header, round tabs, hole table) |
-| `EventSummary` | Tournament preview in event header |
+| `EventSummary` | Event hero in `SportEventContextBar` |
 | `EventDetails` | Course/weather (used inside `EventSummary`, not on interface) |
 | `PredictionField` | Winning-score prediction slider |
+| `scorecard/` | Hole table, score chips, round utils (plugin-internal) |
+| `types.ts` | Golf scorecard metadata shapes |
+| `eventMedia.ts` | Hero image fallback URL |
+| `utils.ts` | Candidate/event metadata parsing |
 
 Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 
@@ -57,8 +61,8 @@ Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 | `ContestList` | Grid/list of contests for an event |
 | `GroupedContestList` | Contests grouped by event (league view) |
 | `CreateContestEventPicker` | Pick `eventId` when creating from a league |
-| `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow` |
-| `LineupManagement` | Join contest flow (text player names; not plugin rows) |
+| `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow`; totals from `lineup.score` |
+| `LineupManagement` | Join contest flow — `SportParticipantRow` for roster |
 | Contest cards, timeline, secondary market UI | Lobby sub-components |
 
 Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreatePage`.
@@ -69,23 +73,11 @@ Pages: `SportHubPage` (via `ContestListPage`), `ContestLobbyPage`, `ContestCreat
 
 | Component | Purpose |
 |-----------|---------|
-| `LineupContestCard` | Primary lineup UI — plugin rows, slot picker, prediction |
-| `LineupManagement` | Contest lobby join/leave — `SportParticipantRow` for roster |
+| `LineupContestCard` | Primary lineup UI — plugin rows, slot picker, prediction, server lineup score |
+| `LineupWinningScoreSlider` | Tie-breaker range input (wrapped by golf `PredictionField`) |
+| Side bet subfolder | Platform-owned betting UI |
 
 Pages: `LineupListPage`, contest lobby.
-
-**Deleted:** `LineupCard`, `PlayerSelectionModal`, `PlayerSelectionButton`, `PlayerSelectionCard`.
-
----
-
-## Legacy (`components/tournament/`, `components/player/`)
-
-See [sport-ui-plugins.md § Legacy inventory](sport-ui-plugins.md#legacy-inventory).
-
-| Component | Status |
-|-----------|--------|
-| `TournamentSummaryModal`, `TournamentInfoPanel` | ✅ `useActiveEvent` |
-| `PlayerScorecard` | `ScoreDisplay` / `StablefordDisplay` primitives for `InfoScorecard` demo |
 
 ---
 
@@ -109,6 +101,8 @@ Pages: `UserGroupListPage`, `UserGroupDetailPage`, etc. Routes under `/leagues/*
 | `AdminRoute` | Requires `ADMIN` / `SUPER_ADMIN` |
 | `OnboardingRedirectGate` | Onboarding funnel |
 | `GlobalLoadingOverlay` | Initial load blocker |
+| `CountdownTimer` | Generic countdown (contest lobby) |
+| `InfoScorecard` | Home page marketing demo (imports plugin score chips) |
 | Modals, toasts, error boundaries | Shared UX |
 
 Nav tabs defined in `lib/navTabs.ts` — contests tab points to `/sports/{defaultSport}`.
@@ -136,6 +130,7 @@ flowchart TD
   CP --> CR[GolfCandidateRow]
   Card --> PDF[SportParticipantDetailModal]
   PDF --> PD[GolfParticipantDetail]
+  Card --> Score[lineupDisplayScore from API]
 ```
 
 ---
@@ -148,4 +143,3 @@ flowchart TD
 4. Ensure server `SportModule` is registered and sport appears in `GET /sports`
 
 See [sport-ui-plugins.md](sport-ui-plugins.md) for `CandidateRow` vs `ParticipantRow` rules.
-

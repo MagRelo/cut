@@ -26,7 +26,7 @@ graph TB
 | `AuthProvider` | Cut user from `/auth/me`, balances, connect flow |
 | `SportProvider` | `sportId` from `/sports/:sportId` or default `pga-golf` |
 
-On mount, `App` prefetches the active event via `prefetchActiveTournament` (wraps `prefetchActiveEvent`).
+On mount, `App` prefetches the active event via `prefetchActiveEventWithCandidates`.
 
 ---
 
@@ -70,7 +70,7 @@ flowchart TB
     Pred[SportPredictionField]
   end
   subgraph plugin[SportUIPlugin]
-  Golf[pga-golf: CandidateRow, EventSummary, PredictionField]
+  Golf[pga-golf: CandidateRow, ParticipantRow, ParticipantDetail, EventSummary, PredictionField]
   end
   Header --> plugin
   Picker --> plugin
@@ -96,18 +96,20 @@ See [data-flow.md](data-flow.md) and [state-management.md](state-management.md).
 
 ---
 
-## Legacy bridge
+## Type system
 
-Until Phase 10 cleanup, two parallel type systems coexist:
+All production UI uses platform types:
 
-| Platform (target) | Bridge (transitional) |
-|-------------------|----------------------|
-| `ActiveEventResponse` | `Tournament` via `golfEventToTournament*` |
-| `Candidate` | `PlayerWithTournamentData` via `candidateToPlayer` (`useTournamentData` / debug only; UI plugins read `candidate.metadata` directly) |
-| `PlatformLineup` | `TournamentLineup` via adapter |
-| `eventId` | sometimes still named `tournamentId` in query keys |
+| Type | Source | Used for |
+|------|--------|----------|
+| `Candidate` | `@cut/sport-sdk` | Picker, rows, detail modal |
+| `ActiveEventResponse` | `types/event.ts` | Event metadata + status |
+| `PlatformLineup` | `types/event.ts` | User lineups (`picks`, `score`) |
+| `ContestLineup` | `types/lineup.ts` | Contest entries (`score`, `position`) |
 
-`useActiveTournament` is the main entry point for components that have not migrated.
+Golf scorecard shapes (`RoundData`, `TournamentPlayerData`) live in `sports/pga-golf/types.ts` — plugin-internal only.
+
+Some query keys and admin types still expose `tournamentId` aliases; new code should use `eventId`.
 
 ---
 

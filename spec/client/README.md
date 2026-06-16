@@ -13,7 +13,7 @@ React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Defau
 | Auth & wallet | Privy + `@privy-io/wagmi` |
 | On-chain | Wagmi/viem — contest join, secondary market, token ops |
 | Sport UI | `SportUIPlugin` registry (`pga-golf` only today) |
-| Legacy bridge | `golfEventAdapter.ts` + `useActiveTournament` map platform APIs → old `Tournament` types |
+| Platform data | `useActiveEvent`, `Candidate`, `PlatformLineup` — no legacy tournament bridge |
 
 ---
 
@@ -23,28 +23,31 @@ React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Defau
 client/src/
   pages/              Route-level screens
   components/
-    platform/         Sport-agnostic lineup/event UI
-    sport/            SportPicker, shared sport chrome
-    contest/          Contest list, cards, create forms
-    lineup/           Lineup cards, management
-    tournament/       Legacy-named display (fed by adapters)
+    platform/         Sport-agnostic lineup/event UI shells
+    sport/            SportPicker
+    contest/          Contest list, cards, lobby, create forms
+    lineup/           Lineup cards, side bets, prediction slider
     userGroup/        League UI
-    common/           Nav, ProtectedRoute, modals
+    common/           Nav, ProtectedRoute, CountdownTimer, modals
   sports/
     registry.ts       SportUIPlugin map
-    pga-golf/         Golf-specific rows, summary, prediction field
+    pga-golf/         Golf plugin slots + scorecard/, types, utils
   hooks/
-    useSportData.ts   GET /sports, active event, candidates
-    useTournamentData.ts   Bridge → legacy tournament shapes
+    useActiveEvent.ts Primary event + candidates hook
+    useSportData.ts   GET /sports, active event, candidates queries
     useLineupQueries.ts    GET/POST /lineups/:eventId
     useContestQuery.ts     Contest fetch by id/address
   contexts/
     AuthContext.tsx   Privy session, /auth/me, token balances
     SportContext.tsx  sportId from URL
   lib/
-    golfEventAdapter.ts   CompetitionEvent → Tournament
-    lineupApi.ts          Lineup POST helpers
-    navTabs.ts            Primary nav (sport-scoped contests tab)
+    candidateUtils.ts   lineup picks → Candidate[]
+    lineupScore.ts      display score from API
+    lineupApi.ts        Lineup POST helpers
+    navTabs.ts          Primary nav (sport-scoped contests tab)
+  types/
+    event.ts          PlatformLineup, ActiveEventResponse
+    lineup.ts         ContestLineup, PlatformLineupListItem
   utils/
     apiClient.ts        Bearer auth, X-Cut-Chain-Id
     queryKeys.ts        Centralized React Query keys
@@ -92,15 +95,12 @@ client/src/
 
 ---
 
-## Transitional bridge (Phase 6–9)
+## Platform / plugin boundary
 
-Many components still consume `Tournament` / `PlayerWithTournamentData` types. The bridge:
-
-1. `useActiveEventQuery` / `useEventCandidatesQuery` — platform APIs
-2. `golfEventAdapter.ts` — maps to legacy shapes
-3. `useActiveTournament` — composed hook used by lineup/contest UI
-
-Phase 10 will remove this bridge once all consumers use `ActiveEventResponse` and `Candidate` directly.
+- **Platform** fetches `Candidate[]` and `PlatformLineup`; passes `Candidate` + `EventStatus` into shell components.
+- **Plugin** (`sports/pga-golf/`) owns all golf presentation — rows, scorecard, event hero, prediction field.
+- Lineup totals: `ContestLineup.score` and `PlatformLineup.score` from the server ([`lineupScore.ts`](../../client/src/lib/lineupScore.ts)).
+- See [sport-ui-plugins.md](sport-ui-plugins.md) for the full contract and remaining platform leaks.
 
 ---
 

@@ -96,11 +96,7 @@ Golf also provides `EventDetails` (hero text) used by `SportEventContextBar`.
 
 `useSportUI()` resolves the plugin from `SportContext`.
 
-**Client detail:** [sport-ui-plugins.md](../client/sport-ui-plugins.md) — slot purposes, usage map, legacy inventory, conventions.
-
-### Transitional bridge
-
-`useActiveTournament()` and `golfEventAdapter.ts` map platform event/candidate APIs to **legacy tournament/player shapes** so older components keep working during the rewrite. Prefer `useSportData` + platform types for new code.
+**Client detail:** [sport-ui-plugins.md](../client/sport-ui-plugins.md) — slot purposes, usage map, conventions.
 
 ---
 
