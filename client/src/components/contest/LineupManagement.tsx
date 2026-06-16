@@ -102,7 +102,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
   const enteredLineupsMap = useMemo(() => {
     const map = new Map<string, string>();
     userContestLineups.forEach((cl) => {
-      const key = cl.lineupId ?? cl.tournamentLineupId;
+      const key = cl.lineupId;
       if (key) map.set(key, cl.id);
     });
     return map;
@@ -139,7 +139,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
         try {
           await joinContest.mutateAsync({
             contestId,
-            tournamentLineupId: joinedLineupId,
+            lineupId: joinedLineupId,
             entryId: pendingAction.entryId,
           });
           setPendingAction(null);
@@ -273,7 +273,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
         contest.contestLineups?.some((contestLineup) => {
           if (contestLineup.userId !== user?.id) return false;
 
-          const contestLineupId = contestLineup.lineupId ?? contestLineup.tournamentLineupId;
+          const contestLineupId = contestLineup.lineupId;
           const contestPlatformLineup = lineups.find((l) => l.id === contestLineupId);
           if (!contestPlatformLineup) return false;
 
@@ -354,7 +354,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
     setSubmissionError(null);
 
     const contestLineup = contest.contestLineups?.find(
-      (cl) => (cl.lineupId ?? cl.tournamentLineupId) === lineupId && cl.userId === user?.id,
+      (cl) => cl.lineupId === lineupId && cl.userId === user?.id,
     );
 
     if (!contestLineup?.entryId) {

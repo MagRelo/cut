@@ -16,10 +16,8 @@ const SETTLEABLE_MARKET_STATUSES: SideBetMarketStatus[] = [
 
 export async function batchSettleSideBets(params?: {
   eventId?: string;
-  /** @deprecated Use eventId */
-  tournamentId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
-  const eventId = params?.eventId?.trim() || params?.tournamentId?.trim();
+  const eventId = params?.eventId?.trim();
 
   const markets = await prisma.sideBetMarket.findMany({
     where: {

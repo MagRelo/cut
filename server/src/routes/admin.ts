@@ -29,12 +29,9 @@ const adminRouter = new Hono();
 /** GET /api/admin/dashboard — active event, contests, parlays, and ops hints. */
 adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
   try {
-    const eventId = resolveEventIdParam(
-      c.req.query("eventId"),
-      c.req.query("tournamentId"),
-    );
+    const eventId = resolveEventIdParam(c.req.query("eventId"));
     const data = await getAdminDashboard(eventId || undefined);
-    if (eventId && !data.tournament) {
+    if (eventId && !data.event) {
       return c.json({ error: "Event not found" }, 404);
     }
     return c.json(data);
@@ -271,13 +268,10 @@ adminRouter.get("/users/:id", requireAuth, requireAdmin, async (c) => {
   }
 });
 
-/** GET /api/admin/bets/side/tournament-report — side-bet tickets for an event + inflow / exposure totals. */
-adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async (c) => {
+/** GET /api/admin/bets/side/event-report — side-bet tickets for an event + inflow / exposure totals. */
+adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) => {
   try {
-    const eventIdParam = resolveEventIdParam(
-      c.req.query("eventId"),
-      c.req.query("tournamentId"),
-    );
+    const eventIdParam = resolveEventIdParam(c.req.query("eventId"));
     const event = await resolveAdminEvent(eventIdParam || undefined);
     if (!event) {
       return c.json(
@@ -292,7 +286,7 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
 
     const eventId = event.id;
     const meta = event.metadata as { name?: string } | null;
-    const tournamentName = meta?.name ?? event.externalId;
+    const eventName = meta?.name ?? event.externalId;
 
     const tickets = await prisma.sideBetTicket.findMany({
       where: { sideBetMarket: { eventId } },
@@ -331,9 +325,8 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
     );
 
     return c.json({
-      tournamentId: eventId,
       eventId,
-      tournamentName,
+      eventName,
       ticketCount: tickets.length,
       totals: {
         stakeInflow,
@@ -363,7 +356,7 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
       })),
     });
   } catch (error) {
-    console.error("admin side bet tournament report error:", error);
+    console.error("admin side bet event report error:", error);
     return c.json({ error: "Failed to load side bet report" }, 500);
   }
 });
@@ -375,11 +368,9 @@ adminRouter.post("/bets/side/lock", requireAuth, requireAdmin, async (c) => {
   try {
     const body = (await c.req.json().catch(() => ({}))) as {
       eventId?: unknown;
-      tournamentId?: unknown;
     };
     const eventId = resolveEventIdParam(
       typeof body.eventId === "string" ? body.eventId : undefined,
-      typeof body.tournamentId === "string" ? body.tournamentId : undefined,
     );
     const result = await batchLockSideBetMarkets(eventId ? { eventId } : undefined);
     return c.json(result);
@@ -396,11 +387,9 @@ adminRouter.post("/bets/side/settle", requireAuth, requireAdmin, async (c) => {
   try {
     const body = (await c.req.json().catch(() => ({}))) as {
       eventId?: unknown;
-      tournamentId?: unknown;
     };
     const eventId = resolveEventIdParam(
       typeof body.eventId === "string" ? body.eventId : undefined,
-      typeof body.tournamentId === "string" ? body.tournamentId : undefined,
     );
     const result = await batchSettleSideBets(eventId ? { eventId } : undefined);
     return c.json(result);
@@ -453,11 +442,9 @@ adminRouter.post("/bets/side/close", requireAuth, requireAdmin, async (c) => {
   try {
     const body = (await c.req.json().catch(() => ({}))) as {
       eventId?: unknown;
-      tournamentId?: unknown;
     };
     const eventId = resolveEventIdParam(
       typeof body.eventId === "string" ? body.eventId : undefined,
-      typeof body.tournamentId === "string" ? body.tournamentId : undefined,
     );
     const result = await batchCloseSideBetMarkets(eventId ? { eventId } : undefined);
     return c.json(result);

@@ -1,7 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type { TournamentLineupListItem } from "../../src/types/lineup";
+import type { PlatformLineupListItem } from "../../src/types/lineup";
+import type { PlatformLineupPick } from "../../src/types/event";
 import {
-  buildLineupPlayersByIds,
+  buildLineupPicksByIds,
   createStorybookLineupsList,
   STORYBOOK_LINEUP_ID,
 } from "../../src/test/fixtures/lineupContestCardMock";
@@ -22,13 +23,12 @@ function getSnapshot() {
   return lineupsSnapshot;
 }
 
-/** Storybook-only reset so each story starts from a known roster. */
-export function resetStorybookLineups(playerIds: string[] = []) {
-  lineupsSnapshot = createStorybookLineupsList(playerIds);
+export function resetStorybookLineups(participantIds: string[] = []) {
+  lineupsSnapshot = createStorybookLineupsList(participantIds);
   emitChange();
 }
 
-export function useLineupData(_options: { tournamentId?: string; enabled?: boolean } = {}) {
+export function useLineupData(_options: { eventId?: string; enabled?: boolean } = {}) {
   const lineups = useSyncExternalStore(subscribe, getSnapshot);
 
   const updateLineup = useCallback(
@@ -37,14 +37,14 @@ export function useLineupData(_options: { tournamentId?: string; enabled?: boole
       playerIds: string[],
       options?: { winningScorePrediction?: number },
     ) => {
-      const players = buildLineupPlayersByIds(playerIds);
+      const picks = buildLineupPicksByIds(playerIds);
       lineupsSnapshot = lineupsSnapshot.map((lineup) =>
         lineup.id === lineupId
           ? {
               ...lineup,
-              players,
+              picks,
               ...(options?.winningScorePrediction !== undefined
-                ? { winningScorePrediction: options.winningScorePrediction }
+                ? { prediction: { winningScorePrediction: options.winningScorePrediction } }
                 : {}),
             }
           : lineup,
@@ -53,21 +53,24 @@ export function useLineupData(_options: { tournamentId?: string; enabled?: boole
       const updated = lineupsSnapshot.find((entry) => entry.id === lineupId);
       return {
         id: lineupId,
+        eventId: updated?.eventId ?? "",
         name: updated?.name ?? "Lineup #1",
-        players,
-        winningScorePrediction: updated?.winningScorePrediction,
+        prediction: updated?.prediction ?? null,
+        picks,
+        createdAt: updated?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
     },
     [],
   );
 
   const getLineupFromCache = useCallback(
-    (lineupId: string): TournamentLineupListItem | null =>
+    (lineupId: string): PlatformLineupListItem | null =>
       lineupsSnapshot.find((lineup) => lineup.id === lineupId) ?? null,
     [],
   );
 
-  const getLineupById = useCallback(async (lineupId: string): Promise<TournamentLineupListItem> => {
+  const getLineupById = useCallback(async (lineupId: string): Promise<PlatformLineupListItem> => {
     const lineup = getLineupFromCache(lineupId);
     if (!lineup) {
       throw new Error(`Lineup ${lineupId} not found`);
@@ -100,3 +103,5 @@ export function useLineupData(_options: { tournamentId?: string; enabled?: boole
 }
 
 export const STORYBOOK_DEFAULT_LINEUP_ID = STORYBOOK_LINEUP_ID;
+
+export type { PlatformLineupPick };

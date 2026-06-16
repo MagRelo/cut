@@ -1,4 +1,3 @@
-import { type Tournament } from "./tournament";
 import { type UserGroup } from "./userGroup";
 import { type ContestLineup } from "./lineup";
 
@@ -70,8 +69,6 @@ export interface Contest {
   name: string;
   description: string | null;
   eventId: string;
-  /** @deprecated Use eventId — kept for transitional client code. */
-  tournamentId?: string;
   userGroupId: string;
   endTime: Date;
   status: ContestStatus;
@@ -81,7 +78,6 @@ export interface Contest {
   chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   createdAt: Date;
   updatedAt: Date;
-  tournament?: Tournament;
   userGroup?: UserGroup;
   contestLineups?: ContestLineup[];
   _count?: {
@@ -126,8 +122,6 @@ export type OnchainPaymentView = {
 export interface CreateContestInput {
   name: string;
   eventId: string;
-  /** @deprecated Use eventId */
-  tournamentId?: string;
   transactionId: string;
   address: string;
   chainId: number;

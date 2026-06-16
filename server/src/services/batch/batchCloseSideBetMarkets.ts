@@ -9,10 +9,8 @@ export type { SideBetBatchOperationSummary } from "./sideBetBatchShared.js";
 
 export async function batchCloseSideBetMarkets(params?: {
   eventId?: string;
-  /** @deprecated Use eventId */
-  tournamentId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
-  const eventId = params?.eventId?.trim() || params?.tournamentId?.trim();
+  const eventId = params?.eventId?.trim();
   const where: {
     status: typeof SideBetMarketStatus.SETTLED;
     eventId?: string;

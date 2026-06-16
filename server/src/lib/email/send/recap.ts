@@ -7,25 +7,14 @@ import { isEmailConfigured, sendEmail } from "../transport.js";
 
 export type RecapBlastResult = {
   eventId: string;
-  /** @deprecated Use eventId */
-  tournamentId: string;
   sent: number;
   failed: number;
   dryRun: boolean;
   aborted?: boolean;
 };
 
-function resolveEventId(options: { eventId?: string; tournamentId?: string }): string {
-  const eventId = options.eventId ?? options.tournamentId;
-  if (!eventId) {
-    throw new Error("eventId is required");
-  }
-  return eventId;
-}
-
 export async function sendTournamentRecapBlast(options: {
-  eventId?: string;
-  tournamentId?: string;
+  eventId: string;
   dryRun?: boolean;
   force?: boolean;
 }): Promise<RecapBlastResult> {
@@ -33,7 +22,10 @@ export async function sendTournamentRecapBlast(options: {
     throw new Error("MailerSend is not configured");
   }
 
-  const eventId = resolveEventId(options);
+  const eventId = options.eventId.trim();
+  if (!eventId) {
+    throw new Error("eventId is required");
+  }
 
   if (
     !options.force &&
@@ -41,7 +33,6 @@ export async function sendTournamentRecapBlast(options: {
   ) {
     return {
       eventId,
-      tournamentId: eventId,
       sent: 0,
       failed: 0,
       dryRun: Boolean(options.dryRun),
@@ -56,7 +47,6 @@ export async function sendTournamentRecapBlast(options: {
   if (options.dryRun) {
     return {
       eventId,
-      tournamentId: eventId,
       sent: recipients.length,
       failed: 0,
       dryRun: true,
@@ -99,7 +89,6 @@ export async function sendTournamentRecapBlast(options: {
 
   return {
     eventId,
-    tournamentId: eventId,
     sent,
     failed,
     dryRun: false,

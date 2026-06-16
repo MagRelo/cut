@@ -48,7 +48,7 @@ export async function resolveAdminEvent(eventIdOverride?: string) {
   });
 }
 
-export function eventToDashboardTournament(event: CompetitionEvent) {
+export function eventToDashboardEvent(event: CompetitionEvent) {
   const meta = parseEventMetadata(event.metadata);
   const start = meta.startDate ? new Date(meta.startDate) : event.createdAt;
   const end = meta.endDate ? new Date(meta.endDate) : event.createdAt;
@@ -67,11 +67,6 @@ export function eventToDashboardTournament(event: CompetitionEvent) {
   };
 }
 
-export function resolveEventIdParam(
-  eventId?: string | null,
-  tournamentId?: string | null,
-): string {
-  const fromEvent = eventId?.trim() ?? "";
-  const fromLegacy = tournamentId?.trim() ?? "";
-  return fromEvent || fromLegacy;
+export function resolveEventIdParam(eventId?: string | null): string {
+  return eventId?.trim() ?? "";
 }

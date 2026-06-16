@@ -2,7 +2,7 @@ import { SideBetTicketStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { sideBetsEnabled } from "../sideBets/featureFlag.js";
 import {
-  eventToDashboardTournament,
+  eventToDashboardEvent,
   isEventCompleteForSettlement,
   resolveAdminEvent,
 } from "./adminEventContext.js";
@@ -56,7 +56,7 @@ const emptyDashboard = {
     openSideBetTickets: 0,
     lockedSideBetMarkets: 0,
     sideBetsEnabled: sideBetsEnabled(),
-    tournamentIsComplete: false,
+    eventIsComplete: false,
     suggestedActions: ["Set an active competition event to view this week's data."],
   },
 };
@@ -69,16 +69,16 @@ export async function getAdminDashboard(eventIdOverride?: string) {
   if (!eventRow) {
     return {
       generatedAt: new Date().toISOString(),
-      tournament: null,
+      event: null,
       weekCounts: {
-        tournamentLineups: 0,
+        lineups: 0,
         contestLineups: 0,
       },
       ...emptyDashboard,
     };
   }
 
-  const tournament = eventToDashboardTournament(eventRow);
+  const eventSummary = eventToDashboardEvent(eventRow);
   const eventId = eventRow.id;
 
   const [contests, sideBetMarkets, sideBetTickets, lineupCount, eventLineupCount] =
@@ -198,7 +198,7 @@ export async function getAdminDashboard(eventIdOverride?: string) {
   const openSideBetMarkets = marketsByStatus.OPEN ?? 0;
   const lockedSideBetMarkets = marketsByStatus.LOCKED ?? 0;
   const openSideBetTickets = ticketsByStatus.OPEN ?? 0;
-  const tournamentIsComplete = isEventCompleteForSettlement(eventRow.metadata);
+  const eventIsComplete = isEventCompleteForSettlement(eventRow.metadata);
   const enabled = sideBetsEnabled();
 
   const suggestedActions: string[] = [];
@@ -207,12 +207,12 @@ export async function getAdminDashboard(eventIdOverride?: string) {
       `${activeContests} contest(s) ACTIVE — lock winner pool when secondary entries should close.`,
     );
   }
-  if (enabled && openSideBetMarkets > 0 && tournamentIsComplete) {
+  if (enabled && openSideBetMarkets > 0 && eventIsComplete) {
     suggestedActions.push(
       `${openSideBetMarkets} side-bet market(s) still OPEN — lock before settling.`,
     );
   }
-  if (enabled && lockedSideBetMarkets > 0 && tournamentIsComplete) {
+  if (enabled && lockedSideBetMarkets > 0 && eventIsComplete) {
     suggestedActions.push(
       `${lockedSideBetMarkets} locked market(s) ready to settle against final results.`,
     );
@@ -228,19 +228,20 @@ export async function getAdminDashboard(eventIdOverride?: string) {
 
   return {
     generatedAt: new Date().toISOString(),
-    tournament: {
-      id: tournament.id,
-      name: tournament.name,
-      status: tournament.status,
-      currentRound: tournament.currentRound,
-      roundDisplay: tournament.roundDisplay,
-      roundStatusDisplay: tournament.roundStatusDisplay,
-      cutLine: tournament.cutLine,
-      startDate: tournament.startDate.toISOString(),
-      endDate: tournament.endDate.toISOString(),
+    event: {
+      id: eventSummary.id,
+      name: eventSummary.name,
+      status: eventSummary.status,
+      currentRound: eventSummary.currentRound,
+      roundDisplay: eventSummary.roundDisplay,
+      roundStatusDisplay: eventSummary.roundStatusDisplay,
+      cutLine: eventSummary.cutLine,
+      startDate: eventSummary.startDate.toISOString(),
+      endDate: eventSummary.endDate.toISOString(),
+      sportId: eventSummary.sportId,
     },
     weekCounts: {
-      tournamentLineups: eventLineupCount,
+      lineups: eventLineupCount,
       contestLineups: lineupCount,
     },
     contests: {
@@ -275,7 +276,7 @@ export async function getAdminDashboard(eventIdOverride?: string) {
       openSideBetTickets,
       lockedSideBetMarkets,
       sideBetsEnabled: enabled,
-      tournamentIsComplete,
+      eventIsComplete,
       suggestedActions,
     },
   };

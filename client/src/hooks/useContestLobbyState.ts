@@ -35,12 +35,10 @@ export function useContestLobbyState(contest: Contest | undefined): {
       contestStateOnChain:
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       hasWallet,
-      eventStartDate: eventMatchesContest ? eventStartDate : contest.tournament?.startDate,
-      eventName: eventMatchesContest ? eventName : contest.tournament?.name,
-      eventNotStarted: eventMatchesContest
-        ? status === "SCHEDULED"
-        : contest.tournament?.status === "NOT_STARTED",
-      roundDisplay: eventMatchesContest ? roundDisplay : contest.tournament?.roundDisplay,
+      eventStartDate: eventMatchesContest ? eventStartDate : undefined,
+      eventName: eventMatchesContest ? eventName : undefined,
+      eventNotStarted: eventMatchesContest ? status === "SCHEDULED" : undefined,
+      roundDisplay: eventMatchesContest ? roundDisplay : undefined,
     };
 
     return deriveContestLobbyViewModel(contest, input);

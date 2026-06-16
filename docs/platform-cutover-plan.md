@@ -7,7 +7,7 @@ Operational reference for moving production from the legacy golf-only stack to t
 ## Preconditions
 
 - Phase 9 migration script validated on a production DB snapshot (`--dry-run`, `--apply`, `--validate` all pass).
-- Architecture cleanup merged on `v4` (client uses platform types; legacy 501 routes removed).
+- Architecture cleanup merged on `v4` (platform types only; legacy routes removed).
 - Staging dry-run completed against migrated data with smoke tests passing.
 - Maintenance window scheduled **between PGA events** (no active tournament in progress).
 

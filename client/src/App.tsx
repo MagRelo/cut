@@ -241,7 +241,7 @@ const AppShell: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  // Prefetch tournament data on app initialization for faster page loads
+  // Prefetch active event data on app initialization for faster page loads
   // This runs in the background and caches data before components mount
   useEffect(() => {
     void prefetchActiveEventWithCandidates(queryClient);

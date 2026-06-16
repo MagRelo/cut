@@ -14,10 +14,8 @@ const LOCKABLE_MARKET_STATUSES: SideBetMarketStatus[] = [
 
 export async function batchLockSideBetMarkets(params?: {
   eventId?: string;
-  /** @deprecated Use eventId */
-  tournamentId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
-  const eventId = params?.eventId?.trim() || params?.tournamentId?.trim();
+  const eventId = params?.eventId?.trim();
   const where: {
     status: { in: SideBetMarketStatus[] };
     eventId?: string;

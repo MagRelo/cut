@@ -8,11 +8,10 @@ import type {
 import { queryKeys } from "../utils/queryKeys";
 
 export type PlaceSideBetTicketPayload = {
-  tournamentLineupId: string;
+  lineupId: string;
   hitsRequired: number;
   topN: number;
   stakeAmount: number;
-  /** When set, server may create a `REFUND_PENDING` ticket if booking fails after on-chain stake. */
   transactionHashes?: string[];
 };
 
@@ -29,33 +28,31 @@ export type PlaceSideBetTicketResult = {
   placementPlayers: SideBetPlacementPlayerDto[];
 };
 
-export function useSideBetMarketQuery(tournamentLineupId: string | null | undefined) {
+export function useSideBetMarketQuery(lineupId: string | null | undefined) {
   return useQuery({
-    queryKey: tournamentLineupId
-      ? queryKeys.sideBet.market(tournamentLineupId)
+    queryKey: lineupId
+      ? queryKeys.sideBet.market(lineupId)
       : (["sideBetMarket", "none"] as const),
-    enabled: Boolean(tournamentLineupId),
+    enabled: Boolean(lineupId),
     queryFn: async () => {
-      const id = tournamentLineupId as string;
+      const id = lineupId as string;
       return apiClient.get<SideBetMarketResponse>(`/bets/side/lineup/${id}/market`, {
         requiresAuth: true,
       });
     },
-    /** Odds must track roster and quote version; treat as stale so refetches are not delayed. */
     staleTime: 0,
     refetchInterval: 60_000,
   });
 }
 
-/** GET /bets/side/tickets?lineupId= — works when market GET is unavailable or errors. */
-export function useSideBetTicketsForLineupQuery(tournamentLineupId: string | null | undefined) {
+export function useSideBetTicketsForLineupQuery(lineupId: string | null | undefined) {
   return useQuery({
-    queryKey: tournamentLineupId
-      ? queryKeys.sideBet.tickets(tournamentLineupId)
+    queryKey: lineupId
+      ? queryKeys.sideBet.tickets(lineupId)
       : (["sideBetTickets", "none"] as const),
-    enabled: Boolean(tournamentLineupId),
+    enabled: Boolean(lineupId),
     queryFn: async () => {
-      const id = tournamentLineupId as string;
+      const id = lineupId as string;
       return apiClient.get<SideBetTicketsListResponse>(
         `/bets/side/tickets?lineupId=${encodeURIComponent(id)}`,
         { requiresAuth: true },
@@ -66,7 +63,7 @@ export function useSideBetTicketsForLineupQuery(tournamentLineupId: string | nul
   });
 }
 
-export function usePlaceSideBetTicketMutation(tournamentLineupId: string | null | undefined) {
+export function usePlaceSideBetTicketMutation(lineupId: string | null | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: PlaceSideBetTicketPayload) => {
@@ -75,9 +72,9 @@ export function usePlaceSideBetTicketMutation(tournamentLineupId: string | null 
       });
     },
     onSuccess: () => {
-      if (tournamentLineupId) {
-        void qc.invalidateQueries({ queryKey: queryKeys.sideBet.market(tournamentLineupId) });
-        void qc.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(tournamentLineupId) });
+      if (lineupId) {
+        void qc.invalidateQueries({ queryKey: queryKeys.sideBet.market(lineupId) });
+        void qc.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(lineupId) });
       }
     },
   });

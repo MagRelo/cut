@@ -24,7 +24,6 @@ export interface AuthUser {
   email: string | null;
   isVerified: boolean;
   userGroups: Array<unknown>;
-  tournamentLineups?: unknown[];
   chainId: number;
   walletAddress: string;
   pendingTokenMint?: boolean;

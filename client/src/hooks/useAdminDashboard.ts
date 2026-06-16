@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../utils/apiClient";
-import type { AdminDashboardResponse, AdminSideBetTournamentReportResponse } from "../types/admin";
+import type { AdminDashboardResponse, AdminSideBetEventReportResponse } from "../types/admin";
 import { queryKeys } from "../utils/queryKeys";
 
 export function useAdminDashboardQuery(eventId?: string) {
@@ -8,7 +8,7 @@ export function useAdminDashboardQuery(eventId?: string) {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(eid),
     queryFn: async () => {
-      const qs = eid ? `?tournamentId=${encodeURIComponent(eid)}` : "";
+      const qs = eid ? `?eventId=${encodeURIComponent(eid)}` : "";
       return apiClient.get<AdminDashboardResponse>(`/admin/dashboard${qs}`, {
         requiresAuth: true,
       });
@@ -22,9 +22,9 @@ export function useAdminSideBetReportQuery(eventId?: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.admin.sideBetReport(eid),
     queryFn: async () => {
-      const qs = eid ? `?tournamentId=${encodeURIComponent(eid)}` : "";
-      return apiClient.get<AdminSideBetTournamentReportResponse>(
-        `/admin/bets/side/tournament-report${qs}`,
+      const qs = eid ? `?eventId=${encodeURIComponent(eid)}` : "";
+      return apiClient.get<AdminSideBetEventReportResponse>(
+        `/admin/bets/side/event-report${qs}`,
         { requiresAuth: true },
       );
     },

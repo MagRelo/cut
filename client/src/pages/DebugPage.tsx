@@ -1,26 +1,28 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { PageSection } from "../components/layout/PageSection";
-import {
-  useActiveTournament,
-  useActiveTournamentLive,
-  useTournamentShell,
-} from "../hooks/useTournamentData";
+import { useActiveEvent } from "../hooks/useActiveEvent";
+import { useEventCandidatesQuery } from "../hooks/useSportData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const shellQuery = useTournamentShell();
-  const tournamentId = shellQuery.data?.tournament?.id;
-  const liveQuery = useActiveTournamentLive(tournamentId);
-  const activeTournament = useActiveTournament();
+  const {
+    activeEvent,
+    eventId,
+    eventName,
+    status,
+    roundDisplay,
+    isLoading: eventLoading,
+    error: eventError,
+  } = useActiveEvent();
+  const candidatesQuery = useEventCandidatesQuery(activeEvent?.sport.id, eventId);
 
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
 
-      {/* Wagmi Account Status */}
       <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-blue-600">Wagmi Account Status</h2>
         <div className="space-y-2 text-sm">
@@ -36,7 +38,6 @@ export const DebugPage: React.FC = () => {
         </div>
       </PageSection>
 
-      {/* Auth context (Cut / Privy) */}
       <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-green-600">Auth context</h2>
         <div className="space-y-2 text-sm">
@@ -89,93 +90,42 @@ export const DebugPage: React.FC = () => {
         </div>
       </PageSection>
 
-      {/* Tournament shell */}
       <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-purple-600">
-          Tournament shell (useTournamentShell / GET active/shell)
-        </h2>
+        <h2 className="text-lg font-semibold mb-3 text-purple-600">Active event (useActiveEvent)</h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Loading:</strong> {shellQuery.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {eventLoading ? "true" : "false"}
           </div>
           <div>
-            <strong>Error:</strong>{" "}
-            {shellQuery.error ? String(shellQuery.error.message) : "None"}
+            <strong>Error:</strong> {eventError ? String(eventError.message) : "None"}
           </div>
           <div>
-            <strong>Data updated:</strong>{" "}
-            {shellQuery.dataUpdatedAt
-              ? new Date(shellQuery.dataUpdatedAt).toLocaleString()
-              : "—"}
+            <strong>Event ID:</strong> {eventId ?? "—"}
           </div>
-          {shellQuery.data && (
-            <>
-              <div>
-                <strong>Tournament:</strong> {shellQuery.data.tournament.name}
-              </div>
-              <div>
-                <strong>Tournament ID:</strong> {shellQuery.data.tournament.id}
-              </div>
-            </>
-          )}
+          <div>
+            <strong>Event name:</strong> {eventName ?? "—"}
+          </div>
+          <div>
+            <strong>Status:</strong> {status ?? "—"}
+          </div>
+          <div>
+            <strong>Round:</strong> {roundDisplay ?? "—"}
+          </div>
         </div>
       </PageSection>
 
-      {/* Active tournament live */}
       <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-indigo-600">
-          Active live (useActiveTournamentLive / GET active/live)
-        </h2>
+        <h2 className="text-lg font-semibold mb-3 text-indigo-600">Candidates (useCandidatesQuery)</h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Tournament ID (from shell):</strong> {tournamentId ?? "—"}
-          </div>
-          <div>
-            <strong>Loading:</strong> {liveQuery.isLoading ? "true" : "false"}
-          </div>
-          <div>
-            <strong>Error:</strong> {liveQuery.error ? String(liveQuery.error.message) : "None"}
-          </div>
-          <div>
-            <strong>Data updated:</strong>{" "}
-            {liveQuery.dataUpdatedAt
-              ? new Date(liveQuery.dataUpdatedAt).toLocaleString()
-              : "—"}
-          </div>
-          <div>
-            <strong>Players Count:</strong> {liveQuery.data?.players.length ?? "—"}
-          </div>
-          {liveQuery.data && (
-            <div>
-              <strong>Status:</strong> {liveQuery.data.tournament.status}
-            </div>
-          )}
-        </div>
-      </PageSection>
-
-      {/* Active Tournament State */}
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-orange-600">
-          Active Tournament State (useActiveTournament)
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Loading:</strong> {activeTournament.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {candidatesQuery.isLoading ? "true" : "false"}
           </div>
           <div>
             <strong>Error:</strong>{" "}
-            {activeTournament.error ? activeTournament.error.message : "None"}
+            {candidatesQuery.error ? String(candidatesQuery.error.message) : "None"}
           </div>
           <div>
-            <strong>Tournament:</strong>{" "}
-            {activeTournament.tournament ? activeTournament.tournament.name : "None"}
-          </div>
-          <div>
-            <strong>Players Count:</strong> {activeTournament.players.length}
-          </div>
-          <div>
-            <strong>Is Tournament Editable:</strong>{" "}
-            {activeTournament.isTournamentEditable ? "true" : "false"}
+            <strong>Count:</strong> {candidatesQuery.data?.length ?? "—"}
           </div>
         </div>
       </PageSection>

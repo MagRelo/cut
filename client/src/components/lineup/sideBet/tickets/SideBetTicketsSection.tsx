@@ -4,22 +4,22 @@ import { resolveSideBetTicketsState } from "./resolveSideBetTicketsState";
 import { SideBetTicketsList } from "./SideBetTicketsList";
 
 export interface SideBetTicketsSectionProps {
-  tournamentLineupId: string | null;
+  lineupId: string | null;
   borderColor: string;
   userLabel: string;
   lineupNumberLabel: string | null;
 }
 
 export const SideBetTicketsSection: React.FC<SideBetTicketsSectionProps> = ({
-  tournamentLineupId,
+  lineupId,
   borderColor,
   userLabel,
   lineupNumberLabel,
 }) => {
-  const ticketsQuery = useSideBetTicketsForLineupQuery(tournamentLineupId);
-  const ticketsState = resolveSideBetTicketsState(tournamentLineupId, ticketsQuery);
+  const ticketsQuery = useSideBetTicketsForLineupQuery(lineupId);
+  const ticketsState = resolveSideBetTicketsState(lineupId, ticketsQuery);
 
-  if (!tournamentLineupId || ticketsState.kind === "hidden") return null;
+  if (!lineupId || ticketsState.kind === "hidden") return null;
 
   return (
     <div className="mt-6 border-t border-gray-200 pt-4">

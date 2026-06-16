@@ -11,14 +11,12 @@ export enum EmailKind {
 export type EmailDedupeParams = {
   userId?: string;
   eventId?: string;
-  /** @deprecated Use eventId — same value on platform schema */
-  tournamentId?: string;
   campaignId?: string;
   playerId?: string;
 };
 
 function resolveEventId(params: EmailDedupeParams): string {
-  const eventId = params.eventId ?? params.tournamentId;
+  const eventId = params.eventId;
   if (!eventId) {
     throw new Error("eventId is required");
   }
@@ -53,8 +51,10 @@ export function buildDedupeKey(kind: EmailKind, params: EmailDedupeParams): stri
       }
       return `${kind}:${eventId}:${params.userId}:${params.playerId}`;
     }
-    default:
-      throw new Error(`Unknown email kind: ${kind}`);
+    default: {
+      const _exhaustive: never = kind;
+      throw new Error(`Unknown email kind: ${_exhaustive}`);
+    }
   }
 }
 

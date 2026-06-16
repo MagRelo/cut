@@ -45,7 +45,7 @@ export type SendIfNotLoggedResult =
   | { status: "dry_run" };
 
 function eventIdFromDedupe(dedupe: EmailDedupeParams): string | undefined {
-  return dedupe.eventId ?? dedupe.tournamentId;
+  return dedupe.eventId;
 }
 
 /**

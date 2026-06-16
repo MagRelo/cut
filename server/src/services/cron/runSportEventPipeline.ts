@@ -1,4 +1,3 @@
-import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
 import { updateContestLineupsForEvent } from "../updateContestLineups.js";
 

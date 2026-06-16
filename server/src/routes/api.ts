@@ -3,7 +3,6 @@ import authRoutes from "./auth.js";
 import sportsRoutes from "./sports.js";
 import lineupsRoutes from "./lineups.js";
 import contestRoutes from "./contest.js";
-import legacyRoutes from "./legacy.js";
 import betsRoutes from "./bets.js";
 import adminRoutes from "./admin.js";
 import cronRoutes from "./cron.js";
@@ -29,9 +28,5 @@ apiRouter.route("/bets", betsRoutes);
 apiRouter.route("/admin", adminRoutes);
 apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/unsubscribe", unsubscribeRoutes);
-
-// Legacy routes return 501 until ported in later rewrite phases
-apiRouter.route("/tournaments", legacyRoutes);
-apiRouter.route("/lineup", legacyRoutes);
 
 export default apiRouter;

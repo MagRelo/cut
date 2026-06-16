@@ -92,7 +92,7 @@ export function buildSideBetTicketsFixture(): SideBetTicketsListResponse {
 
   const base = {
     lineupId: "tl-storybook-1",
-    tournamentId: "tournament-1",
+    eventId: "event-1",
     marketStatus: "OPEN",
     quoteVersionAtPlacement: 1,
     playerIds: placementPlayers.map((p) => p.id),

@@ -8,7 +8,7 @@ const defaultPanelArgs = {
   userLabel: "Storybook User",
   lineupNumberLabel: "Lineup #1",
   playerLastNamesLine: "Scheffler, McIlroy, Rahm, Schauffele",
-  tournamentLineupId: STORYBOOK_SIDE_BET_LINEUP_ID,
+  lineupId: STORYBOOK_SIDE_BET_LINEUP_ID,
 };
 
 const meta = {
@@ -28,6 +28,6 @@ export const Default: Story = {};
 
 export const NoLineup: Story = {
   args: {
-    tournamentLineupId: null,
+    lineupId: null,
   },
 };

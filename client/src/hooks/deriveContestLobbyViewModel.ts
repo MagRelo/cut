@@ -99,9 +99,9 @@ export function deriveContestLobbyViewModel(
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",
       showCountdown,
       entryListOpensModal: primaryActionsLocked,
-      eventName: input.eventName ?? contest.tournament?.name ?? null,
-      eventStartDate: input.eventStartDate ?? contest.tournament?.startDate ?? null,
-      roundDisplay: input.roundDisplay ?? contest.tournament?.roundDisplay ?? null,
+      eventName: input.eventName ?? null,
+      eventStartDate: input.eventStartDate ?? null,
+      roundDisplay: input.roundDisplay ?? null,
     },
     predictions: {
       mode: predictionsMode,

@@ -13,9 +13,7 @@ import {
 const betsRouter = new Hono();
 
 const placeTicketSchema = z.object({
-  /** Platform lineup id (legacy clients may still send `tournamentLineupId`). */
-  lineupId: z.string().min(1).optional(),
-  tournamentLineupId: z.string().min(1).optional(),
+  lineupId: z.string().min(1),
   hitsRequired: z.union([z.literal(2), z.literal(3), z.literal(4)]),
   topN: z.union([z.literal(5), z.literal(10), z.literal(20)]),
   stakeAmount: z.number().finite().positive().min(0.01).max(1_000_000),
@@ -233,10 +231,7 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
     return c.json({ error: "Invalid body", details: parsed.error.flatten() }, 400);
   }
 
-  const lineupId = parsed.data.lineupId ?? parsed.data.tournamentLineupId;
-  if (!lineupId) {
-    return c.json({ error: "lineupId is required" }, 400);
-  }
+  const lineupId = parsed.data.lineupId;
 
   const { hitsRequired, topN, stakeAmount, transactionHashes } = parsed.data;
 
@@ -418,7 +413,6 @@ betsRouter.get("/side/tickets", requireAuth, async (c) => {
       id: ticket.id,
       lineupId: ticket.sideBetMarket.lineupId,
       eventId: ticket.sideBetMarket.eventId,
-      tournamentId: ticket.sideBetMarket.eventId,
       marketStatus: ticket.sideBetMarket.status,
       hitsRequired: ticket.hitsRequired,
       topN: ticket.topN,

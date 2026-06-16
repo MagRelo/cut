@@ -15,7 +15,7 @@ export interface SideBetPanelProps {
   /** Comma-separated last names, leaderboard order (matches ContestEntryList when locked). */
   playerLastNamesLine: string;
   /** Tournament lineup id for `/api/bets/side/lineup/:id/market`. */
-  tournamentLineupId: string | null;
+  lineupId: string | null;
 }
 
 export const SideBetPanel: React.FC<SideBetPanelProps> = ({
@@ -23,16 +23,16 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
   userLabel,
   lineupNumberLabel,
   playerLastNamesLine,
-  tournamentLineupId,
+  lineupId,
 }) => {
   const [activeSelection, setActiveSelection] = useState<SideBetMarketSelectionDto | null>(null);
   const [stakeInput, setStakeInput] = useState("10");
 
-  const marketQuery = useSideBetMarketQuery(tournamentLineupId);
+  const marketQuery = useSideBetMarketQuery(lineupId);
   const bettable = marketQuery.data?.bettable === true;
 
   const placeFlow = useSideBetPlaceFlow({
-    tournamentLineupId,
+    lineupId,
     activeSelection,
     stakeInput,
     bettable,
@@ -48,18 +48,18 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
     <div className="rounded-sm bg-white p-2">
       <h4 className="font-display text-base font-semibold text-gray-900">Lineup Parlays</h4>
 
-      {!tournamentLineupId ? <SideBetNoLineupPrompt /> : null}
+      {!lineupId ? <SideBetNoLineupPrompt /> : null}
 
-      {tournamentLineupId ? (
+      {lineupId ? (
         <SideBetMarketSection
-          tournamentLineupId={tournamentLineupId}
+          lineupId={lineupId}
           onSelect={setActiveSelection}
         />
       ) : null}
 
-      {tournamentLineupId ? (
+      {lineupId ? (
         <SideBetTicketsSection
-          tournamentLineupId={tournamentLineupId}
+          lineupId={lineupId}
           borderColor={borderColor}
           userLabel={userLabel}
           lineupNumberLabel={lineupNumberLabel}

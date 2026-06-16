@@ -17,11 +17,12 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 | 5 | Contests, settlement, cron | ✅ Done |
 | 6–7 | Client shell, routing, golf UI plugin | ✅ Done |
 | 8 | Account, leagues, side bets, email, admin | ✅ Done |
-| 9–10 | Migration + cutover | Phase 9 done; Phase 10 in progress |
+| 9 | Prod DB migration script | ✅ Done |
+| 10 | Cleanup + cutover | Code cleanup done; staging + prod cutover remain |
 | 11 | NFL / future sports | Post-v1 |
 
 **Live APIs:** `/sports`, `/lineups`, `/contests`, `/bets`, `/admin`, `/userGroups`  
-**Still 501:** `/tournaments`, `/lineup` (legacy stubs)
+**Legacy removed:** `/tournaments`, `/lineup` (501 stubs deleted); old tournament services and client bridges removed
 
 ---
 
@@ -106,6 +107,7 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 - [x] Client sport UI boundaries documented — `spec/client/sport-ui-plugins.md`
 - [x] Track A client cleanup — delete orphaned lineup UI, tournament preview on `useActiveEvent`, `LineupManagement` plugin rows, remove `PlayerDisplayRow`
 - [x] `ParticipantDetail` plugin slot — scorecard modal; replaces `PlayerDetailModal` / `PlayerDisplayCard` / `candidateToPlayer` in detail flow
+- [x] Remove legacy routes, services, and client bridges (`golfEventAdapter`, `useTournamentData`, 501 stubs, API fallbacks)
 - [ ] Staging dry-run with migrated data
 - [ ] Production cutover (see `docs/platform-cutover-plan.md`)
 
@@ -113,10 +115,10 @@ Greenfield rewrite of Play The Cut to match [PLATFORM_ARCHITECTURE.md](PLATFORM_
 
 ## Future Tasks
 
-### Phase 10 — Remaining cleanup (post-migration)
+### Phase 10 — Remaining cutover
 
 - [ ] Production cutover (maintenance window)
-- [ ] Remove legacy routes, services, and client pages
+- [x] Remove legacy routes, services, and client pages
 - [x] Update `spec/` docs to match new architecture
 
 ### Phase 11 — NFL and future sports (post-v1)
@@ -201,7 +203,7 @@ Legacy local data (if needed for migration testing) remains in the old `postgres
 | [server/src/sports/registry.ts](server/src/sports/registry.ts) | Server plugin registry | ✅ |
 | [server/src/routes/sports.ts](server/src/routes/sports.ts) | Sports and event APIs | ✅ |
 | [server/src/routes/lineups.ts](server/src/routes/lineups.ts) | Lineup list/create/update APIs | ✅ |
-| [server/src/routes/legacy.ts](server/src/routes/legacy.ts) | 501 stubs for unmigrated APIs | ✅ |
+| [server/src/routes/api.ts](server/src/routes/api.ts) | Platform API router (no legacy mounts) | ✅ |
 | [client/src/sports/types.ts](client/src/sports/types.ts) | Client sport-sdk type re-exports | ✅ |
 | [server/prisma/schema.prisma](server/prisma/schema.prisma) | Platform database schema | ✅ |
 | [server/prisma/migrations/20260611153145_init_platform_schema/](server/prisma/migrations/20260611153145_init_platform_schema/) | Baseline migration | ✅ |

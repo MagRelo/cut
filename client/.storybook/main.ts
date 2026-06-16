@@ -25,10 +25,6 @@ const config: StorybookConfig = {
         replacement: path.resolve(dirname, "./mocks/useContestPredictionData.ts"),
       },
       {
-        find: path.resolve(dirname, "../src/hooks/useTournamentData.ts"),
-        replacement: path.resolve(dirname, "./mocks/useTournamentData.ts"),
-      },
-      {
         find: path.resolve(dirname, "../src/hooks/useLineupData.ts"),
         replacement: path.resolve(dirname, "./mocks/useLineupData.ts"),
       },

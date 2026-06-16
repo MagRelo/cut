@@ -94,18 +94,10 @@ export interface TournamentPlayerData {
   teeTimes?: TournamentPlayerTeeTime[];
 }
 
-// Combined Type for Frontend
+// Combined Type for Frontend (golf scorecard display)
 export interface PlayerWithTournamentData extends Player {
-  tournamentId: string;
+  eventId: string;
   tournamentData: TournamentPlayerData;
-}
-
-// Tournament Lineup Type
-export interface TournamentLineup {
-  id: string;
-  name?: string;
-  players: PlayerWithTournamentData[];
-  winningScorePrediction?: number | null;
 }
 
 // Zod Schemas
@@ -195,11 +187,3 @@ export const tournamentPlayerDataSchema = z.object({
     .optional(),
 });
 
-export const playerWithTournamentDataSchema = playerSchema.extend({
-  tournamentId: z.string(),
-  tournamentData: tournamentPlayerDataSchema,
-});
-
-export const tournamentLineupSchema = z.object({
-  players: z.array(playerWithTournamentDataSchema).max(4),
-});

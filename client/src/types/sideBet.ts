@@ -4,7 +4,7 @@ export interface SideBetPlacementPlayerDto {
   lastName: string | null;
 }
 
-/** GET /api/bets/side/lineup/:lineupId/market · POST /api/bets/side/tickets uses tournamentLineupId + hitsRequired + topN */
+/** GET /api/bets/side/lineup/:lineupId/market · POST /api/bets/side/tickets uses lineupId + hitsRequired + topN */
 export interface SideBetMarketSelectionDto {
   id: string;
   hitsRequired: number;
@@ -34,7 +34,7 @@ export interface SideBetMarketTicketDto {
 export interface SideBetTicketListItemDto {
   id: string;
   lineupId: string;
-  tournamentId: string;
+  eventId: string;
   marketStatus: string;
   hitsRequired: number;
   topN: number;

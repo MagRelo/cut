@@ -15,9 +15,9 @@ describe("buildDedupeKey", () => {
     ).toBe("REMINDER_NO_CONTEST:e1:u1");
   });
 
-  it("accepts tournamentId alias for event-scoped keys", () => {
+  it("builds recap key with eventId", () => {
     expect(
-      buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { tournamentId: "e1", userId: "u1" }),
+      buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { eventId: "e1", userId: "u1" }),
     ).toBe("TOURNAMENT_RECAP:e1:u1");
   });
 

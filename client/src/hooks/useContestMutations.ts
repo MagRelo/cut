@@ -6,9 +6,7 @@ import { type ContestLineup } from "../types/lineup";
 
 interface JoinContestParams {
   contestId: string;
-  lineupId?: string;
-  /** @deprecated Use lineupId */
-  tournamentLineupId?: string;
+  lineupId: string;
   entryId: string;
 }
 
@@ -17,22 +15,14 @@ interface LeaveContestParams {
   contestLineupId: string;
 }
 
-/**
- * Mutation hook for creating a contest
- */
 export function useCreateContest() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: CreateContestInput) => {
-      const { settings, tournamentId, ...rest } = params;
-      const eventId = rest.eventId ?? tournamentId;
-      if (!eventId) {
-        throw new Error("Event ID is required");
-      }
+      const { settings, ...rest } = params;
       return await apiClient.post<Contest>("/contests", {
         ...rest,
-        eventId,
         endDate: settings.expiryTimestamp * 1000,
         settings,
       });
@@ -42,7 +32,7 @@ export function useCreateContest() {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({
         queryKey: queryKeys.contests.byEvent(
-          variables.eventId ?? variables.tournamentId ?? "",
+          variables.eventId,
           variables.chainId,
         ),
       });
@@ -54,26 +44,18 @@ export function useCreateContest() {
   });
 }
 
-/**
- * Mutation hook for joining a contest
- */
 export function useJoinContest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ contestId, lineupId, tournamentLineupId, entryId }: JoinContestParams) => {
-      const resolvedLineupId = lineupId ?? tournamentLineupId;
-      if (!resolvedLineupId) {
-        throw new Error("Lineup ID is required");
-      }
+    mutationFn: async ({ contestId, lineupId, entryId }: JoinContestParams) => {
       return await apiClient.post<Contest>(`/contests/${contestId}/lineups`, {
-        lineupId: resolvedLineupId,
+        lineupId,
         entryId,
       });
     },
 
-    onMutate: async ({ contestId, lineupId, tournamentLineupId }) => {
-      const resolvedLineupId = lineupId ?? tournamentLineupId;
+    onMutate: async ({ contestId, lineupId }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
 
       const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
@@ -85,8 +67,7 @@ export function useJoinContest() {
           const optimisticLineup: ContestLineup = {
             id: `temp-${Date.now()}`,
             contestId,
-            lineupId: resolvedLineupId,
-            tournamentLineupId: resolvedLineupId,
+            lineupId,
             userId: "",
             status: "ACTIVE",
             position: 0,
@@ -120,9 +101,6 @@ export function useJoinContest() {
   });
 }
 
-/**
- * Mutation hook for leaving a contest
- */
 export function useLeaveContest() {
   const queryClient = useQueryClient();
 

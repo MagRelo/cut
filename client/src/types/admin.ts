@@ -63,7 +63,7 @@ export interface AdminDashboardParlayTypeRow {
 
 export interface AdminDashboardResponse {
   generatedAt: string;
-  tournament: {
+  event: {
     id: string;
     name: string;
     status: string;
@@ -75,7 +75,7 @@ export interface AdminDashboardResponse {
     endDate: string;
   } | null;
   weekCounts: {
-    tournamentLineups: number;
+    lineups: number;
     contestLineups: number;
   };
   contests: {
@@ -106,7 +106,7 @@ export interface AdminDashboardResponse {
     openSideBetTickets: number;
     lockedSideBetMarkets: number;
     sideBetsEnabled: boolean;
-    tournamentIsComplete: boolean;
+    eventIsComplete: boolean;
     suggestedActions: string[];
   };
 }
@@ -127,8 +127,8 @@ export interface AdminBatchLockContestsResponse {
   results: AdminBatchContestOperationResult[];
 }
 
-/** Row from `GET /api/admin/bets/side/tournament-report`. */
-export interface AdminSideBetTournamentReportTicket {
+/** Row from `GET /api/admin/bets/side/event-report`. */
+export interface AdminSideBetEventReportTicket {
   id: string;
   userId: string;
   userName: string | null;
@@ -148,15 +148,15 @@ export interface AdminSideBetTournamentReportTicket {
   potentialPayout: number;
 }
 
-/** Response from `GET /api/admin/bets/side/tournament-report`. */
-export interface AdminSideBetTournamentReportResponse {
-  tournamentId: string;
-  tournamentName: string | null;
+/** Response from `GET /api/admin/bets/side/event-report`. */
+export interface AdminSideBetEventReportResponse {
+  eventId: string;
+  eventName: string | null;
   ticketCount: number;
   totals: {
     stakeInflow: number;
     openLiability: number;
     openStake: number;
   };
-  tickets: AdminSideBetTournamentReportTicket[];
+  tickets: AdminSideBetEventReportTicket[];
 }

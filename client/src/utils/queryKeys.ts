@@ -1,11 +1,5 @@
 /**
  * Centralized query keys for React Query
- *
- * Benefits:
- * - Type-safe query keys
- * - Easy to invalidate related queries
- * - Clear data dependencies
- * - No typos or key mismatches
  */
 
 export const queryKeys = {
@@ -17,18 +11,9 @@ export const queryKeys = {
     candidates: (sportId: string, eventId: string) =>
       [...queryKeys.sports.all, "candidates", sportId, eventId] as const,
   },
-  tournaments: {
-    all: ["tournaments"] as const,
-    /** Week/setup fields (GET /tournaments/active/shell). */
-    activeShell: () => [...queryKeys.tournaments.all, "active", "shell"] as const,
-    /** Cron round status + players (GET /tournaments/active/live). */
-    activeLive: (tournamentId: string) =>
-      [...queryKeys.tournaments.all, "active", "live", tournamentId] as const,
-  },
   contests: {
     all: ["contests"] as const,
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
-    /** Lobby page loaded from `/contest/:address` (address in URL only). */
     byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
     byEvent: (
       eventId: string,
@@ -44,41 +29,18 @@ export const queryKeys = {
         userId ?? "anon",
         userGroupId ?? "all",
       ] as const,
-    /** @deprecated Use byEvent — eventId replaces tournamentId. */
-    byTournament: (
-      eventId: string,
-      chainId: number | "all",
-      userId?: string | null,
-      userGroupId?: string,
-    ) => queryKeys.contests.byEvent(eventId, chainId, userId, userGroupId),
   },
   lineups: {
     all: ["lineups"] as const,
-    /** Scoped by user so cache cannot leak across account switches. */
     byEvent: (userId: string, eventId: string) =>
       [...queryKeys.lineups.all, "event", userId, eventId] as const,
-    /** @deprecated Use byEvent — eventId replaces tournamentId. */
-    byTournament: (userId: string, eventId: string) =>
-      queryKeys.lineups.byEvent(userId, eventId),
     byId: (userId: string, lineupId: string) =>
       [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
-  /** GET /bets/side/lineup/:lineupId/market — invalidate when roster changes. */
   sideBet: {
     all: ["sideBetMarket"] as const,
-    market: (tournamentLineupId: string) => [...queryKeys.sideBet.all, tournamentLineupId] as const,
-    tickets: (tournamentLineupId: string) =>
-      [...queryKeys.sideBet.all, "tickets", tournamentLineupId] as const,
-  },
-  players: {
-    all: ["players"] as const,
-    byTournament: (tournamentId: string) =>
-      [...queryKeys.players.all, "tournament", tournamentId] as const,
-  },
-  scores: {
-    all: ["scores"] as const,
-    byTournament: (tournamentId: string) =>
-      [...queryKeys.scores.all, "tournament", tournamentId] as const,
+    market: (lineupId: string) => [...queryKeys.sideBet.all, lineupId] as const,
+    tickets: (lineupId: string) => [...queryKeys.sideBet.all, "tickets", lineupId] as const,
   },
   user: {
     all: ["user"] as const,

@@ -24,10 +24,10 @@ export type SideBetMarketQuerySnapshot = {
 };
 
 export function resolveSideBetMarketState(
-  tournamentLineupId: string | null,
+  lineupId: string | null,
   query: SideBetMarketQuerySnapshot,
 ): SideBetMarketVisualState {
-  if (!tournamentLineupId) return { kind: "hidden" };
+  if (!lineupId) return { kind: "hidden" };
   if (query.data == null && (query.isLoading || query.isFetching)) {
     return { kind: "loading" };
   }
