@@ -24,7 +24,7 @@ import {
   participantLastName,
   sortCandidatesByLeaderboard,
 } from "../../lib/candidateSorting";
-import { candidateStableford } from "../../sports/pga-golf/utils";
+import { lineupDisplayScore } from "../../lib/lineupScore";
 import {
   candidatesForPlatformLineup,
   platformLineupParticipantIds,
@@ -191,10 +191,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const playerCount = canEditSlots ? slotEditor.filledCount : initialCandidates.length;
 
-  const totalPoints = displayCandidates.reduce(
-    (sum, candidate) => sum + candidateStableford(candidate),
-    0,
-  );
+  const totalPoints = lineupDisplayScore(lineup);
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =

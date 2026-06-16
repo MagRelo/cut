@@ -114,12 +114,14 @@ export function buildFixturePlatformLineup(
   name: string,
   picks: PlatformLineupPick[],
 ) {
+  const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
   return {
     id,
     eventId: "tournament-1",
     name,
     prediction: null,
     picks,
+    score,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

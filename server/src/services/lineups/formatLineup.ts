@@ -18,26 +18,31 @@ export type LineupWithPicks = Prisma.LineupGetPayload<{
 }>;
 
 export function formatLineupResponse(lineup: LineupWithPicks) {
+  const picks = lineup.picks.map((pick) => ({
+    id: pick.id,
+    slotIndex: pick.slotIndex,
+    eventParticipantId: pick.eventParticipantId,
+    participant: pick.eventParticipant.participant
+      ? {
+          id: pick.eventParticipant.participant.id,
+          displayName: pick.eventParticipant.participant.displayName,
+          externalId: pick.eventParticipant.participant.externalId,
+          metadata: pick.eventParticipant.participant.metadata,
+        }
+      : null,
+    scoreData: pick.eventParticipant.scoreData,
+    total: pick.eventParticipant.total,
+  }));
+
+  const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
+
   return {
     id: lineup.id,
     eventId: lineup.eventId,
     name: lineup.name,
     prediction: lineup.prediction,
-    picks: lineup.picks.map((pick) => ({
-      id: pick.id,
-      slotIndex: pick.slotIndex,
-      eventParticipantId: pick.eventParticipantId,
-      participant: pick.eventParticipant.participant
-        ? {
-            id: pick.eventParticipant.participant.id,
-            displayName: pick.eventParticipant.participant.displayName,
-            externalId: pick.eventParticipant.participant.externalId,
-            metadata: pick.eventParticipant.participant.metadata,
-          }
-        : null,
-      scoreData: pick.eventParticipant.scoreData,
-      total: pick.eventParticipant.total,
-    })),
+    picks,
+    score,
     createdAt: lineup.createdAt,
     updatedAt: lineup.updatedAt,
   };

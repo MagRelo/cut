@@ -68,12 +68,14 @@ const storybookUser = {
 function buildPlatformLineup(participantIds: string[] = []): PlatformLineupListItem {
   const picks = picksForParticipantIds(participantIds);
   const now = new Date().toISOString();
+  const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
   return {
     id: STORYBOOK_LINEUP_ID,
     eventId: STORYBOOK_LINEUP_EVENT_ID,
     name: "Lineup #1",
     prediction: { winningScorePrediction: 150 },
     picks,
+    score,
     createdAt: now,
     updatedAt: now,
     contestLineups: [],

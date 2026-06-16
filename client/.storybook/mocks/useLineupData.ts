@@ -38,11 +38,13 @@ export function useLineupData(_options: { eventId?: string; enabled?: boolean } 
       options?: { winningScorePrediction?: number },
     ) => {
       const picks = buildLineupPicksByIds(playerIds);
+      const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
       lineupsSnapshot = lineupsSnapshot.map((lineup) =>
         lineup.id === lineupId
           ? {
               ...lineup,
               picks,
+              score,
               ...(options?.winningScorePrediction !== undefined
                 ? { prediction: { winningScorePrediction: options.winningScorePrediction } }
                 : {}),
@@ -57,6 +59,7 @@ export function useLineupData(_options: { eventId?: string; enabled?: boolean } 
         name: updated?.name ?? "Lineup #1",
         prediction: updated?.prediction ?? null,
         picks,
+        score,
         createdAt: updated?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

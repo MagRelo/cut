@@ -9,7 +9,7 @@ import {
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
 import { sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
-import { candidateStableford } from "../../sports/pga-golf/utils";
+import { lineupDisplayScore } from "../../lib/lineupScore";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { EntryHeader } from "./EntryHeader";
@@ -42,11 +42,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     );
   }, [lineup, candidatesByParticipantId]);
 
-  const totalPoints = lineupCandidates.reduce(
-    (sum, candidate) => sum + candidateStableford(candidate),
-    0,
-  );
-
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
   const resolvedStatus = status ?? "SCHEDULED";
 
@@ -55,6 +50,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   }, [isOpen]);
 
   if (!lineup) return null;
+
+  const totalPoints = lineupDisplayScore(lineup);
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =

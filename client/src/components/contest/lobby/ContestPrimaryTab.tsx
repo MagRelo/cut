@@ -1,7 +1,7 @@
 import React from "react";
 import { type Contest } from "../../../types/contest";
 import { type PrimaryTabMode } from "../../../types/contestLobby";
-import { CountdownTimer } from "../../tournament/CountdownTimer";
+import { CountdownTimer } from "../../common/CountdownTimer";
 import { ContestEntryList } from "../ContestEntryList";
 import { ContestTimelinesSection } from "./ContestTimelinesSection";
 import { ContestLobbyTabHero } from "./ContestLobbyTabHero";

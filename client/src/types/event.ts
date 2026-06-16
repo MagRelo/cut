@@ -38,6 +38,8 @@ export interface PlatformLineup {
   name: string;
   prediction: unknown;
   picks: PlatformLineupPick[];
+  /** Sum of pick totals — maintained by the server on each lineup fetch. */
+  score: number;
   createdAt: string;
   updatedAt: string;
   contestLineups?: import("./lineup").ContestLineupWithContest[];

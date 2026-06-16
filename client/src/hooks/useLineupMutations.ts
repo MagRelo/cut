@@ -129,6 +129,7 @@ export function useCreateLineup() {
           name: name || "New Lineup",
           prediction: null,
           picks: [],
+          score: 0,
           contestLineups: [],
           createdAt: now,
           updatedAt: now,

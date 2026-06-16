@@ -31,7 +31,7 @@ function contestLineupForCard(
     userId: user.id,
     lineupId: row.id,
     position: 0,
-    score: 0,
+    score: row.score,
     status: "ACTIVE",
     lineup: row,
     user: user as unknown as ContestLineup["user"],

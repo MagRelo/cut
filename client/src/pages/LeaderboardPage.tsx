@@ -12,12 +12,10 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { SportParticipantDetailModal } from "../components/platform/SportParticipantDetailModal";
 import { SportParticipantRow } from "../components/platform/SportParticipantRow";
-import { TournamentSummaryModal } from "../components/tournament/TournamentSummaryModal";
 
 export const LeaderboardPage: React.FC = () => {
   const { eventId, status, candidates, isLoading, error } = useActiveEvent();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
@@ -129,11 +127,6 @@ export const LeaderboardPage: React.FC = () => {
           ))}
         </div>
       )}
-
-      <TournamentSummaryModal
-        isOpen={isSummaryModalOpen}
-        onClose={() => setIsSummaryModalOpen(false)}
-      />
 
       <SportParticipantDetailModal
         isOpen={isPlayerModalOpen}
