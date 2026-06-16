@@ -3,7 +3,6 @@ import {
   adminMatch,
   contestsMatch,
   leaguesMatch,
-  lineupsMatch,
   userGroupsMatch,
 } from "./navRoutes";
 
@@ -21,6 +20,15 @@ export const CONTEST_HISTORY_LINK = {
   match: (pathname: string) => pathname === "/account/history",
 } as const;
 
+export const ACCOUNT_FUNDS_LINK = {
+  to: "/account/funds",
+  label: "Manage Funds",
+  match: (pathname: string) => pathname === "/account/funds",
+} as const;
+
+/** Indented links nested under Account in user menus. */
+export const ACCOUNT_SUB_LINKS = [ACCOUNT_FUNDS_LINK, CONTEST_HISTORY_LINK] as const;
+
 export const LEFT_TABS: NavTab[] = [
   {
     key: "contests",
@@ -29,13 +37,6 @@ export const LEFT_TABS: NavTab[] = [
     match: contestsMatch,
   },
 ];
-
-export const LINEUPS_TAB: NavTab = {
-  key: "lineups",
-  to: "/lineups",
-  label: "My Lineups",
-  match: lineupsMatch,
-};
 
 export const LEAGUES_TAB: NavTab = {
   key: "leagues",

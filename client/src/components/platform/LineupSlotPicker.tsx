@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo } from "react";
-import { useSportContext } from "../../contexts/SportContext";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import {
   eventParticipantIdsFromParticipantIds,
@@ -8,6 +7,7 @@ import {
 import { CandidatePicker } from "./CandidatePicker";
 
 interface LineupSlotPickerProps {
+  sportId: string;
   eventId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +19,7 @@ interface LineupSlotPickerProps {
 
 /** Bridges legacy participant IDs to sport `CandidatePicker` (eventParticipantId). */
 export const LineupSlotPicker: React.FC<LineupSlotPickerProps> = ({
+  sportId,
   eventId,
   isOpen,
   onClose,
@@ -27,7 +28,6 @@ export const LineupSlotPicker: React.FC<LineupSlotPickerProps> = ({
   isSaving = false,
   saveError = null,
 }) => {
-  const { sportId } = useSportContext();
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
 
   const selectedEventParticipantIds = useMemo(

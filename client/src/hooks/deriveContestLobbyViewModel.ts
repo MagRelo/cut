@@ -86,18 +86,34 @@ export function deriveContestLobbyViewModel(
   const showCountdown =
     !primaryActionsLocked && input.eventNotStarted === true && Boolean(input.eventStartDate);
 
+  const showLineupsTab = Boolean(contest.event?.sportId);
   const showFieldTab = Boolean(contest.event?.sportId);
-  const fieldTabIndex = showFieldTab ? 1 : -1;
-  const defaultTabIndex = isSettled ? (showFieldTab ? 2 : 1) : 0;
+
+  let tabIndex = 0;
+  const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
+  const contestTabIndex = tabIndex++;
+  const fieldTabIndex = showFieldTab ? tabIndex++ : -1;
+  const tailTabIndex = tabIndex;
+
+  const defaultTabIndex =
+    phase === "preRound" && showLineupsTab
+      ? lineupsTabIndex
+      : phase === "settled"
+        ? tailTabIndex
+        : contestTabIndex;
 
   return {
     phase,
     layout: {
+      showLineupsTab,
       showFieldTab,
       showPredictionsTab: !isSettled,
       showResultsTab: isSettled,
-      defaultTabIndex,
+      lineupsTabIndex,
+      contestTabIndex,
       fieldTabIndex,
+      tailTabIndex,
+      defaultTabIndex,
       layoutKey: `${contest.id}-${phase}`,
     },
     primary: {

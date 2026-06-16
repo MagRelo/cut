@@ -63,9 +63,8 @@ client/src/
 | `/contests` | `ContestListPage` (`Contests`) | Multi-sport live contests (public + league merge per event) |
 | `/sports/:sportId` | `SportHubPage` | Single-sport contest list (deep links) |
 | `/sports/:sportId/leaderboard` | `LeaderboardPage` | Sport-scoped field leaderboard (share links) |
-| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; Field tab for event leaderboard |
+| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; Lineups, Field, Contest, Winner Pool / Results tabs |
 | `/contests/create` | `ContestCreatePage` | Staff / league admin |
-| `/lineups` | `LineupListPage` | User lineups across events |
 | `/leaderboard` | `LeaderboardPage` | Legacy golf-default field leaderboard |
 | `/leagues/*` | User group pages | Canonical league URLs |
 | `/user-groups/*` | redirects | → `/leagues/*` |

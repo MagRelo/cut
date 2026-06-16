@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { Link } from "react-router-dom";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
-import { ContestCard } from "../contest/ContestCard";
 import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 import { LineupSlotPicker } from "../platform/LineupSlotPicker";
@@ -10,10 +8,8 @@ import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import type { Candidate } from "@cut/sport-sdk";
 import type { ContestLineup } from "../../types/lineup";
-import type { Contest } from "../../types/contest";
-import { contestLobbyPath } from "../../utils/contestRoutes";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import type { EventStatus } from "../../types/event";
 import {
   candidatesByParticipantIdMap,
   candidatesForLineupPicks,
@@ -31,6 +27,7 @@ import {
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
 import { useLineupData } from "../../hooks/useLineupData";
+import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
 import { SportPredictionField } from "../platform/SportPredictionField";
 import { golfPredictionValue, toGolfPrediction } from "../../lib/golfPrediction";
@@ -53,27 +50,24 @@ const isValidHexColor = (value: unknown): value is string => {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
 
-interface ContestInfo {
-  contest: Contest;
-  position: number;
-}
-
 interface LineupContestCardProps {
   lineup: ContestLineup;
-  contests?: ContestInfo[];
   isEditable?: boolean;
+  sportId: string;
+  eventId: string;
+  eventStatus: EventStatus;
+  isEventEditable: boolean;
 }
 
 const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] py-3 flow-root";
 
-/** Matches the “no contests” badge on the Contests tab label. */
-const NO_CONTESTS_WARNING_BADGE_CLASS =
-  "inline-flex shrink-0 items-center rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700";
-
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
-  contests = [],
   isEditable = false,
+  sportId,
+  eventId,
+  eventStatus,
+  isEventEditable,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -81,12 +75,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const { candidates, isEventEditable, eventId, status } = useActiveEvent();
+  const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
   );
   const { updateLineup, lineups } = useLineupData({ eventId });
+  const status = eventStatus;
 
   const platformLineup =
     lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
@@ -253,24 +248,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             >
               Parlays
             </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                tabButtonClassName(selected, { compact: true })
-              }
-            >
-              <span className="inline-flex items-center gap-1">
-                <span>Contests ({contests.length})</span>
-                {contests.length === 0 ? (
-                  <span
-                    className={NO_CONTESTS_WARNING_BADGE_CLASS}
-                    title="No contests for this lineup"
-                    aria-label="Warning: lineup has no contests"
-                  >
-                    !
-                  </span>
-                ) : null}
-              </span>
-            </Tab>
           </TabList>
 
           <div className="">
@@ -374,52 +351,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 lineupId={lineupId}
               />
             </TabPanel>
-
-            {/* CONTESTS TAB */}
-            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-              <div className="space-y-3 pt-1">
-                {contests.length > 0 ? (
-                  contests.map((contestInfo) => {
-                    return (
-                      <div key={contestInfo.contest.id} className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1 rounded-sm border border-gray-200 bg-white p-3 py-4 shadow-sm">
-                          <Link
-                            to={contestLobbyPath(contestInfo.contest.address)}
-                            className="block"
-                          >
-                            <ContestCard contest={contestInfo.contest} />
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="rounded-sm border border-gray-200 bg-white p-4 shadow">
-                    <p className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
-                      <span className={NO_CONTESTS_WARNING_BADGE_CLASS} aria-hidden>
-                        !
-                      </span>
-                      <span>This lineup is not entered in any contests.</span>
-                    </p>
-                    <p className="font-display text-sm leading-relaxed text-gray-600">
-                      Browse available contests and enter your lineup.
-                    </p>
-                    <Link
-                      to="/contests"
-                      className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
-                    >
-                      Browse Contests
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </TabPanel>
           </div>
         </TabGroup>
       </div>
 
       {canEditSlots && eventId ? (
         <LineupSlotPicker
+          sportId={sportId}
           eventId={eventId}
           isOpen={slotEditor.selectedSlotIndex !== null}
           onClose={slotEditor.closeSlot}
@@ -434,6 +372,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
         candidate={detailCandidate}
+        sportId={sportId}
       />
     </div>
   );

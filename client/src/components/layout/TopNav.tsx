@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import { BRAND_WORDMARK } from "../../lib/brand";
-import { LEFT_TABS, LINEUPS_TAB } from "../../lib/navTabs";
+import { LEFT_TABS } from "../../lib/navTabs";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { UserMenu } from "./UserMenu";
 
@@ -23,7 +23,7 @@ function NavTabLink({
   tab,
   pathname,
 }: {
-  tab: (typeof LEFT_TABS)[number] | typeof LINEUPS_TAB;
+  tab: (typeof LEFT_TABS)[number];
   pathname: string;
 }) {
   const active = tab.match(pathname);
@@ -56,7 +56,6 @@ export const TopNav: React.FC = () => {
           </span>
         </Link>
 
-        {/* Desktop: left group + right group */}
         <nav
           aria-label="Main"
           className="hidden min-w-0 flex-1 items-center justify-between md:flex"
@@ -69,10 +68,7 @@ export const TopNav: React.FC = () => {
 
           <div className="flex items-center gap-2">
             {user ? (
-              <>
-                <NavTabLink tab={LINEUPS_TAB} pathname={location.pathname} />
-                <UserMenu />
-              </>
+              <UserMenu />
             ) : (
               <Link
                 to="/connect"

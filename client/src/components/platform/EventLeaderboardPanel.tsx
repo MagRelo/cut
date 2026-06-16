@@ -104,7 +104,7 @@ export const EventLeaderboardPanel: React.FC<EventLeaderboardPanelProps> = ({
 
   return (
     <>
-      <div className="-mx-4 -mt-4">
+      <div className="-mx-4">
         {sortedCandidates.map((candidate) => (
           <div key={candidate.participantId} className="border-b border-gray-200">
             <div className="p-3">

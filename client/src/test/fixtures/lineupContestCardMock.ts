@@ -1,6 +1,6 @@
 import type { ContestLineup, PlatformLineupListItem } from "../../types/lineup";
 import type { PlatformLineupPick } from "../../types/event";
-import { contestFixtures } from "./contestLobby";
+import type { EventStatus } from "../../types/event";
 
 export const STORYBOOK_LINEUP_EVENT_ID = "event-storybook";
 export const STORYBOOK_LINEUP_ID = "lineup-storybook-1";
@@ -106,11 +106,9 @@ export function createStorybookLineupsList(participantIds: string[] = []): Platf
 }
 
 export const lineupContestCardStoryDefaults = {
+  sportId: "golf",
+  eventId: STORYBOOK_LINEUP_EVENT_ID,
+  eventStatus: "SCHEDULED" as EventStatus,
+  isEventEditable: true,
   isEditable: true,
-  contests: [
-    {
-      contest: contestFixtures.open,
-      position: 1,
-    },
-  ],
 };

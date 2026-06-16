@@ -1,5 +1,4 @@
 import React, { Fragment, useState, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { usePostHog } from "posthog-js/react";
 import { useAccount, useBalance, useReadContract } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
@@ -37,6 +36,7 @@ interface LineupManagementProps {
   contest: Contest;
   /** Called after a successful join when all user lineups are entered. */
   onCloseModal?: () => void;
+  onOpenLineupsTab?: () => void;
 }
 
 // Helper function to get status messages
@@ -64,9 +64,14 @@ const isValidHexColor = (value: unknown): value is string => {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
 };
 
-export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onCloseModal }) => {
+export const LineupManagement: React.FC<LineupManagementProps> = ({
+  contest,
+  onCloseModal,
+  onOpenLineupsTab,
+}) => {
   const posthog = usePostHog();
-  const { sportId } = useSportContext();
+  const { sportId: contextSportId } = useSportContext();
+  const sportId = contest.event?.sportId ?? contextSportId;
   const { status } = useActiveEvent();
   const resolvedStatus = status ?? "SCHEDULED";
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData({
@@ -473,12 +478,13 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
                       )}
                     </button>
                   ) : sortedCandidates.length === 0 ? (
-                    <Link
-                      to="/lineups"
+                    <button
+                      type="button"
+                      onClick={onOpenLineupsTab}
                       className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
                     >
                       Select players
-                    </Link>
+                    </button>
                   ) : (
                     <button
                       onClick={() => handleJoinContest(lineup.id)}
@@ -502,12 +508,13 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({ contest, onC
         })}
 
       {!isLineupsLoading && lineups.length === 0 && (
-        <Link
-          to="/lineups"
+        <button
+          type="button"
+          onClick={onOpenLineupsTab}
           className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
         >
           Select players
-        </Link>
+        </button>
       )}
 
       {/* Error Display */}

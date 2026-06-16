@@ -4,10 +4,17 @@ import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
-import { ADMIN_MENU_LINKS, CONTEST_HISTORY_LINK, LEAGUES_TAB } from "../../lib/navTabs";
+import {
+  ACCOUNT_SUB_LINKS,
+  ADMIN_MENU_LINKS,
+  LEAGUES_TAB,
+} from "../../lib/navTabs";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
+
+const menuSubItemClass =
+  "block w-full py-2 pl-7 pr-4 text-left text-sm font-display text-slate-600 data-[focus]:bg-slate-50";
 
 export const UserMenu: React.FC = () => {
   const { logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
@@ -59,28 +66,37 @@ export const UserMenu: React.FC = () => {
           </Link>
         </MenuItem>
         <MenuItem>
-          <Link to="/account" className={menuItemClass}>
+          <Link
+            to="/account"
+            className={menuItemClass}
+            aria-current={location.pathname === "/account" ? "page" : undefined}
+          >
             Account
           </Link>
         </MenuItem>
-        <MenuItem>
-          <Link to="/account/funds" className={menuItemClass}>
-            Manage Funds
-          </Link>
-        </MenuItem>
-        <MenuItem>
-          <Link
-            to={CONTEST_HISTORY_LINK.to}
-            className={menuItemClass}
-            aria-current={CONTEST_HISTORY_LINK.match(location.pathname) ? "page" : undefined}
-          >
-            {CONTEST_HISTORY_LINK.label}
-          </Link>
-        </MenuItem>
+        {ACCOUNT_SUB_LINKS.map((link) => (
+          <MenuItem key={link.to}>
+            <Link
+              to={link.to}
+              className={menuSubItemClass}
+              aria-current={link.match(location.pathname) ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          </MenuItem>
+        ))}
         {showAdminNav
           ? ADMIN_MENU_LINKS.map((link) => (
               <MenuItem key={link.to}>
-                <Link to={link.to} className={menuItemClass}>
+                <Link
+                  to={link.to}
+                  className={menuItemClass}
+                  aria-current={
+                    location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)
+                      ? "page"
+                      : undefined
+                  }
+                >
                   {link.label}
                 </Link>
               </MenuItem>

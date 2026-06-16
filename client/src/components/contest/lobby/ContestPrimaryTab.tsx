@@ -15,6 +15,7 @@ export interface ContestPrimaryTabProps {
   eventStartDate?: string | Date | null;
   currentUserId?: string;
   onEnterContest: () => void;
+  onOpenLineupsTab?: () => void;
 }
 
 export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
@@ -26,6 +27,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   eventStartDate,
   currentUserId,
   onEnterContest,
+  onOpenLineupsTab,
 }) => {
   return (
     <div className="space-y-4">
@@ -36,7 +38,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
           <div className="flex w-full max-w-sm flex-col items-center justify-center gap-4">
             <button
               type="button"
-              onClick={onEnterContest}
+              onClick={onOpenLineupsTab ?? onEnterContest}
               className="w-full rounded-lg border border-blue-500 bg-blue-500 px-6 py-3 font-display text-base font-semibold text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Enter Contest{" — "}

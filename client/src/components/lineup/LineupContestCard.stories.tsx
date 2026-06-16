@@ -32,7 +32,6 @@ const meta = {
   },
   argTypes: {
     lineup: { control: false },
-    contests: { control: false },
   },
 } satisfies Meta<typeof LineupContestCard>;
 
@@ -62,15 +61,6 @@ export const EditingFull: Story = {
   ],
   args: {
     lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"]),
-  },
-};
-
-/** Lineup with no contest entries — Contests tab shows the warning state. */
-export const EditingNoContests: Story = {
-  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy"])],
-  args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
-    contests: [],
   },
 };
 

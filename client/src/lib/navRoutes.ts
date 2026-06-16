@@ -16,8 +16,6 @@ export const contestsMatch = (pathname: string) =>
   pathname.startsWith("/contest/") ||
   sportsMatch(pathname);
 
-export const lineupsMatch = (pathname: string) => pathname.startsWith("/lineups");
-
 export const leaguesMatch = (pathname: string) => pathname.startsWith("/leagues");
 
 export const userGroupsMatch = (pathname: string) => pathname.startsWith("/user-groups");

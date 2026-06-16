@@ -25,8 +25,6 @@ import { UserPage } from "./pages/Account";
 import { UserHistoryPage } from "./pages/UserHistoryPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
-import { LineupList } from "./pages/LineupListPage";
-
 import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
 import { Contests } from "./pages/ContestListPage";
@@ -143,16 +141,6 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route path="/contest/:address" element={<ContestLobby />} />
-
-                  {/* Lineups */}
-                  <Route
-                    path="/lineups"
-                    element={
-                      <ProtectedRoute>
-                        <LineupList />
-                      </ProtectedRoute>
-                    }
-                  />
 
                   {/* Leaderboard */}
                   <Route path="/leaderboard" element={<LeaderboardPage />} />

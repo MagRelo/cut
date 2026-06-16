@@ -101,10 +101,10 @@ export const FAQPage: React.FC = () => {
               A lineup is four player slots plus a tie-breaker guess for the tournament week. You
               can enter the same lineup into multiple contests. While the tournament is open for
               editing, go to{" "}
-              <Link to="/lineups" className="text-blue-600 hover:underline">
-                Lineups
+              <Link to="/contests" className="text-blue-600 hover:underline">
+                Live Contests
               </Link>{" "}
-              to create or edit one:
+              and open a contest to create or edit lineups:
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>

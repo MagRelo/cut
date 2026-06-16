@@ -4,7 +4,6 @@ const SPORT_EVENT_CONTEXT_PATTERNS = [
   /^\/sports\/[^/]+\/leaderboard$/,
   /^\/contests\/.+/,
   /^\/contest\//,
-  /^\/lineups(\/|$)/,
   /^\/leaderboard$/,
 ];
 

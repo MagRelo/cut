@@ -26,6 +26,6 @@ describe("playerWithdrawal email", () => {
     expect(html).not.toContain("Hi Matt");
     expect(html).toContain("Lineup #1");
     expect(html).toContain("Lineup #2");
-    expect(html).toContain("/lineups");
+    expect(html).toContain("/contests");
   });
 });

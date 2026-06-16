@@ -15,6 +15,7 @@ export interface ContestLineupModalProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
+  onOpenLineupsTab?: () => void;
 }
 
 export const ContestLineupModal: React.FC<ContestLineupModalProps> = ({
@@ -22,7 +23,13 @@ export const ContestLineupModal: React.FC<ContestLineupModalProps> = ({
   isOpen,
   onClose,
   isAuthenticated,
+  onOpenLineupsTab,
 }) => {
+  const handleOpenLineupsTab = () => {
+    onClose();
+    onOpenLineupsTab?.();
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -75,7 +82,11 @@ export const ContestLineupModal: React.FC<ContestLineupModalProps> = ({
                   </button>
                 </div>
                 {isAuthenticated ? (
-                  <LineupManagement contest={contest} onCloseModal={onClose} />
+                  <LineupManagement
+                    contest={contest}
+                    onCloseModal={onClose}
+                    onOpenLineupsTab={handleOpenLineupsTab}
+                  />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-4 p-4 text-center">
                     <div className="flex items-center justify-center gap-2">

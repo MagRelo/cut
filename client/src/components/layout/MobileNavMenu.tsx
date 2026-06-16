@@ -7,11 +7,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_WORDMARK } from "../../lib/brand";
 import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
 import {
+  ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
-  CONTEST_HISTORY_LINK,
   LEAGUES_TAB,
   LEFT_TABS,
-  LINEUPS_TAB,
 } from "../../lib/navTabs";
 
 const mobileNavItemBase =
@@ -107,41 +106,19 @@ export const MobileNavMenu: React.FC = () => {
                     <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
                       <div className="flex flex-col gap-0.5">
                         {LEFT_TABS.map((tab) => (
-                          <Fragment key={tab.key}>
-                            <Link
-                              to={tab.to}
-                              state={tab.state}
-                              aria-current={tab.match(location.pathname) ? "page" : undefined}
-                              className={mobileNavItemClass(tab.match(location.pathname))}
-                            >
-                              {tab.label}
-                            </Link>
-                            {tab.key === "contests" && user ? (
-                              <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
-                                <Link
-                                  to={CONTEST_HISTORY_LINK.to}
-                                  aria-current={
-                                    CONTEST_HISTORY_LINK.match(location.pathname) ? "page" : undefined
-                                  }
-                                  className={mobileSubItemClass}
-                                >
-                                  {CONTEST_HISTORY_LINK.label}
-                                </Link>
-                              </div>
-                            ) : null}
-                          </Fragment>
+                          <Link
+                            key={tab.key}
+                            to={tab.to}
+                            state={tab.state}
+                            aria-current={tab.match(location.pathname) ? "page" : undefined}
+                            className={mobileNavItemClass(tab.match(location.pathname))}
+                          >
+                            {tab.label}
+                          </Link>
                         ))}
 
                         {user ? (
                           <>
-                            <Link
-                              to={LINEUPS_TAB.to}
-                              aria-current={LINEUPS_TAB.match(location.pathname) ? "page" : undefined}
-                              className={mobileNavItemClass(LINEUPS_TAB.match(location.pathname))}
-                            >
-                              {LINEUPS_TAB.label}
-                            </Link>
-
                             <Link
                               to={LEAGUES_TAB.to}
                               aria-current={LEAGUES_TAB.match(location.pathname) ? "page" : undefined}
@@ -170,34 +147,46 @@ export const MobileNavMenu: React.FC = () => {
                             </Link>
 
                             <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
-                              <Link to="/account/funds" className={mobileSubItemClass}>
-                                Manage Funds
-                              </Link>
-                              {showAdminNav
-                                ? ADMIN_MENU_LINKS.map((link) => (
-                                    <Link
-                                      key={link.to}
-                                      to={link.to}
-                                      aria-current={
-                                        location.pathname === link.to ||
-                                        location.pathname.startsWith(`${link.to}/`)
-                                          ? "page"
-                                          : undefined
-                                      }
-                                      className={mobileSubItemClass}
-                                    >
-                                      {link.label}
-                                    </Link>
-                                  ))
-                                : null}
-                              <button
-                                type="button"
-                                className={mobileSubItemClass}
-                                onClick={() => void logout()}
-                              >
-                                Sign Out
-                              </button>
+                              {ACCOUNT_SUB_LINKS.map((link) => (
+                                <Link
+                                  key={link.to}
+                                  to={link.to}
+                                  aria-current={link.match(location.pathname) ? "page" : undefined}
+                                  className={mobileSubItemClass}
+                                >
+                                  {link.label}
+                                </Link>
+                              ))}
                             </div>
+
+                            {showAdminNav
+                              ? ADMIN_MENU_LINKS.map((link) => (
+                                  <Link
+                                    key={link.to}
+                                    to={link.to}
+                                    aria-current={
+                                      location.pathname === link.to ||
+                                      location.pathname.startsWith(`${link.to}/`)
+                                        ? "page"
+                                        : undefined
+                                    }
+                                    className={mobileNavItemClass(
+                                      location.pathname === link.to ||
+                                        location.pathname.startsWith(`${link.to}/`),
+                                    )}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                ))
+                              : null}
+
+                            <button
+                              type="button"
+                              className={mobileNavItemClass(false)}
+                              onClick={() => void logout()}
+                            >
+                              Sign Out
+                            </button>
                           </>
                         ) : (
                           <Link

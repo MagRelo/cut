@@ -33,7 +33,7 @@ ${renderProseBlock(
 ${renderProseBlock(
   `We removed them from ${lineupLabel}. Please pick a replacement before lineups lock.`,
 )}
-${renderCtaBlock({ label: "Update your lineups", href: appPath("/lineups") })}`;
+${renderCtaBlock({ label: "Update your lineups", href: appPath("/contests") })}`;
 
   return wrapEmailHtml({ title: playerWithdrawalSubject(data), bodyHtml });
 }
