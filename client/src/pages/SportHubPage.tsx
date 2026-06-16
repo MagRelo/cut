@@ -1,7 +1,7 @@
 import React from "react";
-import { Contests } from "./ContestListPage";
+import { SportHubContests } from "./SportHubContestsPage";
 
-/** Sport-scoped home: contests for the active event of the selected sport. */
+/** Sport-scoped hub: contests for the active event of the selected sport. */
 export const SportHubPage: React.FC = () => {
-  return <Contests />;
+  return <SportHubContests />;
 };

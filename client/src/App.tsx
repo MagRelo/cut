@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { DEFAULT_SPORT_ID } from "./hooks/useSportData";
 
 import { WagmiProvider } from "@privy-io/wagmi";
 import { PrivyProvider } from "@privy-io/react-auth";
@@ -30,6 +29,7 @@ import { LineupList } from "./pages/LineupListPage";
 
 import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
+import { Contests } from "./pages/ContestListPage";
 import {
   SportContestRedirect,
   UserGroupToLeagueRedirect,
@@ -87,8 +87,9 @@ const AppShell: React.FC = () => {
         {/* <MaintenanceOverlay /> */}
         <OnboardingRedirectGate>
           <Routes>
-                  <Route path="/" element={<Navigate to={`/sports/${DEFAULT_SPORT_ID}`} replace />} />
+                  <Route path="/" element={<Navigate to="/contests" replace />} />
                   <Route path="/sports/:sportId" element={<SportHubPage />} />
+                  <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
                   <Route path="/home" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
@@ -132,10 +133,7 @@ const AppShell: React.FC = () => {
                     }
                   />
                   {/* Contests */}
-                  <Route
-                    path="/contests"
-                    element={<Navigate to={`/sports/${DEFAULT_SPORT_ID}`} replace />}
-                  />
+                  <Route path="/contests" element={<Contests />} />
                   <Route
                     path="/contests/create"
                     element={

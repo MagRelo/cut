@@ -102,7 +102,7 @@ async function resolveMetadataForPath(
     type: "website",
   };
 
-  if (path === "/leaderboard") {
+  if (path === "/leaderboard" || /^\/sports\/[^/]+\/leaderboard$/.test(path)) {
     return defaults;
   }
 

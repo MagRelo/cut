@@ -1,9 +1,8 @@
 import type { Location } from "react-router-dom";
-import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 
-/** After Sign In from the nav, land on the default sport hub. */
+/** After Sign In from the nav, land on the live contests hub. */
 export const signInReturnFrom: Pick<Location, "pathname" | "search" | "hash"> = {
-  pathname: `/sports/${DEFAULT_SPORT_ID}`,
+  pathname: "/contests",
   search: "",
   hash: "",
 };
@@ -23,7 +22,8 @@ export const leaguesMatch = (pathname: string) => pathname.startsWith("/leagues"
 
 export const userGroupsMatch = (pathname: string) => pathname.startsWith("/user-groups");
 
-export const leaderboardMatch = (pathname: string) => pathname === "/leaderboard";
+export const leaderboardMatch = (pathname: string) =>
+  pathname === "/leaderboard" || /^\/sports\/[^/]+\/leaderboard$/.test(pathname);
 
 export const accountMatch = (pathname: string) =>
   pathname.startsWith("/account") || pathname === "/connect";

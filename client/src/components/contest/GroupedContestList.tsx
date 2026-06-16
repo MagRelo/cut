@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { type Contest } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
-import { ContestList } from "./ContestList";
+import { ContestList, PrivateLeagueNotice } from "./ContestList";
 
 export interface ContestEventSummary {
   id: string;
@@ -21,6 +21,7 @@ interface GroupedContestListProps {
   contests: LeagueContest[];
   loading: boolean;
   error: string | null;
+  showPrivateLeagueNotice?: boolean;
 }
 
 function groupContests(contests: LeagueContest[]) {
@@ -55,38 +56,49 @@ export const GroupedContestList = ({
   contests,
   loading,
   error,
+  showPrivateLeagueNotice = false,
 }: GroupedContestListProps) => {
   const groups = useMemo(() => groupContests(contests), [contests]);
 
   if (loading) {
-    return <ContestList contests={[]} loading error={null} />;
+    return <ContestList contests={[]} loading error={null} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
   }
 
   if (error) {
-    return <ContestList contests={[]} loading={false} error={error} />;
+    return <ContestList contests={[]} loading={false} error={error} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
   }
 
   if (contests.length === 0) {
-    return <ContestList contests={[]} loading={false} error={null} />;
+    return <ContestList contests={[]} loading={false} error={null} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
   }
 
   if (groups.length === 1) {
-    return <ContestList contests={contests} loading={false} error={null} />;
+    return (
+      <ContestList
+        contests={contests}
+        loading={false}
+        error={null}
+        showPrivateLeagueNotice={showPrivateLeagueNotice}
+      />
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {groups.map((group) => (
-        <section key={group.key}>
-          <header className="mb-3">
-            <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
-            {group.sublabel ? (
-              <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
-            ) : null}
-          </header>
-          <ContestList contests={group.contests} loading={false} error={null} />
-        </section>
-      ))}
-    </div>
+    <>
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <section key={group.key}>
+            <header className="mb-3">
+              <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
+              {group.sublabel ? (
+                <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
+              ) : null}
+            </header>
+            <ContestList contests={group.contests} loading={false} error={null} />
+          </section>
+        ))}
+      </div>
+      {showPrivateLeagueNotice ? <PrivateLeagueNotice /> : null}
+    </>
   );
 };

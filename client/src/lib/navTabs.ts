@@ -1,9 +1,7 @@
 import type { Location } from "react-router-dom";
-import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 import {
   adminMatch,
   contestsMatch,
-  leaderboardMatch,
   leaguesMatch,
   lineupsMatch,
   userGroupsMatch,
@@ -25,14 +23,8 @@ export const CONTEST_HISTORY_LINK = {
 
 export const LEFT_TABS: NavTab[] = [
   {
-    key: "leaderboard",
-    to: "/leaderboard",
-    label: "Leaderboard",
-    match: leaderboardMatch,
-  },
-  {
     key: "contests",
-    to: `/sports/${DEFAULT_SPORT_ID}`,
+    to: "/contests",
     label: "Live Contests",
     match: contestsMatch,
   },

@@ -7,9 +7,11 @@ export type PredictionsPanelMode = "wager" | "positions" | "claim" | "locked" | 
 export interface ContestLobbyViewModel {
   phase: ContestLobbyPhase;
   layout: {
+    showFieldTab: boolean;
     showPredictionsTab: boolean;
     showResultsTab: boolean;
     defaultTabIndex: number;
+    fieldTabIndex: number;
     layoutKey: string;
   };
   primary: {

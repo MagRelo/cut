@@ -27,7 +27,7 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
       <h1 className="font-display text-2xl font-bold leading-snug tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] sm:text-3xl">
         <Link
-          to="/leaderboard"
+          to={`/sports/${event.sportId}/leaderboard`}
           className="rounded-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           {name}

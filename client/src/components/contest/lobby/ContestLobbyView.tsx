@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
+import { EventLeaderboardPanel } from "../../platform/EventLeaderboardPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
@@ -23,12 +25,32 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   currentUserId,
   isAuthenticated,
 }) => {
-  const [selectedIndex, setSelectedIndex] = useState(viewModel.layout.defaultTabIndex);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTabIndex = useMemo(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "field") return viewModel.layout.fieldTabIndex;
+    return viewModel.layout.defaultTabIndex;
+  }, [searchParams, viewModel.layout.defaultTabIndex, viewModel.layout.fieldTabIndex]);
+
+  const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
   const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
 
   useEffect(() => {
-    setSelectedIndex(viewModel.layout.defaultTabIndex);
-  }, [viewModel.layout.layoutKey, viewModel.layout.defaultTabIndex]);
+    setSelectedIndex(initialTabIndex);
+  }, [viewModel.layout.layoutKey, initialTabIndex]);
+
+  const fieldSportId = contest.event?.sportId;
+  const playerIdParam = searchParams.get("playerId");
+  const pgaTourIdParam = searchParams.get("pgaTourId");
+
+  const clearPlayerParams = () => {
+    if (!searchParams.has("pgaTourId") && !searchParams.has("playerId")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("pgaTourId");
+    next.delete("playerId");
+    setSearchParams(next, { replace: true });
+  };
+
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
 
   return (
@@ -53,6 +75,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
+            {viewModel.layout.showFieldTab ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Field
+              </Tab>
+            ) : null}
             {viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
@@ -82,6 +111,19 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 onEnterContest={() => setIsLineupModalOpen(true)}
               />
             </TabPanel>
+
+            {viewModel.layout.showFieldTab && fieldSportId ? (
+              <TabPanel className="p-4 focus:outline-none">
+                <EventLeaderboardPanel
+                  sportId={fieldSportId}
+                  eventId={contest.eventId}
+                  eventMetadata={contest.event?.metadata}
+                  playerIdParam={playerIdParam}
+                  pgaTourIdParam={pgaTourIdParam}
+                  onClearPlayerParams={clearPlayerParams}
+                />
+              </TabPanel>
+            ) : null}
 
             {viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">

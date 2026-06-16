@@ -13,7 +13,7 @@ interface ContestListProps {
   showPrivateLeagueNotice?: boolean;
 }
 
-function PrivateLeagueNotice() {
+export function PrivateLeagueNotice() {
   const { user } = useAuth();
   const location = useLocation();
 

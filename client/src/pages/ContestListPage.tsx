@@ -1,40 +1,17 @@
-import React, { useMemo } from "react";
-import { ContestList } from "../components/contest/ContestList";
+import React from "react";
+import { GroupedContestList } from "../components/contest/GroupedContestList";
 import { PageHeader } from "../components/common/PageHeader";
-import { useActiveEvent } from "../hooks/useActiveEvent";
-import { useContestsQuery } from "../hooks/useContestQuery";
+import { useLiveContestsAcrossSports } from "../hooks/useLiveContestsAcrossSports";
 
 export const Contests: React.FC = () => {
-  const { eventId, isLoading: isEventLoading, error: fetchError } = useActiveEvent();
-
-  const {
-    data: contestsWithLineupsData,
-    isLoading: isContestsLoading,
-    error: contestsError,
-  } = useContestsQuery(eventId, undefined);
-  const eventError = fetchError instanceof Error ? fetchError.message : null;
-  const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
-  const error = eventError ?? contestsErrorMessage;
-
-  // Sort contests by entry fee (highest first)
-  const contests = useMemo(() => {
-    const list = contestsWithLineupsData ?? [];
-    return [...list].sort((a, b) => {
-      const feeA = a.settings?.primaryDeposit ?? 0;
-      const feeB = b.settings?.primaryDeposit ?? 0;
-      return feeB - feeA;
-    });
-  }, [contestsWithLineupsData]);
-
-  const showLoading =
-    isEventLoading || (isContestsLoading && contestsWithLineupsData === undefined);
+  const { contests, isLoading, error } = useLiveContestsAcrossSports();
 
   return (
     <div className="mb-4 space-y-4">
       <PageHeader title="Live Contests" />
-      <ContestList
+      <GroupedContestList
         contests={contests}
-        loading={showLoading}
+        loading={isLoading}
         error={error}
         showPrivateLeagueNotice
       />

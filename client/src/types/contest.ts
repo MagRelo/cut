@@ -1,6 +1,16 @@
 import { type UserGroup } from "./userGroup";
 import { type ContestLineup } from "./lineup";
 
+export interface ContestEvent {
+  id: string;
+  sportId: string;
+  externalId: string;
+  isActive: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 
@@ -79,6 +89,7 @@ export interface Contest {
   createdAt: Date;
   updatedAt: Date;
   userGroup?: UserGroup;
+  event?: ContestEvent;
   contestLineups?: ContestLineup[];
   _count?: {
     contestLineups: number;

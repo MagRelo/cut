@@ -86,13 +86,18 @@ export function deriveContestLobbyViewModel(
   const showCountdown =
     !primaryActionsLocked && input.eventNotStarted === true && Boolean(input.eventStartDate);
 
+  const showFieldTab = Boolean(contest.event?.sportId);
+  const fieldTabIndex = showFieldTab ? 1 : -1;
+  const defaultTabIndex = isSettled ? (showFieldTab ? 2 : 1) : 0;
+
   return {
     phase,
     layout: {
+      showFieldTab,
       showPredictionsTab: !isSettled,
       showResultsTab: isSettled,
-      // Settled: [Contest, Results] → open Results (index 1).
-      defaultTabIndex: isSettled ? 1 : 0,
+      defaultTabIndex,
+      fieldTabIndex,
       layoutKey: `${contest.id}-${phase}`,
     },
     primary: {

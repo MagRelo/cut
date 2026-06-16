@@ -2,12 +2,14 @@ import React, { Fragment, useRef } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import type { Candidate } from "@cut/sport-sdk";
 import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useSportContext } from "../../contexts/SportContext";
 import { useRequiredSportUIPlugin } from "../../hooks/useSportUI";
 
 export interface SportParticipantDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidate: Candidate | null;
+  sportId?: string;
   onShare?: (candidate: Candidate) => void;
   /** Icon beside PTS in the header row: scorecard (default in lists) or share (detail modal default). */
   rowTrailing?: "scorecard" | "share";
@@ -17,10 +19,13 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
   isOpen,
   onClose,
   candidate,
+  sportId: sportIdProp,
   onShare,
   rowTrailing = "share",
 }) => {
   const plugin = useRequiredSportUIPlugin();
+  const { sportId: contextSportId } = useSportContext();
+  const sportId = sportIdProp ?? contextSportId;
   const { status } = useActiveEvent();
   /** Keeps content visible through the leave transition when parents clear `candidate` immediately on close. */
   const candidateSnapshotRef = useRef<Candidate | null>(null);
@@ -34,7 +39,7 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
     if (typeof window === "undefined") return;
 
     const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = "/leaderboard";
+    shareUrl.pathname = `/sports/${sportId}/leaderboard`;
     shareUrl.searchParams.set("playerId", String(targetCandidate.participantId));
     shareUrl.searchParams.delete("pgaTourId");
 

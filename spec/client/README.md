@@ -24,7 +24,7 @@ client/src/
   pages/              Route-level screens
   components/
     platform/         Sport-agnostic lineup/event UI shells
-    sport/            SportPicker
+    sport/            SportPicker (unused in header; inline on create forms)
     contest/          Contest list, cards, lobby, create forms
     lineup/           Lineup cards, side bets, prediction slider
     userGroup/        League UI
@@ -44,7 +44,7 @@ client/src/
     candidateUtils.ts   lineup picks → Candidate[]
     lineupScore.ts      display score from API
     lineupApi.ts        Lineup POST helpers
-    navTabs.ts          Primary nav (sport-scoped contests tab)
+    navTabs.ts          Primary nav (Live Contests → /contests)
   types/
     event.ts          PlatformLineup, ActiveEventResponse
     lineup.ts         ContestLineup, PlatformLineupListItem
@@ -59,12 +59,14 @@ client/src/
 
 | Route | Page | Notes |
 |-------|------|-------|
-| `/` | redirect | → `/sports/pga-golf` |
-| `/sports/:sportId` | `SportHubPage` | Active event contest list |
-| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL |
+| `/` | redirect | → `/contests` |
+| `/contests` | `ContestListPage` (`Contests`) | Multi-sport live contests (public + league merge per event) |
+| `/sports/:sportId` | `SportHubPage` | Single-sport contest list (deep links) |
+| `/sports/:sportId/leaderboard` | `LeaderboardPage` | Sport-scoped field leaderboard (share links) |
+| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; Field tab for event leaderboard |
 | `/contests/create` | `ContestCreatePage` | Staff / league admin |
 | `/lineups` | `LineupListPage` | User lineups across events |
-| `/leaderboard` | `LeaderboardPage` | Sport leaderboard |
+| `/leaderboard` | `LeaderboardPage` | Legacy golf-default field leaderboard |
 | `/leagues/*` | User group pages | Canonical league URLs |
 | `/user-groups/*` | redirects | → `/leagues/*` |
 | `/account/*` | Account, history, funds | |
