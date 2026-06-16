@@ -155,6 +155,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                 sportId={sportId}
                 eventId={eventId}
                 eventStatus={eventStatus}
+                eventMetadata={eventMetadata}
                 isEventEditable={isEventEditable}
               />
               <ContestLineupJoinActions

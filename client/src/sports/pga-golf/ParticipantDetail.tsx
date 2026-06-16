@@ -2,7 +2,6 @@ import { ArrowTopRightOnSquareIcon, DocumentTextIcon } from "@heroicons/react/24
 import React, { useEffect, useState } from "react";
 import type { ParticipantDetailProps } from "@cut/sport-sdk/ui";
 import type { RoundData, TournamentPlayerData } from "./types";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
 import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
@@ -202,9 +201,9 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
   status,
   rowTrailing = "share",
   onShare,
+  eventMetadata,
 }) => {
-  const { event } = useActiveEvent();
-  const golfMeta = parseGolfEventMetadata(event?.metadata);
+  const golfMeta = parseGolfEventMetadata(eventMetadata);
   const currentRound = resolveTournamentRoundNumber(
     golfMeta.roundDisplay ?? "R1",
     golfMeta.currentRound ?? null,

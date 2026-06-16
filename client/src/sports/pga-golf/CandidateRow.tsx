@@ -1,11 +1,11 @@
 import React from "react";
 import type { CandidateRowProps } from "@cut/sport-sdk/ui";
 import type { EventStatus } from "@cut/sport-sdk";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useOptionalEventScope } from "../../contexts/EventScopeContext";
 import { CandidateSelectionCard } from "./CandidateSelectionCard";
 import { GolfParticipantRow } from "./ParticipantRow";
 
-function pickerLiveStatus(status: EventStatus | null): EventStatus {
+function pickerLiveStatus(status: EventStatus): EventStatus {
   return status === "COMPLETE" ? "COMPLETE" : "LIVE";
 }
 
@@ -14,13 +14,16 @@ function LivePickerCandidateRow({
   onSelect,
   isSelected = false,
   disabled = false,
+  status,
+  eventMetadata,
 }: CandidateRowProps) {
-  const { status } = useActiveEvent();
+  const resolvedStatus = pickerLiveStatus(status ?? "LIVE");
 
   const row = (
     <GolfParticipantRow
       candidate={candidate}
-      status={pickerLiveStatus(status)}
+      status={resolvedStatus}
+      eventMetadata={eventMetadata}
       onClick={disabled ? undefined : onSelect}
     />
   );
@@ -37,11 +40,20 @@ function LivePickerCandidateRow({
 }
 
 export const GolfCandidateRow: React.FC<CandidateRowProps> = (props) => {
-  const { onSelect, isSelected = false, disabled = false, candidate } = props;
-  const { status } = useActiveEvent();
+  const { onSelect, isSelected = false, disabled = false, candidate, status, eventMetadata } =
+    props;
+  const scope = useOptionalEventScope();
+  const resolvedStatus = status ?? scope?.status ?? "SCHEDULED";
+  const resolvedMetadata = eventMetadata ?? scope?.metadata;
 
-  if (status === "LIVE" || status === "COMPLETE") {
-    return <LivePickerCandidateRow {...props} />;
+  if (resolvedStatus === "LIVE" || resolvedStatus === "COMPLETE") {
+    return (
+      <LivePickerCandidateRow
+        {...props}
+        status={resolvedStatus}
+        eventMetadata={resolvedMetadata}
+      />
+    );
   }
 
   if (!onSelect) {

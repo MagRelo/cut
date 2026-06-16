@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import type { Candidate } from "@cut/sport-sdk";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useEventScope } from "../../contexts/EventScopeContext";
 import {
   candidatesByParticipantIdMap,
   candidatesForLineupPicks,
@@ -28,7 +28,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   lineup,
   userName,
 }) => {
-  const { candidates, status } = useActiveEvent();
+  const { candidates, status, sportId, metadata } = useEventScope();
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
@@ -43,7 +43,6 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   }, [lineup, candidatesByParticipantId]);
 
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
-  const resolvedStatus = status ?? "SCHEDULED";
 
   useEffect(() => {
     if (!isOpen) setDetailCandidate(null);
@@ -113,7 +112,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                               <div className="p-3">
                                 <SportParticipantRow
                                   candidate={candidate}
-                                  status={resolvedStatus}
+                                  status={status}
+                                  eventMetadata={metadata}
                                   onClick={() => openDetailModal(candidate)}
                                 />
                               </div>
@@ -136,6 +136,9 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
         isOpen={detailCandidate != null}
         onClose={() => setDetailCandidate(null)}
         candidate={detailCandidate}
+        sportId={sportId}
+        status={status}
+        eventMetadata={metadata}
       />
     </>
   );

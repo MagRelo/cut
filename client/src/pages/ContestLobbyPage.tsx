@@ -2,7 +2,9 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { ErrorMessage } from "../components/common/ErrorMessage";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
+import { ContestEventScopeProvider } from "../contexts/EventScopeContext";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
 import { isApiError } from "../utils/apiError";
@@ -42,12 +44,22 @@ export const ContestLobby: React.FC = () => {
     return <div className="p-4 font-display">Contest not found</div>;
   }
 
+  if (!contest.event?.sportId) {
+    return (
+      <div className="p-4">
+        <ErrorMessage message="This contest's event data is unavailable." />
+      </div>
+    );
+  }
+
   return (
-    <ContestLobbyView
-      contest={contest}
-      viewModel={viewModel}
-      currentUserId={user?.id}
-      isAuthenticated={Boolean(user)}
-    />
+    <ContestEventScopeProvider contest={contest}>
+      <ContestLobbyView
+        contest={contest}
+        viewModel={viewModel}
+        currentUserId={user?.id}
+        isAuthenticated={Boolean(user)}
+      />
+    </ContestEventScopeProvider>
   );
 };

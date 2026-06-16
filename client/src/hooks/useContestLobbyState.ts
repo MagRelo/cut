@@ -8,14 +8,21 @@ import {
   type DeriveContestLobbyViewModelInput,
 } from "./deriveContestLobbyViewModel";
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
-import { useActiveEvent } from "./useActiveEvent";
+import { useContestEvent } from "./useContestEvent";
 
 export function useContestLobbyState(contest: Contest | undefined): {
   viewModel: ContestLobbyViewModel | null;
   isChainStateLoading: boolean;
 } {
   const hasWallet = Boolean(useEffectiveWalletAddress());
-  const { activeEvent, eventName, eventStartDate, roundDisplay, status } = useActiveEvent();
+  const contestEvent = useContestEvent(contest);
+  const {
+    eventName,
+    eventStartDate,
+    roundDisplay,
+    status,
+    eventShell,
+  } = contestEvent;
 
   const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -28,17 +35,16 @@ export function useContestLobbyState(contest: Contest | undefined): {
   });
 
   const viewModel = useMemo(() => {
-    if (!contest) return null;
+    if (!contest || !eventShell) return null;
 
-    const eventMatchesContest = activeEvent?.event.id === contest.eventId;
     const input: DeriveContestLobbyViewModelInput = {
       contestStateOnChain:
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       hasWallet,
-      eventStartDate: eventMatchesContest ? eventStartDate : undefined,
-      eventName: eventMatchesContest ? eventName : undefined,
-      eventNotStarted: eventMatchesContest ? status === "SCHEDULED" : undefined,
-      roundDisplay: eventMatchesContest ? roundDisplay : undefined,
+      eventStartDate: eventStartDate ?? undefined,
+      eventName: eventName || undefined,
+      eventNotStarted: status === "SCHEDULED",
+      roundDisplay: roundDisplay ?? undefined,
     };
 
     return deriveContestLobbyViewModel(contest, input);
@@ -46,7 +52,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
     contest,
     contestStateOnChain,
     hasWallet,
-    activeEvent?.event.id,
+    eventShell,
     eventStartDate,
     eventName,
     status,

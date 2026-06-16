@@ -1,23 +1,14 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { PageSection } from "../components/layout/PageSection";
-import { useActiveEvent } from "../hooks/useActiveEvent";
-import { useEventCandidatesQuery } from "../hooks/useSportData";
+import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
+import { DEFAULT_SPORT_ID } from "../hooks/useSportData";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const {
-    activeEvent,
-    eventId,
-    eventName,
-    status,
-    roundDisplay,
-    isLoading: eventLoading,
-    error: eventError,
-  } = useActiveEvent();
-  const candidatesQuery = useEventCandidatesQuery(activeEvent?.sport.id, eventId);
+  const sportActive = useSportActiveEvent(DEFAULT_SPORT_ID);
 
   return (
     <>
@@ -91,41 +82,34 @@ export const DebugPage: React.FC = () => {
       </PageSection>
 
       <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-purple-600">Active event (useActiveEvent)</h2>
+        <h2 className="text-lg font-semibold mb-3 text-purple-600">
+          Sport active event (useSportActiveEvent)
+        </h2>
         <div className="space-y-2 text-sm">
           <div>
-            <strong>Loading:</strong> {eventLoading ? "true" : "false"}
-          </div>
-          <div>
-            <strong>Error:</strong> {eventError ? String(eventError.message) : "None"}
-          </div>
-          <div>
-            <strong>Event ID:</strong> {eventId ?? "—"}
-          </div>
-          <div>
-            <strong>Event name:</strong> {eventName ?? "—"}
-          </div>
-          <div>
-            <strong>Status:</strong> {status ?? "—"}
-          </div>
-          <div>
-            <strong>Round:</strong> {roundDisplay ?? "—"}
-          </div>
-        </div>
-      </PageSection>
-
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-indigo-600">Candidates (useCandidatesQuery)</h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Loading:</strong> {candidatesQuery.isLoading ? "true" : "false"}
+            <strong>Loading:</strong> {sportActive.isLoading ? "true" : "false"}
           </div>
           <div>
             <strong>Error:</strong>{" "}
-            {candidatesQuery.error ? String(candidatesQuery.error.message) : "None"}
+            {sportActive.error ? String(sportActive.error.message) : "None"}
           </div>
           <div>
-            <strong>Count:</strong> {candidatesQuery.data?.length ?? "—"}
+            <strong>Sport ID:</strong> {sportActive.sportId}
+          </div>
+          <div>
+            <strong>Event ID:</strong> {sportActive.eventId ?? "—"}
+          </div>
+          <div>
+            <strong>Event name:</strong> {sportActive.eventName ?? "—"}
+          </div>
+          <div>
+            <strong>Status:</strong> {sportActive.status ?? "—"}
+          </div>
+          <div>
+            <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
+          </div>
+          <div>
+            <strong>Candidates count:</strong> {sportActive.candidates.length}
           </div>
         </div>
       </PageSection>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import { WagmiProvider } from "@privy-io/wagmi";
@@ -8,7 +8,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
-import { prefetchActiveEventWithCandidates } from "./hooks/useSportData";
 
 import { AuthProvider } from "./contexts/AuthContext";
 import { SportProvider } from "./contexts/SportContext";
@@ -227,12 +226,6 @@ const AppShell: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  // Prefetch active event data on app initialization for faster page loads
-  // This runs in the background and caches data before components mount
-  useEffect(() => {
-    void prefetchActiveEventWithCandidates(queryClient);
-  }, []);
-
   return (
     <PrivyProvider appId={privyAppId ?? ""}>
       <SmartWalletsProvider key={smartWalletsProviderKey} config={smartWalletsPaymasterConfig}>

@@ -2,7 +2,6 @@ import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import type { ParticipantRowProps } from "@cut/sport-sdk/ui";
 import type { RoundData, TournamentPlayerData } from "./types";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
 import {
   formatRoundStrokesVsPar,
   getRoundDataForDisplay,
@@ -27,9 +26,9 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   status,
   onClick,
   ownershipPercentage,
+  eventMetadata,
 }) => {
-  const { event } = useActiveEvent();
-  const golfEventMeta = parseGolfEventMetadata(event?.metadata);
+  const golfEventMeta = parseGolfEventMetadata(eventMetadata);
   const scoringPeriod = (golfEventMeta.roundDisplay ?? "r1").toLowerCase();
   const showLiveLayout = status === "LIVE" || status === "COMPLETE";
 

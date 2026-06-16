@@ -1,4 +1,4 @@
-import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { SportSummary } from "@cut/sport-sdk";
 import type { Candidate } from "@cut/sport-sdk";
 import apiClient from "../utils/apiClient";
@@ -20,7 +20,7 @@ export function useSportsQuery() {
   });
 }
 
-export function useActiveEventQuery(sportId: string = DEFAULT_SPORT_ID) {
+export function useActiveEventQuery(sportId: string) {
   return useQuery({
     queryKey: queryKeys.sports.activeEvent(sportId),
     queryFn: async () => {
@@ -56,43 +56,4 @@ export function useEventCandidatesQuery(
     refetchInterval: CANDIDATES_STALE_MS,
     refetchOnWindowFocus: false,
   });
-}
-
-export async function prefetchActiveEvent(queryClient: QueryClient, sportId = DEFAULT_SPORT_ID) {
-  await queryClient.prefetchQuery({
-    queryKey: queryKeys.sports.activeEvent(sportId),
-    queryFn: async () => {
-      try {
-        return await apiClient.get<ActiveEventResponse>(`/sports/${sportId}/events/active`);
-      } catch (error) {
-        if (error instanceof ApiError && error.statusCode === 404) {
-          return null;
-        }
-        throw error;
-      }
-    },
-    staleTime: ACTIVE_EVENT_STALE_MS,
-  });
-}
-
-export async function prefetchActiveEventWithCandidates(
-  queryClient: QueryClient,
-  sportId = DEFAULT_SPORT_ID,
-) {
-  await prefetchActiveEvent(queryClient, sportId);
-  const active = queryClient.getQueryData<ActiveEventResponse | null>(
-    queryKeys.sports.activeEvent(sportId),
-  );
-  if (active?.event?.id) {
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.sports.candidates(sportId, active.event.id),
-      queryFn: async () => {
-        const data = await apiClient.get<{ candidates: Candidate[] }>(
-          `/sports/${sportId}/events/${active.event.id}/candidates`,
-        );
-        return data.candidates;
-      },
-      staleTime: CANDIDATES_STALE_MS,
-    });
-  }
 }

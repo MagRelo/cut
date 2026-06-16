@@ -3,20 +3,16 @@ import { useCallback, useMemo } from "react";
 import { useLineupsQuery } from "./useLineupQueries";
 import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
 import { useAuth } from "../contexts/AuthContext";
-import { useActiveEvent } from "./useActiveEvent";
 import type { PlatformLineupListItem } from "../types/lineup";
 
 interface UseLineupDataOptions {
-  eventId?: string;
+  eventId: string;
   enabled?: boolean;
 }
 
-export function useLineupData(options: UseLineupDataOptions = {}) {
+export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   const { user } = useAuth();
-  const { eventId: activeEventId } = useActiveEvent();
-
-  const eventId = options.eventId ?? activeEventId;
-  const isEnabled = options.enabled ?? (!!user && !!eventId);
+  const isEnabled = enabled ?? Boolean(user && eventId);
 
   const {
     data: lineups = [],
@@ -28,7 +24,6 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
   const createMutation = useCreateLineup();
   const updateMutation = useUpdateLineup();
 
-  /** Explicit network refresh (e.g. pull-to-refresh). Prefer relying on the query cache otherwise. */
   const refetchLineups = useCallback(async (): Promise<PlatformLineupListItem[]> => {
     const result = await refetch();
     return result.data ?? [];

@@ -1,18 +1,18 @@
-import { useActiveEventQuery } from "./useSportData";
 import { useSportContext } from "../contexts/SportContext";
+import { useSportActiveEvent } from "./useSportActiveEvent";
 import { useSportUIPlugin } from "./useSportUI";
 
 export function useSportEventHeader() {
   const { sportId } = useSportContext();
-  const activeQuery = useActiveEventQuery(sportId);
+  const state = useSportActiveEvent(sportId);
   const plugin = useSportUIPlugin();
 
   return {
     sportId,
-    event: activeQuery.data?.event,
-    isLoading: activeQuery.isLoading,
-    isFetching: activeQuery.isFetching,
-    error: activeQuery.error,
+    event: state.event,
+    isLoading: state.isLoading,
+    isFetching: state.isFetching,
+    error: state.error,
     EventSummary: plugin?.EventSummary,
   };
 }

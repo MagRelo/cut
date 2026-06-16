@@ -1,12 +1,14 @@
 import React, { useMemo } from "react";
 import { ContestList } from "../components/contest/ContestList";
 import { PageHeader } from "../components/common/PageHeader";
-import { useActiveEvent } from "../hooks/useActiveEvent";
+import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useContestsQuery } from "../hooks/useContestQuery";
+import { useSportContext } from "../contexts/SportContext";
 
 /** Contests for the active event of the sport in the URL (`/sports/:sportId`). */
 export const SportHubContests: React.FC = () => {
-  const { eventId, isLoading: isEventLoading, error: fetchError } = useActiveEvent();
+  const { sportId } = useSportContext();
+  const { eventId, isLoading: isEventLoading, error: fetchError } = useSportActiveEvent(sportId);
 
   const {
     data: contestsWithLineupsData,

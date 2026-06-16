@@ -13,6 +13,8 @@ export interface CandidateRowProps {
   onSelect?: () => void;
   isSelected?: boolean;
   disabled?: boolean;
+  status?: EventStatus;
+  eventMetadata?: unknown;
 }
 
 export interface ParticipantRowProps {
@@ -20,6 +22,7 @@ export interface ParticipantRowProps {
   status: EventStatus;
   onClick?: () => void;
   ownershipPercentage?: number;
+  eventMetadata?: unknown;
 }
 
 export interface ParticipantDetailProps {
@@ -28,6 +31,7 @@ export interface ParticipantDetailProps {
   /** Icon beside PTS in the header row: scorecard (default in lists) or share (detail modal default). */
   rowTrailing?: "scorecard" | "share";
   onShare?: () => void;
+  eventMetadata?: unknown;
 }
 
 export interface SportUIPlugin {

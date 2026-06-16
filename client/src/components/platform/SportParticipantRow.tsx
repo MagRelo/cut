@@ -1,13 +1,14 @@
 import React from "react";
 import type { Candidate, EventStatus } from "@cut/sport-sdk";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useOptionalEventScope } from "../../contexts/EventScopeContext";
 import { useRequiredSportUIPlugin } from "../../hooks/useSportUI";
 
 interface SportParticipantRowProps {
   candidate: Candidate;
-  status?: EventStatus;
+  status: EventStatus;
   onClick?: () => void;
   ownershipPercentage?: number;
+  eventMetadata?: unknown;
 }
 
 export const SportParticipantRow: React.FC<SportParticipantRowProps> = ({
@@ -15,18 +16,19 @@ export const SportParticipantRow: React.FC<SportParticipantRowProps> = ({
   status,
   onClick,
   ownershipPercentage,
+  eventMetadata,
 }) => {
   const plugin = useRequiredSportUIPlugin();
-  const { status: eventStatus } = useActiveEvent();
+  const scope = useOptionalEventScope();
   const ParticipantRow = plugin.ParticipantRow;
-  const resolvedStatus = status ?? eventStatus ?? "SCHEDULED";
 
   return (
     <ParticipantRow
       candidate={candidate}
-      status={resolvedStatus}
+      status={status}
       onClick={onClick}
       ownershipPercentage={ownershipPercentage}
+      eventMetadata={eventMetadata ?? scope?.metadata}
     />
   );
 };

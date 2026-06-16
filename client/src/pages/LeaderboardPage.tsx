@@ -1,13 +1,13 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
-import { useActiveEvent } from "../hooks/useActiveEvent";
+import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { PageHeader } from "../components/common/PageHeader";
 import { EventLeaderboardPanel } from "../components/platform/EventLeaderboardPanel";
 import { useSportContext } from "../contexts/SportContext";
 
 export const LeaderboardPage: React.FC = () => {
   const { sportId } = useSportContext();
-  const { eventId, activeEvent } = useActiveEvent();
+  const { eventId, metadata } = useSportActiveEvent(sportId);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const playerIdParam = searchParams.get("playerId");
@@ -38,7 +38,7 @@ export const LeaderboardPage: React.FC = () => {
       <EventLeaderboardPanel
         sportId={sportId}
         eventId={eventId}
-        eventMetadata={activeEvent?.event.metadata}
+        eventMetadata={metadata}
         playerIdParam={playerIdParam}
         pgaTourIdParam={pgaTourIdParam}
         onClearPlayerParams={clearPlayerParams}

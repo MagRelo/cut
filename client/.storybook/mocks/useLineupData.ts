@@ -28,7 +28,7 @@ export function resetStorybookLineups(participantIds: string[] = []) {
   emitChange();
 }
 
-export function useLineupData(_options: { eventId?: string; enabled?: boolean } = {}) {
+export function useLineupData(_options: { eventId: string; enabled?: boolean }) {
   const lineups = useSyncExternalStore(subscribe, getSnapshot);
 
   const updateLineup = useCallback(

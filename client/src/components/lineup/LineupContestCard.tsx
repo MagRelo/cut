@@ -56,6 +56,7 @@ interface LineupContestCardProps {
   sportId: string;
   eventId: string;
   eventStatus: EventStatus;
+  eventMetadata?: unknown;
   isEventEditable: boolean;
 }
 
@@ -67,6 +68,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   sportId,
   eventId,
   eventStatus,
+  eventMetadata,
   isEventEditable,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -262,6 +264,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                             <div className="min-w-0 flex-1">
                               <SportLineupPickRow
                                 candidate={candidate}
+                                status={status}
+                                eventMetadata={eventMetadata}
                                 onClick={() => openDetailModal(candidate)}
                               />
                             </div>
@@ -322,7 +326,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                       <div key={candidate.participantId} className="p-3">
                         <SportParticipantRow
                           candidate={candidate}
-                          status={status ?? "SCHEDULED"}
+                          status={status}
+                          eventMetadata={eventMetadata}
                           onClick={() => openDetailModal(candidate)}
                         />
                       </div>
@@ -373,6 +378,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         onClose={closeDetailModal}
         candidate={detailCandidate}
         sportId={sportId}
+        status={status}
+        eventMetadata={eventMetadata}
       />
     </div>
   );

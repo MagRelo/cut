@@ -3,47 +3,31 @@ import type { ComponentType } from "react";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { lobbyDecorators } from "../../../.storybook/decorators";
+import { ContestEventScopeProvider } from "../../contexts/EventScopeContext";
 import { buildContestLineup, contestWithLineups } from "../../test/fixtures/contestLobby";
 import { FIXTURE_CANDIDATES } from "../../test/fixtures/candidates";
-import { DEFAULT_SPORT_ID } from "../../hooks/useSportData";
 import { queryKeys } from "../../utils/queryKeys";
-import type { ActiveEventResponse } from "../../types/event";
 import { ContestEntryList } from "./ContestEntryList";
 
-function withFixtureCandidates(Story: ComponentType) {
+function withContestEventScope(Story: ComponentType) {
   const Wrapped = () => {
     const queryClient = useQueryClient();
+    const contest = contestWithLineups;
+    const sportId = contest.event?.sportId ?? "golf";
+    const eventId = contest.eventId;
 
     useEffect(() => {
-      const activeEvent: ActiveEventResponse = {
-        sport: {
-          id: DEFAULT_SPORT_ID,
-          name: "PGA Golf",
-          slug: "golf",
-          isEnabled: true,
-          rosterRules: { slotCount: 4, minPicks: 1, maxPicks: 4, allowDuplicates: false },
-          scoringRules: { aggregation: "sum", direction: "higher_wins" },
-        },
-        event: {
-          id: "tournament-1",
-          sportId: DEFAULT_SPORT_ID,
-          externalId: "R2026001",
-          isActive: true,
-          metadata: { status: "IN_PROGRESS", roundDisplay: "R2" },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        status: "LIVE",
-      };
-
-      queryClient.setQueryData(queryKeys.sports.activeEvent(DEFAULT_SPORT_ID), activeEvent);
       queryClient.setQueryData(
-        queryKeys.sports.candidates(DEFAULT_SPORT_ID, "tournament-1"),
+        queryKeys.sports.candidates(sportId, eventId),
         FIXTURE_CANDIDATES,
       );
-    }, [queryClient]);
+    }, [queryClient, sportId, eventId]);
 
-    return <Story />;
+    return (
+      <ContestEventScopeProvider contest={contest}>
+        <Story />
+      </ContestEventScopeProvider>
+    );
   };
 
   return <Wrapped />;
@@ -53,7 +37,7 @@ const meta = {
   title: "Contest/ContestEntryList",
   component: ContestEntryList,
   tags: ["autodocs"],
-  decorators: [...lobbyDecorators, withFixtureCandidates],
+  decorators: [...lobbyDecorators, withContestEventScope],
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ContestEntryList>;
 

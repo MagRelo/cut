@@ -13,7 +13,7 @@ React 19 + TypeScript SPA. Sport-agnostic shell with per-sport UI plugins. Defau
 | Auth & wallet | Privy + `@privy-io/wagmi` |
 | On-chain | Wagmi/viem — contest join, secondary market, token ops |
 | Sport UI | `SportUIPlugin` registry (`pga-golf` only today) |
-| Platform data | `useActiveEvent`, `Candidate`, `PlatformLineup` — no legacy tournament bridge |
+| Platform data | `useSportActiveEvent`, `useContestEvent`, `Candidate`, `PlatformLineup` — no global active event hook |
 
 ---
 
@@ -33,8 +33,9 @@ client/src/
     registry.ts       SportUIPlugin map
     pga-golf/         Golf plugin slots + scorecard/, types, utils
   hooks/
-    useActiveEvent.ts Primary event + candidates hook
-    useSportData.ts   GET /sports, active event, candidates queries
+    useSportActiveEvent.ts  Sport-scoped active event + candidates (hub, leaderboard)
+    useContestEvent.ts      Contest-scoped event from contest.event + candidates
+    useSportData.ts         GET /sports, active event, candidates queries
     useLineupQueries.ts    GET/POST /lineups/:eventId
     useContestQuery.ts     Contest fetch by id/address
   contexts/
@@ -63,7 +64,7 @@ client/src/
 | `/contests` | `ContestListPage` (`Contests`) | Multi-sport live contests (public + league merge per event) |
 | `/sports/:sportId` | `SportHubPage` | Single-sport contest list (deep links) |
 | `/sports/:sportId/leaderboard` | `LeaderboardPage` | Sport-scoped field leaderboard (share links) |
-| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; Lineups, Field, Contest, Winner Pool / Results tabs |
+| `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; local event header; Lineups, Field, Contest, Winner Pool / Results tabs |
 | `/contests/create` | `ContestCreatePage` | Staff / league admin |
 | `/leaderboard` | `LeaderboardPage` | Legacy golf-default field leaderboard |
 | `/leagues/*` | User group pages | Canonical league URLs |
@@ -98,7 +99,9 @@ client/src/
 
 ## Platform / plugin boundary
 
-- **Platform** fetches `Candidate[]` and `PlatformLineup`; passes `Candidate` + `EventStatus` into shell components.
+- **Event scope:** Sport surfaces use `useSportActiveEvent(sportId)` (`GET /sports/:sportId/events/active`). Contest surfaces use `useContestEvent(contest)` (`contest.event` + `contest.eventId`). No implicit fallbacks.
+- **Event headers:** Global `SportEventContextBar` on sport-active routes only (`/sports/:sportId`, `/leaderboard`, `/contests/create`). Contest lobby renders `EventSummary` locally above the contest card.
+- **Platform** fetches `Candidate[]` and `PlatformLineup`; passes `Candidate` + `EventStatus` + optional `eventMetadata` into shell components.
 - **Plugin** (`sports/pga-golf/`) owns all golf presentation — rows, scorecard, event hero, prediction field.
 - Lineup totals: `ContestLineup.score` and `PlatformLineup.score` from the server ([`lineupScore.ts`](../../client/src/lib/lineupScore.ts)).
 - See [sport-ui-plugins.md](sport-ui-plugins.md) for the full contract and remaining platform leaks.

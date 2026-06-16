@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useEventScope } from "../../contexts/EventScopeContext";
 import {
   candidatesByParticipantIdMap,
   candidatesForLineupPicks,
@@ -26,7 +26,7 @@ export const ContestEntryList = ({
   contestStatus,
   entryListOpensModal,
 }: ContestEntryListProps) => {
-  const { candidates } = useActiveEvent();
+  const { candidates } = useEventScope();
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],

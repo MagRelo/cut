@@ -3,6 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
+import { ErrorMessage } from "../../common/ErrorMessage";
+import { useContestEvent } from "../../../hooks/useContestEvent";
+import { useSportUIPlugin } from "../../../hooks/useSportUI";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
 import { EventLeaderboardPanel } from "../../platform/EventLeaderboardPanel";
 import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
@@ -68,9 +71,18 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   };
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
+  const { eventShell, error: eventError } = useContestEvent(contest);
+  const plugin = useSportUIPlugin();
+  const EventSummary = plugin?.EventSummary;
 
   return (
     <div className="">
+      {eventError ? (
+        <div className="p-4">
+          <ErrorMessage message={eventError.message} />
+        </div>
+      ) : null}
+      {eventShell && EventSummary ? <EventSummary event={eventShell} /> : null}
       <div className="border-b border-gray-200">
         <div className="px-3 py-4">
           <ContestCard

@@ -7,7 +7,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@
 import { Contest } from "src/types/contest";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
-import { useSportContext } from "../../contexts/SportContext";
+import { useContestEvent } from "../../hooks/useContestEvent";
 import {
   candidatesForPlatformLineup,
   platformLineupParticipantIds,
@@ -15,7 +15,6 @@ import {
 } from "../../lib/lineupUtils";
 import { candidatesByParticipantIdMap } from "../../lib/candidateUtils";
 import { sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -70,10 +69,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
   onOpenLineupsTab,
 }) => {
   const posthog = usePostHog();
-  const { sportId: contextSportId } = useSportContext();
-  const sportId = contest.event?.sportId ?? contextSportId;
-  const { status } = useActiveEvent();
-  const resolvedStatus = status ?? "SCHEDULED";
+  const sportId = contest.event?.sportId ?? "";
+  const { status, metadata } = useContestEvent(contest);
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData({
     eventId: contest.eventId,
   });
@@ -453,7 +450,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
                         <div key={candidate.participantId} className="px-3 py-1">
                           <SportParticipantRow
                             candidate={candidate}
-                            status={resolvedStatus}
+                            status={status}
+                            eventMetadata={metadata}
                           />
                         </div>
                       ))}

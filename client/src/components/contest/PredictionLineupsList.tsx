@@ -3,7 +3,7 @@ import { formatUnits, parseUnits } from "viem";
 import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { useActiveEvent } from "../../hooks/useActiveEvent";
+import { useContestEvent } from "../../hooks/useContestEvent";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
@@ -26,7 +26,7 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const { candidates } = useActiveEvent();
+  const { candidates = [] } = useContestEvent(contest);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
