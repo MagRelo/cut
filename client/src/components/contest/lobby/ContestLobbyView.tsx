@@ -16,6 +16,9 @@ import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
 import { ContestLineupModal } from "./ContestLineupModal";
 
+/** Temporary: hide Winner Pool from the lobby tab bar. */
+const SHOW_WINNER_POOL_TAB = false;
+
 export interface ContestLobbyViewProps {
   contest: Contest;
   viewModel: ContestLobbyViewModel;
@@ -107,9 +110,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 Lineups
               </Tab>
             ) : null}
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Contest
-            </Tab>
             {viewModel.layout.showFieldTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
@@ -117,7 +117,10 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 Field
               </Tab>
             ) : null}
-            {viewModel.layout.showPredictionsTab ? (
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Contest
+            </Tab>
+            {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
@@ -146,6 +149,19 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               </TabPanel>
             ) : null}
 
+            {viewModel.layout.showFieldTab && fieldSportId ? (
+              <TabPanel className="p-4 focus:outline-none">
+                <EventLeaderboardPanel
+                  sportId={fieldSportId}
+                  eventId={contest.eventId}
+                  eventMetadata={contest.event?.metadata}
+                  playerIdParam={playerIdParam}
+                  pgaTourIdParam={pgaTourIdParam}
+                  onClearPlayerParams={clearPlayerParams}
+                />
+              </TabPanel>
+            ) : null}
+
             <TabPanel className="p-4 focus:outline-none">
               <ContestPrimaryTab
                 contest={contest}
@@ -160,20 +176,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               />
             </TabPanel>
 
-            {viewModel.layout.showFieldTab && fieldSportId ? (
-              <TabPanel className="p-4 focus:outline-none">
-                <EventLeaderboardPanel
-                  sportId={fieldSportId}
-                  eventId={contest.eventId}
-                  eventMetadata={contest.event?.metadata}
-                  playerIdParam={playerIdParam}
-                  pgaTourIdParam={pgaTourIdParam}
-                  onClearPlayerParams={clearPlayerParams}
-                />
-              </TabPanel>
-            ) : null}
-
-            {viewModel.layout.showPredictionsTab ? (
+            {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">
                 <ContestPredictionsPanel
                   contest={contest}

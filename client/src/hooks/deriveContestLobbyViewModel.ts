@@ -91,8 +91,8 @@ export function deriveContestLobbyViewModel(
 
   let tabIndex = 0;
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
-  const contestTabIndex = tabIndex++;
   const fieldTabIndex = showFieldTab ? tabIndex++ : -1;
+  const contestTabIndex = tabIndex++;
   const tailTabIndex = tabIndex;
 
   const defaultTabIndex =
