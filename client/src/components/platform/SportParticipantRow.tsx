@@ -6,6 +6,7 @@ import { useRequiredSportUIPlugin } from "../../hooks/useSportUI";
 interface SportParticipantRowProps {
   candidate: Candidate;
   status: EventStatus;
+  sportId?: string;
   onClick?: () => void;
   ownershipPercentage?: number;
   eventMetadata?: unknown;
@@ -14,11 +15,12 @@ interface SportParticipantRowProps {
 export const SportParticipantRow: React.FC<SportParticipantRowProps> = ({
   candidate,
   status,
+  sportId,
   onClick,
   ownershipPercentage,
   eventMetadata,
 }) => {
-  const plugin = useRequiredSportUIPlugin();
+  const plugin = useRequiredSportUIPlugin(sportId);
   const scope = useOptionalEventScope();
   const ParticipantRow = plugin.ParticipantRow;
 

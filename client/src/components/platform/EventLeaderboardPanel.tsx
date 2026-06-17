@@ -104,13 +104,15 @@ export const EventLeaderboardPanel: React.FC<EventLeaderboardPanelProps> = ({
 
   return (
     <>
-      <div className="-mx-4">
+      <div>
         {sortedCandidates.map((candidate) => (
           <div key={candidate.participantId} className="border-b border-gray-200">
-            <div className="p-3">
+            <div className="px-4 py-3">
               <SportParticipantRow
                 candidate={candidate}
                 status={resolvedStatus}
+                sportId={sportId}
+                eventMetadata={eventMetadata}
                 onClick={() => openPlayerModal(candidate)}
               />
             </div>

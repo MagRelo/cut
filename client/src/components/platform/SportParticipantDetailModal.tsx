@@ -25,7 +25,7 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
   onShare,
   rowTrailing = "share",
 }) => {
-  const plugin = useRequiredSportUIPlugin();
+  const plugin = useRequiredSportUIPlugin(sportId);
   const scope = useOptionalEventScope();
   const candidateSnapshotRef = useRef<Candidate | null>(null);
   if (candidate) {

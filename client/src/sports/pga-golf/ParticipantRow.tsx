@@ -80,7 +80,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   })();
 
   const inactiveContent = (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex min-w-0 items-center justify-between gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {participant.imageUrl ? (
           <div className="shrink-0">
@@ -102,7 +102,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   );
 
   const liveContent = (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex min-w-0 items-center justify-between gap-3">
       <div className="flex w-4 shrink-0 flex-col items-center justify-center gap-1.5 text-center tabular-nums">
         <span className="text-xs font-semibold leading-none text-gray-800">
           {leaderboardPositionDisplay}
@@ -177,12 +177,12 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
       <button
         type="button"
         onClick={onClick}
-        className="group w-full cursor-pointer text-left font-display"
+        className="group w-full min-w-0 cursor-pointer text-left font-display"
       >
         {content}
       </button>
     );
   }
 
-  return <div className="w-full font-display">{content}</div>;
+  return <div className="w-full min-w-0 font-display">{content}</div>;
 };
