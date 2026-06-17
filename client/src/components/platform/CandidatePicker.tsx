@@ -2,6 +2,7 @@ import React, { Fragment, useMemo, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import type { Candidate } from "@cut/sport-sdk";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -30,15 +31,21 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
   saveError = null,
 }) => {
   const plugin = useSportUIPlugin(sportId);
+  const { sort } = useCandidateSort(sportId);
   const { data: candidates = [], isLoading } = useEventCandidatesQuery(sportId, eventId);
   const [searchQuery, setSearchQuery] = useState("");
   const CandidateRow = plugin?.CandidateRow;
 
+  const sortedCandidates = useMemo(
+    () => sort(candidates, "picker"),
+    [candidates, sort],
+  );
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return candidates;
-    return candidates.filter((candidate) => candidate.displayName.toLowerCase().includes(q));
-  }, [candidates, searchQuery]);
+    if (!q) return sortedCandidates;
+    return sortedCandidates.filter((candidate) => candidate.displayName.toLowerCase().includes(q));
+  }, [sortedCandidates, searchQuery]);
 
   const handleClose = () => {
     if (isSaving) return;

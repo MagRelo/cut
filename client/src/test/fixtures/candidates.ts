@@ -1,4 +1,5 @@
 import type { Candidate } from "@cut/sport-sdk";
+import { buildGolfSortKeys } from "@cut/sport-pga-golf";
 import type { PlatformLineupPick } from "../../types/event";
 
 export const FIXTURE_PARTICIPANT_IDS = {
@@ -18,30 +19,33 @@ function buildCandidate(
   position: string,
   total: string,
 ): Candidate {
+  const participant = {
+    firstName,
+    lastName,
+    country: "USA",
+    imageUrl: null,
+  };
+  const scoreData = {
+    leaderboardPosition: position,
+    leaderboardTotal: total,
+    stableford,
+  };
+
   return {
     eventParticipantId,
     participantId,
     displayName,
-    sortKeys: {
-      stableford,
-      name: displayName.toLowerCase(),
-      owgr: 9999,
-      dataGolf: 9999,
-    },
+    sortKeys: buildGolfSortKeys({
+      displayName,
+      participantMetadata: participant,
+      scoreData,
+      total: stableford,
+    }),
     metadata: {
       externalId: `pga-${participantId}`,
-      participant: {
-        firstName,
-        lastName,
-        country: "USA",
-        imageUrl: null,
-      },
+      participant,
       total: stableford,
-      scoreData: {
-        leaderboardPosition: position,
-        leaderboardTotal: total,
-        stableford,
-      },
+      scoreData,
     },
   };
 }

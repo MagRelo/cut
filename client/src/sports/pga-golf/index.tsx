@@ -1,4 +1,5 @@
 import type { SportUIPlugin } from "@cut/sport-sdk/ui";
+import { golfCandidateSortConfig } from "@cut/sport-pga-golf";
 import { GolfCandidateRow } from "./CandidateRow";
 import { CandidateSelectionCard } from "./CandidateSelectionCard";
 import { GolfEventDetails } from "./EventDetails";
@@ -13,6 +14,7 @@ export const pgaGolfUIPlugin: SportUIPlugin = {
   ParticipantDetail: (props) => <GolfParticipantDetail {...props} />,
   PredictionField: GolfPredictionField,
   EventSummary: GolfEventSummary,
+  candidateSortConfig: golfCandidateSortConfig,
 };
 
 export {

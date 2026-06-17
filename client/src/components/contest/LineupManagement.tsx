@@ -14,7 +14,7 @@ import {
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
 import { candidatesByParticipantIdMap } from "../../lib/candidateUtils";
-import { sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { useAuth } from "../../contexts/AuthContext";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -71,6 +71,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
   const posthog = usePostHog();
   const sportId = contest.event?.sportId ?? "";
   const { status, metadata } = useContestEvent(contest);
+  const { sort } = useCandidateSort(sportId);
   const { lineups, isLoading: isLineupsLoading, lineupError } = useLineupData({
     eventId: contest.eventId,
   });
@@ -399,8 +400,10 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
           const isEntered = enteredLineupsMap.has(lineup.id);
           const isPending = pendingAction?.lineupId === lineup.id;
           const isProcessing = isPending && (isSending || isConfirming);
-          const sortedCandidates = sortCandidatesByLeaderboard(
+          const sortedCandidates = sort(
             candidatesForPlatformLineup(lineup, candidatesByParticipantId),
+            "lineupPicks",
+            status,
           );
 
           return (

@@ -54,6 +54,7 @@ flowchart LR
 | `ParticipantDetail` | yes | `candidate`, `status`, `rowTrailing?`, `onShare?`, `eventMetadata?` | **Detail modal** — scorecard header, round tabs, hole table |
 | `PredictionField` | no | `value`, `onChange`, `disabled?`, `error?` | Sport-specific tie-break / prediction input |
 | `EventSummary` | no | `{ event: CompetitionEventShell }` | Event hero in page header |
+| `candidateSortConfig` | yes | `CandidateSortConfig` from sport package | Sort key order for picker, leaderboard, and lineup pick lists |
 
 ### `CandidateRow` vs `ParticipantRow`
 
@@ -93,6 +94,7 @@ Hooks:
 | [`useSportActiveEvent`](../../client/src/hooks/useSportActiveEvent.ts) | Sport-scoped active event — hub, leaderboard, onboarding |
 | [`useContestEvent`](../../client/src/hooks/useContestEvent.ts) | Contest-scoped event — lobby via `ContestEventScopeProvider` |
 | [`useSportUIPlugin`](../../client/src/hooks/useSportUI.ts) | Resolve `SportUIPlugin` from explicit `sportId` or `EventScopeContext` |
+| [`useCandidateSort`](../../client/src/hooks/useCandidateSort.ts) | Sort `Candidate[]` via plugin `candidateSortConfig` + `@cut/sport-sdk` `sortCandidates` |
 
 ---
 
@@ -144,7 +146,8 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 | Module | Purpose |
 |--------|---------|
 | [`candidateUtils.ts`](../../client/src/lib/candidateUtils.ts) | Map `lineup.picks` → `Candidate[]`, display names |
-| [`candidateSorting.ts`](../../client/src/lib/candidateSorting.ts) | Leaderboard sort over `candidate.metadata` (golf-shaped today) |
+| [`candidateSorting.ts`](../../client/src/lib/candidateSorting.ts) | Display helpers (`participantLastName`, `externalIdFromCandidate`) |
+| [`useCandidateSort`](../../client/src/hooks/useCandidateSort.ts) | Multi-sport list sorting via `sortKeys` + plugin config |
 | [`lineupUtils.ts`](../../client/src/lib/lineupUtils.ts) | `platformLineupParticipantIds`, prediction helpers |
 | [`lineupScore.ts`](../../client/src/lib/lineupScore.ts) | Display score from API — no client-side sport aggregation |
 | [`golfPrediction.ts`](../../client/src/lib/golfPrediction.ts) | `{ type: "winningScore", value }` serialization (golf tie-breaker) |
@@ -159,7 +162,7 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 4. **Contest lineups:** use `lineup.lineup.picks`. Use `contestLineupDisplayName(lineup)` for names.
 5. **Lineup totals:** use `lineupDisplayScore(contestLineup)` or `lineup.score` / `platformLineup.score` — never import plugin utils for aggregation.
 6. **Slot editor:** `useLineupSlotEditor` works in `Candidate[]`; saves `participantId[]`.
-7. **New sport:** implement `SportUIPlugin` in `client/src/sports/{sport-id}/`, register in `registry.ts`. Reuse platform shells unchanged.
+7. **New sport:** implement `SportUIPlugin` in `client/src/sports/{sport-id}/`, register in `registry.ts`. Populate `sortKeys` in `build*Candidates`, export `*CandidateSortConfig`, attach to plugin. Reuse platform shells unchanged.
 8. **Do not** add presentation props to `ParticipantRowProps` for one-off UI. Round tab state lives inside `ParticipantDetail`.
 
 ---
@@ -171,7 +174,6 @@ Golf-specific logic still in platform code. **Do not extend**; migrate when addi
 | Item | Location | Notes |
 |------|----------|-------|
 | Winning-score prediction | `lib/golfPrediction.ts`, `LineupWinningScoreSlider`, `SportPredictionField` fallback | Plugin wraps slider; platform owns API serialization |
-| Leaderboard sort | `lib/candidateSorting.ts` | Assumes golf metadata (`WD`, `CUT`, `"E"`) |
 | Event round display | `useSportActiveEvent` exposes `roundDisplay` | Golf metadata field on platform hook |
 | Home demo | `InfoScorecard` imports plugin `ScoreDisplay` | Marketing-only cross-boundary import |
 

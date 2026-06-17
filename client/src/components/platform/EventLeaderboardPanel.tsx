@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import { useEventFieldLeaderboard } from "../../hooks/useEventFieldLeaderboard";
-import {
-  candidateHasDisplayName,
-  externalIdFromCandidate,
-  sortCandidatesByLeaderboard,
-} from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { externalIdFromCandidate } from "../../lib/candidateSorting";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { SportParticipantDetailModal } from "./SportParticipantDetailModal";
@@ -33,14 +30,14 @@ export const EventLeaderboardPanel: React.FC<EventLeaderboardPanelProps> = ({
     eventId,
     eventMetadata,
   );
+  const { sort } = useCandidateSort(sportId);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
-  const sortedCandidates = useMemo(() => {
-    const sortByNameOnly = status === "SCHEDULED";
-    const withNames = candidates.filter(candidateHasDisplayName);
-    return sortCandidatesByLeaderboard(withNames, { sortByNameOnly });
-  }, [candidates, status]);
+  const sortedCandidates = useMemo(
+    () => sort(candidates, "fieldLeaderboard", status ?? "SCHEDULED"),
+    [candidates, sort, status],
+  );
 
   useEffect(() => {
     if (isLoading || sortedCandidates.length === 0) return;

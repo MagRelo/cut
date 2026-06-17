@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { CandidateSortConfig } from "./candidateSort.js";
 import type { Candidate, CompetitionEventShell, EventStatus } from "./types.js";
 
 export interface PredictionFieldProps {
@@ -40,4 +41,5 @@ export interface SportUIPlugin {
   ParticipantDetail: ComponentType<ParticipantDetailProps>;
   PredictionField?: ComponentType<PredictionFieldProps>;
   EventSummary?: ComponentType<{ event: CompetitionEventShell }>;
+  candidateSortConfig: CandidateSortConfig;
 }

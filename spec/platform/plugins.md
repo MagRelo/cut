@@ -71,8 +71,19 @@ interface SportUIPlugin {
   ParticipantDetail: React.FC<ParticipantDetailProps>; // detail modal (scorecard header + round tabs + hole table)
   PredictionField?: React.FC<PredictionFieldProps>;
   EventSummary?: React.FC<{ event: CompetitionEventShell }>;
+  candidateSortConfig: CandidateSortConfig;        // per-context sort key order for platform lists
 }
 ```
+
+**Candidate sort contexts** (`@cut/sport-sdk` `sortCandidates`):
+
+| Context | Used by | Status handling |
+|---------|---------|-----------------|
+| `picker` | `CandidatePicker` | Static key order (e.g. golf: OWGR → DataGolf → name) |
+| `fieldLeaderboard` | `EventLeaderboardPanel` | `scheduled` vs `active` key lists |
+| `lineupPicks` | Lineup cards, contest entry modal/list | `scheduled` vs `active` key lists |
+
+Sport packages populate `Candidate.sortKeys` in `build*Candidates`; export `*CandidateSortConfig` from the sport package and attach to the UI plugin. Platform surfaces call `useCandidateSort(sportId)` → `sort(candidates, context, eventStatus?)`.
 
 `ParticipantRowProps`: `{ candidate, status: EventStatus, onClick?, ownershipPercentage?, eventMetadata? }`. Platform passes `status` from the parent event hook; golf reads `roundDisplay` from `eventMetadata` internally.
 
@@ -160,7 +171,7 @@ Key exports from `packages/sport-sdk/src/types.ts`:
 
 | Type | Purpose |
 |------|---------|
-| `Candidate` | Lineup picker row (`eventParticipantId`, `displayName`, `metadata`) |
+| `Candidate` | Lineup picker row (`eventParticipantId`, `displayName`, `sortKeys`, `metadata`) |
 | `RosterRules` | `slotCount`, `minPicks`, `maxPicks`, `allowDuplicates` |
 | `RankedEntry` | Contest ranking output |
 | `PayoutVector` | Basis points per winner |

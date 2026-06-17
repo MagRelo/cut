@@ -1,5 +1,6 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { GolfParticipantMetadata, GolfScoreData } from "./metadata.js";
+import { buildGolfSortKeys } from "./golfSortKeys.js";
 
 export type EventParticipantRow = {
   id: string;
@@ -37,25 +38,16 @@ export function buildGolfCandidates(rows: EventParticipantRow[]): Candidate[] {
       participantMeta.shortName ??
       "Unknown";
 
-    const owgrRank = participantMeta.owgr ? Number(participantMeta.owgr) : Number.NaN;
-    const dgRank =
-      participantMeta.dataGolf &&
-      typeof participantMeta.dataGolf === "object" &&
-      !Array.isArray(participantMeta.dataGolf) &&
-      typeof (participantMeta.dataGolf as Record<string, unknown>).dg_rank === "number"
-        ? ((participantMeta.dataGolf as Record<string, unknown>).dg_rank as number)
-        : Number.NaN;
-
     return {
       eventParticipantId: row.id,
       participantId: row.participantId,
       displayName,
-      sortKeys: {
-        owgr: Number.isFinite(owgrRank) ? owgrRank : 9999,
-        dataGolf: Number.isFinite(dgRank) ? dgRank : 9999,
-        stableford: row.total ?? scoreData.stableford ?? 0,
-        name: displayName.toLowerCase(),
-      },
+      sortKeys: buildGolfSortKeys({
+        displayName,
+        participantMetadata: row.participant.metadata,
+        scoreData: row.scoreData,
+        total: row.total,
+      }),
       metadata: {
         externalId: row.participant.externalId,
         participant: participantMeta,

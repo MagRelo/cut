@@ -18,6 +18,16 @@ export {
 export { validateGolfRoster } from "./validation.js";
 export { rankGolfEntries, getContestWinningScore, tiebreakerDistance } from "./ranking.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
+export { golfCandidateSortConfig } from "./candidateSort.js";
+export {
+  buildGolfSortKeys,
+  golfCandidateHasDisplayName,
+  golfLeaderboardPositionSortKey,
+  golfLeaderboardScoreSortKey,
+  GOLF_LEADERBOARD_SORT_BUCKET,
+  GOLF_MISSING_POSITION,
+  GOLF_MISSING_RANK,
+} from "./golfSortKeys.js";
 
 export {
   applyGolfRoundIcons,

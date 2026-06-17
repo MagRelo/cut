@@ -13,10 +13,8 @@ import {
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
-import {
-  participantLastName,
-  sortCandidatesByLeaderboard,
-} from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { participantLastName } from "../../lib/candidateSorting";
 
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 
@@ -26,7 +24,8 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const { candidates = [] } = useContestEvent(contest);
+  const { candidates = [], sportId, status } = useContestEvent(contest);
+  const { sort } = useCandidateSort(sportId);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
@@ -156,7 +155,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                           lineupPicksFromContestLineup(lineup),
                           candidatesByParticipantId,
                         );
-                        const sortedPlayerNames = sortCandidatesByLeaderboard(lineupCandidates)
+                        const sortedPlayerNames = sort(lineupCandidates, "lineupPicks", status)
                           .map((candidate) => participantLastName(candidate))
                           .join(", ");
 

@@ -8,7 +8,7 @@ import {
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
-import { sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { lineupDisplayScore } from "../../lib/lineupScore";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
@@ -29,6 +29,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   userName,
 }) => {
   const { candidates, status, sportId, metadata } = useEventScope();
+  const { sort } = useCandidateSort(sportId);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
@@ -37,10 +38,12 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   const lineupCandidates = useMemo(() => {
     if (!lineup) return [];
     const picks = lineupPicksFromContestLineup(lineup);
-    return sortCandidatesByLeaderboard(
+    return sort(
       candidatesForLineupPicks(picks, candidatesByParticipantId),
+      "lineupPicks",
+      status,
     );
-  }, [lineup, candidatesByParticipantId]);
+  }, [lineup, candidatesByParticipantId, sort, status]);
 
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 

@@ -11,7 +11,8 @@ import {
   isLineupWithPicks,
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
-import { participantLastName, sortCandidatesByLeaderboard } from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { participantLastName } from "../../lib/candidateSorting";
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 
 interface ContestEntryListProps {
@@ -26,7 +27,8 @@ export const ContestEntryList = ({
   contestStatus,
   entryListOpensModal,
 }: ContestEntryListProps) => {
-  const { candidates } = useEventScope();
+  const { candidates, sportId, status } = useEventScope();
+  const { sort } = useCandidateSort(sportId);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
@@ -84,11 +86,13 @@ export const ContestEntryList = ({
         const nextInTheMoney = nextLineup != null && (nextLineup.position || 0) <= paidPositions;
         const showPaidCutoffDivider = isInTheMoney && nextLineup != null && !nextInTheMoney;
 
-        const lineupCandidates = sortCandidatesByLeaderboard(
+        const lineupCandidates = sort(
           candidatesForLineupPicks(
             lineupPicksFromContestLineup(lineup),
             candidatesByParticipantId,
           ),
+          "lineupPicks",
+          status,
         );
         const sortedPlayerNames = lineupCandidates.map(participantLastName).join(", ");
 

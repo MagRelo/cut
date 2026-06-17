@@ -16,10 +16,8 @@ import {
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
-import {
-  participantLastName,
-  sortCandidatesByLeaderboard,
-} from "../../lib/candidateSorting";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { participantLastName } from "../../lib/candidateSorting";
 import { lineupDisplayScore } from "../../lib/lineupScore";
 import {
   candidatesForPlatformLineup,
@@ -78,6 +76,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
+  const { sort } = useCandidateSort(sportId);
   const candidatesByParticipantId = useMemo(
     () => candidatesByParticipantIdMap(candidates),
     [candidates],
@@ -184,7 +183,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const displayCandidates = canEditSlots
     ? slotEditor.slots.filter((candidate): candidate is Candidate => candidate !== null)
-    : sortCandidatesByLeaderboard(initialCandidates);
+    : sort(initialCandidates, "lineupPicks", status);
 
   const playerCount = canEditSlots ? slotEditor.filledCount : initialCandidates.length;
 
