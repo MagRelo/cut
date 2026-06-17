@@ -37,8 +37,8 @@ The codebase on branch `v4` is a greenfield rewrite toward that architecture. PG
 
 ## pnpm scripts
 
-Pass arguments to scripts **without** a `--` separator — e.g. `pnpm run service:init-tournament R2026033`, not `pnpm run service:init-tournament -- R2026033`. The separator breaks commands in this repo. `pnpm --filter server` and script flags (`--dry-run`) are fine.
+Pass arguments to scripts **without** a `--` separator — e.g. `pnpm run service:init-event pga-golf R2026033`, not `pnpm run service:init-event -- pga-golf R2026033`. The separator breaks commands in this repo. `pnpm --filter server` and script flags (`--dry-run`) are fine.
 
 ## Live Data Updates
 
-Each active player's stableford scores need to be updated every 10 minutes. This is done via a cron job that runs every 10 minutes. The job needs to: determine all of the players that are currently active on User teams for the current tournament, pull each scorecard and calculate the players score, and then save the player in the db.
+When `ENABLE_CRON=true`, a single pipeline runs every **5 minutes** (`server/src/cron/scheduler.ts`). For each active `CompetitionEvent`, the sport plugin syncs metadata and field, then—when the event is live—pulls PGA leaderboard/scorecards for field participants and updates `EventParticipant` scores. Contest lineup totals and positions are recalculated in the same pass. Spec: `spec/server/cron.md`.

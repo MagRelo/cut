@@ -88,7 +88,10 @@ See [docs/event-activation-runbook.md](../../docs/event-activation-runbook.md).
 `GET /api/cron/status` returns:
 
 ```json
-{ "enabled": true, "activeJobs": ["mainPipeline"] }
+{
+  "enabled": true,
+  "status": "active",
+  "activeJobs": ["mainPipeline"],
+  "pipelineSteps": ["mainPipeline (*/5 * * * *)", "..."]
+}
 ```
-
-Legacy per-job names from pre-v4 docs are obsolete.

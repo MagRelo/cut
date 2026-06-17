@@ -202,7 +202,7 @@ export const FAQPage: React.FC = () => {
               </li>
             </ol>
             <p className="mt-2 text-gray-700">
-              Leaderboards refresh about every 10 minutes during active tournaments. Final
+              Leaderboards refresh about every 5 minutes during active tournaments. Final
               settlement uses the same ranking rules.
             </p>
           </div>

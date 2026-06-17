@@ -128,8 +128,4 @@ Used by golf `PropBetModule` ingest path only.
 
 ## Excluded / legacy (not in v4 build)
 
-These files remain in the repo for reference or migration but are **not** mounted or compiled on v4:
-
-- `services/initTournament.ts`, `updateTournament*.ts`
-- `services/syncTournamentFieldWithdrawals.ts`
-- `routes/tournament.ts`, `routes/lineup.ts`
+Legacy tournament-era services and routes are removed from the v4 tree. Cron and event lifecycle use `CompetitionEvent`, sport plugins, and `server/src/cron/scheduler.ts`. See [`cron.md`](cron.md).

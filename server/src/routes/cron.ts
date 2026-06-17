@@ -2,6 +2,16 @@ import { Hono } from "hono";
 
 const cronRouter = new Hono();
 
+const PIPELINE_STEPS = [
+  "mainPipeline (*/5 * * * *)",
+  "getActiveEvents → runSportEventPipeline per active event",
+  "refreshOpenSideBetQuotes (when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
+  "batchActivateContests",
+  "batchSettleContests",
+  "batchCloseContests",
+  "batchSyncReferralGraph",
+] as const;
+
 // Get cron status
 cronRouter.get("/status", (c) => {
   const enabled = process.env.ENABLE_CRON === "true";
@@ -13,16 +23,8 @@ cronRouter.get("/status", (c) => {
       ? "Cron scheduler is running. Check server logs for detailed job execution status."
       : "Cron scheduler is disabled. Set ENABLE_CRON=true to enable.",
     environment: process.env.NODE_ENV || "development",
-    jobs: enabled
-      ? [
-          "Update Tournament (every 5 minutes)",
-          "Sync Field Withdrawals (every 5 minutes, pre-tournament only)",
-          "Close Escrow Deposits (every 5 minutes)",
-          "Distribute Contests (every 5 minutes)",
-          "Update Tournament Players (every 5 minutes, conditional)",
-          "Update Contest Lineups (every 5 minutes, conditional)",
-        ]
-      : [],
+    activeJobs: enabled ? ["mainPipeline"] : [],
+    pipelineSteps: enabled ? [...PIPELINE_STEPS] : [],
     timestamp: new Date().toISOString(),
   });
 });

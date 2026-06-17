@@ -186,7 +186,7 @@ Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`
 
 ## Server pipeline
 
-The cron job runs every five minutes and processes **all sports** with an active or recently completed event:
+The cron job runs every five minutes and processes **all sports** with an active event (`CompetitionEvent.isActive=true`):
 
 ```mermaid
 sequenceDiagram
@@ -195,18 +195,21 @@ sequenceDiagram
   participant Plugin as SportModule
   participant Contest as Contest services
 
-  Cron->>Core: getActiveEvents across all enabled sports
+  Cron->>Core: getActiveEvents
   loop each active event
-    Core->>Plugin: resolve by event.sportId
+    Core->>Plugin: runSportEventPipeline
     Plugin->>Plugin: syncEventMetadata
     Plugin->>Plugin: syncParticipantField
-    alt event LIVE
+    alt shouldSyncLiveScores
       Plugin->>Plugin: syncLiveScores
-      Core->>Core: updateContestLineups for this event
+      Core->>Core: updateContestLineupsForEvent
     end
-    Core->>Contest: batchActivate / batchSettle for this event
   end
+  Core->>Core: refreshOpenSideBetQuotes
+  Core->>Contest: batchActivateContests
+  Core->>Contest: batchSettleContests
   Core->>Contest: batchCloseContests
+  Core->>Core: batchSyncReferralGraph
 ```
 
 Core platform endpoints:

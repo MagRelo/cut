@@ -7,7 +7,7 @@ server/src/tournamentSummaries/{pgaTourId}.json
 ```
 
 Loaded by `server/src/lib/tournamentSummary.ts` and
-`server/src/services/initTournament.ts`.
+`server/src/sports/pga-golf/initEvent.ts` (via `loadSummarySections`).
 
 ## JSON schema
 

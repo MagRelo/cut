@@ -1,6 +1,6 @@
 import type { RoundData, TournamentPlayerData } from "../types";
 
-/** Same idea as `holesRemainingRatio` in `server/.../updateTournamentPlayers.ts`: played / total holes in the round. */
+/** Same idea as holes-remaining logic in golf live score sync (`server/src/sports/pga-golf/syncLiveScores.ts`). */
 export function getRoundHoleProgress(roundData: RoundData | undefined): {
   played: number;
   total: number;

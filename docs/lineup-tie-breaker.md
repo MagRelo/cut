@@ -181,7 +181,7 @@ Each position receives at most one winner; remainder dust rules apply to the fir
 
 ### Live leaderboard
 
-`updateContestLineups` (cron, ~every 10 minutes during active tournaments) recalculates scores from player totals, then applies the **same sort cascade** and writes unique `position` values per contest. Timeline snapshots record score and position after each run.
+`updateContestLineupsForEvent` (cron pipeline, every 5 minutes when the sport reports live scoring) recalculates scores from participant totals, then applies the **same sort cascade** and writes unique `position` values per contest. Timeline snapshots record score and position after each run.
 
 ---
 

@@ -4,7 +4,7 @@ Product spec for transactional and lifecycle emails.
 
 ## Sending model (v1)
 
-All product emails are **manual** in v1: an operator runs `script:send-blast` (or a future admin action) when content is ready. **`initTournament` does not send email** — it only loads tournament data (including `summarySections`) into the database. Signup does not send email.
+All product emails are **manual** in v1: an operator runs `script:send-blast` (or a future admin action) when content is ready. **`service:init-event` does not send email** — it only loads event data (including `summarySections`) into the database. Signup does not send email.
 
 | Email | v1 trigger |
 |-------|------------|
@@ -67,7 +67,7 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | **Purpose** | Orient new user after account creation; set expectations (fantasy + contests + CUT). |
-| **Trigger** | **Manual:** operator runs send script when ready. **Not** sent from signup or `initTournament`. |
+| **Trigger** | **Manual:** operator runs send script when ready. **Not** sent from signup or `service:init-event`. |
 | **Send window** | Operator-chosen. |
 | **Audience** | All users with email who have not already received `WELCOME` (per-user idempotency). |
 | **Content** | Welcome; weekly curated experience + live updates; three wagering types (Parlays, Contest Rules, Winner Pool); deposit/withdraw (self-custody, crypto, P2P); CTAs to app and Account funds. |
@@ -81,11 +81,11 @@ flowchart LR
 | Field | Detail |
 |-------|--------|
 | **Purpose** | Open the week: event, field, odds; primary weekly touch for **all** users. |
-| **Trigger** | **Manual:** operator runs send script or admin action when the week is ready. Not tied to `initTournament`. Send **once per tournament** unless an explicit resend path is used. |
+| **Trigger** | **Manual:** operator runs send script or admin action when the week is ready. Not tied to `service:init-event`. Send **once per event** unless an explicit resend path is used. |
 | **Send window** | Whenever the operator sends—typically early in the tournament week after init and summary JSON are in place. |
 | **Audience** | All users with email (v1). |
 | **Content pillars** | Tournament name, dates, course / location; **full `summarySections`** (same content as in-app tournament summary); CTA: build lineup / browse open contests. |
-| **Data sources** | `Tournament` row for `manualActive` tournament: `summarySections` (from DB), dates, course, location. `initTournament` only populates DB; it does not send. |
+| **Data sources** | Active `CompetitionEvent`: `summarySections` (from metadata), dates, course, location. `service:init-event` populates the DB; it does not send. |
 | **Skip if** | No email on user; already logged `NEW_TOURNAMENT` for this `tournamentId` (unless resend). |
 | **Idempotency** | Log `tournamentId` + `NEW_TOURNAMENT`. |
 | **Notes** | Preview HTML before send (`script:email-preview`). Optional `--dry-run` on send script. |

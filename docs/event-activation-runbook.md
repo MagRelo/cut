@@ -109,7 +109,9 @@ Not part of init — handle when the week opens.
 | Task | How |
 |------|-----|
 | Open public contests | App create-contest flow or league manage tab |
-| Lock / settle / close contests | Cron when `ENABLE_CRON=true`, or admin **Lock eligible contests** |
+| Activate contests | Cron (`batchActivateContests`) when `ENABLE_CRON=true` |
+| Lock contests | Admin **Lock eligible contests** or `service:batch-lock-contests` |
+| Settle / close contests | Cron when `ENABLE_CRON=true`, or batch CLI scripts |
 | Side-bet quote refresh | Cron pipeline (`refreshOpenSideBetQuotes`) when `SIDE_BETS_ENABLED=true` + DataGolf key |
 | Side-bet lock / settle / close | Admin panel (`/admin`) — manual ops |
 
@@ -130,6 +132,36 @@ pnpm --filter server run script:send-blast new-tournament
 - [ ] Live send completed (if sending today)
 
 `EmailSendLog` records `eventId` for idempotency.
+
+---
+
+### 7. Ongoing week (cron)
+
+Requires `ENABLE_CRON=true` on the API server or a dedicated `cron-app` process (see [`swarm/env/cron.env.example`](../swarm/env/cron.env.example)). Production Swarm keeps cron **off** on web replicas.
+
+| Cadence | What runs |
+|---------|-----------|
+| Every 5 min | `mainPipeline` in `server/src/cron/scheduler.ts` |
+
+Pipeline order:
+
+1. **`runSportEventPipeline`** per `CompetitionEvent` with `isActive=true` — metadata, field, withdrawals; live scores + lineup updates when the sport says the event is live
+2. **`refreshOpenSideBetQuotes`** — when `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY` are set
+3. **`batchActivateContests`** — `OPEN` → `ACTIVE`
+4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
+5. **`batchCloseContests`** — `SETTLED` → `CLOSED` after expiry
+6. **`batchSyncReferralGraph`**
+
+**Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`), side-bet lock / settle / close.
+
+Full spec: [`spec/server/cron.md`](../spec/server/cron.md). Status: `GET /api/cron/status`.
+
+**Later in the week (manual emails):**
+
+| Target | Command |
+|--------|---------|
+| Wednesday reminder | `script:send-blast reminder` |
+| Sunday recap | `script:send-blast recap` |
 
 ---
 
