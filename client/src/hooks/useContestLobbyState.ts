@@ -16,13 +16,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
 } {
   const hasWallet = Boolean(useEffectiveWalletAddress());
   const contestEvent = useContestEvent(contest);
-  const {
-    eventName,
-    eventStartDate,
-    roundDisplay,
-    status,
-    eventShell,
-  } = contestEvent;
+  const { roundDisplay, eventShell } = contestEvent;
 
   const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -41,9 +35,6 @@ export function useContestLobbyState(contest: Contest | undefined): {
       contestStateOnChain:
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       hasWallet,
-      eventStartDate: eventStartDate ?? undefined,
-      eventName: eventName || undefined,
-      eventNotStarted: status === "SCHEDULED",
       roundDisplay: roundDisplay ?? undefined,
     };
 
@@ -53,9 +44,6 @@ export function useContestLobbyState(contest: Contest | undefined): {
     contestStateOnChain,
     hasWallet,
     eventShell,
-    eventStartDate,
-    eventName,
-    status,
     roundDisplay,
   ]);
 

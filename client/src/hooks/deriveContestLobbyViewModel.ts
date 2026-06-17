@@ -9,9 +9,6 @@ import { ContestState } from "./useContestPredictionData";
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
   hasWallet?: boolean;
-  eventStartDate?: string | Date | null;
-  eventName?: string | null;
-  eventNotStarted?: boolean;
   roundDisplay?: string | null;
 }
 
@@ -83,16 +80,13 @@ export function deriveContestLobbyViewModel(
     hasWallet,
   );
 
-  const showCountdown =
-    !primaryActionsLocked && input.eventNotStarted === true && Boolean(input.eventStartDate);
-
   const showLineupsTab = Boolean(contest.event?.sportId);
   const showFieldTab = Boolean(contest.event?.sportId);
 
   let tabIndex = 0;
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
-  const fieldTabIndex = showFieldTab ? tabIndex++ : -1;
   const contestTabIndex = tabIndex++;
+  const fieldTabIndex = showFieldTab ? tabIndex++ : -1;
   const tailTabIndex = tabIndex;
 
   const defaultTabIndex =
@@ -118,10 +112,7 @@ export function deriveContestLobbyViewModel(
     },
     primary: {
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",
-      showCountdown,
       entryListOpensModal: primaryActionsLocked,
-      eventName: input.eventName ?? null,
-      eventStartDate: input.eventStartDate ?? null,
       roundDisplay: input.roundDisplay ?? null,
     },
     predictions: {

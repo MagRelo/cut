@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest } from "../../../types/contest";
@@ -14,7 +14,6 @@ import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
-import { ContestLineupModal } from "./ContestLineupModal";
 
 /** Temporary: hide Winner Pool from the lobby tab bar. */
 const SHOW_WINNER_POOL_TAB = false;
@@ -51,15 +50,10 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   }, [searchParams, viewModel.layout]);
 
   const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
-  const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
 
   useEffect(() => {
     setSelectedIndex(initialTabIndex);
   }, [viewModel.layout.layoutKey, initialTabIndex]);
-
-  const openLineupsTab = useCallback(() => {
-    setSelectedIndex(viewModel.layout.lineupsTabIndex);
-  }, [viewModel.layout.lineupsTabIndex]);
 
   const fieldSportId = contest.event?.sportId;
   const playerIdParam = searchParams.get("playerId");
@@ -107,19 +101,19 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                Lineups
-              </Tab>
-            ) : null}
-            {viewModel.layout.showFieldTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Field
+                My Lineups
               </Tab>
             ) : null}
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
+            {viewModel.layout.showFieldTab ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Leaderboard
+              </Tab>
+            ) : null}
             {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
@@ -149,6 +143,15 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               </TabPanel>
             ) : null}
 
+            <TabPanel className="p-4 focus:outline-none">
+              <ContestPrimaryTab
+                contest={contest}
+                mode={viewModel.primary.mode}
+                entryListOpensModal={viewModel.primary.entryListOpensModal}
+                currentUserId={currentUserId}
+              />
+            </TabPanel>
+
             {viewModel.layout.showFieldTab && fieldSportId ? (
               <TabPanel className="px-0 py-4 focus:outline-none">
                 <EventLeaderboardPanel
@@ -161,20 +164,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 />
               </TabPanel>
             ) : null}
-
-            <TabPanel className="p-4 focus:outline-none">
-              <ContestPrimaryTab
-                contest={contest}
-                mode={viewModel.primary.mode}
-                showCountdown={viewModel.primary.showCountdown}
-                entryListOpensModal={viewModel.primary.entryListOpensModal}
-                eventName={viewModel.primary.eventName}
-                eventStartDate={viewModel.primary.eventStartDate}
-                currentUserId={currentUserId}
-                onEnterContest={() => setIsLineupModalOpen(true)}
-                onOpenLineupsTab={openLineupsTab}
-              />
-            </TabPanel>
 
             {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">
@@ -203,13 +192,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         />
       ) : null}
 
-      <ContestLineupModal
-        contest={contest}
-        isOpen={isLineupModalOpen}
-        onClose={() => setIsLineupModalOpen(false)}
-        isAuthenticated={isAuthenticated}
-        onOpenLineupsTab={openLineupsTab}
-      />
     </div>
   );
 };
