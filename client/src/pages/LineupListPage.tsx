@@ -17,6 +17,7 @@ function contestLineupForCard(row: TournamentLineupListItem, user: AuthUser): Co
     id: row.id,
     name: row.name,
     players: row.players,
+    winningScorePrediction: row.winningScorePrediction,
   };
   const first = row.contestLineups[0];
   if (first) {

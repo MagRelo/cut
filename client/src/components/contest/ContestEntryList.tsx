@@ -3,10 +3,7 @@ import { useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
-import {
-  getLineupNumberLabel,
-  resolveUserBorderColor,
-} from "../../lib/lineupDisplay";
+import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestEntryListProps {

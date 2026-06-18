@@ -83,6 +83,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         userColorHex={userColorHex}
                         userName={userName}
                         lineupName={lineup.tournamentLineup?.name}
+                        winningScorePrediction={lineup.tournamentLineup?.winningScorePrediction}
                         totalPoints={totalPoints || 0}
                       />
                     </div>

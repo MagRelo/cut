@@ -81,3 +81,12 @@ export const WithTieBreakerSlider: Story = {
     lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
   },
 };
+
+/** Locked tournament — tie-breaker shown read-only instead of slider. */
+export const LockedWithTieBreaker: Story = {
+  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"])],
+  args: {
+    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"]),
+    isEditable: false,
+  },
+};

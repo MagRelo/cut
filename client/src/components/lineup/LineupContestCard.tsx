@@ -22,13 +22,9 @@ import {
   DUPLICATE_LINEUP_PREDICTION_MESSAGE,
 } from "../../utils/winningScorePrediction";
 
-const DEFAULT_USER_COLOR = "#9CA3AF";
+import { getLineupNumberLabel } from "../../lib/lineupDisplay";
 
-const getLineupNumberLabel = (lineupName?: string) => {
-  if (!lineupName) return null;
-  const match = lineupName.match(/lineup\s*#\s*(\d+)/i);
-  return match?.[1] ? `#${match[1]}` : null;
-};
+const DEFAULT_USER_COLOR = "#9CA3AF";
 
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
@@ -334,7 +330,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   disabled={slotActionsDisabled}
                   error={sliderError}
                 />
-              ) : null}
+              ) : (
+                <LineupWinningScoreSlider value={serverPrediction} readOnly />
+              )}
             </TabPanel>
 
             {/* PARLAYS TAB */}
