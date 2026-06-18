@@ -93,7 +93,7 @@ export const EventLeaderboardPanel: React.FC<EventLeaderboardPanelProps> = ({
 
   if (sortedCandidates.length === 0) {
     return (
-      <div className="py-6 text-center text-gray-500">
+      <div className="px-4 py-6 text-center text-gray-500">
         <p>No players found.</p>
       </div>
     );

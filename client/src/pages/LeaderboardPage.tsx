@@ -34,7 +34,7 @@ export const LeaderboardPage: React.FC = () => {
     return (
       <div>
         <SportEventHeader sportId={sportId} variant="context" />
-        <PageHeader title="Leaderboard" className="px-4 pt-4" />
+        <PageHeader title="Leaderboard" className="px-8 pt-4" />
         <div className="p-4 text-center">
           <p className="text-gray-600">No active event available</p>
         </div>
@@ -45,15 +45,17 @@ export const LeaderboardPage: React.FC = () => {
   return (
     <div>
       <SportEventHeader sportId={sportId} variant="context" />
-      <PageHeader title="Leaderboard" className="px-4 pt-4" />
-      <EventLeaderboardPanel
-        sportId={sportId}
-        eventId={eventId}
-        eventMetadata={metadata}
-        playerIdParam={playerIdParam}
-        pgaTourIdParam={pgaTourIdParam}
-        onClearPlayerParams={clearPlayerParams}
-      />
+      <PageHeader title="Leaderboard" className="px-8 pt-2" />
+      <div className="px-4">
+        <EventLeaderboardPanel
+          sportId={sportId}
+          eventId={eventId}
+          eventMetadata={metadata}
+          playerIdParam={playerIdParam}
+          pgaTourIdParam={pgaTourIdParam}
+          onClearPlayerParams={clearPlayerParams}
+        />
+      </div>
     </div>
   );
 };
