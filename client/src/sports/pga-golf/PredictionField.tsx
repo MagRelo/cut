@@ -8,6 +8,7 @@ export const GolfPredictionField: React.FC<PredictionFieldProps> = ({
   onChange,
   disabled,
   error,
+  readOnly,
 }) => {
   const numeric = golfPredictionValue(value) ?? 100;
 
@@ -16,7 +17,8 @@ export const GolfPredictionField: React.FC<PredictionFieldProps> = ({
       value={numeric}
       disabled={disabled}
       error={error}
-      onChange={(next) => onChange(toGolfPrediction(next))}
+      readOnly={readOnly}
+      onChange={readOnly ? undefined : (next) => onChange?.(toGolfPrediction(next))}
     />
   );
 };

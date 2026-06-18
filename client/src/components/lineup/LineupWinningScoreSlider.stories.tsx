@@ -49,3 +49,8 @@ export const WithError: Story = {
 export const Disabled: Story = {
   args: { value: 150, disabled: true },
 };
+
+export const ReadOnly: Story = {
+  args: { value: 150, readOnly: true },
+  render: (args) => <LineupWinningScoreSlider {...args} />,
+};

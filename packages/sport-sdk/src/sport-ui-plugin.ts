@@ -4,9 +4,10 @@ import type { Candidate, CompetitionEventShell, EventStatus } from "./types.js";
 
 export interface PredictionFieldProps {
   value: unknown;
-  onChange: (value: unknown) => void;
+  onChange?: (value: unknown) => void;
   disabled?: boolean;
   error?: string | null;
+  readOnly?: boolean;
 }
 
 export interface CandidateRowProps {

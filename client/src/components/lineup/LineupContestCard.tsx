@@ -342,7 +342,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   disabled={slotActionsDisabled}
                   error={sliderError}
                 />
-              ) : null}
+              ) : (
+                <SportPredictionField value={toGolfPrediction(serverPrediction)} readOnly />
+              )}
             </TabPanel>
 
             {/* PARLAYS TAB */}

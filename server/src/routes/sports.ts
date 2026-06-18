@@ -24,6 +24,10 @@ sportsRouter.get("/:sportId/events/active", async (c) => {
       return c.json({ error: "No active event found for this sport" }, 404);
     }
 
+    // React Query caches active event; avoid HTTP caching — same URL must reflect
+    // manualActive switches immediately (Chrome mobile aggressively caches public max-age).
+    c.header("Cache-Control", "private, no-cache, must-revalidate");
+
     return c.json(active);
   } catch (error) {
     console.error("Error fetching active event:", error);

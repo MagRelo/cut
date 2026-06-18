@@ -40,6 +40,7 @@ export function useActiveEventQuery(sportId: string) {
     staleTime: ACTIVE_EVENT_STALE_MS,
     refetchInterval: ACTIVE_EVENT_STALE_MS,
     refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     enabled: Boolean(sportId),
   });
 }

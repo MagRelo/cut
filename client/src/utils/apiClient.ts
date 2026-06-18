@@ -62,6 +62,8 @@ export class ApiClient {
         headers: await this.buildHeaders(options),
         body: data ? JSON.stringify(data) : undefined,
         credentials: "omit",
+        // Bypass browser HTTP cache — React Query owns client-side caching.
+        cache: "no-store",
       });
 
       return await handleApiResponse<T>(response);
