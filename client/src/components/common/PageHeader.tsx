@@ -8,9 +8,11 @@ interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, className = "", actions }) => {
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      <h2 className="m-0 text-3xl font-extrabold text-gray-400">{title}</h2>
-      {actions}
+    <div className={`flex items-center justify-between gap-4 ${className}`}>
+      <h2 className="m-0 min-w-0 font-display text-xl font-bold uppercase tracking-[0.14em] text-slate-400 sm:text-2xl">
+        {title}
+      </h2>
+      {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>
   );
 };

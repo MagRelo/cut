@@ -39,17 +39,6 @@ export const UserGroupInvitePanel = ({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="mb-1 font-display text-lg font-semibold text-gray-900">
-          League Invite Link
-        </h3>
-        <p className="font-display text-sm leading-relaxed text-gray-600">
-          {isManageVariant
-            ? "Generate or rotate the league invite link. Rotating invalidates the old link."
-            : "Share this link so friends can join your league."}
-        </p>
-      </div>
-
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
       {activeInviteUrl ? (

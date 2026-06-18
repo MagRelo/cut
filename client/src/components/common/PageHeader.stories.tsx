@@ -15,7 +15,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    title: "My lineups",
+    title: "Live Contests",
+  },
+};
+
+export const LongTitle: Story = {
+  args: {
+    title: "Frequently Asked Questions",
   },
 };
 
