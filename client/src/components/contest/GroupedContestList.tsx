@@ -1,7 +1,9 @@
 import { useMemo } from "react";
+import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { type Contest } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
-import { ContestList, PrivateLeagueNotice } from "./ContestList";
+import { SportEventHeader } from "../platform/SportEventHeader";
+import { ContestList } from "./ContestList";
 
 export interface ContestEventSummary {
   id: string;
@@ -21,13 +23,47 @@ interface GroupedContestListProps {
   contests: LeagueContest[];
   loading: boolean;
   error: string | null;
-  showPrivateLeagueNotice?: boolean;
+}
+
+function eventShellFromContest(contest: LeagueContest): CompetitionEventShell | null {
+  const event = contest.event;
+  if (event?.sportId) {
+    return {
+      id: event.id,
+      sportId: event.sportId,
+      externalId: event.externalId,
+      isActive: event.isActive ?? true,
+      metadata: event.metadata,
+    };
+  }
+
+  const summary = contest.eventSummary;
+  if (!summary) return null;
+
+  return {
+    id: summary.id,
+    sportId: summary.sportId,
+    externalId: summary.externalId,
+    isActive: true,
+    metadata: {
+      name: summary.name,
+      startDate: summary.startDate,
+      endDate: summary.endDate,
+    },
+  };
 }
 
 function groupContests(contests: LeagueContest[]) {
   const groups = new Map<
     string,
-    { key: string; label: string; sublabel: string | null; contests: LeagueContest[] }
+    {
+      key: string;
+      sportId: string | null;
+      label: string;
+      sublabel: string | null;
+      eventShell: CompetitionEventShell | null;
+      contests: LeagueContest[];
+    }
   >();
 
   for (const contest of contests) {
@@ -40,12 +76,20 @@ function groupContests(contests: LeagueContest[]) {
       summary?.startDate && summary?.endDate
         ? formatTournamentDateRange(summary.startDate, summary.endDate)
         : summary?.externalId ?? null;
+    const sportId = contest.event?.sportId ?? summary?.sportId ?? null;
 
     const existing = groups.get(key);
     if (existing) {
       existing.contests.push(contest);
     } else {
-      groups.set(key, { key, label, sublabel, contests: [contest] });
+      groups.set(key, {
+        key,
+        sportId,
+        label,
+        sublabel,
+        eventShell: eventShellFromContest(contest),
+        contests: [contest],
+      });
     }
   }
 
@@ -56,49 +100,47 @@ export const GroupedContestList = ({
   contests,
   loading,
   error,
-  showPrivateLeagueNotice = false,
 }: GroupedContestListProps) => {
   const groups = useMemo(() => groupContests(contests), [contests]);
 
   if (loading) {
-    return <ContestList contests={[]} loading error={null} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
+    return <ContestList contests={[]} loading error={null} />;
   }
 
   if (error) {
-    return <ContestList contests={[]} loading={false} error={error} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
+    return <ContestList contests={[]} loading={false} error={error} />;
   }
 
   if (contests.length === 0) {
-    return <ContestList contests={[]} loading={false} error={null} showPrivateLeagueNotice={showPrivateLeagueNotice} />;
-  }
-
-  if (groups.length === 1) {
-    return (
-      <ContestList
-        contests={contests}
-        loading={false}
-        error={null}
-        showPrivateLeagueNotice={showPrivateLeagueNotice}
-      />
-    );
+    return <ContestList contests={[]} loading={false} error={null} />;
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        {groups.map((group) => (
-          <section key={group.key}>
-            <header className="mb-3">
+    <div className="space-y-8">
+      {groups.map((group) => (
+        <section
+          key={group.key}
+          className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm"
+        >
+          {group.sportId && group.eventShell ? (
+            <SportEventHeader
+              sportId={group.sportId}
+              event={group.eventShell}
+              variant="standalone"
+            />
+          ) : (
+            <header className="border-b border-slate-100 px-4 py-3">
               <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
               {group.sublabel ? (
                 <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
               ) : null}
             </header>
+          )}
+          <div className="border-t border-slate-100 bg-slate-50 p-3">
             <ContestList contests={group.contests} loading={false} error={null} />
-          </section>
-        ))}
-      </div>
-      {showPrivateLeagueNotice ? <PrivateLeagueNotice /> : null}
-    </>
+          </div>
+        </section>
+      ))}
+    </div>
   );
 };

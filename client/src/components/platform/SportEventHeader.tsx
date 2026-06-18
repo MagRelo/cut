@@ -8,17 +8,33 @@ type SportEventHeaderVariant = "context" | "standalone";
 
 interface SportEventHeaderProps {
   sportId: string;
+  /** When set, renders this event instead of fetching the sport's active event. */
+  event?: CompetitionEventShell | null;
   /** `context` = flush hero bar; `standalone` = in-page card with spinner while loading. */
   variant?: SportEventHeaderVariant;
 }
 
-export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
+function EventSummaryHeader({
   sportId,
-  variant = "standalone",
-}) => {
-  const { event, isLoading, isFetching, error } = useSportActiveEvent(sportId);
+  event,
+}: {
+  sportId: string;
+  event: CompetitionEventShell;
+}) {
   const plugin = useSportUIPlugin(sportId);
   const EventSummary = plugin?.EventSummary;
+  if (!EventSummary) return null;
+  return <EventSummary event={event} />;
+}
+
+function SportActiveEventHeader({
+  sportId,
+  variant,
+}: {
+  sportId: string;
+  variant: SportEventHeaderVariant;
+}) {
+  const { event, isLoading, isFetching, error } = useSportActiveEvent(sportId);
 
   const eventShell = useMemo((): CompetitionEventShell | null => {
     if (!event) return null;
@@ -48,9 +64,21 @@ export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
     );
   }
 
-  if (error || !eventShell || !EventSummary) {
+  if (error || !eventShell) {
     return null;
   }
 
-  return <EventSummary event={eventShell} />;
+  return <EventSummaryHeader sportId={sportId} event={eventShell} />;
+}
+
+export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
+  sportId,
+  event: eventOverride,
+  variant = "standalone",
+}) => {
+  if (eventOverride) {
+    return <EventSummaryHeader sportId={sportId} event={eventOverride} />;
+  }
+
+  return <SportActiveEventHeader sportId={sportId} variant={variant} />;
 };

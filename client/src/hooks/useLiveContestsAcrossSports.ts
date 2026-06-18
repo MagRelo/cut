@@ -95,7 +95,7 @@ export function useLiveContestsAcrossSports() {
       const eventContests = contestsQueries[index]?.data ?? [];
       const eventSummary = eventSummaryFromActive(active);
       for (const contest of eventContests) {
-        merged.push({ ...contest, eventSummary });
+        merged.push({ ...contest, eventSummary, event: active.event });
       }
     });
 

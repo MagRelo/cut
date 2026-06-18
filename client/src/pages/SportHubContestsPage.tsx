@@ -45,12 +45,7 @@ export const SportHubContests: React.FC = () => {
   return (
     <div className="mb-4 space-y-4">
       <PageHeader title="Live Contests" />
-      <ContestList
-        contests={contests}
-        loading={showLoading}
-        error={error}
-        showPrivateLeagueNotice
-      />
+      <ContestList contests={contests} loading={showLoading} error={error} />
     </div>
   );
 };

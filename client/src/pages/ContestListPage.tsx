@@ -9,12 +9,7 @@ export const Contests: React.FC = () => {
   return (
     <div className="mb-4 space-y-4">
       <PageHeader title="Live Contests" />
-      <GroupedContestList
-        contests={contests}
-        loading={isLoading}
-        error={error}
-        showPrivateLeagueNotice
-      />
+      <GroupedContestList contests={contests} loading={isLoading} error={error} />
     </div>
   );
 };

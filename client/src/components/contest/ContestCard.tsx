@@ -1,11 +1,7 @@
 import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { useReadContract } from "wagmi";
-import { formatUnits } from "viem";
+import { useContestPotDisplay } from "../../hooks/useContestPotDisplay";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
-import ContestContract from "../../utils/contracts/ContestController.json";
-import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
 
 interface ContestCardProps {
   contest: Contest;
@@ -15,73 +11,7 @@ interface ContestCardProps {
 }
 
 export const ContestCard = ({ contest, onPotClick, linkUserGroup = false }: ContestCardProps) => {
-  const contestPaymentToken = contest.settings?.paymentTokenAddress ?? "";
-  const paymentDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
-
-  // Read primary prize pool from contract
-  const {
-    data: primaryPrizePool,
-    isLoading: isLoadingPrimaryPrizePool,
-    isError: isErrorPrimaryPrizePool,
-  } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePool",
-    args: [],
-    chainId: contest.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: !!contest?.address,
-    },
-  });
-
-  const primaryPrizePoolBig = primaryPrizePool as bigint | undefined;
-
-  const potAmount = primaryPrizePoolBig
-    ? Math.round(Number(formatUnits(primaryPrizePoolBig, paymentDecimals)))
-    : 0;
-
-  // Fetch speculator pot - don't need entryIds to get total pot
-  const {
-    secondaryTotalFundsFormatted,
-    isLoading: isPredictionDataLoading,
-    contestChainReadsUnavailable,
-  } = useContestPredictionData({
-    contestAddress: contest.address,
-    entryIds: [], // Empty array since we only need secondary prize pool data
-    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-    paymentTokenAddress: contestPaymentToken,
-  });
-
-  const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
-
-  const speculatorPot = Number.isFinite(rawSecondaryTotal) ? Math.round(rawSecondaryTotal) : 0;
-  const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
-
-  const settledTotalPot = (() => {
-    const snapshot = contest.results?.snapshot;
-    if (!snapshot) return null;
-
-    try {
-      const primaryTotal = BigInt(snapshot.primarySideBalance);
-      const secondaryTotal = BigInt(snapshot.secondarySideBalance);
-      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, paymentDecimals)));
-    } catch {
-      return null;
-    }
-  })();
-
-  const displayPot =
-    isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
-
-  const primaryReadFailed =
-    !!contest?.address && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
-  const showLoading =
-    !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
-  const showPotUnavailable =
-    !isFinalizedContest &&
-    !showLoading &&
-    (primaryReadFailed || contestChainReadsUnavailable);
+  const { displayPot, showLoading, showPotUnavailable } = useContestPotDisplay(contest);
 
   return (
     <div className="flex min-w-0 w-full items-center justify-between gap-2.5">
