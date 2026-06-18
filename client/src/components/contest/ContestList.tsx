@@ -41,10 +41,7 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
             aria-label={`View ${contest.name} contest`}
             className="group block w-full min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           >
-            <ContestListItem
-              contest={contest}
-              className="transition-[border-color,box-shadow,background-color] duration-200 group-hover:border-blue-200 group-hover:bg-blue-50/30 group-hover:shadow-md"
-            />
+            <ContestListItem contest={contest} />
           </Link>
         ))}
       </div>
