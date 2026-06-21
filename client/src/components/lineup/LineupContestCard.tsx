@@ -58,7 +58,8 @@ interface LineupContestCardProps {
   isEventEditable: boolean;
 }
 
-const TAB_PANEL_MIN_HEIGHT_CLASS = "min-h-[18.5rem] py-3 flow-root";
+const PLAYERS_TAB_PANEL_CLASS = "flow-root";
+const PARLAYS_TAB_PANEL_CLASS = "min-h-[18.5rem] py-3 flow-root";
 
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
@@ -206,7 +207,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     <div className="bg-white">
       {/* Header */}
       <div
-        className="p-3 py-5 font-display"
+        className="px-3 py-4 font-display"
         style={{
           borderLeftColor: resolvedBorderColor,
           borderLeftWidth: "5px",
@@ -214,7 +215,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         }}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1 pl-1 text-left font-display">
+          <div className="min-w-0 flex-1 text-left font-display">
             <div className="truncate text-xl font-semibold leading-tight text-gray-900">
               {lineup.user?.name || lineup.user?.email || "Unknown User"}
             </div>
@@ -222,7 +223,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               {lineupName || `Lineup ${lineup.id.slice(-6)}`}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 pr-5 text-right">
+          <div className="flex shrink-0 items-center gap-2 text-right">
             <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
             <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
               PTS
@@ -232,7 +233,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="p-4 pt-0">
+      <div className="px-3 pb-3 pt-0">
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className={tabListClassName("space-x-1")}>
             <Tab
@@ -253,8 +254,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
           <div className="">
             {/* PLAYERS TAB */}
-            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
-              <div className="space-y-1">
+            <TabPanel className={PLAYERS_TAB_PANEL_CLASS}>
+              <div>
                 {canEditSlots
                   ? slotEditor.slots.map((candidate, index) => (
                       <div key={`slot-${index}`} className="p-3">
@@ -348,7 +349,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             </TabPanel>
 
             {/* PARLAYS TAB */}
-            <TabPanel className={TAB_PANEL_MIN_HEIGHT_CLASS}>
+            <TabPanel className={PARLAYS_TAB_PANEL_CLASS}>
               <SideBetPanel
                 borderColor={resolvedBorderColor}
                 userLabel={sideBetUserLabel}

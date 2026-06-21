@@ -3,7 +3,11 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@
 import type { Contest } from "../../types/contest";
 import { arePrimaryActionsLocked } from "../../types/contest";
 import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
+import { CheckIcon } from "@heroicons/react/20/solid";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+
+const joinActionsFooterClassName =
+  "border-t border-gray-200 bg-gray-50 px-3 py-2.5 font-display";
 
 type ContestLineupEntry = ReturnType<typeof useContestLineupEntry>;
 
@@ -26,15 +30,18 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
 
   if (!canEnter) {
     return isEntered ? (
-      <p className="px-4 py-3 text-center font-display text-sm text-emerald-700">
-        Entered in this contest
-      </p>
+      <div className={joinActionsFooterClassName}>
+        <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700">
+          <CheckIcon className="h-4 w-4 shrink-0" aria-hidden />
+          Entered in this contest
+        </div>
+      </div>
     ) : null;
   }
 
   return (
     <>
-      <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
+      <div className={joinActionsFooterClassName}>
         {isEntered ? (
           <button
             type="button"

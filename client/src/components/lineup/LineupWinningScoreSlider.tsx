@@ -19,23 +19,33 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   readOnly = false,
 }) => {
   return (
-    <div className="px-3 pb-1 pt-2">
-      <div
-        id="winning-score-prediction"
-        className="text-medium block font-display text-base font-semibold text-gray-900"
-      >
-        Tie-Breaker
-      </div>
-      <p className="mt-0.5 font-display text-xs leading-relaxed text-gray-600">
-        Guess how many points the winning lineup will score. Used to break ties.
-      </p>
+    <div className="border-t border-gray-100 p-3">
       {readOnly ? (
-        <div className="mt-3 font-display text-lg font-bold tabular-nums leading-none text-gray-900">
-          {value}
+        <div className="flex items-baseline justify-between gap-3 font-display">
+          <span
+            id="winning-score-prediction"
+            className="text-sm font-semibold text-gray-700"
+          >
+            Tie-Breaker
+          </span>
+          <span className="text-base font-bold tabular-nums leading-none text-gray-900">
+            {value}
+          </span>
         </div>
       ) : (
         <>
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mb-2 flex items-baseline justify-between gap-3 font-display">
+            <span
+              id="winning-score-prediction"
+              className="text-sm font-semibold text-gray-700"
+            >
+              Tie-Breaker
+            </span>
+            <span className="text-base font-bold tabular-nums leading-none text-gray-900">
+              {value}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
             <input
               type="range"
               min={WINNING_SCORE_SLIDER_MIN}
@@ -46,9 +56,6 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
               className="h-2 w-full flex-1 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               aria-labelledby="winning-score-prediction"
             />
-            <span className="w-10 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
-              {value}
-            </span>
           </div>
           <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
             <span>{WINNING_SCORE_SLIDER_MIN}</span>
