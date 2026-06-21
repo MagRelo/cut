@@ -7,16 +7,12 @@ import { ErrorMessage } from "../../common/ErrorMessage";
 import { useContestEvent } from "../../../hooks/useContestEvent";
 import { useSportUIPlugin } from "../../../hooks/useSportUI";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
-import { EventLeaderboardPanel } from "../../platform/EventLeaderboardPanel";
 import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
-
-/** Temporary: hide Winner Pool from the lobby tab bar. */
-const SHOW_WINNER_POOL_TAB = false;
 
 export interface ContestLobbyViewProps {
   contest: Contest;
@@ -31,7 +27,6 @@ function tabIndexFromQuery(
 ): number | null {
   if (tab === "lineups" && layout.showLineupsTab) return layout.lineupsTabIndex;
   if (tab === "contest") return layout.contestTabIndex;
-  if (tab === "field" && layout.showFieldTab) return layout.fieldTabIndex;
   if (tab === "results" && layout.showResultsTab) return layout.tailTabIndex;
   if (tab === "pool" && layout.showPredictionsTab) return layout.tailTabIndex;
   return null;
@@ -43,7 +38,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   currentUserId,
   isAuthenticated,
 }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const initialTabIndex = useMemo(() => {
     const fromQuery = tabIndexFromQuery(searchParams.get("tab"), viewModel.layout);
     return fromQuery ?? viewModel.layout.defaultTabIndex;
@@ -56,16 +51,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   }, [viewModel.layout.layoutKey, initialTabIndex]);
 
   const fieldSportId = contest.event?.sportId;
-  const playerIdParam = searchParams.get("playerId");
-  const pgaTourIdParam = searchParams.get("pgaTourId");
-
-  const clearPlayerParams = () => {
-    if (!searchParams.has("pgaTourId") && !searchParams.has("playerId")) return;
-    const next = new URLSearchParams(searchParams);
-    next.delete("pgaTourId");
-    next.delete("playerId");
-    setSearchParams(next, { replace: true });
-  };
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
   const { eventShell, error: eventError } = useContestEvent(contest);
@@ -107,14 +92,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
-            {viewModel.layout.showFieldTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Leaderboard
-              </Tab>
-            ) : null}
-            {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
+            {viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
@@ -152,20 +130,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               />
             </TabPanel>
 
-            {viewModel.layout.showFieldTab && fieldSportId ? (
-              <TabPanel className="px-4 pt-2 pb-4 focus:outline-none">
-                <EventLeaderboardPanel
-                  sportId={fieldSportId}
-                  eventId={contest.eventId}
-                  eventMetadata={contest.event?.metadata}
-                  playerIdParam={playerIdParam}
-                  pgaTourIdParam={pgaTourIdParam}
-                  onClearPlayerParams={clearPlayerParams}
-                />
-              </TabPanel>
-            ) : null}
-
-            {SHOW_WINNER_POOL_TAB && viewModel.layout.showPredictionsTab ? (
+            {viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">
                 <ContestPredictionsPanel
                   contest={contest}
