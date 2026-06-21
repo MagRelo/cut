@@ -11,6 +11,7 @@ import { config } from "./wagmi";
 
 import { AuthProvider } from "./contexts/AuthContext";
 import { useReferralCapture } from "./hooks/useReferralCapture";
+import { useLeagueInviteCapture } from "./hooks/useLeagueInviteCapture";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
   getSmartWalletsPaymasterConfig,
@@ -69,6 +70,7 @@ const smartWalletsProviderKey = getSmartWalletsProviderKey();
 
 function ReferralQueryCapture() {
   useReferralCapture();
+  useLeagueInviteCapture();
   return null;
 }
 

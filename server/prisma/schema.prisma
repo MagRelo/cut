@@ -74,12 +74,13 @@ model UserWallet {
 }
 
 model UserGroup {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  inviteCode  String?  @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  description           String?
+  inviteCode            String?  @unique
+  inviteReferrerAddress String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   members  UserGroupMember[]
   contests Contest[]

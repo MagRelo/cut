@@ -39,6 +39,11 @@ export const UserGroupInvitePanel = ({
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Share this link to add players to your league. New signups are credited to you as their
+        referrer for invite rewards.
+      </p>
+
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
       {activeInviteUrl ? (

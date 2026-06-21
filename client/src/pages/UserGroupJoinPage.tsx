@@ -5,12 +5,22 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useJoinLeague } from "../hooks/useUserGroupMutations";
 import { isApiError } from "../utils/apiError";
+import {
+  clearPendingLeagueInviteCode,
+  setPendingLeagueInviteCode,
+} from "../lib/leagueInviteCapture";
 
 export const UserGroupJoinPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { mutateAsync, isPending, isError, error } = useJoinLeague();
   const attemptedCodeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (code) {
+      setPendingLeagueInviteCode(code);
+    }
+  }, [code]);
 
   useEffect(() => {
     if (!code || attemptedCodeRef.current === code) {
@@ -20,10 +30,12 @@ export const UserGroupJoinPage = () => {
 
     void mutateAsync({ inviteCode: code })
       .then((league) => {
+        clearPendingLeagueInviteCode();
         navigate(`/leagues/${league.id}`, { replace: true });
       })
       .catch((joinError) => {
         if (isApiError(joinError) && joinError.statusCode === 409) {
+          clearPendingLeagueInviteCode();
           const userGroupId = joinError.context?.userGroupId;
           if (typeof userGroupId === "string") {
             navigate(`/leagues/${userGroupId}`, { replace: true });

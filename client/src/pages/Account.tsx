@@ -11,6 +11,7 @@ import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
 import { BRAND_PROSE } from "../lib/brand";
+import { buildFundSendUrl } from "../lib/fundLinks";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -239,20 +240,36 @@ const WalletInfo = ({
         ) : null}
 
         {accountIdAddress ? (
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-            <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-              Account ID
-            </span>
-            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span
-                className="truncate text-right font-display text-xs text-gray-800"
-                title={accountIdAddress}
-              >
-                {truncateMiddle(accountIdAddress)}
+          <>
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+                Account ID
               </span>
-              <CopyButton text={accountIdAddress} />
+              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+                <span
+                  className="truncate text-right font-display text-xs text-gray-800"
+                  title={accountIdAddress}
+                >
+                  {truncateMiddle(accountIdAddress)}
+                </span>
+                <CopyButton text={accountIdAddress} />
+              </div>
             </div>
-          </div>
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+                Share fund link
+              </span>
+              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+                <span
+                  className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
+                  title={buildFundSendUrl(accountIdAddress)}
+                >
+                  {truncateMiddle(buildFundSendUrl(accountIdAddress), 18, 8)}
+                </span>
+                <CopyButton text={buildFundSendUrl(accountIdAddress)} />
+              </div>
+            </div>
+          </>
         ) : null}
       </div>
 

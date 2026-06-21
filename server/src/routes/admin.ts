@@ -24,6 +24,7 @@ import {
 } from "../services/admin/adminEventContext.js";
 import { placementPlayersMapForTickets } from "../services/sideBets/lineupSideBetUtils.js";
 import { pickWalletForChain } from "../utils/pickWalletForChain.js";
+import { getRequestChainId } from "../utils/requestChainId.js";
 
 const adminRouter = new Hono();
 
@@ -55,13 +56,6 @@ adminRouter.post("/contests/lock-eligible", requireAuth, requireAdmin, async (c)
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
-
-function getRequestChainId(c: { req: { header: (n: string) => string | undefined } }): number | null {
-  const raw = c.req.header("x-cut-chain-id");
-  if (!raw) return null;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) ? n : null;
-}
 
 // GET /api/admin/users
 adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {

@@ -5,6 +5,7 @@ import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useFirstEnabledSportId } from "../hooks/useSportData";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
+import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -66,8 +67,16 @@ export function OnboardingPage() {
 
   const navigateAfterDismiss = () => {
     const from = (location.state as { from?: Location })?.from;
-    const target = from ? `${from.pathname}${from.search || ""}${from.hash || ""}` : "/";
-    navigate(target, { replace: true });
+    if (from) {
+      navigate(`${from.pathname}${from.search || ""}${from.hash || ""}`, { replace: true });
+      return;
+    }
+    const pendingCode = getPendingLeagueInviteCode();
+    if (pendingCode) {
+      navigate(`/leagues/join/${pendingCode}`, { replace: true });
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   const dismissOnboarding = async () => {
@@ -111,8 +120,7 @@ export function OnboardingPage() {
     setSaving(true);
     try {
       await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
-      const nextPath = "/contests";
-      navigate(nextPath, { replace: true });
+      navigateAfterDismiss();
     } finally {
       setSaving(false);
     }

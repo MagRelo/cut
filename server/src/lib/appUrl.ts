@@ -5,6 +5,12 @@ export function getAppPublicUrl(): string {
   return (raw || DEFAULT_APP_URL).replace(/\/$/, "");
 }
 
-export function buildLeagueInviteUrl(inviteCode: string): string {
-  return `${getAppPublicUrl()}/user-groups/join/${inviteCode}`;
+export function buildLeagueInviteUrl(
+  inviteCode: string,
+  referrerAddress?: string | null,
+): string {
+  const base = `${getAppPublicUrl()}/leagues/join/${inviteCode}`;
+  const ref = referrerAddress?.trim().toLowerCase();
+  if (!ref) return base;
+  return `${base}?ref=${encodeURIComponent(ref)}`;
 }

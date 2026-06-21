@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { type UserGroupMemberResponse, type AddUserGroupMemberInput } from "../../types/userGroup";
 import { useAddUserGroupMember, useRemoveUserGroupMember } from "../../hooks/useUserGroupMutations";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { Modal } from "../common/Modal";
+import { buildFundSendUrl } from "../../lib/fundLinks";
 
 interface UserGroupMemberManagementProps {
   userGroupId: string;
@@ -193,38 +195,33 @@ export const UserGroupMemberManagement = ({
       </Modal>
 
       {/* Members List */}
-      <div className="space-y-2">
+      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
         {members.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-900">{member.user.name}</div>
-              <div className="text-xs text-gray-400 mt-1">
-                Joined {new Date(member.joinedAt).toLocaleDateString()}
-              </div>
+          <li key={member.id} className="px-3 py-3">
+            <div className="font-medium text-gray-900">{member.user.name}</div>
+            <div className="mt-0.5 text-xs text-gray-400">
+              Joined {new Date(member.joinedAt).toLocaleDateString()}
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                  member.role === "ADMIN"
-                    ? "bg-blue-100 text-blue-800 border border-blue-300"
-                    : "bg-gray-100 text-gray-800 border border-gray-300"
-                }`}
-              >
-                {member.role === "ADMIN" ? "Admin" : "Member"}
-              </span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              {member.walletAddress ? (
+                <Link
+                  to={buildFundSendUrl(member.walletAddress)}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Send funds
+                </Link>
+              ) : null}
               <button
+                type="button"
                 onClick={() => setRemoveConfirmUserId(member.userId)}
-                className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                className="font-medium text-red-600 hover:text-red-800 hover:underline"
               >
                 Remove
               </button>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {/* Remove Confirmation Modal */}
       <Modal
