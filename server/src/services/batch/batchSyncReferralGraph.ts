@@ -1,19 +1,22 @@
 /**
- * Push pending referral rows to ReferralGraph (oracle batchRegister).
- * Wave sync: only register when referrer is already on-chain; defer others.
+ * Push pending users to ReferralGraph (one register tx per user).
+ * Organic users → oracle root; invited users → inviter when inviter is on-chain.
  */
 
-import { type Hex } from "viem";
+import { getAddress, type Hex } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { getReferralGraphAddress } from "../../lib/referralConfig.js";
+import { referralGraphIsRegistered } from "../referral/referralGraph.js";
 import {
-  referralGraphBatchRegister,
-  referralGraphIsRegistered,
-} from "../referral/referralGraph.js";
+  bootstrapReferralOracleRoot,
+  isOracleRootRegistered,
+  registerWalletOnReferralGraph,
+  resolveReferralGraphSetup,
+  type ReferralGraphSetup,
+} from "../referral/referralGraphSetup.js";
 import { type BatchOperationResult } from "../shared/types.js";
 import { pickWalletPublicKeyForChain } from "../../utils/pickWalletForChain.js";
 
-const BATCH_SIZE = 25;
 const ALREADY_ON_CHAIN = "already_registered";
 const MAX_WAVES = 500;
 
@@ -22,8 +25,6 @@ type PendingUser = Awaited<ReturnType<typeof loadPendingUsers>>[number];
 async function loadPendingUsers() {
   return prisma.user.findMany({
     where: {
-      referrerAddress: { not: null },
-      referredByUserId: { not: null },
       referralChainId: { not: null },
       referralGroupId: { not: null },
       referralOnchainTxHash: null,
@@ -38,13 +39,27 @@ function userWalletOnChain(u: PendingUser): string | null {
   return pickWalletPublicKeyForChain(u.wallets, cid);
 }
 
-type GroupAgg = {
-  chainId: number;
-  graphAddr: `0x${string}`;
-  groupId: Hex;
-  referrer: `0x${string}`;
-  users: PendingUser[];
-};
+async function resolveReferrer(
+  u: PendingUser,
+  setup: ReferralGraphSetup,
+): Promise<{ ready: boolean; referrer: `0x${string}` | null }> {
+  if (!u.referrerAddress) {
+    if (!(await isOracleRootRegistered(setup))) {
+      await bootstrapReferralOracleRoot(setup);
+    }
+    const ready = await isOracleRootRegistered(setup);
+    return { ready, referrer: ready ? setup.oracleRoot : null };
+  }
+
+  const ref = getAddress(u.referrerAddress).toLowerCase() as `0x${string}`;
+  const onChain = await referralGraphIsRegistered(
+    setup.chainId,
+    setup.graphAddress,
+    ref,
+    setup.groupId,
+  );
+  return { ready: onChain, referrer: ref };
+}
 
 export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
   const pending = await loadPendingUsers();
@@ -104,111 +119,94 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
   let wave = 0;
   while (queue.length > 0 && wave < MAX_WAVES) {
     wave += 1;
-    const ready: PendingUser[] = [];
     const notReady: PendingUser[] = [];
+    let progressed = false;
 
     for (const u of queue) {
       const chainId = u.referralChainId!;
-      const graphAddr = getReferralGraphAddress(chainId);
-      const groupId = u.referralGroupId as Hex;
-      const ref = u.referrerAddress?.toLowerCase();
-      if (!graphAddr || !groupId || !ref) {
+      const userAddr = userWalletOnChain(u);
+      if (!userAddr) {
+        failed += 1;
+        results.push({
+          success: false,
+          contestId: u.id,
+          error: "Missing wallet for chain",
+        });
+        continue;
+      }
+
+      let setup: ReferralGraphSetup;
+      try {
+        setup = resolveReferralGraphSetup(chainId);
+      } catch (e) {
+        failed += 1;
+        results.push({
+          success: false,
+          contestId: u.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+        continue;
+      }
+
+      const { ready, referrer } = await resolveReferrer(u, setup);
+      if (!ready || !referrer) {
         notReady.push(u);
         continue;
       }
 
+      if (userAddr.toLowerCase() === referrer.toLowerCase()) {
+        failed += 1;
+        results.push({
+          success: false,
+          contestId: u.id,
+          error: "User wallet cannot be its own referrer",
+        });
+        continue;
+      }
+
       try {
-        const referrerOnChain = await referralGraphIsRegistered(
-          chainId,
-          graphAddr,
-          ref as `0x${string}`,
-          groupId,
+        const { txHash, skipped } = await registerWalletOnReferralGraph(
+          setup,
+          userAddr,
+          referrer,
         );
-        if (referrerOnChain) {
-          ready.push(u);
-        } else {
-          notReady.push(u);
+
+        if (skipped && !txHash) {
+          await prisma.user.update({
+            where: { id: u.id },
+            data: { referralOnchainTxHash: ALREADY_ON_CHAIN },
+          });
+          succeeded += 1;
+          results.push({ success: true, contestId: u.id });
+          progressed = true;
+          continue;
         }
-      } catch {
-        notReady.push(u);
+
+        if (txHash) {
+          await prisma.user.update({
+            where: { id: u.id },
+            data: { referralOnchainTxHash: txHash },
+          });
+          succeeded += 1;
+          results.push({ success: true, contestId: u.id, transactionHash: txHash });
+          progressed = true;
+        }
+      } catch (e) {
+        failed += 1;
+        results.push({
+          success: false,
+          contestId: u.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
-    if (ready.length === 0) {
+    queue.length = 0;
+    queue.push(...notReady);
+
+    if (!progressed) {
       break;
     }
-
-    const groups = new Map<string, GroupAgg>();
-    for (const u of ready) {
-      const chainId = u.referralChainId!;
-      const graphAddr = getReferralGraphAddress(chainId)!;
-      const groupId = u.referralGroupId as Hex;
-      const ref = u.referrerAddress!.toLowerCase() as `0x${string}`;
-      const key = `${chainId}:${ref}:${groupId}`;
-      let g = groups.get(key);
-      if (!g) {
-        g = { chainId, graphAddr, groupId, referrer: ref, users: [] };
-        groups.set(key, g);
-      }
-      g.users.push(u);
-    }
-
-    const succeededIds = new Set<string>();
-
-    for (const g of groups.values()) {
-      for (let i = 0; i < g.users.length; i += BATCH_SIZE) {
-        const chunk = g.users.slice(i, i + BATCH_SIZE);
-        const addrs: `0x${string}`[] = [];
-        const idByAddr = new Map<string, string>();
-
-        for (const u of chunk) {
-          const a = userWalletOnChain(u);
-          if (!a) continue;
-          const addr = a as `0x${string}`;
-          addrs.push(addr);
-          idByAddr.set(a.toLowerCase(), u.id);
-        }
-
-        if (addrs.length === 0) continue;
-
-        try {
-          const hash = await referralGraphBatchRegister(
-            g.chainId,
-            g.graphAddr,
-            addrs,
-            g.referrer,
-            g.groupId,
-          );
-          for (const addr of addrs) {
-            const id = idByAddr.get(addr.toLowerCase());
-            if (!id) continue;
-            await prisma.user.update({
-              where: { id },
-              data: { referralOnchainTxHash: hash },
-            });
-            succeeded += 1;
-            results.push({ success: true, contestId: id, transactionHash: hash });
-            succeededIds.add(id);
-          }
-          await new Promise((r) => setTimeout(r, 1500));
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          for (const u of chunk) {
-            failed += 1;
-            results.push({ success: false, contestId: u.id, error: msg });
-          }
-        }
-      }
-    }
-
-    const nextQueue: PendingUser[] = [...notReady];
-    for (const u of ready) {
-      if (!succeededIds.has(u.id)) {
-        nextQueue.push(u);
-      }
-    }
-    queue.length = 0;
-    queue.push(...nextQueue);
   }
 
   const deferred = queue.length;
@@ -216,7 +214,9 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     results.push({
       success: false,
       contestId: u.id,
-      error: "deferred: referrer not registered on chain yet",
+      error: u.referrerAddress
+        ? "deferred: referrer not registered on chain yet"
+        : "deferred: oracle root not registered on chain yet",
     });
   }
 

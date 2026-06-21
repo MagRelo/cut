@@ -8,7 +8,6 @@ import {
   parseReferralGroupIdFromEnv,
   requireReferralGroupIdForSignup,
 } from "./referralConfig.js";
-import { registerOrganicUserOnReferralGraph } from "../services/referral/registerOrganicUserOnGraph.js";
 
 /** Wallet already bound to a different Privy user — respond with 403, not a generic 401. */
 export class PrivyWalletIdentityConflictError extends Error {
@@ -443,17 +442,6 @@ export async function ensureCutUserFromPrivy(
   });
 
   await syncUserWalletsForPrivyUser(user.id, privyUser, preferredChainId);
-
-  if (!referral && platformGroupId) {
-    try {
-      await registerOrganicUserOnReferralGraph(user.id, address, chainId);
-    } catch (e) {
-      console.error(
-        `[ensureCutUserFromPrivy] organic ReferralGraph register failed for user ${user.id}:`,
-        e,
-      );
-    }
-  }
 
   return {
     userId: user.id,
