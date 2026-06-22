@@ -1,7 +1,11 @@
 import { CopyButton } from "../common/CopyToClipboard";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useGenerateLeagueInvite } from "../../hooks/useUserGroupMutations";
+import { BRAND_PROSE } from "../../lib/brand";
+
+const inviteLinkRowGridClass = "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4";
 
 interface UserGroupInvitePanelProps {
   userGroupId: string;
@@ -39,29 +43,39 @@ export const UserGroupInvitePanel = ({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        Share this link to add players to your league. New signups are credited to you as their
-        referrer for invite rewards.
-      </p>
-
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
       {activeInviteUrl ? (
         <div className="space-y-3">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-            <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-              Invite link
-            </span>
-            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-              <span
-                className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
-                title={activeInviteUrl}
-              >
-                {activeInviteUrl}
+          {isManageVariant ? (
+            <div className={inviteLinkRowGridClass}>
+              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+                Invite link
               </span>
-              <CopyButton text={activeInviteUrl} />
+              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+                <span
+                  className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
+                  title={activeInviteUrl}
+                >
+                  {activeInviteUrl}
+                </span>
+                <CopyButton text={activeInviteUrl} />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={inviteLinkRowGridClass}>
+              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+                League Invite Link
+              </span>
+              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+                <ShareInviteButton
+                  url={activeInviteUrl}
+                  shareText={`Join my league on ${BRAND_PROSE}`}
+                  ariaLabel="Share league invite link"
+                />
+              </div>
+            </div>
+          )}
           {isManageVariant && activeInviteCode ? (
             <p className="text-xs text-gray-500">Code: {activeInviteCode}</p>
           ) : null}

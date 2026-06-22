@@ -1,16 +1,15 @@
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyButton } from "../components/common/CopyToClipboard";
+import { ShareInviteButton } from "../components/common/ShareInviteButton";
 import { PageSection } from "../components/layout/PageSection";
 import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
-import { BRAND_PROSE } from "../lib/brand";
 import { buildFundSendUrl } from "../lib/fundLinks";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
@@ -28,51 +27,6 @@ function ReferralUrlPreview({ url }: { url: string }) {
     >
       {truncateMiddle(url, 18, 6)}
     </span>
-  );
-}
-
-function ShareInviteButton({ url }: { url: string }) {
-  const [feedback, setFeedback] = useState<null | "shared" | "copied">(null);
-
-  const handleClick = async () => {
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({
-          title: BRAND_PROSE,
-          text: `Join ${BRAND_PROSE}`,
-          url,
-        });
-        setFeedback("shared");
-        setTimeout(() => setFeedback(null), 2000);
-        return;
-      } catch (err) {
-        if ((err as DOMException).name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setFeedback("copied");
-      setTimeout(() => setFeedback(null), 2000);
-    } catch (e) {
-      console.error("Share/copy failed:", e);
-    }
-  };
-
-  const label = feedback === "shared" ? "Shared!" : feedback === "copied" ? "Copied!" : "Share";
-  const active = feedback !== null;
-
-  return (
-    <button
-      type="button"
-      onClick={() => void handleClick()}
-      aria-label={active ? label : "Share your invite link"}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded px-3 py-1 font-display text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
-      }`}
-    >
-      {label}
-      <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" aria-hidden />
-    </button>
   );
 }
 
@@ -94,7 +48,7 @@ function ReferralLinkRow({
         Share Your Invite Link
       </span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-        <ShareInviteButton url={url} />
+        <ShareInviteButton url={url} ariaLabel="Share your invite link" />
       </div>
     </div>
   );

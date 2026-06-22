@@ -134,7 +134,7 @@ export const UserGroupDetailPage = () => {
       />
 
       <PageSection variant="card" className="overflow-hidden !p-0">
-        <header className="flex flex-col justify-between gap-4 px-4 pb-4 pt-4">
+        <header className="px-4 pb-4 pt-4">
           <div>
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
               {userGroup.name}
@@ -145,15 +145,19 @@ export const UserGroupDetailPage = () => {
               </p>
             ) : null}
           </div>
-
-          {userGroup.inviteUrl ? (
-            <UserGroupInvitePanel
-              userGroupId={userGroup.id}
-              inviteUrl={userGroup.inviteUrl}
-              variant="share"
-            />
-          ) : null}
         </header>
+
+        {userGroup.inviteUrl ? (
+          <div className="px-4 pb-4">
+            <PageSection variant="card" className="bg-gray-50">
+              <UserGroupInvitePanel
+                userGroupId={userGroup.id}
+                inviteUrl={userGroup.inviteUrl}
+                variant="share"
+              />
+            </PageSection>
+          </div>
+        ) : null}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <TabList className={tabListClassName("space-x-1", "px-4", "pt-2")}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
