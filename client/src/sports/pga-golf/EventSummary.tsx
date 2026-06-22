@@ -1,5 +1,5 @@
 import React from "react";
-import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
+import type { EventSummaryProps } from "@cut/sport-sdk/ui";
 import {
   DEFAULT_TOURNAMENT_BEAUTY_IMAGE,
   resolveTournamentBeautyImage,
@@ -7,15 +7,21 @@ import {
 import { parseGolfEventMetadata } from "./utils";
 import { GolfEventDetails } from "./EventDetails";
 
-interface GolfEventSummaryProps {
-  event: CompetitionEventShell;
+export function resolveGolfEventHeroImage(event: EventSummaryProps["event"]): string {
+  const meta = parseGolfEventMetadata(event.metadata);
+  return resolveTournamentBeautyImage(meta.beautyImage ?? DEFAULT_TOURNAMENT_BEAUTY_IMAGE);
 }
 
-export const GolfEventSummary: React.FC<GolfEventSummaryProps> = ({ event }) => {
-  const meta = parseGolfEventMetadata(event.metadata);
-  const headerImageUrl = resolveTournamentBeautyImage(
-    meta.beautyImage ?? DEFAULT_TOURNAMENT_BEAUTY_IMAGE,
-  );
+export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface = "hero" }) => {
+  if (surface === "content") {
+    return (
+      <div className="px-4 py-3">
+        <GolfEventDetails event={event} />
+      </div>
+    );
+  }
+
+  const headerImageUrl = resolveGolfEventHeroImage(event);
 
   return (
     <div className="relative overflow-hidden shadow-sm">

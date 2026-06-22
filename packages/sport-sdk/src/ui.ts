@@ -1,5 +1,7 @@
 export type {
   CandidateRowProps,
+  EventSummaryProps,
+  EventSummarySurface,
   ParticipantDetailProps,
   ParticipantRowProps,
   PredictionFieldProps,

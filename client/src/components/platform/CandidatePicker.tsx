@@ -7,6 +7,9 @@ import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 
+/** Temporarily hide player search until picker list performance is improved. */
+const SHOW_PLAYER_SEARCH = false;
+
 interface CandidatePickerProps {
   sportId: string;
   eventId: string;
@@ -68,7 +71,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
           <div className="fixed inset-0 bg-black/40" aria-hidden />
         </TransitionChild>
 
-        <div className="fixed inset-0 flex items-end justify-center p-4 sm:items-center">
+        <div className="fixed inset-0 flex items-center justify-center p-4">
           <TransitionChild
             as={Fragment}
             enter="ease-out duration-200"
@@ -78,22 +81,24 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <DialogPanel className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+            <DialogPanel className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
               <div className="border-b border-gray-200 px-4 py-3">
                 <DialogTitle className="font-display text-lg font-semibold text-gray-900">
                   {isSaving ? "Saving lineup..." : "Select player"}
                 </DialogTitle>
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search players..."
-                  disabled={isSaving}
-                  className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                />
+                {SHOW_PLAYER_SEARCH ? (
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search players..."
+                    disabled={isSaving}
+                    className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  />
+                ) : null}
               </div>
 
-              <div className="relative min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-gray-600 via-gray-700 to-gray-900">
+              <div className="relative min-h-0 flex-1 overflow-y-auto bg-slate-900">
                 {isLoading ? (
                   <div className="flex justify-center py-12">
                     <LoadingSpinner />
@@ -119,7 +124,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                   </div>
                 )}
                 {isSaving ? (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-gray-900/60">
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-900/60">
                     <LoadingSpinner />
                     <span className="font-display text-sm font-medium text-white">Saving...</span>
                   </div>

@@ -138,9 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [paymentTokenBalanceData?.value]);
 
   const combinedPrevRef = useRef<bigint | null>(null);
+  const syncedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    combinedPrevRef.current = null;
+    syncedUserIdRef.current = user?.id ?? null;
   }, [user?.id]);
 
   useEffect(() => {
@@ -387,7 +388,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
-    setUserSyncLoading(true);
+    const previousUserId = syncedUserIdRef.current;
+    const isInitialUserLoad = previousUserId === null;
+    if (isInitialUserLoad) {
+      setUserSyncLoading(true);
+    }
 
     const targetChainId = getTargetChainIdFromEnv();
 
@@ -398,9 +403,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setServerSessionError(null);
           clearStoredReferrerAddress();
           setUser(response);
-          queryClient.invalidateQueries({ queryKey: ["lineups"] });
-          queryClient.invalidateQueries({ queryKey: ["user"] });
-          queryClient.invalidateQueries({ queryKey: ["balance"] });
+          const userIdentityChanged =
+            previousUserId !== null && previousUserId !== response.id;
+          if (isInitialUserLoad || userIdentityChanged) {
+            queryClient.invalidateQueries({ queryKey: ["lineups"] });
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+            queryClient.invalidateQueries({ queryKey: ["balance"] });
+          }
         }
       } catch (error) {
         console.error("GET /auth/me failed:", error);

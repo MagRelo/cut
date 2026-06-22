@@ -15,43 +15,31 @@ export const ContestCard = ({ contest, onPotClick, linkUserGroup = false }: Cont
 
   return (
     <div className="flex min-w-0 w-full items-center justify-between gap-2.5">
-      {/* Left Section - Buy-in */}
-      <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gradient-to-b from-white to-gray-200 p-1.5 text-center shadow-sm ring-1 ring-inset ring-white/60">
-        <div className="text-base font-display font-bold leading-none tabular-nums text-gray-900">
-          {contest.settings?.primaryDeposit === 0
-            ? "Free"
-            : contest.settings?.primaryDeposit != null
-              ? `$${contest.settings.primaryDeposit}`
-              : "—"}
-        </div>
-        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
-          buy-in
-        </div>
-      </div>
-
-      {/* Middle Section - Contest Info */}
       <div className="min-w-0 flex-1 overflow-hidden">
         <h3 className="truncate text-lg font-bold leading-tight text-gray-900 font-display">
           {contest.name}
         </h3>
-        {contest.userGroup?.name ? (
-          <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs font-medium text-emerald-600">
-            <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
-              <Link
-                to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
-                className="truncate hover:underline focus:outline-none focus-visible:underline"
-              >
-                {contest.userGroup.name}
-              </Link>
-            ) : (
-              <span className="truncate">{contest.userGroup.name}</span>
-            )}
-          </p>
-        ) : null}
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs font-medium">
+          {contest.userGroup?.name ? (
+            <>
+              <UserGroupIcon className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+              {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
+                <Link
+                  to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
+                  className="truncate text-emerald-600 hover:underline focus:outline-none focus-visible:underline"
+                >
+                  {contest.userGroup.name}
+                </Link>
+              ) : (
+                <span className="truncate text-emerald-600">{contest.userGroup.name}</span>
+              )}
+            </>
+          ) : (
+            <span className="truncate text-gray-500">Public</span>
+          )}
+        </p>
       </div>
 
-      {/* Right Section - Total Prize Pool */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {onPotClick ? (
           <button

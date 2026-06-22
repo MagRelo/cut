@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { type Contest } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
+import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { SportEventHeader } from "../platform/SportEventHeader";
 import { ContestList } from "./ContestList";
 
@@ -96,6 +97,68 @@ function groupContests(contests: LeagueContest[]) {
   return [...groups.values()];
 }
 
+type ContestGroup = ReturnType<typeof groupContests>[number];
+
+function GroupedContestSection({ group }: { group: ContestGroup }) {
+  const plugin = useSportUIPlugin(group.sportId ?? undefined);
+  const heroImage =
+    group.eventShell && plugin?.resolveEventHeroImage
+      ? plugin.resolveEventHeroImage(group.eventShell)
+      : null;
+  const hasHeroPanel = Boolean(group.sportId && group.eventShell && heroImage);
+
+  if (hasHeroPanel) {
+    return (
+      <section className="overflow-hidden rounded-md border border-slate-700 shadow-md">
+        <div className="relative">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroImage})` }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/75 to-slate-950/95"
+            aria-hidden
+          />
+          <div className="relative z-10">
+            <SportEventHeader
+              sportId={group.sportId!}
+              event={group.eventShell!}
+              variant="standalone"
+              summarySurface="content"
+            />
+            <div className="p-3 pt-1">
+              <ContestList contests={group.contests} loading={false} error={null} />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+      {group.sportId && group.eventShell ? (
+        <SportEventHeader
+          sportId={group.sportId}
+          event={group.eventShell}
+          variant="standalone"
+        />
+      ) : (
+        <header className="border-b border-slate-100 px-4 py-3">
+          <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
+          {group.sublabel ? (
+            <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
+          ) : null}
+        </header>
+      )}
+      <div className="border-t border-slate-800 bg-slate-900 p-3">
+        <ContestList contests={group.contests} loading={false} error={null} />
+      </div>
+    </section>
+  );
+}
+
 export const GroupedContestList = ({
   contests,
   loading,
@@ -118,28 +181,7 @@ export const GroupedContestList = ({
   return (
     <div className="space-y-8">
       {groups.map((group) => (
-        <section
-          key={group.key}
-          className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm"
-        >
-          {group.sportId && group.eventShell ? (
-            <SportEventHeader
-              sportId={group.sportId}
-              event={group.eventShell}
-              variant="standalone"
-            />
-          ) : (
-            <header className="border-b border-slate-100 px-4 py-3">
-              <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
-              {group.sublabel ? (
-                <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
-              ) : null}
-            </header>
-          )}
-          <div className="border-t border-slate-100 bg-slate-50 p-3">
-            <ContestList contests={group.contests} loading={false} error={null} />
-          </div>
-        </section>
+        <GroupedContestSection key={group.key} group={group} />
       ))}
     </div>
   );

@@ -24,7 +24,8 @@ export function useContestQuery(contestAddress: string | undefined) {
     enabled: !!routeKey,
     staleTime: 2 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    // Temporarily off — Privy/wallet popups steal focus and were refetching the whole lobby.
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }

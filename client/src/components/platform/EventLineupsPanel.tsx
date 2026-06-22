@@ -214,7 +214,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     );
   }
 
-  if (isAuthLoading || isLineupsLoading) {
+  if ((isAuthLoading && !user) || isLineupsLoading) {
     return (
       <div className="flex justify-center py-8">
         <LoadingSpinner />

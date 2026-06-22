@@ -36,11 +36,20 @@ export interface ParticipantDetailProps {
   eventMetadata?: unknown;
 }
 
+export type EventSummarySurface = "hero" | "content";
+
+export interface EventSummaryProps {
+  event: CompetitionEventShell;
+  /** `hero` = image + tint (default); `content` = text only for embedding in a parent surface. */
+  surface?: EventSummarySurface;
+}
+
 export interface SportUIPlugin {
   CandidateRow: ComponentType<CandidateRowProps>;
   ParticipantRow: ComponentType<ParticipantRowProps>;
   ParticipantDetail: ComponentType<ParticipantDetailProps>;
   PredictionField?: ComponentType<PredictionFieldProps>;
-  EventSummary?: ComponentType<{ event: CompetitionEventShell }>;
+  EventSummary?: ComponentType<EventSummaryProps>;
+  resolveEventHeroImage?: (event: CompetitionEventShell) => string | null;
   candidateSortConfig: CandidateSortConfig;
 }

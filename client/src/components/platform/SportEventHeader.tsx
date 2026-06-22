@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
+import type { EventSummarySurface } from "@cut/sport-sdk/ui";
 import { useSportActiveEvent } from "../../hooks/useSportActiveEvent";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -12,19 +13,23 @@ interface SportEventHeaderProps {
   event?: CompetitionEventShell | null;
   /** `context` = flush hero bar; `standalone` = in-page card with spinner while loading. */
   variant?: SportEventHeaderVariant;
+  /** Passed through to the sport `EventSummary` when rendering event details. */
+  summarySurface?: EventSummarySurface;
 }
 
 function EventSummaryHeader({
   sportId,
   event,
+  summarySurface,
 }: {
   sportId: string;
   event: CompetitionEventShell;
+  summarySurface?: EventSummarySurface;
 }) {
   const plugin = useSportUIPlugin(sportId);
   const EventSummary = plugin?.EventSummary;
   if (!EventSummary) return null;
-  return <EventSummary event={event} />;
+  return <EventSummary event={event} surface={summarySurface} />;
 }
 
 function SportActiveEventHeader({
@@ -75,9 +80,16 @@ export const SportEventHeader: React.FC<SportEventHeaderProps> = ({
   sportId,
   event: eventOverride,
   variant = "standalone",
+  summarySurface,
 }) => {
   if (eventOverride) {
-    return <EventSummaryHeader sportId={sportId} event={eventOverride} />;
+    return (
+      <EventSummaryHeader
+        sportId={sportId}
+        event={eventOverride}
+        summarySurface={summarySurface}
+      />
+    );
   }
 
   return <SportActiveEventHeader sportId={sportId} variant={variant} />;
