@@ -2,7 +2,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import type { PlatformLineupListItem } from "../../src/types/lineup";
 import type { PlatformLineupPick } from "../../src/types/event";
 import {
-  buildLineupPicksByIds,
+  buildLineupPicksByEventParticipantIds,
   createStorybookLineupsList,
   STORYBOOK_LINEUP_ID,
 } from "../../src/test/fixtures/lineupContestCardMock";
@@ -23,8 +23,8 @@ function getSnapshot() {
   return lineupsSnapshot;
 }
 
-export function resetStorybookLineups(participantIds: string[] = []) {
-  lineupsSnapshot = createStorybookLineupsList(participantIds);
+export function resetStorybookLineups(eventParticipantIds: string[] = []) {
+  lineupsSnapshot = createStorybookLineupsList(eventParticipantIds);
   emitChange();
 }
 
@@ -34,16 +34,16 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
   const updateLineup = useCallback(
     async (
       lineupId: string,
-      playerIds: string[],
+      picks: string[],
       options?: { winningScorePrediction?: number },
     ) => {
-      const picks = buildLineupPicksByIds(playerIds);
-      const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
+      const lineupPicks = buildLineupPicksByEventParticipantIds(picks);
+      const score = lineupPicks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
       lineupsSnapshot = lineupsSnapshot.map((lineup) =>
         lineup.id === lineupId
           ? {
               ...lineup,
-              picks,
+              picks: lineupPicks,
               score,
               ...(options?.winningScorePrediction !== undefined
                 ? { prediction: { winningScorePrediction: options.winningScorePrediction } }
@@ -58,7 +58,7 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
         eventId: updated?.eventId ?? "",
         name: updated?.name ?? "Lineup #1",
         prediction: updated?.prediction ?? null,
-        picks,
+        picks: lineupPicks,
         score,
         createdAt: updated?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),

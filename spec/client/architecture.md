@@ -66,7 +66,7 @@ Plugin hooks (`useSportUIPlugin`) resolve `sportId` from an explicit argument or
 flowchart TB
   subgraph platform[Platform shell]
     Header[SportEventHeader]
-    Picker[CandidatePicker / LineupSlotPicker]
+    Picker[CandidatePicker]
     Pred[SportPredictionField]
   end
   subgraph plugin[SportUIPlugin]

@@ -97,7 +97,6 @@ Golf also provides `EventDetails` (hero text) used inside `EventSummary`.
 |-----------|------|
 | `SportEventHeader` | Leaderboard event hero → plugin `EventSummary` (`sportId` prop) |
 | `CandidatePicker` | Search/sort over `Candidate[]` |
-| `LineupSlotPicker` | Bridges slot IDs ↔ picker |
 | `SportLineupPickRow` | Thin wrapper → `SportParticipantRow` in editable lineup slots |
 | `SportParticipantRow` | Resolves plugin `ParticipantRow`; passes `status` + optional `eventMetadata` |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail`; share URL helper |

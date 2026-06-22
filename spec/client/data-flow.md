@@ -61,7 +61,7 @@ Contest lobby follows the same pattern with `useContestEvent` keyed on `contest.
 ```mermaid
 sequenceDiagram
   participant User
-  participant Picker as LineupSlotPicker
+  participant Picker as CandidatePicker
   participant Hook as useLineupMutations
   participant API as POST /lineups/:eventId
   participant RQ as React Query
@@ -73,7 +73,7 @@ sequenceDiagram
   Hook->>RQ: invalidate lineups.byEvent, sideBet.market
 ```
 
-`useLineupMutations` reads `sportId` from `ContestEventScopeProvider` (required for participant ID resolution). Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
+`useLineupMutations` passes `eventParticipantId` picks directly to the API. Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
 
 ---
 

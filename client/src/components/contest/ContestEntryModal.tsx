@@ -3,7 +3,7 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/re
 import type { Candidate } from "@cut/sport-sdk";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import {
-  candidatesByParticipantIdMap,
+  candidatesByEventParticipantIdMap,
   candidatesForLineupPicks,
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
@@ -31,8 +31,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 }) => {
   const { candidates, status, sportId, metadata } = useEventScope();
   const { sort } = useCandidateSort(sportId);
-  const candidatesByParticipantId = useMemo(
-    () => candidatesByParticipantIdMap(candidates),
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
     [candidates],
   );
 
@@ -40,11 +40,11 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
     if (!lineup) return [];
     const picks = lineupPicksFromContestLineup(lineup);
     return sort(
-      candidatesForLineupPicks(picks, candidatesByParticipantId),
+      candidatesForLineupPicks(picks, candidatesByEventParticipantId),
       "lineupPicks",
       status,
     );
-  }, [lineup, candidatesByParticipantId, sort, status]);
+  }, [lineup, candidatesByEventParticipantId, sort, status]);
 
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 

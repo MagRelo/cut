@@ -17,7 +17,6 @@ Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventS
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
 | `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
 | `CandidatePicker` | Search/sort over `Candidate[]` → plugin `CandidateRow` |
-| `LineupSlotPicker` | Bridges participant IDs ↔ `CandidatePicker` |
 | `SportPredictionField` | Wrapper → plugin `PredictionField` |
 
 Used by: leaderboard, lineup card, contest entry list/modal, contest lobby slot editor.
@@ -134,8 +133,7 @@ flowchart TD
   Card --> Editor[useLineupSlotEditor Candidate slots]
   Card --> SPR[SportLineupPickRow / SportParticipantRow]
   SPR --> Plugin[GolfParticipantRow]
-  Card --> LSP[LineupSlotPicker]
-  LSP --> CP[CandidatePicker]
+  Card --> CP[CandidatePicker]
   CP --> CR[GolfCandidateRow]
   Card --> PDF[SportParticipantDetailModal]
   PDF --> PD[GolfParticipantDetail]

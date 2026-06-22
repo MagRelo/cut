@@ -15,7 +15,7 @@ import { captureContestEntryRecorded } from "../lib/analytics/posthog";
 import type { BatchTransactionStatusData } from "./useBlockchainTransaction";
 import { hasEnoughTokenBalance } from "../lib/paymentTokenSpend";
 import {
-  platformLineupParticipantIds,
+  platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../lib/lineupUtils";
 import ContestContract from "../utils/contracts/ContestController.json";
@@ -96,7 +96,7 @@ export function useContestLineupEntry(contest: Contest) {
       const lineup = lineups.find((l) => l.id === lineupId);
       if (!lineup) return false;
 
-      const normalizedPlayerIds = platformLineupParticipantIds(lineup).sort().join(",");
+      const normalizedPicks = platformLineupEventParticipantIds(lineup).sort().join(",");
       const prediction = platformLineupPrediction(lineup);
 
       return (
@@ -104,11 +104,11 @@ export function useContestLineupEntry(contest: Contest) {
           if (contestLineup.userId !== user?.id) return false;
           const contestPlatformLineup = lineups.find((l) => l.id === contestLineup.lineupId);
           if (!contestPlatformLineup) return false;
-          const contestPlayerIds = platformLineupParticipantIds(contestPlatformLineup)
+          const contestPicks = platformLineupEventParticipantIds(contestPlatformLineup)
             .sort()
             .join(",");
           return (
-            contestPlayerIds === normalizedPlayerIds &&
+            contestPicks === normalizedPicks &&
             platformLineupPrediction(contestPlatformLineup) === prediction
           );
         }) ?? false
@@ -203,7 +203,7 @@ export function useContestLineupEntry(contest: Contest) {
 
   const handleJoinContest = async (lineupId: string) => {
     const lineup = lineups.find((l) => l.id === lineupId);
-    if (!lineup || platformLineupParticipantIds(lineup).length === 0) {
+    if (!lineup || platformLineupEventParticipantIds(lineup).length === 0) {
       setValidationError("Lineup must have at least 1 player");
       return;
     }
@@ -276,7 +276,7 @@ export function useContestLineupEntry(contest: Contest) {
     isFailed: isJoinFailed || isLeaveFailed,
     hasPlayers: (lineupId: string) => {
       const lineup = lineups.find((l) => l.id === lineupId);
-      return Boolean(lineup && platformLineupParticipantIds(lineup).length > 0);
+      return Boolean(lineup && platformLineupEventParticipantIds(lineup).length > 0);
     },
   };
 }

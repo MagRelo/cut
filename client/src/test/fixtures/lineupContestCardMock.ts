@@ -40,8 +40,8 @@ function buildPick(
   };
 }
 
-function picksForParticipantIds(participantIds: string[]): PlatformLineupPick[] {
-  return participantIds
+function picksForEventParticipantIds(eventParticipantIds: string[]): PlatformLineupPick[] {
+  return eventParticipantIds
     .map((id, index) => {
       const def = FIELD_PLAYER_DEFS.find((entry) => entry.id === id);
       return def ? buildPick(def, index) : null;
@@ -49,8 +49,10 @@ function picksForParticipantIds(participantIds: string[]): PlatformLineupPick[] 
     .filter((pick): pick is PlatformLineupPick => pick !== null);
 }
 
-export function buildLineupPicksByIds(participantIds: string[]): PlatformLineupPick[] {
-  return picksForParticipantIds(participantIds);
+export function buildLineupPicksByEventParticipantIds(
+  eventParticipantIds: string[],
+): PlatformLineupPick[] {
+  return picksForEventParticipantIds(eventParticipantIds);
 }
 
 const storybookUser = {
@@ -65,8 +67,8 @@ const storybookUser = {
   settings: { color: "#3B82F6" },
 };
 
-function buildPlatformLineup(participantIds: string[] = []): PlatformLineupListItem {
-  const picks = picksForParticipantIds(participantIds);
+function buildPlatformLineup(eventParticipantIds: string[] = []): PlatformLineupListItem {
+  const picks = picksForEventParticipantIds(eventParticipantIds);
   const now = new Date().toISOString();
   const score = picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
   return {
@@ -82,8 +84,8 @@ function buildPlatformLineup(participantIds: string[] = []): PlatformLineupListI
   };
 }
 
-export function buildContestLineupForCard(participantIds: string[] = []): ContestLineup {
-  const platformLineup = buildPlatformLineup(participantIds);
+export function buildContestLineupForCard(eventParticipantIds: string[] = []): ContestLineup {
+  const platformLineup = buildPlatformLineup(eventParticipantIds);
   const score = platformLineup.picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
 
   return {
@@ -101,8 +103,10 @@ export function buildContestLineupForCard(participantIds: string[] = []): Contes
   };
 }
 
-export function createStorybookLineupsList(participantIds: string[] = []): PlatformLineupListItem[] {
-  return [buildPlatformLineup(participantIds)];
+export function createStorybookLineupsList(
+  eventParticipantIds: string[] = [],
+): PlatformLineupListItem[] {
+  return [buildPlatformLineup(eventParticipantIds)];
 }
 
 export const lineupContestCardStoryDefaults = {

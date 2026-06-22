@@ -10,10 +10,10 @@ import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useContestEvent } from "../../hooks/useContestEvent";
 import {
   candidatesForPlatformLineup,
-  platformLineupParticipantIds,
+  platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
-import { candidatesByParticipantIdMap } from "../../lib/candidateUtils";
+import { candidatesByEventParticipantIdMap } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { useAuth } from "../../contexts/AuthContext";
@@ -76,8 +76,8 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
     eventId: contest.eventId,
   });
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, contest.eventId);
-  const candidatesByParticipantId = useMemo(
-    () => candidatesByParticipantIdMap(candidates),
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
     [candidates],
   );
   const { address } = useAccount();
@@ -269,7 +269,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
       const lineup = lineups.find((l) => l.id === lineupId);
       if (!lineup) return false;
 
-      const normalizedPlayerIds = platformLineupParticipantIds(lineup).sort().join(",");
+      const normalizedPicks = platformLineupEventParticipantIds(lineup).sort().join(",");
       const prediction = platformLineupPrediction(lineup);
 
       return (
@@ -280,11 +280,11 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
           const contestPlatformLineup = lineups.find((l) => l.id === contestLineupId);
           if (!contestPlatformLineup) return false;
 
-          const contestPlayerIds = platformLineupParticipantIds(contestPlatformLineup)
+          const contestPicks = platformLineupEventParticipantIds(contestPlatformLineup)
             .sort()
             .join(",");
           return (
-            contestPlayerIds === normalizedPlayerIds &&
+            contestPicks === normalizedPicks &&
             platformLineupPrediction(contestPlatformLineup) === prediction
           );
         }) || false
@@ -298,7 +298,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
     const lineup = lineups.find((l) => l.id === lineupId);
 
     // Validate lineup has at least 1 player
-    if (!lineup || platformLineupParticipantIds(lineup).length === 0) {
+    if (!lineup || platformLineupEventParticipantIds(lineup).length === 0) {
       setValidationError("Lineup must have at least 1 player");
       return;
     }
@@ -401,7 +401,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
           const isPending = pendingAction?.lineupId === lineup.id;
           const isProcessing = isPending && (isSending || isConfirming);
           const sortedCandidates = sort(
-            candidatesForPlatformLineup(lineup, candidatesByParticipantId),
+            candidatesForPlatformLineup(lineup, candidatesByEventParticipantId),
             "lineupPicks",
             status,
           );

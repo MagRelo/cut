@@ -1,10 +1,10 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineupPick } from "../types/event";
 
-export function candidatesByParticipantIdMap(
+export function candidatesByEventParticipantIdMap(
   candidates: Candidate[],
 ): Map<string, Candidate> {
-  return new Map(candidates.map((candidate) => [candidate.participantId, candidate]));
+  return new Map(candidates.map((candidate) => [candidate.eventParticipantId, candidate]));
 }
 
 export function isLineupWithPicks(
@@ -30,14 +30,14 @@ export function lineupPicksFromContestLineup(lineup: {
 
 export function candidatesForLineupPicks(
   picks: PlatformLineupPick[],
-  byParticipantId: Map<string, Candidate>,
+  byEventParticipantId: Map<string, Candidate>,
 ): Candidate[] {
   return [...picks]
     .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0))
     .map((pick) => {
-      const participantId = pick.participant?.id;
-      if (!participantId) return null;
-      return byParticipantId.get(participantId) ?? null;
+      const eventParticipantId = pick.eventParticipantId;
+      if (!eventParticipantId) return null;
+      return byEventParticipantId.get(eventParticipantId) ?? null;
     })
     .filter((candidate): candidate is Candidate => candidate != null);
 }

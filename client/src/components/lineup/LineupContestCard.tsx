@@ -3,7 +3,7 @@ import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
-import { LineupSlotPicker } from "../platform/LineupSlotPicker";
+import { CandidatePicker } from "../platform/CandidatePicker";
 import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import type { Candidate } from "@cut/sport-sdk";
@@ -11,7 +11,7 @@ import type { ContestLineup } from "../../types/lineup";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import type { EventStatus } from "../../types/event";
 import {
-  candidatesByParticipantIdMap,
+  candidatesByEventParticipantIdMap,
   candidatesForLineupPicks,
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
@@ -21,7 +21,7 @@ import { participantLastName } from "../../lib/candidateSorting";
 import { lineupDisplayScore } from "../../lib/lineupScore";
 import {
   candidatesForPlatformLineup,
-  platformLineupParticipantIds,
+  platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
 import { useLineupData } from "../../hooks/useLineupData";
@@ -78,8 +78,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
   const { sort } = useCandidateSort(sportId);
-  const candidatesByParticipantId = useMemo(
-    () => candidatesByParticipantIdMap(candidates),
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
     [candidates],
   );
   const { updateLineup, lineups } = useLineupData({ eventId });
@@ -91,13 +91,13 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const lineupName = contestLineupDisplayName(lineup);
   const initialCandidates = useMemo(() => {
     if (platformLineup) {
-      return candidatesForPlatformLineup(platformLineup, candidatesByParticipantId);
+      return candidatesForPlatformLineup(platformLineup, candidatesByEventParticipantId);
     }
     return candidatesForLineupPicks(
       lineupPicksFromContestLineup(lineup),
-      candidatesByParticipantId,
+      candidatesByEventParticipantId,
     );
-  }, [platformLineup, lineup, candidatesByParticipantId]);
+  }, [platformLineup, lineup, candidatesByEventParticipantId]);
   const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
 
   const serverPrediction = useMemo(() => {
@@ -132,11 +132,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     async (nextPrediction: number) => {
       if (!canEditSlots || !lineupId) return;
 
-      const playerIds = slotEditor.selectedParticipantIds;
+      const picks = slotEditor.selectedEventParticipantIds;
       const duplicate = lineups.some((entry) => {
         if (entry.id === lineupId) return false;
-        const existingIds = platformLineupParticipantIds(entry).sort().join(",");
-        const nextIds = [...playerIds].sort().join(",");
+        const existingIds = platformLineupEventParticipantIds(entry).sort().join(",");
+        const nextIds = [...picks].sort().join(",");
         return existingIds === nextIds && platformLineupPrediction(entry) === nextPrediction;
       });
 
@@ -148,7 +148,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       setIsSavingPrediction(true);
       setSliderError(null);
       try {
-        await updateLineup(lineupId, playerIds, { winningScorePrediction: nextPrediction });
+        await updateLineup(lineupId, picks, { winningScorePrediction: nextPrediction });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to save prediction";
         setSliderError(message);
@@ -157,7 +157,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         setIsSavingPrediction(false);
       }
     },
-    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedParticipantIds, updateLineup],
+    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedEventParticipantIds, updateLineup],
   );
 
   useEffect(() => {
@@ -363,13 +363,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       </div>
 
       {canEditSlots && eventId ? (
-        <LineupSlotPicker
+        <CandidatePicker
           sportId={sportId}
           eventId={eventId}
           isOpen={slotEditor.selectedSlotIndex !== null}
           onClose={slotEditor.closeSlot}
-          onSelectParticipant={slotEditor.handlePlayerSelect}
-          selectedParticipantIds={slotEditor.selectedParticipantIds}
+          onSelect={(eventParticipantId) => void slotEditor.handlePlayerSelect(eventParticipantId)}
+          onClearSlot={() => void slotEditor.handlePlayerSelect(null)}
+          selectedEventParticipantIds={slotEditor.selectedEventParticipantIds}
           isSaving={slotEditor.isSaving}
           saveError={slotEditor.saveError}
         />

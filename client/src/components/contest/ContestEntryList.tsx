@@ -5,7 +5,7 @@ import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import {
-  candidatesByParticipantIdMap,
+  candidatesByEventParticipantIdMap,
   candidatesForLineupPicks,
   contestLineupDisplayName,
   isLineupWithPicks,
@@ -29,8 +29,8 @@ export const ContestEntryList = ({
 }: ContestEntryListProps) => {
   const { candidates, sportId, status } = useEventScope();
   const { sort } = useCandidateSort(sportId);
-  const candidatesByParticipantId = useMemo(
-    () => candidatesByParticipantIdMap(candidates),
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
     [candidates],
   );
 
@@ -89,7 +89,7 @@ export const ContestEntryList = ({
         const lineupCandidates = sort(
           candidatesForLineupPicks(
             lineupPicksFromContestLineup(lineup),
-            candidatesByParticipantId,
+            candidatesByEventParticipantId,
           ),
           "lineupPicks",
           status,

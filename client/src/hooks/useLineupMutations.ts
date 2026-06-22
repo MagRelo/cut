@@ -6,28 +6,20 @@ import type { PlatformLineupListItem } from "../types/lineup";
 import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
-import {
-  createLineupForEvent,
-  resolveEventParticipantIds,
-  updateLineupById,
-} from "../lib/lineupApi";
+import { createLineupForEvent, updateLineupById } from "../lib/lineupApi";
 import { useOptionalEventScope } from "../contexts/EventScopeContext";
-import {
-  buildOptimisticPicks,
-  platformLineupParticipantIds,
-  platformLineupPrediction,
-} from "../lib/lineupUtils";
+import { buildOptimisticPicks } from "../lib/lineupUtils";
 
 interface CreateLineupParams {
   eventId: string;
-  playerIds: string[];
+  picks: string[];
   name?: string;
   winningScorePrediction?: number;
 }
 
 interface UpdateLineupParams {
   lineupId: string;
-  playerIds: string[];
+  picks: string[];
   name?: string;
   winningScorePrediction?: number;
 }
@@ -85,28 +77,17 @@ export function useCreateLineup() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const { user } = useAuth();
-  const scopeSportId = useOptionalEventScope()?.sportId;
   const userId = user?.id;
 
   return useMutation({
     mutationFn: async ({
       eventId,
-      playerIds,
+      picks,
       name,
       winningScorePrediction,
     }: CreateLineupParams) => {
-      if (!scopeSportId) {
-        throw new Error("Lineup mutations require an EventScope provider with sportId");
-      }
-      const picks = await resolveEventParticipantIds(
-        queryClient,
-        scopeSportId,
-        eventId,
-        playerIds,
-      );
       return await createLineupForEvent({
         eventId,
-        sportId: scopeSportId,
         picks,
         name,
         winningScorePrediction,
@@ -191,34 +172,24 @@ export function useUpdateLineup() {
   return useMutation({
     mutationFn: async ({
       lineupId,
-      playerIds,
+      picks,
       name,
       winningScorePrediction,
     }: UpdateLineupParams) => {
-      if (!scopeSportId) {
-        throw new Error("Lineup mutations require an EventScope provider with sportId");
-      }
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx) {
         throw new Error(`Lineup ${lineupId} not found in cache`);
       }
-      const picks = await resolveEventParticipantIds(
-        queryClient,
-        scopeSportId,
-        ctx.eventId,
-        playerIds,
-      );
       return await updateLineupById({
         lineupId,
         eventId: ctx.eventId,
-        sportId: scopeSportId,
         picks,
         name,
         winningScorePrediction,
       });
     },
 
-    onMutate: async ({ lineupId, name, playerIds, winningScorePrediction }) => {
+    onMutate: async ({ lineupId, name, picks, winningScorePrediction }) => {
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx || !scopeSportId) {
         return { previousLineups: undefined, eventId: undefined as string | undefined, lineupId };
@@ -242,7 +213,7 @@ export function useUpdateLineup() {
               ? {
                   ...lineup,
                   name: name || lineup.name,
-                  picks: buildOptimisticPicks(playerIds, candidates),
+                  picks: buildOptimisticPicks(picks, candidates),
                   ...(winningScorePrediction !== undefined
                     ? { prediction: { type: "winningScore", value: winningScorePrediction } }
                     : {}),
@@ -304,5 +275,4 @@ export function useLineupActions() {
   };
 }
 
-// Re-export helpers used by slot editor duplicate checks
-export { platformLineupParticipantIds, platformLineupPrediction };
+export { platformLineupPrediction } from "../lib/lineupUtils";

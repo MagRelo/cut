@@ -47,10 +47,10 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   );
 
   const createLineup = useCallback(
-    async (createEventId: string, playerIds: string[], name?: string) => {
+    async (createEventId: string, picks: string[], name?: string) => {
       return await createMutation.mutateAsync({
         eventId: createEventId,
-        playerIds,
+        picks,
         name,
       });
     },
@@ -60,12 +60,12 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   const updateLineup = useCallback(
     async (
       lineupId: string,
-      playerIds: string[],
+      picks: string[],
       options?: { name?: string; winningScorePrediction?: number },
     ) => {
       return await updateMutation.mutateAsync({
         lineupId,
-        playerIds,
+        picks,
         name: options?.name,
         winningScorePrediction: options?.winningScorePrediction,
       });

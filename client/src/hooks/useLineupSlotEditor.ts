@@ -3,7 +3,7 @@ import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineupListItem } from "../types/lineup";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
 import {
-  platformLineupParticipantIds,
+  platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../lib/lineupUtils";
 
@@ -17,10 +17,10 @@ function padToSlots(candidates: Candidate[]): Array<Candidate | null> {
   return slots.slice(0, SLOT_COUNT);
 }
 
-function participantIdsFromSlots(slots: Array<Candidate | null>): string[] {
+function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] {
   return slots
     .filter((candidate): candidate is Candidate => candidate !== null)
-    .map((candidate) => candidate.participantId);
+    .map((candidate) => candidate.eventParticipantId);
 }
 
 interface UpdateLineupOptions {
@@ -35,7 +35,7 @@ interface UseLineupSlotEditorOptions {
   winningScorePrediction: number;
   updateLineup: (
     lineupId: string,
-    playerIds: string[],
+    picks: string[],
     options?: UpdateLineupOptions,
   ) => Promise<unknown>;
 }
@@ -55,7 +55,7 @@ export function useLineupSlotEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const initialCandidateKey = initialCandidates.map((c) => c.participantId).join(",");
+  const initialCandidateKey = initialCandidates.map((c) => c.eventParticipantId).join(",");
 
   useEffect(() => {
     if (isSaving) return;
@@ -63,12 +63,12 @@ export function useLineupSlotEditor({
   }, [lineupId, initialCandidateKey, isSaving, initialCandidates]);
 
   const checkForDuplicateLineup = useCallback(
-    (participantIds: string[], prediction: number): boolean => {
-      if (participantIds.length === 0) return false;
-      const normalized = [...participantIds].sort().join(",");
+    (eventParticipantIds: string[], prediction: number): boolean => {
+      if (eventParticipantIds.length === 0) return false;
+      const normalized = [...eventParticipantIds].sort().join(",");
       return lineups.some((lineup) => {
         if (lineup.id === lineupId) return false;
-        const existingIds = platformLineupParticipantIds(lineup).sort().join(",");
+        const existingIds = platformLineupEventParticipantIds(lineup).sort().join(",");
         return existingIds === normalized && platformLineupPrediction(lineup) === prediction;
       });
     },
@@ -77,9 +77,9 @@ export function useLineupSlotEditor({
 
   const saveSlots = useCallback(
     async (newSlots: Array<Candidate | null>) => {
-      const participantIds = participantIdsFromSlots(newSlots);
+      const eventParticipantIds = eventParticipantIdsFromSlots(newSlots);
 
-      if (checkForDuplicateLineup(participantIds, winningScorePrediction)) {
+      if (checkForDuplicateLineup(eventParticipantIds, winningScorePrediction)) {
         setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
       }
@@ -87,7 +87,7 @@ export function useLineupSlotEditor({
       setIsSaving(true);
       setSaveError(null);
       try {
-        await updateLineup(lineupId, participantIds, { winningScorePrediction });
+        await updateLineup(lineupId, eventParticipantIds, { winningScorePrediction });
         return true;
       } catch (error) {
         const message =
@@ -116,14 +116,14 @@ export function useLineupSlotEditor({
   }, []);
 
   const handlePlayerSelect = useCallback(
-    async (participantId: string | null) => {
+    async (eventParticipantId: string | null) => {
       if (selectedSlotIndex === null || isSaving) return;
 
       const newSlots = [...slots];
 
-      if (participantId) {
+      if (eventParticipantId) {
         const selectedCandidate = fieldCandidates.find(
-          (candidate) => candidate.participantId === participantId,
+          (candidate) => candidate.eventParticipantId === eventParticipantId,
         );
         if (selectedCandidate) {
           newSlots[selectedSlotIndex] = selectedCandidate;
@@ -147,17 +147,17 @@ export function useLineupSlotEditor({
     [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slots],
   );
 
-  const selectedParticipantIds = slots
+  const selectedEventParticipantIds = slots
     .filter((candidate): candidate is Candidate => candidate !== null)
-    .map((candidate) => candidate.participantId);
+    .map((candidate) => candidate.eventParticipantId);
 
-  const filledCount = selectedParticipantIds.length;
+  const filledCount = selectedEventParticipantIds.length;
 
   return {
     slots,
     filledCount,
     selectedSlotIndex,
-    selectedParticipantIds,
+    selectedEventParticipantIds,
     isSaving,
     saveError,
     openSlot,

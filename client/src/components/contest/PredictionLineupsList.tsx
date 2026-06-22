@@ -6,7 +6,7 @@ import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { computeTenDollarPurchasePreview } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
 import {
-  candidatesByParticipantIdMap,
+  candidatesByEventParticipantIdMap,
   candidatesForLineupPicks,
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
@@ -24,8 +24,8 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const { candidates = [], sportId, status } = useContestEvent(contest);
   const { sort } = useCandidateSort(sportId);
-  const candidatesByParticipantId = useMemo(
-    () => candidatesByParticipantIdMap(candidates),
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
     [candidates],
   );
 
@@ -141,7 +141,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                         if (!lineup) return "No players";
                         const lineupCandidates = candidatesForLineupPicks(
                           lineupPicksFromContestLineup(lineup),
-                          candidatesByParticipantId,
+                          candidatesByEventParticipantId,
                         );
                         const sortedPlayerNames = sort(lineupCandidates, "lineupPicks", status)
                           .map((candidate) => participantLastName(candidate))

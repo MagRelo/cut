@@ -3,40 +3,40 @@ import type { PlatformLineup, PlatformLineupPick } from "../types/event";
 import { candidatesForLineupPicks } from "./candidateUtils";
 import { golfPredictionValue } from "./golfPrediction";
 
-export function buildCandidatesByParticipantId(
+export function buildCandidatesByEventParticipantId(
   candidates: Candidate[],
 ): Map<string, Candidate> {
-  return new Map(candidates.map((candidate) => [candidate.participantId, candidate]));
+  return new Map(candidates.map((candidate) => [candidate.eventParticipantId, candidate]));
 }
 
 export function platformLineupPrediction(lineup: PlatformLineup): number | null {
   return golfPredictionValue(lineup.prediction);
 }
 
-export function platformLineupParticipantIds(lineup: PlatformLineup): string[] {
+export function platformLineupEventParticipantIds(lineup: PlatformLineup): string[] {
   return lineup.picks
-    .map((pick) => pick.participant?.id)
+    .map((pick) => pick.eventParticipantId)
     .filter((id): id is string => Boolean(id));
 }
 
 export function candidatesForPlatformLineup(
   lineup: PlatformLineup,
-  candidatesByParticipantId: Map<string, Candidate>,
+  candidatesByEventParticipantId: Map<string, Candidate>,
 ): Candidate[] {
-  return candidatesForLineupPicks(lineup.picks, candidatesByParticipantId);
+  return candidatesForLineupPicks(lineup.picks, candidatesByEventParticipantId);
 }
 
 export function buildOptimisticPicks(
-  participantIds: string[],
+  eventParticipantIds: string[],
   candidates: Candidate[],
 ): PlatformLineupPick[] {
-  const byParticipantId = buildCandidatesByParticipantId(candidates);
-  return participantIds.map((participantId, slotIndex) => {
-    const candidate = byParticipantId.get(participantId);
+  const byEventParticipantId = buildCandidatesByEventParticipantId(candidates);
+  return eventParticipantIds.map((eventParticipantId, slotIndex) => {
+    const candidate = byEventParticipantId.get(eventParticipantId);
     return {
       id: `optimistic-${slotIndex}`,
       slotIndex,
-      eventParticipantId: candidate?.eventParticipantId ?? "",
+      eventParticipantId,
       participant: candidate
         ? {
             id: candidate.participantId,
