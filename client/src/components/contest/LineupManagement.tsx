@@ -478,18 +478,14 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
                         "Leave Contest"
                       )}
                     </button>
-                  ) : sortedCandidates.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={onOpenLineupsTab}
-                      className="block w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-center text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
-                    >
-                      Select players
-                    </button>
                   ) : (
                     <button
                       onClick={() => handleJoinContest(lineup.id)}
-                      disabled={isProcessing || isPrimaryDepositLoading}
+                      disabled={
+                        sortedCandidates.length === 0 ||
+                        isProcessing ||
+                        isPrimaryDepositLoading
+                      }
                       className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isProcessing ? (
@@ -498,7 +494,7 @@ export const LineupManagement: React.FC<LineupManagementProps> = ({
                           {getStatusMessages("idle", isSending, isConfirming)}
                         </div>
                       ) : (
-                        `Join Contest — ${joinPrimaryDepositLabel}`
+                        `Enter Contest - ${joinPrimaryDepositLabel}`
                       )}
                     </button>
                   )}

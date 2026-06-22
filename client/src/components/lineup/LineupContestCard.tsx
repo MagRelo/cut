@@ -85,8 +85,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const { updateLineup, lineups } = useLineupData({ eventId });
   const status = eventStatus;
 
-  const platformLineup =
-    lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
+  const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
   const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
   const lineupName = contestLineupDisplayName(lineup);
   const initialCandidates = useMemo(() => {
@@ -157,7 +156,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         setIsSavingPrediction(false);
       }
     },
-    [canEditSlots, lineupId, lineups, serverPrediction, slotEditor.selectedEventParticipantIds, updateLineup],
+    [
+      canEditSlots,
+      lineupId,
+      lineups,
+      serverPrediction,
+      slotEditor.selectedEventParticipantIds,
+      updateLineup,
+    ],
   );
 
   useEffect(() => {
@@ -252,10 +258,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             </Tab>
           </TabList>
 
-          <div className="">
+          <div>
             {/* PLAYERS TAB */}
             <TabPanel className={PLAYERS_TAB_PANEL_CLASS}>
-              <div>
+              <div className="py-3">
                 {canEditSlots
                   ? slotEditor.slots.map((candidate, index) => (
                       <div key={`slot-${index}`} className="p-3">

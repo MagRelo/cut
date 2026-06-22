@@ -6,8 +6,14 @@ import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
-const joinActionsFooterClassName =
-  "border-t border-gray-200 bg-gray-50 px-3 py-2.5 font-display";
+const joinActionsFooterClassName = "border-t border-gray-200 bg-gray-50 px-3 py-2.5 font-display";
+
+const EnteredInContestLabel = () => (
+  <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700">
+    <CheckIcon className="h-4 w-4 shrink-0" aria-hidden />
+    Entered in this contest
+  </div>
+);
 
 type ContestLineupEntry = ReturnType<typeof useContestLineupEntry>;
 
@@ -15,14 +21,12 @@ interface ContestLineupJoinActionsProps {
   contest: Contest;
   lineupId: string;
   entry: ContestLineupEntry;
-  onNeedPlayers?: () => void;
 }
 
 export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> = ({
   contest,
   lineupId,
   entry,
-  onNeedPlayers,
 }) => {
   const isEntered = entry.enteredLineupsMap.has(lineupId);
   const isProcessing = entry.isLineupProcessing(lineupId);
@@ -31,10 +35,7 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
   if (!canEnter) {
     return isEntered ? (
       <div className={joinActionsFooterClassName}>
-        <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700">
-          <CheckIcon className="h-4 w-4 shrink-0" aria-hidden />
-          Entered in this contest
-        </div>
+        <EnteredInContestLabel />
       </div>
     ) : null;
   }
@@ -43,44 +44,39 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
     <>
       <div className={joinActionsFooterClassName}>
         {isEntered ? (
-          <button
-            type="button"
-            onClick={() => void entry.handleLeaveContest(lineupId)}
-            disabled={isProcessing}
-            className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 text-sm font-medium font-display text-gray-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isProcessing ? (
-              <span className="flex items-center justify-center gap-2">
-                <LoadingSpinnerSmall />
-                Confirming...
-              </span>
-            ) : (
-              "Leave Contest"
-            )}
-          </button>
-        ) : entry.hasPlayers(lineupId) ? (
-          <button
-            type="button"
-            onClick={() => void entry.handleJoinContest(lineupId)}
-            disabled={isProcessing || entry.isPrimaryDepositLoading}
-            className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isProcessing ? (
-              <span className="flex items-center justify-center gap-2">
-                <LoadingSpinnerSmall />
-                Confirming...
-              </span>
-            ) : (
-              `Join Contest — ${entry.joinPrimaryDepositLabel}`
-            )}
-          </button>
+          <div className="space-y-2.5">
+            <EnteredInContestLabel />
+            <button
+              type="button"
+              onClick={() => void entry.handleLeaveContest(lineupId)}
+              disabled={isProcessing}
+              className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 font-display text-sm font-medium text-gray-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isProcessing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinnerSmall />
+                  Confirming...
+                </span>
+              ) : (
+                "Leave Contest"
+              )}
+            </button>
+          </div>
         ) : (
           <button
             type="button"
-            onClick={onNeedPlayers}
-            className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 text-sm font-semibold font-display text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600"
+            onClick={() => void entry.handleJoinContest(lineupId)}
+            disabled={!entry.hasPlayers(lineupId) || isProcessing || entry.isPrimaryDepositLoading}
+            className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 font-display text-sm font-semibold text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Select players
+            {isProcessing ? (
+              <span className="flex items-center justify-center gap-2">
+                <LoadingSpinnerSmall />
+                Confirming...
+              </span>
+            ) : (
+              `Enter Contest - ${entry.joinPrimaryDepositLabel}`
+            )}
           </button>
         )}
       </div>
