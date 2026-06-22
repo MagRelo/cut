@@ -279,7 +279,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                               type="button"
                               onClick={() => slotEditor.openSlot(index)}
                               disabled={slotActionsDisabled}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                               aria-label={`Edit player in slot ${index + 1}`}
                             >
                               <svg
@@ -318,7 +318,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                               type="button"
                               onClick={() => slotEditor.openSlot(index)}
                               disabled={slotActionsDisabled}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                               aria-label={`Add player to slot ${index + 1}`}
                             >
                               <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
