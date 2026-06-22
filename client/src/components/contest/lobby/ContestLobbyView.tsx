@@ -70,6 +70,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           <ContestCard
             contest={contest}
             linkUserGroup
+            showPotIcon={viewModel.phase !== "settled"}
             onPotClick={
               viewModel.phase === "settled" ? undefined : () => setIsPayoutsModalOpen(true)
             }

@@ -21,34 +21,40 @@ export function ContestPayoutHeroCard({
   amount: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.35fr_1fr] sm:items-end">
-        <div>
-          <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.16em] text-slate-600">
-            {label}
-          </p>
-          <div className="mt-1">{amount}</div>
-        </div>
+    <section className="overflow-hidden rounded-xl border border-emerald-800/30 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 shadow-md">
+      <div className="px-4 py-5 text-left">
+        <p className="text-[11px] font-semibold uppercase leading-tight tracking-[0.2em] text-emerald-100/85">
+          {label}
+        </p>
+        <div className="mt-2">{amount}</div>
       </div>
     </section>
   );
 }
 
 const gradientMoneySizeClass = {
-  hero: "text-4xl font-semibold leading-tight tracking-tight",
+  hero: "text-4xl font-bold leading-none tracking-tight sm:text-5xl",
   row: "text-lg font-semibold leading-tight",
+} as const;
+
+const gradientMoneyToneClass = {
+  default:
+    "bg-gradient-to-b from-emerald-600 to-emerald-700 bg-clip-text text-transparent drop-shadow-[0_1px_0_rgba(5,150,105,0.12)]",
+  light: "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]",
 } as const;
 
 export function ContestPayoutGradientMoney({
   children,
   size = "row",
+  tone = "default",
 }: {
   children: ReactNode;
   size?: keyof typeof gradientMoneySizeClass;
+  tone?: keyof typeof gradientMoneyToneClass;
 }) {
   return (
     <p
-      className={`bg-gradient-to-b from-emerald-600 to-emerald-700 bg-clip-text text-transparent tabular-nums drop-shadow-[0_1px_0_rgba(5,150,105,0.12)] ${gradientMoneySizeClass[size]}`}
+      className={`tabular-nums ${gradientMoneySizeClass[size]} ${gradientMoneyToneClass[tone]}`}
     >
       {children}
     </p>
@@ -71,8 +77,8 @@ export function ContestPayoutSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="border-b border-slate-200 pb-2">
+    <section className="space-y-2 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+      <div>
         <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
         {description != null ? (
           <div className="mt-1 text-xs leading-tight text-slate-500">{description}</div>

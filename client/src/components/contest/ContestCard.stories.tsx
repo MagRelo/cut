@@ -12,6 +12,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     onPotClick: fn(),
+    showPotIcon: true,
   },
 } satisfies Meta<typeof ContestCard>;
 
