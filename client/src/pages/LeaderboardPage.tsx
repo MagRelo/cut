@@ -43,7 +43,7 @@ export const LeaderboardPage: React.FC = () => {
   return (
     <div>
       <SportEventHeader sportId={sportId} variant="context" />
-      <div className="px-4">
+      <div className="px-4 pt-2">
         <EventLeaderboardPanel
           sportId={sportId}
           eventId={eventId}
