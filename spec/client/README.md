@@ -24,7 +24,6 @@ client/src/
   pages/              Route-level screens
   components/
     platform/         Sport-agnostic lineup/event UI shells
-    sport/            SportPicker (unused in header; inline on create forms)
     contest/          Contest list, cards, lobby, create forms
     lineup/           Lineup cards, side bets, prediction slider
     userGroup/        League UI

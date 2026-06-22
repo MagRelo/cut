@@ -7,7 +7,7 @@ Shared contracts live in `packages/sport-sdk`. Server and client each maintain a
 ## SportModule (server)
 
 **Interface:** `packages/sport-sdk/src/sport-module.ts`  
-**Registry:** `server/src/sports/registry.ts`
+**Registry:** `server/src/sports/registry.ts` — `getSportModule(sportId)` and `requireSportModule(sportId)`
 
 ```typescript
 interface SportModule {

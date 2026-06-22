@@ -178,27 +178,6 @@ Golf-specific logic still in platform code. **Do not extend**; migrate when addi
 
 ---
 
-## Removed (do not reintroduce)
-
-| Item | Replaced by |
-|------|-------------|
-| `useActiveEvent` | `useSportActiveEvent` + `useContestEvent` |
-| `SportContext` / `SportProvider` / `DEFAULT_SPORT_ID` | Explicit `sportId` from URL, contest event, or `useFirstEnabledSportId` |
-| `SportEventContextBar` | Page-local `SportEventHeader` (leaderboard) + lobby `EventSummary` |
-| `useSportEventHeader` | `SportEventHeader` + `useSportActiveEvent` |
-| `PickDetail` | `ParticipantRow` + `SportLineupPickRow` |
-| `PlayerDisplayRow` / `PlayerDetailModal` / `PlayerDisplayCard` | `SportParticipantRow` + `GolfParticipantDetail` |
-| `components/player/` | `sports/pga-golf/scorecard/` |
-| `components/tournament/` (`TournamentSummaryModal`, `TournamentInfoPanel`) | `EventSummary` on lobby + leaderboard |
-| `types/player.ts`, `types/tournament.ts` | `sports/pga-golf/types.ts`, `eventMedia.ts` |
-| `golfEventAdapter.ts`, `useTournamentData`, `useActiveTournament` | `useSportActiveEvent` + `Candidate` |
-| `roundDisplay` on `ParticipantRowProps` | `eventMetadata` inside golf plugin |
-| Client-side lineup Stableford sum | `lineup.score` / `PlatformLineup.score` from API |
-| `LineupCard`, `PlayerSelectionModal`, `PlayerSelectionButton`, `PlayerSelectionCard` | `LineupContestCard` + platform picker |
-| `/lineups` route, `/leaderboard` legacy route | Contest lobby Lineups tab; `/sports/:sportId/leaderboard` |
-
----
-
 ## Quick decision tree
 
 ```

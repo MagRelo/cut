@@ -243,13 +243,15 @@ Core platform endpoints:
 
 **Platform components** (sport-agnostic shell in `client/src/components/platform/`):
 
-- `LineupSlotPicker` — N slots driven by sport `rosterRules`
 - `CandidatePicker` — search and sort over `Candidate[]`
 - `SportLineupPickRow` — single pick row in roster editor
+- `SportParticipantRow` / `SportParticipantDetailModal` — display lists and scorecard modal
 - `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
 - `SportPredictionField` — delegates to plugin prediction input
 
-Feature components in `contest/`, `lineup/`, `userGroup/` compose the shell for lobby, league, and list views using platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
+`LineupContestCard` composes the shell for lineup editing: `SportLineupPickRow` slots, `CandidatePicker` for swaps, and `SportPredictionField` for the winning-score tie-breaker. Feature components in `contest/`, `lineup/`, `userGroup/` use platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
+
+**Server sport registry** (`server/src/sports/registry.ts`) exports `getSportModule` and `requireSportModule` only.
 
 **Sport UI plugins** (injected via registry):
 

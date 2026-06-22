@@ -66,7 +66,7 @@ A user builds **one or more lineups per event**, then enters any lineup into **o
 
 Per-sport packages implement ingestion, candidates, validation, scoring, ranking, and contest lifecycle gates. See [plugins.md](plugins.md).
 
-**Server:** `server/src/sports/registry.ts`  
+**Server:** `server/src/sports/registry.ts` — `getSportModule`, `requireSportModule`  
 **Golf:** `@cut/sport-pga-golf` + `server/src/sports/pga-golf/handlers.ts`
 
 ### 3. Prop bet plugins (`PropBetModule`)

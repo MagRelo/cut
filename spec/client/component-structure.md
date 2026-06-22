@@ -25,14 +25,6 @@ Event heroes on contest lobby are rendered in `ContestLobbyView` (plugin `EventS
 
 ---
 
-## Sport chrome (`components/sport/`)
-
-| Component | Purpose |
-|-----------|---------|
-| `SportPicker` | Lists enabled sports from `GET /sports` (inline on create-contest forms; not in TopNav) |
-
----
-
 ## Sport plugins (`sports/pga-golf/`)
 
 Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`. See [sport-ui-plugins.md](sport-ui-plugins.md) for props, usage map, and conventions.
@@ -60,7 +52,7 @@ Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 |-----------|---------|
 | `ContestList` | Grid/list of contests for an event |
 | `GroupedContestList` | Contests grouped by event (league view) |
-| `CreateContestEventPicker` | Pick `eventId` when creating from a league |
+| `CreateContestEventPicker` | Sport select (when multiple enabled) + active event on create-contest forms |
 | `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow`; totals from `lineup.score` |
 | `LineupManagement` | Join contest flow — `SportParticipantRow` for roster |
 | `ContestLobbyView` | Lobby shell — plugin `EventSummary`, tabs (entries, lineups, etc.) |
@@ -74,8 +66,8 @@ Pages: `ContestListPage` (`/contests`), `SportHubPage`, `ContestLobbyPage`, `Con
 
 | Component | Purpose |
 |-----------|---------|
-| `LineupContestCard` | Primary lineup UI — plugin rows, slot picker, prediction, server lineup score |
-| `LineupWinningScoreSlider` | Tie-breaker range input (wrapped by golf `PredictionField`) |
+| `LineupContestCard` | Primary lineup UI — `SportLineupPickRow` slots, `CandidatePicker`, `SportPredictionField`, server lineup score |
+| `LineupWinningScoreSlider` | Range input used internally by golf `PredictionField` |
 | Side bet subfolder | Platform-owned betting UI |
 
 Used on contest lobby Lineups tab (no standalone `/lineups` page).
