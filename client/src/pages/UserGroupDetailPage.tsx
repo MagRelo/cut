@@ -83,7 +83,6 @@ export const UserGroupDetailPage = () => {
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Create contest</h3>
           <LeagueCreateContestForm
             userGroupId={userGroup.id}
-            userGroupName={userGroup.name}
             onContestCreated={() => {
               void refetch();
               void refetchContests();

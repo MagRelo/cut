@@ -33,13 +33,11 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 
 interface LeagueCreateContestFormProps {
   userGroupId: string;
-  userGroupName: string;
   onContestCreated?: () => void;
 }
 
 export const LeagueCreateContestForm = ({
   userGroupId,
-  userGroupName,
   onContestCreated,
 }: LeagueCreateContestFormProps) => {
   const navigate = useNavigate();
@@ -93,7 +91,7 @@ export const LeagueCreateContestForm = ({
     const baseSettings = buildContestSettings(chainId ?? 0, paymentTokenAddress || "", tokenSymbol);
 
     await submitContest({
-      name: userGroupName,
+      name: selectedEvent.eventName,
       transactionId: "",
       address: "",
       chainId: chainId ?? 0,
