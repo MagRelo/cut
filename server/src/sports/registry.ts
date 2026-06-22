@@ -18,11 +18,3 @@ export function requireSportModule(sportId: string): SportModule {
   }
   return module;
 }
-
-export function listSportModules(): SportModule[] {
-  return [...modules];
-}
-
-export function listRegisteredSportIds(): string[] {
-  return modules.map((module) => module.id);
-}

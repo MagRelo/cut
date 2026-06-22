@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getContestWinningScore, sortContestLineups } from "../../utils/lineupTiebreaker.js";
+import { defaultPayoutVector } from "@cut/sport-sdk";
+import { requireSportModule } from "../../sports/registry.js";
 
 function mockLineup(
   entryId: string,
@@ -12,26 +13,35 @@ function mockLineup(
     score,
     createdAt,
     user: { name: "User", settings: {} },
-    tournamentLineup: {
+    lineup: {
       name: "Lineup",
-      players: [],
-      winningScorePrediction: prediction,
+      prediction,
+      picks: [],
     },
   };
 }
 
 function calculatePayoutBps(lineups: ReturnType<typeof mockLineup>[]) {
-  const contestWinningScore = getContestWinningScore(lineups);
-  const sorted = sortContestLineups(lineups, contestWinningScore);
-  const payoutStructure = lineups.length >= 10 ? [7000, 2000, 1000] : [10000];
+  const sportModule = requireSportModule("pga-golf");
+  const ranked = sportModule.rankEntries(
+    lineups.map((lineup) => ({
+      entryId: lineup.entryId,
+      score: lineup.score,
+      prediction: lineup.lineup.prediction,
+      createdAt: lineup.createdAt,
+    })),
+  );
+  const payoutStructure =
+    sportModule.derivePayoutVector?.(ranked, ranked.length) ??
+    defaultPayoutVector(ranked.length);
 
   const payoutBps: number[] = [];
-  sorted.forEach((_lineup, index) => {
-    const payout = payoutStructure[index] ?? 0;
+  for (const row of ranked) {
+    const payout = payoutStructure[row.position - 1] ?? 0;
     if (payout > 0) {
       payoutBps.push(payout);
     }
-  });
+  }
   return payoutBps;
 }
 

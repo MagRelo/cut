@@ -15,11 +15,3 @@ export function requirePropBetModule(sportId: string): PropBetModule {
   }
   return module;
 }
-
-export function listPropBetModules(): PropBetModule[] {
-  return [...modules];
-}
-
-export function listRegisteredPropBetSportIds(): string[] {
-  return modules.map((module) => module.sportId);
-}
