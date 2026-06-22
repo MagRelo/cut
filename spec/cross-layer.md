@@ -123,7 +123,7 @@ sequenceDiagram
   API-->>Client: ContestLineup + entryId
 ```
 
-- **Lineup** is per user per event (reused across contests for that event)
+- **Lineup** is per user per event with optional `contestId`; contest lobby always sets it on create. Each contest keeps an isolated lineup copy (clone on join when `contestId` mismatches).
 - **ContestLineup** links lineup to a specific contest with on-chain `entryId`
 
 ---

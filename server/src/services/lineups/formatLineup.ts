@@ -39,6 +39,7 @@ export function formatLineupResponse(lineup: LineupWithPicks) {
   return {
     id: lineup.id,
     eventId: lineup.eventId,
+    contestId: lineup.contestId,
     name: lineup.name,
     prediction: lineup.prediction,
     picks,

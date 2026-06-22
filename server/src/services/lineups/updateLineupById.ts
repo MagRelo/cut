@@ -49,6 +49,7 @@ export async function updateLineupById(input: UpdateLineupInput) {
     validated.participantIds,
     predictionValue,
     input.lineupId,
+    existing.contestId ?? undefined,
   );
   if (isDuplicate) {
     return {

@@ -54,8 +54,8 @@ Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 | `GroupedContestList` | Contests grouped by event (league view) |
 | `CreateContestEventPicker` | Sport select (when multiple enabled) + active event on create-contest forms |
 | `ContestEntryList` / `ContestEntryModal` | Entry roster via `SportParticipantRow`; totals from `lineup.score` |
-| `LineupManagement` | Join contest flow — `SportParticipantRow` for roster |
 | `ContestLobbyView` | Lobby shell — plugin `EventSummary`, tabs (entries, lineups, etc.) |
+| `EventLineupsPanel` | Contest lobby lineups tab — create/copy/enter via `LineupContestCard` |
 | Contest cards, timeline, secondary market UI | Lobby sub-components |
 
 Pages: `ContestListPage` (`/contests`), `SportHubPage`, `ContestLobbyPage`, `ContestCreatePage`.

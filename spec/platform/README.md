@@ -41,7 +41,7 @@ Lineup (per user, per event — many allowed)
               └── Contest
 ```
 
-A user builds **one or more lineups per event**, then enters any lineup into **one or more contests** (public + league).
+A user builds **one or more lineups per contest** (`Lineup.contestId`). Copy/clone is the supported way to reuse picks across contests for the same event.
 
 ---
 

@@ -69,6 +69,7 @@ No auth. `{ status, service, timestamp }`
 |--------|------|------|-------------|
 | GET | `/:eventId` | ✅ | User's lineups for event `{ lineups: [...] }` |
 | POST | `/:eventId` | ✅ | **Create** a new lineup |
+| POST | `/clone/:lineupId` | ✅ | **Clone** picks/prediction into a new lineup for `contestId` |
 | PUT | `/:lineupId` | ✅ | **Update** an existing lineup |
 
 **POST / PUT body:**
@@ -76,11 +77,12 @@ No auth. `{ status, service, timestamp }`
 {
   "picks": ["<eventParticipantId>", "..."],
   "name": "optional",
+  "contestId": "optional on create; required on clone",
   "prediction": { "type": "winningScore", "value": 142 }
 }
 ```
 
-- `POST` always creates a new row; rejects duplicate roster + prediction combo
+- `POST` always creates a new row; rejects duplicate roster + prediction **within the same contest** when `contestId` is set
 - `PUT` updates picks/name/prediction for the given `lineupId`
 - Validates via `SportModule.validateRoster`
 - `requireEventEditable` / `requireLineupEditable` — blocked after event is live/complete

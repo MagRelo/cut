@@ -11,6 +11,7 @@ import {
 } from "./formatLineup.js";
 import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupPicks, writeLineupPicks } from "./validateLineupPicks.js";
+import { validateLineupContestScope } from "./validateLineupContestScope.js";
 
 export type CreateLineupInput = {
   userId: string;
@@ -18,6 +19,7 @@ export type CreateLineupInput = {
   picks: string[];
   name?: string;
   prediction?: unknown;
+  contestId?: string;
 };
 
 function resolvePrediction(prediction: unknown | undefined) {
@@ -37,6 +39,17 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "not_found" as const };
   }
 
+  if (input.contestId) {
+    const scope = await validateLineupContestScope(
+      input.userId,
+      input.eventId,
+      input.contestId,
+    );
+    if (!scope.ok) {
+      return { error: scope.error };
+    }
+  }
+
   const validated = await validateLineupPicks(input.eventId, event.sportId, input.picks);
   if (!validated.ok) {
     if (validated.error === "not_found") {
@@ -53,6 +66,8 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     input.eventId,
     validated.participantIds,
     predictionValue,
+    undefined,
+    input.contestId ?? undefined,
   );
   if (isDuplicate) {
     return {
@@ -67,6 +82,7 @@ export async function createLineupForEvent(input: CreateLineupInput) {
       eventId: input.eventId,
       name: input.name ?? "My Lineup",
       prediction,
+      ...(input.contestId ? { contestId: input.contestId } : {}),
     },
   });
 

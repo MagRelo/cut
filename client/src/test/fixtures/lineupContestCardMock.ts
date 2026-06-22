@@ -4,6 +4,7 @@ import type { EventStatus } from "../../types/event";
 
 export const STORYBOOK_LINEUP_EVENT_ID = "event-storybook";
 export const STORYBOOK_LINEUP_ID = "lineup-storybook-1";
+export const STORYBOOK_CONTEST_ID = "contest-storybook";
 
 const FIELD_PLAYER_DEFS = [
   { id: "ep-scheffler", participantId: "p-scheffler", firstName: "Scottie", lastName: "Scheffler" },
@@ -74,6 +75,7 @@ function buildPlatformLineup(eventParticipantIds: string[] = []): PlatformLineup
   return {
     id: STORYBOOK_LINEUP_ID,
     eventId: STORYBOOK_LINEUP_EVENT_ID,
+    contestId: STORYBOOK_CONTEST_ID,
     name: "Lineup #1",
     prediction: { winningScorePrediction: 150 },
     picks,
@@ -90,7 +92,7 @@ export function buildContestLineupForCard(eventParticipantIds: string[] = []): C
 
   return {
     id: "contest-lineup-storybook",
-    contestId: "",
+    contestId: STORYBOOK_CONTEST_ID,
     status: "ACTIVE",
     position: 0,
     score,
@@ -110,6 +112,7 @@ export function createStorybookLineupsList(
 }
 
 export const lineupContestCardStoryDefaults = {
+  contestId: STORYBOOK_CONTEST_ID,
   sportId: "golf",
   eventId: STORYBOOK_LINEUP_EVENT_ID,
   eventStatus: "SCHEDULED" as EventStatus,

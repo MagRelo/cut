@@ -67,7 +67,7 @@ Participant sets are compared after sorting underlying `participantId` values de
 
 | Check | When | Error message (representative) |
 | --- | --- | --- |
-| Event | `POST` / `PUT` `/api/lineups/...` | “You already have a lineup with these players and winning score prediction for this tournament” |
+| Contest (when `contestId` set) | `POST` / `PUT` `/api/lineups/...` | “You already have a lineup with these players and winning score prediction for this contest” |
 | Contest | `POST` `/api/contests/:id/lineups` | Same roster + prediction check in contest scope |
 
 The client runs the same roster + prediction check before save (slot editor and prediction field) so users see errors without a round trip when possible; the server is authoritative.
@@ -264,7 +264,7 @@ cd server && pnpm test:run \
 
 | Decision | Rationale |
 | --- | --- |
-| Prediction lives on `Lineup`, not `ContestLineup` | One slider per roster; same lineup reused across contests carries one guess unless the user edits it. |
+| Prediction lives on `Lineup`, not `ContestLineup` | One slider per lineup row; each contest-scoped lineup carries its own guess. |
 | Duplicates include prediction | Allows intentional “same players, different contest entries” only when the user changes the tie-break guess. |
 | Unique positions everywhere | Simplifies leaderboard display and on-chain settlement; users always see a single rank. |
 | Contest winning score = max entry score | Tie-break measures closeness to “what it took to win this contest,” not a fixed cap or par. |

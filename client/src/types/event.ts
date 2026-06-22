@@ -35,6 +35,7 @@ export interface PlatformLineupPick {
 export interface PlatformLineup {
   id: string;
   eventId: string;
+  contestId?: string | null;
   name: string;
   prediction: unknown;
   picks: PlatformLineupPick[];

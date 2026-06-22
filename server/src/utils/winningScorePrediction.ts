@@ -2,7 +2,7 @@ export const WINNING_SCORE_PREDICTION_MIN = 1;
 export const WINNING_SCORE_PREDICTION_MAX = 250;
 
 export const DUPLICATE_LINEUP_PREDICTION_MESSAGE =
-  "You already have a lineup with these players and winning score prediction for this tournament";
+  "You already have a lineup with these players and winning score prediction for this contest";
 
 /** Inclusive range for randomized defaults on new lineups (center 120, ±25). */
 export const WINNING_SCORE_PREDICTION_RANDOM_MIN = 95;

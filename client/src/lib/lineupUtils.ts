@@ -19,6 +19,32 @@ export function platformLineupEventParticipantIds(lineup: PlatformLineup): strin
     .filter((id): id is string => Boolean(id));
 }
 
+function participantLastName(
+  participant: NonNullable<PlatformLineupPick["participant"]>,
+): string | null {
+  const metadata = participant.metadata;
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const topLevel = (metadata as { lastName?: string | null }).lastName;
+    if (topLevel?.trim()) return topLevel.trim();
+
+    const nested = (metadata as { participant?: { lastName?: string | null } }).participant
+      ?.lastName;
+    if (nested?.trim()) return nested.trim();
+  }
+
+  const displayName = participant.displayName?.trim();
+  if (!displayName) return null;
+
+  const parts = displayName.split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1]! : displayName;
+}
+
+export function lineupPickLastNames(lineup: PlatformLineup): string[] {
+  return lineup.picks
+    .map((pick) => (pick.participant ? participantLastName(pick.participant) : null))
+    .filter((name): name is string => Boolean(name));
+}
+
 export function candidatesForPlatformLineup(
   lineup: PlatformLineup,
   candidatesByEventParticipantId: Map<string, Candidate>,

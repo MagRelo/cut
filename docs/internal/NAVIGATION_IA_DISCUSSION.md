@@ -48,7 +48,7 @@ Good IA feels invisible. Bad IA forces everyone through the same front door when
 | Sport context | `sportId` from URL on sport routes or `contest.event` on lobby — no global provider |
 | Live Contests | `/contests` — all active events across sports; public + member league contests merged per event |
 | Field leaderboard | **Field** tab on contest lobby (scoped to contest event); share links at `/sports/:sportId/leaderboard` |
-| Lineups | **Lineups** tab on contest lobby (event-scoped); same rosters when opening any contest for that event |
+| Lineups | **Lineups** tab on contest lobby (contest-scoped); each contest shows only its own drafts and entries |
 | Event context | Explicit event sources; page-local headers on contest lobby + `/sports/:sportId/leaderboard` only |
 | Sport picker | Not in global header; sport implied by contest/event groups on `/contests` |
 | Sport hub | `/sports/:sportId` remains for deep links (legacy bookmarks) |
@@ -120,7 +120,7 @@ Home (default: last league, or league list)
 │   ├── Overview (contests grouped by event/sport)
 │   ├── Members
 │   └── Manage (admin only)
-├── Contest lobby (/contest/:address) — Lineups tab (event-scoped rosters)
+├── Contest lobby (/contest/:address) — Lineups tab (contest-scoped rosters)
 └── Account
     ├── Wallet / funds
     ├── Contest history
@@ -158,7 +158,7 @@ flowchart TD
 |--------|------------------------|---------|---------------|
 | League home | `/leagues/:id` (target default) | This week’s contests; sport badges on groups | No |
 | Contest lobby | `/contest/:address` | Enter, lineups, standings, timeline, payout | Badge only (“PGA · Masters”) |
-| Lineup builder | Lineups tab on `/contest/:address` | Pick roster + prediction; event-scoped | No — sport from contest |
+| Lineup builder | Lineups tab on `/contest/:address` | Pick roster + prediction; contest-scoped | No — sport from contest |
 | Event leaderboard | Field tab on `/contest/:address`; shares at `/sports/:sportId/leaderboard` | Field scores | From contest or sport-scoped share link |
 | Account | `/account` | Wallet, profile | No |
 
@@ -271,7 +271,7 @@ Contest lobby and below are **shared**. Front door and primary nav **diverge**.
 
 **Play** = today’s `/sports/:sportId` hub with sport segments.  
 **League** = today’s league detail.  
-**Lineups** = contest lobby **Lineups** tab, event-scoped; open any contest for that event to manage the same rosters. Cross-event index deferred — use `/contests` → pick event → enter a contest.
+**Lineups** = contest lobby **Lineups** tab, contest-scoped; copy from another contest reuses picks into a new lineup row. Cross-event index deferred — use `/contests` → pick event → enter a contest.
 
 ### Mobile nav (4 items max — proposed)
 

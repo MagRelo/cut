@@ -180,6 +180,7 @@ model Lineup {
   id         String   @id @default(cuid())
   userId     String
   eventId    String
+  contestId  String?
   name       String
   prediction Json?
   createdAt  DateTime @default(now())
@@ -187,11 +188,13 @@ model Lineup {
 
   user           User            @relation(fields: [userId], references: [id])
   event          CompetitionEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  contest        Contest?        @relation(fields: [contestId], references: [id])
   picks          LineupPick[]
   contestLineups ContestLineup[]
   sideBetMarket  SideBetMarket?
 
   @@index([userId, eventId])
+  @@index([userId, eventId, contestId])
 }
 
 model LineupPick {
@@ -226,6 +229,7 @@ model Contest {
   event                 CompetitionEvent              @relation(fields: [eventId], references: [id])
   userGroup             UserGroup?                      @relation(fields: [userGroupId], references: [id])
   contestLineups        ContestLineup[]
+  lineups               Lineup[]
   secondaryParticipants ContestSecondaryParticipant[]
   onchainPayments       OnchainPayment[]
   timelines             ContestLineupTimeline[]

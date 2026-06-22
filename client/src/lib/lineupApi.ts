@@ -4,6 +4,7 @@ import { toGolfPrediction } from "./golfPrediction";
 
 export async function createLineupForEvent(params: {
   eventId: string;
+  contestId?: string;
   sportId?: string;
   picks: string[];
   name?: string;
@@ -14,6 +15,7 @@ export async function createLineupForEvent(params: {
     {
       picks: params.picks,
       name: params.name,
+      contestId: params.contestId,
       prediction: toGolfPrediction(params.winningScorePrediction),
     },
   );
@@ -36,6 +38,19 @@ export async function updateLineupById(params: {
       name: params.name,
       prediction: toGolfPrediction(params.winningScorePrediction),
     },
+  );
+
+  return response.lineup;
+}
+
+export async function cloneLineupById(params: {
+  lineupId: string;
+  contestId: string;
+  name?: string;
+}): Promise<PlatformLineup> {
+  const response = await apiClient.post<{ lineup: PlatformLineup }>(
+    `/lineups/clone/${params.lineupId}`,
+    { name: params.name, contestId: params.contestId },
   );
 
   return response.lineup;

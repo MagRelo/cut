@@ -38,13 +38,18 @@ export async function isDuplicateLineup(
   participantIds: string[],
   prediction: number | null | undefined,
   excludeLineupId?: string,
+  contestId?: string | null,
 ): Promise<boolean> {
   if (participantIds.length === 0) {
     return false;
   }
 
   const userLineups = await prisma.lineup.findMany({
-    where: { userId, eventId },
+    where: {
+      userId,
+      eventId,
+      ...(contestId !== undefined ? { contestId } : {}),
+    },
     include: {
       picks: {
         include: {

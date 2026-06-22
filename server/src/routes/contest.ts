@@ -28,6 +28,7 @@ import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
+import { cloneLineup } from "../services/lineups/cloneLineup.js";
 import type { DetailedResult } from "../services/shared/types.js";
 import { getRewardDistributorAddress } from "../lib/referralConfig.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
@@ -517,6 +518,7 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
         id: true,
         eventId: true,
         userId: true,
+        contestId: true,
         prediction: true,
       },
     });
@@ -529,13 +531,34 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       return c.json({ error: "Lineup does not belong to this user" }, 401);
     }
 
-    const participantIds = await getParticipantIdsFromLineup(lineupId);
+    let resolvedLineupId = lineupId;
+    if (lineup.contestId != null && lineup.contestId !== contestId) {
+      const cloned = await cloneLineup({
+        sourceLineupId: lineupId,
+        userId: user.userId,
+        targetContestId: contestId,
+      });
+      if ("error" in cloned) {
+        if (cloned.error === "not_found") {
+          return c.json({ error: "Lineup not found" }, 404);
+        }
+        return c.json({ error: "Contest not found" }, 404);
+      }
+      resolvedLineupId = cloned.lineupId;
+    }
+
+    const resolvedLineup = await prisma.lineup.findUnique({
+      where: { id: resolvedLineupId },
+      select: { prediction: true },
+    });
+
+    const participantIds = await getParticipantIdsFromLineup(resolvedLineupId);
 
     if (!hasMinimumPlayers(participantIds)) {
       return c.json({ error: "Lineup must have at least 1 player" }, 400);
     }
 
-    const prediction = golfPredictionValue(lineup.prediction);
+    const prediction = golfPredictionValue(resolvedLineup?.prediction ?? lineup.prediction);
     const isDuplicate = await isDuplicateInContest(
       user.userId,
       contestId,
@@ -555,7 +578,7 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
     const existingLineup = await prisma.contestLineup.findFirst({
       where: {
         contestId,
-        lineupId,
+        lineupId: resolvedLineupId,
       },
     });
 
@@ -580,7 +603,7 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
     await prisma.contestLineup.create({
       data: {
         contestId,
-        lineupId,
+        lineupId: resolvedLineupId,
         userId: user.userId,
         entryId,
         status: "ACTIVE",

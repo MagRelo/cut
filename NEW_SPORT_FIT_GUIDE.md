@@ -50,7 +50,7 @@ flowchart LR
 | **Clear ranking** | Lineups order cleanly: higher or lower wins, with tie-break rules when totals match. |
 | **Discrete lifecycle** | `SCHEDULED → LIVE → COMPLETE`. Contests activate when play starts and settle when the event is final. |
 | **Periodic score sync** | Live scores refresh on a cron cadence (~5 minutes), not second-by-second. |
-| **Reusable lineups** | One lineup per event can be entered into multiple contests without rebuilding the roster. |
+| **Contest-scoped lineups** | Each lineup optionally belongs to one contest (`Lineup.contestId`). Copy/clone reuses picks across contests for the same event. |
 | **Shared wallet & leagues** | Same account and league groups work across domains; domain is chosen per contest via the event. |
 
 **PGA Golf is the reference external fit.** Four golfers, Stableford totals summed into a lineup score, one tournament per week, field sync before tee-off, live leaderboard through Sunday, winning-score prediction as a tie-break.

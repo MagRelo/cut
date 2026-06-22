@@ -43,7 +43,7 @@ The platform owns everything that applies to any tournament-style competition:
 
 - **Identity & social** — users, authentication (Privy), cross-sport leagues
 - **Events** — schedule, status, one active event per sport
-- **Lineups & entries** — roster assembly from a candidate pool; reusable across multiple contests for the same event
+- **Lineups & entries** — roster assembly from a candidate pool; each contest entry uses an isolated lineup copy (clone-on-join when reusing across contests)
 - **Contests** — lifecycle, settings, on-chain contracts, secondary prediction market
 - **Ranking & settlement** — score aggregation, tie-breaking, payout derivation, oracle settlement, payout push, timeline snapshots
 - **Cron** — loops all sports with active or recently completed events, dispatching each to its sport plugin
@@ -116,7 +116,7 @@ Lineup (event-scoped roster)
               └── Contest
 ```
 
-A user builds one lineup for an event, then enters it into multiple contests (public and league) without rebuilding the roster.
+A user builds lineups for an event, scoped to a contest via optional `Lineup.contestId`. The contest lobby always sets `contestId` on create. Cross-contest reuse is explicit via copy/clone. Each contest entry uses an isolated lineup row; joining with a mismatched `contestId` clones server-side.
 
 ---
 

@@ -6,6 +6,7 @@ import {
   platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../lib/lineupUtils";
+import { lineupsInSameContestScope } from "../lib/lineupContestScope";
 
 const SLOT_COUNT = 4;
 
@@ -29,6 +30,7 @@ interface UpdateLineupOptions {
 
 interface UseLineupSlotEditorOptions {
   lineupId: string;
+  contestId?: string | null;
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
@@ -42,6 +44,7 @@ interface UseLineupSlotEditorOptions {
 
 export function useLineupSlotEditor({
   lineupId,
+  contestId,
   initialCandidates,
   fieldCandidates,
   lineups,
@@ -66,13 +69,13 @@ export function useLineupSlotEditor({
     (eventParticipantIds: string[], prediction: number): boolean => {
       if (eventParticipantIds.length === 0) return false;
       const normalized = [...eventParticipantIds].sort().join(",");
-      return lineups.some((lineup) => {
-        if (lineup.id === lineupId) return false;
+      const scopedLineups = lineupsInSameContestScope(lineups, contestId, lineupId);
+      return scopedLineups.some((lineup) => {
         const existingIds = platformLineupEventParticipantIds(lineup).sort().join(",");
         return existingIds === normalized && platformLineupPrediction(lineup) === prediction;
       });
     },
-    [lineupId, lineups],
+    [lineupId, lineups, contestId],
   );
 
   const saveSlots = useCallback(

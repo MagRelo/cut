@@ -6,15 +6,23 @@ import type { PlatformLineupListItem } from "../types/lineup";
 import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
-import { createLineupForEvent, updateLineupById } from "../lib/lineupApi";
+import { createLineupForEvent, cloneLineupById, updateLineupById } from "../lib/lineupApi";
 import { useOptionalEventScope } from "../contexts/EventScopeContext";
 import { buildOptimisticPicks } from "../lib/lineupUtils";
 
 interface CreateLineupParams {
   eventId: string;
+  contestId?: string;
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
+}
+
+interface CloneLineupParams {
+  lineupId: string;
+  eventId: string;
+  contestId: string;
+  name?: string;
 }
 
 interface UpdateLineupParams {
@@ -82,19 +90,21 @@ export function useCreateLineup() {
   return useMutation({
     mutationFn: async ({
       eventId,
+      contestId,
       picks,
       name,
       winningScorePrediction,
     }: CreateLineupParams) => {
       return await createLineupForEvent({
         eventId,
+        contestId,
         picks,
         name,
         winningScorePrediction,
       });
     },
 
-    onMutate: async ({ eventId, name }) => {
+    onMutate: async ({ eventId, contestId, name }) => {
       if (!userId) {
         return { previousLineups: undefined, eventId };
       }
@@ -110,6 +120,7 @@ export function useCreateLineup() {
         const optimisticLineup: PlatformLineupListItem = {
           id: `temp-${Date.now()}`,
           eventId,
+          contestId: contestId ?? null,
           name: name || "New Lineup",
           prediction: null,
           picks: [],
@@ -150,6 +161,29 @@ export function useCreateLineup() {
           is_first_lineup: isFirstLineup,
         });
       }
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
+      }
+      if (data?.id) {
+        resetSideBetMarketCache(queryClient, data.id);
+        invalidateSideBetQueries(queryClient, data.id);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
+    },
+  });
+}
+
+export function useCloneLineup() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useMutation({
+    mutationFn: async ({ lineupId, contestId, name }: CloneLineupParams) => {
+      return await cloneLineupById({ lineupId, contestId, name });
+    },
+
+    onSuccess: (data, { eventId }) => {
       if (userId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
       }

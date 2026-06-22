@@ -58,7 +58,8 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ## Lineups
 
 ### Lineup
-- `userId` + `eventId` — **many lineups per user per event** (same as legacy `TournamentLineup`)
+- `userId` + `eventId` — **many lineups per user per event**
+- `contestId` optional FK — contest lobby always sets it; scopes drafts and duplicate checks per contest
 - `prediction` JSON (golf: `{ type: "winningScore", value: number }`)
 - `name` optional display label
 
@@ -138,6 +139,7 @@ erDiagram
   CompetitionEvent ||--o{ EventParticipant : has
   Participant ||--o{ EventParticipant : appears_in
   CompetitionEvent ||--o{ Lineup : has
+  Contest ||--o{ Lineup : scopes_optional
   Lineup ||--o{ LineupPick : has
   LineupPick }o--|| EventParticipant : picks
   CompetitionEvent ||--o{ Contest : has

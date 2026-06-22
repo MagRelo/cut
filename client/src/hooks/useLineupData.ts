@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 
 import { useLineupsQuery } from "./useLineupQueries";
-import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
+import { useCreateLineup, useCloneLineup, useUpdateLineup } from "./useLineupMutations";
 import { useAuth } from "../contexts/AuthContext";
 import type { PlatformLineupListItem } from "../types/lineup";
 
@@ -22,6 +22,7 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   } = useLineupsQuery(eventId, isEnabled, user?.id);
 
   const createMutation = useCreateLineup();
+  const cloneMutation = useCloneLineup();
   const updateMutation = useUpdateLineup();
 
   const refetchLineups = useCallback(async (): Promise<PlatformLineupListItem[]> => {
@@ -47,14 +48,34 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   );
 
   const createLineup = useCallback(
-    async (createEventId: string, picks: string[], name?: string) => {
+    async (
+      createEventId: string,
+      picks: string[],
+      contestId: string,
+      name?: string,
+      winningScorePrediction?: number,
+    ) => {
       return await createMutation.mutateAsync({
         eventId: createEventId,
+        contestId,
         picks,
         name,
+        winningScorePrediction,
       });
     },
     [createMutation],
+  );
+
+  const cloneLineup = useCallback(
+    async (sourceLineupId: string, eventId: string, contestId: string, name?: string) => {
+      return await cloneMutation.mutateAsync({
+        lineupId: sourceLineupId,
+        eventId,
+        contestId,
+        name,
+      });
+    },
+    [cloneMutation],
   );
 
   const updateLineup = useCallback(
@@ -90,6 +111,7 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
     getLineupById,
     getLineupFromCache,
     createLineup,
+    cloneLineup,
     updateLineup,
     clearLineups,
   };

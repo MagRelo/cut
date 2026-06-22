@@ -131,7 +131,7 @@ Golf `ParticipantRow` uses `parseGolfEventMetadata(eventMetadata).roundDisplay` 
 | [`LineupContestCard`](../../client/src/components/lineup/LineupContestCard.tsx) — picker | `CandidatePicker` → `CandidateRow` | contest event candidates |
 | [`ContestEntryList`](../../client/src/components/contest/ContestEntryList.tsx) / [`ContestEntryModal`](../../client/src/components/contest/ContestEntryModal.tsx) | `SportParticipantRow` | `contestLineup.lineup.picks` + candidates cache |
 | [`PredictionLineupsList`](../../client/src/components/contest/PredictionLineupsList.tsx) | (text summary only) | `lineup.picks` + `participantLastName` — no row plugin |
-| [`LineupManagement`](../../client/src/components/contest/LineupManagement.tsx) | `SportParticipantRow` | `candidatesForPlatformLineup` |
+| [`EventLineupsPanel`](../../client/src/components/platform/EventLineupsPanel.tsx) | `LineupContestCard` | contest-scoped lineups + create/copy |
 | [`ContestLobbyView`](../../client/src/components/contest/lobby/ContestLobbyView.tsx) | `EventSummary` | `useContestEvent(contest)` |
 
 Detail modal: [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) → plugin `ParticipantDetail`.

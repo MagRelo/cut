@@ -24,6 +24,7 @@ import {
   platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../../lib/lineupUtils";
+import { lineupsInSameContestScope } from "../../lib/lineupContestScope";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
@@ -50,6 +51,7 @@ const isValidHexColor = (value: unknown): value is string => {
 
 interface LineupContestCardProps {
   lineup: ContestLineup;
+  contestId: string;
   isEditable?: boolean;
   sportId: string;
   eventId: string;
@@ -63,6 +65,7 @@ const PARLAYS_TAB_PANEL_CLASS = "min-h-[18.5rem] py-3 flow-root";
 
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
+  contestId,
   isEditable = false,
   sportId,
   eventId,
@@ -120,6 +123,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
 
   const slotEditor = useLineupSlotEditor({
     lineupId,
+    contestId: platformLineup?.contestId ?? contestId,
     initialCandidates,
     fieldCandidates: candidates,
     lineups,
@@ -132,8 +136,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       if (!canEditSlots || !lineupId) return;
 
       const picks = slotEditor.selectedEventParticipantIds;
-      const duplicate = lineups.some((entry) => {
-        if (entry.id === lineupId) return false;
+      const scopedLineups = lineupsInSameContestScope(
+        lineups,
+        platformLineup?.contestId ?? contestId,
+        lineupId,
+      );
+      const duplicate = scopedLineups.some((entry) => {
         const existingIds = platformLineupEventParticipantIds(entry).sort().join(",");
         const nextIds = [...picks].sort().join(",");
         return existingIds === nextIds && platformLineupPrediction(entry) === nextPrediction;
@@ -159,6 +167,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     [
       canEditSlots,
       lineupId,
+      contestId,
       lineups,
       serverPrediction,
       slotEditor.selectedEventParticipantIds,

@@ -19,23 +19,29 @@ import { ErrorMessage } from "../common/ErrorMessage";
 import { Connect } from "../user/Connect";
 import { LineupContestCard } from "../lineup/LineupContestCard";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";
+import {
+  lineupsCopyableIntoContest,
+  lineupsForContestPanel,
+} from "../../lib/lineupContestScope";
+import { lineupPickLastNames } from "../../lib/lineupUtils";
 
 function contestLineupForCard(
   row: PlatformLineupListItem,
   user: AuthUser,
+  contestId: string,
 ): ContestLineup {
-  const first = row.contestLineups[0];
-  if (first) {
+  const forContest = row.contestLineups.find((entry) => entry.contestId === contestId);
+  if (forContest) {
     return {
-      ...first,
+      ...forContest,
       lineup: row,
       lineupId: row.id,
-      user: first.user ?? (user as unknown as ContestLineup["user"]),
+      user: forContest.user ?? (user as unknown as ContestLineup["user"]),
     };
   }
   return {
     id: row.id,
-    contestId: "",
+    contestId: row.contestId ?? contestId,
     userId: user.id,
     lineupId: row.id,
     position: 0,
@@ -64,12 +70,13 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   isAuthenticated,
 }) => {
   const { loading: isAuthLoading, user } = useAuth();
-  const { lineups, lineupError, isLoading: isLineupsLoading, createLineup } = useLineupData({
+  const { lineups, lineupError, isLoading: isLineupsLoading, createLineup, cloneLineup } = useLineupData({
     eventId,
   });
   const contestEntry = useContestLineupEntry(contest);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [copyingLineupId, setCopyingLineupId] = useState<string | null>(null);
 
   const eventStatus = useMemo(() => eventStatusFromMetadata(eventMetadata), [eventMetadata]);
   const isEventEditable = useMemo(
@@ -85,23 +92,116 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     [eventMetadata],
   );
 
-  const listItems = lineups;
+  const listItems = useMemo(
+    () => lineupsForContestPanel(lineups, contest.id),
+    [lineups, contest.id],
+  );
+  const copyableLineups = useMemo(
+    () => lineupsCopyableIntoContest(lineups, contest.id),
+    [lineups, contest.id],
+  );
   const hasLineups = listItems.length > 0;
-  const showAddLineup = isEventEditable && !isAuthLoading && !isLineupsLoading;
+  const showCreatePanel = isEventEditable && !isAuthLoading && !isLineupsLoading;
+  const isCreateBusy = isCreating || copyingLineupId !== null;
 
   const handleCreateLineup = async () => {
     if (isCreating) return;
-    const nextName = `Lineup #${listItems.length + 1}`;
+    const nextName = `Lineup #${lineups.length + 1}`;
     setIsCreating(true);
     setCreateError(null);
     try {
-      await createLineup(eventId, [], nextName);
+      await createLineup(eventId, [], contest.id, nextName);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to create lineup");
     } finally {
       setIsCreating(false);
     }
   };
+
+  const handleCopyFromLineup = async (sourceLineupId: string) => {
+    if (copyingLineupId) return;
+    const source = copyableLineups.find((row) => row.id === sourceLineupId);
+    if (!source) return;
+
+    setCopyingLineupId(sourceLineupId);
+    setCreateError(null);
+    try {
+      const nextName = `Lineup #${lineups.length + 1}`;
+      await cloneLineup(sourceLineupId, eventId, contest.id, nextName);
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Failed to copy lineup");
+    } finally {
+      setCopyingLineupId(null);
+    }
+  };
+
+  const createLineupPanel = showCreatePanel ? (
+    <div className="rounded-sm border border-gray-200 bg-gray-50 p-4">
+      <p className="font-display text-base font-semibold text-gray-900">Create lineup</p>
+      <p className="mt-1 font-display text-sm leading-relaxed text-gray-600">
+        {hasLineups ? (
+          "Start a new lineup or copy picks from one you entered in another contest."
+        ) : (
+          <>
+            Pick players for{" "}
+            <span className="font-medium text-gray-800">{displayEventName}</span>, then join this
+            contest.
+          </>
+        )}
+      </p>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => void handleCreateLineup()}
+          disabled={isCreateBusy}
+          className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+          {isCreating ? "Creating…" : "New lineup"}
+        </button>
+      </div>
+
+      {copyableLineups.length > 0 ? (
+        <div className="mt-4">
+          <p className="font-display text-xs font-medium uppercase tracking-wide text-gray-500">
+            Or copy from another contest
+          </p>
+          <ul className="mt-2 divide-y divide-gray-200 overflow-hidden rounded border border-gray-200 bg-white">
+            {copyableLineups.map((row) => {
+              const players = lineupPickLastNames(row);
+              const isCopying = copyingLineupId === row.id;
+              return (
+                <li
+                  key={row.id}
+                  className="flex items-start justify-between gap-3 p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-sm font-medium text-gray-900">{row.name}</p>
+                    {players.length > 0 ? (
+                      <p className="mt-0.5 font-display text-xs leading-relaxed text-gray-600">
+                        {players.join(", ")}
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 font-display text-xs text-gray-500">No players selected</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyFromLineup(row.id)}
+                    disabled={isCreateBusy}
+                    className="shrink-0 rounded border border-blue-500 bg-blue-500 px-3 py-1.5 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isCopying ? "Copying…" : "Copy"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  ) : null;
 
   if (!isAuthenticated) {
     return (
@@ -150,7 +250,8 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           {listItems.map((row) => (
             <div key={row.id} className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
               <LineupContestCard
-                lineup={contestLineupForCard(row, user)}
+                lineup={contestLineupForCard(row, user, contest.id)}
+                contestId={contest.id}
                 isEditable={isEventEditable}
                 sportId={sportId}
                 eventId={eventId}
@@ -165,53 +266,11 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
               />
             </div>
           ))}
-
-          {showAddLineup ? (
-            <div>
-              <div className="py-6">
-                <hr className="border-0 border-t border-gray-200" />
-              </div>
-              <p className="text-center font-display text-sm text-gray-600">
-                Did you know you can have more lineups?
-              </p>
-              <div className="mt-3 flex justify-center pb-2">
-                <button
-                  type="button"
-                  onClick={() => void handleCreateLineup()}
-                  disabled={isCreating}
-                  className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-                  {isCreating ? "Adding..." : "Add New Lineup"}
-                </button>
-              </div>
-            </div>
-          ) : null}
+          {createLineupPanel}
         </div>
-      ) : null}
-
-      {isEventEditable && !hasLineups ? (
-        <PageSection>
-          <p className="mb-1 font-display text-base font-semibold text-gray-900">
-            Build your first lineup
-          </p>
-          <p className="font-display text-sm leading-relaxed text-gray-600">
-            Choose your players for{" "}
-            <span className="font-medium text-gray-800">{displayEventName}</span>, then join this
-            contest.
-          </p>
-          {showAddLineup ? (
-            <button
-              type="button"
-              onClick={() => void handleCreateLineup()}
-              disabled={isCreating}
-              className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isCreating ? "Creating..." : "Build Lineup"}
-            </button>
-          ) : null}
-        </PageSection>
-      ) : null}
+      ) : (
+        createLineupPanel
+      )}
 
       {!isEventEditable && !hasLineups ? (
         <PageSection>
