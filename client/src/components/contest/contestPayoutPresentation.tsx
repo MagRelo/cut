@@ -9,7 +9,7 @@ export function ContestPayoutLayout({
   background?: "muted" | "white";
 }) {
   const surfaceClass = background === "white" ? "bg-white" : "bg-gray-100";
-  const paddingClass = background === "white" ? "px-4 py-3" : "p-3";
+  const paddingClass = background === "white" ? "p-4" : "p-3";
   return <div className={`space-y-4 ${paddingClass} font-display ${surfaceClass}`}>{children}</div>;
 }
 
@@ -77,14 +77,16 @@ export function ContestPayoutSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
-      <div>
-        <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
-        {description != null ? (
-          <div className="mt-1 text-xs leading-tight text-slate-500">{description}</div>
-        ) : null}
+    <section className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+      <div className="space-y-2 px-4">
+        <div>
+          <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
+          {description != null ? (
+            <div className="mt-1 text-xs leading-tight text-slate-500">{description}</div>
+          ) : null}
+        </div>
+        {children}
       </div>
-      {children}
     </section>
   );
 }
