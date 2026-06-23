@@ -54,6 +54,7 @@ CREATE TABLE "UserGroup" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "inviteCode" TEXT,
+    "inviteReferrerAddress" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -127,6 +128,7 @@ CREATE TABLE "Lineup" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
+    "contestId" TEXT,
     "name" TEXT NOT NULL,
     "prediction" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -379,6 +381,9 @@ CREATE UNIQUE INDEX "EventParticipant_eventId_participantId_key" ON "EventPartic
 CREATE INDEX "Lineup_userId_eventId_idx" ON "Lineup"("userId", "eventId");
 
 -- CreateIndex
+CREATE INDEX "Lineup_userId_eventId_contestId_idx" ON "Lineup"("userId", "eventId", "contestId");
+
+-- CreateIndex
 CREATE INDEX "LineupPick_lineupId_idx" ON "LineupPick"("lineupId");
 
 -- CreateIndex
@@ -520,6 +525,9 @@ ALTER TABLE "Lineup" ADD CONSTRAINT "Lineup_userId_fkey" FOREIGN KEY ("userId") 
 ALTER TABLE "Lineup" ADD CONSTRAINT "Lineup_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "CompetitionEvent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Lineup" ADD CONSTRAINT "Lineup_contestId_fkey" FOREIGN KEY ("contestId") REFERENCES "Contest"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "LineupPick" ADD CONSTRAINT "LineupPick_lineupId_fkey" FOREIGN KEY ("lineupId") REFERENCES "Lineup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -578,3 +586,4 @@ ALTER TABLE "EmailSendLog" ADD CONSTRAINT "EmailSendLog_userId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "EmailSendLog" ADD CONSTRAINT "EmailSendLog_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "CompetitionEvent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
