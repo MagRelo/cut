@@ -7,8 +7,8 @@ import { accountMatch } from "../../lib/navRoutes";
 import {
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
-  LEAGUES_TAB,
 } from "../../lib/navTabs";
+import { UserContestsNavList } from "./UserContestsNavList";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
@@ -56,15 +56,7 @@ export const UserMenu: React.FC = () => {
         anchor="bottom end"
         className="z-50 mt-1 min-w-[11rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
       >
-        <MenuItem>
-          <Link
-            to={LEAGUES_TAB.to}
-            className={menuItemClass}
-            aria-current={LEAGUES_TAB.match(location.pathname) ? "page" : undefined}
-          >
-            {LEAGUES_TAB.label}
-          </Link>
-        </MenuItem>
+        <UserContestsNavList variant="dropdown" />
         <MenuItem>
           <Link
             to="/account"

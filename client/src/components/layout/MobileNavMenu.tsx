@@ -1,6 +1,7 @@
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useState } from "react";
+import { UserContestsNavList } from "./UserContestsNavList";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
@@ -9,7 +10,6 @@ import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
-  LEAGUES_TAB,
   LEFT_TABS,
 } from "../../lib/navTabs";
 
@@ -106,27 +106,23 @@ export const MobileNavMenu: React.FC = () => {
                     <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
                       <div className="flex flex-col gap-0.5">
                         {LEFT_TABS.map((tab) => (
-                          <Link
-                            key={tab.key}
-                            to={tab.to}
-                            state={tab.state}
-                            aria-current={tab.match(location.pathname) ? "page" : undefined}
-                            className={mobileNavItemClass(tab.match(location.pathname))}
-                          >
-                            {tab.label}
-                          </Link>
+                          <Fragment key={tab.key}>
+                            <Link
+                              to={tab.to}
+                              state={tab.state}
+                              aria-current={tab.match(location.pathname) ? "page" : undefined}
+                              className={mobileNavItemClass(tab.match(location.pathname))}
+                            >
+                              {tab.label}
+                            </Link>
+                            {user && tab.key === "contests" ? (
+                              <UserContestsNavList variant="mobile" />
+                            ) : null}
+                          </Fragment>
                         ))}
 
                         {user ? (
                           <>
-                            <Link
-                              to={LEAGUES_TAB.to}
-                              aria-current={LEAGUES_TAB.match(location.pathname) ? "page" : undefined}
-                              className={mobileNavItemClass(LEAGUES_TAB.match(location.pathname))}
-                            >
-                              {LEAGUES_TAB.label}
-                            </Link>
-
                             <Link
                               to="/account"
                               aria-current={isAccountActive ? "page" : undefined}

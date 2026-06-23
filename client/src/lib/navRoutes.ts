@@ -24,6 +24,9 @@ export const leaderboardMatch = (pathname: string) =>
   /^\/sports\/[^/]+\/leaderboard$/.test(pathname);
 
 export const accountMatch = (pathname: string) =>
-  pathname.startsWith("/account") || pathname === "/connect";
+  pathname.startsWith("/account") ||
+  pathname === "/connect" ||
+  leaguesMatch(pathname) ||
+  userGroupsMatch(pathname);
 
 export const adminMatch = (pathname: string) => pathname.startsWith("/admin");
