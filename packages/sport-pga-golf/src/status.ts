@@ -1,6 +1,15 @@
 import type { EventStatus } from "@cut/sport-sdk";
 import { parseGolfEventMetadata, type GolfEventMetadata } from "./metadata.js";
 
+export function isGolfEventCompleteRaw(status: string): boolean {
+  const s = status.toUpperCase();
+  return s === "COMPLETED" || s === "COMPLETE" || s === "OFFICIAL";
+}
+
+export function isGolfEventLiveRaw(status: string): boolean {
+  return status.toUpperCase() === "IN_PROGRESS";
+}
+
 export function golfEventStatusFromMetadata(metadata: unknown): EventStatus {
   const golf = parseGolfEventMetadata(metadata);
   if (!golf) {
@@ -10,11 +19,10 @@ export function golfEventStatusFromMetadata(metadata: unknown): EventStatus {
 }
 
 export function golfEventStatus(golf: GolfEventMetadata): EventStatus {
-  const status = golf.status.toUpperCase();
-  if (status === "COMPLETE" || status === "OFFICIAL") {
+  if (isGolfEventCompleteRaw(golf.status)) {
     return "COMPLETE";
   }
-  if (status === "IN_PROGRESS") {
+  if (isGolfEventLiveRaw(golf.status)) {
     return "LIVE";
   }
   return "SCHEDULED";
@@ -25,7 +33,7 @@ export function golfShouldActivateContest(metadata: unknown): boolean {
   if (!golf) {
     return false;
   }
-  return golf.status === "IN_PROGRESS";
+  return isGolfEventLiveRaw(golf.status);
 }
 
 export function golfShouldSettleContest(metadata: unknown): boolean {
@@ -33,7 +41,7 @@ export function golfShouldSettleContest(metadata: unknown): boolean {
   if (!golf) {
     return false;
   }
-  return golf.status === "COMPLETE" || golf.status === "OFFICIAL";
+  return isGolfEventCompleteRaw(golf.status);
 }
 
 export function golfShouldSyncLiveScores(metadata: unknown): boolean {
@@ -46,7 +54,7 @@ export function golfShouldSyncLiveScores(metadata: unknown): boolean {
     golf.roundDisplay === "Playoff" || (golf.currentRound ?? 0) >= 401;
 
   return (
-    golf.status === "IN_PROGRESS" &&
+    isGolfEventLiveRaw(golf.status) &&
     (golf.roundStatusDisplay === "In Progress" ||
       golf.roundStatusDisplay === "Complete" ||
       isPlayoffRound)

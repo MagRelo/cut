@@ -13,6 +13,8 @@ export {
   golfShouldActivateContest,
   golfShouldSettleContest,
   golfShouldSyncLiveScores,
+  isGolfEventCompleteRaw,
+  isGolfEventLiveRaw,
 } from "./status.js";
 
 export { validateGolfRoster } from "./validation.js";

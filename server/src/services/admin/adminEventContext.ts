@@ -1,4 +1,5 @@
 import type { CompetitionEvent } from "@prisma/client";
+import { isGolfEventCompleteRaw, isGolfEventLiveRaw } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 
 type GolfEventMetadata = {
@@ -20,16 +21,17 @@ export function parseEventMetadata(metadata: unknown): GolfEventMetadata {
 }
 
 export function eventStatusForDashboard(metadata: unknown): string {
-  const status = parseEventMetadata(metadata).status?.toUpperCase();
-  if (status === "COMPLETE" || status === "OFFICIAL") return "COMPLETED";
-  if (status === "IN_PROGRESS") return "IN_PROGRESS";
+  const raw = parseEventMetadata(metadata).status ?? "";
+  if (isGolfEventCompleteRaw(raw)) return "COMPLETED";
+  if (isGolfEventLiveRaw(raw)) return "IN_PROGRESS";
+  const status = raw.toUpperCase();
   if (status === "CANCELLED") return "CANCELLED";
   return "NOT_STARTED";
 }
 
 export function isEventCompleteForSettlement(metadata: unknown): boolean {
-  const status = parseEventMetadata(metadata).status?.toUpperCase();
-  return status === "COMPLETE" || status === "OFFICIAL" || status === "COMPLETED";
+  const raw = parseEventMetadata(metadata).status ?? "";
+  return isGolfEventCompleteRaw(raw);
 }
 
 export async function resolveAdminEvent(eventIdOverride?: string) {

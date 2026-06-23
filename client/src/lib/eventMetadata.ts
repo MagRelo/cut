@@ -1,4 +1,5 @@
 import type { EventStatus } from "../types/event";
+import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
 import { formatGolfEventStatus } from "../sports/pga-golf/utils";
 
 type EventMetadataShape = {
@@ -10,26 +11,12 @@ type EventMetadataShape = {
 };
 
 export function eventStatusFromMetadata(metadata: unknown): EventStatus {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return "SCHEDULED";
-  }
-  const status = (metadata as EventMetadataShape).status?.toUpperCase();
-  if (status === "IN_PROGRESS") return "LIVE";
-  if (status === "COMPLETE" || status === "OFFICIAL") return "COMPLETE";
-  return "SCHEDULED";
+  return golfEventStatusFromMetadata(metadata);
 }
 
 export function isEventEditableFromMetadata(metadata: unknown): boolean {
   const status = eventStatusFromMetadata(metadata);
-  if (status === "LIVE" || status === "COMPLETE") return false;
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return true;
-  }
-  const metaStatus = (metadata as EventMetadataShape).status?.toUpperCase();
-  if (metaStatus === "IN_PROGRESS" || metaStatus === "COMPLETE" || metaStatus === "OFFICIAL") {
-    return false;
-  }
-  return true;
+  return status !== "LIVE" && status !== "COMPLETE";
 }
 
 export function eventDisplayNameFromMetadata(metadata: unknown, fallback = "this event"): string {
