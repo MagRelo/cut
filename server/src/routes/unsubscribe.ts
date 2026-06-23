@@ -42,8 +42,8 @@ unsubscribeRouter.get("/", async (c) => {
     return c.html(confirmationHtml());
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
     select: { id: true, settings: true },
   });
 

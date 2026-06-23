@@ -48,7 +48,7 @@ services:
       start_period: 15s
 
   web:
-    image: ${CUT_APP_IMAGE:-magrelo/cut-v2:latest}
+    image: ${CUT_APP_IMAGE:-magrelo/cut-v4:latest}
     logging:
       driver: json-file
       options:

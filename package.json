@@ -36,7 +36,7 @@
     "claim-oracle-fee": "node scripts/sepolia/claimOracleFee.js",
     "sepolia:claim-oracle-fee": "node scripts/sepolia/claimOracleFee.js",
     "base:deposit-usdc": "node scripts/base/depositUSDC.js",
-    "deploy": "pnpm run client:build && pnpm run server:build && pnpm run docker:build",
+    "deploy": "pnpm --filter @cut/sport-sdk run build && pnpm --filter @cut/sport-pga-golf run build && pnpm --filter @cut/secondary-pricing run build && pnpm run client:build && pnpm run server:build && pnpm run docker:build",
     "release": "pnpm run deploy",
     "deploy:contracts": "node scripts/deploy.js",
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
@@ -49,7 +49,7 @@
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base",
     "ssh": "ssh deployer@45.55.136.214",
-    "swarm:deploy": "ssh root@157.230.6.6 'cd /opt/cut && docker pull magrelo/cut-v2:latest && docker stack deploy --detach=true -c swarm/stack.yml cut'"
+    "swarm:deploy": "ssh root@157.230.6.6 'cd /opt/cut && docker pull magrelo/cut-v4:latest && docker stack deploy --detach=true -c swarm/stack.yml cut'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

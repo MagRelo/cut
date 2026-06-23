@@ -1,4 +1,5 @@
 import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
+import { isMarketingEmailAllowed } from "./data/audience.js";
 import { buildTestEmailHtml } from "./templates.js";
 import { appendUnsubscribeFooter } from "./unsubscribe.js";
 import {
@@ -56,6 +57,10 @@ export const sendEmail = async ({
   html,
   skipUnsubscribe = false,
 }: EmailOptions): Promise<void> => {
+  if (!skipUnsubscribe && !(await isMarketingEmailAllowed(to))) {
+    throw new Error(`Marketing email refused: ${to} is unsubscribed`);
+  }
+
   const { fromEmail, fromName } = getEmailConfig();
   const mailerSend = getMailerSendClient();
   const htmlToSend = skipUnsubscribe ? html : appendUnsubscribeFooter(html, to);

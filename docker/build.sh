@@ -11,7 +11,7 @@ echo "Building with tag: $TAG"
 
 # Set your Docker Hub username
 DOCKER_USERNAME="magrelo"
-DOCKER_IMAGE_NAME="cut-v2"
+DOCKER_IMAGE_NAME="cut-v4"
 
 # Set up Docker buildx builder
 echo "Setting up Docker buildx builder..."

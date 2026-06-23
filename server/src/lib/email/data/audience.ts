@@ -7,17 +7,32 @@ export type EmailRecipient = {
   name: string;
 };
 
-function isMarketingUnsubscribed(settings: unknown): boolean {
+export function isMarketingUnsubscribed(settings: unknown): boolean {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
     return false;
   }
   return (settings as { marketingUnsubscribed?: unknown }).marketingUnsubscribed === true;
 }
 
-/** All users with a deliverable email address. */
+/** True when address is unknown or belongs to a subscribed USER account. */
+export async function isMarketingEmailAllowed(email: string): Promise<boolean> {
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email.trim(), mode: "insensitive" } },
+    select: { settings: true },
+  });
+  if (!user) return true;
+  return !isMarketingUnsubscribed(user.settings);
+}
+
+const marketingUserWhere = {
+  userType: "USER",
+  email: { not: null },
+} as const;
+
+/** All USER accounts with a deliverable email address and marketing opt-in. */
 export async function loadAllEmailRecipients(): Promise<EmailRecipient[]> {
   const users = await prisma.user.findMany({
-    where: { email: { not: null } },
+    where: marketingUserWhere,
     select: { id: true, email: true, name: true, settings: true },
   });
   return users
@@ -41,7 +56,7 @@ export async function loadReminderNoContestSegment(eventId: string): Promise<Ema
 
   const users = await prisma.user.findMany({
     where: {
-      email: { not: null },
+      ...marketingUserWhere,
       OR: [
         { lineups: { some: { eventId: { in: prevIds } } } },
         { contestLineups: { some: { contest: { eventId: { in: prevIds } } } } },

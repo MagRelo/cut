@@ -70,7 +70,7 @@ If Swarm is already initialized, skip this block. To reset: `docker swarm leave 
    Build and push the image from your dev machine (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). On the droplet, still from **`/opt/cut`**:
 
    ```bash
-   export CUT_APP_IMAGE=your-registry/cut-v2:yourtag   # optional; default is magrelo/cut-v2:latest
+   export CUT_APP_IMAGE=your-registry/cut-v4:yourtag   # optional; default is magrelo/cut-v4:latest
    docker stack deploy -c swarm/stack.yml cut
    ```
 

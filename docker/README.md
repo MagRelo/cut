@@ -13,7 +13,7 @@ The build process follows this sequence:
 
 1. **Client Build**: `pnpm run client:build` - Builds the React frontend
 2. **Server Build**: `pnpm run server:build` - Compiles TypeScript and copies contracts
-3. **Workspace package**: `@cut/secondary-pricing` must have `dist/` (built via normal `pnpm install` / `pnpm --filter @cut/secondary-pricing run build`)
+3. **Workspace packages**: `@cut/sport-sdk`, `@cut/sport-pga-golf`, and `@cut/secondary-pricing` must have `dist/` (built by `pnpm run deploy` before `docker:build`)
 4. **Docker Build**: `pnpm run docker:build` - Builds and pushes Docker image (uses **pnpm** inside the image for `workspace:*` dependencies)
 
 ## Usage
@@ -42,7 +42,7 @@ docker-compose up -d
 The Docker image is built with:
 
 - Node.js 22 Alpine
-- pnpm (Corepack) and a filtered workspace install for `server` + `@cut/secondary-pricing`
+- pnpm (Corepack) and a filtered workspace install for `server` + `@cut/sport-sdk`, `@cut/sport-pga-golf`, `@cut/secondary-pricing`
 - Prisma Client pre-generated
 - Built application files from `server/dist/`
 - Client static files in `public/` (from `client/dist/`)

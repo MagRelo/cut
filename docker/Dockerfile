@@ -9,16 +9,20 @@ WORKDIR /app
 # pnpm for workspace:* deps (Corepack can fail signature verify in minimal images)
 RUN npm install -g pnpm@10.14.0
 
-# Workspace manifests (required for server dependency @cut/secondary-pricing: workspace:*)
+# Workspace manifests (required for server workspace:* deps)
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY server/package.json ./server/
 COPY packages/secondary-pricing/package.json ./packages/secondary-pricing/
+COPY packages/sport-sdk/package.json ./packages/sport-sdk/
+COPY packages/sport-pga-golf/package.json ./packages/sport-pga-golf/
 
-# Install server and its workspace deps. --ignore-scripts skips @cut/secondary-pricing prepare
+# Install server and its workspace deps. --ignore-scripts skips package prepare
 # (no sources in image yet); dist is copied in the next step from the host build.
 RUN pnpm install --frozen-lockfile --filter "server..." --ignore-scripts
 
 COPY packages/secondary-pricing/dist ./packages/secondary-pricing/dist
+COPY packages/sport-sdk/dist ./packages/sport-sdk/dist
+COPY packages/sport-pga-golf/dist ./packages/sport-pga-golf/dist
 
 COPY server/prisma ./server/prisma/
 RUN cd server && pnpm exec prisma generate
