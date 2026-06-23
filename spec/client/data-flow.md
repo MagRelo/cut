@@ -1,277 +1,163 @@
-# Client Data Flow
+# Client data flow (v4)
 
-## Data Flow Overview
+---
 
-The client receives data from two main sources:
-1. **Server API**: Tournament data, contests, lineups, user data
-2. **Blockchain**: Contract state, token balances, transactions
+## HTTP client
 
-## Server Data Flow
+`utils/apiClient.ts`:
 
-### Tournament Data Flow
+- Prefix: `/api`
+- Attaches `Authorization: Bearer` from registered Privy `getAccessToken`
+- Optional `X-Cut-Chain-Id` when chain-specific wallet resolution is needed
+- Throws `ApiError` with `statusCode` for React Query error boundaries
 
-Active tournament data is split: **shell** (init/week, long cache), **live** (cron round status + players, 5-minute poll), and **contests** (`GET /contests` via `useContestsQuery`, unchanged).
+---
 
-```mermaid
-sequenceDiagram
-    participant App
-    participant Hook
-    participant ReactQuery
-    participant ApiClient
-    participant Server
+## Query key conventions
 
-    App->>Hook: useTournamentShell()
-    Hook->>ReactQuery: useQuery(activeShell)
-    ReactQuery->>ApiClient: GET /api/tournaments/active/shell
-    ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: tournament shell
-    ApiClient-->>ReactQuery: JSON Response
-    ReactQuery-->>Hook: shell state
+`utils/queryKeys.ts` — invalidate by prefix:
 
-    App->>Hook: useActiveTournamentLive(tournamentId)
-    Hook->>ReactQuery: useQuery(activeLive by id)
-    ReactQuery->>ApiClient: GET /api/tournaments/active/live
-    ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: live tournament + players
-    ApiClient-->>ReactQuery: JSON Response
-    ReactQuery-->>Hook: live state
-```
+| Key factory | API | Notes |
+|-------------|-----|-------|
+| `sports.list()` | `GET /sports` | |
+| `sports.activeEvent(sportId)` | `GET /sports/:id/events/active` | |
+| `sports.candidates(sportId, eventId)` | `GET .../candidates` | |
+| `contests.byEvent(eventId, ...)` | `GET /contests?eventId=` | Replaces `byTournament` |
+| `contests.byLobbyRoute(address)` | `GET /contests/:address` | |
+| `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped; response includes `PlatformLineup.score` |
+| `sideBet.market(lineupId)` | `GET /bets/side/lineup/:id/market` | |
 
-`useActiveTournament()` merges shell + live (`mergeTournament`) for lineups, leaderboard, and header. `useTournamentShell()` alone is used only where live fields are not needed (e.g. tournament summary modal).
+---
 
-### Contest Data Flow
+## Event data sources
+
+Two explicit sources — no global active-event hook:
+
+| Surface | Hook | API |
+|---------|------|-----|
+| Sport hub, leaderboard, onboarding | `useSportActiveEvent(sportId)` | `GET /sports/:sportId/events/active` + candidates |
+| Contest lobby | `useContestEvent(contest)` via `ContestEventScopeProvider` | `contest.event` + `GET .../events/:eventId/candidates` |
 
 ```mermaid
 sequenceDiagram
-    participant Component
-    participant Hook
-    participant ReactQuery
-    participant ApiClient
-    participant Server
-    
-    Component->>Hook: useContestQuery(contestId)
-    Hook->>ReactQuery: useQuery(['contest', contestId])
-    ReactQuery->>ApiClient: GET /api/contests/:id
-    ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: Contest Data
-    ApiClient-->>ReactQuery: JSON Response
-    ReactQuery-->>Hook: Cached Data
-    Hook-->>Component: Contest State
+  participant Page
+  participant RQ as React Query
+  participant API as GET /sports/.../active
+  participant UI
+
+  Page->>RQ: useSportActiveEvent(sportId)
+  RQ->>API: fetch active event
+  API-->>RQ: ActiveEventResponse
+  RQ->>API: fetch candidates for eventId
+  API-->>RQ: Candidate[]
 ```
 
-### Lineup Creation Flow
+Contest lobby follows the same pattern with `useContestEvent` keyed on `contest.eventId`.
+
+---
+
+## Lineup save flow
 
 ```mermaid
 sequenceDiagram
-    participant Component
-    participant Hook
-    participant ReactQuery
-    participant ApiClient
-    participant Server
-    
-    Component->>Hook: useLineupMutations()
-    Hook->>ReactQuery: useMutation(createLineup)
-    Component->>Hook: createLineup(data)
-    Hook->>ApiClient: POST /api/lineup/:tournamentId
-    ApiClient->>Server: HTTP Request
-    Server-->>ApiClient: Created Lineup
-    ApiClient-->>ReactQuery: Success
-    ReactQuery->>ReactQuery: Invalidate Queries
-    ReactQuery-->>Hook: Success
-    Hook-->>Component: Updated State
+  participant User
+  participant Picker as CandidatePicker
+  participant Hook as useLineupMutations
+  participant API as POST /lineups/:eventId
+  participant RQ as React Query
+
+  User->>Picker: Select 4 candidates
+  Picker->>Hook: saveLineup(picks, prediction)
+  Hook->>API: POST body picks + prediction
+  API-->>Hook: lineup
+  Hook->>RQ: invalidate lineups.byEvent, sideBet.market
 ```
 
-## Blockchain Data Flow
+`useLineupMutations` passes `eventParticipantId` picks directly to the API. Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
 
-### Token Balance Flow
+---
+
+## Contest join flow
 
 ```mermaid
 sequenceDiagram
-    participant Component
-    participant Context
-    participant Wagmi
-    participant Blockchain
-    
-    Component->>Context: useAuth()
-    Context->>Wagmi: useBalance / useReadContract (tokens)
-    Wagmi->>Blockchain: RPC Call
-    Blockchain-->>Wagmi: Balance
-    Wagmi-->>Context: Balance Data
-    Context-->>Component: Token Balance
-    Note over Wagmi,Blockchain: Polls every 30 seconds
+  participant User
+  participant UI as ContestLobby
+  participant Chain as Wagmi
+  participant API as POST /contests/:id/lineups
+
+  User->>UI: Join with lineup
+  UI->>Chain: addPrimaryPosition(entryId)
+  Chain-->>UI: tx confirmed
+  UI->>API: record ContestLineup
+  API-->>UI: updated contest
 ```
 
-### Contract Read Flow
+Order: **on-chain first**, then server indexes the entry. Server links `lineupId` + `entryId`.
+
+---
+
+## Contest list flow
+
+**Multi-sport hub** (`/contests`): `useLiveContestsAcrossSports` — per-sport active events, merged contest lists.
+
+**Sport hub** (`/sports/:sportId`):
+
+1. `useParams().sportId`
+2. `useSportActiveEvent(sportId)` → `eventId`
+3. `useContestsQuery(eventId, ...)` → `GET /contests?eventId=`
+
+League detail uses `useUserGroupContestsQuery` → `GET /userGroups/:id/contests` (cross-event with `eventSummary`).
+
+---
+
+## Side bets (when enabled)
+
+| Step | Hook / API |
+|------|------------|
+| Load market | `GET /bets/side/lineup/:lineupId/market` |
+| Place ticket | `POST /bets/side/tickets` |
+| User tickets | `GET /bets/side/tickets` |
+
+Invalidate `sideBet.market(lineupId)` after lineup save.
+
+---
+
+## Auth flow
 
 ```mermaid
 sequenceDiagram
-    participant Component
-    participant Hook
-    participant Wagmi
-    participant Blockchain
-    
-    Component->>Hook: useReadContract()
-    Hook->>Wagmi: useReadContract(config)
-    Wagmi->>Blockchain: RPC Call
-    Blockchain-->>Wagmi: Contract State
-    Wagmi-->>Hook: Decoded Data
-    Hook-->>Component: Contract Data
+  participant User
+  participant Privy
+  participant Auth as AuthProvider
+  participant API as GET /auth/me
+
+  User->>Privy: Sign in
+  Privy-->>Auth: session + getAccessToken
+  Auth->>API: Bearer token
+  API-->>Auth: user, lineups, userGroups
+  Auth->>apiClient: registerAuthTokenHandlers
 ```
 
-### Transaction Flow
+`AuthProvider` polls token balances on an interval (~30s) for display in nav/account.
 
-```mermaid
-sequenceDiagram
-    participant Component
-    participant Hook
-    participant Wagmi
-    participant Wallet
-    participant Blockchain
-    
-    Component->>Hook: execute(calls)
-    Hook->>Wagmi: writeContract (each call)
-    Wagmi->>Wallet: Request signature
-    Wallet-->>Wagmi: Signed tx
-    Wagmi->>Blockchain: Broadcast
-    Blockchain-->>Wagmi: Transaction hash
-    Hook->>Wagmi: waitForTransactionReceipt
-    Wagmi-->>Hook: Receipt
-    Hook-->>Component: Transaction complete
-```
+---
 
-## Authentication Flow
+## Cache strategy
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Component
-    participant Privy
-    participant Context
-    participant ApiClient
-    participant Server
-    
-    User->>Component: Connect / login
-    Component->>Privy: login()
-    Privy-->>Component: Session + wallet
-    Component->>Context: startAuthFlow / AuthProvider effects
-    Context->>Privy: getAccessToken()
-    Privy-->>Context: Bearer token
-    Context->>ApiClient: GET /auth/me (Authorization: Bearer)
-    ApiClient->>Server: Verify token, load Cut user
-    Server-->>ApiClient: User + lineups + groups
-    ApiClient-->>Context: Profile
-    Context->>Context: Set user state
-    Context-->>Component: Authenticated
-```
+| When | What |
+|------|------|
+| Route mount | React Query fetches on demand (no app-wide event prefetch) |
+| Contest lobby navigation | contest query by address |
+| After mutation | targeted `queryClient.invalidateQueries` |
 
-The server verifies the Privy access token on each protected request, provisions or updates the Cut `User` and `UserWallet` records from the Privy user, and uses optional `X-Cut-Chain-Id` when resolving the active wallet for a chain.
+Stale times: sports 24h, active event/candidates 5m (see `useSportData.ts`).
 
-## Data Transformation
+---
 
-### Server Data → Component Props
-1. **API Response**: Raw JSON from server
-2. **React Query**: Cached and typed
-3. **Custom Hook**: Transformed to component format
-4. **Component**: Rendered in UI
+## Error handling
 
-### Blockchain Data → Component Props
-1. **RPC Response**: Raw blockchain data
-2. **Wagmi**: Decoded and typed
-3. **Custom Hook**: Transformed to component format
-4. **Component**: Rendered in UI
-
-## Data Synchronization
-
-### Server Data Sync
-- **Automatic**: React Query refetches on focus/reconnect
-- **Manual**: Invalidate queries after mutations
-- **Polling**: Token balances polled every 30 seconds
-
-### Blockchain Data Sync
-- **Automatic**: Wagmi refetches on block updates
-- **Polling**: Balances polled every 30 seconds
-- **Events**: Contract events (if implemented)
-
-## Cache Management
-
-### React Query Cache
-- **Key Structure**: `['resource', id]` or `['resource', params]`
-- **Invalidation**: After mutations
-- **Prefetching**: Tournament data on app load
-
-### Wagmi Cache
-- **Automatic**: Wagmi manages cache
-- **Block-based**: Updates on new blocks
-- **Configurable**: Can adjust cache settings
-
-## Error Handling Flow
-
-```mermaid
-graph TD
-    A[Request] --> B{Success?}
-    B -->|Yes| C[Update State]
-    B -->|No| D{Error Type?}
-    D -->|Network| E[Retry/Show Error]
-    D -->|Validation| F[Show Validation Error]
-    D -->|Server| G[Show Server Error]
-    D -->|Blockchain| H[Show Transaction Error]
-    E --> I[Global Error Context]
-    F --> I
-    G --> I
-    H --> I
-```
-
-## Data Flow Patterns
-
-### Read Pattern
-1. Component requests data via hook
-2. Hook checks cache
-3. If cached and fresh, return cached data
-4. If stale or missing, fetch from source
-5. Update cache and return data
-
-### Write Pattern
-1. Component triggers mutation
-2. Hook sends request to source
-3. Source processes request
-4. On success, invalidate related queries
-5. Update UI with new data
-
-### Optimistic Update Pattern
-1. Component triggers mutation
-2. Hook updates cache optimistically
-3. Send request to source
-4. On success, confirm update
-5. On error, rollback and show error
-
-## Performance Optimizations
-
-### Prefetching
-- Tournament data prefetched on app load
-- Reduces initial load time
-- Improves perceived performance
-
-### Caching
-- React Query caches server data
-- Wagmi caches blockchain data
-- Reduces redundant requests
-
-### Polling Strategy
-- Token balances: 30 seconds
-- Tournament data: On focus/reconnect
-- Contest data: On focus/reconnect
-
-## Data Dependencies
-
-### Tournament → Contests
-- Contests depend on tournament data
-- Invalidate contests when tournament updates
-
-### Contest → Lineups
-- Lineups depend on contest data
-- Invalidate lineups when contest updates
-
-### User → Everything
-- Most data depends on user authentication
-- Clear cache on logout
-
+- `ApiError` 404 on active event → UI shows "no active event" state
+- React Query retries transient network errors
+- `GlobalErrorContext` for user-visible fatal errors
+- Wagmi tx errors surfaced in contest/token hooks with user-readable messages

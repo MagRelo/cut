@@ -1,5 +1,5 @@
 import React from "react";
-import { ScoreDisplay, StablefordDisplay } from "../player/PlayerScorecard";
+import { ScoreDisplay, StablefordDisplay } from "../../sports/pga-golf/scorecard/ScoreDisplay";
 
 // Dummy sample (holes 7–11) — table classes copied from PlayerScorecard
 const dummyPars = [5, 4, 4, 3, 5];

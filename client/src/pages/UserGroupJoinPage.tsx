@@ -5,12 +5,22 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useJoinLeague } from "../hooks/useUserGroupMutations";
 import { isApiError } from "../utils/apiError";
+import {
+  clearPendingLeagueInviteCode,
+  setPendingLeagueInviteCode,
+} from "../lib/leagueInviteCapture";
 
 export const UserGroupJoinPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { mutateAsync, isPending, isError, error } = useJoinLeague();
   const attemptedCodeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (code) {
+      setPendingLeagueInviteCode(code);
+    }
+  }, [code]);
 
   useEffect(() => {
     if (!code || attemptedCodeRef.current === code) {
@@ -20,13 +30,15 @@ export const UserGroupJoinPage = () => {
 
     void mutateAsync({ inviteCode: code })
       .then((league) => {
-        navigate(`/user-groups/${league.id}`, { replace: true });
+        clearPendingLeagueInviteCode();
+        navigate(`/leagues/${league.id}`, { replace: true });
       })
       .catch((joinError) => {
         if (isApiError(joinError) && joinError.statusCode === 409) {
+          clearPendingLeagueInviteCode();
           const userGroupId = joinError.context?.userGroupId;
           if (typeof userGroupId === "string") {
-            navigate(`/user-groups/${userGroupId}`, { replace: true });
+            navigate(`/leagues/${userGroupId}`, { replace: true });
           }
         }
       });
@@ -36,7 +48,7 @@ export const UserGroupJoinPage = () => {
     return (
       <>
         <ErrorMessage message="Invalid invite link" />
-        <Link to="/user-groups" className="text-sm text-blue-600 hover:text-blue-700 font-display">
+        <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to my leagues
         </Link>
       </>
@@ -66,7 +78,7 @@ export const UserGroupJoinPage = () => {
       <>
         <PageHeader title="Join League" />
         <ErrorMessage message={message} />
-        <Link to="/user-groups" className="text-sm text-blue-600 hover:text-blue-700 font-display">
+        <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to my leagues
         </Link>
       </>

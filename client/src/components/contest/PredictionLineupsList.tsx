@@ -1,12 +1,18 @@
 import React, { useMemo, useState } from "react";
-import { formatUnits, parseUnits } from "viem";
-import { simulateAddSecondaryPosition } from "@cut/secondary-pricing";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useContestEvent } from "../../hooks/useContestEvent";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
-import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
+import { computeTenDollarPurchasePreview } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
+import {
+  candidatesByEventParticipantIdMap,
+  candidatesForLineupPicks,
+  contestLineupDisplayName,
+  lineupPicksFromContestLineup,
+} from "../../lib/candidateUtils";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { participantLastName } from "../../lib/candidateSorting";
 
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
 
@@ -16,6 +22,12 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const { candidates = [], sportId, status } = useContestEvent(contest);
+  const { sort } = useCandidateSort(sportId);
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
+    [candidates],
+  );
 
   // Compute secondary actions lock based on contest status
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
@@ -49,6 +61,32 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
 
   const canOpenLineupModal = canPredict && !secondaryActionsLocked;
 
+  const sortedEntryRows = useMemo(() => {
+    const rows = entryData.map((entry) => {
+      const preview = computeTenDollarPurchasePreview({
+        totalSupply: entry.totalSupply,
+        entryLiquidity: entry.entryLiquidity,
+        balance: entry.balance,
+        totalSecondaryLiquidityBefore: secondaryTotalFunds,
+        paymentDecimals,
+        poolSnapshot,
+      });
+      const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
+      return { entry, preview, lineup };
+    });
+
+    return rows.sort((a, b) => {
+      const aReturn = a.preview.projectedReturn;
+      const bReturn = b.preview.projectedReturn;
+      if (aReturn == null && bReturn == null) return 0;
+      if (aReturn == null) return 1;
+      if (bReturn == null) return -1;
+      // Shorter odds (favorites) first — lower projected return on a fixed $10 buy.
+      if (aReturn !== bReturn) return aReturn - bReturn;
+      return (a.lineup?.position ?? Number.MAX_SAFE_INTEGER) - (b.lineup?.position ?? Number.MAX_SAFE_INTEGER);
+    });
+  }, [entryData, secondaryTotalFunds, paymentDecimals, poolSnapshot, contest.contestLineups]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -60,46 +98,11 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
   return (
     <div>
       <div className="space-y-2">
-        {[...entryData]
-          .sort((a, b) => parseFloat(b.priceFormatted) - parseFloat(a.priceFormatted))
-          .map((entry) => {
-            const lineup = contest.contestLineups?.find((l) => l.entryId === entry.entryId);
+        {sortedEntryRows.map(({ entry, preview, lineup }) => {
             const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
-            const lineupNumberLabel = getLineupNumberLabel(lineup?.tournamentLineup?.name);
-            const tenDollarReturnLabel = (() => {
-              if (!poolSnapshot) return "—";
-
-              let tenDollarAmount: bigint;
-              try {
-                tenDollarAmount = parseUnits("10", paymentDecimals);
-              } catch {
-                return "—";
-              }
-
-              const sim = simulateAddSecondaryPosition({
-                amount: tenDollarAmount,
-                entryShares: entry.totalSupply,
-                entryLiquidity: entry.entryLiquidity,
-                ...poolSnapshot,
-              });
-
-              const deltaWei = incrementalGlobalClaimDelta(
-                secondaryTotalFunds,
-                tenDollarAmount,
-                entry.balance,
-                entry.totalSupply,
-                sim,
-              );
-              if (deltaWei === null) return "—";
-              const impliedRaw = Number(formatUnits(deltaWei, paymentDecimals));
-              if (!Number.isFinite(impliedRaw)) return "—";
-              return impliedRaw.toFixed(2);
-            })();
-            const tenDollarEnglishOdds = (() => {
-              const projectedReturn = Number.parseFloat(tenDollarReturnLabel);
-              if (!Number.isFinite(projectedReturn)) return "—";
-              return toEnglishOdds(10, projectedReturn);
-            })();
+            const lineupName = lineup ? contestLineupDisplayName(lineup) : "";
+            const lineupNumberLabel = getLineupNumberLabel(lineupName);
+            const tenDollarEnglishOdds = preview.englishOdds;
 
             const userSettings = lineup?.user?.settings;
             const maybeColor =
@@ -135,14 +138,16 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                     </div>
                     <div className="text-xs text-gray-500 truncate">
                       {(() => {
-                        const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
-                        const name = lineup?.tournamentLineup?.name || "";
-                        const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
-                          .map((player) => player.pga_lastName)
-                          .filter(Boolean)
+                        if (!lineup) return "No players";
+                        const lineupCandidates = candidatesForLineupPicks(
+                          lineupPicksFromContestLineup(lineup),
+                          candidatesByEventParticipantId,
+                        );
+                        const sortedPlayerNames = sort(lineupCandidates, "lineupPicks", status)
+                          .map((candidate) => participantLastName(candidate))
                           .join(", ");
 
-                        return sortedPlayerNames || name || "No players";
+                        return sortedPlayerNames || lineupName || "No players";
                       })()}
                     </div>
                   </div>

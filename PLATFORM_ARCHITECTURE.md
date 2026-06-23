@@ -43,7 +43,7 @@ The platform owns everything that applies to any tournament-style competition:
 
 - **Identity & social** — users, authentication (Privy), cross-sport leagues
 - **Events** — schedule, status, one active event per sport
-- **Lineups & entries** — roster assembly from a candidate pool; reusable across multiple contests for the same event
+- **Lineups & entries** — roster assembly from a candidate pool; each contest entry uses an isolated lineup copy (clone-on-join when reusing across contests)
 - **Contests** — lifecycle, settings, on-chain contracts, secondary prediction market
 - **Ranking & settlement** — score aggregation, tie-breaking, payout derivation, oracle settlement, payout push, timeline snapshots
 - **Cron** — loops all sports with active or recently completed events, dispatching each to its sport plugin
@@ -116,7 +116,7 @@ Lineup (event-scoped roster)
               └── Contest
 ```
 
-A user builds one lineup for an event, then enters it into multiple contests (public and league) without rebuilding the roster.
+A user builds lineups for an event, scoped to a contest via optional `Lineup.contestId`. The contest lobby always sets `contestId` on create. Cross-contest reuse is explicit via copy/clone. Each contest entry uses an isolated lineup row; joining with a mismatched `contestId` clones server-side.
 
 ---
 
@@ -186,7 +186,7 @@ Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`
 
 ## Server pipeline
 
-The cron job runs every five minutes and processes **all sports** with an active or recently completed event:
+The cron job runs every five minutes and processes **all sports** with an active event (`CompetitionEvent.isActive=true`):
 
 ```mermaid
 sequenceDiagram
@@ -195,18 +195,21 @@ sequenceDiagram
   participant Plugin as SportModule
   participant Contest as Contest services
 
-  Cron->>Core: getActiveEvents across all enabled sports
+  Cron->>Core: getActiveEvents
   loop each active event
-    Core->>Plugin: resolve by event.sportId
+    Core->>Plugin: runSportEventPipeline
     Plugin->>Plugin: syncEventMetadata
     Plugin->>Plugin: syncParticipantField
-    alt event LIVE
+    alt shouldSyncLiveScores
       Plugin->>Plugin: syncLiveScores
-      Core->>Core: updateContestLineups for this event
+      Core->>Core: updateContestLineupsForEvent
     end
-    Core->>Contest: batchActivate / batchSettle for this event
   end
+  Core->>Core: refreshOpenSideBetQuotes
+  Core->>Contest: batchActivateContests
+  Core->>Contest: batchSettleContests
   Core->>Contest: batchCloseContests
+  Core->>Core: batchSyncReferralGraph
 ```
 
 Core platform endpoints:
@@ -225,31 +228,38 @@ Core platform endpoints:
 
 | Route | Scope |
 |-------|-------|
-| `/sports/:sportId` | Sport home — active event, lineup management, public contests |
-| `/sports/:sportId/contests/:id` | Contest detail and leaderboard |
-| `/leagues/:id` | Cross-sport league — contest list grouped by sport/event |
+| `/contests` | Multi-sport live contests hub |
+| `/sports/:sportId` | Sport home — active event contest list (`SportHubPage`) |
+| `/sports/:sportId/leaderboard` | Leaderboard + `SportEventHeader` |
+| `/contest/:address` | Contest lobby (on-chain address in URL) |
+| `/leagues/:id` | Cross-sport league — contests grouped by event |
 | `/account` | Wallet, referrals, settings (sport-neutral) |
 
-`SportContext` provides `sportId`, `rosterRules`, `activeEvent`, and the resolved `SportUIPlugin` to all routes under `/sports/:sportId`.
+`/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`. No legacy `/leaderboard` or `/lineups` routes.
+
+**Sport scope** — explicit at route boundary: `useParams().sportId` on sport routes, `contest.event.sportId` via `ContestEventScopeProvider` on contest lobby, `useFirstEnabledSportId()` on create forms. **Event scope** — `useSportActiveEvent(sportId)` or `useContestEvent(contest)`. Plugin hooks resolve via `useSportUIPlugin(sportId?)`.
 
 ### Component layers
 
-**Platform components** (sport-agnostic shell):
+**Platform components** (sport-agnostic shell in `client/src/components/platform/`):
 
-- `LineupSlotEditor` — N slots driven by `rosterRules.slotCount`
-- `CandidatePicker` — search and sort over generic `Candidate[]`
-- `LineupContestCard` — roster editor + contest entry tabs
-- `ContestLeaderboard` — scores, positions, timeline charts
-- `LineupManagement` — on-chain join/leave flow
-- `LeagueContestList` — cross-sport contest roster with sport badges
-- `LeagueCreateContestForm` — sport → event → settings → deploy
+- `CandidatePicker` — search and sort over `Candidate[]`
+- `SportLineupPickRow` — single pick row in roster editor
+- `SportParticipantRow` / `SportParticipantDetailModal` — display lists and scorecard modal
+- `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
+- `SportPredictionField` — delegates to plugin prediction input
+
+`LineupContestCard` composes the shell for lineup editing: `SportLineupPickRow` slots, `CandidatePicker` for swaps, and `SportPredictionField` for the winning-score tie-breaker. Feature components in `contest/`, `lineup/`, `userGroup/` use platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
+
+**Server sport registry** (`server/src/sports/registry.ts`) exports `getSportModule` and `requireSportModule` only.
 
 **Sport UI plugins** (injected via registry):
 
 ```typescript
 interface SportUIPlugin {
-  CandidateRow: React.FC<{ candidate: Candidate }>;
-  PickDetail: React.FC<{ pick: LineupPick }>;
+  CandidateRow: React.FC<CandidateRowProps>;
+  ParticipantRow: React.FC<ParticipantRowProps>;
+  ParticipantDetail: React.FC<ParticipantDetailProps>;
   PredictionField?: React.FC<PredictionProps>;
   EventSummary?: React.FC<{ event: CompetitionEvent }>;
 }
@@ -322,15 +332,17 @@ packages/
   secondary-pricing/      # Bonding curve math (sport-agnostic)
 
 server/
-  src/sports/registry.ts  # Plugin registry
-  src/routes/event.ts     # Generic event/candidate APIs
-  src/services/contest/   # Lifecycle + settlement (unchanged)
-  src/cron/scheduler.ts   # Multi-sport pipeline
+  src/sports/registry.ts       # SportModule registry
+  src/sports/propBetRegistry.ts # PropBetModule registry
+  src/routes/sports.ts         # GET /sports, active event, candidates
+  src/routes/lineups.ts        # Lineup CRUD
+  src/services/contest/        # Lifecycle + settlement
+  src/cron/scheduler.ts        # Multi-sport pipeline + side-bet quotes
 
 client/
-  src/sports/registry.ts  # UI plugin registry
-  src/components/lineup/   # Generic lineup shell
-  src/sports/pga-golf/    # Golf-specific UI components
+  src/sports/registry.ts       # SportUIPlugin registry
+  src/components/platform/     # Generic lineup/event shell
+  src/sports/pga-golf/         # Golf-specific UI components
 ```
 
 ---

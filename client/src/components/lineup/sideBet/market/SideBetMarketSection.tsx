@@ -5,19 +5,19 @@ import { resolveSideBetMarketState, toMarketGridState } from "./resolveSideBetMa
 import type { SideBetMarketSelectionDto } from "../../../../types/sideBet";
 
 export interface SideBetMarketSectionProps {
-  tournamentLineupId: string | null;
+  lineupId: string | null;
   onSelect: (selection: SideBetMarketSelectionDto) => void;
 }
 
 export const SideBetMarketSection: React.FC<SideBetMarketSectionProps> = ({
-  tournamentLineupId,
+  lineupId,
   onSelect,
 }) => {
-  const marketQuery = useSideBetMarketQuery(tournamentLineupId);
-  const marketState = resolveSideBetMarketState(tournamentLineupId, marketQuery);
+  const marketQuery = useSideBetMarketQuery(lineupId);
+  const marketState = resolveSideBetMarketState(lineupId, marketQuery);
   const gridState = toMarketGridState(marketState);
 
-  if (!tournamentLineupId) return null;
+  if (!lineupId) return null;
 
   return (
     <>

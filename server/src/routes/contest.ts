@@ -1,4 +1,5 @@
 import { Context, Hono } from "hono";
+import { golfPredictionValue } from "@cut/sport-pga-golf";
 import { prisma } from "../lib/prisma.js";
 import {
   contestQuerySchema,
@@ -7,13 +8,16 @@ import {
 } from "../schemas/contest.js";
 import { requireAuth, optionalAuth, getOptionalUserId } from "../middleware/auth.js";
 import { isStaffUserType } from "../middleware/admin.js";
-import { requireContestPrimaryActionsUnlocked } from "../middleware/tournamentStatus.js";
+import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
-import { transformLineupPlayer } from "../utils/playerTransform.js";
+import {
+  formatContestResponse,
+  loadLineupDetailsById,
+} from "../utils/formatContestResponse.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
-  getPlayerIdsFromLineup,
+  getParticipantIdsFromLineup,
 } from "../utils/lineupValidation.js";
 import {
   canAccessLeagueContest,
@@ -24,6 +28,7 @@ import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
+import { cloneLineup } from "../services/lineups/cloneLineup.js";
 import type { DetailedResult } from "../services/shared/types.js";
 import { getRewardDistributorAddress } from "../lib/referralConfig.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
@@ -42,23 +47,11 @@ async function leagueContestAccessDenied(
   return null;
 }
 
-type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
-
-const DEFAULT_USER_COLOR = "#9CA3AF";
-
-function pickUserColor(settings: unknown): string {
-  if (typeof settings !== "object" || settings === null) return DEFAULT_USER_COLOR;
-  const maybeColor = (settings as { color?: unknown }).color;
-  if (typeof maybeColor !== "string") return DEFAULT_USER_COLOR;
-  const color = maybeColor.trim();
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : DEFAULT_USER_COLOR;
-}
-
 const contestDetailSelect = {
   id: true,
   name: true,
   description: true,
-  tournamentId: true,
+  eventId: true,
   userGroupId: true,
   endTime: true,
   address: true,
@@ -68,7 +61,7 @@ const contestDetailSelect = {
   results: true,
   createdAt: true,
   updatedAt: true,
-  tournament: true,
+  event: true,
   userGroup: true,
   _count: {
     select: {
@@ -77,9 +70,6 @@ const contestDetailSelect = {
   },
 } as const;
 
-/**
- * Loads contest + lineups; skips heavy player joins when status is OPEN.
- */
 async function loadFormattedContestById(contestId: string) {
   const contest = await prisma.contest.findUnique({
     where: { id: contestId },
@@ -103,46 +93,22 @@ async function loadFormattedContestById(contestId: string) {
     return null;
   }
 
-  let toFormat: typeof contest = contest;
-
+  let lineupDetailsById: Awaited<ReturnType<typeof loadLineupDetailsById>> | undefined;
   if (contest.status !== "OPEN") {
-    const tlIds = [...new Set(contest.contestLineups.map((cl) => cl.tournamentLineupId))];
-    if (tlIds.length > 0) {
-      const tournamentLineupsWithPlayers = await prisma.tournamentLineup.findMany({
-        where: { id: { in: tlIds } },
-        include: {
-          players: {
-            include: {
-              tournamentPlayer: {
-                include: {
-                  player: true,
-                },
-              },
-            },
-          },
-        },
-      });
-      const byId = new Map(tournamentLineupsWithPlayers.map((tl) => [tl.id, tl]));
-      toFormat = {
-        ...contest,
-        contestLineups: contest.contestLineups.map((cl) => ({
-          ...cl,
-          tournamentLineup: byId.get(cl.tournamentLineupId) ?? cl.tournamentLineup,
-        })),
-      };
-    }
+    const lineupIds = [...new Set(contest.contestLineups.map((cl) => cl.lineupId))];
+    lineupDetailsById = await loadLineupDetailsById(lineupIds);
   }
 
-  const formatted = formatContestResponse(toFormat);
-  const results = toFormat.results as { detailedResults?: DetailedResult[] } | null;
-  const contestSettings = toFormat.settings as { oracle?: string } | null;
+  const formatted = formatContestResponse(contest, lineupDetailsById);
+  const results = contest.results as { detailedResults?: DetailedResult[] } | null;
+  const contestSettings = contest.settings as { oracle?: string } | null;
   const contestOracleAddress =
     typeof contestSettings?.oracle === "string" ? contestSettings.oracle : undefined;
   const onchainPayments =
-    toFormat.onchainPayments?.length &&
-    (toFormat.status === "SETTLED" || toFormat.status === "CLOSED")
+    contest.onchainPayments?.length &&
+    (contest.status === "SETTLED" || contest.status === "CLOSED")
       ? formatOnchainPaymentsForContest(
-          toFormat.onchainPayments,
+          contest.onchainPayments,
           results?.detailedResults,
           contestOracleAddress,
         )
@@ -151,63 +117,14 @@ async function loadFormattedContestById(contestId: string) {
   return { ...formatted, onchainPayments };
 }
 
-const formatContestLineup = (lineup: any, contestStatus: ContestStatus, tournamentId?: string) => {
-  if (!lineup?.tournamentLineup) {
-    return lineup;
-  }
-
-  const shouldMaskPlayers = contestStatus === "OPEN";
-  const players =
-    !shouldMaskPlayers && tournamentId && lineup.tournamentLineup.players
-      ? lineup.tournamentLineup.players.map((playerData: any) =>
-          transformLineupPlayer(playerData, tournamentId)
-        )
-      : [];
-
-  return {
-    ...lineup,
-    user: lineup.user
-      ? {
-          id: lineup.user.id,
-          name: lineup.user.name,
-          settings: {
-            color: pickUserColor(lineup.user.settings),
-          },
-        }
-      : undefined,
-    tournamentLineup: {
-      ...lineup.tournamentLineup,
-      players,
-    },
-  };
-};
-
-/** Used by contest list and GET /lineup/:tournamentId nested contests. */
-export const formatContestResponse = (contest: any, fallbackTournamentId?: string) => {
-  if (!contest?.contestLineups) {
-    return contest;
-  }
-
-  const tournamentId = contest.tournamentId ?? fallbackTournamentId;
-
-  return {
-    ...contest,
-    contestLineups: contest.contestLineups.map((lineup: any) =>
-      formatContestLineup(lineup, contest.status, tournamentId)
-    ),
-  };
-};
-
-// Get contests by tournament ID and chainId
 contestRouter.get("/", optionalAuth, async (c) => {
   try {
-    const tournamentId = c.req.query("tournamentId");
+    const eventId = c.req.query("eventId");
     const chainId = c.req.query("chainId");
     const userGroupId = c.req.query("userGroupId");
 
-    // Validate query parameters
     const validation = contestQuerySchema.safeParse({
-      tournamentId,
+      eventId,
       chainId: chainId ? parseInt(chainId) : undefined,
       userGroupId: userGroupId || undefined,
     });
@@ -218,29 +135,32 @@ contestRouter.get("/", optionalAuth, async (c) => {
           error: "Invalid query parameters",
           details: validation.error.errors,
         },
-        400
+        400,
       );
     }
 
     const {
-      tournamentId: validTournamentId,
+      eventId: validEventId,
       chainId: validChainId,
       userGroupId: validUserGroupId,
     } = validation.data;
 
     const userId = getOptionalUserId(c);
 
-    // Build where clause - if chainId is not provided, return contests from all chains
-    const whereClause: any = {
-      tournamentId: validTournamentId,
+    const whereClause: {
+      eventId: string;
+      chainId?: number | { in: number[] };
+      userGroupId?: string;
+      OR?: Array<{ userGroupId: null } | { userGroupId: { in: string[] } }>;
+    } = {
+      eventId: validEventId,
     };
 
     if (validChainId !== undefined) {
       whereClause.chainId = validChainId;
     } else {
-      // No chainId provided - return contests from all chains
       whereClause.chainId = {
-        in: [8453, 84532], // Base and Base Sepolia
+        in: [8453, 84532],
       };
     }
 
@@ -257,15 +177,13 @@ contestRouter.get("/", optionalAuth, async (c) => {
       ];
     }
 
-    // List payload: scalars + slim contest lineups (no tournamentLineup / player joins).
-    // Include `user` (minimal) for lineup list headers; detail + players on `GET /contests/:id` and `GET /lineup/:tournamentId`.
     const contests = await prisma.contest.findMany({
       where: whereClause,
       select: {
         id: true,
         name: true,
         description: true,
-        tournamentId: true,
+        eventId: true,
         userGroupId: true,
         endTime: true,
         address: true,
@@ -286,7 +204,7 @@ contestRouter.get("/", optionalAuth, async (c) => {
             id: true,
             contestId: true,
             userId: true,
-            tournamentLineupId: true,
+            lineupId: true,
             position: true,
             score: true,
             status: true,
@@ -300,14 +218,19 @@ contestRouter.get("/", optionalAuth, async (c) => {
                 settings: true,
               },
             },
+            lineup: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Format the contests data to transform player structure
-    const formattedContests = contests.map((contest: any) =>
-      formatContestResponse(contest, validTournamentId)
+    const formattedContests = contests.map((contest) =>
+      formatContestResponse(contest, undefined, validEventId),
     );
 
     return c.json(formattedContests);
@@ -317,7 +240,6 @@ contestRouter.get("/", optionalAuth, async (c) => {
   }
 });
 
-// Record secondary (prediction) participant for push payouts after settlement
 contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
   try {
     const contestId = c.req.param("id");
@@ -380,7 +302,6 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
   }
 });
 
-// Timeline chart data only (keeps GET /:id payload small; client loads both in parallel)
 contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   try {
     const contestId = await resolveContestDbId(c.req.param("id"));
@@ -408,7 +329,6 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   }
 });
 
-// Get contest by ID (no embedded timeline — use GET /:id/timeline)
 contestRouter.get("/:id", optionalAuth, async (c) => {
   try {
     const contestId = await resolveContestDbId(c.req.param("id"));
@@ -432,12 +352,10 @@ contestRouter.get("/:id", optionalAuth, async (c) => {
   }
 });
 
-// Create new contest
 contestRouter.post("/", requireAuth, async (c) => {
   try {
     const body = await c.req.json();
 
-    // Validate request body
     const validation = createContestSchema.safeParse(body);
     if (!validation.success) {
       return c.json(
@@ -445,11 +363,11 @@ contestRouter.post("/", requireAuth, async (c) => {
           error: "Invalid request body",
           details: validation.error.errors,
         },
-        400
+        400,
       );
     }
 
-    const { name, description, tournamentId, userGroupId, endDate, address, chainId, settings } =
+    const { name, description, eventId, userGroupId, endDate, address, chainId, settings } =
       validation.data;
 
     const user = c.get("user");
@@ -459,19 +377,37 @@ contestRouter.post("/", requireAuth, async (c) => {
       if (!isAdmin) {
         return c.json(
           { error: "You must be a league admin to create contests for this group" },
-          403
+          403,
         );
       }
     } else if (!isStaffUserType(user.userType)) {
       return c.json({ error: "Forbidden" }, 403);
     }
 
+    const event = await prisma.competitionEvent.findUnique({
+      where: { id: eventId },
+      select: { id: true },
+    });
+    if (!event) {
+      return c.json({ error: "Event not found" }, 404);
+    }
+
     const endTime = new Date(endDate);
 
-    const contestData: any = {
+    const contestData: {
+      name: string;
+      description: string | null;
+      eventId: string;
+      userGroupId: string | null;
+      endTime: Date;
+      address: string;
+      chainId: number;
+      status: string;
+      settings?: object;
+    } = {
       name,
       description: description || null,
-      tournamentId,
+      eventId,
       userGroupId: userGroupId || null,
       endTime,
       address,
@@ -486,17 +422,15 @@ contestRouter.post("/", requireAuth, async (c) => {
     const contest = await prisma.contest.create({
       data: contestData,
       include: {
-        tournament: true,
+        event: true,
         userGroup: true,
       },
     });
 
-    // Fire-and-forget contract verification for the freshly deployed ContestController instance.
-    // This is intentionally not awaited; we only want to kick off verification after the DB row is created.
     if (settings?.paymentTokenAddress && settings?.oracle) {
       const bps =
         settings.primaryDepositSecondarySubsidyBps ??
-        (settings as any).primaryEntryInvestmentShareBps;
+        (settings as { primaryEntryInvestmentShareBps?: number }).primaryEntryInvestmentShareBps;
 
       const referralNetworkBps =
         typeof (settings as { referralNetworkBps?: number }).referralNetworkBps === "number"
@@ -545,23 +479,24 @@ contestRouter.post("/", requireAuth, async (c) => {
   }
 });
 
-// Add lineup to contest
 contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, async (c) => {
   try {
-    const { tournamentLineupId, entryId } = await c.req.json();
+    const { lineupId, entryId } = await c.req.json();
     const user = c.get("user");
     const contestId = c.req.param("id");
 
-    // Validate entryId is provided
     if (!entryId) {
       return c.json({ error: "Entry ID is required" }, 400);
     }
+    if (!lineupId) {
+      return c.json({ error: "Lineup ID is required" }, 400);
+    }
 
-    // Fetch contest to check if it's userGroup-specific
     const contestCheck = await prisma.contest.findUnique({
       where: { id: contestId },
       select: {
         id: true,
+        eventId: true,
         userGroupId: true,
       },
     });
@@ -570,7 +505,6 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       return c.json({ error: "Contest not found" }, 404);
     }
 
-    // If contest has a userGroupId, verify user is a member
     if (contestCheck.userGroupId) {
       const accessDenied = await leagueContestAccessDenied(c, contestCheck.userGroupId);
       if (accessDenied) {
@@ -578,26 +512,58 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       }
     }
 
-    const tournamentLineup = await prisma.tournamentLineup.findUnique({
-      where: { id: tournamentLineupId },
-      select: { winningScorePrediction: true },
+    const lineup = await prisma.lineup.findUnique({
+      where: { id: lineupId },
+      select: {
+        id: true,
+        eventId: true,
+        userId: true,
+        contestId: true,
+        prediction: true,
+      },
     });
 
-    if (!tournamentLineup) {
+    if (!lineup || lineup.eventId !== contestCheck.eventId) {
       return c.json({ error: "Lineup not found" }, 404);
     }
 
-    const playerIds = await getPlayerIdsFromLineup(tournamentLineupId);
+    if (lineup.userId !== user.userId) {
+      return c.json({ error: "Lineup does not belong to this user" }, 401);
+    }
 
-    if (!hasMinimumPlayers(playerIds)) {
+    let resolvedLineupId = lineupId;
+    if (lineup.contestId != null && lineup.contestId !== contestId) {
+      const cloned = await cloneLineup({
+        sourceLineupId: lineupId,
+        userId: user.userId,
+        targetContestId: contestId,
+      });
+      if ("error" in cloned) {
+        if (cloned.error === "not_found") {
+          return c.json({ error: "Lineup not found" }, 404);
+        }
+        return c.json({ error: "Contest not found" }, 404);
+      }
+      resolvedLineupId = cloned.lineupId;
+    }
+
+    const resolvedLineup = await prisma.lineup.findUnique({
+      where: { id: resolvedLineupId },
+      select: { prediction: true },
+    });
+
+    const participantIds = await getParticipantIdsFromLineup(resolvedLineupId);
+
+    if (!hasMinimumPlayers(participantIds)) {
       return c.json({ error: "Lineup must have at least 1 player" }, 400);
     }
 
+    const prediction = golfPredictionValue(resolvedLineup?.prediction ?? lineup.prediction);
     const isDuplicate = await isDuplicateInContest(
       user.userId,
       contestId,
-      playerIds,
-      tournamentLineup.winningScorePrediction,
+      participantIds,
+      prediction,
     );
     if (isDuplicate) {
       return c.json(
@@ -609,11 +575,10 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       );
     }
 
-    // Check if this specific lineup is already in this contest (by tournamentLineupId)
     const existingLineup = await prisma.contestLineup.findFirst({
       where: {
-        contestId: contestId,
-        tournamentLineupId: tournamentLineupId,
+        contestId,
+        lineupId: resolvedLineupId,
       },
     });
 
@@ -621,30 +586,26 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       return c.json({ error: "This lineup has already been added to this contest" }, 400);
     }
 
-    // Use the entryId provided by the client (which matches what's on the blockchain)
-    // The client generates this deterministically from contestAddress + tournamentLineupId
-
-    // Check if this entryId already exists in this contest (shouldn't happen with proper validation, but extra safety)
     const existingEntry = await prisma.contestLineup.findFirst({
       where: {
-        contestId: contestId,
-        entryId: entryId,
+        contestId,
+        entryId,
       },
     });
 
     if (existingEntry) {
       return c.json(
         { error: "An entry with this player composition already exists in this contest" },
-        400
+        400,
       );
     }
 
     await prisma.contestLineup.create({
       data: {
-        contestId: contestId,
-        tournamentLineupId,
+        contestId,
+        lineupId: resolvedLineupId,
         userId: user.userId,
-        entryId: entryId,
+        entryId,
         status: "ACTIVE",
       },
     });
@@ -661,7 +622,6 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
   }
 });
 
-// Remove lineup from contest
 contestRouter.delete(
   "/:id/lineups/:lineupId",
   requireContestPrimaryActionsUnlocked,
@@ -672,11 +632,10 @@ contestRouter.delete(
       const contestId = c.req.param("id");
       const contestLineupId = c.req.param("lineupId");
 
-      // First verify the lineup belongs to this contest
       const lineup = await prisma.contestLineup.findFirst({
         where: {
           id: contestLineupId,
-          contestId: contestId,
+          contestId,
         },
       });
 
@@ -684,12 +643,10 @@ contestRouter.delete(
         return c.json({ error: "Lineup not found in this contest" }, 404);
       }
 
-      // then verify the lineup belongs to this user
-      if (lineup?.userId !== user.userId) {
+      if (lineup.userId !== user.userId) {
         return c.json({ error: "Lineup does not belong to this user" }, 401);
       }
 
-      // Delete the lineup
       await prisma.contestLineup.delete({
         where: {
           id: contestLineupId,
@@ -706,7 +663,7 @@ contestRouter.delete(
       console.error("Error removing lineup from contest:", error);
       return c.json({ error: "Failed to remove lineup from contest" }, 500);
     }
-  }
+  },
 );
 
 export default contestRouter;

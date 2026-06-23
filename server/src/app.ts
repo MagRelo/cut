@@ -102,57 +102,7 @@ async function resolveMetadataForPath(
     type: "website",
   };
 
-  if (path === "/leaderboard") {
-    try {
-      const playerIdParam = requestUrl.searchParams.get("playerId")?.trim();
-      const tournament = await prisma.tournament.findFirst({
-        where: { manualActive: true },
-        select: { id: true, name: true },
-      });
-
-      if (playerIdParam && tournament?.id && tournament.name) {
-        const player = await prisma.player.findFirst({
-          where: {
-            id: playerIdParam,
-            tournamentPlayers: {
-              some: {
-                tournamentId: tournament.id,
-              },
-            },
-          },
-          select: {
-            pga_displayName: true,
-            pga_firstName: true,
-            pga_lastName: true,
-          },
-        });
-
-        const playerName =
-          player?.pga_displayName?.trim() ||
-          [player?.pga_firstName?.trim(), player?.pga_lastName?.trim()]
-            .filter(Boolean)
-            .join(" ");
-
-        if (playerName) {
-          return {
-            ...defaults,
-            title: `${playerName} | ${tournament.name}`,
-            description: `View ${playerName} on the ${tournament.name} leaderboard on ${BRAND_PROSE}.`,
-          };
-        }
-      }
-
-      if (tournament?.name) {
-        return {
-          ...defaults,
-          title: `${tournament.name}${TITLE_SUFFIX}`,
-          description: `Live leaderboard and scoring for ${tournament.name} on ${BRAND_PROSE}.`,
-        };
-      }
-    } catch (error) {
-      console.error("Error resolving leaderboard metadata:", error);
-    }
-
+  if (/^\/sports\/[^/]+\/leaderboard$/.test(path)) {
     return defaults;
   }
 

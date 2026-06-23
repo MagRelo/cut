@@ -6,7 +6,11 @@ import { type ContestSettings, type CreateContestInput } from "../../types/conte
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
-import { useActiveTournament } from "../../hooks/useTournamentData";
+import { useFirstEnabledSportId } from "../../hooks/useSportData";
+import {
+  CreateContestEventPicker,
+  useSelectedSportEvent,
+} from "./CreateContestEventPicker";
 import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 import {
   buildContestSettings,
@@ -21,7 +25,14 @@ export const CreateContestForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const lockedUserGroupId = searchParams.get("userGroupId") ?? undefined;
-  const { tournament: currentTournament } = useActiveTournament();
+  const firstSportId = useFirstEnabledSportId();
+  const [sportId, setSportId] = useState("");
+  useEffect(() => {
+    if (!sportId && firstSportId) {
+      setSportId(firstSportId);
+    }
+  }, [firstSportId, sportId]);
+  const { selection: selectedEvent } = useSelectedSportEvent(sportId);
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();
@@ -36,7 +47,7 @@ export const CreateContestForm = () => {
     transactionId: "",
     address: "",
     chainId: chainId ?? 0,
-    tournamentId: currentTournament?.id ?? "",
+    eventId: selectedEvent?.eventId ?? "",
     settings: buildContestSettings(
       chainId ?? 0,
       paymentTokenAddress || "",
@@ -68,6 +79,13 @@ export const CreateContestForm = () => {
   });
 
   useEffect(() => {
+    if (!selectedEvent?.eventId) return;
+    setFormData((prev) =>
+      prev.eventId === selectedEvent.eventId ? prev : { ...prev, eventId: selectedEvent.eventId },
+    );
+  }, [selectedEvent?.eventId]);
+
+  useEffect(() => {
     if (lockedUserGroupId && adminLeagues.some((group) => group.id === lockedUserGroupId)) {
       setFormData((prev) => ({ ...prev, userGroupId: lockedUserGroupId }));
     }
@@ -79,7 +97,7 @@ export const CreateContestForm = () => {
       transactionId: "",
       address: "",
       chainId: chainId ?? 0,
-      tournamentId: currentTournament?.id ?? "",
+      eventId: selectedEvent?.eventId ?? "",
       settings: buildContestSettings(
         chainId ?? 0,
         paymentTokenAddress || "",
@@ -98,7 +116,7 @@ export const CreateContestForm = () => {
   }, []);
 
   useEffect(() => {
-    const end = currentTournament?.endDate;
+    const end = selectedEvent?.endDate;
     setFormData((prev) => {
       if (!end) {
         if (prev.settings.expiryTimestamp === 0) return prev;
@@ -113,7 +131,7 @@ export const CreateContestForm = () => {
       if (prev.settings.expiryTimestamp === ts) return prev;
       return { ...prev, settings: { ...prev.settings, expiryTimestamp: ts } };
     });
-  }, [currentTournament?.endDate, expiryDaysAfterTournament]);
+  }, [selectedEvent?.endDate, expiryDaysAfterTournament]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +139,7 @@ export const CreateContestForm = () => {
     const s = formData.settings;
     const pending: CreateContestInput = {
       ...formData,
-      tournamentId: currentTournament?.id ?? "",
+      eventId: selectedEvent?.eventId ?? "",
       chainId: chainId ?? 0,
       userGroupId: formData.userGroupId || undefined,
       settings: {
@@ -153,6 +171,12 @@ export const CreateContestForm = () => {
     <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto p-4">
       <div className="space-y-4 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
         <h3 className="text-lg font-semibold text-blue-900">Contest</h3>
+
+        <CreateContestEventPicker
+          sportId={sportId}
+          onSportIdChange={setSportId}
+          disabled={isProcessing}
+        />
 
         <div className="space-y-2">
           <label htmlFor="name" className="block font-medium">
@@ -324,17 +348,17 @@ export const CreateContestForm = () => {
             className="w-full p-2 border rounded-md"
           />
           <div className="p-2 bg-white border rounded-md text-sm">
-            {currentTournament?.endDate
+            {selectedEvent?.endDate
               ? new Date(
-                  new Date(currentTournament.endDate).getTime() +
+                  new Date(selectedEvent.endDate).getTime() +
                     expiryDaysAfterTournament * 24 * 60 * 60 * 1000,
                 ).toLocaleString()
-              : "Tournament not selected"}
+              : "Event not selected"}
           </div>
           <p className="text-sm text-gray-600">
-            Tournament end:{" "}
-            {currentTournament?.endDate
-              ? new Date(currentTournament.endDate).toLocaleString()
+            Event end:{" "}
+            {selectedEvent?.endDate
+              ? new Date(selectedEvent.endDate).toLocaleString()
               : "Not available"}
           </p>
         </div>

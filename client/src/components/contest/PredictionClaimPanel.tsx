@@ -4,6 +4,7 @@ import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress
 import { useClaimPredictionPayout } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { type Contest } from "../../types/contest";
+import { contestLineupDisplayName } from "../../lib/candidateUtils";
 
 interface PredictionClaimPanelProps {
   contest: Contest;
@@ -49,7 +50,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
     // Find the lineup that matches this winner
     const winningLineup = contest.contestLineups?.find(
       (lineup) =>
-        lineup.user?.name === winner.username && lineup.tournamentLineup?.name === winner.lineupName
+        lineup.user?.name === winner.username && contestLineupDisplayName(lineup) === winner.lineupName
     );
 
     return winningLineup?.entryId || null;
@@ -144,7 +145,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
             {winningPositions.map((position) => {
               const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
               const userName = lineup?.user?.name || "Unknown";
-              const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+              const lineupName = lineup ? contestLineupDisplayName(lineup) : "Lineup";
 
               const isClaiming = claimingEntryId === position.entryId;
 
@@ -197,7 +198,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
             {losingPositions.map((position) => {
               const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
               const userName = lineup?.user?.name || "Unknown";
-              const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+              const lineupName = lineup ? contestLineupDisplayName(lineup) : "Lineup";
 
               return (
                 <div key={position.entryId} className="p-4 bg-gray-50">

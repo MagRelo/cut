@@ -1,25 +1,14 @@
 // Reusable Prisma include fragments for consistent queries
 
 /**
- * Standard include for fetching tournament player data
- * Use when querying TournamentLineupPlayer -> TournamentPlayer
+ * Lineup picks with event participant and participant profile data.
  */
-export const tournamentPlayerInclude = {
-  include: {
-    player: true,
-  },
-} as const;
-
-/**
- * Standard include for fetching lineup players with full tournament data
- * Use when querying TournamentLineup -> TournamentLineupPlayer -> TournamentPlayer -> Player
- */
-export const lineupPlayersInclude = {
-  players: {
+export const lineupPicksInclude = {
+  picks: {
     include: {
-      tournamentPlayer: {
+      eventParticipant: {
         include: {
-          player: true,
+          participant: true,
         },
       },
     },
@@ -27,30 +16,19 @@ export const lineupPlayersInclude = {
 } as const;
 
 /**
- * Standard include for fetching contest lineups with full player data
- * Use when querying Contest -> ContestLineup -> TournamentLineup -> Players
+ * Standard include for fetching contest lineups with full pick data.
  */
 export const contestLineupsInclude = {
   include: {
     user: true,
-    tournamentLineup: {
-      include: {
-        players: {
-          include: {
-            tournamentPlayer: {
-              include: {
-                player: true,
-              },
-            },
-          },
-        },
-      },
+    lineup: {
+      include: lineupPicksInclude,
     },
   },
 } as const;
 
 /**
- * Contest lineups without tournament lineup players (avoids heavy joins when players are not needed, e.g. OPEN contests).
+ * Contest lineups without pick joins (lighter payload for OPEN contests).
  */
 export const contestLineupsIncludeWithoutPlayers = {
   include: {
@@ -61,6 +39,6 @@ export const contestLineupsIncludeWithoutPlayers = {
         settings: true,
       },
     },
-    tournamentLineup: true,
+    lineup: true,
   },
 } as const;

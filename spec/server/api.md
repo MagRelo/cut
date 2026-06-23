@@ -1,244 +1,209 @@
-# Server API Documentation
+# Server API reference (v4)
 
-## Base URL
-
-- **Development**: `http://localhost:3000/api`
-- **Production**: `https://your-domain.com/api`
+Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
 ## Authentication
 
-Protected endpoints expect:
+Protected routes:
 
-- **Header**: `Authorization: Bearer <privy_access_token>`
-- **Optional**: `X-Cut-Chain-Id` — preferred chain when resolving the user’s wallet for that request
+```
+Authorization: Bearer <privy_access_token>
+X-Cut-Chain-Id: <optional chain id for wallet resolution>
+```
 
-The server verifies the token with Privy, attaches the Cut user to the request context, and provisions `User` / `UserWallet` records from the Privy user when needed.
+---
 
-Unauthenticated routes are explicitly noted below (e.g. health, some tournament reads).
+## Route index
 
-## API Routes
+| Prefix | Router file | Status |
+|--------|-------------|--------|
+| `/health` | `api.ts` | ✅ |
+| `/auth` | `auth.ts` | ✅ |
+| `/sports` | `sports.ts` | ✅ |
+| `/lineups` | `lineups.ts` | ✅ |
+| `/contests` | `contest.ts` | ✅ |
+| `/userGroups` | `userGroup.ts` | ✅ |
+| `/bets` | `bets.ts` | ✅ (flag) |
+| `/admin` | `admin.ts` | ✅ staff |
+| `/cron` | `cron.ts` | ✅ |
+| `/unsubscribe` | `unsubscribe.ts` | ✅ |
+| `/tournaments` | `legacy.ts` | ❌ 501 |
+| `/lineup` | `legacy.ts` | ❌ 501 |
 
-### Health Check
+---
 
-#### `GET /api/health`
-- **Description**: API health check
-- **Auth**: None
-- **Response**: `{ status: "healthy", service: "API", timestamp: string }`
+## Health
 
-### Authentication (`/api/auth`)
+### `GET /api/health`
+No auth. `{ status, service, timestamp }`
 
-#### `GET /api/auth/me`
-- **Description**: Get current user information
-- **Auth**: Required
-- **Response**: User object with tournament lineups and user groups
+---
 
-#### `PUT /api/auth/update`
-- **Description**: Update user name
-- **Auth**: Required
-- **Body**: `{ name: string }`
-- **Response**: `{ success: boolean, user: User }`
+## Auth (`/api/auth`)
 
-#### `PUT /api/auth/settings`
-- **Description**: Update user settings
-- **Auth**: Required
-- **Body**: `{ settings: object }`
-- **Response**: `{ success: boolean, settings: object }`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/me` | ✅ | User profile, `lineups` for active event, `userGroups` |
+| GET | `/referrals/summary` | ✅ | Referral tree summary |
+| PUT | `/update` | ✅ | Update display name |
+| PUT | `/settings` | ✅ | Update settings JSON |
+| GET | `/contests` | ✅ | User's contest history |
 
-#### `GET /api/auth/contests`
-- **Description**: Get user's contest history
-- **Auth**: Required
-- **Response**: `{ contests: Contest[] }`
+---
 
-### Tournaments (`/api/tournaments`)
+## Sports (`/api/sports`)
 
-#### `GET /api/tournaments/active/shell`
-- **Description**: Week/setup fields for the active tournament (init-tournament; no live status or players)
-- **Auth**: None
-- **Response**: `{ tournament: TournamentShell }` — `id`, `pgaTourId`, `name`, `startDate`, `endDate`, `beautyImage`, `summarySections`, `timezone`, `manualActive`, timestamps
-- **Cache**: 24 hours (HTTP); client `staleTime` 24h, no poll
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | — | List enabled sports (`SportSummary[]`) |
+| GET | `/:sportId/events/active` | — | Active event + status. 404 if none. |
+| GET | `/:sportId/events/:eventId/candidates` | — | `{ candidates: Candidate[] }` |
 
-#### `GET /api/tournaments/active/live`
-- **Description**: Cron-updated round status and in-field player scores for the active tournament (single payload)
-- **Auth**: None
-- **Response**: `{ tournament: TournamentLive, players: PlayerWithTournamentData[] }`
-- **Cache**: ~2 minutes (HTTP); client refetches every 5 minutes (aligned with cron pipeline)
+**Active event response:** `{ sport, event, status }` where `event` is `CompetitionEvent` with `metadata` JSON (golf: name, dates, course, round status, etc.).
 
-The monolithic `GET /api/tournaments/active` and the split `active/metadata` + `active/players` endpoints have been **removed**. Clients merge shell + live via `mergeTournament()` and `useActiveTournament()`.
+---
 
-### Lineups (`/api/lineup`)
+## Lineups (`/api/lineups`)
 
-Full behavior for `winningScorePrediction`, duplicate rules, and contest ranking: [lineup tie-breaker](../../docs/lineup-tie-breaker.md).
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/:eventId` | ✅ | User's lineups for event `{ lineups: [...] }` |
+| POST | `/:eventId` | ✅ | **Create** a new lineup |
+| POST | `/clone/:lineupId` | ✅ | **Clone** picks/prediction into a new lineup for `contestId` |
+| PUT | `/:lineupId` | ✅ | **Update** an existing lineup |
 
-#### `POST /api/lineup/:tournamentId`
-- **Description**: Create new tournament lineup
-- **Auth**: Required
-- **Body**: `{ players: string[], name?: string, winningScorePrediction?: number }` — `winningScorePrediction` is 1–250; if omitted, server assigns a random value in 125–175
-- **Response**: `{ lineups: TournamentLineup[] }` (includes `winningScorePrediction`)
-
-#### `PUT /api/lineup/:lineupId`
-- **Description**: Update existing lineup
-- **Auth**: Required
-- **Body**: `{ players: string[], name?: string, winningScorePrediction?: number }` — optional prediction update (1–250)
-- **Response**: `{ lineups: TournamentLineup[] }` (includes `winningScorePrediction`)
-
-#### `GET /api/lineup/lineup/:lineupId`
-- **Description**: Get specific lineup by ID
-- **Auth**: Required
-- **Response**: `{ lineups: TournamentLineup[] }`
-
-#### `GET /api/lineup/:tournamentId`
-- **Description**: Get all lineups for tournament
-- **Auth**: Required
-- **Response**: `{ lineups: TournamentLineup[] }`
-
-### Contests (`/api/contests`)
-
-#### `GET /api/contests`
-- **Description**: List contests for a tournament. Returns public contests for all callers; when authenticated, also includes league contests for groups the caller belongs to.
-- **Auth**: Optional (`Authorization` merges league contests for members)
-- **Query Params**:
-  - `tournamentId`: string (required)
-  - `chainId`: number (optional — omit to return Base + Base Sepolia)
-  - `userGroupId`: string (optional — scope to one league; caller must be a member)
-- **Response**: `Contest[]` (includes `userGroup: { id, name }` when scoped to a league)
-
-#### `GET /api/contests/:id`
-- **Description**: Get contest by database id or contract address. League contests return **404** for non-members.
-- **Auth**: Optional (required implicitly for league contests)
-- **Response**: `Contest`
-
-#### `GET /api/contests/:id/timeline`
-- **Description**: Timeline chart data for a contest. League contests return **404** for non-members.
-- **Auth**: Optional (required implicitly for league contests)
-
-#### `POST /api/contests`
-- **Description**: Create new contest
-- **Auth**: Required
-- **Authorization**: App staff (`ADMIN` / `SUPER_ADMIN`) for public contests; league `ADMIN` when `userGroupId` is set
-- **Body**: `{ name: string, description?: string, tournamentId: string, userGroupId?: string, endDate: string|number, address: string, chainId: number, settings?: object }`
-- **Response**: `Contest` (201)
-
-#### `POST /api/contests/:id/lineups`
-- **Description**: Add lineup to contest. League contests return **404** for non-members.
-- **Auth**: Required
-- **Body**: `{ tournamentLineupId: string, entryId: string }`
-- **Response**: `Contest` (201)
-
-#### `DELETE /api/contests/:id/lineups/:lineupId`
-- **Description**: Remove lineup from contest
-- **Auth**: Required
-- **Response**: `Contest`
-
-### User Groups / Leagues (`/api/userGroups`)
-
-Product term: **League**. All routes require authentication unless noted.
-
-#### `GET /api/userGroups`
-- **Description**: List leagues the caller belongs to (membership-scoped; no public directory)
-- **Auth**: Required
-- **Response**: `{ userGroups: UserGroupListItem[] }`
-
-#### `POST /api/userGroups/join`
-- **Description**: Self-join a league via invite code
-- **Auth**: Required
-- **Body**: `{ inviteCode: string }`
-- **Response**: `UserGroupDetail` (201)
-- **Errors**: `404` invalid code; `409` already a member (includes `userGroupId` in body)
-
-#### `GET /api/userGroups/:id`
-- **Description**: League detail with members
-- **Auth**: Required; **members only** (non-members receive `404`)
-- **Response**: `UserGroupDetail` — admins also receive `inviteCode` and `inviteUrl` when a code exists
-
-#### `POST /api/userGroups`
-- **Description**: Create league; creator becomes `ADMIN`
-- **Auth**: Required
-- **Body**: `{ name: string, description?: string }`
-- **Response**: `UserGroupDetail` (201)
-
-#### `PUT /api/userGroups/:id`
-- **Description**: Update league name/description
-- **Auth**: Required; league `ADMIN`
-- **Body**: `{ name?: string, description?: string }`
-- **Response**: `{ id, name, description, memberCount, contestCount, ... }`
-
-#### `DELETE /api/userGroups/:id`
-- **Description**: Delete league and memberships; contests keep `userGroupId` → null
-- **Auth**: Required; league `ADMIN`
-- **Response**: `{ success: boolean, message: string }`
-
-#### `GET /api/userGroups/:id/members`
-- **Description**: List league members
-- **Auth**: Required; **members only** (`404` for non-members)
-- **Response**: `{ members: UserGroupMember[] }`
-
-#### `POST /api/userGroups/:id/members`
-- **Description**: Add member by wallet address
-- **Auth**: Required; league `ADMIN`
-- **Body**: `{ walletAddress: string, role?: "MEMBER" | "ADMIN" }` (defaults to `MEMBER`)
-- **Response**: `UserGroupMember` (201)
-
-#### `DELETE /api/userGroups/:id/members/:userId`
-- **Description**: Remove member (admin or self; cannot remove last admin)
-- **Auth**: Required
-- **Response**: `{ success: boolean, message: string }`
-
-#### `POST /api/userGroups/:id/invite`
-- **Description**: Generate or rotate invite code
-- **Auth**: Required; league `ADMIN`
-- **Response**: `{ inviteCode: string, inviteUrl: string }` — `inviteUrl` uses `APP_PUBLIC_URL` / `PUBLIC_APP_URL`
-
-**Client routes:** `/user-groups`, `/user-groups/create`, `/user-groups/:id`, `/user-groups/join/:code`
-
-### Cron (`/api/cron`)
-
-#### `POST /api/cron/trigger`
-- **Description**: Manually trigger cron pipeline (admin)
-- **Auth**: Required (admin)
-- **Response**: `{ success: boolean, message: string }`
-
-## Response Formats
-
-### Success Response
+**POST / PUT body:**
 ```json
 {
-  "data": { ... },
-  "success": true
+  "picks": ["<eventParticipantId>", "..."],
+  "name": "optional",
+  "contestId": "optional on create; required on clone",
+  "prediction": { "type": "winningScore", "value": 142 }
 }
 ```
 
-### Error Response
+- `POST` always creates a new row; rejects duplicate roster + prediction **within the same contest** when `contestId` is set
+- `PUT` updates picks/name/prediction for the given `lineupId`
+- Validates via `SportModule.validateRoster`
+- `requireEventEditable` / `requireLineupEditable` — blocked after event is live/complete
+- Marks side-bet market stale on save
+
+---
+
+## Contests (`/api/contests`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | optional | List contests for an **event** |
+| GET | `/:id` | optional | Contest detail (id or contract address) |
+| GET | `/:id/timeline` | optional | Score/position timeline |
+| POST | `/` | ✅ | Create contest (staff or league admin) |
+| POST | `/:id/lineups` | ✅ | Join contest with lineup |
+| DELETE | `/:id/lineups` | ✅ | Leave contest |
+| POST | `/:id/secondary-participants` | ✅ | Record secondary market participant |
+
+**GET `/` query:**
+- `eventId` (required) — was `tournamentId` in legacy
+- `chainId` (optional)
+- `userGroupId` (optional) — league scope; member required
+
+**POST `/` body:** `eventId`, `name`, `address`, `chainId`, `settings`, optional `userGroupId`, `description`, `endDate`
+
+League contests return **404** to non-members.
+
+---
+
+## Leagues (`/api/userGroups`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | ✅ | Leagues for current user |
+| POST | `/` | ✅ | Create league (creator = ADMIN) |
+| POST | `/join` | ✅ | Join via invite code |
+| GET | `/:id` | ✅ member | League detail + members |
+| PUT | `/:id` | ✅ admin | Update name/description |
+| DELETE | `/:id` | ✅ admin | Delete league |
+| GET | `/:id/contests` | ✅ member | All league contests across events |
+| GET | `/:id/members` | ✅ member | Member list |
+| POST | `/:id/members` | ✅ admin | Add member |
+| DELETE | `/:id/members/:userId` | ✅ | Remove member |
+| POST | `/:id/invite` | ✅ admin | Generate invite code |
+
+Client routes use `/leagues/*`; API path remains `/userGroups` for compatibility.
+
+---
+
+## Side bets (`/api/bets`)
+
+Requires `SIDE_BETS_ENABLED=true`.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/side/lineup/:lineupId/market` | ✅ | Market + selections for lineup |
+| POST | `/side/tickets` | ✅ | Place ticket |
+| GET | `/side/tickets` | ✅ | User's tickets (optional filters) |
+
+**Place ticket body:** `lineupId`, `hitsRequired` (2\|3\|4), `topN` (5\|10\|20), `stakeAmount`, optional `transactionHashes`
+
+Response includes `playerIds` (= `eventParticipantIds`) for client compat.
+
+---
+
+## Admin (`/api/admin`)
+
+Staff only (`requireAdmin`).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/dashboard` | Ops dashboard. Query: `eventId` or `tournamentId` alias |
+| POST | `/contests/lock-eligible` | Batch lock contests |
+| GET | `/users` | User list + on-chain balances |
+| GET | `/users/:id` | User detail |
+| GET | `/bets/side/tournament-report` | Side-bet exposure report |
+| POST | `/bets/side/lock` | Lock side-bet markets |
+| POST | `/bets/side/settle` | Settle side-bet tickets |
+| POST | `/bets/side/close` | Close markets |
+| POST | `/test-email` | Send preview email (`mode`: preview kinds) |
+
+---
+
+## Cron (`/api/cron`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/status` | Scheduler enabled + active job names |
+
+---
+
+## Unsubscribe (`/api/unsubscribe`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Marketing unsubscribe (signed token) |
+
+---
+
+## Legacy (501)
+
+`GET|POST|PUT|DELETE /api/tournaments/*` and `/api/lineup/*` return:
+
 ```json
 {
-  "error": "Error message",
-  "details": [ ... ] // Optional validation errors
+  "error": "Endpoint unavailable during platform rewrite",
+  "message": "Use /api/sports and /api/lineups for the new platform APIs"
 }
 ```
 
-## Status Codes
+---
 
-- **200**: Success
-- **201**: Created
-- **400**: Bad Request (validation error)
-- **401**: Unauthorized (authentication required)
-- **403**: Forbidden (insufficient permissions)
-- **404**: Not Found
-- **500**: Internal Server Error
+## Client mapping
 
-## Caching
-
-Some endpoints include cache headers:
-- **Tournament Metadata**: 5 minutes
-- **Tournament Data**: 2 minutes
-- **Static Assets**: 1 hour
-
-## Rate Limiting
-
-Currently no rate limiting implemented. Consider adding for production.
-
-## CORS
-
-CORS configured for:
-- Development: `http://localhost:5173`, `http://localhost:3000`
-- Production: Configured via `ALLOWED_ORIGINS` environment variable
-
+| Client hook / page | API |
+|--------------------|-----|
+| `useSportsQuery` | `GET /sports` |
+| `useActiveEventQuery` | `GET /sports/:sportId/events/active` |
+| `useEventCandidatesQuery` | `GET /sports/.../candidates` |
+| `useContestsQuery` | `GET /contests?eventId=` |
+| `useUserGroupContestsQuery` | `GET /userGroups/:id/contests` |
+| Lineup save | `POST /lineups/:eventId` (create) or `PUT /lineups/:lineupId` (update) |
+| `useAuth` / `/me` | `GET /auth/me` |

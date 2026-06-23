@@ -61,7 +61,7 @@ ${renderSection(
   ]),
 )}
 ${tournamentBlock}
-${renderCtaBlock({ label: "Build your lineup", href: appPath("/lineups") })}`;
+${renderCtaBlock({ label: "Build your lineup", href: appPath("/contests") })}`;
 
   return wrapEmailHtml({ title: welcomeSubject(), bodyHtml });
 }

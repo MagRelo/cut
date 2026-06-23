@@ -1,15 +1,14 @@
 import { prisma } from "../../lib/prisma.js";
 import { SideBetMarketStatus } from "@prisma/client";
 import { fetchSideBetDataGolfSnapshot } from "./fetchSideBetDataGolfSnapshot.js";
-import { ingestSideBetQuoteForLineup } from "./ingestSideBetQuoteForLineup.js";
+import { ingestPropBetQuoteForLineup } from "../propBets/ingestPropBetQuoteForLineup.js";
 import { dataGolfTourFromEnv } from "../odds/dataGolfFieldUpdates.js";
 import { sideBetsEnabled } from "./featureFlag.js";
+import { getActiveEvents } from "../events/getActiveEvents.js";
 
 /**
- * Minute cron: refresh side-bet quotes for the active tournament’s 4-player lineups
+ * Minute cron: refresh side-bet quotes for 4-player lineups on active events
  * where the market is OPEN or UNAVAILABLE (retry). Skips LOCKED+.
- *
- * Fetches DataGolf field + outrights **once** per run and reuses for every lineup to avoid HTTP 429.
  */
 export async function refreshOpenSideBetQuotes(): Promise<{
   total: number;
@@ -25,37 +24,35 @@ export async function refreshOpenSideBetQuotes(): Promise<{
     console.warn("[refreshOpenSideBetQuotes] DATAGOLF_API_KEY not set; skipping");
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
-  const active = await prisma.tournament.findFirst({
-    where: { manualActive: true },
-    orderBy: { startDate: "desc" },
-  });
 
-  if (!active) {
+  const activeEvents = await getActiveEvents();
+  if (activeEvents.length === 0) {
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
 
   const tour = dataGolfTourFromEnv();
+  const eventIds = activeEvents.map((event) => event.id);
 
-  const lineups = await prisma.tournamentLineup.findMany({
+  const lineups = await prisma.lineup.findMany({
     where: {
-      tournamentId: active.id,
-      players: { some: {} },
+      eventId: { in: eventIds },
+      picks: { some: {} },
     },
     include: {
-      players: true,
+      picks: true,
       sideBetMarket: true,
     },
   });
 
-  const eligible = lineups.filter((lu) => {
-    if (lu.players.length !== 4) return false;
-    const st = lu.sideBetMarket?.status;
+  const eligible = lineups.filter((lineup) => {
+    if (lineup.picks.length !== 4) return false;
+    const status = lineup.sideBetMarket?.status;
     if (
-      st === SideBetMarketStatus.LOCKED ||
-      st === SideBetMarketStatus.SETTLING ||
-      st === SideBetMarketStatus.SETTLED ||
-      st === SideBetMarketStatus.VOID ||
-      st === SideBetMarketStatus.CLOSED
+      status === SideBetMarketStatus.LOCKED ||
+      status === SideBetMarketStatus.SETTLING ||
+      status === SideBetMarketStatus.SETTLED ||
+      status === SideBetMarketStatus.VOID ||
+      status === SideBetMarketStatus.CLOSED
     ) {
       return false;
     }
@@ -64,7 +61,13 @@ export async function refreshOpenSideBetQuotes(): Promise<{
 
   const lineupsAttempted = eligible.length;
   if (lineupsAttempted === 0) {
-    return { total: 0, succeeded: 0, failed: 0, tournaments: 1, lineupsAttempted: 0 };
+    return {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      tournaments: activeEvents.length,
+      lineupsAttempted: 0,
+    };
   }
 
   let snapshot;
@@ -77,7 +80,7 @@ export async function refreshOpenSideBetQuotes(): Promise<{
       total: lineupsAttempted,
       succeeded: 0,
       failed: lineupsAttempted,
-      tournaments: 1,
+      tournaments: activeEvents.length,
       lineupsAttempted,
     };
   }
@@ -85,9 +88,9 @@ export async function refreshOpenSideBetQuotes(): Promise<{
   let succeeded = 0;
   let failed = 0;
 
-  for (const lu of eligible) {
-    const r = await ingestSideBetQuoteForLineup(lu.id, tour, snapshot);
-    if (r.ok) succeeded++;
+  for (const lineup of eligible) {
+    const result = await ingestPropBetQuoteForLineup(lineup.id, tour, snapshot);
+    if (result.ok) succeeded++;
     else failed++;
   }
 
@@ -95,17 +98,14 @@ export async function refreshOpenSideBetQuotes(): Promise<{
     total: lineupsAttempted,
     succeeded,
     failed,
-    tournaments: 1,
+    tournaments: activeEvents.length,
     lineupsAttempted,
   };
 }
 
-/**
- * Recompute side-bet cells for one lineup right after the roster is saved.
- * Without this, GET /market keeps serving quotes for the previous four players until the cron job runs.
- */
+/** Recompute side-bet cells for one lineup right after the roster is saved. */
 export async function refreshSideBetQuoteForLineupAfterRosterChange(
-  tournamentLineupId: string,
+  lineupId: string,
 ): Promise<void> {
   if (!sideBetsEnabled() || !process.env.DATAGOLF_API_KEY?.trim()) {
     return;
@@ -113,9 +113,9 @@ export async function refreshSideBetQuoteForLineupAfterRosterChange(
   const tour = dataGolfTourFromEnv();
   try {
     const snapshot = await fetchSideBetDataGolfSnapshot(tour);
-    await ingestSideBetQuoteForLineup(tournamentLineupId, tour, snapshot);
+    await ingestPropBetQuoteForLineup(lineupId, tour, snapshot);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("[refreshSideBetQuoteForLineupAfterRosterChange]", tournamentLineupId, msg);
+    console.error("[refreshSideBetQuoteForLineupAfterRosterChange]", lineupId, msg);
   }
 }

@@ -1,17 +1,25 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
-import { PlayerDisplayRow } from "../player/PlayerDisplayRow";
-import { PlayerDetailModal } from "../player/PlayerDetailModal";
-import { type PlayerWithTournamentData } from "../../types/player";
+import type { Candidate } from "@cut/sport-sdk";
+import { useEventScope } from "../../contexts/EventScopeContext";
+import {
+  candidatesByEventParticipantIdMap,
+  candidatesForLineupPicks,
+  contestLineupDisplayName,
+  lineupPicksFromContestLineup,
+} from "../../lib/candidateUtils";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { lineupDisplayScore } from "../../lib/lineupScore";
+import { golfPredictionValue } from "../../lib/golfPrediction";
+import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
+import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { EntryHeader } from "./EntryHeader";
 import { type ContestLineup } from "../../types/lineup";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   lineup: ContestLineup | null;
-  roundDisplay: string;
   userName?: string;
 }
 
@@ -19,26 +27,34 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   isOpen,
   onClose,
   lineup,
-  roundDisplay,
   userName,
 }) => {
-  // NOTE: Do not early-return before hooks.
-  const lineupPlayers = lineup?.tournamentLineup?.players ?? [];
+  const { candidates, status, sportId, metadata } = useEventScope();
+  const { sort } = useCandidateSort(sportId);
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
+    [candidates],
+  );
 
-  // Calculate total points for the lineup
-  const totalPoints = lineupPlayers.reduce((sum, player) => {
-    return sum + (player.tournamentData?.total || 0);
-  }, 0);
+  const lineupCandidates = useMemo(() => {
+    if (!lineup) return [];
+    const picks = lineupPicksFromContestLineup(lineup);
+    return sort(
+      candidatesForLineupPicks(picks, candidatesByEventParticipantId),
+      "lineupPicks",
+      status,
+    );
+  }, [lineup, candidatesByEventParticipantId, sort, status]);
 
-  const sortedPlayers = sortPlayersByLeaderboard(lineupPlayers);
-
-  const [detailPlayer, setDetailPlayer] = useState<PlayerWithTournamentData | null>(null);
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
   useEffect(() => {
-    if (!isOpen) setDetailPlayer(null);
+    if (!isOpen) setDetailCandidate(null);
   }, [isOpen]);
 
   if (!lineup) return null;
+
+  const totalPoints = lineupDisplayScore(lineup);
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =
@@ -46,6 +62,16 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
       ? (userSettings as { color?: unknown }).color
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
+
+  const winningScorePrediction =
+    lineup.lineup && "prediction" in lineup.lineup
+      ? golfPredictionValue(lineup.lineup.prediction)
+      : null;
+
+  const openDetailModal = (candidate: Candidate) => {
+    setDetailCandidate(candidate);
+  };
+
   return (
     <>
       <Transition appear show={isOpen} as={Fragment}>
@@ -73,45 +99,39 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 shadow-xl transition-all p-2">
-                  {/* Content Section */}
-
-                  <div className="max-h-[70vh] overflow-y-auto bg-white rounded-sm border border-gray-300">
-                    {/* Header */}
-                    <div className="">
+                <DialogPanel className="max-w-modal w-full transform overflow-hidden rounded-sm bg-gray-100 p-2 shadow-xl transition-all">
+                  <div className="max-h-[70vh] overflow-y-auto rounded-sm border border-gray-300 bg-white">
+                    <div>
                       <EntryHeader
                         userColorHex={userColorHex}
                         userName={userName}
-                        lineupName={lineup.tournamentLineup?.name}
-                        winningScorePrediction={lineup.tournamentLineup?.winningScorePrediction}
-                        totalPoints={totalPoints || 0}
+                        lineupName={contestLineupDisplayName(lineup)}
+                        winningScorePrediction={winningScorePrediction}
+                        totalPoints={totalPoints}
                       />
                     </div>
 
                     <div className="space-y-1">
                       <hr className="my-0 border-0 border-t border-gray-200" />
-                      <div className="px-2 sm:px-6 pb-2 pt-0 space-y-1">
-                        {sortedPlayers.length === 0 ? (
-                          <p className="text-sm text-gray-500 py-4 text-center">No players</p>
+                      <div className="space-y-1 px-2 pb-2 pt-0 sm:px-6">
+                        {lineupCandidates.length === 0 ? (
+                          <p className="py-4 text-center text-sm text-gray-500">No players</p>
                         ) : (
-                          sortedPlayers.map((player, index) => {
-                            return (
-                              <Fragment key={player.id}>
-                                <button
-                                  type="button"
-                                  className="block w-full text-left text-inherit cursor-pointer hover:opacity-90 border-0 bg-transparent p-0"
-                                  onClick={() => setDetailPlayer(player)}
-                                >
-                                  <div className="p-3">
-                                    <PlayerDisplayRow player={player} roundDisplay={roundDisplay} />
-                                  </div>
-                                </button>
-                                {index < sortedPlayers.length - 1 && (
-                                  <hr className="my-0 border-0 border-t border-gray-200" />
-                                )}
-                              </Fragment>
-                            );
-                          })
+                          lineupCandidates.map((candidate, index) => (
+                            <Fragment key={candidate.participantId}>
+                              <div className="p-3">
+                                <SportParticipantRow
+                                  candidate={candidate}
+                                  status={status}
+                                  eventMetadata={metadata}
+                                  onClick={() => openDetailModal(candidate)}
+                                />
+                              </div>
+                              {index < lineupCandidates.length - 1 ? (
+                                <hr className="my-0 border-0 border-t border-gray-200" />
+                              ) : null}
+                            </Fragment>
+                          ))
                         )}
                       </div>
                     </div>
@@ -122,10 +142,13 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
           </div>
         </Dialog>
       </Transition>
-      <PlayerDetailModal
-        isOpen={detailPlayer != null}
-        onClose={() => setDetailPlayer(null)}
-        player={detailPlayer}
+      <SportParticipantDetailModal
+        isOpen={detailCandidate != null}
+        onClose={() => setDetailCandidate(null)}
+        candidate={detailCandidate}
+        sportId={sportId}
+        status={status}
+        eventMetadata={metadata}
       />
     </>
   );

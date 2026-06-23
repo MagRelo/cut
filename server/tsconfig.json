@@ -22,5 +22,12 @@
     "noUncheckedIndexedAccess": true
   },
   "include": ["src/**/*", "prisma/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/cron-app.ts",
+    "src/scripts/**",
+    "src/**/*.test.ts",
+    "src/services/odds/**",
+    "src/utils/mergePlayerIdentity.ts"
+  ]
 }

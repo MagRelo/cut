@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PaymentKind } from "@prisma/client";
+import { defaultPayoutVector } from "@cut/sport-sdk";
 import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
 import {
   createWalletClient,
@@ -35,7 +36,9 @@ import type {
   ContestSnapshot,
   DetailedResult,
 } from "../services/shared/types.js";
-import { getContestWinningScore, sortContestLineups } from "../utils/lineupTiebreaker.js";
+import { requireSportModule } from "../sports/registry.js";
+import { contestLineupsInclude } from "../utils/prismaIncludes.js";
+import { sortedPlayerLastNamesFromPicks } from "../utils/lineupPickPresentation.js";
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const TX_DELAY_MS = 2000;
@@ -138,7 +141,10 @@ type SimulationResult = {
   contractTokenBalanceWei: bigint;
 };
 
-function calculatePayouts(lineups: any[]): {
+function calculatePayouts(
+  lineups: any[],
+  sportId: string,
+): {
   winningEntries: string[];
   payoutBps: number[];
   detailedResults: DetailedResult[];
@@ -156,29 +162,37 @@ function calculatePayouts(lineups: any[]): {
     throw new Error("No valid lineups found");
   }
 
-  const contestWinningScore = getContestWinningScore(validLineups);
-  const sortedLineups = sortContestLineups(validLineups, contestWinningScore);
-  const isLargeContest = validLineups.length >= 10;
-  const payoutStructure = isLargeContest ? [7000, 2000, 1000] : [10000];
+  const sportModule = requireSportModule(sportId);
+  const lineupByEntryId = new Map(
+    validLineups.map((lineup) => [lineup.entryId as string, lineup]),
+  );
+
+  const ranked = sportModule.rankEntries(
+    validLineups.map((lineup) => ({
+      entryId: lineup.entryId!,
+      score: lineup.score,
+      prediction: lineup.lineup.prediction,
+      createdAt: lineup.createdAt,
+    })),
+  );
+
+  const payoutStructure =
+    sportModule.derivePayoutVector?.(ranked, ranked.length) ??
+    defaultPayoutVector(ranked.length);
 
   const winningEntries: string[] = [];
   const payoutBps: number[] = [];
   const detailedResults: DetailedResult[] = [];
   let totalDistributed = 0;
 
-  sortedLineups.forEach((lineup, index) => {
-    const position = index + 1;
-    const payout = payoutStructure[position - 1] ?? 0;
+  for (const row of ranked) {
+    const lineup = lineupByEntryId.get(row.entryId);
+    if (!lineup) {
+      continue;
+    }
 
-    const playerLastNames = (lineup.tournamentLineup?.players ?? [])
-      .slice()
-      .sort((a: any, b: any) => {
-        const aTotal = a?.tournamentPlayer?.total ?? 0;
-        const bTotal = b?.tournamentPlayer?.total ?? 0;
-        return bTotal - aTotal;
-      })
-      .map((p: any) => p?.tournamentPlayer?.player?.pga_lastName)
-      .filter((name: unknown): name is string => Boolean(name));
+    const payout = payoutStructure[row.position - 1] ?? 0;
+    const playerLastNames = sortedPlayerLastNamesFromPicks(lineup.lineup.picks);
 
     const userSettings = lineup.user?.settings as { color?: string } | undefined;
     const userColor = isValidHexColor(userSettings?.color)
@@ -186,22 +200,22 @@ function calculatePayouts(lineups: any[]): {
       : DEFAULT_USER_COLOR;
 
     if (payout > 0) {
-      winningEntries.push(lineup.entryId);
+      winningEntries.push(row.entryId);
       payoutBps.push(payout);
       totalDistributed += payout;
     }
 
     detailedResults.push({
       username: lineup.user?.name || "Unknown",
-      lineupName: lineup.tournamentLineup?.name || "Unnamed Lineup",
-      entryId: lineup.entryId,
-      position,
-      score: lineup.score,
+      lineupName: lineup.lineup?.name || "Unnamed Lineup",
+      entryId: row.entryId,
+      position: row.position,
+      score: row.score,
       payoutBasisPoints: payout,
       playerLastNames,
       userColor,
     });
-  });
+  }
 
   if (totalDistributed < 10000 && payoutBps.length > 0 && payoutBps[0] !== undefined) {
     const dust = 10000 - totalDistributed;
@@ -247,23 +261,8 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
   const contest = await prisma.contest.findUnique({
     where: { id: contestId },
     include: {
-      tournament: true,
-      contestLineups: {
-        include: {
-          user: true,
-          tournamentLineup: {
-            include: {
-              players: {
-                include: {
-                  tournamentPlayer: {
-                    include: { player: true },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      event: true,
+      contestLineups: contestLineupsInclude,
     },
   });
 
@@ -283,8 +282,10 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
     throw new Error(`Contest DB status is ${contest.status}; expected ACTIVE or LOCKED`);
   }
 
-  if (contest.tournament.status !== "COMPLETED") {
-    throw new Error(`Tournament status is ${contest.tournament.status}; expected COMPLETED`);
+  const sportModule = requireSportModule(contest.event.sportId);
+  const eventStatus = await sportModule.getEventStatus(contest.eventId);
+  if (!sportModule.shouldSettleContest(eventStatus)) {
+    throw new Error(`Event status is ${eventStatus}; expected COMPLETE before settlement`);
   }
 
   if (!contest.contestLineups.length) {
@@ -340,6 +341,7 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
 
   const { winningEntries, payoutBps, detailedResults } = calculatePayouts(
     contest.contestLineups,
+    contest.event.sportId,
   );
 
   const primaryAmounts = allocateNetPool(netPrimaryWei, payoutBps);

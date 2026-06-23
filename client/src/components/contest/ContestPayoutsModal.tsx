@@ -3,7 +3,6 @@ import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useBalance, useReadContract } from "wagmi";
 import { erc20Abi, formatUnits } from "viem";
 import { Modal } from "../common/Modal";
-import { LoadingSpinner } from "../common/LoadingSpinner";
 import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
@@ -330,6 +329,11 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
+  const formatCurrencyDisplay = (value: number) => (isLoading ? "..." : formatCurrency(value));
+
+  const formatTokenDisplay = (value: number) =>
+    isLoading ? "..." : `${value.toFixed(2)} ${tokenLabel}`;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -339,14 +343,12 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
       maxWidth="4xl"
       scrollable
       maxHeight="600px"
+      panelClassName="overflow-hidden bg-gray-100 p-2"
+      contentClassName="rounded-sm border border-gray-300 bg-white"
     >
       <div>
-        {isLoading ? (
-          <div className="flex min-h-[200px] items-center justify-center">
-            <LoadingSpinner />
-          </div>
-        ) : readsFailed ? (
-          <div className="p-3 font-display">
+        {readsFailed ? (
+          <ContestPayoutLayout background="white">
             <div
               className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
               role="status"
@@ -371,14 +373,15 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 </p>
               </div>
             </div>
-          </div>
+            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
+          </ContestPayoutLayout>
         ) : (
-          <ContestPayoutLayout>
+          <ContestPayoutLayout background="white">
             <ContestPayoutHeroCard
               label="Total Prize Pool"
               amount={
-                <ContestPayoutGradientMoney size="hero">
-                  {formatCurrency(totalPrizePool)}
+                <ContestPayoutGradientMoney size="hero" tone="light">
+                  {formatCurrencyDisplay(totalPrizePool)}
                 </ContestPayoutGradientMoney>
               }
             />
@@ -409,10 +412,10 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                       right={
                         <>
                           <ContestPayoutGradientMoney>
-                            {formatCurrency(payoutAmount)}
+                            {formatCurrencyDisplay(payoutAmount)}
                           </ContestPayoutGradientMoney>
                           <ContestPayoutSubAmount>
-                            {payoutAmount.toFixed(2)} {tokenLabel}
+                            {formatTokenDisplay(payoutAmount)}
                           </ContestPayoutSubAmount>
                         </>
                       }
@@ -444,10 +447,10 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                   right={
                     <>
                       <ContestPayoutGradientMoney>
-                        {formatCurrency(secondaryLiquidityData.netTotal)}
+                        {formatCurrencyDisplay(secondaryLiquidityData.netTotal)}
                       </ContestPayoutGradientMoney>
                       <ContestPayoutSubAmount>
-                        {secondaryLiquidityData.netTotal.toFixed(2)} {tokenLabel}
+                        {formatTokenDisplay(secondaryLiquidityData.netTotal)}
                       </ContestPayoutSubAmount>
                     </>
                   }
@@ -481,10 +484,10 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                   right={
                     <>
                       <ContestPayoutGradientMoney>
-                        {formatCurrency(networkBonusTotal)}
+                        {formatCurrencyDisplay(networkBonusTotal)}
                       </ContestPayoutGradientMoney>
                       <ContestPayoutSubAmount>
-                        {networkBonusTotal.toFixed(2)} {tokenLabel}
+                        {formatTokenDisplay(networkBonusTotal)}
                       </ContestPayoutSubAmount>
                     </>
                   }
@@ -495,12 +498,6 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
           </ContestPayoutLayout>
         )}
-
-        {isLoading || readsFailed ? (
-          <div className="p-3 pt-0 font-display">
-            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
-          </div>
-        ) : null}
       </div>
     </Modal>
   );

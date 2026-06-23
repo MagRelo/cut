@@ -38,7 +38,7 @@ export function buildNewTournamentBodyHtml(data: NewTournamentEmailData): string
 ${subtitleHtml}
 ${leadHtml}
 ${topSectionsHtml}
-${renderCtaBlock({ label: "Build your lineup", href: appPath("/lineups") }, { margin: "24px 0 36px" })}
+${renderCtaBlock({ label: "Build your lineup", href: appPath("/contests") }, { margin: "24px 0 36px" })}
 ${bottomSectionsHtml}
 ${renderCtaBlock({ label: "Browse open contests", href: appPath("/contests") }, { margin: "0 0 20px" })}
 `;

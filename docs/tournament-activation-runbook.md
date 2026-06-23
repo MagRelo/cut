@@ -1,5 +1,7 @@
 # Tournament activation runbook
 
+> **Legacy (pre-v4).** This runbook targets the old `Tournament` model and `service:init-tournament`. For current operations use **[event-activation-runbook.md](./event-activation-runbook.md)** and **[`spec/server/cron.md`](../spec/server/cron.md)**.
+
 Operator checklist for switching Play The Cut to a new PGA Tour week: content, database init, verification, and the New Tournament email.
 
 **Related specs:** [email-program.md](./email-program.md) · tournament summary skill (`.cursor/skills/tournament-summary/SKILL.md`)
@@ -187,12 +189,15 @@ Not part of init — handle separately when the week opens.
 
 ### 8. Ongoing week (cron)
 
-With `ENABLE_CRON=true` on the server:
+Superseded by v4. See **[event-activation-runbook.md](./event-activation-runbook.md)** §7 and **[`spec/server/cron.md`](../spec/server/cron.md)**.
 
-| Cadence | Job |
-|---------|-----|
-| Every 5 min | `updateTournament`, escrow close, contest distribute |
-| Every 5 min (when round In Progress / Complete) | `updateTournamentPlayers`, `updateContestLineups` |
+With `ENABLE_CRON=true` (main server or `cron-app` on a dedicated host):
+
+| Cadence | Pipeline step |
+|---------|----------------|
+| Every 5 min | `mainPipeline`: sport sync per active event, side-bet quotes (if enabled), activate / settle / close contests, referral sync |
+
+Live scores and lineup updates run inside `runSportEventPipeline` when the sport plugin reports live scoring (golf: round In Progress / Complete).
 
 Manual only: init, emails, contest lock (admin), side-bet lock/settle/close.
 

@@ -1,25 +1,32 @@
 import { loadSummarySectionsFromFile } from "../../tournamentSummary.js";
 import {
-  formatTournamentSubtitle,
-  loadTournamentForEmail,
-  summarySectionsFromTournament,
-} from "./tournament.js";
+  formatEventSubtitle,
+  loadEventForEmail,
+  summarySectionsFromEvent,
+} from "./event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 
-export async function loadNewTournamentEmailData(
-  tournamentId: string,
+export async function loadNewEventEmailData(
+  eventId: string,
 ): Promise<NewTournamentEmailData | null> {
-  const tournament = await loadTournamentForEmail(tournamentId);
-  if (!tournament) return null;
+  const event = await loadEventForEmail(eventId);
+  if (!event) return null;
 
-  let summarySections = summarySectionsFromTournament(tournament);
-  if (!summarySections && tournament.pgaTourId) {
-    summarySections = await loadSummarySectionsFromFile(tournament.pgaTourId);
+  let summarySections = summarySectionsFromEvent(event);
+  if (!summarySections) {
+    summarySections = await loadSummarySectionsFromFile(event.externalId);
   }
 
   return {
-    tournamentName: tournament.name,
-    subtitle: formatTournamentSubtitle(tournament),
+    tournamentName: event.name,
+    subtitle: formatEventSubtitle(event),
     summarySections,
   };
+}
+
+/** @deprecated Use loadNewEventEmailData */
+export async function loadNewTournamentEmailData(
+  eventId: string,
+): Promise<NewTournamentEmailData | null> {
+  return loadNewEventEmailData(eventId);
 }

@@ -1,16 +1,43 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentType } from "react";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { lobbyDecorators } from "../../../.storybook/decorators";
-import {
-  buildContestLineup,
-  contestWithLineups,
-} from "../../test/fixtures/contestLobby";
+import { ContestEventScopeProvider } from "../../contexts/EventScopeContext";
+import { buildContestLineup, contestWithLineups } from "../../test/fixtures/contestLobby";
+import { FIXTURE_CANDIDATES } from "../../test/fixtures/candidates";
+import { queryKeys } from "../../utils/queryKeys";
 import { ContestEntryList } from "./ContestEntryList";
+
+function withContestEventScope(Story: ComponentType) {
+  const Wrapped = () => {
+    const queryClient = useQueryClient();
+    const contest = contestWithLineups;
+    const sportId = contest.event?.sportId ?? "golf";
+    const eventId = contest.eventId;
+
+    useEffect(() => {
+      queryClient.setQueryData(
+        queryKeys.sports.candidates(sportId, eventId),
+        FIXTURE_CANDIDATES,
+      );
+    }, [queryClient, sportId, eventId]);
+
+    return (
+      <ContestEventScopeProvider contest={contest}>
+        <Story />
+      </ContestEventScopeProvider>
+    );
+  };
+
+  return <Wrapped />;
+}
 
 const meta = {
   title: "Contest/ContestEntryList",
   component: ContestEntryList,
   tags: ["autodocs"],
-  decorators: lobbyDecorators,
+  decorators: [...lobbyDecorators, withContestEventScope],
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ContestEntryList>;
 
@@ -20,7 +47,6 @@ type Story = StoryObj<typeof meta>;
 export const PreContestOpen: Story = {
   args: {
     contestLineups: contestWithLineups.contestLineups,
-    roundDisplay: "R1",
     contestStatus: "OPEN",
     entryListOpensModal: false,
   },
@@ -29,7 +55,6 @@ export const PreContestOpen: Story = {
 export const LiveLocked: Story = {
   args: {
     contestLineups: contestWithLineups.contestLineups,
-    roundDisplay: "R2",
     contestStatus: "ACTIVE",
     entryListOpensModal: true,
   },
@@ -38,7 +63,6 @@ export const LiveLocked: Story = {
 export const Empty: Story = {
   args: {
     contestLineups: [],
-    roundDisplay: "R1",
     contestStatus: "ACTIVE",
     entryListOpensModal: true,
   },
@@ -62,7 +86,6 @@ export const ManyEntries: Story = {
         },
       }),
     ),
-    roundDisplay: "R3",
     contestStatus: "LOCKED",
     entryListOpensModal: true,
   },

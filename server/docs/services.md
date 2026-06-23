@@ -1,38 +1,38 @@
 # Services
 
-## MANUAL:
+Platform services under `server/src/services/`. Cron orchestration: [`src/cron/README.md`](../src/cron/README.md) · [`spec/server/cron.md`](../../spec/server/cron.md).
 
-### initTournament(pgaTourId):
+---
 
-- update **Tournament** meta
-- update **Player** records to inField
-- update **Player** profiles for players inField
-- create **TournamentPlayer** records for players inField
+## Manual (operator)
 
-## SCHEDULED:
+### `service:init-event {sportId} {externalId}`
 
-### updateTournament():
+Bootstraps a `CompetitionEvent` via the sport plugin (PGA golf: `pga-golf R2026033`).
 
-- update **Tournament** meta-data from PGA (status, rounds, weather)
+- Upsert event row and metadata from external APIs
+- Load `server/src/tournamentSummaries/{externalId}.json` into event metadata when present
+- Sync participant field, profiles, rankings
+- Set `isActive=true` on this event (clears other active events for the sport)
 
-### updateTournamentPlayers():
+### Admin / CLI contest ops
 
-- update **TournamentPlayer** scores
+| Transition | Service |
+|------------|---------|
+| `OPEN` → `ACTIVE` | `activateContest` / `batchActivateContests` |
+| `ACTIVE` → `LOCKED` | `lockContest` / `batchLockContests` (admin) |
+| `ACTIVE` / `LOCKED` → `SETTLED` | `settleContest` / `batchSettleContests` |
+| `SETTLED` → `CLOSED` | `closeContest` / `batchCloseContests` |
 
-### updateContestLineups():
+---
 
-- update **ContestLineup** score & position
+## Scheduled (`ENABLE_CRON=true`)
 
-### closeContest():
+Every 5 minutes — single pipeline in `src/cron/scheduler.ts`:
 
-- find "OPEN" **Contests** where **Tournament** status is "IN_PROGRESS"
-- call **Contract.closeEntry()**
-- update **Contest** status to "CLOSED"
+1. Per active event: metadata, field, withdrawals, live scores (when live), contest lineup updates
+2. Side-bet quote refresh (feature-flagged)
+3. Batch activate / settle / close contests
+4. Referral graph sync
 
-### distributeContest():
-
-- find **Contests** in status "CLOSED" where **Tournament** status is "COMPLETED"
-- calculate payouts based on **ContestLineup** position
-- Call **Contract.distribute()**
-- Call **PlatformTokens.mintRewards()** equal to entry fee for all participants
-- update **Contest** status to "SETTLED"
+See [`spec/server/cron.md`](../../spec/server/cron.md) for the full sequence.

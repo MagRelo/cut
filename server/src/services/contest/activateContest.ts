@@ -1,24 +1,21 @@
 /**
  * Activate a contest: OPEN → ACTIVE
- * 
- * This closes primary participant registration but allows secondary participants
- * to continue adding predictions.
+ *
+ * Closes primary participant registration; secondary predictions may continue.
  */
 
-import { prisma } from '../../lib/prisma.js';
-import { getContestContract, verifyOracle, readContestState } from '../shared/contractClient.js';
-import { ContestState, type OperationResult } from '../shared/types.js';
+import { prisma } from "../../lib/prisma.js";
+import { requireSportModule } from "../../sports/registry.js";
+import { getContestContract, verifyOracle, readContestState } from "../shared/contractClient.js";
+import { ContestState, type OperationResult } from "../shared/types.js";
 
 export async function activateContest(contestId: string): Promise<OperationResult> {
   try {
-    // console.log(`[activateContest] Starting activation for contest ${contestId}`);
-
-    // Fetch contest from database
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
       include: {
         contestLineups: true,
-        tournament: true,
+        event: true,
       },
     });
 
@@ -26,12 +23,11 @@ export async function activateContest(contestId: string): Promise<OperationResul
       return {
         success: false,
         contestId,
-        error: 'Contest not found',
+        error: "Contest not found",
       };
     }
 
-    // Validate contest status
-    if (contest.status !== 'OPEN') {
+    if (contest.status !== "OPEN") {
       return {
         success: false,
         contestId,
@@ -39,35 +35,33 @@ export async function activateContest(contestId: string): Promise<OperationResul
       };
     }
 
-    // Validate tournament is in progress
-    if (contest.tournament.status !== 'IN_PROGRESS' && contest.tournament.status !== 'COMPLETED') {
+    const sportModule = requireSportModule(contest.event.sportId);
+    const eventStatus = await sportModule.getEventStatus(contest.eventId);
+    if (!sportModule.shouldActivateContest(eventStatus)) {
       return {
         success: false,
         contestId,
-        error: `Tournament status is ${contest.tournament.status}, expected IN_PROGRESS or COMPLETED`,
+        error: `Event status is ${eventStatus}, contest cannot be activated yet`,
       };
     }
 
-    // Validate has entries
     if (!contest.contestLineups || contest.contestLineups.length === 0) {
       return {
         success: false,
         contestId,
-        error: 'Contest has no entries',
+        error: "Contest has no entries",
       };
     }
 
-    // Verify oracle
     const isValidOracle = await verifyOracle(contest.address, contest.chainId);
     if (!isValidOracle) {
       return {
         success: false,
         contestId,
-        error: 'Oracle address mismatch',
+        error: "Oracle address mismatch",
       };
     }
 
-    // Check contract state
     const contractState = await readContestState(contest.address, contest.chainId);
     if (contractState !== ContestState.OPEN) {
       return {
@@ -77,16 +71,14 @@ export async function activateContest(contestId: string): Promise<OperationResul
       };
     }
 
-    // Call contract to activate
     const contract = getContestContract(contest.address, contest.chainId);
     const hash = (await contract.write.activateContest!()) as string;
 
     console.log(`[activateContest] Transaction hash: ${hash}`);
 
-    // Update database
     await prisma.contest.update({
       where: { id: contestId },
-      data: { status: 'ACTIVE' },
+      data: { status: "ACTIVE" },
     });
 
     console.log(`[activateContest] Successfully activated contest ${contestId}`);
@@ -105,4 +97,3 @@ export async function activateContest(contestId: string): Promise<OperationResul
     };
   }
 }
-

@@ -1,12 +1,12 @@
 import { loadAllEmailRecipients } from "../data/audience.js";
-import { loadTournamentRecapEmailDataForUser } from "../data/recap.js";
+import { loadEventRecapEmailDataForUser } from "../data/recap.js";
 import { renderTournamentRecapEmail } from "../emails/tournamentRecap.js";
 import { hasBroadcastBeenSent, recordEmailSend } from "../sendLog.js";
 import { buildDedupeKey, EmailKind } from "../types.js";
 import { isEmailConfigured, sendEmail } from "../transport.js";
 
 export type RecapBlastResult = {
-  tournamentId: string;
+  eventId: string;
   sent: number;
   failed: number;
   dryRun: boolean;
@@ -14,7 +14,7 @@ export type RecapBlastResult = {
 };
 
 export async function sendTournamentRecapBlast(options: {
-  tournamentId: string;
+  eventId: string;
   dryRun?: boolean;
   force?: boolean;
 }): Promise<RecapBlastResult> {
@@ -22,12 +22,17 @@ export async function sendTournamentRecapBlast(options: {
     throw new Error("MailerSend is not configured");
   }
 
+  const eventId = options.eventId.trim();
+  if (!eventId) {
+    throw new Error("eventId is required");
+  }
+
   if (
     !options.force &&
-    (await hasBroadcastBeenSent(EmailKind.TOURNAMENT_RECAP, { tournamentId: options.tournamentId }))
+    (await hasBroadcastBeenSent(EmailKind.TOURNAMENT_RECAP, { eventId }))
   ) {
     return {
-      tournamentId: options.tournamentId,
+      eventId,
       sent: 0,
       failed: 0,
       dryRun: Boolean(options.dryRun),
@@ -41,7 +46,7 @@ export async function sendTournamentRecapBlast(options: {
 
   if (options.dryRun) {
     return {
-      tournamentId: options.tournamentId,
+      eventId,
       sent: recipients.length,
       failed: 0,
       dryRun: true,
@@ -49,7 +54,7 @@ export async function sendTournamentRecapBlast(options: {
   }
 
   for (const user of recipients) {
-    const data = await loadTournamentRecapEmailDataForUser(user.id, options.tournamentId);
+    const data = await loadEventRecapEmailDataForUser(user.id, eventId);
     if (!data) {
       failed++;
       continue;
@@ -60,12 +65,12 @@ export async function sendTournamentRecapBlast(options: {
       await recordEmailSend({
         kind: EmailKind.TOURNAMENT_RECAP,
         dedupeKey: buildDedupeKey(EmailKind.TOURNAMENT_RECAP, {
-          tournamentId: options.tournamentId,
+          eventId,
           userId: user.id,
         }),
         recipientEmail: user.email,
         userId: user.id,
-        tournamentId: options.tournamentId,
+        eventId,
       });
       sent++;
     } catch {
@@ -76,14 +81,14 @@ export async function sendTournamentRecapBlast(options: {
   if (sent > 0) {
     await recordEmailSend({
       kind: EmailKind.TOURNAMENT_RECAP,
-      dedupeKey: buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { tournamentId: options.tournamentId }),
+      dedupeKey: buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { eventId }),
       recipientEmail: `blast:${sent}`,
-      tournamentId: options.tournamentId,
+      eventId,
     });
   }
 
   return {
-    tournamentId: options.tournamentId,
+    eventId,
     sent,
     failed,
     dryRun: false,

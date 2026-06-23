@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useActiveTournament } from "../hooks/useTournamentData";
+import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
+import { useFirstEnabledSportId } from "../hooks/useSportData";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
+import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -40,9 +42,10 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser, updateUserSettings } = useAuth();
-  const { isTournamentEditable } = useActiveTournament();
-  /** Lineup create/edit closed (tournament in progress or completed). */
-  const editingNotAllowed = !isTournamentEditable;
+  const onboardingSportId = useFirstEnabledSportId();
+  const { isEventEditable } = useSportActiveEvent(onboardingSportId ?? "");
+  /** Lineup create/edit closed (event in progress or completed). */
+  const editingNotAllowed = !isEventEditable;
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);
@@ -64,8 +67,16 @@ export function OnboardingPage() {
 
   const navigateAfterDismiss = () => {
     const from = (location.state as { from?: Location })?.from;
-    const target = from ? `${from.pathname}${from.search || ""}${from.hash || ""}` : "/";
-    navigate(target, { replace: true });
+    if (from) {
+      navigate(`${from.pathname}${from.search || ""}${from.hash || ""}`, { replace: true });
+      return;
+    }
+    const pendingCode = getPendingLeagueInviteCode();
+    if (pendingCode) {
+      navigate(`/leagues/join/${pendingCode}`, { replace: true });
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   const dismissOnboarding = async () => {
@@ -109,8 +120,7 @@ export function OnboardingPage() {
     setSaving(true);
     try {
       await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
-      const nextPath = editingNotAllowed ? "/contests" : "/lineups";
-      navigate(nextPath, { replace: true });
+      navigateAfterDismiss();
     } finally {
       setSaving(false);
     }

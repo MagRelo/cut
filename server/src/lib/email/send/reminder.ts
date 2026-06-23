@@ -6,32 +6,37 @@ import { EmailKind } from "../types.js";
 import { isEmailConfigured } from "../transport.js";
 
 export type ReminderBlastResult = {
-  tournamentId: string;
+  eventId: string;
   sent: number;
   skipped: number;
   dryRun: boolean;
 };
 
 export async function sendReminderNoContestBlast(options: {
-  tournamentId: string;
+  eventId: string;
   dryRun?: boolean;
 }): Promise<ReminderBlastResult> {
   if (!isEmailConfigured()) {
     throw new Error("MailerSend is not configured");
   }
 
-  const segment = await loadReminderNoContestSegment(options.tournamentId);
+  const eventId = options.eventId.trim();
+  if (!eventId) {
+    throw new Error("eventId is required");
+  }
+
+  const segment = await loadReminderNoContestSegment(eventId);
   let sent = 0;
   let skipped = 0;
 
   for (const user of segment) {
-    const data = await loadReminderEmailDataForUser(user.id, options.tournamentId);
+    const data = await loadReminderEmailDataForUser(user.id, eventId);
     if (!data) continue;
 
     const { subject, html } = renderReminderNoContestEmail(data);
     const payload = {
       kind: EmailKind.REMINDER_NO_CONTEST,
-      dedupe: { tournamentId: options.tournamentId, userId: user.id },
+      dedupe: { eventId, userId: user.id },
       to: user.email,
       subject,
       html,
@@ -45,7 +50,7 @@ export async function sendReminderNoContestBlast(options: {
   }
 
   return {
-    tournamentId: options.tournamentId,
+    eventId,
     sent,
     skipped,
     dryRun: Boolean(options.dryRun),

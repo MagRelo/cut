@@ -1,14 +1,22 @@
 import { UserGroupIcon } from "@heroicons/react/24/outline";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { type ContestLineup } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
+import { useEventScope } from "../../contexts/EventScopeContext";
+import {
+  candidatesByEventParticipantIdMap,
+  candidatesForLineupPicks,
+  contestLineupDisplayName,
+  isLineupWithPicks,
+  lineupPicksFromContestLineup,
+} from "../../lib/candidateUtils";
+import { useCandidateSort } from "../../hooks/useCandidateSort";
+import { participantLastName } from "../../lib/candidateSorting";
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
-import { sortPlayersByLeaderboard } from "../../utils/playerSorting";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
-  roundDisplay?: string;
   contestStatus: ContestStatus;
   /** When set, controls row click + display; otherwise derived from `contestStatus`. */
   entryListOpensModal?: boolean;
@@ -16,30 +24,32 @@ interface ContestEntryListProps {
 
 export const ContestEntryList = ({
   contestLineups,
-  roundDisplay,
   contestStatus,
   entryListOpensModal,
 }: ContestEntryListProps) => {
-  const primaryActionsLocked =
-    entryListOpensModal ?? arePrimaryActionsLocked(contestStatus);
+  const { candidates, sportId, status } = useEventScope();
+  const { sort } = useCandidateSort(sportId);
+  const candidatesByEventParticipantId = useMemo(
+    () => candidatesByEventParticipantIdMap(candidates),
+    [candidates],
+  );
 
-  // lineup modal
+  const primaryActionsLocked = entryListOpensModal ?? arePrimaryActionsLocked(contestStatus);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);
-  /** Clears selected lineup after close so leave transition can finish (matches `duration-150` on the dialog). */
   const clearLineupAfterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openLineupModal = (contestLineup: ContestLineup) => {
-    if (!primaryActionsLocked) return; // Don't open modal if primary actions are not locked (contest still open)
+    if (!primaryActionsLocked) return;
+    if (!contestLineup.lineup?.id) return;
 
-    if (contestLineup.tournamentLineup) {
-      if (clearLineupAfterCloseTimeoutRef.current != null) {
-        clearTimeout(clearLineupAfterCloseTimeoutRef.current);
-        clearLineupAfterCloseTimeoutRef.current = null;
-      }
-      setSelectedLineup(contestLineup);
-      setIsModalOpen(true);
+    if (clearLineupAfterCloseTimeoutRef.current != null) {
+      clearTimeout(clearLineupAfterCloseTimeoutRef.current);
+      clearLineupAfterCloseTimeoutRef.current = null;
     }
+    setSelectedLineup(contestLineup);
+    setIsModalOpen(true);
   };
 
   const closeLineupModal = () => {
@@ -53,19 +63,17 @@ export const ContestEntryList = ({
     }, 200);
   };
 
-  // Use stored scores and sort by position (already calculated by backend)
   const sortedLineups = contestLineups
     ? [...contestLineups].sort((a, b) => (a.position || 0) - (b.position || 0))
     : [];
 
-  // Determine how many positions are "in the money"
   const totalEntries = sortedLineups.length;
   const paidPositions = totalEntries < 10 ? 1 : 3;
 
   if (sortedLineups.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500 font-display">No teams in this contest yet</p>
+      <div className="py-8 text-center">
+        <p className="font-display text-gray-500">No teams in this contest yet</p>
       </div>
     );
   }
@@ -77,23 +85,30 @@ export const ContestEntryList = ({
         const nextLineup = sortedLineups[index + 1];
         const nextInTheMoney = nextLineup != null && (nextLineup.position || 0) <= paidPositions;
         const showPaidCutoffDivider = isInTheMoney && nextLineup != null && !nextInTheMoney;
-        const lineupPlayers = lineup.tournamentLineup?.players ?? [];
+
+        const lineupCandidates = sort(
+          candidatesForLineupPicks(
+            lineupPicksFromContestLineup(lineup),
+            candidatesByEventParticipantId,
+          ),
+          "lineupPicks",
+          status,
+        );
+        const sortedPlayerNames = lineupCandidates.map(participantLastName).join(", ");
+
         const userSettings = lineup.user?.settings;
         const maybeColor =
           typeof userSettings === "object" && userSettings !== null
             ? (userSettings as { color?: unknown }).color
             : undefined;
         const resolvedBorderColor = resolveUserBorderColor(maybeColor);
-        const sortedPlayerNames = sortPlayersByLeaderboard(lineupPlayers)
-          .map((player) => player.pga_lastName)
-          .filter(Boolean)
-          .join(", ");
-        const lineupNumberLabel = getLineupNumberLabel(lineup.tournamentLineup?.name);
+        const lineupNumberLabel = getLineupNumberLabel(contestLineupDisplayName(lineup));
+        const hasExpandedLineup = isLineupWithPicks(lineup.lineup);
 
         return (
           <div key={lineup.id}>
             <div
-              className={`group cursor-pointer rounded-sm border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display shadow-sm ${
+              className={`group cursor-pointer rounded-sm border-0 border-b border-l border-r border-t border-gray-200 p-3 font-display shadow-sm ${
                 index > 0 ? "mt-2" : ""
               }`}
               onClick={() => openLineupModal(lineup)}
@@ -104,40 +119,40 @@ export const ContestEntryList = ({
               }}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-semibold text-gray-900 truncate leading-tight sm:text-lg">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
                     {lineup.user?.name || lineup.user?.email || "Unknown User"}
-                    {lineupNumberLabel && (
+                    {lineupNumberLabel ? (
                       <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
                         {lineupNumberLabel}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
-                  <div className="text-xs text-gray-500 truncate">
-                    {!primaryActionsLocked
-                      ? lineup.tournamentLineup?.name || "Lineup"
+                  <div className="truncate text-xs text-gray-500">
+                    {!primaryActionsLocked || !hasExpandedLineup
+                      ? contestLineupDisplayName(lineup)
                       : sortedPlayerNames || "No players"}
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 flex items-center gap-4">
-                  {primaryActionsLocked && (
+                <div className="flex shrink-0 items-center gap-4">
+                  {primaryActionsLocked ? (
                     <UserGroupIcon className="h-5 w-5 shrink-0 text-blue-400" aria-hidden />
-                  )}
+                  ) : null}
 
                   <div className="text-center">
-                    <div className="text-lg font-bold tabular-nums text-gray-900 leading-none">
+                    <div className="text-lg font-bold tabular-nums leading-none text-gray-900">
                       {lineup.score || 0}
                     </div>
-                    <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
+                    <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
                       PTS
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            {showPaidCutoffDivider && (
+            {showPaidCutoffDivider ? (
               <div className="my-2 flex items-center gap-2" role="separator" aria-hidden>
                 <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
                 <span className="flex h-6 w-4 shrink-0 items-center justify-center font-display text-sm font-semibold leading-none text-green-600 opacity-80">
@@ -145,17 +160,15 @@ export const ContestEntryList = ({
                 </span>
                 <div className="h-0 min-h-0 flex-1 border-t-2 border-green-600 opacity-40" />
               </div>
-            )}
+            ) : null}
           </div>
         );
       })}
 
-      {/* Contest Entry Modal */}
       <ContestEntryModal
         isOpen={isModalOpen}
         onClose={closeLineupModal}
-        lineup={selectedLineup || null}
-        roundDisplay={roundDisplay || ""}
+        lineup={selectedLineup}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
       />
     </div>

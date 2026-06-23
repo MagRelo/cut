@@ -15,7 +15,7 @@ export async function recordEmailSend(input: {
   dedupeKey: string;
   recipientEmail: string;
   userId?: string;
-  tournamentId?: string;
+  eventId?: string;
   campaignId?: string;
 }): Promise<void> {
   await prisma.emailSendLog.create({
@@ -24,7 +24,7 @@ export async function recordEmailSend(input: {
       dedupeKey: input.dedupeKey,
       recipientEmail: input.recipientEmail,
       userId: input.userId ?? null,
-      tournamentId: input.tournamentId ?? null,
+      eventId: input.eventId ?? null,
       campaignId: input.campaignId ?? null,
     },
   });
@@ -43,6 +43,10 @@ export type SendIfNotLoggedResult =
   | { status: "sent" }
   | { status: "skipped"; reason: "already_sent" }
   | { status: "dry_run" };
+
+function eventIdFromDedupe(dedupe: EmailDedupeParams): string | undefined {
+  return dedupe.eventId;
+}
 
 /**
  * Sends one email if dedupeKey has not been logged. Records send on success.
@@ -66,19 +70,20 @@ export async function sendIfNotLogged(input: SendIfNotLoggedInput): Promise<Send
   };
   await sendEmail(payload);
 
+  const eventId = eventIdFromDedupe(input.dedupe);
   await recordEmailSend({
     kind: input.kind,
     dedupeKey,
     recipientEmail: input.to,
     ...(input.dedupe.userId ? { userId: input.dedupe.userId } : {}),
-    ...(input.dedupe.tournamentId ? { tournamentId: input.dedupe.tournamentId } : {}),
+    ...(eventId ? { eventId } : {}),
     ...(input.dedupe.campaignId ? { campaignId: input.dedupe.campaignId } : {}),
   });
 
   return { status: "sent" };
 }
 
-/** Broadcast guard: true if this tournament/campaign blast was already sent. */
+/** Broadcast guard: true if this event/campaign blast was already sent. */
 export async function hasBroadcastBeenSent(kind: EmailKind, dedupe: EmailDedupeParams): Promise<boolean> {
   return hasEmailBeenSent(buildDedupeKey(kind, dedupe));
 }

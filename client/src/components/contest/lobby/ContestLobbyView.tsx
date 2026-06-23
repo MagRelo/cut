@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
+import { ErrorMessage } from "../../common/ErrorMessage";
+import { useContestEvent } from "../../../hooks/useContestEvent";
+import { useSportUIPlugin } from "../../../hooks/useSportUI";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
+import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
-import { ContestLineupModal } from "./ContestLineupModal";
 
 export interface ContestLobbyViewProps {
   contest: Contest;
@@ -17,27 +21,56 @@ export interface ContestLobbyViewProps {
   isAuthenticated: boolean;
 }
 
+function tabIndexFromQuery(
+  tab: string | null,
+  layout: ContestLobbyViewModel["layout"],
+): number | null {
+  if (tab === "lineups" && layout.showLineupsTab) return layout.lineupsTabIndex;
+  if (tab === "contest") return layout.contestTabIndex;
+  if (tab === "results" && layout.showResultsTab) return layout.tailTabIndex;
+  if (tab === "pool" && layout.showPredictionsTab) return layout.tailTabIndex;
+  return null;
+}
+
 export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   contest,
   viewModel,
   currentUserId,
   isAuthenticated,
 }) => {
-  const [selectedIndex, setSelectedIndex] = useState(viewModel.layout.defaultTabIndex);
-  const [isLineupModalOpen, setIsLineupModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialTabIndex = useMemo(() => {
+    const fromQuery = tabIndexFromQuery(searchParams.get("tab"), viewModel.layout);
+    return fromQuery ?? viewModel.layout.defaultTabIndex;
+  }, [searchParams, viewModel.layout]);
+
+  const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
 
   useEffect(() => {
-    setSelectedIndex(viewModel.layout.defaultTabIndex);
-  }, [viewModel.layout.layoutKey, viewModel.layout.defaultTabIndex]);
+    setSelectedIndex(initialTabIndex);
+  }, [viewModel.layout.layoutKey, initialTabIndex]);
+
+  const fieldSportId = contest.event?.sportId;
+
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
+  const { eventShell, error: eventError } = useContestEvent(contest);
+  const plugin = useSportUIPlugin();
+  const EventSummary = plugin?.EventSummary;
 
   return (
     <div className="">
+      {eventError ? (
+        <div className="p-4">
+          <ErrorMessage message={eventError.message} />
+        </div>
+      ) : null}
+      {eventShell && EventSummary ? <EventSummary event={eventShell} /> : null}
       <div className="border-b border-gray-200">
         <div className="px-3 py-4">
           <ContestCard
             contest={contest}
             linkUserGroup
+            showPotIcon={viewModel.phase !== "settled"}
             onPotClick={
               viewModel.phase === "settled" ? undefined : () => setIsPayoutsModalOpen(true)
             }
@@ -50,6 +83,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           key={viewModel.layout.layoutKey}
         >
           <TabList className={tabListClassName("px-3")}>
+            {viewModel.layout.showLineupsTab ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                My Lineups
+              </Tab>
+            ) : null}
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
@@ -70,14 +110,24 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           </TabList>
 
           <TabPanels>
+            {viewModel.layout.showLineupsTab && fieldSportId ? (
+              <TabPanel className="p-4 focus:outline-none">
+                <EventLineupsPanel
+                  contest={contest}
+                  sportId={fieldSportId}
+                  eventId={contest.eventId}
+                  eventMetadata={contest.event?.metadata}
+                  isAuthenticated={isAuthenticated}
+                />
+              </TabPanel>
+            ) : null}
+
             <TabPanel className="p-4 focus:outline-none">
               <ContestPrimaryTab
                 contest={contest}
                 mode={viewModel.primary.mode}
-                showCountdown={viewModel.primary.showCountdown}
                 entryListOpensModal={viewModel.primary.entryListOpensModal}
                 currentUserId={currentUserId}
-                onEnterContest={() => setIsLineupModalOpen(true)}
               />
             </TabPanel>
 
@@ -108,12 +158,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         />
       ) : null}
 
-      <ContestLineupModal
-        contest={contest}
-        isOpen={isLineupModalOpen}
-        onClose={() => setIsLineupModalOpen(false)}
-        isAuthenticated={isAuthenticated}
-      />
     </div>
   );
 };

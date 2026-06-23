@@ -35,13 +35,13 @@ function renderBatchSummary(
 
 export interface AdminOperationsPanelProps {
   section: "contest" | "side";
-  tournamentId?: string;
+  eventId?: string;
   onActionComplete?: () => void;
 }
 
 export const AdminOperationsPanel: React.FC<AdminOperationsPanelProps> = ({
   section,
-  tournamentId,
+  eventId,
   onActionComplete,
 }) => {
   const [lockRunning, setLockRunning] = useState(false);
@@ -57,8 +57,8 @@ export const AdminOperationsPanel: React.FC<AdminOperationsPanelProps> = ({
   const [sideError, setSideError] = useState<string | null>(null);
 
   const sideBody = useMemo(
-    () => (tournamentId?.trim() ? { tournamentId: tournamentId.trim() } : {}),
-    [tournamentId],
+    () => (eventId?.trim() ? { eventId: eventId.trim() } : {}),
+    [eventId],
   );
 
   const runLockEligibleContests = useCallback(async () => {

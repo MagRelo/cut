@@ -19,7 +19,7 @@ export interface DataGolfRanking {
 
 export interface DataGolfRankingsData {
   current_date?: string;
-  /** Normalized ranking rows (stable shape for `initTournament`). */
+  /** Normalized ranking rows (stable shape for event init). */
   data?: DataGolfRanking[];
   rankings?: DataGolfRanking[];
   last_updated?: string;

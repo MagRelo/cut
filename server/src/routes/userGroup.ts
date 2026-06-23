@@ -13,9 +13,37 @@ import { generateUniqueInviteCode } from "../utils/inviteCode.js";
 import { buildLeagueInviteUrl } from "../lib/appUrl.js";
 import {
   formatUserGroupDetailResponse,
+  getMemberWalletByUserId,
   userGroupDetailInclude,
   userGroupMemberUserSelect,
 } from "../utils/userGroup.js";
+import { getRequestChainId } from "../utils/requestChainId.js";
+import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
+import { formatContestResponse } from "../utils/formatContestResponse.js";
+
+function eventSummaryForContest(
+  event: {
+    id: string;
+    sportId: string;
+    externalId: string;
+    metadata: unknown;
+    sport: { id: string; name: string };
+  },
+) {
+  const meta =
+    typeof event.metadata === "object" && event.metadata !== null
+      ? (event.metadata as { name?: string; startDate?: string; endDate?: string })
+      : {};
+  return {
+    id: event.id,
+    sportId: event.sportId,
+    sportName: event.sport.name,
+    externalId: event.externalId,
+    name: meta.name ?? event.externalId,
+    startDate: meta.startDate ?? null,
+    endDate: meta.endDate ?? null,
+  };
+}
 
 const userGroupRouter = new Hono();
 
@@ -152,7 +180,25 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    return c.json(formatUserGroupDetailResponse(userGroup, user.userId));
+    const isAdmin = userGroup.members.some(
+      (m) => m.userId === user.userId && m.role === "ADMIN",
+    );
+    const chainId = getRequestChainId(c);
+    const memberWalletByUserId =
+      isAdmin && chainId !== null
+        ? await getMemberWalletByUserId(
+            userGroup.members.map((m) => m.userId),
+            chainId,
+          )
+        : undefined;
+
+    return c.json(
+      formatUserGroupDetailResponse(
+        userGroup,
+        user.userId,
+        memberWalletByUserId ? { memberWalletByUserId } : undefined,
+      ),
+    );
   } catch (error) {
     console.error("Error fetching userGroup:", error);
     return c.json({ error: "Failed to fetch userGroup" }, 500);
@@ -314,6 +360,96 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
   } catch (error) {
     console.error("Error deleting userGroup:", error);
     return c.json({ error: "Failed to delete userGroup" }, 500);
+  }
+});
+
+// All contests for a league, across events (members only)
+userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async (c) => {
+  try {
+    const userGroupId = c.req.param("id");
+    const chainIdParam = c.req.query("chainId")?.trim();
+    const chainId = chainIdParam ? Number(chainIdParam) : undefined;
+    if (chainIdParam && !Number.isFinite(chainId)) {
+      return c.json({ error: "Invalid chainId" }, 400);
+    }
+
+    const contests = await prisma.contest.findMany({
+      where: {
+        userGroupId,
+        chainId: chainId ?? { in: [8453, 84532] },
+      },
+      orderBy: [{ event: { sportId: "asc" } }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        eventId: true,
+        userGroupId: true,
+        endTime: true,
+        address: true,
+        chainId: true,
+        status: true,
+        settings: true,
+        results: true,
+        createdAt: true,
+        updatedAt: true,
+        event: {
+          select: {
+            id: true,
+            sportId: true,
+            externalId: true,
+            metadata: true,
+            sport: { select: { id: true, name: true } },
+          },
+        },
+        userGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        contestLineups: {
+          select: {
+            id: true,
+            contestId: true,
+            userId: true,
+            lineupId: true,
+            position: true,
+            score: true,
+            status: true,
+            entryId: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                settings: true,
+              },
+            },
+            lineup: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const formatted = contests.map((contest) => {
+      const base = formatContestResponse(contest, undefined, contest.eventId);
+      return {
+        ...base,
+        eventSummary: eventSummaryForContest(contest.event),
+      };
+    });
+
+    return c.json({ contests: formatted });
+  } catch (error) {
+    console.error("Error fetching league contests:", error);
+    return c.json({ error: "Failed to fetch league contests" }, 500);
   }
 });
 
@@ -537,6 +673,11 @@ userGroupRouter.delete("/:id/members/:userId", requireAuth, async (c) => {
 userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c) => {
   try {
     const userGroupId = c.req.param("id");
+    const user = c.get("user");
+    const chainId = getRequestChainId(c);
+    if (chainId === null) {
+      return c.json({ error: "X-Cut-Chain-Id header is required" }, 400);
+    }
 
     const userGroup = await prisma.userGroup.findUnique({
       where: { id: userGroupId },
@@ -547,16 +688,40 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
+    const adminUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      include: {
+        wallets: {
+          where: { chainId },
+          orderBy: { isPrimary: "desc" },
+        },
+      },
+    });
+
+    const inviteReferrerAddress = adminUser
+      ? pickWalletPublicKeyForChain(adminUser.wallets, chainId)
+      : null;
+
+    if (!inviteReferrerAddress) {
+      return c.json(
+        {
+          error:
+            "Connect your wallet on this network before generating an invite link.",
+        },
+        400,
+      );
+    }
+
     const inviteCode = await generateUniqueInviteCode();
 
     await prisma.userGroup.update({
       where: { id: userGroupId },
-      data: { inviteCode },
+      data: { inviteCode, inviteReferrerAddress },
     });
 
     return c.json({
       inviteCode,
-      inviteUrl: buildLeagueInviteUrl(inviteCode),
+      inviteUrl: buildLeagueInviteUrl(inviteCode, inviteReferrerAddress),
     });
   } catch (error) {
     console.error("Error generating userGroup invite:", error);

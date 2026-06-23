@@ -24,7 +24,8 @@ export function useContestQuery(contestAddress: string | undefined) {
     enabled: !!routeKey,
     staleTime: 2 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    // Temporarily off — Privy/wallet popups steal focus and were refetching the whole lobby.
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 }
@@ -38,7 +39,7 @@ interface UseContestsQueryOptions {
  * with league contests for groups the user belongs to.
  */
 export function useContestsQuery(
-  tournamentId: string | undefined,
+  eventId: string | undefined,
   chainId: number | undefined,
   options?: UseContestsQueryOptions,
 ) {
@@ -48,15 +49,15 @@ export function useContestsQuery(
   const userId = user?.id ?? null;
 
   return useQuery({
-    queryKey: queryKeys.contests.byTournament(
-      tournamentId ?? "",
+    queryKey: queryKeys.contests.byEvent(
+      eventId ?? "",
       chainId ?? "all",
       userId,
       userGroupId,
     ),
     queryFn: async () => {
-      if (!tournamentId) throw new Error("Tournament ID is required");
-      const params = new URLSearchParams({ tournamentId });
+      if (!eventId) throw new Error("Event ID is required");
+      const params = new URLSearchParams({ eventId });
       if (isConnected && chainId) {
         params.set("chainId", String(chainId));
       }
@@ -65,7 +66,7 @@ export function useContestsQuery(
       }
       return await apiClient.get<Contest[]>(`/contests?${params.toString()}`);
     },
-    enabled: !!tournamentId,
+    enabled: !!eventId,
     staleTime: userGroupId ? 2 * 60 * 1000 : Infinity,
     gcTime: 12 * 60 * 60 * 1000,
     refetchOnWindowFocus: !!userGroupId,

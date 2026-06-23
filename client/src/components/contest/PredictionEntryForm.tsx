@@ -18,6 +18,7 @@ import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransa
 import apiClient from "../../utils/apiClient";
 import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
 import { captureWinnerPoolPositionRecorded } from "../../lib/analytics/posthog";
+import { contestLineupDisplayName } from "../../lib/candidateUtils";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -336,7 +337,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             {lineupForEntry?.user?.name || lineupForEntry?.user?.email || "—"}
           </div>
           <div className="mt-0.5 truncate text-xs text-gray-500">
-            {lineupForEntry?.tournamentLineup?.name || "—"}
+            {lineupForEntry ? contestLineupDisplayName(lineupForEntry) : "—"}
           </div>
         </div>
 

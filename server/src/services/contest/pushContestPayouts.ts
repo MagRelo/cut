@@ -9,6 +9,7 @@ import ContestController from "../../contracts/ContestController.json" with { ty
 import { getContestContract, getPublicClient } from "../shared/contractClient.js";
 import { prisma } from "../../lib/prisma.js";
 import { sharesForSecondaryPricing } from "@cut/secondary-pricing";
+import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
 import { insertOnchainPaymentRow, resolveUserIdForWallet } from "./onchainPayment.js";
 import type { SecondaryPayoutResult } from "../shared/types.js";
 
@@ -63,29 +64,25 @@ async function loadTicketBackingContext(contestId: string, entryId: string) {
   const cl = await prisma.contestLineup.findUnique({
     where: { contestId_entryId: { contestId, entryId } },
     include: {
-      tournamentLineup: {
+      lineup: {
         include: {
-          players: {
-            include: { tournamentPlayer: { include: { player: true } } },
+          picks: {
+            include: {
+              eventParticipant: {
+                include: { participant: true },
+              },
+            },
           },
         },
       },
     },
   });
   const defaultName = "Unnamed Lineup";
-  if (!cl?.tournamentLineup) {
+  if (!cl?.lineup) {
     return { ticketLineupName: defaultName, ticketPlayerLastNames: [] as string[] };
   }
-  const ticketLineupName = cl.tournamentLineup.name || defaultName;
-  const ticketPlayerLastNames = (cl.tournamentLineup.players ?? [])
-    .slice()
-    .sort((a, b) => {
-      const aTotal = a?.tournamentPlayer?.total ?? 0;
-      const bTotal = b?.tournamentPlayer?.total ?? 0;
-      return bTotal - aTotal;
-    })
-    .map((p) => p?.tournamentPlayer?.player?.pga_lastName)
-    .filter((name): name is string => Boolean(name));
+  const ticketLineupName = cl.lineup.name || defaultName;
+  const ticketPlayerLastNames = sortedPlayerLastNamesFromPicks(cl.lineup.picks);
   return { ticketLineupName, ticketPlayerLastNames };
 }
 

@@ -1,148 +1,78 @@
 import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { useReadContract } from "wagmi";
-import { formatUnits } from "viem";
-import { UserGroupIcon } from "@heroicons/react/24/outline";
-import ContestContract from "../../utils/contracts/ContestController.json";
-import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
+import { useContestPotDisplay } from "../../hooks/useContestPotDisplay";
+import { Cog6ToothIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 
 interface ContestCardProps {
   contest: Contest;
   preTournament?: boolean;
   onPotClick?: () => void;
+  /** Settings gear beside pot — contest lobby only, not list rows. */
+  showPotIcon?: boolean;
   linkUserGroup?: boolean;
 }
 
-export const ContestCard = ({ contest, onPotClick, linkUserGroup = false }: ContestCardProps) => {
-  const contestPaymentToken = contest.settings?.paymentTokenAddress ?? "";
-  const paymentDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
-
-  // Read primary prize pool from contract
-  const {
-    data: primaryPrizePool,
-    isLoading: isLoadingPrimaryPrizePool,
-    isError: isErrorPrimaryPrizePool,
-  } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePool",
-    args: [],
-    chainId: contest.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: !!contest?.address,
-    },
-  });
-
-  const primaryPrizePoolBig = primaryPrizePool as bigint | undefined;
-
-  const potAmount = primaryPrizePoolBig
-    ? Math.round(Number(formatUnits(primaryPrizePoolBig, paymentDecimals)))
-    : 0;
-
-  // Fetch speculator pot - don't need entryIds to get total pot
-  const {
-    secondaryTotalFundsFormatted,
-    isLoading: isPredictionDataLoading,
-    contestChainReadsUnavailable,
-  } = useContestPredictionData({
-    contestAddress: contest.address,
-    entryIds: [], // Empty array since we only need secondary prize pool data
-    enabled: !!contest.address && !!contest.chainId, // Only fetch if we have an address and chainId
-    chainId: contest.chainId, // Use the contest's chainId, not the wallet's
-    paymentTokenAddress: contestPaymentToken,
-  });
-
-  const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
-
-  const speculatorPot = Number.isFinite(rawSecondaryTotal) ? Math.round(rawSecondaryTotal) : 0;
-  const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
-
-  const settledTotalPot = (() => {
-    const snapshot = contest.results?.snapshot;
-    if (!snapshot) return null;
-
-    try {
-      const primaryTotal = BigInt(snapshot.primarySideBalance);
-      const secondaryTotal = BigInt(snapshot.secondarySideBalance);
-      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, paymentDecimals)));
-    } catch {
-      return null;
-    }
-  })();
-
-  const displayPot =
-    isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
-
-  const primaryReadFailed =
-    !!contest?.address && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
-  const showLoading =
-    !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
-  const showPotUnavailable =
-    !isFinalizedContest &&
-    !showLoading &&
-    (primaryReadFailed || contestChainReadsUnavailable);
+export const ContestCard = ({
+  contest,
+  onPotClick,
+  showPotIcon = false,
+  linkUserGroup = false,
+}: ContestCardProps) => {
+  const { displayPot, showLoading, showPotUnavailable } = useContestPotDisplay(contest);
 
   return (
-    <div className="flex min-w-0 w-full items-center justify-between gap-2.5">
-      {/* Left Section - Buy-in */}
-      <div className="min-w-[3.75rem] flex-shrink-0 rounded-md border border-gray-300/90 bg-gradient-to-b from-white to-gray-200 p-1.5 text-center shadow-sm ring-1 ring-inset ring-white/60">
-        <div className="text-base font-display font-bold leading-none tabular-nums text-gray-900">
-          {contest.settings?.primaryDeposit === 0
-            ? "Free"
-            : contest.settings?.primaryDeposit != null
-              ? `$${contest.settings.primaryDeposit}`
-              : "—"}
-        </div>
-        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
-          buy-in
-        </div>
-      </div>
-
-      {/* Middle Section - Contest Info */}
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <h3 className="truncate text-lg font-bold leading-tight text-gray-900 font-display">
+    <div className="flex w-full min-w-0 items-center justify-between gap-2.5">
+      <div className="min-w-0 flex-1 overflow-hidden pl-2">
+        <h3 className="truncate font-display text-xl font-bold leading-tight text-gray-900">
           {contest.name}
         </h3>
-        {contest.userGroup?.name ? (
-          <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs font-medium text-emerald-600">
-            <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
-              <Link
-                to={`/user-groups/${contest.userGroup.id ?? contest.userGroupId}`}
-                className="truncate hover:underline focus:outline-none focus-visible:underline"
-              >
-                {contest.userGroup.name}
-              </Link>
-            ) : (
-              <span className="truncate">{contest.userGroup.name}</span>
-            )}
-          </p>
-        ) : null}
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium">
+          {contest.userGroup?.name ? (
+            <>
+              <UserGroupIcon className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+              {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
+                <Link
+                  to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
+                  className="truncate text-emerald-600 hover:underline focus:outline-none focus-visible:underline"
+                >
+                  {contest.userGroup.name}
+                </Link>
+              ) : (
+                <span className="truncate text-emerald-600">{contest.userGroup.name}</span>
+              )}
+            </>
+          ) : (
+            <span className="truncate text-gray-500">Public</span>
+          )}
+        </p>
       </div>
 
-      {/* Right Section - Total Prize Pool */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center gap-1.5">
         {onPotClick ? (
           <button
             type="button"
             onClick={onPotClick}
-            aria-label="Contest Payouts"
-            className="ml-2 mr-2 rounded text-right transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            aria-label="Contest settings"
+            className="ml-2 mr-2 flex items-center gap-5 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
-            <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
-              {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
-            </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
-              POT
+            {showPotIcon ? (
+              <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+            ) : null}
+            <div>
+              <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
+                {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
+              </div>
+              <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+                POT
+              </div>
             </div>
           </button>
         ) : (
           <div className="ml-2 mr-2 text-right">
-            <div className="text-xl font-display font-bold leading-none text-emerald-600 tabular-nums">
+            <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
               {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
             </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide leading-none text-gray-500">
+            <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
               POT
             </div>
           </div>

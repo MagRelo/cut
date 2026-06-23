@@ -1,36 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type TournamentLineup } from "../types/player";
-import type { TournamentLineupListItem } from "../types/lineup";
+import type { PlatformLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
 
-interface LineupListResponse {
-  lineups: TournamentLineupListItem[];
-}
-
-interface LineupDetailResponse {
-  lineups: TournamentLineup[];
+interface LineupsResponse {
+  lineups: PlatformLineupListItem[];
 }
 
 /**
- * Fetches all lineups for a tournament for the logged-in user.
- *
- * Query key includes `userId` so React Query cache does not leak across accounts.
+ * Fetches the user's lineups for an event (platform API).
  */
 export function useLineupsQuery(
-  tournamentId: string | undefined,
+  eventId: string | undefined,
   enabled: boolean = true,
-  userId: string | undefined
+  userId: string | undefined,
 ) {
-  const canRun = !!tournamentId && !!userId && enabled;
+  const canRun = !!eventId && !!userId && enabled;
 
   return useQuery({
-    queryKey: queryKeys.lineups.byTournament(userId ?? "_", tournamentId ?? "_"),
+    queryKey: queryKeys.lineups.byEvent(userId ?? "_", eventId ?? "_"),
     queryFn: async () => {
-      if (!tournamentId) throw new Error("Tournament ID is required");
-      const data = await apiClient.get<LineupListResponse>(`/lineup/${tournamentId}`);
-      return data.lineups || [];
+      if (!eventId) throw new Error("Event ID is required");
+      const lineupsResponse = await apiClient.get<LineupsResponse>(`/lineups/${eventId}`);
+      return lineupsResponse.lineups;
     },
     enabled: canRun,
     staleTime: Infinity,
@@ -44,17 +37,19 @@ export function useLineupsQuery(
  */
 export function useLineupQuery(
   lineupId: string | undefined,
+  eventId: string | undefined,
   enabled: boolean = true,
-  userId: string | undefined
+  userId: string | undefined,
 ) {
-  const canRun = !!lineupId && !!userId && enabled;
+  const canRun = !!lineupId && !!eventId && !!userId && enabled;
 
   return useQuery({
     queryKey: queryKeys.lineups.byId(userId ?? "_", lineupId ?? "_"),
     queryFn: async () => {
-      if (!lineupId) throw new Error("Lineup ID is required");
-      const data = await apiClient.get<LineupDetailResponse>(`/lineup/lineup/${lineupId}`);
-      return data.lineups[0] ?? null;
+      if (!eventId || !lineupId) throw new Error("Event and lineup ID are required");
+
+      const lineupsResponse = await apiClient.get<LineupsResponse>(`/lineups/${eventId}`);
+      return lineupsResponse.lineups.find((row) => row.id === lineupId) ?? null;
     },
     enabled: canRun,
     staleTime: Infinity,
@@ -63,11 +58,8 @@ export function useLineupQuery(
   });
 }
 
-/**
- * Read a lineup from an already-fetched tournament list (no fetch; `enabled: false` on list query).
- */
-export function useLineupFromCache(lineupId: string, tournamentId: string) {
+export function useLineupFromCache(lineupId: string, eventId: string) {
   const { user } = useAuth();
-  const { data: lineups } = useLineupsQuery(tournamentId, false, user?.id);
+  const { data: lineups } = useLineupsQuery(eventId, false, user?.id);
   return lineups?.find((lineup) => lineup.id === lineupId) ?? null;
 }

@@ -8,9 +8,9 @@ import {
 import { LineupContestCard } from "./LineupContestCard";
 
 const withLineupRoster =
-  (playerIds: string[]): Decorator =>
+  (eventParticipantIds: string[]): Decorator =>
   (Story) => {
-    resetStorybookLineups(playerIds);
+    resetStorybookLineups(eventParticipantIds);
     return <Story />;
   };
 
@@ -32,7 +32,6 @@ const meta = {
   },
   argTypes: {
     lineup: { control: false },
-    contests: { control: false },
   },
 } satisfies Meta<typeof LineupContestCard>;
 
@@ -49,44 +48,35 @@ export const EditingEmpty: Story = {
 
 /** Two players selected, two open slots — mix of Edit and Add actions. */
 export const EditingPartial: Story = {
-  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy"])],
+  decorators: [withLineupRoster(["ep-scheffler", "ep-mcilroy"])],
   args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
+    lineup: buildContestLineupForCard(["ep-scheffler", "ep-mcilroy"]),
   },
 };
 
 /** Full roster — each slot shows Edit to swap a player. */
 export const EditingFull: Story = {
   decorators: [
-    withLineupRoster(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"]),
+    withLineupRoster(["ep-scheffler", "ep-mcilroy", "ep-rahm", "ep-schauffele"]),
   ],
   args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"]),
-  },
-};
-
-/** Lineup with no contest entries — Contests tab shows the warning state. */
-export const EditingNoContests: Story = {
-  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy"])],
-  args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
-    contests: [],
+    lineup: buildContestLineupForCard(["ep-scheffler", "ep-mcilroy", "ep-rahm", "ep-schauffele"]),
   },
 };
 
 /** Editable roster with tie-breaker slider (Storybook mock save). */
 export const WithTieBreakerSlider: Story = {
-  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy"])],
+  decorators: [withLineupRoster(["ep-scheffler", "ep-mcilroy"])],
   args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy"]),
+    lineup: buildContestLineupForCard(["ep-scheffler", "ep-mcilroy"]),
   },
 };
 
 /** Locked tournament — tie-breaker shown read-only instead of slider. */
 export const LockedWithTieBreaker: Story = {
-  decorators: [withLineupRoster(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"])],
+  decorators: [withLineupRoster(["ep-scheffler", "ep-mcilroy", "ep-rahm", "ep-schauffele"])],
   args: {
-    lineup: buildContestLineupForCard(["p-scheffler", "p-mcilroy", "p-rahm", "p-schauffele"]),
+    lineup: buildContestLineupForCard(["ep-scheffler", "ep-mcilroy", "ep-rahm", "ep-schauffele"]),
     isEditable: false,
   },
 };

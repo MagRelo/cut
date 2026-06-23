@@ -1,29 +1,22 @@
 /**
  * Centralized query keys for React Query
- *
- * Benefits:
- * - Type-safe query keys
- * - Easy to invalidate related queries
- * - Clear data dependencies
- * - No typos or key mismatches
  */
 
 export const queryKeys = {
-  tournaments: {
-    all: ["tournaments"] as const,
-    /** Week/setup fields (GET /tournaments/active/shell). */
-    activeShell: () => [...queryKeys.tournaments.all, "active", "shell"] as const,
-    /** Cron round status + players (GET /tournaments/active/live). */
-    activeLive: (tournamentId: string) =>
-      [...queryKeys.tournaments.all, "active", "live", tournamentId] as const,
+  sports: {
+    all: ["sports"] as const,
+    list: () => [...queryKeys.sports.all, "list"] as const,
+    activeEvent: (sportId: string) =>
+      [...queryKeys.sports.all, "activeEvent", sportId] as const,
+    candidates: (sportId: string, eventId: string) =>
+      [...queryKeys.sports.all, "candidates", sportId, eventId] as const,
   },
   contests: {
     all: ["contests"] as const,
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
-    /** Lobby page loaded from `/contest/:address` (address in URL only). */
     byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
-    byTournament: (
-      tournamentId: string,
+    byEvent: (
+      eventId: string,
       chainId: number | "all",
       userId?: string | null,
       userGroupId?: string,
@@ -31,7 +24,7 @@ export const queryKeys = {
       [
         ...queryKeys.contests.all,
         "list",
-        tournamentId,
+        eventId,
         chainId,
         userId ?? "anon",
         userGroupId ?? "all",
@@ -39,28 +32,15 @@ export const queryKeys = {
   },
   lineups: {
     all: ["lineups"] as const,
-    /** Scoped by user so cache cannot leak across account switches. */
-    byTournament: (userId: string, tournamentId: string) =>
-      [...queryKeys.lineups.all, "tournament", userId, tournamentId] as const,
+    byEvent: (userId: string, eventId: string) =>
+      [...queryKeys.lineups.all, "event", userId, eventId] as const,
     byId: (userId: string, lineupId: string) =>
       [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
-  /** GET /bets/side/lineup/:lineupId/market — invalidate when roster changes. */
   sideBet: {
     all: ["sideBetMarket"] as const,
-    market: (tournamentLineupId: string) => [...queryKeys.sideBet.all, tournamentLineupId] as const,
-    tickets: (tournamentLineupId: string) =>
-      [...queryKeys.sideBet.all, "tickets", tournamentLineupId] as const,
-  },
-  players: {
-    all: ["players"] as const,
-    byTournament: (tournamentId: string) =>
-      [...queryKeys.players.all, "tournament", tournamentId] as const,
-  },
-  scores: {
-    all: ["scores"] as const,
-    byTournament: (tournamentId: string) =>
-      [...queryKeys.scores.all, "tournament", tournamentId] as const,
+    market: (lineupId: string) => [...queryKeys.sideBet.all, lineupId] as const,
+    tickets: (lineupId: string) => [...queryKeys.sideBet.all, "tickets", lineupId] as const,
   },
   user: {
     all: ["user"] as const,
@@ -71,14 +51,16 @@ export const queryKeys = {
   userGroups: {
     all: ["userGroups"] as const,
     byId: (id: string) => [...queryKeys.userGroups.all, id] as const,
+    contests: (id: string, chainId: number | "all") =>
+      [...queryKeys.userGroups.all, id, "contests", chainId] as const,
     members: (id: string) => [...queryKeys.userGroups.all, id, "members"] as const,
   },
   admin: {
     all: ["admin"] as const,
-    dashboard: (tournamentId?: string) =>
-      [...queryKeys.admin.all, "dashboard", tournamentId ?? "active"] as const,
-    sideBetReport: (tournamentId?: string) =>
-      [...queryKeys.admin.all, "sideBetReport", tournamentId ?? "active"] as const,
+    dashboard: (eventId?: string) =>
+      [...queryKeys.admin.all, "dashboard", eventId ?? "active"] as const,
+    sideBetReport: (eventId?: string) =>
+      [...queryKeys.admin.all, "sideBetReport", eventId ?? "active"] as const,
     userList: (chainId: number, userType: string) =>
       [...queryKeys.admin.all, "users", chainId, userType] as const,
     userDetail: (userId: string, chainId: number) =>

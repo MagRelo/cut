@@ -1,7 +1,6 @@
 import React from "react";
 import { Footer } from "../common/Footer";
 import { PageContentPanel } from "./PagePanel";
-import { TournamentContextBar } from "../tournament/TournamentContextBar";
 import { TopNav } from "./TopNav";
 
 interface AppLayoutProps {
@@ -15,7 +14,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="container mx-auto">
           <div className="max-w-shell mx-auto">
             <TopNav />
-            <TournamentContextBar />
             <PageContentPanel>{children}</PageContentPanel>
           </div>
         </div>

@@ -107,10 +107,10 @@ export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [contestScope, setContestScope] = useState<ContestScopeFilter>("all");
   const dashboardQuery = useAdminDashboardQuery();
-  const tournamentId = dashboardQuery.data?.tournament?.id;
+  const eventId = dashboardQuery.data?.event?.id;
   const sideReportQuery = useAdminSideBetReportQuery(
-    tournamentId,
-    Boolean(tournamentId) && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
+    eventId,
+    Boolean(eventId) && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
   );
 
   const refreshAll = useCallback(() => {
@@ -127,7 +127,7 @@ export const AdminPage: React.FC = () => {
         ? String(dashboardQuery.error)
         : null;
 
-  const hasTournament = Boolean(dashboard?.tournament);
+  const hasEvent = Boolean(dashboard?.event);
   const contests = dashboard?.contests;
   const filteredContests = useMemo(() => {
     const items = contests?.items ?? [];
@@ -171,10 +171,9 @@ export const AdminPage: React.FC = () => {
         </div>
       ) : error ? (
         <ErrorMessage message={error} />
-      ) : !hasTournament ? (
+      ) : !hasEvent ? (
         <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 text-sm text-amber-900">
-          No active tournament. Set <span className="font-medium">manualActive</span> on a tournament to
-          populate this dashboard.
+          No active event. Set an active competition event to populate this dashboard.
         </div>
       ) : (
         <>
@@ -221,7 +220,7 @@ export const AdminPage: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-1">Side bets</h2>
                 <p className="text-xs text-gray-500">
-                  Side-bet markets and tickets for this tournament.
+                  Side-bet markets and tickets for this event.
                 </p>
               </div>
 
@@ -315,7 +314,7 @@ export const AdminPage: React.FC = () => {
 
               <AdminOperationsPanel
                 section="side"
-                tournamentId={tournamentId}
+                eventId={eventId}
                 onActionComplete={refreshAll}
               />
             </PageSection>

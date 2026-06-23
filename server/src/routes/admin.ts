@@ -18,17 +18,23 @@ import {
   sendSampleEmail,
   type PreviewKind,
 } from "../lib/email/index.js";
+import {
+  resolveAdminEvent,
+  resolveEventIdParam,
+} from "../services/admin/adminEventContext.js";
+import { placementPlayersMapForTickets } from "../services/sideBets/lineupSideBetUtils.js";
 import { pickWalletForChain } from "../utils/pickWalletForChain.js";
+import { getRequestChainId } from "../utils/requestChainId.js";
 
 const adminRouter = new Hono();
 
-/** GET /api/admin/dashboard — current-week tournament, contests, parlays, and ops hints. */
+/** GET /api/admin/dashboard — active event, contests, parlays, and ops hints. */
 adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
   try {
-    const qTid = c.req.query("tournamentId")?.trim();
-    const data = await getAdminDashboard(qTid || undefined);
-    if (qTid && !data.tournament) {
-      return c.json({ error: "Tournament not found" }, 404);
+    const eventId = resolveEventIdParam(c.req.query("eventId"));
+    const data = await getAdminDashboard(eventId || undefined);
+    if (eventId && !data.event) {
+      return c.json({ error: "Event not found" }, 404);
     }
     return c.json(data);
   } catch (error) {
@@ -50,13 +56,6 @@ adminRouter.post("/contests/lock-eligible", requireAuth, requireAdmin, async (c)
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
-
-function getRequestChainId(c: { req: { header: (n: string) => string | undefined } }): number | null {
-  const raw = c.req.header("x-cut-chain-id");
-  if (!raw) return null;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) ? n : null;
-}
 
 // GET /api/admin/users
 adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
@@ -243,36 +242,28 @@ adminRouter.get("/users/:id", requireAuth, requireAdmin, async (c) => {
   }
 });
 
-/** GET /api/admin/bets/side/tournament-report — all side-bet tickets for a tournament + inflow / exposure totals. */
-adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async (c) => {
+/** GET /api/admin/bets/side/event-report — side-bet tickets for an event + inflow / exposure totals. */
+adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) => {
   try {
-    const qTid = c.req.query("tournamentId")?.trim();
-    let tournamentId = qTid ?? "";
-    let tournamentName: string | null = null;
-
-    if (!tournamentId) {
-      const active = await prisma.tournament.findFirst({
-        where: { manualActive: true },
-        select: { id: true, name: true },
-      });
-      if (!active) {
-        return c.json({ error: "No active tournament (set manualActive or pass tournamentId)" }, 404);
-      }
-      tournamentId = active.id;
-      tournamentName = active.name;
-    } else {
-      const t = await prisma.tournament.findUnique({
-        where: { id: tournamentId },
-        select: { id: true, name: true },
-      });
-      if (!t) {
-        return c.json({ error: "Tournament not found" }, 404);
-      }
-      tournamentName = t.name;
+    const eventIdParam = resolveEventIdParam(c.req.query("eventId"));
+    const event = await resolveAdminEvent(eventIdParam || undefined);
+    if (!event) {
+      return c.json(
+        {
+          error: eventIdParam
+            ? "Event not found"
+            : "No active event (pass eventId or activate an event)",
+        },
+        404,
+      );
     }
 
+    const eventId = event.id;
+    const meta = event.metadata as { name?: string } | null;
+    const eventName = meta?.name ?? event.externalId;
+
     const tickets = await prisma.sideBetTicket.findMany({
-      where: { sideBetMarket: { tournamentId } },
+      where: { sideBetMarket: { eventId } },
       orderBy: { createdAt: "desc" },
       take: 5000,
       include: {
@@ -280,9 +271,9 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
         sideBetMarket: {
           select: {
             id: true,
-            tournamentLineupId: true,
+            lineupId: true,
             status: true,
-            tournamentLineup: { select: { name: true } },
+            lineup: { select: { name: true } },
           },
         },
       },
@@ -291,85 +282,55 @@ adminRouter.get("/bets/side/tournament-report", requireAuth, requireAdmin, async
     let stakeInflow = 0;
     let openLiability = 0;
     let openStake = 0;
-    for (const t of tickets) {
-      stakeInflow += t.stakeAmount;
-      if (t.status === SideBetTicketStatus.OPEN) {
-        openStake += t.stakeAmount;
-        openLiability += t.stakeAmount * t.decimalOddsAtPlacement;
+    for (const ticket of tickets) {
+      stakeInflow += ticket.stakeAmount;
+      if (ticket.status === SideBetTicketStatus.OPEN) {
+        openStake += ticket.stakeAmount;
+        openLiability += ticket.stakeAmount * ticket.decimalOddsAtPlacement;
       }
     }
 
-    const allTpIds = [...new Set(tickets.flatMap((t) => t.playerIds))];
-    const tpRows =
-      allTpIds.length > 0
-        ? await prisma.tournamentPlayer.findMany({
-            where: { tournamentId, id: { in: allTpIds } },
-            select: {
-              id: true,
-              player: { select: { pga_firstName: true, pga_lastName: true } },
-            },
-          })
-        : [];
-    const placementNameByTpId = new Map(
-      tpRows.map((r) => [
-        r.id,
-        {
-          id: r.id,
-          firstName: r.player.pga_firstName ?? null,
-          lastName: r.player.pga_lastName ?? null,
-        },
-      ]),
+    const placementByTicketId = await placementPlayersMapForTickets(
+      eventId,
+      tickets.map((ticket) => ({
+        id: ticket.id,
+        eventParticipantIds: ticket.eventParticipantIds,
+      })),
     );
 
-    function placementPlayersForTicket(playerIds: string[]) {
-      return [...playerIds]
-        .sort((a, b) => a.localeCompare(b))
-        .map(
-          (id) =>
-            placementNameByTpId.get(id) ?? {
-              id,
-              firstName: null as string | null,
-              lastName: null as string | null,
-            },
-        );
-    }
-
     return c.json({
-      tournamentId,
-      tournamentName,
+      eventId,
+      eventName,
       ticketCount: tickets.length,
       totals: {
-        /** Sum of stake for every ticket (funds received on accepted / recorded tickets). */
         stakeInflow,
-        /** Sum of stake × decimal odds for OPEN tickets only (max payout if all won). */
         openLiability,
-        /** Sum of stakes for OPEN tickets only. */
         openStake,
       },
-      tickets: tickets.map((t) => ({
-        id: t.id,
-        userId: t.userId,
-        userName: t.user.name,
-        userEmail: t.user.email,
-        lineupId: t.sideBetMarket.tournamentLineupId,
-        lineupName: t.sideBetMarket.tournamentLineup.name,
-        marketId: t.sideBetMarket.id,
-        marketStatus: t.sideBetMarket.status,
-        hitsRequired: t.hitsRequired,
-        topN: t.topN,
-        stakeAmount: t.stakeAmount,
-        decimalOddsAtPlacement: t.decimalOddsAtPlacement,
-        americanDisplayAtPlacement: t.americanDisplayAtPlacement,
-        quoteVersionAtPlacement: t.quoteVersionAtPlacement,
-        status: t.status,
-        createdAt: t.createdAt.toISOString(),
-        potentialPayout: t.stakeAmount * t.decimalOddsAtPlacement,
-        playerIds: t.playerIds,
-        placementPlayers: placementPlayersForTicket(t.playerIds),
+      tickets: tickets.map((ticket) => ({
+        id: ticket.id,
+        userId: ticket.userId,
+        userName: ticket.user.name,
+        userEmail: ticket.user.email,
+        lineupId: ticket.sideBetMarket.lineupId,
+        lineupName: ticket.sideBetMarket.lineup.name,
+        marketId: ticket.sideBetMarket.id,
+        marketStatus: ticket.sideBetMarket.status,
+        hitsRequired: ticket.hitsRequired,
+        topN: ticket.topN,
+        stakeAmount: ticket.stakeAmount,
+        decimalOddsAtPlacement: ticket.decimalOddsAtPlacement,
+        americanDisplayAtPlacement: ticket.americanDisplayAtPlacement,
+        quoteVersionAtPlacement: ticket.quoteVersionAtPlacement,
+        status: ticket.status,
+        createdAt: ticket.createdAt.toISOString(),
+        potentialPayout: ticket.stakeAmount * ticket.decimalOddsAtPlacement,
+        playerIds: ticket.eventParticipantIds,
+        placementPlayers: placementByTicketId.get(ticket.id) ?? [],
       })),
     });
   } catch (error) {
-    console.error("admin side bet tournament report error:", error);
+    console.error("admin side bet event report error:", error);
     return c.json({ error: "Failed to load side bet report" }, 500);
   }
 });
@@ -379,9 +340,13 @@ adminRouter.post("/bets/side/lock", requireAuth, requireAdmin, async (c) => {
     return c.json({ error: "Side bets disabled" }, 403);
   }
   try {
-    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
-    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
-    const result = await batchLockSideBetMarkets(tid ? { tournamentId: tid } : undefined);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      eventId?: unknown;
+    };
+    const eventId = resolveEventIdParam(
+      typeof body.eventId === "string" ? body.eventId : undefined,
+    );
+    const result = await batchLockSideBetMarkets(eventId ? { eventId } : undefined);
     return c.json(result);
   } catch (error) {
     console.error("admin batch lock side bets error:", error);
@@ -394,9 +359,13 @@ adminRouter.post("/bets/side/settle", requireAuth, requireAdmin, async (c) => {
     return c.json({ error: "Side bets disabled" }, 403);
   }
   try {
-    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
-    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
-    const result = await batchSettleSideBets(tid ? { tournamentId: tid } : undefined);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      eventId?: unknown;
+    };
+    const eventId = resolveEventIdParam(
+      typeof body.eventId === "string" ? body.eventId : undefined,
+    );
+    const result = await batchSettleSideBets(eventId ? { eventId } : undefined);
     return c.json(result);
   } catch (error) {
     console.error("admin batch settle side bets error:", error);
@@ -445,9 +414,13 @@ adminRouter.post("/bets/side/close", requireAuth, requireAdmin, async (c) => {
     return c.json({ error: "Side bets disabled" }, 403);
   }
   try {
-    const body = (await c.req.json().catch(() => ({}))) as { tournamentId?: unknown };
-    const tid = typeof body.tournamentId === "string" ? body.tournamentId.trim() : "";
-    const result = await batchCloseSideBetMarkets(tid ? { tournamentId: tid } : undefined);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      eventId?: unknown;
+    };
+    const eventId = resolveEventIdParam(
+      typeof body.eventId === "string" ? body.eventId : undefined,
+    );
+    const result = await batchCloseSideBetMarkets(eventId ? { eventId } : undefined);
     return c.json(result);
   } catch (error) {
     console.error("admin batch close side bets error:", error);

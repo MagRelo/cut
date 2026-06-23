@@ -1,6 +1,6 @@
 import type { Contest } from "./contest";
 import { type User } from "./user";
-import { type TournamentLineup } from "./player";
+import type { PlatformLineup } from "./event";
 
 export interface ContestLineup {
   id: string;
@@ -8,21 +8,19 @@ export interface ContestLineup {
   status: "ACTIVE" | "INACTIVE";
   position: number;
   score: number;
-  tournamentLineup?: TournamentLineup;
-  tournamentLineupId: string;
-  entryId?: string; // Blockchain entry ID (uint256 as string)
+  lineup?: PlatformLineup | Pick<PlatformLineup, "id" | "name">;
+  lineupId: string;
+  entryId?: string;
   createdAt: Date;
   updatedAt: Date;
   user?: User;
   userId: string;
 }
 
-/** Contest lineup row from GET /lineup/:tournamentId including nested contest (list shape). */
 export interface ContestLineupWithContest extends ContestLineup {
   contest: Contest;
 }
 
-/** Response item for GET /lineup/:tournamentId — roster plus optional contest entries per lineup. */
-export interface TournamentLineupListItem extends TournamentLineup {
+export interface PlatformLineupListItem extends PlatformLineup {
   contestLineups: ContestLineupWithContest[];
 }

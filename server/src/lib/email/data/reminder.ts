@@ -1,25 +1,22 @@
 import { prisma } from "../../prisma.js";
-import { formatLockLabel } from "./tournament.js";
-import { loadOpenContestsForTournament } from "./contests.js";
+import { formatLockLabel, loadEventForEmail } from "./event.js";
+import { loadOpenContestsForEvent } from "./contests.js";
 import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
 
 export async function loadReminderEmailDataForUser(
   userId: string,
-  tournamentId: string,
+  eventId: string,
 ): Promise<ReminderNoContestEmailData | null> {
-  const [user, tournament, contests] = await Promise.all([
+  const [user, event, contests] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true },
     }),
-    prisma.tournament.findUnique({
-      where: { id: tournamentId },
-      select: { name: true, endDate: true },
-    }),
-    loadOpenContestsForTournament(tournamentId),
+    loadEventForEmail(eventId),
+    loadOpenContestsForEvent(eventId),
   ]);
 
-  if (!user?.email?.trim() || !tournament) return null;
+  if (!user?.email?.trim() || !event) return null;
 
   const groups = await prisma.userGroupMember.findMany({
     where: { userId },
@@ -27,19 +24,19 @@ export async function loadReminderEmailDataForUser(
   });
 
   const lockContest = await prisma.contest.findFirst({
-    where: { tournamentId, status: "OPEN" },
+    where: { eventId, status: "OPEN" },
     orderBy: { endTime: "asc" },
     select: { endTime: true },
   });
   const lockLabel = lockContest
     ? formatLockLabel(lockContest.endTime)
-    : formatLockLabel(tournament.endDate);
+    : formatLockLabel(event.endDate);
 
   return {
     userName: user.name,
-    tournamentName: tournament.name,
+    tournamentName: event.name,
     lockLabel,
     openContests: contests,
-    groupNames: groups.map((g) => g.userGroup.name),
+    groupNames: groups.map((group) => group.userGroup.name),
   };
 }

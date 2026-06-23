@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
 import { lobbyDecorators } from "../../../../.storybook/decorators";
 import {
   contestFixtures,
@@ -15,7 +14,6 @@ const meta = {
   decorators: lobbyDecorators,
   parameters: { layout: "fullscreen" },
   args: {
-    onEnterContest: fn(),
     currentUserId: "user-1",
   },
 } satisfies Meta<typeof ContestPrimaryTab>;
@@ -27,7 +25,6 @@ export const EnterContest: Story = {
   args: {
     contest: contestFixtures.open,
     mode: "enterContest",
-    showCountdown: true,
     entryListOpensModal: false,
   },
 };
@@ -36,7 +33,6 @@ export const LiveTimeline: Story = {
   args: {
     contest: contestWithTimeline,
     mode: "liveTimeline",
-    showCountdown: false,
     entryListOpensModal: true,
   },
 };
@@ -45,7 +41,6 @@ export const WithEntries: Story = {
   args: {
     contest: contestWithLineups,
     mode: "liveTimeline",
-    showCountdown: false,
     entryListOpensModal: true,
   },
 };

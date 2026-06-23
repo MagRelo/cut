@@ -2,8 +2,7 @@ import type { Location } from "react-router-dom";
 import {
   adminMatch,
   contestsMatch,
-  leaderboardMatch,
-  lineupsMatch,
+  leaguesMatch,
   userGroupsMatch,
 } from "./navRoutes";
 
@@ -21,13 +20,16 @@ export const CONTEST_HISTORY_LINK = {
   match: (pathname: string) => pathname === "/account/history",
 } as const;
 
+export const ACCOUNT_FUNDS_LINK = {
+  to: "/account/funds",
+  label: "Manage Funds",
+  match: (pathname: string) => pathname === "/account/funds",
+} as const;
+
+/** Indented links nested under Account in user menus. */
+export const ACCOUNT_SUB_LINKS = [ACCOUNT_FUNDS_LINK, CONTEST_HISTORY_LINK] as const;
+
 export const LEFT_TABS: NavTab[] = [
-  {
-    key: "leaderboard",
-    to: "/leaderboard",
-    label: "Leaderboard",
-    match: leaderboardMatch,
-  },
   {
     key: "contests",
     to: "/contests",
@@ -36,18 +38,11 @@ export const LEFT_TABS: NavTab[] = [
   },
 ];
 
-export const LINEUPS_TAB: NavTab = {
-  key: "lineups",
-  to: "/lineups",
-  label: "My Lineups",
-  match: lineupsMatch,
-};
-
 export const LEAGUES_TAB: NavTab = {
   key: "leagues",
-  to: "/user-groups",
+  to: "/leagues",
   label: "My Leagues",
-  match: userGroupsMatch,
+  match: (pathname) => leaguesMatch(pathname) || userGroupsMatch(pathname),
 };
 
 export const ADMIN_TAB: NavTab = {

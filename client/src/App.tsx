@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import { WagmiProvider } from "@privy-io/wagmi";
 import { PrivyProvider } from "@privy-io/react-auth";
@@ -8,10 +8,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
-import { prefetchActiveTournament } from "./hooks/useTournamentData";
 
 import { AuthProvider } from "./contexts/AuthContext";
 import { useReferralCapture } from "./hooks/useReferralCapture";
+import { useLeagueInviteCapture } from "./hooks/useLeagueInviteCapture";
 import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
   getSmartWalletsPaymasterConfig,
@@ -24,10 +24,13 @@ import { UserPage } from "./pages/Account";
 import { UserHistoryPage } from "./pages/UserHistoryPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
-import { LineupList } from "./pages/LineupListPage";
-
-import { Contests } from "./pages/ContestListPage";
+import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
+import { Contests } from "./pages/ContestListPage";
+import {
+  SportContestRedirect,
+  UserGroupToLeagueRedirect,
+} from "./components/routing/LegacyRedirects";
 import ContractsPage from "./pages/ContractsPage";
 
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -67,6 +70,7 @@ const smartWalletsProviderKey = getSmartWalletsProviderKey();
 
 function ReferralQueryCapture() {
   useReferralCapture();
+  useLeagueInviteCapture();
   return null;
 }
 
@@ -81,7 +85,10 @@ const AppShell: React.FC = () => {
         {/* <MaintenanceOverlay /> */}
         <OnboardingRedirectGate>
           <Routes>
-                  <Route path="/" element={<Contests />} />
+                  <Route path="/" element={<Navigate to="/contests" replace />} />
+                  <Route path="/sports/:sportId" element={<SportHubPage />} />
+                  <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
                   <Route path="/home" element={<Home />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -135,22 +142,9 @@ const AppShell: React.FC = () => {
                   />
                   <Route path="/contest/:address" element={<ContestLobby />} />
 
-                  {/* Lineups */}
+                  {/* Leagues (canonical) */}
                   <Route
-                    path="/lineups"
-                    element={
-                      <ProtectedRoute>
-                        <LineupList />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Leaderboard */}
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-
-                  {/* User Groups */}
-                  <Route
-                    path="/user-groups"
+                    path="/leagues"
                     element={
                       <ProtectedRoute>
                         <UserGroupListPage />
@@ -158,7 +152,7 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/create"
+                    path="/leagues/create"
                     element={
                       <ProtectedRoute>
                         <UserGroupCreatePage />
@@ -166,7 +160,7 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/join/:code"
+                    path="/leagues/join/:code"
                     element={
                       <ProtectedRoute>
                         <UserGroupJoinPage />
@@ -174,13 +168,18 @@ const AppShell: React.FC = () => {
                     }
                   />
                   <Route
-                    path="/user-groups/:id"
+                    path="/leagues/:id"
                     element={
                       <ProtectedRoute>
                         <UserGroupDetailPage />
                       </ProtectedRoute>
                     }
                   />
+                  {/* Legacy user-group URLs */}
+                  <Route path="/user-groups" element={<Navigate to="/leagues" replace />} />
+                  <Route path="/user-groups/create" element={<Navigate to="/leagues/create" replace />} />
+                  <Route path="/user-groups/join/:code" element={<UserGroupToLeagueRedirect />} />
+                  <Route path="/user-groups/:id" element={<UserGroupToLeagueRedirect />} />
 
                   {/* Admin (staff only; linked in nav when user is ADMIN / SUPER_ADMIN) */}
                   <Route
@@ -225,12 +224,6 @@ const AppShell: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  // Prefetch tournament data on app initialization for faster page loads
-  // This runs in the background and caches data before components mount
-  useEffect(() => {
-    void prefetchActiveTournament(queryClient);
-  }, []);
-
   return (
     <PrivyProvider appId={privyAppId ?? ""}>
       <SmartWalletsProvider key={smartWalletsProviderKey} config={smartWalletsPaymasterConfig}>

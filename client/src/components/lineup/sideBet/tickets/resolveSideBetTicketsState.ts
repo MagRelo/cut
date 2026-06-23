@@ -41,10 +41,10 @@ export function sortTicketsNewestFirst(tickets: SideBetMarketTicketDto[]): SideB
 }
 
 export function resolveSideBetTicketsState(
-  tournamentLineupId: string | null,
+  lineupId: string | null,
   query: SideBetTicketsQuerySnapshot,
 ): SideBetTicketsVisualState {
-  if (!tournamentLineupId) return { kind: "hidden" };
+  if (!lineupId) return { kind: "hidden" };
   if (query.isLoading && query.data == null) return { kind: "loading" };
   if (query.isError) return { kind: "error", message: SIDE_BET_TICKETS_LOAD_ERROR };
   const tickets = sortTicketsNewestFirst(

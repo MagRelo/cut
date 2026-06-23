@@ -1,21 +1,22 @@
 import { SideBetTicketStatus, type Prisma } from "@prisma/client";
+import type { PropBetResultsShell, PropBetTicketShell } from "@cut/sport-sdk";
+import type { GolfPropBetResultsMetadata, GolfPropBetTicketMetadata } from "@cut/sport-pga-golf";
+import { isGolfFinishInTopN } from "@cut/sport-pga-golf";
+import { getPropBetModule } from "../../sports/propBetRegistry.js";
+import { eventParticipantLeaderboardPosition } from "../sideBets/lineupSideBetUtils.js";
 
-/**
- * Official finish position vs top-N threshold.
- * `null` = cannot grade conservatively (unknown position string).
- */
-export function isFinishInTopN(
-  leaderboardPosition: string | null | undefined,
-  topN: number,
-): boolean | null {
-  if (leaderboardPosition == null || leaderboardPosition === "") return null;
-  const u = leaderboardPosition.trim().toUpperCase();
-  if (u === "CUT" || u === "WD" || u === "DQ" || u === "MDF" || u === "DNS") return false;
-  const m = u.match(/^T?(\d+)$/);
-  if (!m) return null;
-  const n = parseInt(m[1]!, 10);
-  if (!Number.isFinite(n)) return null;
-  return n <= topN;
+/** @deprecated Use isGolfFinishInTopN from @cut/sport-pga-golf */
+export const isFinishInTopN = isGolfFinishInTopN;
+
+function propBetGradeToTicketStatus(grade: "WON" | "LOST" | "VOID"): SideBetTicketStatus {
+  switch (grade) {
+    case "WON":
+      return SideBetTicketStatus.WON;
+    case "LOST":
+      return SideBetTicketStatus.LOST;
+    default:
+      return SideBetTicketStatus.VOID;
+  }
 }
 
 export async function settleOpenTicketIfPossible(
@@ -26,7 +27,7 @@ export async function settleOpenTicketIfPossible(
     where: { id: ticketId },
     include: {
       sideBetMarket: {
-        select: { tournamentId: true },
+        select: { eventId: true, lineupId: true, event: { select: { sportId: true } } },
       },
     },
   });
@@ -36,24 +37,37 @@ export async function settleOpenTicketIfPossible(
     return { ok: true, status: ticket.status };
   }
 
-  const playerIds = ticket.playerIds;
-  if (!playerIds || playerIds.length !== 4) {
+  const eventParticipantIds = ticket.eventParticipantIds;
+  if (!eventParticipantIds || eventParticipantIds.length !== 4) {
     await tx.sideBetTicket.update({
       where: { id: ticketId },
       data: {
         status: SideBetTicketStatus.VOID,
-        settlementNotes: { reason: "MISSING_PLAYER_IDS" },
+        settlementNotes: { reason: "MISSING_EVENT_PARTICIPANT_IDS" },
       },
     });
     return { ok: true, status: SideBetTicketStatus.VOID };
   }
 
-  const tournamentId = ticket.sideBetMarket.tournamentId;
-  const tournamentPlayers = await tx.tournamentPlayer.findMany({
-    where: { tournamentId, id: { in: playerIds } },
+  const eventId = ticket.sideBetMarket.eventId;
+  const sportId = ticket.sideBetMarket.event.sportId;
+  const propBetModule = getPropBetModule(sportId);
+  if (!propBetModule) {
+    await tx.sideBetTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: SideBetTicketStatus.VOID,
+        settlementNotes: { reason: "PROP_BETS_NOT_SUPPORTED_FOR_SPORT" },
+      },
+    });
+    return { ok: true, status: SideBetTicketStatus.VOID };
+  }
+
+  const eventParticipants = await tx.eventParticipant.findMany({
+    where: { eventId, id: { in: eventParticipantIds } },
   });
 
-  if (tournamentPlayers.length !== 4) {
+  if (eventParticipants.length !== 4) {
     await tx.sideBetTicket.update({
       where: { id: ticketId },
       data: {
@@ -61,42 +75,55 @@ export async function settleOpenTicketIfPossible(
         settlementNotes: {
           reason: "PLACEMENT_PLAYERS_NOT_FOUND",
           expected: 4,
-          found: tournamentPlayers.length,
+          found: eventParticipants.length,
         },
       },
     });
     return { ok: true, status: SideBetTicketStatus.VOID };
   }
 
-  const sorted = [...tournamentPlayers].sort((a, b) => a.id.localeCompare(b.id));
-  const results: (boolean | null)[] = [];
+  const sortedIds = [...eventParticipantIds].sort((a, b) => a.localeCompare(b));
+  const byId = new Map(eventParticipants.map((row) => [row.id, row]));
+  const leaderboardPositions = sortedIds.map((id) => {
+    const row = byId.get(id);
+    return row ? eventParticipantLeaderboardPosition(row) : null;
+  });
 
-  for (const tp of sorted) {
-    const pos = tp.leaderboardPosition;
-    const r = isFinishInTopN(pos, ticket.topN);
-    results.push(r);
-  }
+  const ticketShell: PropBetTicketShell = {
+    id: ticket.id,
+    lineupId: ticket.sideBetMarket.lineupId,
+    metadata: {
+      hitsRequired: ticket.hitsRequired,
+      topN: ticket.topN,
+      eventParticipantIds: sortedIds,
+    } satisfies GolfPropBetTicketMetadata,
+  };
 
-  if (results.some((r) => r === null)) {
-    await tx.sideBetTicket.update({
-      where: { id: ticketId },
-      data: {
-        status: SideBetTicketStatus.VOID,
-        settlementNotes: { reason: "INDETERMINATE_POSITION" },
-      },
-    });
-    return { ok: true, status: SideBetTicketStatus.VOID };
-  }
+  const resultsShell: PropBetResultsShell = {
+    eventId,
+    metadata: {
+      leaderboardPositions,
+    } satisfies GolfPropBetResultsMetadata,
+  };
 
-  const hits = results.filter((r) => r === true).length;
-  const won = hits >= ticket.hitsRequired;
-  const status = won ? SideBetTicketStatus.WON : SideBetTicketStatus.LOST;
+  const grade = propBetModule.gradeTicket(ticketShell, resultsShell);
+  const status = propBetGradeToTicketStatus(grade);
+  const hits = leaderboardPositions
+    .map((position, index) => ({
+      position,
+      topN: ticket.topN,
+      id: sortedIds[index],
+    }))
+    .filter((row) => isGolfFinishInTopN(row.position, row.topN) === true).length;
 
   await tx.sideBetTicket.update({
     where: { id: ticketId },
     data: {
       status,
-      settlementNotes: { hits, hitsRequired: ticket.hitsRequired, topN: ticket.topN },
+      settlementNotes:
+        status === SideBetTicketStatus.VOID
+          ? { reason: "INDETERMINATE_POSITION" }
+          : { hits, hitsRequired: ticket.hitsRequired, topN: ticket.topN },
     },
   });
 

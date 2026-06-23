@@ -14,9 +14,9 @@ function formatBuyIn(settings: unknown): string | undefined {
   return `$${n} buy-in`;
 }
 
-export async function loadOpenContestsForTournament(tournamentId: string): Promise<ContestListItem[]> {
+export async function loadOpenContestsForEvent(eventId: string): Promise<ContestListItem[]> {
   const contests = await prisma.contest.findMany({
-    where: { tournamentId, status: "OPEN" },
+    where: { eventId, status: "OPEN" },
     select: {
       name: true,
       settings: true,
@@ -25,11 +25,16 @@ export async function loadOpenContestsForTournament(tournamentId: string): Promi
     orderBy: { name: "asc" },
   });
 
-  return contests.map((c) => {
-    const item: ContestListItem = { name: c.name };
-    const buyIn = formatBuyIn(c.settings);
+  return contests.map((contest) => {
+    const item: ContestListItem = { name: contest.name };
+    const buyIn = formatBuyIn(contest.settings);
     if (buyIn) item.buyInLabel = buyIn;
-    if (c.userGroup?.name) item.groupName = c.userGroup.name;
+    if (contest.userGroup?.name) item.groupName = contest.userGroup.name;
     return item;
   });
+}
+
+/** @deprecated Use loadOpenContestsForEvent */
+export async function loadOpenContestsForTournament(eventId: string): Promise<ContestListItem[]> {
+  return loadOpenContestsForEvent(eventId);
 }

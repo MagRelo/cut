@@ -1,76 +1,92 @@
 import { useCallback, useMemo } from "react";
 
 import { useLineupsQuery } from "./useLineupQueries";
-import { useCreateLineup, useUpdateLineup } from "./useLineupMutations";
+import { useCreateLineup, useCloneLineup, useUpdateLineup } from "./useLineupMutations";
 import { useAuth } from "../contexts/AuthContext";
-import { useActiveTournament } from "./useTournamentData";
-import type { TournamentLineupListItem } from "../types/lineup";
+import type { PlatformLineupListItem } from "../types/lineup";
 
 interface UseLineupDataOptions {
-  tournamentId?: string;
+  eventId: string;
   enabled?: boolean;
 }
 
-export function useLineupData(options: UseLineupDataOptions = {}) {
+export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
   const { user } = useAuth();
-  const { tournament: currentTournament } = useActiveTournament();
-
-  const tournamentId = options.tournamentId ?? currentTournament?.id;
-  const isEnabled = options.enabled ?? (!!user && !!tournamentId);
+  const isEnabled = enabled ?? Boolean(user && eventId);
 
   const {
     data: lineups = [],
     error,
     isLoading,
     refetch,
-  } = useLineupsQuery(tournamentId, isEnabled, user?.id);
+  } = useLineupsQuery(eventId, isEnabled, user?.id);
 
   const createMutation = useCreateLineup();
+  const cloneMutation = useCloneLineup();
   const updateMutation = useUpdateLineup();
 
-  /** Explicit network refresh (e.g. pull-to-refresh). Prefer relying on the query cache otherwise. */
-  const refetchLineups = useCallback(async (): Promise<TournamentLineupListItem[]> => {
+  const refetchLineups = useCallback(async (): Promise<PlatformLineupListItem[]> => {
     const result = await refetch();
     return result.data ?? [];
   }, [refetch]);
 
   const getLineupFromCache = useCallback(
-    (lineupId: string): TournamentLineupListItem | null =>
+    (lineupId: string): PlatformLineupListItem | null =>
       lineups.find((lineup) => lineup.id === lineupId) ?? null,
-    [lineups]
+    [lineups],
   );
 
   const getLineupById = useCallback(
-    async (lineupId: string): Promise<TournamentLineupListItem> => {
+    async (lineupId: string): Promise<PlatformLineupListItem> => {
       const lineup = getLineupFromCache(lineupId);
       if (!lineup) {
         throw new Error(`Lineup ${lineupId} not found`);
       }
       return lineup;
     },
-    [getLineupFromCache]
+    [getLineupFromCache],
   );
 
   const createLineup = useCallback(
-    async (createTournamentId: string, playerIds: string[], name?: string) => {
+    async (
+      createEventId: string,
+      picks: string[],
+      contestId: string,
+      name?: string,
+      winningScorePrediction?: number,
+    ) => {
       return await createMutation.mutateAsync({
-        tournamentId: createTournamentId,
-        playerIds,
+        eventId: createEventId,
+        contestId,
+        picks,
+        name,
+        winningScorePrediction,
+      });
+    },
+    [createMutation],
+  );
+
+  const cloneLineup = useCallback(
+    async (sourceLineupId: string, eventId: string, contestId: string, name?: string) => {
+      return await cloneMutation.mutateAsync({
+        lineupId: sourceLineupId,
+        eventId,
+        contestId,
         name,
       });
     },
-    [createMutation]
+    [cloneMutation],
   );
 
   const updateLineup = useCallback(
     async (
       lineupId: string,
-      playerIds: string[],
+      picks: string[],
       options?: { name?: string; winningScorePrediction?: number },
     ) => {
       return await updateMutation.mutateAsync({
         lineupId,
-        playerIds,
+        picks,
         name: options?.name,
         winningScorePrediction: options?.winningScorePrediction,
       });
@@ -84,7 +100,7 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
   }, [error]);
 
   const clearLineups = () => {
-    // React Query cache will be cleared automatically on auth/tournament change
+    // React Query cache will be cleared automatically on auth/event change
   };
 
   return {
@@ -95,9 +111,8 @@ export function useLineupData(options: UseLineupDataOptions = {}) {
     getLineupById,
     getLineupFromCache,
     createLineup,
+    cloneLineup,
     updateLineup,
     clearLineups,
   };
 }
-
-

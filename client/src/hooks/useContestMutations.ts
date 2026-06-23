@@ -6,8 +6,8 @@ import { type ContestLineup } from "../types/lineup";
 
 interface JoinContestParams {
   contestId: string;
-  tournamentLineupId: string;
-  entryId: string; // Blockchain entry ID (required)
+  lineupId: string;
+  entryId: string;
 }
 
 interface LeaveContestParams {
@@ -15,9 +15,6 @@ interface LeaveContestParams {
   contestLineupId: string;
 }
 
-/**
- * Mutation hook for creating a contest
- */
 export function useCreateContest() {
   const queryClient = useQueryClient();
 
@@ -34,7 +31,10 @@ export function useCreateContest() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.contests.byTournament(variables.tournamentId, variables.chainId),
+        queryKey: queryKeys.contests.byEvent(
+          variables.eventId,
+          variables.chainId,
+        ),
       });
     },
 
@@ -44,21 +44,18 @@ export function useCreateContest() {
   });
 }
 
-/**
- * Mutation hook for joining a contest
- */
 export function useJoinContest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ contestId, tournamentLineupId, entryId }: JoinContestParams) => {
+    mutationFn: async ({ contestId, lineupId, entryId }: JoinContestParams) => {
       return await apiClient.post<Contest>(`/contests/${contestId}/lineups`, {
-        tournamentLineupId,
+        lineupId,
         entryId,
       });
     },
 
-    onMutate: async ({ contestId, tournamentLineupId }) => {
+    onMutate: async ({ contestId, lineupId }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
 
       const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
@@ -70,7 +67,7 @@ export function useJoinContest() {
           const optimisticLineup: ContestLineup = {
             id: `temp-${Date.now()}`,
             contestId,
-            tournamentLineupId,
+            lineupId,
             userId: "",
             status: "ACTIVE",
             position: 0,
@@ -104,9 +101,6 @@ export function useJoinContest() {
   });
 }
 
-/**
- * Mutation hook for leaving a contest
- */
 export function useLeaveContest() {
   const queryClient = useQueryClient();
 

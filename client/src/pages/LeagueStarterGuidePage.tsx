@@ -106,7 +106,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </li>
           <li>
             Go to{" "}
-            <Link to="/user-groups" className="text-blue-600 hover:underline">
+            <Link to="/leagues" className="text-blue-600 hover:underline">
               My Leagues
             </Link>{" "}
             and tap <strong>Create League</strong>.
@@ -124,8 +124,9 @@ export const LeagueStarterGuidePage: React.FC = () => {
             no in-app email send; you share the link yourself.
           </li>
           <li>
-            When a friend opens the link, they must be <strong>signed in</strong>. They&apos;ll join
-            your league and land on the league Overview.
+            When a friend opens the link, they&apos;ll be prompted to <strong>sign in or create an
+            account</strong> if they aren&apos;t already. New players are credited to you as their
+            referrer, join your league, and land on the league page.
           </li>
         </ol>
 
@@ -136,7 +137,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
         <div className="mt-6">
           <Link
-            to="/user-groups/create"
+            to="/leagues/create"
             className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Create a league
@@ -183,34 +184,16 @@ export const LeagueStarterGuidePage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Invite link</h3>
             <p className="mb-3">
-              <strong>Generate</strong> a link if you don&apos;t have one yet.{" "}
-              <strong>Rotate</strong> to issue a new link—the old one stops working immediately. Use
-              rotation if a link was shared too widely or you want to stop new joins temporarily.
+              <strong>Generate</strong> a link if you don&apos;t have one yet (connect your wallet
+              on the current network first). <strong>Rotate</strong> to issue a new link—the old
+              one stops working immediately. Use rotation if a link was shared too widely or you
+              want to stop new joins temporarily.
             </p>
-            <div className="rounded-sm border border-amber-200 bg-amber-50/80 p-4">
-              <h4 className="mb-2 text-sm font-semibold text-gray-900">
-                League invite link vs. User Invite Link
-              </h4>
-              <p className="mb-2 text-sm">
-                These are two different links—both useful, but they do different jobs:
-              </p>
-              <ul className="list-disc space-y-1 pl-5 text-sm">
-                <li>
-                  <strong>League invite link</strong> — adds someone to <em>your league</em> so they
-                  can see and join league contests. You generate this on your league&apos;s{" "}
-                  <strong>Manage</strong> tab.
-                </li>
-                <li>
-                  <strong>User Invite Link</strong> — builds your on-chain invite tree for contest
-                  payouts. Find it on your{" "}
-                  <Link to="/account" className="text-blue-600 hover:underline">
-                    Account
-                  </Link>{" "}
-                  page (<code className="text-xs">/?ref=your-wallet-address</code>). Share this when
-                  someone is signing up for Play The Cut.
-                </li>
-              </ul>
-            </div>
+            <p className="text-sm text-gray-700">
+              One link does both jobs: it adds someone to <em>your league</em> and sets you as their
+              referrer for invite rewards when they sign up. Share it when onboarding new players—you
+              don&apos;t need a separate Account invite link for league members.
+            </p>
           </div>
 
           <div>
@@ -222,13 +205,17 @@ export const LeagueStarterGuidePage: React.FC = () => {
                 the invite link. You can add them as a regular member or as a co-admin.
               </li>
               <li>
+                <strong>Send funds</strong> — opens Manage funds with the member&apos;s wallet
+                pre-filled so you can transfer testnet xUSDC from your connected wallet.
+              </li>
+              <li>
                 <strong>Remove member</strong> — removes them from the league. You cannot remove the
                 last admin; promote someone else first if needed.
               </li>
             </ul>
             <p className="mt-2 text-sm text-gray-600">
-              Members can copy the invite link from the <strong>Members</strong> tab once you have
-              generated one (they cannot rotate it).
+              Members can copy the invite link from the league header once you have generated one
+              (they cannot rotate it).
             </p>
           </div>
 
@@ -244,7 +231,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
 
         <div className="mt-6">
           <Link
-            to="/user-groups"
+            to="/leagues"
             className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Go to My Leagues
@@ -277,13 +264,15 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Account ID</h3>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Account ID &amp; fund links</h3>
             <p>
-              Your <strong>Account ID</strong> is your smart wallet address. It appears on the{" "}
+              Your <strong>Account ID</strong> is your smart wallet address on the{" "}
               <Link to="/account" className="text-blue-600 hover:underline">
                 Account
               </Link>{" "}
-              page. Share it with anyone who needs to send you tokens.
+              page. Each player also has a <strong>Share fund link</strong> there—send that link to
+              anyone who should fund their account; it opens Manage funds with their wallet
+              pre-filled.
             </p>
           </div>
 
@@ -303,7 +292,8 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </li>
               <li>
                 <strong>Send</strong> — peer-to-peer transfer: enter a recipient&apos;s wallet
-                address and amount. There is no send-by-username or email—addresses only.
+                address and amount, or use a fund link / league Manage tab <strong>Send funds</strong>{" "}
+                link to pre-fill the recipient.
               </li>
             </ul>
           </div>
@@ -315,21 +305,12 @@ export const LeagueStarterGuidePage: React.FC = () => {
                 <strong>Onboard new members in order:</strong>
                 <ol className="mt-2 list-decimal space-y-1 pl-6">
                   <li>
-                    Have them sign up using your <strong>User Invite Link</strong> from{" "}
-                    <Link to="/account" className="text-blue-600 hover:underline">
-                      Account
-                    </Link>{" "}
-                    so they join your invite network.
+                    Send your <strong>league invite link</strong> from the Manage tab—they sign up,
+                    join your league, and you become their referrer automatically.
                   </li>
                   <li>
-                    Send your <strong>league invite link</strong> so they can join the league.
-                  </li>
-                  <li>
-                    Send them funds from{" "}
-                    <Link to="/account/funds" className="text-blue-600 hover:underline">
-                      Manage funds
-                    </Link>{" "}
-                    to get them started.
+                    Use <strong>Send funds</strong> on the Manage tab member list (or Manage funds)
+                    to transfer starter xUSDC from your wallet.
                   </li>
                 </ol>
               </li>
@@ -370,7 +351,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           <Link to="/faq#referral-network" className="font-medium text-blue-600 hover:underline">
             Invite network deep dive
           </Link>
-          <Link to="/user-groups/create" className="font-medium text-blue-600 hover:underline">
+          <Link to="/leagues/create" className="font-medium text-blue-600 hover:underline">
             Create a league
           </Link>
         </nav>

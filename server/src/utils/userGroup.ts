@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { buildLeagueInviteUrl } from "../lib/appUrl.js";
+import { pickWalletPublicKeyForChain } from "./pickWalletForChain.js";
 
 export const userGroupMemberUserSelect = {
   id: true,
@@ -30,6 +31,7 @@ type UserGroupDetailRecord = {
   name: string;
   description: string | null;
   inviteCode: string | null;
+  inviteReferrerAddress: string | null;
   createdAt: Date;
   updatedAt: Date;
   members: Array<{
@@ -42,12 +44,18 @@ type UserGroupDetailRecord = {
   _count: { members: number; contests: number };
 };
 
+export type FormatUserGroupDetailOptions = {
+  memberWalletByUserId?: Map<string, string | null>;
+};
+
 export function formatUserGroupDetailResponse(
   userGroup: UserGroupDetailRecord,
   currentUserId: string,
+  options?: FormatUserGroupDetailOptions,
 ) {
   const currentUserMembership = userGroup.members.find((member) => member.userId === currentUserId);
   const isAdmin = currentUserMembership?.role === "ADMIN";
+  const memberWalletByUserId = options?.memberWalletByUserId;
 
   return {
     id: userGroup.id,
@@ -65,14 +73,44 @@ export function formatUserGroupDetailResponse(
       user: member.user,
       role: member.role,
       joinedAt: member.joinedAt,
+      ...(isAdmin && memberWalletByUserId
+        ? { walletAddress: memberWalletByUserId.get(member.userId) ?? null }
+        : {}),
     })),
     ...(userGroup.inviteCode
       ? {
-          inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode),
+          inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode, userGroup.inviteReferrerAddress),
           ...(isAdmin ? { inviteCode: userGroup.inviteCode } : {}),
         }
       : {}),
   };
+}
+
+/** Wallet addresses for league members on a chain (admin tooling). */
+export async function getMemberWalletByUserId(
+  userIds: string[],
+  chainId: number,
+): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  if (userIds.length === 0) return map;
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    include: {
+      wallets: {
+        where: { chainId },
+        orderBy: { isPrimary: "desc" },
+      },
+    },
+  });
+
+  for (const userId of userIds) {
+    map.set(userId, null);
+  }
+  for (const u of users) {
+    map.set(u.id, pickWalletPublicKeyForChain(u.wallets, chainId));
+  }
+  return map;
 }
 
 /** League IDs the user belongs to (for contest list scoping). */

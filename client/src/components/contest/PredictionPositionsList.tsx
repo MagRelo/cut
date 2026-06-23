@@ -5,6 +5,7 @@ import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
 import { toEnglishOdds } from "../../utils/secondaryPurchasePreview";
+import { contestLineupDisplayName } from "../../lib/candidateUtils";
 
 import { resolveUserBorderColor } from "../../lib/lineupDisplay";
 
@@ -106,7 +107,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
         {userPositions.map((position) => {
           const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
           const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
-          const lineupName = lineup?.tournamentLineup?.name || "Lineup";
+          const lineupName = lineup ? contestLineupDisplayName(lineup) : "Lineup";
           const isWithdrawing = withdrawingEntryId === position.entryId;
 
           const userSettings = lineup?.user?.settings;

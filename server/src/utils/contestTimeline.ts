@@ -73,7 +73,7 @@ type LineupMetaRow = {
   userId: string;
   entryId: string | null;
   user: { name: string; settings: unknown };
-  tournamentLineup: { name: string };
+  lineup: { name: string };
 };
 
 function buildLineupMetaMap(rows: LineupMetaRow[]) {
@@ -86,7 +86,7 @@ function buildLineupMetaMap(rows: LineupMetaRow[]) {
     const userColor = userSettings?.color;
     const resolvedColor = isValidHexColor(userColor) ? userColor : DEFAULT_USER_COLOR;
     const userName = row.user.name?.trim() || "Unknown";
-    const displayName = `${userName} - ${row.tournamentLineup.name}`;
+    const displayName = `${userName} - ${row.lineup.name}`;
     map.set(row.id, {
       userId: row.userId,
       name: displayName,
@@ -127,7 +127,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
         userId: true,
         entryId: true,
         user: { select: { name: true, settings: true } },
-        tournamentLineup: { select: { name: true } },
+        lineup: { select: { name: true } },
       },
     }),
   ]);

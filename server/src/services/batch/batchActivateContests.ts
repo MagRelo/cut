@@ -1,38 +1,42 @@
 /**
  * Batch activate contests (for cron jobs)
- * 
- * Finds all OPEN contests where the tournament has started,
- * then activates each one.
+ *
+ * Finds OPEN contests whose event is ready for activation via the sport plugin.
  */
 
-import { prisma } from '../../lib/prisma.js';
-import { activateContest } from '../contest/activateContest.js';
-import { type BatchOperationResult } from '../shared/types.js';
+import { prisma } from "../../lib/prisma.js";
+import { requireSportModule } from "../../sports/registry.js";
+import { activateContest } from "../contest/activateContest.js";
+import { type BatchOperationResult } from "../shared/types.js";
 
 export async function batchActivateContests(): Promise<BatchOperationResult> {
-  // console.log('[batchActivateContests] Starting batch activation');
-
   try {
-    // Find all OPEN contests where tournament is IN_PROGRESS or COMPLETED
-    const contests = await prisma.contest.findMany({
+    const openContests = await prisma.contest.findMany({
       where: {
-        status: 'OPEN',
+        status: "OPEN",
         chainId: {
-          in: [8453, 84532], // Base and Base Sepolia
-        },
-        tournament: {
-          status: {
-            in: ['IN_PROGRESS', 'COMPLETED'],
-          },
+          in: [8453, 84532],
         },
       },
       select: {
         id: true,
         name: true,
         chainId: true,
+        eventId: true,
+        event: {
+          select: { sportId: true },
+        },
       },
     });
 
+    const contests = [];
+    for (const contest of openContests) {
+      const sportModule = requireSportModule(contest.event.sportId);
+      const eventStatus = await sportModule.getEventStatus(contest.eventId);
+      if (sportModule.shouldActivateContest(eventStatus)) {
+        contests.push(contest);
+      }
+    }
 
     if (contests.length === 0) {
       return {
@@ -43,19 +47,16 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
       };
     }
 
-    // Activate each contest sequentially to avoid nonce conflicts
     const results = [];
     for (const contest of contests) {
       const result = await activateContest(contest.id);
       results.push(result);
-      
-      // Add a small delay between transactions to ensure nonce propagation
+
       if (result.success) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
-    // Count successes and failures
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
@@ -66,21 +67,19 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
       results,
     };
   } catch (error) {
-    console.error('[batchActivateContests] Error in batch operation:', error);
+    console.error("[batchActivateContests] Error in batch operation:", error);
     throw error;
   }
 }
 
-// Main execution block (for direct script execution)
 if (import.meta.url === `file://${process.argv[1]}`) {
   batchActivateContests()
     .then((result) => {
-      console.log('Batch activate contests completed:', result);
+      console.log("Batch activate contests completed:", result);
       process.exit(result.failed > 0 ? 1 : 0);
     })
     .catch((error) => {
-      console.error('Batch activate contests failed:', error);
+      console.error("Batch activate contests failed:", error);
       process.exit(1);
     });
 }
-

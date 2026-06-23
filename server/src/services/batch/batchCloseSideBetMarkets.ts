@@ -8,27 +8,28 @@ import {
 export type { SideBetBatchOperationSummary } from "./sideBetBatchShared.js";
 
 export async function batchCloseSideBetMarkets(params?: {
-  tournamentId?: string;
+  eventId?: string;
 }): Promise<ReturnType<typeof summarizeSideBetBatch>> {
+  const eventId = params?.eventId?.trim();
   const where: {
     status: typeof SideBetMarketStatus.SETTLED;
-    tournamentId?: string;
+    eventId?: string;
   } = { status: SideBetMarketStatus.SETTLED };
-  if (params?.tournamentId) where.tournamentId = params.tournamentId;
+  if (eventId) where.eventId = eventId;
 
   const markets = await prisma.sideBetMarket.findMany({ where, select: { id: true } });
   const results: SideBetBatchOperationResult[] = [];
 
-  for (const m of markets) {
+  for (const market of markets) {
     try {
       await prisma.sideBetMarket.update({
-        where: { id: m.id },
+        where: { id: market.id },
         data: { status: SideBetMarketStatus.CLOSED, closedAt: new Date() },
       });
-      results.push({ success: true, marketId: m.id });
+      results.push({ success: true, marketId: market.id });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      results.push({ success: false, marketId: m.id, error: msg });
+      results.push({ success: false, marketId: market.id, error: msg });
     }
   }
 

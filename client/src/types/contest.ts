@@ -1,6 +1,15 @@
-import { type Tournament } from "./tournament";
 import { type UserGroup } from "./userGroup";
 import { type ContestLineup } from "./lineup";
+
+export interface ContestEvent {
+  id: string;
+  sportId: string;
+  externalId: string;
+  isActive: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
@@ -69,7 +78,7 @@ export interface Contest {
   id: string;
   name: string;
   description: string | null;
-  tournamentId: string;
+  eventId: string;
   userGroupId: string;
   endTime: Date;
   status: ContestStatus;
@@ -79,8 +88,8 @@ export interface Contest {
   chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   createdAt: Date;
   updatedAt: Date;
-  tournament?: Tournament;
   userGroup?: UserGroup;
+  event?: ContestEvent;
   contestLineups?: ContestLineup[];
   _count?: {
     contestLineups: number;
@@ -123,7 +132,7 @@ export type OnchainPaymentView = {
 
 export interface CreateContestInput {
   name: string;
-  tournamentId: string;
+  eventId: string;
   transactionId: string;
   address: string;
   chainId: number;

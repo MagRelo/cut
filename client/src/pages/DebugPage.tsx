@@ -1,26 +1,21 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PageSection } from "../components/layout/PageSection";
-import {
-  useActiveTournament,
-  useActiveTournamentLive,
-  useTournamentShell,
-} from "../hooks/useTournamentData";
+import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
   const auth = useAuth();
-  const shellQuery = useTournamentShell();
-  const tournamentId = shellQuery.data?.tournament?.id;
-  const liveQuery = useActiveTournamentLive(tournamentId);
-  const activeTournament = useActiveTournament();
+  const [searchParams] = useSearchParams();
+  const debugSportId = searchParams.get("sportId") ?? undefined;
+  const sportActive = useSportActiveEvent(debugSportId ?? "");
 
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
 
-      {/* Wagmi Account Status */}
       <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-blue-600">Wagmi Account Status</h2>
         <div className="space-y-2 text-sm">
@@ -36,7 +31,6 @@ export const DebugPage: React.FC = () => {
         </div>
       </PageSection>
 
-      {/* Auth context (Cut / Privy) */}
       <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-green-600">Auth context</h2>
         <div className="space-y-2 text-sm">
@@ -89,96 +83,47 @@ export const DebugPage: React.FC = () => {
         </div>
       </PageSection>
 
-      {/* Tournament shell */}
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-purple-600">
-          Tournament shell (useTournamentShell / GET active/shell)
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Loading:</strong> {shellQuery.isLoading ? "true" : "false"}
-          </div>
-          <div>
-            <strong>Error:</strong>{" "}
-            {shellQuery.error ? String(shellQuery.error.message) : "None"}
-          </div>
-          <div>
-            <strong>Data updated:</strong>{" "}
-            {shellQuery.dataUpdatedAt
-              ? new Date(shellQuery.dataUpdatedAt).toLocaleString()
-              : "—"}
-          </div>
-          {shellQuery.data && (
-            <>
-              <div>
-                <strong>Tournament:</strong> {shellQuery.data.tournament.name}
-              </div>
-              <div>
-                <strong>Tournament ID:</strong> {shellQuery.data.tournament.id}
-              </div>
-            </>
-          )}
-        </div>
-      </PageSection>
-
-      {/* Active tournament live */}
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-indigo-600">
-          Active live (useActiveTournamentLive / GET active/live)
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Tournament ID (from shell):</strong> {tournamentId ?? "—"}
-          </div>
-          <div>
-            <strong>Loading:</strong> {liveQuery.isLoading ? "true" : "false"}
-          </div>
-          <div>
-            <strong>Error:</strong> {liveQuery.error ? String(liveQuery.error.message) : "None"}
-          </div>
-          <div>
-            <strong>Data updated:</strong>{" "}
-            {liveQuery.dataUpdatedAt
-              ? new Date(liveQuery.dataUpdatedAt).toLocaleString()
-              : "—"}
-          </div>
-          <div>
-            <strong>Players Count:</strong> {liveQuery.data?.players.length ?? "—"}
-          </div>
-          {liveQuery.data && (
+      {debugSportId ? (
+        <PageSection>
+          <h2 className="text-lg font-semibold mb-3 text-purple-600">
+            Sport active event (useSportActiveEvent)
+          </h2>
+          <div className="space-y-2 text-sm">
             <div>
-              <strong>Status:</strong> {liveQuery.data.tournament.status}
+              <strong>Loading:</strong> {sportActive.isLoading ? "true" : "false"}
             </div>
-          )}
-        </div>
-      </PageSection>
-
-      {/* Active Tournament State */}
-      <PageSection>
-        <h2 className="text-lg font-semibold mb-3 text-orange-600">
-          Active Tournament State (useActiveTournament)
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <strong>Loading:</strong> {activeTournament.isLoading ? "true" : "false"}
+            <div>
+              <strong>Error:</strong>{" "}
+              {sportActive.error ? String(sportActive.error.message) : "None"}
+            </div>
+            <div>
+              <strong>Sport ID:</strong> {sportActive.sportId}
+            </div>
+            <div>
+              <strong>Event ID:</strong> {sportActive.eventId ?? "—"}
+            </div>
+            <div>
+              <strong>Event name:</strong> {sportActive.eventName ?? "—"}
+            </div>
+            <div>
+              <strong>Status:</strong> {sportActive.status ?? "—"}
+            </div>
+            <div>
+              <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
+            </div>
+            <div>
+              <strong>Candidates count:</strong> {sportActive.candidates.length}
+            </div>
           </div>
-          <div>
-            <strong>Error:</strong>{" "}
-            {activeTournament.error ? activeTournament.error.message : "None"}
-          </div>
-          <div>
-            <strong>Tournament:</strong>{" "}
-            {activeTournament.tournament ? activeTournament.tournament.name : "None"}
-          </div>
-          <div>
-            <strong>Players Count:</strong> {activeTournament.players.length}
-          </div>
-          <div>
-            <strong>Is Tournament Editable:</strong>{" "}
-            {activeTournament.isTournamentEditable ? "true" : "false"}
-          </div>
-        </div>
-      </PageSection>
+        </PageSection>
+      ) : (
+        <PageSection>
+          <p className="text-sm text-gray-600">
+            Add <code className="font-mono">?sportId=…</code> to the URL to load sport-active
+            event debug info.
+          </p>
+        </PageSection>
+      )}
     </>
   );
 };

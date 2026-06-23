@@ -1,20 +1,17 @@
 import cron from "node-cron";
-import { prisma } from "../lib/prisma.js";
-
-// Import services
-import { updateTournament } from "../services/updateTournament.js";
-import { syncTournamentFieldWithdrawals } from "../services/syncTournamentFieldWithdrawals.js";
-import { updateTournamentPlayerScores } from "../services/updateTournamentPlayers.js";
-import { updateContestLineups } from "../services/updateContestLineups.js";
+import { getActiveEvents } from "../services/events/getActiveEvents.js";
+import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
 import { refreshOpenSideBetQuotes } from "../services/sideBets/refreshOpenSideBetQuotes.js";
+import type { BatchOperationResult } from "../services/shared/types.js";
+
 class CronScheduler {
   private jobs: Map<string, cron.ScheduledTask> = new Map();
   private isEnabled: boolean;
-  private pipelineRunning: boolean = false;
+  private pipelineRunning = false;
 
   constructor(enabled: boolean = true) {
     this.isEnabled = enabled;
@@ -22,18 +19,17 @@ class CronScheduler {
 
   private async executeWithErrorHandling(
     jobName: string,
-    task: () => Promise<void | any>
+    task: () => Promise<void | unknown>,
   ): Promise<void> {
     try {
       console.log(`[CRON] ${jobName} - Starting...`);
       const result = await task();
 
-      // If the task returns a BatchOperationResult, log it
       if (result && typeof result === "object" && "total" in result) {
-        const deferred =
-          "deferred" in result && typeof result.deferred === "number" ? result.deferred : 0;
+        const batch = result as BatchOperationResult & { deferred?: number };
+        const deferred = typeof batch.deferred === "number" ? batch.deferred : 0;
         console.log(
-          `[CRON] ${jobName} - Completed: ${result.succeeded}/${result.total} succeeded, ${result.failed} failed${deferred > 0 ? `, ${deferred} deferred` : ""}`,
+          `[CRON] ${jobName} - Completed: ${batch.succeeded}/${batch.total} succeeded, ${batch.failed} failed${deferred > 0 ? `, ${deferred} deferred` : ""}`,
         );
       } else {
         console.log(`[CRON] ${jobName} - Completed`);
@@ -41,54 +37,14 @@ class CronScheduler {
     } catch (error) {
       console.error(`[CRON] ${jobName} - Error:`, error);
 
-      // If it's a connection error, wait before continuing (hardcoded 30 seconds)
-      if ((error as any)?.code === "P2037" || (error as any)?.message?.includes("connection")) {
+      if ((error as { code?: string })?.code === "P2037" || (error as Error)?.message?.includes("connection")) {
         console.log(`[CRON] ${jobName} - Connection error, waiting 30 seconds before next attempt`);
         await new Promise((resolve) => setTimeout(resolve, 30000));
       }
     }
   }
 
-  private async shouldRunPlayerUpdates(): Promise<boolean> {
-    try {
-      const currentTournament = await prisma.tournament.findFirst({
-        where: { manualActive: true },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (!currentTournament) {
-        console.log("[CRON] Player Updates - Skipped: No tournament is active");
-        return false;
-      }
-
-      // PGA RoundStatus enum (GraphQL introspection) has no PLAYOFF value — only
-      // IN_PROGRESS, COMPLETE, OFFICIAL, SUSPENDED, GROUPINGS_OFFICIAL, UPCOMING.
-      // Playoff is signaled via roundDisplay ("Playoff") and currentRound (401+).
-      const isPlayoffRound =
-        currentTournament.roundDisplay === "Playoff" ||
-        (currentTournament.currentRound ?? 0) >= 401;
-
-      const shouldRun =
-        currentTournament.status === "IN_PROGRESS" &&
-        (currentTournament.roundStatusDisplay === "In Progress" ||
-          currentTournament.roundStatusDisplay === "Complete" ||
-          isPlayoffRound);
-
-      if (!shouldRun) {
-        console.log(
-          `[CRON] Player Updates - Skipped: Tournament status is ${currentTournament.status}, roundStatusDisplay is ${currentTournament.roundStatusDisplay ?? "null"}, roundDisplay is ${currentTournament.roundDisplay ?? "null"}, currentRound is ${currentTournament.currentRound ?? "null"}`
-        );
-      }
-
-      return shouldRun;
-    } catch (error) {
-      console.error("[CRON] Error checking tournament status:", error);
-      return false; // Don't run on error to be safe
-    }
-  }
-
   private async runDataUpdatePipeline(): Promise<void> {
-    // Prevent overlapping pipeline executions
     if (this.pipelineRunning) {
       console.log("[CRON] Data Pipeline - Skipped: Pipeline already running");
       return;
@@ -97,30 +53,21 @@ class CronScheduler {
     this.pipelineRunning = true;
     const startTime = Date.now();
     console.log(
-      `[CRON] ========== Starting Data Update Pipeline (${new Date().toISOString()}) ==========`
+      `[CRON] ========== Starting Data Update Pipeline (${new Date().toISOString()}) ==========`,
     );
 
     try {
+      const events = await getActiveEvents();
 
-      // Step 1: Update tournament
-      await this.executeWithErrorHandling("Update Tournament", updateTournament);
-
-      // Step 1b: Sync field withdrawals (pre-tournament only; no-ops when IN_PROGRESS)
-      await this.executeWithErrorHandling(
-        "Sync Field Withdrawals",
-        syncTournamentFieldWithdrawals,
-      );
-
-      // Step 2: Update player scores & contest lineups 
-      const shouldRunPlayerUpdates = await this.shouldRunPlayerUpdates();
-      if (shouldRunPlayerUpdates) {
-        await this.executeWithErrorHandling("Update Players",updateTournamentPlayerScores);
-        await this.executeWithErrorHandling("Update Contest Lineups", updateContestLineups);
-      } else {
-        console.log("[CRON] Player Updates - Skipped: Tournament is not active");
+      for (const event of events) {
+        await this.executeWithErrorHandling(
+          `Sport pipeline (${event.sportId}/${event.id})`,
+          () => runSportEventPipeline(event.id, event.sportId),
+        );
       }
 
-      // Step 3: Update contest lifecycle
+      await this.executeWithErrorHandling("Refresh Side Bet Quotes", refreshOpenSideBetQuotes);
+
       await this.executeWithErrorHandling("Activate Contests", batchActivateContests);
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests);
       await this.executeWithErrorHandling("Close Contests", batchCloseContests);
@@ -137,23 +84,15 @@ class CronScheduler {
 
   public start(): void {
     if (!this.isEnabled) {
-      // console.log("[CRON] Cron scheduler is disabled");
       return;
     }
 
     console.log("[CRON] Starting cron scheduler...");
 
-    // Main data update pipeline - runs every 5 minutes
-    // Executes jobs in sequence: Tournament → Activate → Players → Lineups → Settle → Close
     const mainPipelineJob = cron.schedule("*/5 * * * *", () => {
-      this.runDataUpdatePipeline();
+      void this.runDataUpdatePipeline();
     });
     this.jobs.set("mainPipeline", mainPipelineJob);
-
-    const sideBetOddsJob = cron.schedule("* * * * *", () => {
-      void this.executeWithErrorHandling("Side bet odds refresh", refreshOpenSideBetQuotes);
-    });
-    this.jobs.set("sideBetOdds", sideBetOddsJob);
 
     console.log("[CRON] All cron jobs scheduled successfully");
   }
@@ -168,10 +107,9 @@ class CronScheduler {
   }
 
   public getStatus(): { enabled: boolean; activeJobs: string[] } {
-    const activeJobs = Array.from(this.jobs.keys());
     return {
       enabled: this.isEnabled,
-      activeJobs,
+      activeJobs: Array.from(this.jobs.keys()),
     };
   }
 }

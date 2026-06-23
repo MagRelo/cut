@@ -6,28 +6,28 @@ describe("buildDedupeKey", () => {
     expect(buildDedupeKey(EmailKind.WELCOME, { userId: "u1" })).toBe("WELCOME:u1");
   });
 
-  it("builds reminder key", () => {
+  it("builds reminder key with eventId", () => {
     expect(
       buildDedupeKey(EmailKind.REMINDER_NO_CONTEST, {
-        tournamentId: "t1",
+        eventId: "e1",
         userId: "u1",
       }),
-    ).toBe("REMINDER_NO_CONTEST:t1:u1");
+    ).toBe("REMINDER_NO_CONTEST:e1:u1");
   });
 
-  it("builds recap per-user key", () => {
+  it("builds recap key with eventId", () => {
     expect(
-      buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { tournamentId: "t1", userId: "u1" }),
-    ).toBe("TOURNAMENT_RECAP:t1:u1");
+      buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { eventId: "e1", userId: "u1" }),
+    ).toBe("TOURNAMENT_RECAP:e1:u1");
   });
 
   it("builds player withdrawal key", () => {
     expect(
       buildDedupeKey(EmailKind.PLAYER_WITHDRAWAL, {
-        tournamentId: "t1",
+        eventId: "e1",
         userId: "u1",
         playerId: "p1",
       }),
-    ).toBe("PLAYER_WITHDRAWAL:t1:u1:p1");
+    ).toBe("PLAYER_WITHDRAWAL:e1:u1:p1");
   });
 });

@@ -1,8 +1,4 @@
-import {
-  arePrimaryActionsLocked,
-  areSecondaryActionsLocked,
-  type Contest,
-} from "../types/contest";
+import { arePrimaryActionsLocked, areSecondaryActionsLocked, type Contest } from "../types/contest";
 import {
   type ContestLobbyPhase,
   type ContestLobbyViewModel,
@@ -13,6 +9,7 @@ import { ContestState } from "./useContestPredictionData";
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
   hasWallet?: boolean;
+  roundDisplay?: string | null;
 }
 
 export function deriveContestLobbyPhase(contest: Contest): ContestLobbyPhase {
@@ -83,24 +80,36 @@ export function deriveContestLobbyViewModel(
     hasWallet,
   );
 
-  const showCountdown =
-    !primaryActionsLocked &&
-    contest.tournament?.status === "NOT_STARTED" &&
-    Boolean(contest.tournament?.startDate);
+  const showLineupsTab = Boolean(contest.event?.sportId);
+
+  let tabIndex = 0;
+  const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
+  const contestTabIndex = tabIndex++;
+  const tailTabIndex = tabIndex;
+
+  const defaultTabIndex =
+    phase === "preRound" && showLineupsTab
+      ? lineupsTabIndex
+      : phase === "settled"
+        ? tailTabIndex
+        : contestTabIndex;
 
   return {
     phase,
     layout: {
+      showLineupsTab,
       showPredictionsTab: !isSettled,
       showResultsTab: isSettled,
-      // Settled: [Contest, Results] → open Results (index 1).
-      defaultTabIndex: isSettled ? 1 : 0,
+      lineupsTabIndex,
+      contestTabIndex,
+      tailTabIndex,
+      defaultTabIndex,
       layoutKey: `${contest.id}-${phase}`,
     },
     primary: {
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",
-      showCountdown,
       entryListOpensModal: primaryActionsLocked,
+      roundDisplay: input.roundDisplay ?? null,
     },
     predictions: {
       mode: predictionsMode,

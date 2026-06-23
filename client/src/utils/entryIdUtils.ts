@@ -8,7 +8,7 @@ import { keccak256, encodePacked } from "viem";
  * produce the same entryId, making it deterministic and reproducible.
  *
  * @param contestAddress - The contest contract address
- * @param tournamentLineupId - The tournament lineup ID (string UUID)
+ * @param lineupId - The platform lineup ID (string UUID)
  * @returns entryId as a number (safe for uint256 in contracts)
  *
  * @example
@@ -18,11 +18,9 @@ import { keccak256, encodePacked } from "viem";
  * );
  * // Returns: 123456789012345 (deterministic number)
  */
-export function generateEntryId(contestAddress: string, tournamentLineupId: string): number {
-  // Create deterministic hash using keccak256
-  // encodePacked mimics Solidity's abi.encodePacked for consistency
+export function generateEntryId(contestAddress: string, lineupId: string): number {
   const hash = keccak256(
-    encodePacked(["address", "string"], [contestAddress as `0x${string}`, tournamentLineupId])
+    encodePacked(["address", "string"], [contestAddress as `0x${string}`, lineupId])
   );
 
   // Convert hash (bytes32) to BigInt
@@ -42,14 +40,14 @@ export function generateEntryId(contestAddress: string, tournamentLineupId: stri
  *
  * @param entryId - The entryId to validate
  * @param contestAddress - The contest contract address
- * @param tournamentLineupId - The tournament lineup ID
+ * @param lineupId - The platform lineup ID
  * @returns true if the entryId matches the generated value
  */
 export function validateEntryId(
   entryId: number,
   contestAddress: string,
-  tournamentLineupId: string
+  lineupId: string
 ): boolean {
-  const expectedEntryId = generateEntryId(contestAddress, tournamentLineupId);
+  const expectedEntryId = generateEntryId(contestAddress, lineupId);
   return entryId === expectedEntryId;
 }

@@ -129,12 +129,11 @@ Save to:
 server/src/tournamentSummaries/{pgaTourId}.json
 ```
 
-`initTournament` loads this file on tournament init and stores it on the
-`Tournament.summarySections` field. After updating a summary for the active
-event, the user can re-run:
+`service:init-event` (PGA golf plugin) loads this file on event init and stores sections on the
+event metadata. After updating a summary for the active event, re-run init:
 
 ```bash
-cd server && pnpm run service:init-tournament R2026023
+pnpm run service:init-event pga-golf R2026023
 ```
 
 ## Style reference

@@ -1,4 +1,9 @@
-import type { SimulateAddSecondaryPositionResult } from "@cut/secondary-pricing";
+import { formatUnits, parseUnits } from "viem";
+import {
+  simulateAddSecondaryPosition,
+  type SecondaryPoolSnapshot,
+  type SimulateAddSecondaryPositionResult,
+} from "@cut/secondary-pricing";
 
 export function toEnglishOdds(stake: number, projectedReturn: number): string {
   if (!Number.isFinite(stake) || !Number.isFinite(projectedReturn) || stake <= 0 || projectedReturn <= 0) {
@@ -21,6 +26,57 @@ export function toEnglishOdds(stake: number, projectedReturn: number): string {
     }
   }
   return `${bestNum}/${bestDen}`;
+}
+
+export interface TenDollarPurchasePreviewInput {
+  totalSupply: bigint;
+  entryLiquidity: bigint;
+  balance: bigint;
+  totalSecondaryLiquidityBefore: bigint;
+  paymentDecimals: number;
+  poolSnapshot?: SecondaryPoolSnapshot;
+  stakeUsd?: number;
+}
+
+export function computeTenDollarPurchasePreview(
+  input: TenDollarPurchasePreviewInput,
+): { projectedReturn: number | null; englishOdds: string } {
+  const stake = input.stakeUsd ?? 10;
+
+  let purchaseAmount: bigint;
+  try {
+    purchaseAmount = parseUnits(String(stake), input.paymentDecimals);
+  } catch {
+    return { projectedReturn: null, englishOdds: "—" };
+  }
+
+  const sim = simulateAddSecondaryPosition({
+    amount: purchaseAmount,
+    entryShares: input.totalSupply,
+    entryLiquidity: input.entryLiquidity,
+    ...(input.poolSnapshot ?? {}),
+  });
+
+  const deltaWei = incrementalGlobalClaimDelta(
+    input.totalSecondaryLiquidityBefore,
+    purchaseAmount,
+    input.balance,
+    input.totalSupply,
+    sim,
+  );
+  if (deltaWei === null) {
+    return { projectedReturn: null, englishOdds: "—" };
+  }
+
+  const projectedReturn = Number(formatUnits(deltaWei, input.paymentDecimals));
+  if (!Number.isFinite(projectedReturn)) {
+    return { projectedReturn: null, englishOdds: "—" };
+  }
+
+  return {
+    projectedReturn,
+    englishOdds: toEnglishOdds(stake, projectedReturn),
+  };
 }
 
 /**

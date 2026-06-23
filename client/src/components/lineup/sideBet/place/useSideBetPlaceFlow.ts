@@ -16,7 +16,7 @@ import {
 import { formatStakeInputLine, formatUsd } from "../shared/sideBetFormatters";
 
 export interface UseSideBetPlaceFlowOptions {
-  tournamentLineupId: string | null;
+  lineupId: string | null;
   activeSelection: SideBetMarketSelectionDto | null;
   stakeInput: string;
   bettable: boolean;
@@ -24,7 +24,7 @@ export interface UseSideBetPlaceFlowOptions {
 }
 
 export function useSideBetPlaceFlow({
-  tournamentLineupId,
+  lineupId,
   activeSelection,
   stakeInput,
   bettable,
@@ -38,13 +38,13 @@ export function useSideBetPlaceFlow({
   const paymentBalance = paymentTokenBalance ?? 0n;
 
   const pendingSideBetRef = useRef<{
-    tournamentLineupId: string;
+    lineupId: string;
     hitsRequired: number;
     topN: number;
     stakeAmount: number;
   } | null>(null);
 
-  const placeMutation = usePlaceSideBetTicketMutation(tournamentLineupId);
+  const placeMutation = usePlaceSideBetTicketMutation(lineupId);
 
   const {
     execute,
@@ -107,7 +107,7 @@ export function useSideBetPlaceFlow({
   const clearPlaceError = () => setPlaceError(null);
 
   const placeTicket = async () => {
-    if (!activeSelection || !tournamentLineupId) return;
+    if (!activeSelection || !lineupId) return;
     if (!bettable) {
       setPlaceError(PARLAY_MARKET_UNAVAILABLE);
       return;
@@ -166,7 +166,7 @@ export function useSideBetPlaceFlow({
 
     setPlaceError(null);
     pendingSideBetRef.current = {
-      tournamentLineupId,
+      lineupId,
       hitsRequired: activeSelection.hitsRequired,
       topN: activeSelection.topN,
       stakeAmount,
