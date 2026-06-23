@@ -1,5 +1,5 @@
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
-import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useState } from "react";
 import { UserContestsNavList } from "./UserContestsNavList";
 import { Link, useLocation } from "react-router-dom";
@@ -123,24 +123,19 @@ export const MobileNavMenu: React.FC = () => {
 
                         {user ? (
                           <>
-                            <Link
-                              to="/account"
-                              aria-current={isAccountActive ? "page" : undefined}
+                            <div
                               className={[
                                 mobileNavItemClass(isAccountActive),
                                 "inline-flex items-center justify-between gap-2 normal-case tracking-normal",
                               ].join(" ")}
                             >
-                              <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
-                                <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
-                                Account
-                              </span>
+                              <span className="uppercase tracking-wider">My Account</span>
                               {totalBalance !== null ? (
                                 <span className="font-semibold tabular-nums">${totalBalance}</span>
                               ) : (
                                 <span className="tabular-nums text-amber-800">—</span>
                               )}
-                            </Link>
+                            </div>
 
                             <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
                               {ACCOUNT_SUB_LINKS.map((link) => (

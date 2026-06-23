@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getContestParticipationStatus } from "./contestParticipationStatus";
 import type { Contest } from "../types/contest";
+import type { ContestLineup } from "../types/lineup";
 
 function contest(
   overrides: Partial<Pick<Contest, "status" | "contestLineups">>,
@@ -12,12 +13,26 @@ function contest(
   };
 }
 
+function lineup(userId: string, id = "cl-1"): ContestLineup {
+  return {
+    id,
+    userId,
+    contestId: "contest-1",
+    status: "ACTIVE",
+    position: 0,
+    score: 0,
+    lineupId: "lineup-1",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
 describe("getContestParticipationStatus", () => {
   it("returns not-joined when user has no lineup in the contest", () => {
     expect(
       getContestParticipationStatus(
         contest({
-          contestLineups: [{ userId: "other-user", id: "cl-1" } as Contest["contestLineups"][number]],
+          contestLineups: [lineup("other-user")],
         }),
         "user-1",
       ),
@@ -29,7 +44,7 @@ describe("getContestParticipationStatus", () => {
       getContestParticipationStatus(
         contest({
           status: "OPEN",
-          contestLineups: [{ userId: "user-1", id: "cl-1" } as Contest["contestLineups"][number]],
+          contestLineups: [lineup("user-1")],
         }),
         "user-1",
       ),
@@ -41,7 +56,7 @@ describe("getContestParticipationStatus", () => {
       getContestParticipationStatus(
         contest({
           status: "ACTIVE",
-          contestLineups: [{ userId: "user-1", id: "cl-1" } as Contest["contestLineups"][number]],
+          contestLineups: [lineup("user-1")],
         }),
         "user-1",
       ),
@@ -53,7 +68,7 @@ describe("getContestParticipationStatus", () => {
       getContestParticipationStatus(
         contest({
           status: "LOCKED",
-          contestLineups: [{ userId: "user-1", id: "cl-1" } as Contest["contestLineups"][number]],
+          contestLineups: [lineup("user-1")],
         }),
         "user-1",
       ),
@@ -65,7 +80,7 @@ describe("getContestParticipationStatus", () => {
       getContestParticipationStatus(
         contest({
           status: "SETTLED",
-          contestLineups: [{ userId: "user-1", id: "cl-1" } as Contest["contestLineups"][number]],
+          contestLineups: [lineup("user-1")],
         }),
         "user-1",
       ),

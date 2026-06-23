@@ -26,6 +26,12 @@ export const ACCOUNT_FUNDS_LINK = {
   match: (pathname: string) => pathname === "/account/funds",
 } as const;
 
+export const ACCOUNT_HOME_LINK = {
+  to: "/account",
+  label: "Settings",
+  match: (pathname: string) => pathname === "/account",
+} as const;
+
 export const LEAGUES_TAB: NavTab = {
   key: "leagues",
   to: "/leagues",
@@ -34,7 +40,12 @@ export const LEAGUES_TAB: NavTab = {
 };
 
 /** Indented links nested under Account in user menus. */
-export const ACCOUNT_SUB_LINKS = [LEAGUES_TAB, ACCOUNT_FUNDS_LINK, CONTEST_HISTORY_LINK] as const;
+export const ACCOUNT_SUB_LINKS = [
+  ACCOUNT_HOME_LINK,
+  LEAGUES_TAB,
+  ACCOUNT_FUNDS_LINK,
+  CONTEST_HISTORY_LINK,
+] as const;
 
 export const LEFT_TABS: NavTab[] = [
   {

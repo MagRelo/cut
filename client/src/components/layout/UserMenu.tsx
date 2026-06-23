@@ -1,5 +1,5 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon, UserIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -36,9 +36,8 @@ export const UserMenu: React.FC = () => {
             ? "bg-slate-100 text-slate-950 font-semibold"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
         ].join(" ")}
-        aria-label="Account menu"
+        aria-label="My Account menu"
       >
-        <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
         {totalBalance !== null ? (
           <span className="tabular-nums tracking-normal">${totalBalance}</span>
         ) : (
@@ -57,15 +56,6 @@ export const UserMenu: React.FC = () => {
         className="z-50 mt-1 min-w-[11rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
       >
         <UserContestsNavList variant="dropdown" />
-        <MenuItem>
-          <Link
-            to="/account"
-            className={menuItemClass}
-            aria-current={location.pathname === "/account" ? "page" : undefined}
-          >
-            Account
-          </Link>
-        </MenuItem>
         {ACCOUNT_SUB_LINKS.map((link) => (
           <MenuItem key={link.to}>
             <Link
