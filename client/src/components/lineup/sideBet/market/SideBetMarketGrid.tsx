@@ -6,6 +6,7 @@ import {
   SIDE_BET_COLUMNS,
   SIDE_BET_MARKET_GRID_H,
 } from "../shared/sideBetConstants";
+import { sideBetCellButtonClassNames } from "../shared/sideBetCellPalette";
 import { classNames, selectionForCell } from "../shared/sideBetFormatters";
 import type { SideBetMarketGridState } from "./resolveSideBetMarketState";
 
@@ -84,9 +85,9 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
                       onClick={() => onSelect?.(cell)}
                       className={classNames(
                         SIDE_BET_CELL_MIN_H,
-                        "flex w-full items-center justify-center rounded-sm border border-gray-300 bg-gray-100 px-1 font-display text-gray-900 transition-colors",
-                        "hover:bg-gray-200",
-                        "focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1",
+                        "flex w-full items-center justify-center rounded-sm border px-1 font-display font-medium tabular-nums transition-colors",
+                        "focus:outline-none focus:ring-2 focus:ring-offset-1",
+                        sideBetCellButtonClassNames(cell.decimalOdds),
                       )}
                     >
                       <span className="text-center text-sm leading-tight">
