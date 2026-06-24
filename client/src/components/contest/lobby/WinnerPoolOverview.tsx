@@ -38,7 +38,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
   return (
     <div className="rounded-sm border border-gray-200 bg-gray-50 p-4 font-display">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-base font-semibold text-gray-900">Winner Pool</h3>
+        <h3 className="text-base font-semibold text-gray-900">Contest Winner Pool</h3>
         <span
           className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(contest.status)}`}
         >
@@ -47,8 +47,8 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
       </div>
 
       <p className="text-sm leading-relaxed text-gray-600">
-        A live market on which lineup wins the contest. Spot a rising lineup and bet to win your
-        share of the pot.{" "}
+        Bet on which lineup will win this contest. Odds update as money enters the pool - get in
+        early to secure a larger share of the pot!{" "}
         <Link
           to="/faq#winner-pool"
           className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
