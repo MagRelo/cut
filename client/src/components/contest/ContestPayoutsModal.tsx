@@ -178,8 +178,11 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
   };
 
   return (
-    <ContestPayoutSection title="Contest Settings">
-      <div className="flex flex-col gap-1.5 pb-4 text-xs">
+    <section className="px-4 pb-4">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Contest Settings
+      </h3>
+      <div className="flex flex-col gap-1.5 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Current State</span>
           <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
@@ -236,7 +239,7 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
           </div>
         )}
       </div>
-    </ContestPayoutSection>
+    </section>
   );
 }
 
