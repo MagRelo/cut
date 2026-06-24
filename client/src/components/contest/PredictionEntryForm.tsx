@@ -101,8 +101,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     },
   });
 
-  const spendableForContest =
-    contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
+  const spendableForContest = contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
 
   const lineupForEntry = useMemo(
     () => contest.contestLineups?.find((l) => l.entryId === entryId) ?? null,
@@ -353,7 +352,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
   const currentOddsQuoteCard = (
     <div className="px-1 pt-4 font-display">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-around gap-4">
         <div className="text-center">
           <div className="text-lg font-semibold tabular-nums leading-none text-gray-800">
             {projectedEnglishOdds}
@@ -372,8 +371,8 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
         </div>
       </div>
 
-      <div className="mt-2">
-        <p className="text-[11px] leading-snug text-gray-600">
+      <div className="mt-4">
+        <p className="border-t border-gray-200 pt-2 text-[11px] leading-snug text-gray-600">
           <span className="font-semibold text-gray-900">Note:</span> Winner Pool quotes update as
           entries and pool size change. Your final odds and payout are calculated from the closing
           pool at lock.{" "}
