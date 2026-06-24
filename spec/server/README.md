@@ -44,7 +44,7 @@ Node.js backend (Hono + Prisma + PostgreSQL) for the v4 platform.
 | `MAILERSEND_*` | Transactional / marketing email |
 | Privy vars | Auth token verification |
 
-Local DB: see [PLATFORM_REWRITE.md](../../PLATFORM_REWRITE.md) — `playthecut-local` container.
+Local DB: `playthecut-local` container in [docker/docker-compose.yml](../../docker/docker-compose.yml) (`playthecut` database; see `server/.env.example`).
 
 ---
 

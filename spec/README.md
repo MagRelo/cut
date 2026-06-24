@@ -1,10 +1,9 @@
 # Play The Cut — Specification (v4 platform)
 
-Architecture and behavior documentation for the **v4 platform rewrite** (`v4` branch). This reflects the code as implemented today — not legacy tournament-centric production.
+Architecture and behavior documentation for the **v4 platform** (`v4` branch). This reflects the code as implemented today — not legacy tournament-centric production.
 
-**North star:** [PLATFORM_ARCHITECTURE.md](../PLATFORM_ARCHITECTURE.md)  
-**Implementation tracker:** [PLATFORM_REWRITE.md](../PLATFORM_REWRITE.md)  
-**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md)
+**Design intent:** [docs/platform-architecture.md](../docs/platform-architecture.md)  
+**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md) · [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md)
 
 ---
 
@@ -24,9 +23,9 @@ Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
 
 ---
 
-## Implementation next
+## Production cutover
 
-**Phases 1–8 are done.** Next work is **Phase 9 — data migration** ([PLATFORM_REWRITE.md](../PLATFORM_REWRITE.md)): `migrate-from-legacy.ts`, preserve `entryId` / contract addresses, validation on prod snapshot. Phase 10 is cutover + legacy cleanup after that.
+Platform code on `v4` is complete. Remaining ops work is staging validation and production cutover per [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md). Migration script: `server/src/scripts/migrate-from-legacy.ts`.
 
 ---
 
@@ -78,6 +77,8 @@ Use this order for a full architecture walkthrough:
 | Tie-breakers | [docs/lineup-tie-breaker.md](../docs/lineup-tie-breaker.md) |
 | Referrals | [docs/referral-network.md](../docs/referral-network.md) |
 | Email program | [docs/email-program.md](../docs/email-program.md) |
+| Competition fit | [docs/new-competition-fit-guide.md](../docs/new-competition-fit-guide.md) |
+| Competition ideas | [docs/competition-shape-ideas.md](../docs/competition-shape-ideas.md) |
 
 ### Legacy / planning artifacts
 
@@ -119,5 +120,4 @@ contracts/             Solidity (ContestController, Factory, tokens)
 ## Maintenance
 
 - Update `spec/` when behavior changes on `v4`.
-- `PLATFORM_ARCHITECTURE.md` is the design intent; `spec/` is the as-built reference.
-- Production cutover steps: [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md).
+- [docs/platform-architecture.md](../docs/platform-architecture.md) is the design intent; `spec/` is the as-built reference.

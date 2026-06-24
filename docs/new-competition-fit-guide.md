@@ -12,9 +12,9 @@ Candidates fall into three buckets:
 | **External-shaped** | Real world, but reframed to fit | F1 as race weekends, Survivor as episode weeks |
 | **Platform-native** | Play The Cut designs and runs the competition | Community lists, promo tournaments, voting challenges |
 
-For technical setup after a format passes review, see [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) and [spec/platform/README.md](spec/platform/README.md).
+For technical setup after a format passes review, see [platform-architecture.md](platform-architecture.md) and [spec/platform/README.md](../spec/platform/README.md).
 
-For brainstormed external domains (markets, awards, esports, etc.), see [COMPETITION_SHAPE_IDEAS.md](COMPETITION_SHAPE_IDEAS.md).
+For brainstormed external domains (markets, awards, esports, etc.), see [competition-shape-ideas.md](competition-shape-ideas.md).
 
 ---
 
@@ -398,7 +398,7 @@ After completing the worksheet:
 - Scoring is explainable in two sentences
 - At least one person on the team is genuinely excited to play it
 
-→ Write a one-page brief (event unit, pool size, scoring, data/ops) and hand off to [spec/platform/plugins.md](spec/platform/plugins.md).
+→ Write a one-page brief (event unit, pool size, scoring, data/ops) and hand off to [spec/platform/plugins.md](../spec/platform/plugins.md).
 
 ### Adapt
 
@@ -478,8 +478,8 @@ External | Platform-native | Hybrid
 
 | Doc | Use when |
 |-----|----------|
-| [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) | Full platform model, data schema, plugin interface |
-| [spec/platform/README.md](spec/platform/README.md) | Product overview and technical add-sport checklist |
-| [spec/platform/plugins.md](spec/platform/plugins.md) | `SportModule` / `SportUIPlugin` contracts |
-| [spec/cross-layer.md](spec/cross-layer.md) | End-to-end flows (lineup → contest → settlement) |
-| [COMPETITION_SHAPE_IDEAS.md](COMPETITION_SHAPE_IDEAS.md) | Brainstorm — competition domains in the same shape |
+| [platform-architecture.md](platform-architecture.md) | Full platform model, data schema, plugin interface |
+| [spec/platform/README.md](../spec/platform/README.md) | Product overview and technical add-sport checklist |
+| [spec/platform/plugins.md](../spec/platform/plugins.md) | `SportModule` / `SportUIPlugin` contracts |
+| [spec/cross-layer.md](../spec/cross-layer.md) | End-to-end flows (lineup → contest → settlement) |
+| [competition-shape-ideas.md](competition-shape-ideas.md) | Brainstorm — competition domains in the same shape |

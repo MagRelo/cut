@@ -106,7 +106,6 @@ If critical issues appear within the maintenance window:
 
 ## Related docs
 
-- [PLATFORM_REWRITE.md](../PLATFORM_REWRITE.md) — implementation tracker
-- [PLATFORM_ARCHITECTURE.md](../PLATFORM_ARCHITECTURE.md) — target design
+- [platform-architecture.md](./platform-architecture.md) — target design
 - [event-activation-runbook.md](./event-activation-runbook.md) — post-cutover event ops
 - [swarm/README.md](../swarm/README.md) — deployment commands
