@@ -16,7 +16,7 @@ export type NavTab = {
 
 export const CONTEST_HISTORY_LINK = {
   to: "/account/history",
-  label: "My Contest History",
+  label: "Contest History",
   match: (pathname: string) => pathname === "/account/history",
 } as const;
 
@@ -28,7 +28,7 @@ export const ACCOUNT_FUNDS_LINK = {
 
 export const ACCOUNT_HOME_LINK = {
   to: "/account",
-  label: "Settings",
+  label: "Account Settings",
   match: (pathname: string) => pathname === "/account",
 } as const;
 

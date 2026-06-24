@@ -83,7 +83,7 @@ export const UserHistoryPage: React.FC = () => {
   if (isLoading) {
     return (
       <>
-        <PageHeader title="My Contest History" className="" />
+        <PageHeader title="Contest History" className="" />
         <PageSection>
           <div className="text-center min-h-[200px] flex items-center justify-center">
             <LoadingSpinner />
@@ -96,7 +96,7 @@ export const UserHistoryPage: React.FC = () => {
   if (error) {
     return (
       <>
-        <PageHeader title="My Contest History" className="" />
+        <PageHeader title="Contest History" className="" />
         <PageSection>
           <div className="text-center text-red-500 font-display">
             {error instanceof Error ? error.message : "Failed to load contest history"}
@@ -109,7 +109,7 @@ export const UserHistoryPage: React.FC = () => {
   if (!contests || contests.length === 0) {
     return (
       <>
-        <PageHeader title="My Contest History" className="" />
+        <PageHeader title="Contest History" className="" />
         <PageSection>
           <div className="text-center my-8">
             <p className="text-gray-400 font-semibold font-display mb-2">
@@ -130,7 +130,7 @@ export const UserHistoryPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader title="My Contest History" className="" />
+      <PageHeader title="Contest History" className="" />
       <PageSection>
         <div className="mb-4">
           <p className="text-sm text-gray-600 font-display">

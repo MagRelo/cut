@@ -1,27 +1,12 @@
 import type { ReactNode } from "react";
 
-export function ContestPayoutLayout({
-  children,
-  background = "muted",
-}: {
-  children: ReactNode;
-  /** `muted` matches payouts modal; `white` for embedded panels (e.g. post-settlement results). */
-  background?: "muted" | "white";
-}) {
-  const surfaceClass = background === "white" ? "bg-white" : "bg-gray-100";
-  const paddingClass = background === "white" ? "p-4" : "p-3";
-  return <div className={`space-y-4 ${paddingClass} font-display ${surfaceClass}`}>{children}</div>;
+export function ContestPayoutLayout({ children }: { children: ReactNode }) {
+  return <div className="space-y-4 bg-white font-display">{children}</div>;
 }
 
-export function ContestPayoutHeroCard({
-  label,
-  amount,
-}: {
-  label: string;
-  amount: ReactNode;
-}) {
+export function ContestPayoutHeroCard({ label, amount }: { label: string; amount: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-emerald-800/30 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 shadow-md">
+    <section className="overflow-hidden border border-emerald-800/30 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 shadow-md">
       <div className="px-4 py-5 text-left">
         <p className="text-[11px] font-semibold uppercase leading-tight tracking-[0.2em] text-emerald-100/85">
           {label}
@@ -53,18 +38,14 @@ export function ContestPayoutGradientMoney({
   tone?: keyof typeof gradientMoneyToneClass;
 }) {
   return (
-    <p
-      className={`tabular-nums ${gradientMoneySizeClass[size]} ${gradientMoneyToneClass[tone]}`}
-    >
+    <p className={`tabular-nums ${gradientMoneySizeClass[size]} ${gradientMoneyToneClass[tone]}`}>
       {children}
     </p>
   );
 }
 
 export function ContestPayoutSubAmount({ children }: { children: ReactNode }) {
-  return (
-    <p className="mt-0.5 text-xs leading-tight tabular-nums text-slate-500">{children}</p>
-  );
+  return <p className="mt-0.5 text-xs tabular-nums leading-tight text-slate-500">{children}</p>;
 }
 
 export function ContestPayoutSection({

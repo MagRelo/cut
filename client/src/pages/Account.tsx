@@ -4,6 +4,7 @@ import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyButton } from "../components/common/CopyToClipboard";
+import { PageHeader } from "../components/common/PageHeader";
 import { ShareInviteButton } from "../components/common/ShareInviteButton";
 import { PageSection } from "../components/layout/PageSection";
 import { UserSettings } from "../components/user/UserSettings";
@@ -265,7 +266,7 @@ export function UserPage() {
   return (
     <div className="-m-4 bg-gray-100 p-4">
       <div className="space-y-5">
-        {/* <PageHeader title="Account" className="mb-3" /> */}
+        <PageHeader title="Account Settings" className="mb-3" />
 
         {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
         {/* <MintingUserFundsPanel /> */}

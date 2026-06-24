@@ -178,8 +178,13 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
   };
 
   return (
-    <ContestPayoutSection title="Contest Contract">
-      <div className="flex flex-col gap-1.5 text-xs">
+    <ContestPayoutSection title="Contest Settings">
+      <div className="flex flex-col gap-1.5 pb-4 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Current State</span>
+          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
+        </div>
+
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Contest Entry Fee</span>
           <span className="font-semibold text-gray-900">{formatEntryFee()}</span>
@@ -197,13 +202,6 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Invite Network Reward</span>
           <span className="font-semibold text-gray-900">{inviteNetworkPercent.toFixed(2)}%</span>
-        </div>
-
-        <hr className="my-1" />
-
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Current State</span>
-          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
         </div>
 
         {contractBalance?.value !== undefined && (
@@ -348,7 +346,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
     >
       <div>
         {readsFailed ? (
-          <ContestPayoutLayout background="white">
+          <ContestPayoutLayout>
             <div
               className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
               role="status"
@@ -376,7 +374,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
             <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
           </ContestPayoutLayout>
         ) : (
-          <ContestPayoutLayout background="white">
+          <ContestPayoutLayout>
             <ContestPayoutHeroCard
               label="Total Prize Pool"
               amount={

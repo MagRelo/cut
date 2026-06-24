@@ -22,8 +22,6 @@ export const ContestTimelinesSection: React.FC<ContestTimelinesSectionProps> = (
           currentUserId={currentUserId}
           defaultMetric="score"
           allowedMetrics={["score"]}
-          fitContainer
-          className="h-full w-full"
         />
       )}
     </ContestLobbyTabHero>

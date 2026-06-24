@@ -18,7 +18,7 @@ export function TransferFundsPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Manage" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Manage Funds" }]}
         className="mb-3"
       />
 

@@ -1,9 +1,6 @@
 import React, { type ReactNode } from "react";
 import { cn } from "../../../lib/tabStyles";
 
-/** Fixed height for tab hero panels (timeline, CTA, pie chart, connect, etc.). */
-export const CONTEST_LOBBY_TAB_HERO_HEIGHT_CLASS = "h-[300px]";
-
 interface ContestLobbyTabHeroProps {
   children: ReactNode;
   className?: string;
@@ -19,15 +16,12 @@ export const ContestLobbyTabHero: React.FC<ContestLobbyTabHeroProps> = ({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col",
+        "flex w-full flex-col items-center justify-center py-4",
         showBottomBorder && "border-b border-gray-200",
-        CONTEST_LOBBY_TAB_HERO_HEIGHT_CLASS,
         className,
       )}
     >
-      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden">
-        {children}
-      </div>
+      {children}
     </div>
   );
 };

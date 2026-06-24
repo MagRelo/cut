@@ -16,13 +16,10 @@ import {
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { PageSection } from "../layout/PageSection";
 import { ErrorMessage } from "../common/ErrorMessage";
-import { Connect } from "../user/Connect";
+import { SignInPrompt } from "../user/SignInPrompt";
 import { LineupContestCard } from "../lineup/LineupContestCard";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";
-import {
-  lineupsCopyableIntoContest,
-  lineupsForContestPanel,
-} from "../../lib/lineupContestScope";
+import { lineupsCopyableIntoContest, lineupsForContestPanel } from "../../lib/lineupContestScope";
 import { lineupPickLastNames } from "../../lib/lineupUtils";
 
 function contestLineupForCard(
@@ -70,7 +67,13 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   isAuthenticated,
 }) => {
   const { loading: isAuthLoading, user } = useAuth();
-  const { lineups, lineupError, isLoading: isLineupsLoading, createLineup, cloneLineup } = useLineupData({
+  const {
+    lineups,
+    lineupError,
+    isLoading: isLineupsLoading,
+    createLineup,
+    cloneLineup,
+  } = useLineupData({
     eventId,
   });
   const contestEntry = useContestLineupEntry(contest);
@@ -143,9 +146,8 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           "Start a new lineup or copy picks from one you entered in another contest."
         ) : (
           <>
-            Pick players for{" "}
-            <span className="font-medium text-gray-800">{displayEventName}</span>, then join this
-            contest.
+            Pick players for <span className="font-medium text-gray-800">{displayEventName}</span>,
+            then join this contest.
           </>
         )}
       </p>
@@ -172,10 +174,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
               const players = lineupPickLastNames(row);
               const isCopying = copyingLineupId === row.id;
               return (
-                <li
-                  key={row.id}
-                  className="flex items-start justify-between gap-3 p-3"
-                >
+                <li key={row.id} className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-sm font-medium text-gray-900">{row.name}</p>
                     {players.length > 0 ? (
@@ -183,14 +182,16 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                         {players.join(", ")}
                       </p>
                     ) : (
-                      <p className="mt-0.5 font-display text-xs text-gray-500">No players selected</p>
+                      <p className="mt-0.5 font-display text-xs text-gray-500">
+                        No players selected
+                      </p>
                     )}
                   </div>
                   <button
                     type="button"
                     onClick={() => void handleCopyFromLineup(row.id)}
                     disabled={isCreateBusy}
-                    className="shrink-0 rounded border border-blue-500 bg-blue-500 px-3 py-1.5 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="shrink-0 rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCopying ? "Copying…" : "Copy"}
                   </button>
@@ -204,14 +205,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   ) : null;
 
   if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-        <p className="font-display text-sm text-gray-600">
-          <b>Sign in</b> to build and manage lineups for this event.
-        </p>
-        <Connect />
-      </div>
-    );
+    return <SignInPrompt action="build lineups" className="py-4" />;
   }
 
   if ((isAuthLoading && !user) || isLineupsLoading) {
@@ -248,7 +242,10 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
       {hasLineups ? (
         <div className="space-y-4">
           {listItems.map((row) => (
-            <div key={row.id} className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
+            <div
+              key={row.id}
+              className="overflow-hidden rounded-sm border border-gray-300 shadow-md"
+            >
               <LineupContestCard
                 lineup={contestLineupForCard(row, user, contest.id)}
                 contestId={contest.id}
@@ -259,11 +256,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                 eventMetadata={eventMetadata}
                 isEventEditable={isEventEditable}
               />
-              <ContestLineupJoinActions
-                contest={contest}
-                lineupId={row.id}
-                entry={contestEntry}
-              />
+              <ContestLineupJoinActions contest={contest} lineupId={row.id} entry={contestEntry} />
             </div>
           ))}
           {createLineupPanel}
