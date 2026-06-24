@@ -44,6 +44,8 @@ export const MobileNavMenu: React.FC = () => {
 
   const isAccountActive = accountMatch(location.pathname);
 
+  const closeMenu = () => setOpen(false);
+
   return (
     <>
       <button
@@ -85,7 +87,7 @@ export const MobileNavMenu: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                       <Link
                         to="/"
-                        onClick={() => setOpen(false)}
+                        onClick={closeMenu}
                         className="flex items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                       >
                         <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
@@ -95,7 +97,7 @@ export const MobileNavMenu: React.FC = () => {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => setOpen(false)}
+                        onClick={closeMenu}
                         className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                         aria-label="Close menu"
                       >
@@ -110,13 +112,14 @@ export const MobileNavMenu: React.FC = () => {
                             <Link
                               to={tab.to}
                               state={tab.state}
+                              onClick={closeMenu}
                               aria-current={tab.match(location.pathname) ? "page" : undefined}
                               className={mobileNavItemClass(tab.match(location.pathname))}
                             >
                               {tab.label}
                             </Link>
                             {user && tab.key === "contests" ? (
-                              <UserContestsNavList variant="mobile" />
+                              <UserContestsNavList variant="mobile" onNavigate={closeMenu} />
                             ) : null}
                           </Fragment>
                         ))}
@@ -142,6 +145,7 @@ export const MobileNavMenu: React.FC = () => {
                                 <Link
                                   key={link.to}
                                   to={link.to}
+                                  onClick={closeMenu}
                                   aria-current={link.match(location.pathname) ? "page" : undefined}
                                   className={mobileSubItemClass}
                                 >
@@ -155,6 +159,7 @@ export const MobileNavMenu: React.FC = () => {
                                   <Link
                                     key={link.to}
                                     to={link.to}
+                                    onClick={closeMenu}
                                     aria-current={
                                       location.pathname === link.to ||
                                       location.pathname.startsWith(`${link.to}/`)
@@ -183,6 +188,7 @@ export const MobileNavMenu: React.FC = () => {
                           <Link
                             to="/connect"
                             state={{ from: signInReturnFrom }}
+                            onClick={closeMenu}
                             aria-current={location.pathname === "/connect" ? "page" : undefined}
                             className={mobileNavItemClass(location.pathname === "/connect")}
                           >

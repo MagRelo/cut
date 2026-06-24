@@ -18,6 +18,7 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 
 type UserContestsNavListProps = {
   variant: "mobile" | "dropdown";
+  onNavigate?: () => void;
 };
 
 const sectionLabelClass =
@@ -57,17 +58,24 @@ function ContestNavLink({
   contest,
   userId,
   variant,
+  onNavigate,
 }: {
   contest: Contest;
   userId: string;
   variant: UserContestsNavListProps["variant"];
+  onNavigate?: () => void;
 }) {
   const status = getContestParticipationStatus(contest, userId);
   const itemClass = variant === "mobile" ? mobileItemClass : dropdownItemClass;
   const leagueName = contest.userGroup?.name;
 
   const link = (
-    <Link to={contestLobbyPath(contest.address)} className={itemClass} title={contest.name}>
+    <Link
+      to={contestLobbyPath(contest.address)}
+      className={itemClass}
+      title={contest.name}
+      onClick={onNavigate}
+    >
       <ContestParticipationIcon status={status} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{contest.name}</span>
@@ -79,13 +87,35 @@ function ContestNavLink({
   );
 
   if (variant === "dropdown") {
-    return <MenuItem>{link}</MenuItem>;
+    return (
+      <MenuItem>
+        {({ close }) => (
+          <Link
+            to={contestLobbyPath(contest.address)}
+            className={itemClass}
+            title={contest.name}
+            onClick={() => {
+              onNavigate?.();
+              close();
+            }}
+          >
+            <ContestParticipationIcon status={status} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{contest.name}</span>
+              {leagueName ? (
+                <span className="block truncate text-xs text-slate-500">{leagueName}</span>
+              ) : null}
+            </span>
+          </Link>
+        )}
+      </MenuItem>
+    );
   }
 
   return link;
 }
 
-export function UserContestsNavList({ variant }: UserContestsNavListProps) {
+export function UserContestsNavList({ variant, onNavigate }: UserContestsNavListProps) {
   const { user } = useAuth();
   const { contests, isLoading, error } = useLiveContestsAcrossSports();
 
@@ -121,7 +151,13 @@ export function UserContestsNavList({ variant }: UserContestsNavListProps) {
   }
 
   const items = sortedContests.map((contest) => (
-    <ContestNavLink key={contest.id} contest={contest} userId={user.id} variant={variant} />
+    <ContestNavLink
+      key={contest.id}
+      contest={contest}
+      userId={user.id}
+      variant={variant}
+      onNavigate={onNavigate}
+    />
   ));
 
   if (variant === "mobile") {

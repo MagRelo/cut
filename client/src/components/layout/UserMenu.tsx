@@ -58,29 +58,35 @@ export const UserMenu: React.FC = () => {
         <UserContestsNavList variant="dropdown" />
         {ACCOUNT_SUB_LINKS.map((link) => (
           <MenuItem key={link.to}>
-            <Link
-              to={link.to}
-              className={menuSubItemClass}
-              aria-current={link.match(location.pathname) ? "page" : undefined}
-            >
-              {link.label}
-            </Link>
+            {({ close }) => (
+              <Link
+                to={link.to}
+                className={menuSubItemClass}
+                aria-current={link.match(location.pathname) ? "page" : undefined}
+                onClick={close}
+              >
+                {link.label}
+              </Link>
+            )}
           </MenuItem>
         ))}
         {showAdminNav
           ? ADMIN_MENU_LINKS.map((link) => (
               <MenuItem key={link.to}>
-                <Link
-                  to={link.to}
-                  className={menuItemClass}
-                  aria-current={
-                    location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)
-                      ? "page"
-                      : undefined
-                  }
-                >
-                  {link.label}
-                </Link>
+                {({ close }) => (
+                  <Link
+                    to={link.to}
+                    className={menuItemClass}
+                    aria-current={
+                      location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)
+                        ? "page"
+                        : undefined
+                    }
+                    onClick={close}
+                  >
+                    {link.label}
+                  </Link>
+                )}
               </MenuItem>
             ))
           : null}
