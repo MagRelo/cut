@@ -1,14 +1,16 @@
 import React, { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { ContestList } from "../components/contest/ContestList";
+import { ContestList, ContestListConnectHint } from "../components/contest/ContestList";
 import { PageHeader } from "../components/common/PageHeader";
 import { ErrorMessage } from "../components/common/ErrorMessage";
+import { useAuth } from "../contexts/AuthContext";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useContestsQuery } from "../hooks/useContestQuery";
 
 /** Contests for the active event of the sport in the URL (`/sports/:sportId`). */
 export const SportHubContests: React.FC = () => {
   const { sportId } = useParams<{ sportId: string }>();
+  const { user } = useAuth();
   const { eventId, isLoading: isEventLoading, error: fetchError } = useSportActiveEvent(
     sportId ?? "",
   );
@@ -46,6 +48,7 @@ export const SportHubContests: React.FC = () => {
     <div className="mb-4 space-y-4">
       <PageHeader title="Live Contests" />
       <ContestList contests={contests} loading={showLoading} error={error} />
+      {!user && !showLoading && !error ? <ContestListConnectHint /> : null}
     </div>
   );
 };

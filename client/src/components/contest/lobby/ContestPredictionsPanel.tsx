@@ -22,9 +22,11 @@ export const ContestPredictionsPanel: React.FC<ContestPredictionsPanelProps> = (
 }) => {
   return (
     <div className="space-y-4">
-      {mode === "connectWallet" ? <SignInPrompt action="place predictions" /> : null}
-
       <WinnerPoolOverview contest={contest} mode={mode} placeWagerTabLocked={placeWagerTabLocked} />
+
+      {mode === "connectWallet" ? (
+        <SignInPrompt action="use the Winner Pool" className="py-6" />
+      ) : null}
 
       {mode === "wager" ? (
         <TabGroup>

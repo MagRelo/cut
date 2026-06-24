@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { type Contest } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
+import { useAuth } from "../../contexts/AuthContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { SportEventHeader } from "../platform/SportEventHeader";
-import { ContestList } from "./ContestList";
+import { ContestList, ContestListConnectHint } from "./ContestList";
 
 export interface ContestEventSummary {
   id: string;
@@ -164,25 +165,32 @@ export const GroupedContestList = ({
   loading,
   error,
 }: GroupedContestListProps) => {
+  const { user } = useAuth();
   const groups = useMemo(() => groupContests(contests), [contests]);
+  const showConnectHint = !user && !loading && !error;
+
+  let listContent: ReactNode;
 
   if (loading) {
-    return <ContestList contests={[]} loading error={null} />;
-  }
-
-  if (error) {
-    return <ContestList contests={[]} loading={false} error={error} />;
-  }
-
-  if (contests.length === 0) {
-    return <ContestList contests={[]} loading={false} error={null} />;
+    listContent = <ContestList contests={[]} loading error={null} />;
+  } else if (error) {
+    listContent = <ContestList contests={[]} loading={false} error={error} />;
+  } else if (contests.length === 0) {
+    listContent = <ContestList contests={[]} loading={false} error={null} />;
+  } else {
+    listContent = (
+      <div className="space-y-8">
+        {groups.map((group) => (
+          <GroupedContestSection key={group.key} group={group} />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      {groups.map((group) => (
-        <GroupedContestSection key={group.key} group={group} />
-      ))}
-    </div>
+    <>
+      {listContent}
+      {showConnectHint ? <ContestListConnectHint /> : null}
+    </>
   );
 };

@@ -1,13 +1,49 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
+import { ContestListConnectHint } from "../components/contest/ContestList";
 import { ContestEventScopeProvider } from "../contexts/EventScopeContext";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
 import { isApiError } from "../utils/apiError";
+
+function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
+  return (
+    <div className="flex min-h-[240px] items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md rounded-md border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
+        <div
+          className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100"
+          aria-hidden
+        >
+          <MagnifyingGlassIcon className="h-6 w-6 text-slate-500" />
+        </div>
+        <h1 className="font-display text-xl font-semibold text-gray-900">Contest not found</h1>
+        {isAuthenticated ? (
+          <p className="mt-2 font-display text-sm leading-relaxed text-gray-600">
+            Check the link and try again, or browse{" "}
+            <Link to="/contests" className="font-semibold text-blue-600 hover:text-blue-700">
+              live contests
+            </Link>
+            .
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 font-display text-sm leading-relaxed text-gray-600">
+              This contest may be private, or the link may be incorrect.
+            </p>
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <ContestListConnectHint message="to view private contests." className="text-center" />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export const ContestLobby: React.FC = () => {
   const { address: contestAddress } = useParams<{ address: string }>();
@@ -25,23 +61,21 @@ export const ContestLobby: React.FC = () => {
   }
 
   if (queryError) {
-    const message =
-      isApiError(queryError) && queryError.statusCode === 404
-        ? "Contest not found"
-        : queryError.message;
+    const isNotFound = isApiError(queryError) && queryError.statusCode === 404;
+
+    if (isNotFound) {
+      return <ContestNotFound isAuthenticated={Boolean(user)} />;
+    }
 
     return (
       <div className="flex min-h-[176px] flex-col items-center justify-center p-8 text-center">
-        <p className="mb-2 text-lg font-medium text-gray-800">{message}</p>
-        {message !== "Contest not found" && (
-          <p className="text-sm text-gray-500">{queryError.message}</p>
-        )}
+        <p className="mb-2 text-lg font-medium text-gray-800">{queryError.message}</p>
       </div>
     );
   }
 
   if (!contest || !viewModel) {
-    return <div className="p-4 font-display">Contest not found</div>;
+    return <ContestNotFound isAuthenticated={Boolean(user)} />;
   }
 
   if (!contest.event?.sportId) {

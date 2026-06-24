@@ -10,6 +10,23 @@ interface ContestListProps {
   error: string | null;
 }
 
+export function ContestListConnectHint({
+  message = "to see private contests.",
+  className = "mt-6 text-center",
+}: {
+  message?: string;
+  className?: string;
+}) {
+  return (
+    <p className={`font-display text-sm text-gray-600 ${className}`}>
+      <Link to="/connect" className="font-semibold text-blue-600 hover:text-blue-700">
+        Sign In
+      </Link>{" "}
+      {message}
+    </p>
+  );
+}
+
 export const ContestList = ({ contests, loading, error }: ContestListProps) => {
   if (loading) {
     return (

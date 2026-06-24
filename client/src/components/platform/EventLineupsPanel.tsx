@@ -205,7 +205,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   ) : null;
 
   if (!isAuthenticated) {
-    return <SignInPrompt action="build lineups" className="py-4" />;
+    return <SignInPrompt action="build lineups" className="py-6" />;
   }
 
   if ((isAuthLoading && !user) || isLineupsLoading) {
