@@ -77,7 +77,7 @@ export const UserGroupDetailPage = () => {
   );
 
   const manageContent = (
-    <div className="-m-4 bg-gray-100 p-4">
+    <div className="-m-2 bg-gray-100 p-4">
       <div className="space-y-5">
         <PageSection variant="card">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Create contest</h3>
@@ -133,8 +133,8 @@ export const UserGroupDetailPage = () => {
         ]}
       />
 
-      <PageSection variant="card" className="overflow-hidden !p-0">
-        <header className="px-4 pb-4 pt-4">
+      <PageSection variant="default" className="overflow-hidden !border-b-0 !p-0 !pb-0">
+        <header className="px-2 pb-4 pt-2">
           <div>
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
               {userGroup.name}
@@ -148,7 +148,7 @@ export const UserGroupDetailPage = () => {
         </header>
 
         {userGroup.inviteUrl ? (
-          <div className="px-4 pb-4">
+          <div className="px-2 pb-4">
             <PageSection variant="card" className="bg-gray-50">
               <UserGroupInvitePanel
                 userGroupId={userGroup.id}
@@ -159,7 +159,7 @@ export const UserGroupDetailPage = () => {
           </div>
         ) : null}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className={tabListClassName("space-x-1", "px-4", "pt-2")}>
+          <TabList className={tabListClassName("space-x-1", "px-2", "pt-2")}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contests
             </Tab>
@@ -174,7 +174,7 @@ export const UserGroupDetailPage = () => {
               </Tab>
             ) : null}
           </TabList>
-          <div className="px-4 py-4">
+          <div className="px-2 py-4">
             <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
             <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
             {isAdmin ? <TabPanel className="focus:outline-none">{manageContent}</TabPanel> : null}
