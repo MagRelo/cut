@@ -2,7 +2,7 @@
 export const MIN_STAKE = "0.01";
 
 /** Total return (stake × decimal odds) must stay strictly below this USD amount per ticket. */
-export const MAX_TICKET_PAYOUT_USD = 2000;
+export const MAX_TICKET_PAYOUT_USD = 2011;
 
 /** Server / market quote issues only — not used for wallet, stake, or payment-prep errors. */
 export const PARLAY_MARKET_UNAVAILABLE =
