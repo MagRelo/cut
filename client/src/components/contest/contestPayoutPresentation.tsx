@@ -73,7 +73,7 @@ export function ContestPayoutSection({
 }
 
 export function ContestPayoutDividedRows({ children }: { children: ReactNode }) {
-  return <div className="divide-y divide-slate-200">{children}</div>;
+  return <div className="divide-y divide-slate-200 pl-3">{children}</div>;
 }
 
 export function ContestPayoutRow({ left, right }: { left: ReactNode; right: ReactNode }) {

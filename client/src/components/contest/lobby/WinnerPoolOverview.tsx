@@ -47,8 +47,8 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
       </div>
 
       <p className="text-sm leading-relaxed text-gray-600">
-        A live market on which lineup wins the contest—odds move as wagers come in. Spot a rising
-        lineup and bet to win your share of the pot.{" "}
+        A live market on which lineup wins the contest. Spot a rising lineup and bet to win your
+        share of the pot.{" "}
         <Link
           to="/faq#winner-pool"
           className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
