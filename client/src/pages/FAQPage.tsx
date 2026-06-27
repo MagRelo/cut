@@ -597,16 +597,17 @@ export const FAQPage: React.FC = () => {
         <div className="space-y-4">
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">
-              How does sign-in and my wallet work?
+              Do I have a Play The Cut account?
             </h3>
             <p className="mb-2 text-gray-700">
-              When you sign in with your email, Play The Cut creates a smart wallet for you to hold xUSDC
-              and handle on-chain actions like contest entries, sends, and claims.
+              You sign in with your email address—that&apos;s your identity on Play The Cut. Your
+              balance, contest history, and wallet are tied to that email, so signing in with the
+              same address on any device brings everything back.
             </p>
             <p className="mb-2 text-gray-700">
-              You are always in control of your funds. The platform cannot move funds from your
-              wallet without your approval, and your balance is not kept in a platform-operated
-              account.
+              When you sign in, we create a smart wallet for you to hold xUSDC and handle on-chain
+              actions like contest entries, sends, and claims. Your funds stay in your wallet, not a
+              platform-operated account, and nothing moves without your approval.
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
