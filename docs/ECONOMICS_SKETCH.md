@@ -105,4 +105,104 @@ Monthly secondary fee ≈ 0.07 × m_avg × H_tot
 
 ---
 
+## Observed economics (production counterpoint)
+
+The sections above are a **forward model** — personas, funnel targets, and scale math. This section records what **actually happened** on production over an 8-week PGA window (**2026-05-02 → 2026-06-27**, eight tournaments) so we can compare theory to data and refine targets.
+
+**Scope:** Base Sepolia (`chainId` 84532), xUSDC (6 decimals). **27** unique users with at least one paid contest lineup in the window. Contest platform fees come from **`referralNetworkBps` (700 = 7%)** on gross TVL at settlement (primary + secondary), aligned with the sketch’s 7% take. Side bets are a **separate rail** (stakes to `VITE_SIDE_BET_STAKE_RECIPIENT`); they are **not** in the sketch formulas above.
+
+### What we measured
+
+| Metric | Indexed (DB) | Adjusted estimate |
+|--------|-------------:|------------------:|
+| Platform income (8 weeks) | ~$122 | ~$157–$202 |
+| Platform income / MAU / month | ~$2.40 | ~$3.10 |
+| Primary TVL / MAU / month | ~$37 | ~$37 |
+| Contest fee as % of primary TVL | ~6.5% blended | ~7% when secondary included |
+
+**Platform income** = oracle’s share of contest referral-network fees (indexed `OnchainPayment` kind `REFERRAL` to `ORACLE_ADDRESS`) **plus** net side-bet P&L on **settled** tickets (stake minus estimated payout). User-to-user referral shares are pass-through, not platform income.
+
+**Adjusted** adds estimated May contest fees that settled on-chain but were **not indexed** in `OnchainPayment` until June (primary TVL × 7%). June indexed amounts match settlement snapshots closely (e.g. RBC Canadian: $170 gross → $11.90 fee; U.S. Open: $413.85 gross → $31.15 fee).
+
+### Sketch vs observed personas
+
+| Lens | Sketch | Observed (8-week window) |
+|------|--------|--------------------------|
+| Monthly primary spend **S** | Casual $40; Regular $200 | **~$37** (≈ Casual) |
+| Secondary attach **m** | Casual 0.15; Regular 0.43 | **Near 0** in practice (few secondary participants) |
+| Contest platform fee / MAU / mo | Casual **$3**; Regular **$20** | **~$3** indexed; **~$3.10** adjusted |
+| Side bets | Not modeled | ~$17 net on ~$215 settled handle (volatile by week) |
+
+Live cohort behavior maps to the sketch **Casual** tier, not **Regular**. The gap to Regular is mostly **entry frequency** and **Winner Pool attach**, not take rate or buy-in (paid contests were mostly **$20** entry).
+
+Weekly revenue per **that week’s active entrant** swung from about **−$3.70** (PGA Championship — side bets lost) to **+$5.25** (Memorial) because side-bet P&L is lumpy; contest fees are the stabler core.
+
+### Bridge persona: Light Regular ($10 ARPU)
+
+For planning between today’s data and the sketch **Regular** row, treat **$10 / MAU / month** (contest fees only) as a near-term stretch target:
+
+```
+0.07 × (1 + m) × S ≈ 10
+```
+
+Example that closes the gap without jumping straight to Regular volume: **~5 entries / month × $20 buy-in**, **m ≈ 0.43** (Regular-level secondary) → **~$10/mo** platform fee.
+
+| Persona | Sketch fee / mo | Role |
+|---------|----------------:|------|
+| Casual | $3 | **Observed today** |
+| **Light Regular** | **$10** | Planning bridge (~half Regular depth + real secondary) |
+| Regular | $20 | Sketch growth cohort (100 users → ~$2,000/mo) |
+
+At **$10 ARPU**, the sketch headline “100 users → ~$2,000/mo” becomes **~200 users** for the same MRR; at sketch **Regular ($20)**, 100 users still holds.
+
+### Scale targets at $10 ARPU (contest fees; side bets upside)
+
+| Milestone | MRR | MAUs @ $10/mo |
+|-----------|----:|--------------:|
+| Ramens / proof | $2,000 | ~200 |
+| Indie ~$100K gross / yr | $8,300 | ~830 |
+| Seed traction | $20,000 | ~2,000 |
+| Seed strong | $50,000 | ~5,000 |
+| Series A floor ($1M ARR) | $85,000 | ~8,500 |
+
+Founder **~$100K net / yr** (lean solo, after tax and light opex) implies roughly **$12–15K MRR** gross → **~1,200–1,500 MAUs** at $10 ARPU, or **~700–1,000 MAUs** if ARPU reaches sketch Regular ($20).
+
+### Weekly fund-flow reference (same window)
+
+Platform income by tournament week (indexed; May contest fees under-counted):
+
+| Week of | Tournament | Active entrants | Platform income | Income / active entrant |
+|---------|------------|----------------:|----------------:|------------------------:|
+| 2026-05-04 | Truist | 19 | $0 | $0 |
+| 2026-05-11 | PGA Championship | 17 | −$63 | −$3.73 |
+| 2026-05-18 | Byron Nelson | 11 | $35 | $3.18 |
+| 2026-05-25 | Charles Schwab | 10 | −$32 | −$3.21 |
+| 2026-06-01 | Memorial | 11 | $58 | $5.25 |
+| 2026-06-08 | RBC Canadian | 13 | $33 | $2.57 |
+| 2026-06-15 | U.S. Open | 17 | $46 | $2.70 |
+| 2026-06-22 | Travelers | 9 | $45 | $5.00 |
+
+*Active entrant* = unique user with a contest lineup that week. Blended over the period: **~$0.56–0.73 / MAU / week** when spread across 27 MAUs (not all play every week).
+
+### Levers the data highlights
+
+1. **Retention / entries per month** — largest gap vs sketch Regular; moving Casual → Light Regular is ~3× ARPU.
+2. **Winner Pool (m)** — sketch assumes meaningful secondary; production was minimal; fee is on **gross TVL**, so secondary moves the needle when it exists (U.S. Open week).
+3. **Side bets** — material week-to-week variance; treat as margin upside, not the core model until payout rail and book depth mature.
+4. **Free contests** — zero primary **S** and zero platform fee; mix dilutes cohort ARPU.
+5. **Indexing** — use on-chain settlement events or snapshot gross for May-era contests when reconciling platform revenue; DB `OnchainPayment` alone understates contest fees before ~June 2026.
+
+### How to use both sections
+
+| Use the sketch (above) for… | Use this counterpoint for… |
+|-----------------------------|----------------------------|
+| Persona design and funnel targets | Whether users behave like those personas today |
+| Take-rate and buy-in sensitivity | Validating 7% on real settlement TVL |
+| Scale math at Regular / Serious | Conservative MAU counts and ARPU floors |
+| Investor “what if we execute the funnel” | Operator “what we earned last month” |
+
+Revisit this table quarterly or after major product changes (real-money rail, secondary growth, side-bet settlement automation, multi-sport).
+
+---
+
 *Internal use — not financial advice.*
