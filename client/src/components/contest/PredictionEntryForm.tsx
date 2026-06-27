@@ -351,14 +351,14 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   );
 
   const currentOddsQuoteCard = (
-    <div className="px-1 pt-4 font-display">
+    <div className="px-1 pt-2 font-display">
       <div className="flex items-start justify-around gap-4">
         <div className="text-center">
           <div className="text-lg font-semibold tabular-nums leading-none text-gray-800">
             {projectedEnglishOdds}
           </div>
           <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
-            Estimated Odds
+            Current Odds
           </div>
         </div>
         <div className="text-center">
@@ -369,20 +369,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             Estimated Payout
           </div>
         </div>
-      </div>
-
-      <div className="mt-4">
-        <p className="border-t border-gray-200 pt-2 text-[11px] leading-snug text-gray-600">
-          <span className="font-semibold text-gray-900">Note:</span> Winner Pool quotes update as
-          entries and pool size change. Your final odds and payout are calculated from the closing
-          pool at lock.{" "}
-          <Link
-            to="/faq#winner-pool"
-            className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
-          >
-            Learn more...
-          </Link>
-        </p>
       </div>
     </div>
   );
@@ -401,9 +387,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           <div>
             <label
               htmlFor="position-amount-preview"
-              className="block text-left font-display text-sm font-normal uppercase tracking-wide text-gray-500"
+              className="block text-xs font-semibold uppercase tracking-wide text-gray-500"
             >
-              Ticket amount
+              Ticket amount ($)
             </label>
             <input
               id="position-amount-preview"
@@ -413,7 +399,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="w-full cursor-not-allowed rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-right text-base font-normal tabular-nums text-gray-600 shadow-inner"
+              className="mt-2 w-full cursor-not-allowed rounded-sm border border-gray-300 bg-gray-50 px-3 py-2 text-sm tabular-nums text-gray-600"
               disabled
             />
           </div>
@@ -458,13 +444,27 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       {predictionDetailsCard}
       {currentOddsQuoteCard}
 
+      <div className="">
+        <p className="text-[11px] leading-snug text-gray-600">
+          <span className="font-semibold text-gray-900">Note:</span> Winner Pool quotes update as
+          entries and pool size change. Your final odds and payout are calculated from the closing
+          pool at lock.{" "}
+          <Link
+            to="/faq#winner-pool"
+            className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
+          >
+            Learn more...
+          </Link>
+        </p>
+      </div>
+
       <div>
-        {/* <label
+        <label
           htmlFor="position-amount"
-          className="block text-left text-sm font-display font-normal uppercase tracking-wide text-gray-500"
+          className="block text-xs font-semibold uppercase tracking-wide text-gray-500"
         >
-          Ticket amount
-        </label> */}
+          Ticket amount ($)
+        </label>
         <input
           id="position-amount"
           type="text"
@@ -472,7 +472,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-right text-base font-normal tabular-nums text-gray-900 shadow-inner transition-[box-shadow,border-color] placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none"
+          className="mt-2 w-full rounded-sm border border-gray-300 px-3 py-2 text-sm tabular-nums text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isProcessing}
           autoFocus
         />
