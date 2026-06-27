@@ -16,7 +16,7 @@ export const ContestLobbyTabHero: React.FC<ContestLobbyTabHeroProps> = ({
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center py-4",
+        "flex w-full flex-col items-center justify-center",
         showBottomBorder && "border-b border-gray-200",
         className,
       )}

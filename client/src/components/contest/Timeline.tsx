@@ -17,6 +17,8 @@ import { cn } from "../../lib/tabStyles";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const OTHER_TEAM_LINE_OPACITY = 0.6;
+/** Shared color for y-axis ticks and round divider labels. */
+const TIMELINE_AXIS_LABEL_COLOR = "#4B5563";
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
 const USER_LINE_ORDER = 0;
 const PAYOUT_WINNER_LINE_ORDER = 5;
@@ -152,7 +154,7 @@ const timelineChartPlugin: Plugin<"line"> = {
         ctx.setLineDash([]);
       }
 
-      ctx.fillStyle = "rgba(107, 114, 128, 0.75)";
+      ctx.fillStyle = TIMELINE_AXIS_LABEL_COLOR;
       ctx.font = "9px 'Outfit', sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "bottom";
@@ -334,6 +336,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             display: false,
           },
           ticks: {
+            color: TIMELINE_AXIS_LABEL_COLOR,
             font: {
               family: "'Outfit', sans-serif",
               size: 9,
