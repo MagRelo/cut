@@ -6,8 +6,9 @@ import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_WORDMARK } from "../../lib/brand";
-import { accountMatch, signInReturnFrom } from "../../lib/navRoutes";
+import { contestsHubMatch, signInReturnFrom } from "../../lib/navRoutes";
 import {
+  ACCOUNT_HOME_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEFT_TABS,
@@ -15,6 +16,9 @@ import {
 
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+
+const mobileSectionHeaderBase =
+  "block w-full rounded-md px-3 pt-2 pb-0.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
 
 function mobileNavItemClass(active: boolean) {
   return [
@@ -25,8 +29,33 @@ function mobileNavItemClass(active: boolean) {
   ].join(" ");
 }
 
-const mobileSubItemClass =
-  "block w-full rounded-md px-3 py-2 text-left text-sm font-display text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+function mobileSectionHeaderClass(active: boolean) {
+  return [
+    mobileSectionHeaderBase,
+    active
+      ? "bg-slate-100 text-slate-950 font-semibold"
+      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+  ].join(" ");
+}
+
+function mobileSubItemClass(active: boolean) {
+  return [
+    "block w-full rounded-md px-3 py-2 text-left text-sm font-display transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40",
+    active
+      ? "bg-slate-100 font-semibold text-slate-950"
+      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+  ].join(" ");
+}
+
+const mobileContestInsetListClass = "ml-2 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
+
+const mobileAccountInsetListClass =
+  "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
+
+const mobileAccountHeaderClass = [
+  mobileNavItemBase,
+  "inline-flex items-center justify-between gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+].join(" ");
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -41,8 +70,6 @@ export const MobileNavMenu: React.FC = () => {
   const totalBalance = balancesUnavailable
     ? null
     : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
-
-  const isAccountActive = accountMatch(location.pathname);
 
   const closeMenu = () => setOpen(false);
 
@@ -106,52 +133,73 @@ export const MobileNavMenu: React.FC = () => {
                     </div>
 
                     <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-3">
                         {LEFT_TABS.map((tab) => (
-                          <Fragment key={tab.key}>
+                          <div key={tab.key} className="flex flex-col">
                             <Link
                               to={tab.to}
                               state={tab.state}
                               onClick={closeMenu}
-                              aria-current={tab.match(location.pathname) ? "page" : undefined}
-                              className={mobileNavItemClass(tab.match(location.pathname))}
+                              aria-current={
+                                user && tab.key === "contests"
+                                  ? contestsHubMatch(location.pathname)
+                                    ? "page"
+                                    : undefined
+                                  : tab.match(location.pathname)
+                                    ? "page"
+                                    : undefined
+                              }
+                              className={
+                                user && tab.key === "contests"
+                                  ? mobileSectionHeaderClass(contestsHubMatch(location.pathname))
+                                  : mobileNavItemClass(tab.match(location.pathname))
+                              }
                             >
                               {tab.label}
                             </Link>
                             {user && tab.key === "contests" ? (
-                              <UserContestsNavList variant="mobile" onNavigate={closeMenu} />
+                              <UserContestsNavList
+                                variant="mobile"
+                                onNavigate={closeMenu}
+                                insetListClass={mobileContestInsetListClass}
+                              />
                             ) : null}
-                          </Fragment>
+                          </div>
                         ))}
 
                         {user ? (
                           <>
-                            <div
-                              className={[
-                                mobileNavItemClass(isAccountActive),
-                                "inline-flex items-center justify-between gap-2 normal-case tracking-normal",
-                              ].join(" ")}
-                            >
-                              <span className="uppercase tracking-wider">My Account</span>
-                              {totalBalance !== null ? (
-                                <span className="font-semibold tabular-nums">${totalBalance}</span>
-                              ) : (
-                                <span className="tabular-nums text-amber-800">—</span>
-                              )}
-                            </div>
+                            <div className="flex flex-col">
+                              <Link
+                                to={ACCOUNT_HOME_LINK.to}
+                                onClick={closeMenu}
+                                className={mobileAccountHeaderClass}
+                              >
+                                <span>My Account</span>
+                                {totalBalance !== null ? (
+                                  <span className="font-semibold tabular-nums normal-case tracking-normal">
+                                    ${totalBalance}
+                                  </span>
+                                ) : (
+                                  <span className="tabular-nums normal-case tracking-normal text-amber-800">
+                                    —
+                                  </span>
+                                )}
+                              </Link>
 
-                            <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">
-                              {ACCOUNT_SUB_LINKS.map((link) => (
-                                <Link
-                                  key={link.to}
-                                  to={link.to}
-                                  onClick={closeMenu}
-                                  aria-current={link.match(location.pathname) ? "page" : undefined}
-                                  className={mobileSubItemClass}
-                                >
-                                  {link.label}
-                                </Link>
-                              ))}
+                              <div className={mobileAccountInsetListClass}>
+                                {ACCOUNT_SUB_LINKS.map((link) => (
+                                  <Link
+                                    key={link.to}
+                                    to={link.to}
+                                    onClick={closeMenu}
+                                    aria-current={link.match(location.pathname) ? "page" : undefined}
+                                    className={mobileSubItemClass(link.match(location.pathname))}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                ))}
+                              </div>
                             </div>
 
                             {showAdminNav

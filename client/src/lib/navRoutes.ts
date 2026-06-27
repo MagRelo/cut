@@ -16,6 +16,13 @@ export const contestsMatch = (pathname: string) =>
   pathname.startsWith("/contest/") ||
   sportsMatch(pathname);
 
+/** Contests hub/list pages — excludes individual contest lobby URLs. */
+export const contestsHubMatch = (pathname: string) =>
+  pathname === "/" ||
+  pathname === "/contests" ||
+  pathname.startsWith("/contests/") ||
+  sportsMatch(pathname);
+
 export const leaguesMatch = (pathname: string) => pathname.startsWith("/leagues");
 
 export const userGroupsMatch = (pathname: string) => pathname.startsWith("/user-groups");

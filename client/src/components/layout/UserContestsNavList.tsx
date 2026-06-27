@@ -5,7 +5,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { MinusCircleIcon } from "@heroicons/react/24/outline";
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLiveContestsAcrossSports } from "../../hooks/useLiveContestsAcrossSports";
 import {
@@ -19,13 +19,26 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 type UserContestsNavListProps = {
   variant: "mobile" | "dropdown";
   onNavigate?: () => void;
+  insetListClass?: string;
 };
+
+const defaultMobileInsetListClass =
+  "ml-2 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
 
 const sectionLabelClass =
   "px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400";
 
-const mobileItemClass =
-  "flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-display text-slate-700 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+const mobileItemBase =
+  "flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-display transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+
+function mobileItemClass(active: boolean) {
+  return [
+    mobileItemBase,
+    active
+      ? "bg-slate-100 font-semibold text-slate-950"
+      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+  ].join(" ");
+}
 
 const dropdownItemClass =
   "flex w-full items-center gap-2.5 py-2 pl-7 pr-4 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50 data-[focus]:text-slate-900";
@@ -59,14 +72,16 @@ function ContestNavLink({
   userId,
   variant,
   onNavigate,
+  isActive = false,
 }: {
   contest: Contest;
   userId: string;
   variant: UserContestsNavListProps["variant"];
   onNavigate?: () => void;
+  isActive?: boolean;
 }) {
   const status = getContestParticipationStatus(contest, userId);
-  const itemClass = variant === "mobile" ? mobileItemClass : dropdownItemClass;
+  const itemClass = variant === "mobile" ? mobileItemClass(isActive) : dropdownItemClass;
   const leagueName = contest.userGroup?.name;
 
   const link = (
@@ -75,6 +90,7 @@ function ContestNavLink({
       className={itemClass}
       title={contest.name}
       onClick={onNavigate}
+      aria-current={isActive ? "page" : undefined}
     >
       <ContestParticipationIcon status={status} />
       <span className="min-w-0 flex-1">
@@ -94,6 +110,7 @@ function ContestNavLink({
             to={contestLobbyPath(contest.address)}
             className={itemClass}
             title={contest.name}
+            aria-current={isActive ? "page" : undefined}
             onClick={() => {
               onNavigate?.();
               close();
@@ -115,8 +132,13 @@ function ContestNavLink({
   return link;
 }
 
-export function UserContestsNavList({ variant, onNavigate }: UserContestsNavListProps) {
+export function UserContestsNavList({
+  variant,
+  onNavigate,
+  insetListClass = defaultMobileInsetListClass,
+}: UserContestsNavListProps) {
   const { user } = useAuth();
+  const location = useLocation();
   const { contests, isLoading, error } = useLiveContestsAcrossSports();
 
   const sortedContests = useMemo(() => {
@@ -134,7 +156,7 @@ export function UserContestsNavList({ variant, onNavigate }: UserContestsNavList
     const loading = <div className={`${sectionLabelClass} text-slate-500`}>Loading contests…</div>;
     if (variant === "mobile") {
       return (
-        <div className="ml-2 mt-0.5 flex flex-col gap-1 border-l border-slate-100 pl-2">
+        <div className={insetListClass}>
           {loading}
         </div>
       );
@@ -150,20 +172,24 @@ export function UserContestsNavList({ variant, onNavigate }: UserContestsNavList
     return null;
   }
 
-  const items = sortedContests.map((contest) => (
-    <ContestNavLink
-      key={contest.id}
-      contest={contest}
-      userId={user.id}
-      variant={variant}
-      onNavigate={onNavigate}
-    />
-  ));
+  const items = sortedContests.map((contest) => {
+    const contestPath = contestLobbyPath(contest.address);
+    const isActive = location.pathname === contestPath;
+
+    return (
+      <ContestNavLink
+        key={contest.id}
+        contest={contest}
+        userId={user.id}
+        variant={variant}
+        onNavigate={onNavigate}
+        isActive={isActive}
+      />
+    );
+  });
 
   if (variant === "mobile") {
-    return (
-      <div className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2">{items}</div>
-    );
+    return <div className={insetListClass}>{items}</div>;
   }
 
   return (
