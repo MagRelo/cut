@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,13 +8,13 @@ import {
   Title,
   Tooltip,
   Legend,
+  type Plugin,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import type { TimelineData, TimelineMetric } from "../../types/contest";
-import { cn, segmentButtonClassName } from "../../lib/tabStyles";
+import { cn } from "../../lib/tabStyles";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-const ROUND_BUTTONS = [1, 2, 3, 4] as const;
 
 const OTHER_TEAM_LINE_OPACITY = 0.6;
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
@@ -22,7 +22,6 @@ const USER_LINE_ORDER = 0;
 const PAYOUT_WINNER_LINE_ORDER = 5;
 const OTHER_LINE_ORDER = 10;
 
-type RoundOrFinal = (typeof ROUND_BUTTONS)[number] | "final";
 type TimelineTeam = TimelineData["teams"][number];
 
 function isCurrentUserTeam(team: TimelineTeam, currentUserId: string | undefined): boolean {
@@ -84,6 +83,85 @@ function orderTeamsForChart(
   return [...sortWinnersLast(mine), ...sortWinnersLast(others)];
 }
 
+interface RoundSegment {
+  roundNumber: number;
+  startIndex: number;
+  count: number;
+}
+
+interface RoundLabel {
+  index: number;
+  roundNumber: number;
+}
+
+function buildRoundByTimestamp(topTeams: TimelineTeam[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const team of topTeams) {
+    for (const dp of team.dataPoints) {
+      const roundNumber = dp.roundNumber;
+      if (typeof roundNumber === "number" && roundNumber >= 1 && roundNumber <= 4) {
+        map.set(dp.timestamp, roundNumber);
+      }
+    }
+  }
+  return map;
+}
+
+function buildRoundSegments(
+  chartTimestamps: string[],
+  roundByTimestamp: Map<string, number>,
+): RoundSegment[] {
+  const segments: RoundSegment[] = [];
+  for (let i = 0; i < chartTimestamps.length; i++) {
+    const roundNumber = roundByTimestamp.get(chartTimestamps[i]);
+    if (roundNumber === undefined) continue;
+    const last = segments[segments.length - 1];
+    if (last?.roundNumber === roundNumber) {
+      last.count += 1;
+    } else {
+      segments.push({ roundNumber, startIndex: i, count: 1 });
+    }
+  }
+  return segments;
+}
+
+const TIMELINE_CHART_PLUGIN_ID = "timelineChartDecorations";
+
+const timelineChartPlugin: Plugin<"line"> = {
+  id: TIMELINE_CHART_PLUGIN_ID,
+  afterDraw(chart) {
+    const plugins = chart.options.plugins as Record<string, { labels?: RoundLabel[] }> | undefined;
+    const labels = plugins?.[TIMELINE_CHART_PLUGIN_ID]?.labels ?? [];
+    if (!labels.length) return;
+
+    const { ctx, chartArea, scales } = chart;
+    const xScale = scales.x;
+    if (!chartArea || !xScale) return;
+
+    ctx.save();
+    for (const { index, roundNumber } of labels) {
+      const x = xScale.getPixelForValue(index);
+      if (index > 0) {
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.strokeStyle = "rgba(107, 114, 128, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.fillStyle = "rgba(107, 114, 128, 0.75)";
+      ctx.font = "9px 'Outfit', sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(`R${roundNumber}`, x + 6, chartArea.bottom - 4);
+    }
+    ctx.restore();
+  },
+};
+
 function forwardFilledScores(
   sortedTimestamps: string[],
   points: Array<{ timestamp: string; roundNumber?: number; score: number }>,
@@ -118,12 +196,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   currentUserId,
   fitContainer = false,
 }) => {
-  const contestFinished = timelineData.contestFinished === true;
-
-  const [selectedRound, setSelectedRound] = useState<RoundOrFinal>(() =>
-    contestFinished ? "final" : 4,
-  );
-
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
     return [...timelineData.teams].sort((a, b) => {
@@ -133,137 +205,76 @@ export const Timeline: React.FC<TimelineProps> = ({
     });
   }, [timelineData.teams]);
 
-  const availableRounds = useMemo(() => {
-    return new Set(
-      topTeams.flatMap((team) =>
-        team.dataPoints
-          .map((dp) => dp.roundNumber)
-          .filter(
-            (round): round is number => typeof round === "number" && round >= 1 && round <= 4,
-          ),
-      ),
-    );
+  const chartTimestamps = useMemo(() => {
+    const ts = new Set<string>();
+    for (const team of topTeams) {
+      for (const dp of team.dataPoints) {
+        const r = dp.roundNumber;
+        if (typeof r === "number" && r >= 1 && r <= 4) ts.add(dp.timestamp);
+      }
+    }
+    return [...ts].sort((a, b) => a.localeCompare(b));
   }, [topTeams]);
 
-  useEffect(() => {
-    if (selectedRound === "final") return;
-    if (availableRounds.size > 0 && !availableRounds.has(selectedRound)) {
-      const latestAvailableRound = [...ROUND_BUTTONS]
-        .reverse()
-        .find((round) => availableRounds.has(round));
-      if (latestAvailableRound) setSelectedRound(latestAvailableRound);
-    }
-  }, [availableRounds, selectedRound]);
+  const roundByTimestamp = useMemo(() => buildRoundByTimestamp(topTeams), [topTeams]);
 
-  const finalHasData = useMemo(
+  const roundLabels = useMemo(
     () =>
-      topTeams.some((team) =>
-        team.dataPoints.some(
-          (dp) => typeof dp.roundNumber === "number" && dp.roundNumber >= 1 && dp.roundNumber <= 4,
-        ),
-      ),
-    [topTeams],
+      buildRoundSegments(chartTimestamps, roundByTimestamp).map((segment) => ({
+        index: segment.startIndex,
+        roundNumber: segment.roundNumber,
+      })),
+    [chartTimestamps, roundByTimestamp],
   );
-
-  const selectedRoundTimestamps = useMemo(() => {
-    if (selectedRound === "final") {
-      const ts = new Set<string>();
-      for (const team of topTeams) {
-        for (const dp of team.dataPoints) {
-          const r = dp.roundNumber;
-          if (typeof r === "number" && r >= 1 && r <= 4) ts.add(dp.timestamp);
-        }
-      }
-      return [...ts].sort((a, b) => a.localeCompare(b));
-    }
-    return [
-      ...new Set(
-        topTeams.flatMap((team) =>
-          team.dataPoints
-            .filter((dp) => dp.roundNumber === selectedRound)
-            .map((dp) => dp.timestamp),
-        ),
-      ),
-    ].sort();
-  }, [topTeams, selectedRound]);
 
   const highlightPayoutWinners = useMemo(
     () => topTeams.some((t) => t.isPrimaryPayoutWinner === true),
     [topTeams],
   );
 
-  const teamsForChart = useMemo(() => {
-    const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
-    return orderTeamsForChart(topTeams, currentUserId, highlightWinners);
-  }, [topTeams, selectedRound, highlightPayoutWinners, currentUserId]);
+  const teamsForChart = useMemo(
+    () => orderTeamsForChart(topTeams, currentUserId, highlightPayoutWinners),
+    [topTeams, highlightPayoutWinners, currentUserId],
+  );
 
   const lineColorForTeam = useCallback(
     (team: TimelineTeam) => {
       if (!currentUserId) return team.color;
       if (isCurrentUserTeam(team, currentUserId)) return team.color;
-      const isFinalWinner =
-        selectedRound === "final" && highlightPayoutWinners && team.isPrimaryPayoutWinner === true;
-      if (isFinalWinner) return team.color;
+      if (highlightPayoutWinners && team.isPrimaryPayoutWinner === true) return team.color;
       return colorWithOpacity(team.color, OTHER_TEAM_LINE_OPACITY);
     },
-    [currentUserId, selectedRound, highlightPayoutWinners],
+    [currentUserId, highlightPayoutWinners],
   );
 
   const lineStyleForTeam = useCallback(
     (team: TimelineTeam) => {
       const isUser = isCurrentUserTeam(team, currentUserId);
-      const highlightWinners = selectedRound === "final" && highlightPayoutWinners;
       return {
         borderColor: lineColorForTeam(team),
         borderWidth: !currentUserId ? 2 : isUser ? 3 : 1,
-        order: chartOrderForTeam(team, currentUserId, highlightWinners),
+        order: chartOrderForTeam(team, currentUserId, highlightPayoutWinners),
       };
     },
-    [currentUserId, selectedRound, highlightPayoutWinners, lineColorForTeam],
+    [currentUserId, highlightPayoutWinners, lineColorForTeam],
   );
 
   const labels = useMemo(
-    () => selectedRoundTimestamps.map((_timestamp, idx) => `${idx + 1}`),
-    [selectedRoundTimestamps],
+    () => chartTimestamps.map((_timestamp, idx) => `${idx + 1}`),
+    [chartTimestamps],
   );
 
-  const chartData = useMemo(() => {
-    if (selectedRound === "final") {
-      return {
-        labels,
-        datasets: teamsForChart.map((team) => {
-          const roundPoints = team.dataPoints.filter(
-            (dp) =>
-              typeof dp.roundNumber === "number" && dp.roundNumber >= 1 && dp.roundNumber <= 4,
-          );
-          const { borderColor, borderWidth, order } = lineStyleForTeam(team);
-          return {
-            label: team.name,
-            data: forwardFilledScores(selectedRoundTimestamps, roundPoints),
-            borderColor,
-            backgroundColor: borderColor,
-            borderWidth,
-            order,
-            pointRadius: 0,
-            tension: 0.4,
-            spanGaps: true,
-          };
-        }),
-      };
-    }
-
-    return {
+  const chartData = useMemo(
+    () => ({
       labels,
       datasets: teamsForChart.map((team) => {
-        const scoreMap = new Map(
-          team.dataPoints
-            .filter((dp) => dp.roundNumber === selectedRound)
-            .map((dp) => [dp.timestamp, dp.score]),
+        const roundPoints = team.dataPoints.filter(
+          (dp) => typeof dp.roundNumber === "number" && dp.roundNumber >= 1 && dp.roundNumber <= 4,
         );
         const { borderColor, borderWidth, order } = lineStyleForTeam(team);
         return {
           label: team.name,
-          data: selectedRoundTimestamps.map((timestamp) => scoreMap.get(timestamp) ?? null),
+          data: forwardFilledScores(chartTimestamps, roundPoints),
           borderColor,
           backgroundColor: borderColor,
           borderWidth,
@@ -273,8 +284,9 @@ export const Timeline: React.FC<TimelineProps> = ({
           spanGaps: true,
         };
       }),
-    };
-  }, [labels, teamsForChart, selectedRoundTimestamps, selectedRound, lineStyleForTeam]);
+    }),
+    [labels, teamsForChart, chartTimestamps, lineStyleForTeam],
+  );
 
   const options = useMemo(
     () => ({
@@ -288,6 +300,9 @@ export const Timeline: React.FC<TimelineProps> = ({
         title: {
           display: false,
         },
+        [TIMELINE_CHART_PLUGIN_ID]: {
+          labels: roundLabels,
+        },
       },
       scales: {
         x: {
@@ -295,7 +310,6 @@ export const Timeline: React.FC<TimelineProps> = ({
           display: true,
           title: {
             display: false,
-            text: "Round",
           },
           grid: {
             display: false,
@@ -314,13 +328,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         y: {
           display: true,
           title: {
-            display: true,
-            text: "Points",
-            font: {
-              family: "'Outfit', sans-serif",
-              size: 9,
-            },
-            color: "#6B7280",
+            display: false,
           },
           grid: {
             display: false,
@@ -335,7 +343,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         },
       },
     }),
-    [],
+    [roundLabels],
   );
 
   if (!timelineData.teams.length) {
@@ -361,65 +369,23 @@ export const Timeline: React.FC<TimelineProps> = ({
       )}
     >
       <div className="shrink-0 border-b border-gray-100 px-3 pb-2 pt-2.5">
-        <h3 className="text-sm font-semibold leading-tight text-gray-900">Contest Timeline</h3>
+        <h3 className="text-sm font-semibold leading-tight text-gray-900">Tournament Timeline</h3>
         <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
           Each line tracks a lineup&apos;s total points.
         </p>
       </div>
 
       <div
-        className={cn("timeline-chart min-h-0 px-2 pb-1 pt-1", fitContainer ? "flex-1" : "")}
+        className={cn("timeline-chart min-h-0 px-2 pb-3 pt-1", fitContainer ? "flex-1" : "")}
         style={fitContainer ? undefined : { height: "220px" }}
       >
-        {selectedRoundTimestamps.length === 0 ? (
+        {chartTimestamps.length === 0 ? (
           <div className="flex h-full items-center justify-center font-display text-sm text-gray-500">
-            {selectedRound === "final"
-              ? "No timeline data available for the full tournament."
-              : `No timeline data available for Round ${selectedRound}.`}
+            No timeline data available.
           </div>
         ) : (
-          <Line data={chartData} options={options} />
+          <Line data={chartData} options={options} plugins={[timelineChartPlugin]} />
         )}
-      </div>
-
-      <div className="flex shrink-0 gap-2 px-3 pb-3 pt-1">
-        {ROUND_BUTTONS.map((round) => {
-          const isActive = selectedRound === round;
-          const hasData = availableRounds.has(round);
-          return (
-            <button
-              key={round}
-              type="button"
-              disabled={!hasData}
-              tabIndex={hasData ? undefined : -1}
-              aria-hidden={!hasData}
-              onClick={() => setSelectedRound(round)}
-              className={cn(
-                segmentButtonClassName(isActive),
-                !hasData && "pointer-events-none invisible",
-              )}
-              aria-pressed={isActive}
-            >
-              Round {round}
-            </button>
-          );
-        })}
-        {contestFinished ? (
-          <button
-            type="button"
-            disabled={!finalHasData}
-            tabIndex={finalHasData ? undefined : -1}
-            aria-hidden={!finalHasData}
-            onClick={() => setSelectedRound("final")}
-            className={cn(
-              segmentButtonClassName(selectedRound === "final"),
-              !finalHasData && "pointer-events-none invisible",
-            )}
-            aria-pressed={selectedRound === "final"}
-          >
-            Final
-          </button>
-        ) : null}
       </div>
     </div>
   );
