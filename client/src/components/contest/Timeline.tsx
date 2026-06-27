@@ -371,7 +371,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         className,
       )}
     >
-      <div className="shrink-0 border-b border-gray-100 px-3 pb-2 pt-2.5">
+      <div className="shrink-0 px-3 pb-2 pt-2.5">
         <h3 className="text-sm font-semibold leading-tight text-gray-900">Tournament Timeline</h3>
         <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
           Each line tracks a lineup&apos;s total points.
