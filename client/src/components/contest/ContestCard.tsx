@@ -26,14 +26,14 @@ export const ContestCard = ({
         <h3 className="truncate font-display text-xl font-bold leading-tight text-gray-900">
           {contest.name}
         </h3>
-        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium text-gray-500">
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium text-slate-400">
           {contest.userGroup?.name ? (
             <>
               <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
                 <Link
                   to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
-                  className="truncate hover:text-gray-700 hover:underline focus:outline-none focus-visible:underline"
+                  className="truncate hover:text-slate-500 hover:underline focus:outline-none focus-visible:underline"
                 >
                   {contest.userGroup.name}
                 </Link>
@@ -58,7 +58,7 @@ export const ContestCard = ({
             className="ml-2 mr-2 flex items-center gap-3 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
             {showPotIcon ? (
-              <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-500/90" aria-hidden />
+              <Cog6ToothIcon className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
             ) : null}
             <div>
               <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
