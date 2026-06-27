@@ -7,9 +7,8 @@ import apiClient from "../utils/apiClient";
 import { ApiError } from "../utils/apiError";
 import { queryKeys } from "../utils/queryKeys";
 import { useAuth } from "../contexts/AuthContext";
+import { SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming";
 import { useSportsQuery } from "./useSportData";
-
-const ACTIVE_EVENT_STALE_MS = 5 * 60 * 1000;
 
 function eventSummaryFromActive(active: ActiveEventResponse): ContestEventSummary {
   const meta =
@@ -55,8 +54,8 @@ export function useLiveContestsAcrossSports() {
           throw error;
         }
       },
-      staleTime: ACTIVE_EVENT_STALE_MS,
-      refetchInterval: ACTIVE_EVENT_STALE_MS,
+      staleTime: SERVER_SYNC_INTERVAL_MS,
+      refetchInterval: SERVER_SYNC_INTERVAL_MS,
       refetchOnWindowFocus: true,
     })),
   });

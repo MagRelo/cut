@@ -2,9 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type Contest, type TimelineData } from "../types/contest";
+import { type Contest, type ContestStatus, type TimelineData } from "../types/contest";
 import { normalizeContestAddress } from "../utils/contestRoutes";
 import { useAuth } from "../contexts/AuthContext";
+import { eventStatusFromMetadata } from "../lib/eventMetadata";
+import { CONTEST_LOBBY_GC_MS, SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming";
+
+const TERMINAL_CONTEST_STATUSES: ContestStatus[] = ["SETTLED", "CLOSED", "CANCELLED"];
+
+function isContestLiveTracked(contest: Contest | undefined): boolean {
+  if (!contest) return false;
+  if (TERMINAL_CONTEST_STATUSES.includes(contest.status)) return false;
+  if (eventStatusFromMetadata(contest.event?.metadata) === "COMPLETE") return false;
+  return true;
+}
 
 /**
  * Loads the contest lobby from a contract address in the URL.
@@ -22,10 +33,13 @@ export function useContestQuery(contestAddress: string | undefined) {
       return { ...contest, timeline };
     },
     enabled: !!routeKey,
-    staleTime: 2 * 60 * 1000,
-    refetchInterval: 10 * 60 * 1000,
-    // Temporarily off — Privy/wallet popups steal focus and were refetching the whole lobby.
-    refetchOnWindowFocus: false,
+    staleTime: (query) =>
+      isContestLiveTracked(query.state.data) ? SERVER_SYNC_INTERVAL_MS : Infinity,
+    refetchInterval: (query) =>
+      isContestLiveTracked(query.state.data) ? SERVER_SYNC_INTERVAL_MS : false,
+    gcTime: CONTEST_LOBBY_GC_MS,
+    // Safe with 5-min staleTime — wallet popups return before data goes stale.
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
