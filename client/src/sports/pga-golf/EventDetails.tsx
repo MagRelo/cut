@@ -1,4 +1,4 @@
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
@@ -13,8 +13,7 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
   const name = meta.name ?? event.externalId;
   const locationLine = [meta.city?.trim(), meta.state?.trim()].filter(Boolean).join(", ");
   const roundDisplay = meta.roundDisplay || "R1";
-  const roundStatusDisplay =
-    meta.roundStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
+  const roundStatusDisplay = meta.roundStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
   const isSuspended = meta.roundStatusDisplay === "Suspended";
 
   const detailSeparator = (
@@ -50,7 +49,7 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
         </div>
       ) : null}
 
-      <div className="mt-0.5 flex w-full items-center gap-x-2 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
+      <div className="mt-0.5 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
         <span>{roundDisplay}</span>
         {detailSeparator}
         {isSuspended ? (
@@ -61,6 +60,14 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
         ) : (
           <span>{roundStatusDisplay}</span>
         )}
+        {detailSeparator}
+        <Link
+          to={`/sports/${event.sportId}/leaderboard`}
+          className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+        >
+          View Leaderboard
+          <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        </Link>
       </div>
     </div>
   );
