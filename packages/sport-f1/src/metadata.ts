@@ -15,6 +15,8 @@ export interface F1EventMetadata {
 
 export interface F1ParticipantMetadata {
   driverNumber?: number | null;
+  firstName?: string | null;
+  lastName?: string | null;
   teamName?: string | null;
   teamColour?: string | null;
   headshotUrl?: string | null;

@@ -39,8 +39,13 @@ export async function syncF1ParticipantField(eventId: string) {
   for (const driver of drivers) {
     const externalId = driverExternalId(driver.driver_number);
     const season = seasonByDriver.get(driver.driver_number);
+    const lastName = driver.last_name?.trim() || null;
+    const firstName = driver.first_name?.trim() || null;
+
     const participantMetadata = {
       driverNumber: driver.driver_number,
+      firstName,
+      lastName,
       teamName: driver.team_name,
       teamColour: driver.team_colour,
       headshotUrl: driver.headshot_url ?? null,

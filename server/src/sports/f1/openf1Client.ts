@@ -31,6 +31,8 @@ export type OpenF1Session = {
 export type OpenF1Driver = {
   driver_number: number;
   full_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   team_name: string;
   team_colour: string;
   headshot_url?: string | null;

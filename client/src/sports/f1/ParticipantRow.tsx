@@ -3,6 +3,7 @@ import type { ParticipantRowProps } from "@cut/sport-sdk/ui";
 import { F1DriverAvatar } from "./F1DriverAvatar";
 import {
   candidatePoints,
+  formatDriverFullName,
   formatDriverStatus,
   formatOrdinal,
   formatTeamColor,
@@ -25,10 +26,11 @@ export const F1ParticipantRow: React.FC<ParticipantRowProps> = ({
     scoreData.position != null ? `P${scoreData.position}` : showLiveLayout ? "—" : "";
   const statusLabel = formatDriverStatus(scoreData.status);
   const teamName = participant.teamName?.trim() || "—";
+  const driverName = formatDriverFullName(candidate);
 
   const driverAvatar = (
     <F1DriverAvatar
-      displayName={candidate.displayName}
+      displayName={driverName}
       headshotUrl={participant.headshotUrl}
       teamColor={teamColor}
     />
@@ -39,7 +41,7 @@ export const F1ParticipantRow: React.FC<ParticipantRowProps> = ({
       {driverAvatar}
       <div className="min-w-0 flex-1">
         <div className="truncate text-md font-semibold leading-tight text-gray-900">
-          {candidate.displayName}
+          {driverName}
         </div>
         <div className="truncate text-xs text-gray-600">
           {teamName}
@@ -61,7 +63,7 @@ export const F1ParticipantRow: React.FC<ParticipantRowProps> = ({
 
       <div className="min-w-0 flex-1">
         <div className="truncate text-md font-semibold leading-tight text-gray-900">
-          {candidate.displayName}
+          {driverName}
         </div>
         <div className="flex min-h-5 items-center gap-2 text-xs text-gray-600">
           <span className="truncate">{teamName}</span>

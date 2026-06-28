@@ -1,7 +1,7 @@
 import React from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import { F1DriverAvatar } from "./F1DriverAvatar";
-import { formatCount, formatOrdinal, formatTeamColor, parseF1CandidateMetadata } from "./utils";
+import { formatCount, formatDriverFullName, formatOrdinal, formatTeamColor, parseF1CandidateMetadata } from "./utils";
 
 interface CandidateSelectionCardProps {
   candidate: Candidate;
@@ -18,6 +18,7 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
   const wdc = formatOrdinal(participant.championshipPosition);
   const wins = formatCount(participant.seasonWins);
   const teamName = participant.teamName?.trim() || "—";
+  const driverName = formatDriverFullName(candidate);
 
   return (
     <div
@@ -29,14 +30,14 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
       <div className="p-3">
         <div className="flex items-start gap-3">
           <F1DriverAvatar
-            displayName={candidate.displayName}
+            displayName={driverName}
             headshotUrl={participant.headshotUrl}
             teamColor={teamColor}
             size="lg"
           />
           <div className="min-w-0 flex-1 mt-1">
             <h3 className="truncate text-left text-xl font-semibold leading-tight text-slate-900">
-              {candidate.displayName || "Unknown"}
+              {driverName}
             </h3>
             <p className="truncate text-left text-sm text-slate-600">{teamName}</p>
           </div>
