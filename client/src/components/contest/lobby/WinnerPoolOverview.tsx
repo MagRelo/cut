@@ -16,11 +16,8 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ mode }) 
 
       <p className="text-sm leading-relaxed text-gray-600">
         Bet on which lineup will win this contest. Odds update as money enters the pool - get in
-        early to secure a larger share of the pot!{" "}
-        <Link
-          to="/faq#winner-pool"
-          className="font-medium text-gray-700 underline-offset-2 hover:text-gray-900 hover:underline"
-        >
+        early to secure a larger share of the pot.{"  "}
+        <Link to="/faq#winner-pool" className="ml-0.5 text-blue-600 hover:underline">
           Learn more...
         </Link>
       </p>
