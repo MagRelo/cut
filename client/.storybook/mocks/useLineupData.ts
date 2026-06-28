@@ -35,7 +35,7 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
     async (
       lineupId: string,
       picks: string[],
-      options?: { winningScorePrediction?: number },
+      options?: { predictionValue?: number },
     ) => {
       const lineupPicks = buildLineupPicksByEventParticipantIds(picks);
       const score = lineupPicks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
@@ -45,8 +45,8 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
               ...lineup,
               picks: lineupPicks,
               score,
-              ...(options?.winningScorePrediction !== undefined
-                ? { prediction: { winningScorePrediction: options.winningScorePrediction } }
+              ...(options?.predictionValue !== undefined
+                ? { prediction: { type: "winningLineupTotal", value: options.predictionValue } }
                 : {}),
             }
           : lineup,

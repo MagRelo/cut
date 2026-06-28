@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
-import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction.js";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction.js";
 import {
   defaultPredictionForSport,
   predictionValueForSport,
@@ -22,7 +22,7 @@ export type CreateLineupInput = {
   contestId?: string;
 };
 
-function resolvePrediction(sportId: string, prediction: unknown | undefined) {
+async function resolvePrediction(sportId: string, prediction: unknown | undefined) {
   if (prediction !== undefined && prediction !== null) {
     return prediction as object;
   }
@@ -58,7 +58,7 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "validation" as const, messages: validated.messages };
   }
 
-  const prediction = resolvePrediction(event.sportId, input.prediction);
+  const prediction = await resolvePrediction(event.sportId, input.prediction);
   const predictionValue = predictionValueForSport(event.sportId, prediction);
 
   const isDuplicate = await isDuplicateLineup(

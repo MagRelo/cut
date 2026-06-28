@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineupListItem } from "../types/lineup";
-import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/lineupPrediction";
 import {
   platformLineupEventParticipantIds,
   platformLineupPrediction,
@@ -26,7 +26,7 @@ function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] 
 }
 
 interface UpdateLineupOptions {
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }
 
 interface UseLineupSlotEditorOptions {
@@ -36,7 +36,7 @@ interface UseLineupSlotEditorOptions {
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
-  winningScorePrediction: number;
+  predictionValue: number;
   updateLineup: (
     lineupId: string,
     picks: string[],
@@ -51,7 +51,7 @@ export function useLineupSlotEditor({
   initialCandidates,
   fieldCandidates,
   lineups,
-  winningScorePrediction,
+  predictionValue,
   updateLineup,
 }: UseLineupSlotEditorOptions) {
   const [slots, setSlots] = useState<Array<Candidate | null>>(() =>
@@ -85,7 +85,7 @@ export function useLineupSlotEditor({
     async (newSlots: Array<Candidate | null>) => {
       const eventParticipantIds = eventParticipantIdsFromSlots(newSlots);
 
-      if (checkForDuplicateLineup(eventParticipantIds, winningScorePrediction)) {
+      if (checkForDuplicateLineup(eventParticipantIds, predictionValue)) {
         setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
       }
@@ -93,7 +93,7 @@ export function useLineupSlotEditor({
       setIsSaving(true);
       setSaveError(null);
       try {
-        await updateLineup(lineupId, eventParticipantIds, { winningScorePrediction });
+        await updateLineup(lineupId, eventParticipantIds, { predictionValue });
         return true;
       } catch (error) {
         const message =
@@ -104,7 +104,7 @@ export function useLineupSlotEditor({
         setIsSaving(false);
       }
     },
-    [checkForDuplicateLineup, lineupId, updateLineup, winningScorePrediction],
+    [checkForDuplicateLineup, lineupId, updateLineup, predictionValue],
   );
 
   const openSlot = useCallback(

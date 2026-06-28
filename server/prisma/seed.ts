@@ -21,6 +21,13 @@ const PGA_GOLF_SCORING_RULES = {
   direction: "higher_wins",
 };
 
+const PGA_GOLF_PREDICTION_RULES = {
+  min: 1,
+  max: 250,
+  defaultRandomMin: 95,
+  defaultRandomMax: 145,
+};
+
 const F1_ROSTER_RULES = {
   slotCount: 4,
   minPicks: 0,
@@ -31,6 +38,13 @@ const F1_ROSTER_RULES = {
 const F1_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+};
+
+const F1_PREDICTION_RULES = {
+  min: 1,
+  max: 120,
+  defaultRandomMin: 45,
+  defaultRandomMax: 75,
 };
 
 async function main() {
@@ -45,6 +59,7 @@ async function main() {
       isEnabled: true,
       rosterRules: PGA_GOLF_ROSTER_RULES,
       scoringRules: PGA_GOLF_SCORING_RULES,
+      predictionRules: PGA_GOLF_PREDICTION_RULES,
     },
     update: {
       name: "PGA Tour Fantasy",
@@ -52,6 +67,7 @@ async function main() {
       isEnabled: true,
       rosterRules: PGA_GOLF_ROSTER_RULES,
       scoringRules: PGA_GOLF_SCORING_RULES,
+      predictionRules: PGA_GOLF_PREDICTION_RULES,
     },
   });
 
@@ -66,6 +82,7 @@ async function main() {
       isEnabled: true,
       rosterRules: F1_ROSTER_RULES,
       scoringRules: F1_SCORING_RULES,
+      predictionRules: F1_PREDICTION_RULES,
     },
     update: {
       name: "Formula 1",
@@ -73,6 +90,7 @@ async function main() {
       isEnabled: true,
       rosterRules: F1_ROSTER_RULES,
       scoringRules: F1_SCORING_RULES,
+      predictionRules: F1_PREDICTION_RULES,
     },
   });
 

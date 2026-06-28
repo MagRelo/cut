@@ -1,6 +1,5 @@
 export {
   F1_SPORT_ID,
-  f1PredictionValue,
   parseF1EventMetadata,
   type F1DriverStatus,
   type F1EventMetadata,

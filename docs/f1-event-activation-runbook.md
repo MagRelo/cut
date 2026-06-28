@@ -151,7 +151,7 @@ pnpm --filter server run service:sync-f1-scores
 
 - [ ] Sport hub (`/sports/f1`) shows correct race name and start time
 - [ ] Driver field ~20 entries (spot-check favorites, numbers)
-- [ ] Lineups can be created — 4 drivers + `winningLineupPoints` prediction (1–120)
+- [ ] Lineups can be created — 4 drivers + `winningLineupTotal` prediction (1–120)
 - [ ] Admin dashboard shows active F1 event
 
 **Before race:** scores may be null — expected. Grid positions may be null for historical races if OpenF1 `starting_grid` is empty.

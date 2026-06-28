@@ -1,6 +1,5 @@
 export {
   PGA_GOLF_SPORT_ID,
-  golfPredictionValue,
   parseGolfEventMetadata,
   type GolfEventMetadata,
   type GolfParticipantMetadata,

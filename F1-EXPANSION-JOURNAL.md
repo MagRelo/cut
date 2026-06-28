@@ -357,3 +357,23 @@ Copy for each new stage entry:
 
 - Stage 9 checklist items marked complete.
 - F1 expansion stages 0–9 complete per plan.
+
+---
+
+## Stage 10 — Prediction standardization (2026-06-28)
+
+### Predicted needs
+
+- Single canonical JSON type for all sports; sport-specific ranges in DB not code.
+- Remove duplicated golf/F1 parsers and `sportPrediction` sport-dispatch layer.
+
+### Actual findings
+
+- Canonical type `winningLineupTotal` added to `@cut/sport-sdk` with shared parse/serialize helpers.
+- `Sport.predictionRules` column seeded for golf (1–250) and F1 (1–120).
+- Deleted `golfPrediction.ts`, `f1Prediction.ts`, `winningScorePrediction.ts`; renamed hook param to `predictionValue`.
+- Migration rewrites existing `Lineup.prediction` rows to `winningLineupTotal` in one step.
+
+### Checklist impact
+
+- Tie-break plumbing is sport-agnostic; new sports only add `predictionRules` to seed.

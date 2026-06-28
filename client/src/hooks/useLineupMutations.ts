@@ -9,15 +9,14 @@ import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/pos
 import { createLineupForEvent, cloneLineupById, updateLineupById } from "../lib/lineupApi";
 import { useOptionalEventScope } from "../contexts/EventScopeContext";
 import { buildOptimisticPicks } from "../lib/lineupUtils";
-import { toPredictionForSport } from "../lib/sportPrediction";
+import { toLineupPredictionValue } from "../lib/sportPrediction";
 
 interface CreateLineupParams {
   eventId: string;
   contestId?: string;
-  sportId?: string;
   picks: string[];
   name?: string;
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }
 
 interface CloneLineupParams {
@@ -29,10 +28,9 @@ interface CloneLineupParams {
 
 interface UpdateLineupParams {
   lineupId: string;
-  sportId?: string;
   picks: string[];
   name?: string;
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }
 
 function resetSideBetMarketCache(queryClient: QueryClient, lineupId: string) {
@@ -91,21 +89,13 @@ export function useCreateLineup() {
   const userId = user?.id;
 
   return useMutation({
-    mutationFn: async ({
-      eventId,
-      contestId,
-      sportId,
-      picks,
-      name,
-      winningScorePrediction,
-    }: CreateLineupParams) => {
+    mutationFn: async ({ eventId, contestId, picks, name, predictionValue }: CreateLineupParams) => {
       return await createLineupForEvent({
         eventId,
         contestId,
-        sportId,
         picks,
         name,
-        winningScorePrediction,
+        predictionValue,
       });
     },
 
@@ -209,13 +199,7 @@ export function useUpdateLineup() {
   const userId = user?.id;
 
   return useMutation({
-    mutationFn: async ({
-      lineupId,
-      sportId,
-      picks,
-      name,
-      winningScorePrediction,
-    }: UpdateLineupParams) => {
+    mutationFn: async ({ lineupId, picks, name, predictionValue }: UpdateLineupParams) => {
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx) {
         throw new Error(`Lineup ${lineupId} not found in cache`);
@@ -223,14 +207,13 @@ export function useUpdateLineup() {
       return await updateLineupById({
         lineupId,
         eventId: ctx.eventId,
-        sportId: sportId ?? scopeSportId,
         picks,
         name,
-        winningScorePrediction,
+        predictionValue,
       });
     },
 
-    onMutate: async ({ lineupId, name, picks, winningScorePrediction }) => {
+    onMutate: async ({ lineupId, name, picks, predictionValue }) => {
       const ctx = findLineupListContext(queryClient, lineupId);
       if (!ctx || !scopeSportId) {
         return { previousLineups: undefined, eventId: undefined as string | undefined, lineupId };
@@ -255,12 +238,9 @@ export function useUpdateLineup() {
                   ...lineup,
                   name: name || lineup.name,
                   picks: buildOptimisticPicks(picks, candidates),
-                  ...(winningScorePrediction !== undefined && scopeSportId
+                  ...(predictionValue !== undefined
                     ? {
-                        prediction: toPredictionForSport(
-                          scopeSportId,
-                          winningScorePrediction,
-                        ),
+                        prediction: toLineupPredictionValue(predictionValue),
                       }
                     : {}),
                 }

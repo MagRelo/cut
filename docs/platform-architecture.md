@@ -94,7 +94,7 @@ model Sport {
 | `CompetitionEvent` | A single competition instance for a sport (tournament, slate, race). `sportId`, `externalId`, `isActive`, `metadata` for sport-specific fields. |
 | `Participant` | Global identity for a competitor (golfer, NFL player). `sportId`, `externalId`, `displayName`, `metadata`. |
 | `EventParticipant` | A participant in a specific event with live scoring. `scoreData` (JSON), `total` (the number aggregated into lineups). |
-| `Lineup` | A user's roster for one event. Optional `prediction` JSON for tie-breaking (golf: `{ type: "winningScore", value: 142 }`). |
+| `Lineup` | A user's roster for one event. Optional `prediction` JSON for tie-breaking (`{ type: "winningLineupTotal", value: 142 }`). |
 | `LineupPick` | Junction: lineup slot → `EventParticipant`. |
 
 ### Contests and leagues

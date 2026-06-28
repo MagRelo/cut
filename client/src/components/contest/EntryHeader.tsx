@@ -13,7 +13,7 @@ interface EntryHeaderProps {
   userColorHex?: string;
   userName?: string;
   lineupName?: string;
-  winningScorePrediction?: number | null;
+  predictionValue?: number | null;
   totalPoints: number;
   showArrow?: boolean;
   onClick?: () => void;
@@ -23,7 +23,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
   userColorHex,
   userName,
   lineupName,
-  winningScorePrediction,
+  predictionValue,
   totalPoints,
   showArrow = false,
   onClick,
@@ -59,7 +59,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
               }`}
             >
               {lineupName}
-              {winningScorePrediction != null ? ` (${winningScorePrediction})` : null}
+              {predictionValue != null ? ` (${predictionValue})` : null}
             </div>
           )}
         </div>

@@ -75,14 +75,3 @@ export function parseF1EventMetadata(metadata: unknown): F1EventMetadata | null 
     classificationComplete: f1.classificationComplete === true,
   };
 }
-
-export function f1PredictionValue(prediction: unknown): number | null {
-  if (!prediction || typeof prediction !== "object" || Array.isArray(prediction)) {
-    return null;
-  }
-  const record = prediction as Record<string, unknown>;
-  if (record.type === "winningLineupPoints" && typeof record.value === "number") {
-    return record.value;
-  }
-  return null;
-}

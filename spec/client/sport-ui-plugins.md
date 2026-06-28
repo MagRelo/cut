@@ -149,7 +149,8 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 | [`useCandidateSort`](../../client/src/hooks/useCandidateSort.ts) | Multi-sport list sorting via `sortKeys` + plugin config |
 | [`lineupUtils.ts`](../../client/src/lib/lineupUtils.ts) | `platformLineupEventParticipantIds`, prediction helpers |
 | [`lineupScore.ts`](../../client/src/lib/lineupScore.ts) | Display score from API — no client-side sport aggregation |
-| [`golfPrediction.ts`](../../client/src/lib/golfPrediction.ts) | `{ type: "winningScore", value }` serialization (golf tie-breaker) |
+| [`sportPrediction.ts`](../../client/src/lib/sportPrediction.ts) | `{ type: "winningLineupTotal", value }` parse/serialize |
+| [`useSportPredictionRules`](../../client/src/hooks/useSportPredictionRules.ts) | Per-sport slider range from `GET /sports` |
 
 ---
 
@@ -172,7 +173,7 @@ Golf-specific logic still in platform code. **Do not extend**; migrate when addi
 
 | Item | Location | Notes |
 |------|----------|-------|
-| Winning-score prediction | `lib/golfPrediction.ts`, `LineupWinningScoreSlider`, `SportPredictionField` fallback | Plugin wraps slider; platform owns API serialization |
+| Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Plugin wraps slider; platform owns canonical JSON shape |
 | Event round display | `useSportActiveEvent` exposes `roundDisplay` | Golf metadata field on platform hook |
 | Home demo | `InfoScorecard` imports plugin `ScoreDisplay` | Marketing-only cross-boundary import |
 

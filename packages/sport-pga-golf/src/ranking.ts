@@ -1,5 +1,5 @@
 import type { LineupEntryInput, RankedEntry } from "@cut/sport-sdk";
-import { golfPredictionValue } from "./metadata.js";
+import { parseLineupPrediction } from "@cut/sport-sdk";
 
 export function getContestWinningScore(entries: { score: number | null }[]): number {
   return entries.reduce((max, entry) => Math.max(max, entry.score ?? 0), 0);
@@ -25,8 +25,8 @@ export function rankGolfEntries(entries: LineupEntryInput[]): RankedEntry[] {
       return scoreB - scoreA;
     }
 
-    const distA = tiebreakerDistance(golfPredictionValue(a.prediction), contestWinningScore);
-    const distB = tiebreakerDistance(golfPredictionValue(b.prediction), contestWinningScore);
+    const distA = tiebreakerDistance(parseLineupPrediction(a.prediction), contestWinningScore);
+    const distB = tiebreakerDistance(parseLineupPrediction(b.prediction), contestWinningScore);
     if (distA !== distB) {
       return distA - distB;
     }
@@ -39,7 +39,7 @@ export function rankGolfEntries(entries: LineupEntryInput[]): RankedEntry[] {
     score: entry.score ?? 0,
     position: index + 1,
     predictionDistance: tiebreakerDistance(
-      golfPredictionValue(entry.prediction),
+      parseLineupPrediction(entry.prediction),
       contestWinningScore,
     ),
     createdAt: entry.createdAt,

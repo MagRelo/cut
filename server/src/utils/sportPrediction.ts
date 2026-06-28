@@ -1,81 +1,51 @@
-import { f1PredictionValue, F1_SPORT_ID } from "@cut/sport-f1";
-import { golfPredictionValue, PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import type { PredictionRules } from "@cut/sport-sdk";
 import {
-  randomWinningScorePrediction,
-  WINNING_SCORE_PREDICTION_MAX,
-  WINNING_SCORE_PREDICTION_MIN,
-} from "./winningScorePrediction.js";
+  defaultLineupPredictionForLineupId,
+  defaultLineupPredictionMidpoint,
+  isValidLineupPrediction,
+  parseLineupPrediction,
+  randomLineupPrediction,
+  toLineupPrediction,
+} from "@cut/sport-sdk";
+import { prisma } from "../lib/prisma.js";
 
-export const F1_LINEUP_POINTS_PREDICTION_MIN = 1;
-export const F1_LINEUP_POINTS_PREDICTION_MAX = 120;
-export const F1_LINEUP_POINTS_RANDOM_MIN = 45;
-export const F1_LINEUP_POINTS_RANDOM_MAX = 75;
-
-export function randomF1LineupPointsPrediction(): number {
-  const span = F1_LINEUP_POINTS_RANDOM_MAX - F1_LINEUP_POINTS_RANDOM_MIN + 1;
-  return F1_LINEUP_POINTS_RANDOM_MIN + Math.floor(Math.random() * span);
-}
-
-export function predictionValueForSport(sportId: string, prediction: unknown): number | null {
-  if (sportId === F1_SPORT_ID) {
-    return f1PredictionValue(prediction);
-  }
-  return golfPredictionValue(prediction);
-}
-
-/** Parse numeric tie-break from any supported prediction shape. */
 export function predictionNumericValue(prediction: unknown): number | null {
-  return f1PredictionValue(prediction) ?? golfPredictionValue(prediction);
+  return parseLineupPrediction(prediction);
 }
 
-export function defaultPredictionForSport(sportId: string): object {
-  if (sportId === F1_SPORT_ID) {
-    return { type: "winningLineupPoints", value: randomF1LineupPointsPrediction() };
-  }
-  return { type: "winningScore", value: randomWinningScorePrediction() };
+export function predictionValueForSport(_sportId: string, prediction: unknown): number | null {
+  return parseLineupPrediction(prediction);
 }
 
-export function toPredictionForSport(
-  sportId: string,
-  value: number | null | undefined,
-): unknown {
-  if (value == null) return null;
-  if (sportId === F1_SPORT_ID) {
-    return { type: "winningLineupPoints", value };
-  }
-  return { type: "winningScore", value };
+export async function getPredictionRulesForSport(sportId: string): Promise<PredictionRules> {
+  const sport = await prisma.sport.findUniqueOrThrow({
+    where: { id: sportId },
+    select: { predictionRules: true },
+  });
+  return sport.predictionRules as unknown as PredictionRules;
 }
 
-export function isValidPredictionForSport(sportId: string, value: unknown): value is number {
-  if (typeof value !== "number" || !Number.isInteger(value)) {
-    return false;
+export async function defaultPredictionForSport(sportId: string): Promise<object> {
+  const rules = await getPredictionRulesForSport(sportId);
+  const prediction = toLineupPrediction(randomLineupPrediction(rules));
+  if (!prediction) {
+    throw new Error("Failed to build default lineup prediction");
   }
-  if (sportId === F1_SPORT_ID) {
-    return value >= F1_LINEUP_POINTS_PREDICTION_MIN && value <= F1_LINEUP_POINTS_PREDICTION_MAX;
-  }
-  return value >= WINNING_SCORE_PREDICTION_MIN && value <= WINNING_SCORE_PREDICTION_MAX;
+  return prediction;
 }
 
-export function defaultPredictionMidpoint(sportId: string): number {
-  if (sportId === F1_SPORT_ID) {
-    return 60;
-  }
-  return 120;
+export function toLineupPredictionValue(value: number | null | undefined) {
+  return toLineupPrediction(value);
 }
 
-export function defaultPredictionForLineupId(sportId: string, lineupId: string): number {
-  let hash = 0;
-  for (let i = 0; i < lineupId.length; i++) {
-    hash = (hash * 31 + lineupId.charCodeAt(i)) | 0;
-  }
-
-  if (sportId === F1_SPORT_ID) {
-    const span = F1_LINEUP_POINTS_RANDOM_MAX - F1_LINEUP_POINTS_RANDOM_MIN + 1;
-    return F1_LINEUP_POINTS_RANDOM_MIN + (Math.abs(hash) % span);
-  }
-
-  const span = 145 - 95 + 1;
-  return 95 + (Math.abs(hash) % span);
+export function isValidPredictionValue(value: unknown, rules: PredictionRules): value is number {
+  return isValidLineupPrediction(value, rules);
 }
 
-export { F1_SPORT_ID, PGA_GOLF_SPORT_ID };
+export function defaultPredictionMidpoint(rules: PredictionRules): number {
+  return defaultLineupPredictionMidpoint(rules);
+}
+
+export function defaultPredictionForLineupId(lineupId: string, rules: PredictionRules): number {
+  return defaultLineupPredictionForLineupId(lineupId, rules);
+}

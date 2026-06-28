@@ -32,11 +32,12 @@ import { SportPredictionField } from "../platform/SportPredictionField";
 import {
   defaultPredictionForLineupId,
   defaultPredictionMidpoint,
-  predictionValueForSport,
-  toPredictionForSport,
+  predictionNumericValue,
+  toLineupPredictionValue,
 } from "../../lib/sportPrediction";
-import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
+import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
 
 import { getLineupNumberLabel } from "../../lib/lineupDisplay";
 
@@ -86,6 +87,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   );
   const { updateLineup, lineups } = useLineupData({ eventId });
   const rosterRules = useSportRosterRules(sportId);
+  const predictionRules = useSportPredictionRules(sportId);
   const status = eventStatus;
 
   const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
@@ -107,12 +109,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     const fromListValue = fromList ? platformLineupPrediction(fromList) : null;
     const fromLineup =
       platformLineup && "prediction" in platformLineup
-        ? predictionValueForSport(sportId, platformLineup.prediction)
+        ? predictionNumericValue(platformLineup.prediction)
         : null;
     const value = fromListValue ?? fromLineup;
     if (value != null) return value;
-    return lineupId ? defaultPredictionForLineupId(sportId, lineupId) : defaultPredictionMidpoint(sportId);
-  }, [platformLineup, lineupId, lineups, sportId]);
+    return lineupId
+      ? defaultPredictionForLineupId(lineupId, predictionRules)
+      : defaultPredictionMidpoint(predictionRules);
+  }, [platformLineup, lineupId, lineups, predictionRules]);
 
   const [prediction, setPrediction] = useState(serverPrediction);
 
@@ -128,7 +132,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     initialCandidates,
     fieldCandidates: candidates,
     lineups,
-    winningScorePrediction: prediction,
+    predictionValue: prediction,
     updateLineup,
   });
 
@@ -156,7 +160,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       setIsSavingPrediction(true);
       setSliderError(null);
       try {
-        await updateLineup(lineupId, picks, { winningScorePrediction: nextPrediction });
+        await updateLineup(lineupId, picks, { predictionValue: nextPrediction });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to save prediction";
         setSliderError(message);
@@ -351,9 +355,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               </div>
               {canEditSlots ? (
                 <SportPredictionField
-                  value={toPredictionForSport(sportId, prediction)}
+                  value={toLineupPredictionValue(prediction)}
                   onChange={(value) => {
-                    const next = predictionValueForSport(sportId, value);
+                    const next = predictionNumericValue(value);
                     if (next != null) setPrediction(next);
                   }}
                   disabled={slotActionsDisabled}
@@ -361,7 +365,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                 />
               ) : (
                 <SportPredictionField
-                  value={toPredictionForSport(sportId, serverPrediction)}
+                  value={toLineupPredictionValue(serverPrediction)}
                   readOnly
                 />
               )}

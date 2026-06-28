@@ -1,11 +1,9 @@
 import React from "react";
 import type { PredictionFieldProps } from "@cut/sport-sdk/ui";
-import {
-  F1_PREDICTION_MAX,
-  F1_PREDICTION_MIN,
-  f1PredictionValue,
-  toF1Prediction,
-} from "../../lib/f1Prediction";
+import { parseLineupPrediction, toLineupPrediction } from "@cut/sport-sdk";
+import { useOptionalEventScope } from "../../contexts/EventScopeContext";
+import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
+import { defaultPredictionMidpoint } from "../../lib/sportPrediction";
 
 export const F1PredictionField: React.FC<PredictionFieldProps> = ({
   value,
@@ -14,7 +12,9 @@ export const F1PredictionField: React.FC<PredictionFieldProps> = ({
   error,
   readOnly,
 }) => {
-  const numeric = f1PredictionValue(value) ?? 60;
+  const scope = useOptionalEventScope();
+  const rules = useSportPredictionRules(scope?.sportId ?? "f1");
+  const numeric = parseLineupPrediction(value) ?? defaultPredictionMidpoint(rules);
 
   return (
     <div className="border-t border-gray-100 p-3">
@@ -46,18 +46,18 @@ export const F1PredictionField: React.FC<PredictionFieldProps> = ({
           <div className="flex items-center gap-3">
             <input
               type="range"
-              min={F1_PREDICTION_MIN}
-              max={F1_PREDICTION_MAX}
+              min={rules.min}
+              max={rules.max}
               value={numeric}
               disabled={disabled}
-              onChange={(event) => onChange?.(toF1Prediction(Number(event.target.value)))}
+              onChange={(event) => onChange?.(toLineupPrediction(Number(event.target.value)))}
               className="h-2 w-full flex-1 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               aria-labelledby="f1-lineup-points-prediction"
             />
           </div>
           <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
-            <span>{F1_PREDICTION_MIN}</span>
-            <span>{F1_PREDICTION_MAX}</span>
+            <span>{rules.min}</span>
+            <span>{rules.max}</span>
           </div>
         </>
       )}

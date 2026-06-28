@@ -87,7 +87,7 @@ Same platform mechanic as golf: user submits a guess at the **winning lineup's t
 
 | Field | Value |
 |-------|-------|
-| **JSON shape** | `{ type: "winningLineupPoints", value: number }` |
+| **JSON shape** | `{ type: "winningLineupTotal", value: number }` |
 | **Range** | 1–120 (UI slider; max realistic ≈ 4 × 26 = 104 if four top-four finishers with fastest-lap bonuses) |
 | **Ranking** | Score desc → prediction distance to `max(contest scores)` asc → entry time asc |
 

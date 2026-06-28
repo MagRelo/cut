@@ -213,7 +213,7 @@ async function main(): Promise<void> {
       eventId: event.id,
       name: spec.name,
       picks: spec.drivers,
-      prediction: { type: "winningLineupPoints", value: spec.prediction },
+      prediction: { type: "winningLineupTotal", value: spec.prediction },
     });
 
     if ("error" in result) {

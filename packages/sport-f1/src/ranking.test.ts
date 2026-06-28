@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { LINEUP_PREDICTION_TYPE } from "@cut/sport-sdk";
 import { rankF1Entries } from "./ranking.js";
 
 describe("rankF1Entries", () => {
@@ -14,18 +15,18 @@ describe("rankF1Entries", () => {
     expect(ranked[0]?.position).toBe(1);
   });
 
-  it("uses winningLineupPoints tie-break against contest max score", () => {
+  it("uses winningLineupTotal tie-break against contest max score", () => {
     const ranked = rankF1Entries([
       {
         entryId: "a",
         score: 50,
-        prediction: { type: "winningLineupPoints", value: 55 },
+        prediction: { type: LINEUP_PREDICTION_TYPE, value: 55 },
         createdAt: t0,
       },
       {
         entryId: "b",
         score: 50,
-        prediction: { type: "winningLineupPoints", value: 52 },
+        prediction: { type: LINEUP_PREDICTION_TYPE, value: 52 },
         createdAt: t1,
       },
     ]);

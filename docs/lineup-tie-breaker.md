@@ -1,6 +1,6 @@
 # Lineup tie-breaker — Play The Cut
 
-Product and engineering spec for **winning score prediction**: how users set it, how duplicates work, and how contests rank lineups and pay winners when fantasy scores tie.
+Product and engineering spec for **lineup total prediction**: how users set it, how duplicates work, and how contests rank lineups and pay winners when fantasy scores tie.
 
 Related references: [server API — lineups](../spec/server/api.md), [data models — Lineup](../spec/server/data-models.md), user-facing copy on the FAQ (“How are ties handled?”).
 
@@ -10,7 +10,7 @@ Related references: [server API — lineups](../spec/server/api.md), [data model
 
 Fantasy contests rank lineups by **Stableford total** (sum of the four golfers on the roster). When two or more entries finish with the same fantasy score, the product needs a deterministic way to assign **unique positions** (1, 2, 3, …) and **one payout per position**—no shared ranks and no pooled tie splits.
 
-Each **lineup** carries a **winning score prediction**: the user’s guess at the **highest lineup score that will win that contest** (again, sum of four golfers’ Stableford points). That number is **not** the PGA Tour leader’s stroke total or course par.
+Each **lineup** carries a **winning lineup total prediction**: the user’s guess at the **highest lineup score that will win that contest** (sum of roster participants’ event totals). For golf that is Stableford points; for F1 it is championship points. That number is **not** the PGA Tour leader’s stroke total or course par.
 
 The prediction serves two roles:
 
@@ -25,8 +25,8 @@ The prediction serves two roles:
 | --- | --- |
 | **Lineup** | User’s roster for an event (`Lineup`), up to four picks keyed by `eventParticipantId`. |
 | **Contest lineup** | That roster entered into a specific contest (`ContestLineup`); has score, position, `createdAt`. |
-| **Fantasy score** | Sum of roster players’ tournament Stableford totals (`ContestLineup.score`). |
-| **Winning score prediction** | Integer 1–250 in `Lineup.prediction` (`{ type: "winningScore", value }`); user’s guess of the winning lineup’s fantasy total in a contest. |
+| **Fantasy score** | Sum of roster participants’ event totals (`ContestLineup.score`). |
+| **Winning lineup total prediction** | Integer in `Lineup.prediction` (`{ type: "winningLineupTotal", value }`); user’s guess of the winning lineup total in a contest. Valid range comes from `Sport.predictionRules`. |
 | **Contest winning score** | `max(ContestLineup.score)` across all entries in that contest at ranking time. |
 | **Prediction distance** | `abs(prediction value − contestWinningScore)`; lower is better. |
 
@@ -36,7 +36,8 @@ The prediction serves two roles:
 
 | Field | Model | Type | Notes |
 | --- | --- | --- | --- |
-| `prediction` | `Lineup` | `Json?` | Golf: `{ type: "winningScore", value: number }`, range **1–250** when set. Stored on the lineup, not per contest entry. |
+| `prediction` | `Lineup` | `Json?` | `{ type: "winningLineupTotal", value: number }`. Range from `Sport.predictionRules` (golf: 1–250; F1: 1–120). Stored on the lineup, not per contest entry. |
+| `predictionRules` | `Sport` | `Json` | `{ min, max, defaultRandomMin, defaultRandomMax }` — per-sport slider range and server random defaults. |
 | `eventParticipantId` | `LineupPick` | `String` | Pick identity for roster slots. |
 | `score` | `ContestLineup` | `Int` | Live and final fantasy total. |
 | `position` | `ContestLineup` | `Int` | Unique rank within the contest (1 = best). |
@@ -46,8 +47,8 @@ The prediction serves two roles:
 
 | Event | Prediction value |
 | --- | --- |
-| New lineup via API without body field | Random integer in **95–145** (`randomWinningScorePrediction()`). |
-| Client before server value loads | Deterministic placeholder from lineup id (`defaultWinningScorePredictionForLineup`) so the slider does not flicker. |
+| New lineup via API without body field | Random integer in sport `defaultRandomMin`–`defaultRandomMax` (`randomLineupPrediction(rules)`). |
+| Client before server value loads | Deterministic placeholder from lineup id (`defaultLineupPredictionForLineupId`) so the slider does not flicker. |
 
 ---
 
@@ -67,7 +68,7 @@ Participant sets are compared after sorting underlying `participantId` values de
 
 | Check | When | Error message (representative) |
 | --- | --- | --- |
-| Contest (when `contestId` set) | `POST` / `PUT` `/api/lineups/...` | “You already have a lineup with these players and winning score prediction for this contest” |
+| Contest (when `contestId` set) | `POST` / `PUT` `/api/lineups/...` | “You already have a lineup with these players and winning lineup total prediction for this contest” |
 | Contest | `POST` `/api/contests/:id/lineups` | Same roster + prediction check in contest scope |
 
 The client runs the same roster + prediction check before save (slot editor and prediction field) so users see errors without a round trip when possible; the server is authoritative.
@@ -78,11 +79,10 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 **Surface:** `LineupContestCard` → **Players** tab, bottom of the panel when the user can edit slots (`canEditSlots`: editable event + lineup id present).
 
-**Control:** `SportPredictionField` → golf plugin `PredictionField` → `LineupWinningScoreSlider`
+**Control:** `SportPredictionField` → sport plugin `PredictionField` (golf: `LineupWinningScoreSlider`; F1: custom range slider)
 
-- Label: “Predicted winning lineup score”
-- Helper: explains it breaks ties
-- Range **1–250** with live numeric readout
+- Label: sport-specific (e.g. “Predicted winning lineup score” for golf)
+- Range from `Sport.predictionRules` via `useSportPredictionRules`
 
 **Save behavior**
 
@@ -107,7 +107,7 @@ Base path: `/api/lineups` (auth required; event must be editable for writes).
 | --- | --- | --- |
 | `picks` | Yes | 0–4 `eventParticipantId` values |
 | `name` | No | Default `"My Lineup"` |
-| `prediction` | No | `{ type: "winningScore", value: 1–250 }`; if omitted, server assigns random 95–145 |
+| `prediction` | No | `{ type: "winningLineupTotal", value }` within sport `predictionRules` range; if omitted, server assigns random default |
 
 ### `PUT /api/lineups/:lineupId`
 
@@ -127,7 +127,7 @@ Example body:
 {
   "picks": ["cuid1", "cuid2", "cuid3", "cuid4"],
   "name": "Lineup #1",
-  "prediction": { "type": "winningScore", "value": 142 }
+  "prediction": { "type": "winningLineupTotal", "value": 142 }
 }
 ```
 
@@ -226,8 +226,10 @@ sequenceDiagram
 
 | Concern | Location |
 | --- | --- |
-| Schema | `server/prisma/schema.prisma` — `Lineup.prediction`, `LineupPick.eventParticipantId` |
-| Random default / validation helpers | `server/src/utils/winningScorePrediction.ts` |
+| Schema | `server/prisma/schema.prisma` — `Lineup.prediction`, `Sport.predictionRules`, `LineupPick.eventParticipantId` |
+| Parse / serialize / validation | `packages/sport-sdk/src/lineupPrediction.ts` |
+| Sport-aware server helpers | `server/src/utils/sportPrediction.ts` |
+| Duplicate message | `server/src/utils/lineupPrediction.ts` |
 | Duplicate checks | `server/src/utils/lineupValidation.ts` |
 | Golf ranking cascade | `packages/sport-pga-golf/src/ranking.ts` (`rankGolfEntries`) |
 | Registry | `server/src/sports/registry.ts` (`requireSportModule`) |
@@ -235,11 +237,10 @@ sequenceDiagram
 | Contest entry HTTP | `server/src/routes/contest.ts` |
 | Live positions | `server/src/services/updateContestLineups.ts` |
 | Settlement | `server/src/services/contest/settleContest.ts` |
-| Prediction UI | `client/src/components/platform/SportPredictionField.tsx` → golf `PredictionField` |
-| Card + debounced save | `client/src/components/lineup/LineupContestCard.tsx` |
-| Slot picker + saves | `CandidatePicker`, `useLineupSlotEditor` (`eventParticipantId[]`) |
-| Mutations / cache | `client/src/hooks/useLineupMutations.ts`, `useLineupData.ts` |
-| Client defaults / copy | `client/src/utils/winningScorePrediction.ts` |
+| Prediction UI | `client/src/components/platform/SportPredictionField.tsx` → sport `PredictionField` |
+| Prediction rules hook | `client/src/hooks/useSportPredictionRules.ts` |
+| Client helpers | `client/src/lib/sportPrediction.ts` |
+| Duplicate message | `client/src/utils/lineupPrediction.ts` |
 
 ---
 

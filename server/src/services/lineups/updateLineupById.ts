@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
-import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction.js";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction.js";
 import { predictionValueForSport } from "../../utils/sportPrediction.js";
 import { isDuplicateLineup } from "../../utils/lineupValidation.js";
 import {
