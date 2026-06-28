@@ -23,7 +23,7 @@ export type CreateLineupInput = {
 };
 
 function resolvePrediction(sportId: string, prediction: unknown | undefined) {
-  if (prediction !== undefined) {
+  if (prediction !== undefined && prediction !== null) {
     return prediction as object;
   }
   return defaultPredictionForSport(sportId);

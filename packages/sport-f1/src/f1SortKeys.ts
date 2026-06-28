@@ -39,12 +39,14 @@ export function buildF1SortKeys(input: {
   const constructor = (participantMeta.teamName ?? "").trim().toLowerCase();
   const championship = numericRank(participantMeta.championshipPosition);
   const gridPosition = numericRank(participantMeta.gridPosition);
+  const seasonWins = participantMeta.seasonWins ?? 0;
   const racePosition = numericRank(scoreData.position);
   const points = input.total ?? 0;
 
   return {
     championship,
     gridPosition,
+    seasonWins: -seasonWins,
     constructor,
     driverName,
     racePosition,

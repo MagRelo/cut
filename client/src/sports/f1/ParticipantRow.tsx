@@ -1,5 +1,6 @@
 import React from "react";
 import type { ParticipantRowProps } from "@cut/sport-sdk/ui";
+import { F1DriverAvatar } from "./F1DriverAvatar";
 import {
   candidatePoints,
   formatDriverStatus,
@@ -25,11 +26,17 @@ export const F1ParticipantRow: React.FC<ParticipantRowProps> = ({
   const statusLabel = formatDriverStatus(scoreData.status);
   const teamName = participant.teamName?.trim() || "—";
 
+  const driverAvatar = (
+    <F1DriverAvatar
+      displayName={candidate.displayName}
+      headshotUrl={participant.headshotUrl}
+      teamColor={teamColor}
+    />
+  );
+
   const inactiveContent = (
     <div className="flex min-w-0 items-center gap-3">
-      {teamColor ? (
-        <div className="h-10 w-1 shrink-0 rounded-full" style={{ backgroundColor: teamColor }} />
-      ) : null}
+      {driverAvatar}
       <div className="min-w-0 flex-1">
         <div className="truncate text-md font-semibold leading-tight text-gray-900">
           {candidate.displayName}
@@ -50,9 +57,7 @@ export const F1ParticipantRow: React.FC<ParticipantRowProps> = ({
         <span className="text-xs font-semibold leading-none text-gray-800">{positionDisplay}</span>
       </div>
 
-      {teamColor ? (
-        <div className="h-10 w-1 shrink-0 rounded-full" style={{ backgroundColor: teamColor }} />
-      ) : null}
+      {driverAvatar}
 
       <div className="min-w-0 flex-1">
         <div className="truncate text-md font-semibold leading-tight text-gray-900">

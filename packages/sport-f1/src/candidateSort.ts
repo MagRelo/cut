@@ -9,7 +9,7 @@ const nameSortKeys = [
 
 const pickerSortKeys = [
   { key: "championship", direction: "asc" as const },
-  { key: "gridPosition", direction: "asc" as const },
+  { key: "seasonWins", direction: "asc" as const },
   { key: "constructor", direction: "asc" as const },
   { key: "driverName", direction: "asc" as const },
 ];

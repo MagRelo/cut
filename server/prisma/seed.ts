@@ -23,7 +23,7 @@ const PGA_GOLF_SCORING_RULES = {
 
 const F1_ROSTER_RULES = {
   slotCount: 4,
-  minPicks: 4,
+  minPicks: 0,
   maxPicks: 4,
   allowDuplicates: false,
 };

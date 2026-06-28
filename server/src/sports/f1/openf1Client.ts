@@ -64,6 +64,19 @@ export type OpenF1ChampionshipDriver = {
   position_current?: number | null;
 };
 
+export type JolpicaDriverStanding = {
+  position: string;
+  wins: string;
+  Driver: {
+    permanentNumber?: string;
+  };
+};
+
+export type DriverSeasonStanding = {
+  championshipPosition: number;
+  seasonWins: number;
+};
+
 export type ResolvedRaceContext = {
   season: number;
   round: number;
@@ -193,6 +206,44 @@ export async function fetchChampionshipDrivers(
   } catch {
     return [];
   }
+}
+
+export async function fetchJolpicaDriverStandings(
+  season: number,
+  round: number,
+): Promise<JolpicaDriverStanding[]> {
+  try {
+    const data = await fetchJson<{
+      MRData: {
+        StandingsTable: {
+          StandingsLists: Array<{ DriverStandings: JolpicaDriverStanding[] }>;
+        };
+      };
+    }>(`${JOLPICA_BASE}/${season}/${round}/driverStandings.json`);
+    const list = data.MRData.StandingsTable.StandingsLists[0];
+    return list?.DriverStandings ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export function mapJolpicaStandingsByDriverNumber(
+  standings: JolpicaDriverStanding[],
+): Map<number, DriverSeasonStanding> {
+  const map = new Map<number, DriverSeasonStanding>();
+  for (const row of standings) {
+    const driverNumber = Number.parseInt(row.Driver.permanentNumber ?? "", 10);
+    const championshipPosition = Number.parseInt(row.position, 10);
+    const seasonWins = Number.parseInt(row.wins, 10);
+    if (!Number.isFinite(driverNumber) || !Number.isFinite(championshipPosition)) {
+      continue;
+    }
+    map.set(driverNumber, {
+      championshipPosition,
+      seasonWins: Number.isFinite(seasonWins) ? seasonWins : 0,
+    });
+  }
+  return map;
 }
 
 export async function fetchSessionResults(sessionKey: number): Promise<OpenF1SessionResult[]> {

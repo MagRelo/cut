@@ -1,7 +1,7 @@
 import React from "react";
-import { UserIcon } from "@heroicons/react/24/outline";
 import type { Candidate } from "@cut/sport-sdk";
-import { formatOrdinal, formatTeamColor, parseF1CandidateMetadata } from "./utils";
+import { F1DriverAvatar } from "./F1DriverAvatar";
+import { formatCount, formatOrdinal, formatTeamColor, parseF1CandidateMetadata } from "./utils";
 
 interface CandidateSelectionCardProps {
   candidate: Candidate;
@@ -15,8 +15,8 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
   const meta = parseF1CandidateMetadata(candidate);
   const participant = meta.participant ?? {};
   const teamColor = formatTeamColor(participant.teamColour);
-  const grid = formatOrdinal(participant.gridPosition);
-  const championship = formatOrdinal(participant.championshipPosition);
+  const wdc = formatOrdinal(participant.championshipPosition);
+  const wins = formatCount(participant.seasonWins);
   const teamName = participant.teamName?.trim() || "—";
 
   return (
@@ -28,17 +28,12 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
       ) : null}
       <div className="p-3">
         <div className="flex items-start gap-3">
-          {participant.headshotUrl ? (
-            <img
-              className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-white"
-              src={participant.headshotUrl}
-              alt={candidate.displayName}
-            />
-          ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100">
-              <UserIcon className="h-8 w-8 text-slate-300" aria-hidden />
-            </div>
-          )}
+          <F1DriverAvatar
+            displayName={candidate.displayName}
+            headshotUrl={participant.headshotUrl}
+            teamColor={teamColor}
+            size="lg"
+          />
           <div className="min-w-0 flex-1 mt-1">
             <h3 className="truncate text-left text-xl font-semibold leading-tight text-slate-900">
               {candidate.displayName || "Unknown"}
@@ -50,17 +45,15 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
         <div className="mt-3 grid grid-cols-2 gap-1.5">
           <div className="rounded-sm border border-blue-100 bg-gradient-to-b from-blue-50/95 to-blue-50/45 px-2 py-1.5 text-center">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-blue-800">
-              Grid
+              WDC
             </div>
-            <div className="mt-1 text-[13px] font-bold tabular-nums text-slate-800">{grid}</div>
+            <div className="mt-1 text-[13px] font-bold tabular-nums text-slate-800">{wdc}</div>
           </div>
           <div className="rounded-sm border border-blue-100 bg-gradient-to-b from-blue-50/95 to-blue-50/45 px-2 py-1.5 text-center">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-blue-800">
-              Championship
+              Wins
             </div>
-            <div className="mt-1 text-[13px] font-bold tabular-nums text-slate-800">
-              {championship}
-            </div>
+            <div className="mt-1 text-[13px] font-bold tabular-nums text-slate-800">{wins}</div>
           </div>
         </div>
       </div>

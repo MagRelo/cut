@@ -4,7 +4,9 @@ import {
   driverExternalId,
   fetchChampionshipDrivers,
   fetchDrivers,
+  fetchJolpicaDriverStandings,
   fetchStartingGrid,
+  mapJolpicaStandingsByDriverNumber,
 } from "./openf1Client.js";
 import { requireF1Metadata } from "./metadataMerge.js";
 
@@ -20,20 +22,23 @@ export async function syncF1ParticipantField(eventId: string) {
   const f1Meta = requireF1Metadata(event.metadata);
   const sessionKey = f1Meta.sessionKey;
 
-  const [drivers, startingGrid, championshipDrivers] = await Promise.all([
+  const [drivers, startingGrid, championshipDrivers, jolpicaStandings] = await Promise.all([
     fetchDrivers(sessionKey),
     fetchStartingGrid(sessionKey),
     fetchChampionshipDrivers(sessionKey),
+    fetchJolpicaDriverStandings(f1Meta.season, f1Meta.round),
   ]);
 
   const gridByDriver = new Map(startingGrid.map((row) => [row.driver_number, row.position]));
   const championshipByDriver = new Map(
     championshipDrivers.map((row) => [row.driver_number, row.position_current ?? null]),
   );
+  const seasonByDriver = mapJolpicaStandingsByDriverNumber(jolpicaStandings);
   const fieldDriverNumbers = new Set(drivers.map((driver) => driver.driver_number));
 
   for (const driver of drivers) {
     const externalId = driverExternalId(driver.driver_number);
+    const season = seasonByDriver.get(driver.driver_number);
     const participantMetadata = {
       driverNumber: driver.driver_number,
       teamName: driver.team_name,
@@ -41,7 +46,11 @@ export async function syncF1ParticipantField(eventId: string) {
       headshotUrl: driver.headshot_url ?? null,
       countryCode: driver.country_code ?? null,
       gridPosition: gridByDriver.get(driver.driver_number) ?? null,
-      championshipPosition: championshipByDriver.get(driver.driver_number) ?? null,
+      championshipPosition:
+        season?.championshipPosition ??
+        championshipByDriver.get(driver.driver_number) ??
+        null,
+      seasonWins: season?.seasonWins ?? null,
       inField: true,
     };
 

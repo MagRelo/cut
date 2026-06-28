@@ -282,4 +282,4 @@ pnpm --filter server run service:update-contest-lineups
 | Date | externalId | Operator | Notes |
 |------|------------|----------|-------|
 | 2026-06-28 | `2024-british-gp` | Stage 8 dry run | Local dev; `script:f1-dry-run` passed |
-| | | | |
+| 2026-06-27 | `2026-austrian-gp` | Local activation | Init + metadata sync; 22 drivers; race 2026-06-28 |

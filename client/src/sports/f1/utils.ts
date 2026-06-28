@@ -39,6 +39,11 @@ export function formatTeamColor(colour: string | null | undefined): string | nul
   return c.startsWith("#") ? c : `#${c}`;
 }
 
+export function formatCount(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return String(Math.round(value));
+}
+
 export function formatOrdinal(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   const n = Math.round(value);

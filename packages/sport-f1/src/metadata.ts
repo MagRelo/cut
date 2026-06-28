@@ -20,6 +20,7 @@ export interface F1ParticipantMetadata {
   headshotUrl?: string | null;
   countryCode?: string | null;
   championshipPosition?: number | null;
+  seasonWins?: number | null;
   gridPosition?: number | null;
 }
 
